@@ -1,4 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="5,5,111,32"/>
-<area shape="rect" id="node2" href="$structripple_1_1TypedField.html" title="A field with a type known at compile time." alt="" coords="159,5,332,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1SHAMapAbstractNode.html" title=" " alt="" coords="5,31,215,57"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="263,5,451,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="265,56,448,83"/>
 </map>

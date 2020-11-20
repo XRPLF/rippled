@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['rcltxset_25473',['RCLTxSet',['../classripple_1_1RCLTxSet_1_1MutableTxSet.html#ae77e0f98f13b953d575d7872bf6e1186',1,'ripple::RCLTxSet::MutableTxSet']]],
-  ['reader_25474',['reader',['../classripple_1_1DatabaseBody_1_1value__type.html#a0e6b5ca720b55b305ae96f8bcf7f5c4b',1,'ripple::DatabaseBody::value_type']]],
-  ['rootstoppable_25475',['RootStoppable',['../classripple_1_1Stoppable.html#a761776ae10bd0812aef7de483d03cc77',1,'ripple::Stoppable']]]
+  ['scheduler_25466',['Scheduler',['../structripple_1_1test_1_1csf_1_1Scheduler_1_1cancel__token.html#afb88c77ea5daaefa6c8fa6bc5b9aa5c1',1,'ripple::test::csf::Scheduler::cancel_token']]],
+  ['shamap_25467',['SHAMap',['../classripple_1_1SHAMap_1_1const__iterator.html#a1ffff693669cd9c4038491d5cc4cf6f3',1,'ripple::SHAMap::const_iterator']]],
+  ['slotimp_25468',['SlotImp',['../classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a8ac11c6c11b15e6200067722d25e2a89',1,'ripple::PeerFinder::SlotImp::recent_t']]],
+  ['slots_3c_20clock_5ftype_20_3e_25469',['Slots&lt; clock_type &gt;',['../classripple_1_1squelch_1_1Slot.html#a388610512ec6b4ac10e70735797eee39',1,'ripple::squelch::Slot']]],
+  ['stobject_25470',['STObject',['../classripple_1_1STObject_1_1ValueProxy.html#a3d078850c695c0d606fe88c0fba7088f',1,'ripple::STObject::ValueProxy::STObject()'],['../classripple_1_1STObject_1_1OptionalProxy.html#a3d078850c695c0d606fe88c0fba7088f',1,'ripple::STObject::OptionalProxy::STObject()']]]
 ];

@@ -220,10 +220,10 @@ $(function() {
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">// Prepare for download and establish the</span></div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">// connection:</span></div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <span class="keyword">const</span> rangeStart = <a class="code" href="classripple_1_1HTTPDownloader.html#a787cb0169f8a3fb10ef99434c217fea9">size</a>(p);</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a> = ssl ? HTTPStream::makeUnique&lt;SSLStream&gt;(<a class="code" href="classripple_1_1HTTPDownloader.html#aed75962906409ad382fbec61591df491">config_</a>, <a class="code" href="classripple_1_1HTTPDownloader.html#a1ec934ea60b2ccab57678e6bde74a60c">strand_</a>, <a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>)</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                  : HTTPStream::makeUnique&lt;RawStream&gt;(<a class="code" href="classripple_1_1HTTPDownloader.html#aed75962906409ad382fbec61591df491">config_</a>, <a class="code" href="classripple_1_1HTTPDownloader.html#a1ec934ea60b2ccab57678e6bde74a60c">strand_</a>, <a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>);</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="keywordflow">if</span> (ssl)</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a> = std::make_unique&lt;SSLStream&gt;(<a class="code" href="classripple_1_1HTTPDownloader.html#aed75962906409ad382fbec61591df491">config_</a>, <a class="code" href="classripple_1_1HTTPDownloader.html#a1ec934ea60b2ccab57678e6bde74a60c">strand_</a>, <a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>);</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a> = std::make_unique&lt;RawStream&gt;(<a class="code" href="classripple_1_1HTTPDownloader.html#a1ec934ea60b2ccab57678e6bde74a60c">strand_</a>);</div>
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> error;</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;connect(error, host, port, yield))</div>
@@ -234,160 +234,162 @@ $(function() {
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    req.set(http::field::host, host);</div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);</div>
 <div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="comment">// Requesting a portion of the file</span></div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keywordflow">if</span> (rangeStart)</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    {</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        req.set(</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            http::field::range,</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            (boost::format(<span class="stringliteral">&quot;bytes=%llu-&quot;</span>) % rangeStart).str());</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    }</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncWrite(req, yield, ec);</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_write&quot;</span>, p);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    {</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        <span class="comment">// Read the response</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        http::response_parser&lt;http::empty_body&gt; connectParser;</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        connectParser.skip(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncRead(<a class="code" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">read_buf_</a>, connectParser, <span class="keyword">false</span>, yield, ec);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_read&quot;</span>, p);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        <span class="comment">// Range request was rejected</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        <span class="keywordflow">if</span> (connectParser.get().result() == http::status::range_not_satisfiable)</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        {</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            req.erase(http::field::range);</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160; </div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncWrite(req, yield, ec);</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_write_range_verify&quot;</span>, p);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            http::response_parser&lt;http::empty_body&gt; rangeParser;</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            rangeParser.skip(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncRead(<a class="code" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">read_buf_</a>, rangeParser, <span class="keyword">false</span>, yield, ec);</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_read_range_verify&quot;</span>, p);</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;            <span class="comment">// The entire file is downloaded already.</span></div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;            <span class="keywordflow">if</span> (rangeParser.content_length() == rangeStart)</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                skip = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;range_not_satisfiable&quot;</span>, p);</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        }</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            rangeStart &amp;&amp;</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            connectParser.get().result() != http::status::partial_content)</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        {</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;            ec.assign(</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                boost::system::errc::not_supported,</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                boost::system::generic_category());</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160; </div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;Range request ignored&quot;</span>, p);</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        }</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<span class="keyword">auto</span> len = connectParser.content_length())</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        {</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            {</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                <span class="comment">// Ensure sufficient space is available</span></div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                <span class="keywordflow">if</span> (*len &gt; space(dstPath.parent_path()).available)</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                {</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                    <span class="keywordflow">return</span> failAndExit(</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                        <span class="stringliteral">&quot;Insufficient disk space for download&quot;</span>, p);</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                }</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            }</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            {</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                <span class="keywordflow">return</span> failAndExit(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;exception: &quot;</span>) + e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(), p);</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            }</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        }</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    }</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keywordflow">if</span> (!skip)</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    {</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="comment">// Set up an HTTP GET request message to download the file</span></div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        req.method(http::verb::get);</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        <span class="keywordflow">if</span> (rangeStart)</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        {</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            req.set(</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                http::field::range,</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                (boost::format(<span class="stringliteral">&quot;bytes=%llu-&quot;</span>) % rangeStart).str());</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        }</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    }</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncWrite(req, yield, ec);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_write&quot;</span>, p);</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="comment">// end prepare and connect</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;<span class="comment"></span> </div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="keywordflow">if</span> (skip)</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        p-&gt;skip(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <span class="comment">// Download the file</span></div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keywordflow">while</span> (!p-&gt;is_done())</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    {</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1HTTPDownloader.html#a5f3895cd01a96c313cc00675417e6977">stop_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic/load.html">load</a>())</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        {</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            close(p);</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            <span class="keywordflow">return</span> exit();</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        }</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncRead(<a class="code" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">read_buf_</a>, *p, <span class="keyword">true</span>, yield, ec);</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    }</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;download completed: &quot;</span> &lt;&lt; dstPath.string();</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <span class="keyword">const</span> rangeStart = <a class="code" href="classripple_1_1HTTPDownloader.html#a787cb0169f8a3fb10ef99434c217fea9">size</a>(p);</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="comment">// Requesting a portion of the file</span></div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keywordflow">if</span> (rangeStart)</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    {</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        req.set(</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            http::field::range,</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            (boost::format(<span class="stringliteral">&quot;bytes=%llu-&quot;</span>) % rangeStart).str());</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    }</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160; </div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncWrite(req, yield, ec);</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_write&quot;</span>, p);</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    {</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="comment">// Read the response</span></div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        http::response_parser&lt;http::empty_body&gt; connectParser;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        connectParser.skip(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncRead(<a class="code" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">read_buf_</a>, connectParser, yield, ec);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_read&quot;</span>, p);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <span class="comment">// Range request was rejected</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        <span class="keywordflow">if</span> (connectParser.get().result() == http::status::range_not_satisfiable)</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        {</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            req.erase(http::field::range);</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncWrite(req, yield, ec);</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_write_range_verify&quot;</span>, p);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            http::response_parser&lt;http::empty_body&gt; rangeParser;</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            rangeParser.skip(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncRead(<a class="code" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">read_buf_</a>, rangeParser, yield, ec);</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_read_range_verify&quot;</span>, p);</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            <span class="comment">// The entire file is downloaded already.</span></div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            <span class="keywordflow">if</span> (rangeParser.content_length() == rangeStart)</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                skip = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;range_not_satisfiable&quot;</span>, p);</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        }</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            rangeStart &amp;&amp;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;            connectParser.get().result() != http::status::partial_content)</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        {</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;            ec.assign(</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                boost::system::errc::not_supported,</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                boost::system::generic_category());</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;Range request ignored&quot;</span>, p);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        }</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<span class="keyword">auto</span> len = connectParser.content_length())</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        {</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            {</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                <span class="comment">// Ensure sufficient space is available</span></div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                <span class="keywordflow">if</span> (*len &gt; space(dstPath.parent_path()).available)</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                {</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                    <span class="keywordflow">return</span> failAndExit(</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                        <span class="stringliteral">&quot;Insufficient disk space for download&quot;</span>, p);</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                }</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            }</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            {</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                <span class="keywordflow">return</span> failAndExit(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;exception: &quot;</span>) + e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(), p);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            }</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        }</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    }</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    <span class="keywordflow">if</span> (!skip)</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    {</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <span class="comment">// Set up an HTTP GET request message to download the file</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        req.method(http::verb::get);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="keywordflow">if</span> (rangeStart)</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        {</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            req.set(</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                http::field::range,</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                (boost::format(<span class="stringliteral">&quot;bytes=%llu-&quot;</span>) % rangeStart).str());</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        }</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncWrite(req, yield, ec);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        <span class="keywordflow">return</span> failAndExit(<span class="stringliteral">&quot;async_write&quot;</span>, p);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160; </div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="comment">// end prepare and connect</span></div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;<span class="comment"></span> </div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="keywordflow">if</span> (skip)</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        p-&gt;skip(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <span class="comment">// Download the file</span></div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <span class="keywordflow">while</span> (!p-&gt;is_done())</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    {</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1HTTPDownloader.html#a5f3895cd01a96c313cc00675417e6977">stop_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic/load.html">load</a>())</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        {</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            close(p);</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            <span class="keywordflow">return</span> exit();</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        }</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">stream_</a>-&gt;asyncReadSome(<a class="code" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">read_buf_</a>, *p, yield, ec);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    }</div>
 <div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    close(p);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    exit();</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;}</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00281"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPDownloader.html#a85a117582c525f5ec137c531b2381d07">  281</a></span>&#160;<a class="code" href="classripple_1_1HTTPDownloader.html#a85a117582c525f5ec137c531b2381d07">HTTPDownloader::onStop</a>()</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;{</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#a5f3895cd01a96c313cc00675417e6977">stop_</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock(<a class="code" href="classripple_1_1HTTPDownloader.html#a1608efa7e758d4b161c6fbd71ec3cff0">m_</a>);</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1HTTPDownloader.html#aebd897756f73b388ddaf7e4c6d41f612">sessionActive_</a>)</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    {</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        <span class="comment">// Wait for the handler to exit.</span></div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ae220825fb19bf7c59b8097181ba892fc">c_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">wait</a>(lock, [<span class="keyword">this</span>]() { <span class="keywordflow">return</span> !<a class="code" href="classripple_1_1HTTPDownloader.html#aebd897756f73b388ddaf7e4c6d41f612">sessionActive_</a>; });</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    }</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;}</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00294"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPDownloader.html#a02ca1f8a329e2075a29226089e751096">  294</a></span>&#160;<a class="code" href="classripple_1_1HTTPDownloader.html#a02ca1f8a329e2075a29226089e751096">HTTPDownloader::fail</a>(</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    boost::filesystem::path dstPath,</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    boost::system::error_code <span class="keyword">const</span>&amp; ec,</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; errMsg,</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;parser&gt;</a> <a class="code" href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">parser</a>)</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;{</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    <span class="keywordflow">if</span> (!ec)</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    {</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; errMsg;</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    }</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ec != boost::asio::error::operation_aborted)</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    {</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;        JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; errMsg &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message();</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    }</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160; </div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">parser</a>)</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#a37205e8d9ea9e38bfe5beda01bfe5485">closeBody</a>(<a class="code" href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">parser</a>);</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        remove(dstPath);</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    }</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    {</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;exception: &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                         &lt;&lt; <span class="stringliteral">&quot; in function: &quot;</span> &lt;&lt; __func__;</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    }</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;}</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;download completed: &quot;</span> &lt;&lt; dstPath.string();</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    close(p);</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    exit();</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;}</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00283"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPDownloader.html#a85a117582c525f5ec137c531b2381d07">  283</a></span>&#160;<a class="code" href="classripple_1_1HTTPDownloader.html#a85a117582c525f5ec137c531b2381d07">HTTPDownloader::onStop</a>()</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;{</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="code" href="classripple_1_1HTTPDownloader.html#a5f3895cd01a96c313cc00675417e6977">stop_</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock(<a class="code" href="classripple_1_1HTTPDownloader.html#a1608efa7e758d4b161c6fbd71ec3cff0">m_</a>);</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1HTTPDownloader.html#aebd897756f73b388ddaf7e4c6d41f612">sessionActive_</a>)</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    {</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        <span class="comment">// Wait for the handler to exit.</span></div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#ae220825fb19bf7c59b8097181ba892fc">c_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">wait</a>(lock, [<span class="keyword">this</span>]() { <span class="keywordflow">return</span> !<a class="code" href="classripple_1_1HTTPDownloader.html#aebd897756f73b388ddaf7e4c6d41f612">sessionActive_</a>; });</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    }</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;}</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00296"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPDownloader.html#a02ca1f8a329e2075a29226089e751096">  296</a></span>&#160;<a class="code" href="classripple_1_1HTTPDownloader.html#a02ca1f8a329e2075a29226089e751096">HTTPDownloader::fail</a>(</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    boost::filesystem::path dstPath,</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    boost::system::error_code <span class="keyword">const</span>&amp; ec,</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; errMsg,</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;parser&gt;</a> <a class="code" href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">parser</a>)</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;{</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordflow">if</span> (!ec)</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    {</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; errMsg;</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    }</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ec != boost::asio::error::operation_aborted)</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    {</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;        JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; errMsg &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message();</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    }</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">parser</a>)</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <a class="code" href="classripple_1_1HTTPDownloader.html#a37205e8d9ea9e38bfe5beda01bfe5485">closeBody</a>(<a class="code" href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">parser</a>);</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160; </div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    {</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        remove(dstPath);</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    {</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        JLOG(<a class="code" href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;exception: &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                         &lt;&lt; <span class="stringliteral">&quot; in function: &quot;</span> &lt;&lt; __func__;</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    }</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;}</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160; </div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a3a83f807e3fff4d1c93160dbbcc9c64d"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a3a83f807e3fff4d1c93160dbbcc9c64d">ripple::HTTPDownloader::getParser</a></div><div class="ttdeci">virtual std::shared_ptr&lt; parser &gt; getParser(boost::filesystem::path dstPath, std::function&lt; void(boost::filesystem::path)&gt; complete, boost::system::error_code &amp;ec)=0</div></div>
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a4527887376a54897f255df63f95a1207"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a4527887376a54897f255df63f95a1207">ripple::HTTPDownloader::checkPath</a></div><div class="ttdeci">virtual bool checkPath(boost::filesystem::path const &amp;dstPath)=0</div></div>
@@ -407,8 +409,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_ad89cdc3c6d7084f3dbd68a519062cc2e"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#ad89cdc3c6d7084f3dbd68a519062cc2e">ripple::HTTPDownloader::stream_</a></div><div class="ttdeci">std::unique_ptr&lt; HTTPStream &gt; stream_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8h_source.html#l00086">HTTPDownloader.h:86</a></div></div>
 <div class="ttc" id="ashared_from_this_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">std::enable_shared_from_this&lt; HTTPDownloader &gt;::shared_from_this</a></div><div class="ttdeci">T shared_from_this(T... args)</div></div>
 <div class="ttc" id="aload_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/atomic/atomic/load.html">std::atomic::load</a></div><div class="ttdeci">T load(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00068">Config.h:68</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a02ca1f8a329e2075a29226089e751096"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a02ca1f8a329e2075a29226089e751096">ripple::HTTPDownloader::fail</a></div><div class="ttdeci">void fail(boost::filesystem::path dstPath, boost::system::error_code const &amp;ec, std::string const &amp;errMsg, std::shared_ptr&lt; parser &gt; parser)</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8cpp_source.html#l00294">HTTPDownloader.cpp:294</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00069">Config.h:69</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a02ca1f8a329e2075a29226089e751096"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a02ca1f8a329e2075a29226089e751096">ripple::HTTPDownloader::fail</a></div><div class="ttdeci">void fail(boost::filesystem::path dstPath, boost::system::error_code const &amp;ec, std::string const &amp;errMsg, std::shared_ptr&lt; parser &gt; parser)</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8cpp_source.html#l00296">HTTPDownloader.cpp:296</a></div></div>
 <div class="ttc" id="aunique_lock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_aed75962906409ad382fbec61591df491"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#aed75962906409ad382fbec61591df491">ripple::HTTPDownloader::config_</a></div><div class="ttdeci">Config const  &amp; config_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8h_source.html#l00084">HTTPDownloader.h:84</a></div></div>
 <div class="ttc" id="anamespaceboost_1_1asio_html"><div class="ttname"><a href="namespaceboost_1_1asio.html">boost::asio</a></div><div class="ttdef"><b>Definition:</b> <a href="Overlay_8h_source.html#l00042">Overlay.h:42</a></div></div>
@@ -418,7 +420,7 @@ $(function() {
 <div class="ttc" id="await_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">std::condition_variable::wait</a></div><div class="ttdeci">T wait(T... args)</div></div>
 <div class="ttc" id="anotify_one_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/notify_one.html">std::condition_variable::notify_one</a></div><div class="ttdeci">T notify_one(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a85a117582c525f5ec137c531b2381d07"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a85a117582c525f5ec137c531b2381d07">ripple::HTTPDownloader::onStop</a></div><div class="ttdeci">void onStop()</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8cpp_source.html#l00281">HTTPDownloader.cpp:281</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a85a117582c525f5ec137c531b2381d07"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a85a117582c525f5ec137c531b2381d07">ripple::HTTPDownloader::onStop</a></div><div class="ttdeci">void onStop()</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8cpp_source.html#l00283">HTTPDownloader.cpp:283</a></div></div>
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a0438f2d57582abab6b9ef9b942af9b6f"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a0438f2d57582abab6b9ef9b942af9b6f">ripple::HTTPDownloader::download</a></div><div class="ttdeci">bool download(std::string const &amp;host, std::string const &amp;port, std::string const &amp;target, int version, boost::filesystem::path const &amp;dstPath, std::function&lt; void(boost::filesystem::path)&gt; complete, bool ssl=true)</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8cpp_source.html#l00038">HTTPDownloader.cpp:38</a></div></div>
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_a67006e79b06b6014cc1cbb53150810b4"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#a67006e79b06b6014cc1cbb53150810b4">ripple::HTTPDownloader::j_</a></div><div class="ttdeci">const beast::Journal j_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8h_source.html#l00074">HTTPDownloader.h:74</a></div></div>
 <div class="ttc" id="aclassripple_1_1HTTPDownloader_html_ac53696c115ea2f5327b429473c921089"><div class="ttname"><a href="classripple_1_1HTTPDownloader.html#ac53696c115ea2f5327b429473c921089">ripple::HTTPDownloader::parser</a></div><div class="ttdeci">boost::beast::http::basic_parser&lt; false &gt; parser</div><div class="ttdef"><b>Definition:</b> <a href="HTTPDownloader_8h_source.html#l00072">HTTPDownloader.h:72</a></div></div>

@@ -90,16 +90,17 @@ Collaboration diagram for ripple::test::CaptureLogs::CaptureSink:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink__coll__graph.png" border="0" usemap="#ripple_1_1test_1_1CaptureLogs_1_1CaptureSink_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1test_1_1CaptureLogs_1_1CaptureSink_coll__map" id="ripple_1_1test_1_1CaptureLogs_1_1CaptureSink_coll__map">
-<area shape="rect" title="sink for writing all log messages to a stringstream" alt="" coords="69,95,251,136"/>
+<area shape="rect" title="sink for writing all log messages to a stringstream" alt="" coords="132,95,313,136"/>
 <area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html" title="STL class." alt="" coords="176,5,309,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="177,5,269,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html" title="STL class." alt="" coords="293,5,427,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:afc0600a7d1cc8f350027ca6b3ccf8e3b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#afc0600a7d1cc8f350027ca6b3ccf8e3b">CaptureSink</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a> <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a763da4afe95c22997084ad368db9dfc1">threshold</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &amp;strm)</td></tr>
-<tr class="separator:afc0600a7d1cc8f350027ca6b3ccf8e3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5034de50c690e04bb19e185d3e3908d0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#a5034de50c690e04bb19e185d3e3908d0">CaptureSink</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a> <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a763da4afe95c22997084ad368db9dfc1">threshold</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &amp;mutex, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &amp;strm)</td></tr>
+<tr class="separator:a5034de50c690e04bb19e185d3e3908d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a495b1fc5b7147f1a77853b8ea2808058"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#a495b1fc5b7147f1a77853b8ea2808058">write</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a> level, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;text) override</td></tr>
 <tr class="memdesc:a495b1fc5b7147f1a77853b8ea2808058"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write text to the sink at the specified severity.  <a href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#a495b1fc5b7147f1a77853b8ea2808058">More...</a><br /></td></tr>
 <tr class="separator:a495b1fc5b7147f1a77853b8ea2808058"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -121,6 +122,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
+<tr class="memitem:a36545f6ecfa120afc96b9ae9015ef91e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#a36545f6ecfa120afc96b9ae9015ef91e">strmMutex_</a></td></tr>
+<tr class="separator:a36545f6ecfa120afc96b9ae9015ef91e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58f17e165c92778de26111d5f4050c9e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#a58f17e165c92778de26111d5f4050c9e">strm_</a></td></tr>
 <tr class="separator:a58f17e165c92778de26111d5f4050c9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4901ba08ac3271fdb8fbe42607dd19f4"><td class="memItemLeft" align="right" valign="top">Severity&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1Journal_1_1Sink.html#a4901ba08ac3271fdb8fbe42607dd19f4">thresh_</a></td></tr>
@@ -131,10 +134,10 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>sink for writing all log messages to a stringstream </p>
 
-<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00039">39</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00040">40</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="afc0600a7d1cc8f350027ca6b3ccf8e3b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc0600a7d1cc8f350027ca6b3ccf8e3b">&#9670;&nbsp;</a></span>CaptureSink()</h2>
+<a id="a5034de50c690e04bb19e185d3e3908d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5034de50c690e04bb19e185d3e3908d0">&#9670;&nbsp;</a></span>CaptureSink()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -144,6 +147,12 @@ Private Attributes</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a>&#160;</td>
           <td class="paramname"><em>threshold</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &amp;&#160;</td>
+          <td class="paramname"><em>mutex</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -159,7 +168,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00044">44</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00046">46</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
 
 </div>
 </div>
@@ -203,7 +212,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a8886af7a5275b68f3f2e5e907dbbe726">beast::Journal::Sink</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00052">52</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00057">57</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
 
 </div>
 </div>
@@ -366,6 +375,30 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a36545f6ecfa120afc96b9ae9015ef91e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36545f6ecfa120afc96b9ae9015ef91e">&#9670;&nbsp;</a></span>strmMutex_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&amp; ripple::test::CaptureLogs::CaptureSink::strmMutex_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00042">42</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
+
+</div>
+</div>
 <a id="a58f17e165c92778de26111d5f4050c9e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a58f17e165c92778de26111d5f4050c9e">&#9670;&nbsp;</a></span>strm_</h2>
 
@@ -386,7 +419,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00041">41</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CaptureLogs_8h_source.html#l00043">43</a> of file <a class="el" href="CaptureLogs_8h_source.html">CaptureLogs.h</a>.</p>
 
 </div>
 </div>

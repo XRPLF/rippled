@@ -84,17 +84,11 @@ Collaboration diagram for ripple::test::csf::Scheduler:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1test_1_1csf_1_1Scheduler__coll__graph.png" border="0" usemap="#ripple_1_1test_1_1csf_1_1Scheduler_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1test_1_1csf_1_1Scheduler_coll__map" id="ripple_1_1test_1_1csf_1_1Scheduler_coll__map">
-<area shape="rect" title="Simulated discrete&#45;event scheduler." alt="" coords="1487,88,1613,129"/>
-<area shape="rect" href="classripple_1_1qalloc__type.html" title=" " alt="" coords="968,44,1111,85"/>
-<area shape="rect" href="classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="1216,88,1387,129"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="677,44,864,85"/>
-<area shape="rect" href="classripple_1_1detail_1_1qalloc__impl.html" title=" " alt="" coords="456,44,607,85"/>
-<area shape="rect" href="classripple_1_1detail_1_1qalloc__impl_1_1block.html" title=" " alt="" coords="201,44,365,85"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,14,100,41"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="9,89,97,115"/>
-<area shape="rect" href="classbeast_1_1manual__clock.html" title=" " alt="" coords="1221,154,1382,210"/>
-<area shape="rect" href="classbeast_1_1abstract__clock.html" title=" " alt="" coords="959,138,1120,194"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="953,218,1125,245"/>
+<area shape="rect" title="Simulated discrete&#45;event scheduler." alt="" coords="535,41,661,83"/>
+<area shape="rect" href="classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="264,5,435,47"/>
+<area shape="rect" href="classbeast_1_1manual__clock.html" title=" " alt="" coords="269,71,430,127"/>
+<area shape="rect" href="classbeast_1_1abstract__clock.html" title=" " alt="" coords="11,38,172,94"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="5,118,177,145"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -126,9 +120,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7fcc418fe247c815dca60c6b0dd4f3cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93734a750102cbdebf77383d9cc85278"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a93734a750102cbdebf77383d9cc85278">Scheduler</a> ()</td></tr>
 <tr class="separator:a93734a750102cbdebf77383d9cc85278"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa24f8983ec7c46aa5cb16f558da91277"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a55cb865a9c5efbdf769885cb31b495fa">qalloc</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#aa24f8983ec7c46aa5cb16f558da91277">alloc</a> () const</td></tr>
-<tr class="memdesc:aa24f8983ec7c46aa5cb16f558da91277"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the allocator.  <a href="classripple_1_1test_1_1csf_1_1Scheduler.html#aa24f8983ec7c46aa5cb16f558da91277">More...</a><br /></td></tr>
-<tr class="separator:aa24f8983ec7c46aa5cb16f558da91277"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba21381f62fd1cc2ce7f3e0e40cd482d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a6bec798d034260a5001335e19c3f512f">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#aba21381f62fd1cc2ce7f3e0e40cd482d">clock</a> () const</td></tr>
 <tr class="memdesc:aba21381f62fd1cc2ce7f3e0e40cd482d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the clock.  <a href="classripple_1_1test_1_1csf_1_1Scheduler.html#aba21381f62fd1cc2ce7f3e0e40cd482d">More...</a><br /></td></tr>
 <tr class="separator:aba21381f62fd1cc2ce7f3e0e40cd482d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -177,8 +168,8 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a355de2993359ad8210e2e70add2e7bb3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a55cb865a9c5efbdf769885cb31b495fa">qalloc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a355de2993359ad8210e2e70add2e7bb3">alloc_</a></td></tr>
-<tr class="separator:a355de2993359ad8210e2e70add2e7bb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a853080f4ce95bb078e522129c12fcfa5"><td class="memItemLeft" align="right" valign="top">boost::container::pmr::monotonic_buffer_resource&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a853080f4ce95bb078e522129c12fcfa5">alloc_</a> {<a class="el" href="namespaceripple.html#a8f7c1dac6a768426c7fc2bf4b544254a">kilobytes</a>(256)}</td></tr>
+<tr class="separator:a853080f4ce95bb078e522129c12fcfa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35e19562515b76152ba3211a2854ed35"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html">queue_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a35e19562515b76152ba3211a2854ed35">queue_</a></td></tr>
 <tr class="separator:a35e19562515b76152ba3211a2854ed35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a425406c083e814c863588553d7deb447"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a6bec798d034260a5001335e19c3f512f">clock_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a425406c083e814c863588553d7deb447">clock_</a></td></tr>
@@ -190,7 +181,7 @@ Private Attributes</h2></td></tr>
 <p>An event is modeled using a lambda function and is scheduled to occur at a specific time. Events may be canceled using a token returned when the event is scheduled.</p>
 <p>The caller uses one or more of the step, step_one, step_for, step_until and step_while functions to process scheduled events. </p>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00044">44</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00047">47</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a6bec798d034260a5001335e19c3f512f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6bec798d034260a5001335e19c3f512f">&#9670;&nbsp;</a></span>clock_type</h2>
@@ -204,7 +195,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00047">47</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00050">50</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -220,7 +211,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00049">49</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00052">52</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -236,7 +227,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00051">51</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00054">54</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -260,7 +251,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00055">55</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00058">58</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -306,7 +297,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00352">352</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00354">354</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -337,27 +328,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aa24f8983ec7c46aa5cb16f558da91277"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa24f8983ec7c46aa5cb16f558da91277">&#9670;&nbsp;</a></span>alloc()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a55cb865a9c5efbdf769885cb31b495fa">qalloc</a> const  &amp; ripple::test::csf::Scheduler::alloc </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Return the allocator. </p>
-
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00357">357</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
-
-</div>
-</div>
 <a id="aba21381f62fd1cc2ce7f3e0e40cd482d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aba21381f62fd1cc2ce7f3e0e40cd482d">&#9670;&nbsp;</a></span>clock()</h2>
 
@@ -376,7 +346,7 @@ Private Attributes</h2></td></tr>
 <p>Return the clock. </p>
 <p>(aged_containers want a non-const ref =( </p>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00363">363</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00359">359</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -398,7 +368,7 @@ Private Attributes</h2></td></tr>
 <p>Return the current network time. </p>
 <dl class="section note"><dt>Note</dt><dd>The epoch is unspecified </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00369">369</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00365">365</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -492,7 +462,7 @@ no arguments.
 <p>Preconditions: </p><pre class="fragment">`token` was the return value of a call
 timer() which has not yet been invoked.
 </pre> 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00389">389</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00385">385</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -516,7 +486,7 @@ timer() which has not yet been invoked.
 of the last delivered event.
 </pre><dl class="section return"><dt>Returns</dt><dd><code>true</code> if an event was processed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00395">395</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00391">391</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +510,7 @@ of the last delivered event.
 of the last event.
 </pre><dl class="section return"><dt>Returns</dt><dd><code>true</code> if an event was processed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00407">407</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00403">403</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -568,7 +538,7 @@ template&lt;class Function &gt; </div>
 of the last delivered event.
 </pre><dl class="section return"><dt>Returns</dt><dd><code>true</code> if any event was processed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00419">419</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00415">415</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -593,7 +563,7 @@ of the last delivered event.
 specified time.
 </pre><dl class="section return"><dt>Returns</dt><dd><code>true</code> if any event remain. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00428">428</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00424">424</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -620,7 +590,7 @@ template&lt;class Period , class Rep &gt; </div>
 specified duration.
 </pre><dl class="section return"><dt>Returns</dt><dd><code>true</code> if any event remain. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00453">453</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00449">449</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -653,7 +623,7 @@ template&lt;class Function &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00376">376</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00372">372</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -686,13 +656,13 @@ template&lt;class Function &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00383">383</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00379">379</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a355de2993359ad8210e2e70add2e7bb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a355de2993359ad8210e2e70add2e7bb3">&#9670;&nbsp;</a></span>alloc_</h2>
+<a id="a853080f4ce95bb078e522129c12fcfa5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a853080f4ce95bb078e522129c12fcfa5">&#9670;&nbsp;</a></span>alloc_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -701,7 +671,7 @@ template&lt;class Function &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a55cb865a9c5efbdf769885cb31b495fa">qalloc</a> ripple::test::csf::Scheduler::alloc_</td>
+          <td class="memname">boost::container::pmr::monotonic_buffer_resource ripple::test::csf::Scheduler::alloc_ {<a class="el" href="namespaceripple.html#a8f7c1dac6a768426c7fc2bf4b544254a">kilobytes</a>(256)}</td>
         </tr>
       </table>
   </td>
@@ -711,7 +681,7 @@ template&lt;class Function &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00144">144</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00148">148</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -735,7 +705,7 @@ template&lt;class Function &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00145">145</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00149">149</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>
@@ -759,7 +729,7 @@ template&lt;class Function &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00148">148</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test_2csf_2Scheduler_8h_source.html#l00152">152</a> of file <a class="el" href="test_2csf_2Scheduler_8h_source.html">test/csf/Scheduler.h</a>.</p>
 
 </div>
 </div>

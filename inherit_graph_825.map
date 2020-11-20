@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1ValidNewAccountRoot.html" title="Invariant: a new account root must be the consequence of a payment, must have the right starting sequ..." alt="" coords="5,5,215,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1WSMsg.html" title=" " alt="" coords="5,13,120,39"/>
+<area shape="rect" id="node2" href="$classripple_1_1StreambufWSMsg.html" title=" " alt="" coords="168,5,351,47"/>
 </map>

@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,180,61"/>
-<area shape="rect" id="node2" href="$structbeast_1_1static__sum_3_01s0_00_01sN_8_8_8_01_4.html" title=" " alt="" coords="228,13,376,54"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/logic_error.html" title="STL class." alt="" coords="5,13,124,39"/>
+<area shape="rect" id="node2" href="$structripple_1_1test_1_1jtx_1_1parse__error.html" title="Thrown when parse fails." alt="" coords="172,5,297,47"/>
 </map>

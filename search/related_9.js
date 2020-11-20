@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['qalloc_5ftype_25472',['qalloc_type',['../classripple_1_1qalloc__type.html#a502016fec33ba19169bdd7ad2ea20dd9',1,'ripple::qalloc_type']]]
+  ['rcltxset_25463',['RCLTxSet',['../classripple_1_1RCLTxSet_1_1MutableTxSet.html#ae77e0f98f13b953d575d7872bf6e1186',1,'ripple::RCLTxSet::MutableTxSet']]],
+  ['reader_25464',['reader',['../classripple_1_1DatabaseBody_1_1value__type.html#a0e6b5ca720b55b305ae96f8bcf7f5c4b',1,'ripple::DatabaseBody::value_type']]],
+  ['rootstoppable_25465',['RootStoppable',['../classripple_1_1Stoppable.html#a761776ae10bd0812aef7de483d03cc77',1,'ripple::Stoppable']]]
 ];

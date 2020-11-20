@@ -68,7 +68,6 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="classripple_1_1HTTPStream-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::HTTPStream Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
@@ -98,18 +97,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afe02610b424d6ed1f58adea4950e8b7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfdaadeaf054e17c50ad69a363a1005f"><td class="memItemLeft" align="right" valign="top">virtual boost::asio::ip::tcp::socket &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#acfdaadeaf054e17c50ad69a363a1005f">getStream</a> ()=0</td></tr>
 <tr class="separator:acfdaadeaf054e17c50ad69a363a1005f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9ff4bd63a837c654634e4a5a989a6b4"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#ae9ff4bd63a837c654634e4a5a989a6b4">connect</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;errorOut, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const host, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const port, boost::asio::yield_context &amp;yield)=0</td></tr>
-<tr class="separator:ae9ff4bd63a837c654634e4a5a989a6b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad830795f6b182b183c8160553e8cb25d"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#ad830795f6b182b183c8160553e8cb25d">connect</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;errorOut, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;host, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;port, boost::asio::yield_context &amp;yield)=0</td></tr>
+<tr class="separator:ad830795f6b182b183c8160553e8cb25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada3094239b9cedb4417c31edc3fd8c70"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#ada3094239b9cedb4417c31edc3fd8c70">asyncWrite</a> (<a class="el" href="classripple_1_1HTTPStream.html#adaedf72be1e41c7baad6422bd4c4b965">request</a> &amp;req, boost::asio::yield_context &amp;yield, boost::system::error_code &amp;ec)=0</td></tr>
 <tr class="separator:ada3094239b9cedb4417c31edc3fd8c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b1e15a4ac94d0a6c950d8360156bb5c"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#a3b1e15a4ac94d0a6c950d8360156bb5c">asyncRead</a> (boost::beast::flat_buffer &amp;buf, <a class="el" href="classripple_1_1HTTPStream.html#ae1af9210c0f8c4b51ab17fa23db5dcaa">parser</a> &amp;p, bool readSome, boost::asio::yield_context &amp;yield, boost::system::error_code &amp;ec)=0</td></tr>
-<tr class="separator:a3b1e15a4ac94d0a6c950d8360156bb5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ac253e750b9e228b1b6a45d76059d7dce"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:ac253e750b9e228b1b6a45d76059d7dce"><td class="memTemplItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1HTTPStream.html">HTTPStream</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#ac253e750b9e228b1b6a45d76059d7dce">makeUnique</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, boost::asio::io_service::strand &amp;strand, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="separator:ac253e750b9e228b1b6a45d76059d7dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a852d1708918beddb12c088d35f6c924b"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#a852d1708918beddb12c088d35f6c924b">asyncRead</a> (boost::beast::flat_buffer &amp;buf, <a class="el" href="classripple_1_1HTTPStream.html#ae1af9210c0f8c4b51ab17fa23db5dcaa">parser</a> &amp;p, boost::asio::yield_context &amp;yield, boost::system::error_code &amp;ec)=0</td></tr>
+<tr class="separator:a852d1708918beddb12c088d35f6c924b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4a8049d8ab3daa91b5814ec72f20072"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html#ab4a8049d8ab3daa91b5814ec72f20072">asyncReadSome</a> (boost::beast::flat_buffer &amp;buf, <a class="el" href="classripple_1_1HTTPStream.html#ae1af9210c0f8c4b51ab17fa23db5dcaa">parser</a> &amp;p, boost::asio::yield_context &amp;yield, boost::system::error_code &amp;ec)=0</td></tr>
+<tr class="separator:ab4a8049d8ab3daa91b5814ec72f20072"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -174,52 +169,6 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac253e750b9e228b1b6a45d76059d7dce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac253e750b9e228b1b6a45d76059d7dce">&#9670;&nbsp;</a></span>makeUnique()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1HTTPStream.html">HTTPStream</a>&gt; ripple::HTTPStream::makeUnique </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">boost::asio::io_service::strand &amp;&#160;</td>
-          <td class="paramname"><em>strand</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00043">43</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
-
-</div>
-</div>
 <a id="acfdaadeaf054e17c50ad69a363a1005f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acfdaadeaf054e17c50ad69a363a1005f">&#9670;&nbsp;</a></span>getStream()</h2>
 
@@ -247,8 +196,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="ae9ff4bd63a837c654634e4a5a989a6b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9ff4bd63a837c654634e4a5a989a6b4">&#9670;&nbsp;</a></span>connect()</h2>
+<a id="ad830795f6b182b183c8160553e8cb25d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad830795f6b182b183c8160553e8cb25d">&#9670;&nbsp;</a></span>connect()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -265,13 +214,13 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>host</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>port</em>, </td>
         </tr>
         <tr>
@@ -293,7 +242,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1RawStream.html#a515c73471cff222c87d3009d625337b1">ripple::RawStream</a>, and <a class="el" href="classripple_1_1SSLStream.html#a26287ba530bae1b17b390a173463bab4">ripple::SSLStream</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1RawStream.html#ab5fe3709f147f522aa491ea694299da0">ripple::RawStream</a>, and <a class="el" href="classripple_1_1SSLStream.html#a0b9a2e54b9323f0c1e0f906d3aca4cd4">ripple::SSLStream</a>.</p>
 
 </div>
 </div>
@@ -341,8 +290,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a3b1e15a4ac94d0a6c950d8360156bb5c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b1e15a4ac94d0a6c950d8360156bb5c">&#9670;&nbsp;</a></span>asyncRead()</h2>
+<a id="a852d1708918beddb12c088d35f6c924b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a852d1708918beddb12c088d35f6c924b">&#9670;&nbsp;</a></span>asyncRead()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -361,12 +310,6 @@ template&lt;class T &gt; </div>
           <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1HTTPStream.html#ae1af9210c0f8c4b51ab17fa23db5dcaa">parser</a> &amp;&#160;</td>
           <td class="paramname"><em>p</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>readSome</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -393,7 +336,57 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1RawStream.html#a0b8449bc2283ce5469bdd01a0c4999bc">ripple::RawStream</a>, and <a class="el" href="classripple_1_1SSLStream.html#a34ccb009e52a2a98da62390ec08a4840">ripple::SSLStream</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1RawStream.html#a4befbb4488a79896bce339e98e51d35b">ripple::RawStream</a>, and <a class="el" href="classripple_1_1SSLStream.html#afd5dc8f168c0b52004d64ba24acfcdda">ripple::SSLStream</a>.</p>
+
+</div>
+</div>
+<a id="ab4a8049d8ab3daa91b5814ec72f20072"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4a8049d8ab3daa91b5814ec72f20072">&#9670;&nbsp;</a></span>asyncReadSome()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::HTTPStream::asyncReadSome </td>
+          <td>(</td>
+          <td class="paramtype">boost::beast::flat_buffer &amp;&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1HTTPStream.html#ae1af9210c0f8c4b51ab17fa23db5dcaa">parser</a> &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::asio::yield_context &amp;&#160;</td>
+          <td class="paramname"><em>yield</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::system::error_code &amp;&#160;</td>
+          <td class="paramname"><em>ec</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1RawStream.html#ad150796218c98b411ff0fd11000c1ab1">ripple::RawStream</a>, and <a class="el" href="classripple_1_1SSLStream.html#a0d852cd4a3f4c36990086fd5b2197337">ripple::SSLStream</a>.</p>
 
 </div>
 </div>

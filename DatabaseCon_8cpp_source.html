@@ -157,160 +157,174 @@ $(function() {
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">checkpointer_</a>)</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    {</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <a class="code" href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">checkpointers</a>.<a class="code" href="classripple_1_1CheckpointersCollection.html#a5a7c1a8c57c2c0fb38a37bd93afc9886">erase</a>(<a class="code" href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">checkpointer_</a>-&gt;id());</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    }</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a></div>
-<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">   93</a></span>&#160;<a class="code" href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">setup_DatabaseCon</a>(<a class="code" href="classripple_1_1Config.html">Config</a> <span class="keyword">const</span>&amp; c, boost::optional&lt;beast::Journal&gt; j)</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;{</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> setup;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#aa0a5722c0cae142b105e970a77594b6c">startUp</a> = c.<a class="code" href="classripple_1_1Config.html#afcaabfcf92819db93bab0540ce159d89">START_UP</a>;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#ac8430db645f0c35a70b27a794c8c73ab">standAlone</a> = c.<a class="code" href="classripple_1_1Config.html#a55cd8ef67ffbf6a137e0dd71bc8151c6">standalone</a>();</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a0af8b51b7fba3f82bc144cad8d83cb64">dataDir</a> = c.<a class="code" href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">legacy</a>(<span class="stringliteral">&quot;database_path&quot;</span>);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordflow">if</span> (!setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#ac8430db645f0c35a70b27a794c8c73ab">standAlone</a> &amp;&amp; setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a0af8b51b7fba3f82bc144cad8d83cb64">dataDir</a>.empty())</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    {</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;database_path must be set.&quot;</span>);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr&lt;Checkpointer&gt;</a> wk(<a class="code" href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">checkpointer_</a>);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <a class="code" href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">checkpointer_</a>.reset();</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="comment">// The references to our Checkpointer held by &#39;checkpointer_&#39; and</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="comment">// &#39;checkpointers&#39; have been removed, so if the use count is nonzero, a</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="comment">// checkpoint is currently in progress. Wait for it to end, otherwise</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="comment">// creating a new DatabaseCon to the same database may fail due to the</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="comment">// database being locked by our (now old) Checkpointer.</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keywordflow">while</span> (wk.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr/use_count.html">use_count</a>())</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        {</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>(100));</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        }</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    }</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;}</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordflow">if</span> (!setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">globalPragma</a>)</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    {</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">globalPragma</a> = [&amp;c, &amp;j]() {</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; sqlite = c.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(<span class="stringliteral">&quot;sqlite&quot;</span>);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            <span class="keyword">auto</span> result = std::make_unique&lt;std::vector&lt;std::string&gt;&gt;();</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            result-&gt;reserve(3);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="comment">// defaults</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> safety_level;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> journal_mode = <span class="stringliteral">&quot;wal&quot;</span>;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> synchronous = <span class="stringliteral">&quot;normal&quot;</span>;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> temp_store = <span class="stringliteral">&quot;file&quot;</span>;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            <span class="keywordtype">bool</span> showRiskWarning = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(safety_level, <span class="stringliteral">&quot;safety_level&quot;</span>, sqlite))</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            {</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="keywordflow">if</span> (boost::iequals(safety_level, <span class="stringliteral">&quot;low&quot;</span>))</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                {</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                    <span class="comment">// low safety defaults</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                    journal_mode = <span class="stringliteral">&quot;memory&quot;</span>;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                    synchronous = <span class="stringliteral">&quot;off&quot;</span>;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                    temp_store = <span class="stringliteral">&quot;memory&quot;</span>;</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                    showRiskWarning = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                }</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!boost::iequals(safety_level, <span class="stringliteral">&quot;high&quot;</span>))</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                {</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                        <span class="stringliteral">&quot;Invalid safety_level value: &quot;</span> + safety_level);</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                }</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            }</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            {</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                <span class="comment">// #journal_mode Valid values : delete, truncate, persist,</span></div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                <span class="comment">// memory, wal, off</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(journal_mode, <span class="stringliteral">&quot;journal_mode&quot;</span>, sqlite) &amp;&amp;</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                    !safety_level.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                {</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                        <span class="stringliteral">&quot;Configuration file may not define both &quot;</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                        <span class="stringliteral">&quot;\&quot;safety_level\&quot; and \&quot;journal_mode\&quot;&quot;</span>);</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                }</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                <span class="keywordtype">bool</span> higherRisk = boost::iequals(journal_mode, <span class="stringliteral">&quot;memory&quot;</span>) ||</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;off&quot;</span>);</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                showRiskWarning = showRiskWarning || higherRisk;</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                <span class="keywordflow">if</span> (higherRisk || boost::iequals(journal_mode, <span class="stringliteral">&quot;delete&quot;</span>) ||</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;truncate&quot;</span>) ||</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;persist&quot;</span>) ||</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;wal&quot;</span>))</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                {</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                    result-&gt;emplace_back(boost::str(</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                        boost::format(<a class="code" href="namespaceripple.html#ab6ca35d5b27da46ec36366535255b343">CommonDBPragmaJournal</a>) % journal_mode));</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                }</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                {</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                        <span class="stringliteral">&quot;Invalid journal_mode value: &quot;</span> + journal_mode);</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                }</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            }</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160; </div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            {</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                <span class="comment">//#synchronous Valid values : off, normal, full, extra</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(synchronous, <span class="stringliteral">&quot;synchronous&quot;</span>, sqlite) &amp;&amp;</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                    !safety_level.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                {</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                        <span class="stringliteral">&quot;Configuration file may not define both &quot;</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                        <span class="stringliteral">&quot;\&quot;safety_level\&quot; and \&quot;synchronous\&quot;&quot;</span>);</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                }</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                <span class="keywordtype">bool</span> higherRisk = boost::iequals(synchronous, <span class="stringliteral">&quot;off&quot;</span>);</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                showRiskWarning = showRiskWarning || higherRisk;</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                <span class="keywordflow">if</span> (higherRisk || boost::iequals(synchronous, <span class="stringliteral">&quot;normal&quot;</span>) ||</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                    boost::iequals(synchronous, <span class="stringliteral">&quot;full&quot;</span>) ||</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                    boost::iequals(synchronous, <span class="stringliteral">&quot;extra&quot;</span>))</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                {</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                    result-&gt;emplace_back(boost::str(</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                        boost::format(<a class="code" href="namespaceripple.html#a24af3e0c3c74c690d22fff32b075c25d">CommonDBPragmaSync</a>) % synchronous));</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                }</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                {</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                        <span class="stringliteral">&quot;Invalid synchronous value: &quot;</span> + synchronous);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                }</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            }</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            {</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                <span class="comment">// #temp_store Valid values : default, file, memory</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(temp_store, <span class="stringliteral">&quot;temp_store&quot;</span>, sqlite) &amp;&amp;</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                    !safety_level.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                {</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                        <span class="stringliteral">&quot;Configuration file may not define both &quot;</span></div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                        <span class="stringliteral">&quot;\&quot;safety_level\&quot; and \&quot;temp_store\&quot;&quot;</span>);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                }</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                <span class="keywordtype">bool</span> higherRisk = boost::iequals(temp_store, <span class="stringliteral">&quot;memory&quot;</span>);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                showRiskWarning = showRiskWarning || higherRisk;</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                <span class="keywordflow">if</span> (higherRisk || boost::iequals(temp_store, <span class="stringliteral">&quot;default&quot;</span>) ||</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;                    boost::iequals(temp_store, <span class="stringliteral">&quot;file&quot;</span>))</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;                {</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                    result-&gt;emplace_back(boost::str(</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                        boost::format(<a class="code" href="namespaceripple.html#a75396e0d47cf97ef093f6e94f0230780">CommonDBPragmaTemp</a>) % temp_store));</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                }</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                {</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                        <span class="stringliteral">&quot;Invalid temp_store value: &quot;</span> + temp_store);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a></div>
+<div class="line"><a name="l00106"></a><span class="lineno"><a class="line" href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">  106</a></span>&#160;<a class="code" href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">setup_DatabaseCon</a>(<a class="code" href="classripple_1_1Config.html">Config</a> <span class="keyword">const</span>&amp; c, boost::optional&lt;beast::Journal&gt; j)</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;{</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> setup;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#aa0a5722c0cae142b105e970a77594b6c">startUp</a> = c.<a class="code" href="classripple_1_1Config.html#afcaabfcf92819db93bab0540ce159d89">START_UP</a>;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#ac8430db645f0c35a70b27a794c8c73ab">standAlone</a> = c.<a class="code" href="classripple_1_1Config.html#a55cd8ef67ffbf6a137e0dd71bc8151c6">standalone</a>();</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a0af8b51b7fba3f82bc144cad8d83cb64">dataDir</a> = c.<a class="code" href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">legacy</a>(<span class="stringliteral">&quot;database_path&quot;</span>);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keywordflow">if</span> (!setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#ac8430db645f0c35a70b27a794c8c73ab">standAlone</a> &amp;&amp; setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a0af8b51b7fba3f82bc144cad8d83cb64">dataDir</a>.empty())</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    {</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;database_path must be set.&quot;</span>);</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    }</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keywordflow">if</span> (!setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">globalPragma</a>)</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    {</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">globalPragma</a> = [&amp;c, &amp;j]() {</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; sqlite = c.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(<span class="stringliteral">&quot;sqlite&quot;</span>);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="keyword">auto</span> result = std::make_unique&lt;std::vector&lt;std::string&gt;&gt;();</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            result-&gt;reserve(3);</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="comment">// defaults</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> safety_level;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> journal_mode = <span class="stringliteral">&quot;wal&quot;</span>;</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> synchronous = <span class="stringliteral">&quot;normal&quot;</span>;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> temp_store = <span class="stringliteral">&quot;file&quot;</span>;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            <span class="keywordtype">bool</span> showRiskWarning = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(safety_level, <span class="stringliteral">&quot;safety_level&quot;</span>, sqlite))</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            {</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                <span class="keywordflow">if</span> (boost::iequals(safety_level, <span class="stringliteral">&quot;low&quot;</span>))</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    <span class="comment">// low safety defaults</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                    journal_mode = <span class="stringliteral">&quot;memory&quot;</span>;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                    synchronous = <span class="stringliteral">&quot;off&quot;</span>;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                    temp_store = <span class="stringliteral">&quot;memory&quot;</span>;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                    showRiskWarning = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                }</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!boost::iequals(safety_level, <span class="stringliteral">&quot;high&quot;</span>))</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                {</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                        <span class="stringliteral">&quot;Invalid safety_level value: &quot;</span> + safety_level);</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                }</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            }</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            {</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                <span class="comment">// #journal_mode Valid values : delete, truncate, persist,</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                <span class="comment">// memory, wal, off</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(journal_mode, <span class="stringliteral">&quot;journal_mode&quot;</span>, sqlite) &amp;&amp;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    !safety_level.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                {</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                        <span class="stringliteral">&quot;Configuration file may not define both &quot;</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                        <span class="stringliteral">&quot;\&quot;safety_level\&quot; and \&quot;journal_mode\&quot;&quot;</span>);</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                }</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                <span class="keywordtype">bool</span> higherRisk = boost::iequals(journal_mode, <span class="stringliteral">&quot;memory&quot;</span>) ||</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;off&quot;</span>);</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                showRiskWarning = showRiskWarning || higherRisk;</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                <span class="keywordflow">if</span> (higherRisk || boost::iequals(journal_mode, <span class="stringliteral">&quot;delete&quot;</span>) ||</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;truncate&quot;</span>) ||</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;persist&quot;</span>) ||</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                    boost::iequals(journal_mode, <span class="stringliteral">&quot;wal&quot;</span>))</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                {</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                    result-&gt;emplace_back(boost::str(</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                        boost::format(<a class="code" href="namespaceripple.html#ab6ca35d5b27da46ec36366535255b343">CommonDBPragmaJournal</a>) % journal_mode));</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                }</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                {</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                        <span class="stringliteral">&quot;Invalid journal_mode value: &quot;</span> + journal_mode);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                }</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            }</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;            {</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                <span class="comment">//#synchronous Valid values : off, normal, full, extra</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(synchronous, <span class="stringliteral">&quot;synchronous&quot;</span>, sqlite) &amp;&amp;</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    !safety_level.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                {</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                        <span class="stringliteral">&quot;Configuration file may not define both &quot;</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                        <span class="stringliteral">&quot;\&quot;safety_level\&quot; and \&quot;synchronous\&quot;&quot;</span>);</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                }</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                <span class="keywordtype">bool</span> higherRisk = boost::iequals(synchronous, <span class="stringliteral">&quot;off&quot;</span>);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;                showRiskWarning = showRiskWarning || higherRisk;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                <span class="keywordflow">if</span> (higherRisk || boost::iequals(synchronous, <span class="stringliteral">&quot;normal&quot;</span>) ||</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                    boost::iequals(synchronous, <span class="stringliteral">&quot;full&quot;</span>) ||</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                    boost::iequals(synchronous, <span class="stringliteral">&quot;extra&quot;</span>))</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                {</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                    result-&gt;emplace_back(boost::str(</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                        boost::format(<a class="code" href="namespaceripple.html#a24af3e0c3c74c690d22fff32b075c25d">CommonDBPragmaSync</a>) % synchronous));</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                }</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                {</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                        <span class="stringliteral">&quot;Invalid synchronous value: &quot;</span> + synchronous);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                }</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            }</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160; </div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            {</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                <span class="comment">// #temp_store Valid values : default, file, memory</span></div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(temp_store, <span class="stringliteral">&quot;temp_store&quot;</span>, sqlite) &amp;&amp;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                    !safety_level.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                {</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                        <span class="stringliteral">&quot;Configuration file may not define both &quot;</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                        <span class="stringliteral">&quot;\&quot;safety_level\&quot; and \&quot;temp_store\&quot;&quot;</span>);</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                }</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;            }</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            <span class="keywordflow">if</span> (showRiskWarning &amp;&amp; j &amp;&amp; c.<a class="code" href="classripple_1_1Config.html#a1f21eed12b604b6b99b866008af1b576">LEDGER_HISTORY</a> &gt; <a class="code" href="namespaceripple.html#a765fc36171e8b61b25083253bae87fd1">SQLITE_TUNING_CUTOFF</a>)</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            {</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                JLOG(j-&gt;warn())</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;reducing the data integrity guarantees from the &quot;</span></div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                       <span class="stringliteral">&quot;default [sqlite] behavior is not recommended for &quot;</span></div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                       <span class="stringliteral">&quot;nodes storing large amounts of history, because of the &quot;</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                       <span class="stringliteral">&quot;difficulty inherent in rebuilding corrupted data.&quot;</span>;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            }</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            assert(result-&gt;size() == 3);</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;            <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        }();</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    }</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a4a438ff7956abf18f374cc738401cc44">useGlobalPragma</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keywordflow">return</span> setup;</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;}</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;std::vector&lt;std::string&gt;</a> <span class="keyword">const</span>&gt;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">DatabaseCon::Setup::globalPragma</a>;</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00234"></a><span class="lineno"><a class="line" href="classripple_1_1DatabaseCon.html#a041741f7c254fa37958c92c087a20718">  234</a></span>&#160;<a class="code" href="classripple_1_1DatabaseCon.html#a041741f7c254fa37958c92c087a20718">DatabaseCon::setupCheckpointing</a>(<a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>* q, <a class="code" href="classripple_1_1Logs.html">Logs</a>&amp; l)</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;{</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    <span class="keywordflow">if</span> (!q)</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        Throw&lt;std::logic_error&gt;(<span class="stringliteral">&quot;No JobQueue&quot;</span>);</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <a class="code" href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">checkpointer_</a> = <a class="code" href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">checkpointers</a>.<a class="code" href="classripple_1_1CheckpointersCollection.html#a868cb1b2bf851dcf0ca2587cdd10a3ff">create</a>(<a class="code" href="classripple_1_1DatabaseCon.html#aae42b582c4f7ec05b4a5d6fb3cd9cca9">session_</a>, *q, l);</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;}</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                <span class="keywordtype">bool</span> higherRisk = boost::iequals(temp_store, <span class="stringliteral">&quot;memory&quot;</span>);</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                showRiskWarning = showRiskWarning || higherRisk;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                <span class="keywordflow">if</span> (higherRisk || boost::iequals(temp_store, <span class="stringliteral">&quot;default&quot;</span>) ||</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                    boost::iequals(temp_store, <span class="stringliteral">&quot;file&quot;</span>))</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                {</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                    result-&gt;emplace_back(boost::str(</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                        boost::format(<a class="code" href="namespaceripple.html#a75396e0d47cf97ef093f6e94f0230780">CommonDBPragmaTemp</a>) % temp_store));</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                }</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                {</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                        <span class="stringliteral">&quot;Invalid temp_store value: &quot;</span> + temp_store);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                }</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            }</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <span class="keywordflow">if</span> (showRiskWarning &amp;&amp; j &amp;&amp; c.<a class="code" href="classripple_1_1Config.html#a1f21eed12b604b6b99b866008af1b576">LEDGER_HISTORY</a> &gt; <a class="code" href="namespaceripple.html#a765fc36171e8b61b25083253bae87fd1">SQLITE_TUNING_CUTOFF</a>)</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            {</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                JLOG(j-&gt;warn())</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;reducing the data integrity guarantees from the &quot;</span></div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                       <span class="stringliteral">&quot;default [sqlite] behavior is not recommended for &quot;</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                       <span class="stringliteral">&quot;nodes storing large amounts of history, because of the &quot;</span></div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                       <span class="stringliteral">&quot;difficulty inherent in rebuilding corrupted data.&quot;</span>;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            }</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            assert(result-&gt;size() == 3);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        }();</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    }</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    setup.<a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a4a438ff7956abf18f374cc738401cc44">useGlobalPragma</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keywordflow">return</span> setup;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;}</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;std::vector&lt;std::string&gt;</a> <span class="keyword">const</span>&gt;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">DatabaseCon::Setup::globalPragma</a>;</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00247"></a><span class="lineno"><a class="line" href="classripple_1_1DatabaseCon.html#a041741f7c254fa37958c92c087a20718">  247</a></span>&#160;<a class="code" href="classripple_1_1DatabaseCon.html#a041741f7c254fa37958c92c087a20718">DatabaseCon::setupCheckpointing</a>(<a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>* q, <a class="code" href="classripple_1_1Logs.html">Logs</a>&amp; l)</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;{</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">if</span> (!q)</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        Throw&lt;std::logic_error&gt;(<span class="stringliteral">&quot;No JobQueue&quot;</span>);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <a class="code" href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">checkpointer_</a> = <a class="code" href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">checkpointers</a>.<a class="code" href="classripple_1_1CheckpointersCollection.html#a868cb1b2bf851dcf0ca2587cdd10a3ff">create</a>(<a class="code" href="classripple_1_1DatabaseCon.html#aae42b582c4f7ec05b4a5d6fb3cd9cca9">session_</a>, *q, l);</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;}</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="asleep_for_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a></div><div class="ttdeci">T sleep_for(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1CheckpointersCollection_html_ae554b43320b2d5b4844083cc49d6650c"><div class="ttname"><a href="classripple_1_1CheckpointersCollection.html#ae554b43320b2d5b4844083cc49d6650c">ripple::CheckpointersCollection::checkpointers_</a></div><div class="ttdeci">std::unordered_map&lt; std::uintptr_t, std::shared_ptr&lt; Checkpointer &gt; &gt; checkpointers_</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00042">DatabaseCon.cpp:42</a></div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1Setup_html_a22f499c35a33d930c0f8459fe61dd9a0"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1Setup.html#a22f499c35a33d930c0f8459fe61dd9a0">ripple::DatabaseCon::Setup::globalPragma</a></div><div class="ttdeci">static std::unique_ptr&lt; std::vector&lt; std::string &gt; const  &gt; globalPragma</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00103">DatabaseCon.h:103</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
@@ -318,37 +332,40 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Logs_html"><div class="ttname"><a href="classripple_1_1Logs.html">ripple::Logs</a></div><div class="ttdoc">Manages partitions for logging.</div><div class="ttdef"><b>Definition:</b> <a href="Log_8h_source.html#l00048">Log.h:48</a></div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1Setup_html"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1Setup.html">ripple::DatabaseCon::Setup</a></div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00084">DatabaseCon.h:84</a></div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1Setup_html_aa0a5722c0cae142b105e970a77594b6c"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1Setup.html#aa0a5722c0cae142b105e970a77594b6c">ripple::DatabaseCon::Setup::startUp</a></div><div class="ttdeci">Config::StartUpType startUp</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00088">DatabaseCon.h:88</a></div></div>
+<div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad762481a6ff332cd122213b3f84cfbee"><div class="ttname"><a href="namespaceripple.html#ad762481a6ff332cd122213b3f84cfbee">ripple::checkpointerFromId</a></div><div class="ttdeci">std::shared_ptr&lt; Checkpointer &gt; checkpointerFromId(std::uintptr_t id)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00079">DatabaseCon.cpp:79</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1Setup_html_a0af8b51b7fba3f82bc144cad8d83cb64"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1Setup.html#a0af8b51b7fba3f82bc144cad8d83cb64">ripple::DatabaseCon::Setup::dataDir</a></div><div class="ttdeci">boost::filesystem::path dataDir</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00090">DatabaseCon.h:90</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2611245485e6cfe23d56f1fa608de87d"><div class="ttname"><a href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">ripple::checkpointers</a></div><div class="ttdeci">CheckpointersCollection checkpointers</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00076">DatabaseCon.cpp:76</a></div></div>
-<div class="ttc" id="aclassripple_1_1DatabaseCon_html_a041741f7c254fa37958c92c087a20718"><div class="ttname"><a href="classripple_1_1DatabaseCon.html#a041741f7c254fa37958c92c087a20718">ripple::DatabaseCon::setupCheckpointing</a></div><div class="ttdeci">void setupCheckpointing(JobQueue *, Logs &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00234">DatabaseCon.cpp:234</a></div></div>
+<div class="ttc" id="aclassripple_1_1DatabaseCon_html_a041741f7c254fa37958c92c087a20718"><div class="ttname"><a href="classripple_1_1DatabaseCon.html#a041741f7c254fa37958c92c087a20718">ripple::DatabaseCon::setupCheckpointing</a></div><div class="ttdeci">void setupCheckpointing(JobQueue *, Logs &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00247">DatabaseCon.cpp:247</a></div></div>
 <div class="ttc" id="aclassripple_1_1CheckpointersCollection_html_ae8d0f6fbc9cecab60906b43ecdac73d6"><div class="ttname"><a href="classripple_1_1CheckpointersCollection.html#ae8d0f6fbc9cecab60906b43ecdac73d6">ripple::CheckpointersCollection::nextId_</a></div><div class="ttdeci">std::uintptr_t nextId_</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00035">DatabaseCon.cpp:35</a></div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1Setup_html_a4a438ff7956abf18f374cc738401cc44"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1Setup.html#a4a438ff7956abf18f374cc738401cc44">ripple::DatabaseCon::Setup::useGlobalPragma</a></div><div class="ttdeci">bool useGlobalPragma</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00093">DatabaseCon.h:93</a></div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1Setup_html_ac8430db645f0c35a70b27a794c8c73ab"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1Setup.html#ac8430db645f0c35a70b27a794c8c73ab">ripple::DatabaseCon::Setup::standAlone</a></div><div class="ttdeci">bool standAlone</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00089">DatabaseCon.h:89</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00068">Config.h:68</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00069">Config.h:69</a></div></div>
 <div class="ttc" id="aclassripple_1_1DatabaseCon_html_aae42b582c4f7ec05b4a5d6fb3cd9cca9"><div class="ttname"><a href="classripple_1_1DatabaseCon.html#aae42b582c4f7ec05b4a5d6fb3cd9cca9">ripple::DatabaseCon::session_</a></div><div class="ttdeci">const std::shared_ptr&lt; soci::session &gt; session_</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00223">DatabaseCon.h:223</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_a55cd8ef67ffbf6a137e0dd71bc8151c6"><div class="ttname"><a href="classripple_1_1Config.html#a55cd8ef67ffbf6a137e0dd71bc8151c6">ripple::Config::standalone</a></div><div class="ttdeci">bool standalone() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00235">Config.h:235</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a55cd8ef67ffbf6a137e0dd71bc8151c6"><div class="ttname"><a href="classripple_1_1Config.html#a55cd8ef67ffbf6a137e0dd71bc8151c6">ripple::Config::standalone</a></div><div class="ttdeci">bool standalone() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00236">Config.h:236</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a53f80df10254751781250aa20704e98f"><div class="ttname"><a href="namespaceripple.html#a53f80df10254751781250aa20704e98f">ripple::set</a></div><div class="ttdeci">bool set(T &amp;target, std::string const &amp;name, Section const &amp;section)</div><div class="ttdoc">Set a value from a configuration Section If the named value is not found or doesn't parse as a T,...</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00276">BasicConfig.h:276</a></div></div>
 <div class="ttc" id="aclassripple_1_1CheckpointersCollection_html_a868cb1b2bf851dcf0ca2587cdd10a3ff"><div class="ttname"><a href="classripple_1_1CheckpointersCollection.html#a868cb1b2bf851dcf0ca2587cdd10a3ff">ripple::CheckpointersCollection::create</a></div><div class="ttdeci">std::shared_ptr&lt; Checkpointer &gt; create(std::shared_ptr&lt; soci::session &gt; const &amp;session, JobQueue &amp;jobQueue, Logs &amp;logs)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00063">DatabaseCon.cpp:63</a></div></div>
 <div class="ttc" id="aclassripple_1_1BasicConfig_html_ae2c21d011e6424d4917db175ef9df301"><div class="ttname"><a href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">ripple::BasicConfig::legacy</a></div><div class="ttdeci">void legacy(std::string const &amp;section, std::string value)</div><div class="ttdoc">Set a value that is not a key/value pair.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00175">BasicConfig.cpp:175</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a765fc36171e8b61b25083253bae87fd1"><div class="ttname"><a href="namespaceripple.html#a765fc36171e8b61b25083253bae87fd1">ripple::SQLITE_TUNING_CUTOFF</a></div><div class="ttdeci">constexpr std::uint32_t SQLITE_TUNING_CUTOFF</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00040">DBInit.h:40</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_afcaabfcf92819db93bab0540ce159d89"><div class="ttname"><a href="classripple_1_1Config.html#afcaabfcf92819db93bab0540ce159d89">ripple::Config::START_UP</a></div><div class="ttdeci">StartUpType START_UP</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00124">Config.h:124</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_afcaabfcf92819db93bab0540ce159d89"><div class="ttname"><a href="classripple_1_1Config.html#afcaabfcf92819db93bab0540ce159d89">ripple::Config::START_UP</a></div><div class="ttdeci">StartUpType START_UP</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00125">Config.h:125</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a75396e0d47cf97ef093f6e94f0230780"><div class="ttname"><a href="namespaceripple.html#a75396e0d47cf97ef093f6e94f0230780">ripple::CommonDBPragmaTemp</a></div><div class="ttdeci">constexpr char const  * CommonDBPragmaTemp</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00034">DBInit.h:34</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab6ca35d5b27da46ec36366535255b343"><div class="ttname"><a href="namespaceripple.html#ab6ca35d5b27da46ec36366535255b343">ripple::CommonDBPragmaJournal</a></div><div class="ttdeci">constexpr char const  * CommonDBPragmaJournal</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00032">DBInit.h:32</a></div></div>
 <div class="ttc" id="aclassripple_1_1CheckpointersCollection_html_a2c65aca58202d63fa305e52851917707"><div class="ttname"><a href="classripple_1_1CheckpointersCollection.html#a2c65aca58202d63fa305e52851917707">ripple::CheckpointersCollection::fromId</a></div><div class="ttdeci">std::shared_ptr&lt; Checkpointer &gt; fromId(std::uintptr_t id)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00046">DatabaseCon.cpp:46</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_a1f21eed12b604b6b99b866008af1b576"><div class="ttname"><a href="classripple_1_1Config.html#a1f21eed12b604b6b99b866008af1b576">ripple::Config::LEDGER_HISTORY</a></div><div class="ttdeci">std::uint32_t LEDGER_HISTORY</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00164">Config.h:164</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a1f21eed12b604b6b99b866008af1b576"><div class="ttname"><a href="classripple_1_1Config.html#a1f21eed12b604b6b99b866008af1b576">ripple::Config::LEDGER_HISTORY</a></div><div class="ttdeci">std::uint32_t LEDGER_HISTORY</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00165">Config.h:165</a></div></div>
 <div class="ttc" id="aclassripple_1_1JobQueue_html"><div class="ttname"><a href="classripple_1_1JobQueue.html">ripple::JobQueue</a></div><div class="ttdoc">A pool of threads to perform work.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00055">JobQueue.h:55</a></div></div>
+<div class="ttc" id="aweak_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1DatabaseCon_html_a784d46c18b89d5b6a75806ff452f37ef"><div class="ttname"><a href="classripple_1_1DatabaseCon.html#a784d46c18b89d5b6a75806ff452f37ef">ripple::DatabaseCon::~DatabaseCon</a></div><div class="ttdeci">~DatabaseCon()</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00084">DatabaseCon.cpp:84</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af6a1a3fa6f1a16f1eeae66a4ae038bc8"><div class="ttname"><a href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">ripple::setup_DatabaseCon</a></div><div class="ttdeci">DatabaseCon::Setup setup_DatabaseCon(Config const &amp;c, boost::optional&lt; beast::Journal &gt; j=boost::none)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00093">DatabaseCon.cpp:93</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af6a1a3fa6f1a16f1eeae66a4ae038bc8"><div class="ttname"><a href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">ripple::setup_DatabaseCon</a></div><div class="ttdeci">DatabaseCon::Setup setup_DatabaseCon(Config const &amp;c, boost::optional&lt; beast::Journal &gt; j=boost::none)</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00106">DatabaseCon.cpp:106</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1CheckpointersCollection_html"><div class="ttname"><a href="classripple_1_1CheckpointersCollection.html">ripple::CheckpointersCollection</a></div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00033">DatabaseCon.cpp:33</a></div></div>
 <div class="ttc" id="aclassripple_1_1CheckpointersCollection_html_a6f2b213eb135fb2d4e6db94de939d59d"><div class="ttname"><a href="classripple_1_1CheckpointersCollection.html#a6f2b213eb135fb2d4e6db94de939d59d">ripple::CheckpointersCollection::mutex_</a></div><div class="ttdeci">std::mutex mutex_</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8cpp_source.html#l00037">DatabaseCon.cpp:37</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a24af3e0c3c74c690d22fff32b075c25d"><div class="ttname"><a href="namespaceripple.html#a24af3e0c3c74c690d22fff32b075c25d">ripple::CommonDBPragmaSync</a></div><div class="ttdeci">constexpr char const  * CommonDBPragmaSync</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00033">DBInit.h:33</a></div></div>
+<div class="ttc" id="ause_count_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/weak_ptr/use_count.html">std::weak_ptr::use_count</a></div><div class="ttdeci">T use_count(T... args)</div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aunordered_map_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/unordered_map.html">unordered_map</a></div></div>
 <div class="ttc" id="aclassripple_1_1DatabaseCon_html_ad0b7c9ad5a89e29fe9469fbc56c6c2ca"><div class="ttname"><a href="classripple_1_1DatabaseCon.html#ad0b7c9ad5a89e29fe9469fbc56c6c2ca">ripple::DatabaseCon::checkpointer_</a></div><div class="ttdeci">std::shared_ptr&lt; Checkpointer &gt; checkpointer_</div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00224">DatabaseCon.h:224</a></div></div>

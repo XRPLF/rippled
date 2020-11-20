@@ -1,18 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
-<area shape="rect" id="node2" href="$classripple_1_1STArray.html" title=" " alt="" coords="239,13,356,39"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="216,64,379,105"/>
-<area shape="rect" id="node4" href="$classripple_1_1STLedgerEntry.html" title=" " alt="" coords="427,209,588,235"/>
-<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,443,168,484"/>
-<area shape="rect" id="node6" href="$classripple_1_1STObject.html" title=" " alt="" coords="235,450,360,477"/>
-<area shape="rect" id="node7" href="$classripple_1_1STTx.html" title=" " alt="" coords="458,423,557,450"/>
-<area shape="rect" id="node8" href="$classripple_1_1STValidation.html" title=" " alt="" coords="433,478,581,505"/>
-<area shape="rect" id="node9" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="216,384,379,425"/>
-<area shape="rect" id="node10" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="216,501,379,543"/>
-<area shape="rect" id="node11" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="29,231,144,258"/>
-<area shape="rect" id="node12" href="$classripple_1_1STAccount.html" title=" " alt="" coords="230,130,365,157"/>
-<area shape="rect" id="node13" href="$classripple_1_1STAmount.html" title=" " alt="" coords="231,181,364,207"/>
-<area shape="rect" id="node14" href="$classripple_1_1STBlob.html" title=" " alt="" coords="241,231,353,258"/>
-<area shape="rect" id="node15" href="$classripple_1_1STPathSet.html" title=" " alt="" coords="231,282,363,309"/>
-<area shape="rect" id="node16" href="$classripple_1_1STVector256.html" title=" " alt="" coords="223,333,371,359"/>
+<area shape="rect" id="node1" href="$structripple_1_1STExchange_3_01STBlob_00_01Slice_01_4.html" title=" " alt="" coords="5,5,152,47"/>
 </map>

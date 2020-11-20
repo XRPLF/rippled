@@ -1,9 +1,0 @@
-<map id="ripple::test::csf::Scheduler::queue_type" name="ripple::test::csf::Scheduler::queue_type">
-<area shape="rect" id="node1" title=" " alt="" coords="25,555,195,596"/>
-<area shape="rect" id="node2" href="$classripple_1_1qalloc__type.html" title=" " alt="" coords="39,451,181,492"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="17,347,203,388"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1qalloc__impl.html" title=" " alt="" coords="35,243,185,284"/>
-<area shape="rect" id="node5" href="$classripple_1_1detail_1_1qalloc__impl_1_1block.html" title=" " alt="" coords="28,124,192,165"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,100,32"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="125,5,213,32"/>
-</map>

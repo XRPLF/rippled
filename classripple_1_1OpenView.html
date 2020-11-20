@@ -72,6 +72,7 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classripple_1_1OpenView-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::OpenView Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
@@ -96,40 +97,43 @@ Collaboration diagram for ripple::OpenView:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1OpenView__coll__graph.png" border="0" usemap="#ripple_1_1OpenView_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1OpenView_coll__map" id="ripple_1_1OpenView_coll__map">
-<area shape="rect" title="Writable ledger view that accumulates state and tx changes." alt="" coords="2079,405,2212,431"/>
-<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="1819,598,1949,625"/>
-<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2057,622,2233,678"/>
-<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2057,765,2233,807"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="2283,589,2483,615"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="2285,719,2480,746"/>
-<area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="1809,475,1959,502"/>
-<area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="1565,475,1691,502"/>
-<area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="1135,161,1309,203"/>
-<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="559,155,701,182"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="939,397,1075,423"/>
-<area shape="rect" title=" " alt="" coords="251,5,417,47"/>
-<area shape="rect" title=" " alt="" coords="221,137,447,163"/>
-<area shape="rect" title=" " alt="" coords="229,71,439,112"/>
-<area shape="rect" title=" " alt="" coords="227,188,441,229"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="287,254,381,281"/>
-<area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="1833,305,1935,331"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1543,291,1713,332"/>
-<area shape="rect" href="classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="1333,298,1472,325"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title=" " alt="" coords="904,219,1111,275"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="559,273,701,315"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title=" " alt="" coords="933,299,1082,355"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="250,444,418,485"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="559,413,701,455"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,523,108,550"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="290,327,378,354"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="552,339,708,380"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="544,479,716,520"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1803,409,1965,451"/>
+<area shape="rect" title="Writable ledger view that accumulates state and tx changes." alt="" coords="2036,460,2169,487"/>
+<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="1765,671,1895,697"/>
+<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2015,700,2191,756"/>
+<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2015,843,2191,885"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="2240,667,2440,693"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="2243,816,2437,843"/>
+<area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="1755,611,1905,637"/>
+<area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="1386,627,1513,653"/>
+<area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="1743,199,1917,241"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="1348,112,1551,168"/>
+<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="1378,192,1521,219"/>
+<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="1762,379,1898,405"/>
+<area shape="rect" title=" " alt="" coords="1057,239,1222,281"/>
+<area shape="rect" title=" " alt="" coords="1027,5,1252,32"/>
+<area shape="rect" title=" " alt="" coords="1035,57,1244,98"/>
+<area shape="rect" title=" " alt="" coords="1032,122,1247,163"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1092,188,1187,215"/>
+<area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="1779,497,1881,524"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1364,495,1535,537"/>
+<area shape="rect" href="classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="1070,503,1209,529"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title=" " alt="" coords="712,539,919,595"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="487,479,628,521"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title=" " alt="" coords="741,459,890,515"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,453,389,494"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="487,394,628,435"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,383,108,409"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,379,349,405"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1371,430,1527,471"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="1363,561,1535,602"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1749,430,1911,471"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1OpenView_1_1txData.html">txData</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView_1_1txs__iter__impl.html">txs_iter_impl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -152,9 +156,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6e29d6f62db650f77c5598bba4f8f3a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee063bba2d56bec5db6c52f761ebefc7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#aee063bba2d56bec5db6c52f761ebefc7">OpenView</a> (<a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:aee063bba2d56bec5db6c52f761ebefc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acbd4bc078c26af306dbcfa7ddb6b87b8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#acbd4bc078c26af306dbcfa7ddb6b87b8">OpenView</a> (<a class="el" href="classripple_1_1OpenView.html">OpenView</a> const &amp;)=default</td></tr>
-<tr class="memdesc:acbd4bc078c26af306dbcfa7ddb6b87b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a shallow copy.  <a href="classripple_1_1OpenView.html#acbd4bc078c26af306dbcfa7ddb6b87b8">More...</a><br /></td></tr>
-<tr class="separator:acbd4bc078c26af306dbcfa7ddb6b87b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f2f16adaaff0366c0fa715cdbcb2a48"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a6f2f16adaaff0366c0fa715cdbcb2a48">OpenView</a> (<a class="el" href="classripple_1_1OpenView.html">OpenView</a> const &amp;)</td></tr>
+<tr class="memdesc:a6f2f16adaaff0366c0fa715cdbcb2a48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a shallow copy.  <a href="classripple_1_1OpenView.html#a6f2f16adaaff0366c0fa715cdbcb2a48">More...</a><br /></td></tr>
+<tr class="separator:a6f2f16adaaff0366c0fa715cdbcb2a48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83e03eeee83a93bb3fc5079d03405b31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a83e03eeee83a93bb3fc5079d03405b31">OpenView</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const *base, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; void const &gt; hold=nullptr)</td></tr>
 <tr class="memdesc:a83e03eeee83a93bb3fc5079d03405b31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new last closed ledger.  <a href="classripple_1_1OpenView.html#a83e03eeee83a93bb3fc5079d03405b31">More...</a><br /></td></tr>
 <tr class="separator:a83e03eeee83a93bb3fc5079d03405b31"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -243,15 +247,17 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
-<tr class="memitem:aba75441e3d5ac9d770eb66ba293b2c3f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#aba75441e3d5ac9d770eb66ba293b2c3f">txs_map</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const  &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const  &gt; &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/less.html">std::less</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;, <a class="el" href="classripple_1_1qalloc__type.html">qalloc_type</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const  &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const  &gt; &gt;&gt;, false &gt; &gt;</td></tr>
-<tr class="separator:aba75441e3d5ac9d770eb66ba293b2c3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed5cbb4cae5961c6172d8630fdbbb8b9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#aed5cbb4cae5961c6172d8630fdbbb8b9">txs_map</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>, <a class="el" href="structripple_1_1OpenView_1_1txData.html">txData</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/less.html">std::less</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;, boost::container::pmr::polymorphic_allocator&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const, <a class="el" href="structripple_1_1OpenView_1_1txData.html">txData</a> &gt; &gt;&gt;</td></tr>
+<tr class="separator:aed5cbb4cae5961c6172d8630fdbbb8b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
+<tr class="memitem:a4bf0e499f0d0385a64331e4d0295298c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; boost::container::pmr::monotonic_buffer_resource &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a4bf0e499f0d0385a64331e4d0295298c">monotonic_resource_</a></td></tr>
+<tr class="separator:a4bf0e499f0d0385a64331e4d0295298c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf32abeccc0ca8255ad89872ca85ff25"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1OpenView.html#aed5cbb4cae5961c6172d8630fdbbb8b9">txs_map</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#adf32abeccc0ca8255ad89872ca85ff25">txs_</a></td></tr>
+<tr class="separator:adf32abeccc0ca8255ad89872ca85ff25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7acff4b564ca5b36eb38322e0c6f8609"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Rules.html">Rules</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a7acff4b564ca5b36eb38322e0c6f8609">rules_</a></td></tr>
 <tr class="separator:a7acff4b564ca5b36eb38322e0c6f8609"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf32abeccc0ca8255ad89872ca85ff25"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1OpenView.html#aba75441e3d5ac9d770eb66ba293b2c3f">txs_map</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#adf32abeccc0ca8255ad89872ca85ff25">txs_</a></td></tr>
-<tr class="separator:adf32abeccc0ca8255ad89872ca85ff25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83cd3f615ed22414ea48dee22ed925ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a83cd3f615ed22414ea48dee22ed925ae">info_</a></td></tr>
 <tr class="separator:a83cd3f615ed22414ea48dee22ed925ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a313ac645b10e79426ae6c7fe706c6141"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a313ac645b10e79426ae6c7fe706c6141">base_</a></td></tr>
@@ -262,15 +268,20 @@ Private Attributes</h2></td></tr>
 <tr class="separator:aeb1f50a567c80fb4f104916ef326ee64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa638259974fcbaf2ab81482342273118"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#aa638259974fcbaf2ab81482342273118">open_</a> = true</td></tr>
 <tr class="separator:aa638259974fcbaf2ab81482342273118"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a64a7035f5761abf42efcdf1a1a90b20c"><td class="memItemLeft" align="right" valign="top">static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a64a7035f5761abf42efcdf1a1a90b20c">initialBufferSize</a> = <a class="el" href="namespaceripple.html#a8f7c1dac6a768426c7fc2bf4b544254a">kilobytes</a>(256)</td></tr>
+<tr class="separator:a64a7035f5761abf42efcdf1a1a90b20c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Writable ledger view that accumulates state and tx changes. </p>
 <dl class="section note"><dt>Note</dt><dd>Presented as <a class="el" href="classripple_1_1ReadView.html" title="A view into a ledger.">ReadView</a> to clients. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00052">52</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00055">55</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="aba75441e3d5ac9d770eb66ba293b2c3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba75441e3d5ac9d770eb66ba293b2c3f">&#9670;&nbsp;</a></span>txs_map</h2>
+<a id="aed5cbb4cae5961c6172d8630fdbbb8b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed5cbb4cae5961c6172d8630fdbbb8b9">&#9670;&nbsp;</a></span>txs_map</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -279,7 +290,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1OpenView.html#aba75441e3d5ac9d770eb66ba293b2c3f">ripple::OpenView::txs_map</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1Serializer.html">Serializer</a> const&gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1Serializer.html">Serializer</a> const&gt; &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/less.html">std::less</a>&lt;<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>&gt;, <a class="el" href="classripple_1_1qalloc__type.html">qalloc_type</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1Serializer.html">Serializer</a> const&gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1Serializer.html">Serializer</a> const&gt; &gt;&gt;, false&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1OpenView.html#aed5cbb4cae5961c6172d8630fdbbb8b9">ripple::OpenView::txs_map</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>, <a class="el" href="structripple_1_1OpenView_1_1txData.html">txData</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/less.html">std::less</a>&lt;<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>&gt;, boost::container::pmr::polymorphic_allocator&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const, <a class="el" href="structripple_1_1OpenView_1_1txData.html">txData</a>&gt; &gt;&gt;</td>
         </tr>
       </table>
   </td>
@@ -289,7 +300,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00070">70</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00087">87</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -417,34 +428,28 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="acbd4bc078c26af306dbcfa7ddb6b87b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acbd4bc078c26af306dbcfa7ddb6b87b8">&#9670;&nbsp;</a></span>OpenView() <span class="overload">[3/6]</span></h2>
+<a id="a6f2f16adaaff0366c0fa715cdbcb2a48"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f2f16adaaff0366c0fa715cdbcb2a48">&#9670;&nbsp;</a></span>OpenView() <span class="overload">[3/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">ripple::OpenView::OpenView </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1OpenView.html">OpenView</a> const &amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>rhs</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">default</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Construct a shallow copy. </p>
 <p>Effects: </p><pre class="fragment">Creates a new object with a copy of
 the modification state table.
 </pre><p>The objects managed by shared pointers are not duplicated but shared between instances. Since the SLEs are immutable, calls on the <a class="el" href="classripple_1_1RawView.html" title="Interface for ledger entry changes.">RawView</a> interface cannot break invariants. </p>
+
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00077">77</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -501,7 +506,7 @@ Calls to rules() will return the
 rules provided on construction.
 </pre><p>The tx list starts empty and will contain all newly inserted tx. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00077">77</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00090">90</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -537,7 +542,7 @@ rules provided on construction.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00130">130</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00151">151</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -573,7 +578,7 @@ rules provided on construction.
 The rules are inherited from the base.
 </pre><p>The tx list starts empty and will contain all newly inserted tx. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00091">91</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00110">110</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -657,7 +662,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a8dc63ee1e4ae7b2f96823e146c53d03e">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00154">154</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00175">175</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -679,7 +684,7 @@ The rules are inherited from the base.
 <p>Return the number of tx inserted since creation. </p>
 <p>This is used to set the "apply ordinal" when calculating transaction metadata. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00101">101</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00123">123</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -701,7 +706,7 @@ The rules are inherited from the base.
 
 <p>Apply changes. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00107">107</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00129">129</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -732,7 +737,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00117">117</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00139">139</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -763,7 +768,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a9bbdb3fb4754482a8d6c6e6d25c2d1eb">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00123">123</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00145">145</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -794,7 +799,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00129">129</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00151">151</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -828,7 +833,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#ac1d377c35a8332d069b09be8f4008dec">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00135">135</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00157">157</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -872,7 +877,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a2b1718fdf4ffd63d8fe7650f66114804">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00141">141</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00163">163</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -907,7 +912,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00148">148</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00170">170</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -936,7 +941,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a70b1654cf02d2af0c3d34faf6be218ac">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00154">154</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00176">176</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -965,7 +970,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a6940351c76fe355db59a9f8ff6bf807b">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00160">160</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00182">182</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -995,7 +1000,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00166">166</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00188">188</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1024,7 +1029,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a8bf980722b37ba7a57614fa7c92c7d11">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00173">173</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00195">195</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1053,7 +1058,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#afbcb8704c56e927eca2cb81bcb42f912">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00179">179</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00201">201</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1086,7 +1091,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#af95bff423d062ed89665e9f628972ece">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00185">185</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00207">207</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1120,7 +1125,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#af88b035a71531a9b27ee2fa25d0444e9">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00191">191</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00213">213</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1153,7 +1158,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#ae90031cd2242cf34aeb93fbdbf92cfb8">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00210">210</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00232">232</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1188,7 +1193,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#a144f9ecbd046e28918d273728ad91eb0">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00216">216</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00238">238</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1228,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#ad27fcee888dd020ca39a2327d1a5f19c">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00222">222</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00244">244</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1256,7 +1261,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#accebb9124b44b63080c236f01e070a1e">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00228">228</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00250">250</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1305,7 +1310,7 @@ The rules are inherited from the base.
 
 <p>Implements <a class="el" href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">ripple::TxsRawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00238">238</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00260">260</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
 </div>
 </div>
@@ -1454,6 +1459,78 @@ The rules are inherited from the base.
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a64a7035f5761abf42efcdf1a1a90b20c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64a7035f5761abf42efcdf1a1a90b20c">&#9670;&nbsp;</a></span>initialBufferSize</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr size_t ripple::OpenView::initialBufferSize = <a class="el" href="namespaceripple.html#a8f7c1dac6a768426c7fc2bf4b544254a">kilobytes</a>(256)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00061">61</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+
+</div>
+</div>
+<a id="a4bf0e499f0d0385a64331e4d0295298c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4bf0e499f0d0385a64331e4d0295298c">&#9670;&nbsp;</a></span>monotonic_resource_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;boost::container::pmr::monotonic_buffer_resource&gt; ripple::OpenView::monotonic_resource_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00092">92</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+
+</div>
+</div>
+<a id="adf32abeccc0ca8255ad89872ca85ff25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf32abeccc0ca8255ad89872ca85ff25">&#9670;&nbsp;</a></span>txs_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1OpenView.html#aed5cbb4cae5961c6172d8630fdbbb8b9">txs_map</a> ripple::OpenView::txs_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00093">93</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+
+</div>
+</div>
 <a id="a7acff4b564ca5b36eb38322e0c6f8609"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7acff4b564ca5b36eb38322e0c6f8609">&#9670;&nbsp;</a></span>rules_</h2>
 
@@ -1474,31 +1551,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00072">72</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
-
-</div>
-</div>
-<a id="adf32abeccc0ca8255ad89872ca85ff25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf32abeccc0ca8255ad89872ca85ff25">&#9670;&nbsp;</a></span>txs_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1OpenView.html#aba75441e3d5ac9d770eb66ba293b2c3f">txs_map</a> ripple::OpenView::txs_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00073">73</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00094">94</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -1522,7 +1575,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00074">74</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00095">95</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -1546,7 +1599,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00075">75</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00096">96</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -1570,7 +1623,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00076">76</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00097">97</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -1594,7 +1647,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00077">77</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00098">98</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>
@@ -1618,7 +1671,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00078">78</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenView_8h_source.html#l00099">99</a> of file <a class="el" href="OpenView_8h_source.html">OpenView.h</a>.</p>
 
 </div>
 </div>

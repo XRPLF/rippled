@@ -520,20 +520,21 @@ $(function() {
 <div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    createInstance(</div>
 <div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;        <span class="keywordtype">size_t</span> keyBytes,</div>
 <div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;        Section <span class="keyword">const</span>&amp; keyValues,</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        Scheduler&amp; scheduler,</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)<span class="keyword"> override</span></div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        <span class="keywordflow">return</span> std::make_unique&lt;RocksDBBackend&gt;(</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;            keyBytes, keyValues, scheduler, journal, &amp;m_env);</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;    }</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;};</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160; </div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;<span class="keyword">static</span> RocksDBFactory rocksDBFactory;</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160; </div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160; </div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>,</div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        Scheduler&amp; scheduler,</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)<span class="keyword"> override</span></div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;        <span class="keywordflow">return</span> std::make_unique&lt;RocksDBBackend&gt;(</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;            keyBytes, keyValues, scheduler, journal, &amp;m_env);</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    }</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;};</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;<span class="keyword">static</span> RocksDBFactory rocksDBFactory;</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160; </div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>
 <div class="ttc" id="afor_each_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a></div><div class="ttdeci">T for_each(T... args)</div></div>
@@ -565,7 +566,7 @@ $(function() {
 <div class="ttc" id="astr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">std::stringstream::str</a></div><div class="ttdeci">T str(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a556228cb60bcf405c225d3f64b7b01ae"><div class="ttname"><a href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">beast::Journal::debug</a></div><div class="ttdeci">Stream debug() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00315">Journal.h:315</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1NodeStore_1_1Manager_html_a59f9bcb7e6049d1b4c557891992f6cab"><div class="ttname"><a href="classripple_1_1NodeStore_1_1Manager.html#a59f9bcb7e6049d1b4c557891992f6cab">ripple::NodeStore::Manager::instance</a></div><div class="ttdeci">static Manager &amp; instance()</div><div class="ttdoc">Returns the instance of the manager singleton.</div><div class="ttdef"><b>Definition:</b> <a href="ManagerImp_8cpp_source.html#l00117">ManagerImp.cpp:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1NodeStore_1_1Manager_html_a59f9bcb7e6049d1b4c557891992f6cab"><div class="ttname"><a href="classripple_1_1NodeStore_1_1Manager.html#a59f9bcb7e6049d1b4c557891992f6cab">ripple::NodeStore::Manager::instance</a></div><div class="ttdeci">static Manager &amp; instance()</div><div class="ttdoc">Returns the instance of the manager singleton.</div><div class="ttdef"><b>Definition:</b> <a href="ManagerImp_8cpp_source.html#l00119">ManagerImp.cpp:119</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/data.html">std::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a886ed36db831a964fc5f66ebbb4fe3d0"><div class="ttname"><a href="namespaceripple.html#a886ed36db831a964fc5f66ebbb4fe3d0">ripple::open</a></div><div class="ttdeci">void open(soci::session &amp;s, BasicConfig const &amp;config, std::string const &amp;dbName)</div><div class="ttdoc">Open a soci session.</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00100">SociDB.cpp:100</a></div></div>

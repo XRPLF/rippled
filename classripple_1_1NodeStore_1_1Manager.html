@@ -105,12 +105,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a2ba9ddfb3327328112ef8d906297fdaa"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1NodeStore_1_1Factory.html">Factory</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Manager.html#a2ba9ddfb3327328112ef8d906297fdaa">find</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)=0</td></tr>
 <tr class="memdesc:a2ba9ddfb3327328112ef8d906297fdaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a pointer to the matching factory if it exists.  <a href="classripple_1_1NodeStore_1_1Manager.html#a2ba9ddfb3327328112ef8d906297fdaa">More...</a><br /></td></tr>
 <tr class="separator:a2ba9ddfb3327328112ef8d906297fdaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5008bfc75ce6dbf0bee4cc5de5fe51a9"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Manager.html#a5008bfc75ce6dbf0bee4cc5de5fe51a9">make_Backend</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;parameters, <a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">Scheduler</a> &amp;scheduler, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)=0</td></tr>
-<tr class="memdesc:a5008bfc75ce6dbf0bee4cc5de5fe51a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a backend.  <a href="classripple_1_1NodeStore_1_1Manager.html#a5008bfc75ce6dbf0bee4cc5de5fe51a9">More...</a><br /></td></tr>
-<tr class="separator:a5008bfc75ce6dbf0bee4cc5de5fe51a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab712f2dcc9010b4578e6967f066463a8"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Database.html">Database</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Manager.html#ab712f2dcc9010b4578e6967f066463a8">make_Database</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, <a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">Scheduler</a> &amp;scheduler, int readThreads, <a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;backendParameters, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)=0</td></tr>
-<tr class="memdesc:ab712f2dcc9010b4578e6967f066463a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> database.  <a href="classripple_1_1NodeStore_1_1Manager.html#ab712f2dcc9010b4578e6967f066463a8">More...</a><br /></td></tr>
-<tr class="separator:ab712f2dcc9010b4578e6967f066463a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81a6d60d5ccc13e9b0ad87dd6ea7aeca"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Manager.html#a81a6d60d5ccc13e9b0ad87dd6ea7aeca">make_Backend</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;parameters, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> burstSize, <a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">Scheduler</a> &amp;scheduler, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)=0</td></tr>
+<tr class="memdesc:a81a6d60d5ccc13e9b0ad87dd6ea7aeca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a backend.  <a href="classripple_1_1NodeStore_1_1Manager.html#a81a6d60d5ccc13e9b0ad87dd6ea7aeca">More...</a><br /></td></tr>
+<tr class="separator:a81a6d60d5ccc13e9b0ad87dd6ea7aeca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad77af517bcd993cf292d64db64102979"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Database.html">Database</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Manager.html#ad77af517bcd993cf292d64db64102979">make_Database</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> burstSize, <a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">Scheduler</a> &amp;scheduler, int readThreads, <a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;backendParameters, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)=0</td></tr>
+<tr class="memdesc:ad77af517bcd993cf292d64db64102979"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> database.  <a href="classripple_1_1NodeStore_1_1Manager.html#ad77af517bcd993cf292d64db64102979">More...</a><br /></td></tr>
+<tr class="separator:ad77af517bcd993cf292d64db64102979"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -251,7 +251,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the instance of the manager singleton. </p>
 
-<p class="definition">Definition at line <a class="el" href="ManagerImp_8cpp_source.html#l00117">117</a> of file <a class="el" href="ManagerImp_8cpp_source.html">ManagerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ManagerImp_8cpp_source.html#l00119">119</a> of file <a class="el" href="ManagerImp_8cpp_source.html">ManagerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -352,8 +352,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5008bfc75ce6dbf0bee4cc5de5fe51a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5008bfc75ce6dbf0bee4cc5de5fe51a9">&#9670;&nbsp;</a></span>make_Backend()</h2>
+<a id="a81a6d60d5ccc13e9b0ad87dd6ea7aeca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81a6d60d5ccc13e9b0ad87dd6ea7aeca">&#9670;&nbsp;</a></span>make_Backend()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -366,6 +366,12 @@ Static Public Member Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Section.html">Section</a> const &amp;&#160;</td>
           <td class="paramname"><em>parameters</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>burstSize</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -394,12 +400,12 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Create a backend. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#ab97d1fb7cf772b20aa2acb37adbfb626">ripple::NodeStore::ManagerImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#aef7e34cffd643fe39fc726e3a05bc6d6">ripple::NodeStore::ManagerImp</a>.</p>
 
 </div>
 </div>
-<a id="ab712f2dcc9010b4578e6967f066463a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab712f2dcc9010b4578e6967f066463a8">&#9670;&nbsp;</a></span>make_Database()</h2>
+<a id="ad77af517bcd993cf292d64db64102979"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad77af517bcd993cf292d64db64102979">&#9670;&nbsp;</a></span>make_Database()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -412,6 +418,12 @@ Static Public Member Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>burstSize</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -464,6 +476,7 @@ Static Public Member Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">name</td><td>A diagnostic label for the database. </td></tr>
+    <tr><td class="paramname">burstSize</td><td><a class="el" href="classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore.">Backend</a> burst size in bytes. </td></tr>
     <tr><td class="paramname">scheduler</td><td>The scheduler to use for performing asynchronous tasks. </td></tr>
     <tr><td class="paramname">readThreads</td><td>The number of async read threads to create </td></tr>
     <tr><td class="paramname">backendParameters</td><td>The parameter string for the persistent backend. </td></tr>
@@ -473,7 +486,7 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The opened database. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#aef58ca4112dbcbe823a46e51b30f8d16">ripple::NodeStore::ManagerImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#a6922ca3cf6a37443b4d2a1f2a0a289c8">ripple::NodeStore::ManagerImp</a>.</p>
 
 </div>
 </div>

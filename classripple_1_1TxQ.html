@@ -493,7 +493,7 @@ Private Attributes</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd>As more transactions are applied to the ledger, the required fee may increase. The required fee may rise above the fee level of the queued items before the queue is emptied, which will end the process, leaving those in the queue for the next open ledger.</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether any transactions were added to the <code>view</code>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01398">1398</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01406">1406</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -532,7 +532,7 @@ Private Attributes</h2></td></tr>
 <p>Update fee metrics and clean up the queue in preparation for the next ledger. </p>
 <dl class="section note"><dt>Note</dt><dd>Fee metrics are updated based on the fee levels of the txs in the validated ledger and whether consensus is slow. Maximum queue size is adjusted to be enough to hold <code>ledgersInQueue</code> ledgers or <code>queueSizeMin</code> transactions. Any transactions for which the <code>LastLedgerSequence</code> has passed are removed from the queue, and any account objects that have no candidates under them are removed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01329">1329</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01337">1337</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -554,7 +554,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return the next sequence that would go in the <a class="el" href="classripple_1_1TxQ.html" title="Transaction Queue.">TxQ</a> for an account. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01538">1538</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01546">1546</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -576,7 +576,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns fee metrics in reference fee level units. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01705">1705</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01713">1713</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -616,7 +616,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>minimum required fee, first sequence in the ledger and first available sequence </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01727">1727</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01735">1735</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -649,7 +649,7 @@ Private Attributes</h2></td></tr>
 <p>Returns information about the transactions currently in the queue for the account. </p>
 <dl class="section return"><dt>Returns</dt><dd>Empty <code>vector</code> if the account has no transactions in the queue. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01748">1748</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01756">1756</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -672,7 +672,7 @@ Private Attributes</h2></td></tr>
 <p>Returns information about all transactions currently in the queue. </p>
 <dl class="section return"><dt>Returns</dt><dd>Empty <code>vector</code> if there are no transactions in the queue. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01769">1769</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01777">1777</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -695,7 +695,7 @@ Private Attributes</h2></td></tr>
 <p>Summarize current fee metrics for the <code>fee</code> <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command. </p>
 <dl class="section return"><dt>Returns</dt><dd>a <code><a class="el" href="namespaceJson.html" title="JSON (JavaScript Object Notation).">Json</a> objectvalue</code> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01784">1784</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01792">1792</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -733,7 +733,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01551">1551</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01559">1559</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -783,7 +783,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01598">1598</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01606">1606</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -839,7 +839,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01614">1614</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01622">1622</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -877,7 +877,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01685">1685</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01693">1693</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
