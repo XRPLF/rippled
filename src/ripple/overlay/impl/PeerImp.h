@@ -262,7 +262,7 @@ public:
     }
 
     // Work-around for calling shared_from_this in constructors
-    void
+    virtual void
     run();
 
     // Called when Overlay gets a stop request.
