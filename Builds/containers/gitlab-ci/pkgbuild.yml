@@ -45,11 +45,7 @@ stages:
   variables:
     docker_driver: overlay2
   image:
-    name: docker:latest
-  services:
-    # workaround for TLS issues - consider going back
-    # back to unversioned `dind` when issues are resolved
-    - docker:18-dind
+    name: ${ARTIFACTORY_HOST}/docker:latest
   tags:
     - docker-4xlarge
 
