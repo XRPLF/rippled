@@ -44,14 +44,16 @@ stages:
     - . ./Builds/containers/gitlab-ci/docker_alpine_setup.sh
   variables:
     docker_driver: overlay2
+    DOCKER_TLS_CERTDIR: ""
   image:
-    name: docker:latest
+    name: artifactory.ops.ripple.com/docker:latest
   services:
     # workaround for TLS issues - consider going back
     # back to unversioned `dind` when issues are resolved
-    - docker:18-dind
+    - name: artifactory.ops.ripple.com/docker:stable-dind
+      alias: docker
   tags:
-    - docker-4xlarge
+    - 4xlarge
 
 .only_primary_template: &only_primary
   only:
@@ -281,14 +283,16 @@ tag_bld_images:
   stage: tag_images
   variables:
     docker_driver: overlay2
+    DOCKER_TLS_CERTDIR: ""
   image:
-    name: docker:19.03.8
+    name: artifactory.ops.ripple.com/docker:latest
   services:
     # workaround for TLS issues - consider going back
     # back to unversioned `dind` when issues are resolved
-    - docker:18-dind
+    - name: artifactory.ops.ripple.com/docker:stable-dind
+      alias: docker
   tags:
-    - docker-large
+    - large
   dependencies:
     - rpm_sign
     - dpkg_sign
