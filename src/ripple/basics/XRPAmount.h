@@ -22,7 +22,6 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/beast/cxx17/type_traits.h>
 #include <ripple/beast/utility/Zero.h>
 #include <ripple/json/json_value.h>
 
@@ -32,6 +31,7 @@
 
 #include <cstdint>
 #include <string>
+#include <type_traits>
 
 namespace ripple {
 
