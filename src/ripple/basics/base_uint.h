@@ -27,7 +27,6 @@
 
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/strHex.h>
-#include <ripple/beast/cxx17/type_traits.h>
 #include <ripple/beast/utility/Zero.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>

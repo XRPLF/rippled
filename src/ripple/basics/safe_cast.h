@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_SAFE_CAST_H_INCLUDED
 #define RIPPLE_BASICS_SAFE_CAST_H_INCLUDED
 
-#include <ripple/beast/cxx17/type_traits.h>
 #include <type_traits>
 
 namespace ripple {
