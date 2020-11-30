@@ -96,11 +96,50 @@ mkdir -p "build/${BUILD_DIR}"
 pushd "build/${BUILD_DIR}"
 
 # generate
+for file in CMakeOutput.log CMakeError.log
+do
+  if [ -f CMakeFiles/${file} ]
+  then
+    echo -e '\n\n-------------------------------------------'
+    ls -l CMakeFiles/${file}
+    echo -e '-------------------------------------------\n\n'
+  fi
+done
 ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
+for file in CMakeOutput.log CMakeError.log
+do
+  if [ -f CMakeFiles/${file} ]
+  then
+    echo -e '\n\n-------------------------------------------'
+    ls -l CMakeFiles/${file}
+    cat CMakeFiles/${file}
+    echo -e '-------------------------------------------\n\n'
+  fi
+done
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
 
+for nih_path in ${NIH_CACHE_ROOT}/*/*/*/src ${NIH_CACHE_ROOT}/*/*/src
+do
+  for dir in lz4-stamp snappy-stamp sqlite3-stamp rocksdb
+  do
+    if [ -e ${nih_path}/${dir} ]
+    then
+      ls -la ${nih_path}/${dir}
+    fi
+  done
+done
 ${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
+for nih_path in ${NIH_CACHE_ROOT}/*/*/*/src ${NIH_CACHE_ROOT}/*/*/src
+do
+  for dir in lz4-stamp snappy-stamp sqlite3-stamp rocksdb
+  do
+    if [ -e ${nih_path}/${dir} ]
+    then
+      ls -la ${nih_path}/${dir}
+    fi
+  done
+done
 
 if [[ ${TARGET} == "docs" ]]; then
     ## mimic the standard test output for docs build
