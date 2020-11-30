@@ -82,8 +82,7 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::shared_ptr<NodeObject>& nodeObject,
-        std::function<void(
-            std::shared_ptr<NodeObject>&)>&& callback) override;
+        std::function<void(std::shared_ptr<NodeObject>&)>&& callback) override;
 
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override

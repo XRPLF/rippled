@@ -43,9 +43,8 @@ DatabaseNodeImp::asyncFetch(
     std::shared_ptr<NodeObject>& nodeObject,
     std::function<void(std::shared_ptr<NodeObject>&)>&& callback)
 {
-    return
-        Database::asyncFetch(hash, ledgerSeq, nodeObject,
-            std::move(callback));
+    return Database::asyncFetch(
+        hash, ledgerSeq, nodeObject, std::move(callback));
 }
 
 void

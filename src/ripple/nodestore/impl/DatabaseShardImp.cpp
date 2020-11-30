@@ -1033,8 +1033,8 @@ DatabaseShardImp::asyncFetch(
     }
 
     // Otherwise post a read
-    return
-        Database::asyncFetch(hash, ledgerSeq, nodeObject, std::move (callback));
+    return Database::asyncFetch(
+        hash, ledgerSeq, nodeObject, std::move(callback));
 }
 
 bool

@@ -203,17 +203,20 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                  ->touch_if_exists(childHash.as_uint256()))
         {
             bool pending = false;
-            auto d = descendAsync(node, branch, mn.filter_, pending,
-            [node, nodeID, branch, &mn](
-                std::shared_ptr<SHAMapAbstractNode> found,
-                SHAMapHash const&)
-            {
-                // a read completed asynchronously
-                std::unique_lock<std::mutex> lock{mn.deferLock_};
-                mn.finishedReads_.emplace_back(
-                    node, nodeID, branch, std::move(found));
-                mn.deferCondVar_.notify_one();
-            });
+            auto d = descendAsync(
+                node,
+                branch,
+                mn.filter_,
+                pending,
+                [node, nodeID, branch, &mn](
+                    std::shared_ptr<SHAMapAbstractNode> found,
+                    SHAMapHash const&) {
+                    // a read completed asynchronously
+                    std::unique_lock<std::mutex> lock{mn.deferLock_};
+                    mn.finishedReads_.emplace_back(
+                        node, nodeID, branch, std::move(found));
+                    mn.deferCondVar_.notify_one();
+                });
 
             if (pending)
             {
@@ -273,14 +276,18 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
     int complete = 0;
     while (complete != mn.deferred_)
     {
-        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int,
-            std::shared_ptr<SHAMapAbstractNode>> deferredNode;
+        std::tuple<
+            SHAMapInnerNode*,
+            SHAMapNodeID,
+            int,
+            std::shared_ptr<SHAMapAbstractNode>>
+            deferredNode;
         {
             std::unique_lock<std::mutex> lock{mn.deferLock_};
 
             while (mn.finishedReads_.size() <= complete)
                 mn.deferCondVar_.wait(lock);
-            deferredNode = std::move (mn.finishedReads_[complete++]);
+            deferredNode = std::move(mn.finishedReads_[complete++]);
         }
 
         auto parent = std::get<0>(deferredNode);
@@ -290,7 +297,7 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
         auto const& nodeHash = parent->getChildHash(branch);
 
         if (nodePtr)
-        {   // Got the node
+        {  // Got the node
             nodePtr = parent->canonicalizeChild(branch, std::move(nodePtr));
 
             // When we finish this stack, we need to restart
@@ -323,7 +330,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     MissingNodes mn(
         max,
         filter,
-        4096,   // number of async reads per pass
+        4096,  // number of async reads per pass
         f_.getFullBelowCache(ledgerSeq_)->getGeneration());
 
     if (!root_->isInner() ||

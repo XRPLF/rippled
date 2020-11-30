@@ -150,8 +150,7 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::shared_ptr<NodeObject>& nodeObject,
-        std::function<void(
-            std::shared_ptr<NodeObject>&)>&& callback) = 0;
+        std::function<void(std::shared_ptr<NodeObject>&)>&& callback) = 0;
 
     /** Store a ledger from a different database.
 
@@ -249,9 +248,7 @@ protected:
 
     // Called by the public storeLedger function
     bool
-    storeLedger(
-        Ledger const& srcLedger,
-        std::shared_ptr<Backend> dstBackend);
+    storeLedger(Ledger const& srcLedger, std::shared_ptr<Backend> dstBackend);
 
 private:
     std::atomic<std::uint64_t> storeCount_{0};
@@ -262,8 +259,12 @@ private:
     std::condition_variable readCondVar_;
 
     // reads to do
-    std::map<uint256, std::vector< std::pair <std::uint32_t,
-        std::function<void(std::shared_ptr<NodeObject>&)> > > > read_;
+    std::map<
+        uint256,
+        std::vector<std::pair<
+            std::uint32_t,
+            std::function<void(std::shared_ptr<NodeObject>&)>>>>
+        read_;
 
     // last read
     uint256 readLastHash_;

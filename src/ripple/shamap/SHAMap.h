@@ -375,15 +375,15 @@ private:
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
-    using descendCallback = std::function<void(
-        std::shared_ptr<SHAMapAbstractNode>, SHAMapHash const&)>;
+    using descendCallback = std::function<
+        void(std::shared_ptr<SHAMapAbstractNode>, SHAMapHash const&)>;
     SHAMapAbstractNode*
     descendAsync(
         SHAMapInnerNode* parent,
         int branch,
         SHAMapSyncFilter* filter,
         bool& pending,
-        descendCallback &&) const;
+        descendCallback&&) const;
 
     std::pair<SHAMapAbstractNode*, SHAMapNodeID>
     descend(
@@ -456,10 +456,10 @@ private:
 
         // nodes we may have acquired from deferred reads
         using DeferredNode = std::tuple<
-            SHAMapInnerNode*,  // parent node
-            SHAMapNodeID,      // parent node ID
-            int,               // branch
-            std::shared_ptr<SHAMapAbstractNode>>; // node
+            SHAMapInnerNode*,                      // parent node
+            SHAMapNodeID,                          // parent node ID
+            int,                                   // branch
+            std::shared_ptr<SHAMapAbstractNode>>;  // node
 
         int deferred_;
         std::mutex deferLock_;
@@ -494,9 +494,8 @@ private:
 
     // fetch from DB helper function
     std::shared_ptr<SHAMapAbstractNode>
-    finishFetch(
-        SHAMapHash const& hash,
-        std::shared_ptr<NodeObject>& object) const;
+    finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject>& object)
+        const;
 };
 
 inline void

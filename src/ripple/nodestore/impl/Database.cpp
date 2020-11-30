@@ -96,7 +96,7 @@ Database::asyncFetch(
 {
     // Post a read
     std::lock_guard lock(readLock_);
-    read_[hash].emplace_back(ledgerSeq, std::move (cb));
+    read_[hash].emplace_back(ledgerSeq, std::move(cb));
     readCondVar_.notify_one();
     return false;
 }
@@ -273,8 +273,10 @@ Database::threadEntry()
     while (true)
     {
         uint256 lastHash;
-        std::vector< std::pair <std::uint32_t,
-            std::function<void(std::shared_ptr<NodeObject>&)>>> entry;
+        std::vector<std::pair<
+            std::uint32_t,
+            std::function<void(std::shared_ptr<NodeObject>&)>>>
+            entry;
 
         {
             std::unique_lock<std::mutex> lock(readLock_);
@@ -302,7 +304,7 @@ Database::threadEntry()
         for (auto const& req : entry)
         {
             auto obj = fetchNodeObject(lastHash, req.first, FetchType::async);
-            req.second (obj);
+            req.second(obj);
         }
     }
 }

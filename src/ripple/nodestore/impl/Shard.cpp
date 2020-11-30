@@ -285,7 +285,6 @@ Shard::fetchNodeObject(uint256 const& hash, FetchReport& fetchReport)
 
         if (nodeObject)
             fetchReport.wasFound = true;
-
     }
 
     return nodeObject;

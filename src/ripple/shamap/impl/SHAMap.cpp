@@ -147,18 +147,17 @@ SHAMap::findKey(uint256 const& id) const
 std::shared_ptr<SHAMapAbstractNode>
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
-    assert (backed_);
+    assert(backed_);
     auto obj = f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_);
     return finishFetch(hash, obj);
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMap::finishFetch(
-    SHAMapHash const& hash,
-    std::shared_ptr<NodeObject>& object) const
+SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject>& object)
+    const
 {
     assert(backed_);
-    if (! object)
+    if (!object)
     {
         if (full_)
         {
@@ -386,13 +385,15 @@ SHAMap::descendAsync(
         if (!ptr && backed_)
         {
             std::shared_ptr<NodeObject> object;
-            if (f_.db().asyncFetch(hash.as_uint256(), ledgerSeq_, object,
-                [this, hash, cb{std::move(callback)}]
-                    (std::shared_ptr<NodeObject>& object)
-                {
-                    auto node = finishFetch(hash, object);
-                    cb (node, hash);
-                }))
+            if (f_.db().asyncFetch(
+                    hash.as_uint256(),
+                    ledgerSeq_,
+                    object,
+                    [this, hash, cb{std::move(callback)}](
+                        std::shared_ptr<NodeObject>& object) {
+                        auto node = finishFetch(hash, object);
+                        cb(node, hash);
+                    }))
             {
                 // completed immediately
                 if (!object)
