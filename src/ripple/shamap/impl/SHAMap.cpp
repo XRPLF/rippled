@@ -384,23 +384,16 @@ SHAMap::descendAsync(
 
         if (!ptr && backed_)
         {
-            if (!f_.db().asyncFetch(
-                    hash.as_uint256(),
-                    ledgerSeq_,
-                    [this, hash, cb{std::move(callback)}](
-                        std::shared_ptr<NodeObject>& object) {
-                        auto node = finishFetch(hash, object);
-                        cb(node, hash);
-                    }))
-            {
-                // hash can't be found (shards may do this)
-                return nullptr;
-            }
-            else
-            {
-                pending = true;
-                return nullptr;
-            }
+            f_.db().asyncFetch(
+                hash.as_uint256(),
+                ledgerSeq_,
+                [this, hash, cb{std::move(callback)}](
+                    std::shared_ptr<NodeObject>& object) {
+                    auto node = finishFetch(hash, object);
+                    cb(node, hash);
+                });
+            pending = true;
+            return nullptr;
         }
     }
 

@@ -142,14 +142,12 @@ public:
         @param ledgerSeq The sequence of the ledger where the
                 object is stored, used by the shard store.
         @param callback Callback function when read completes
-        @return true if the operation is pending, false if hash will not be
-                found (as with shards)
     */
-    virtual bool
+    void
     asyncFetch(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
-        std::function<void(std::shared_ptr<NodeObject>&)>&& callback) = 0;
+        std::function<void(std::shared_ptr<NodeObject>&)>&& callback);
 
     /** Store a ledger from a different database.
 

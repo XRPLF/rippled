@@ -87,7 +87,7 @@ Database::stopReadThreads()
         e.join();
 }
 
-bool
+void
 Database::asyncFetch(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
@@ -97,7 +97,6 @@ Database::asyncFetch(
     std::lock_guard lock(readLock_);
     read_[hash].emplace_back(ledgerSeq, std::move(cb));
     readCondVar_.notify_one();
-    return true;
 }
 
 void

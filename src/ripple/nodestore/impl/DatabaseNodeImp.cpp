@@ -36,15 +36,6 @@ DatabaseNodeImp::store(
     storeStats(1, nObj->getData().size());
 }
 
-bool
-DatabaseNodeImp::asyncFetch(
-    uint256 const& hash,
-    std::uint32_t ledgerSeq,
-    std::function<void(std::shared_ptr<NodeObject>&)>&& callback)
-{
-    return Database::asyncFetch(hash, ledgerSeq, std::move(callback));
-}
-
 void
 DatabaseNodeImp::sweep()
 {

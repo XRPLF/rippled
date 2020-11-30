@@ -1015,24 +1015,6 @@ DatabaseShardImp::store(
 }
 
 bool
-DatabaseShardImp::asyncFetch(
-    uint256 const& hash,
-    std::uint32_t ledgerSeq,
-    std::function<void(std::shared_ptr<NodeObject>&)>&& callback)
-{
-    auto const shardIndex{seqToShardIndex(ledgerSeq)};
-    {
-        std::lock_guard lock(mutex_);
-        assert(init_);
-        if (shards_.find(shardIndex) == shards_.end())
-            return false;
-    }
-
-    // Otherwise post a read
-    return Database::asyncFetch(hash, ledgerSeq, std::move(callback));
-}
-
-bool
 DatabaseShardImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
 {
     auto const ledgerSeq{srcLedger->info().seq};

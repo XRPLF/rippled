@@ -78,12 +78,6 @@ public:
         override;
 
     bool
-    asyncFetch(
-        uint256 const& hash,
-        std::uint32_t ledgerSeq,
-        std::function<void(std::shared_ptr<NodeObject>&)>&& callback) override;
-
-    bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
     {
         return Database::storeLedger(*srcLedger, backend_);
