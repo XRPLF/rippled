@@ -417,8 +417,9 @@ matrix:
 before_cache:
   - if [ $(uname) = "Linux" ] ; then SUDO="sudo"; else SUDO=""; fi
   - cd ${TRAVIS_HOME}
-  - if [ -f cache_ignore.tar ] ; then $SUDO tar xvf cache_ignore.tar; fi
+  - if [ -f cache_ignore.tar ] ; then ls -l cache_ignore.tar ; $SUDO tar xvf cache_ignore.tar; fi
   - cd ${TRAVIS_BUILD_DIR}
+  - find $CACHE_DIR -mmin -10
 
 cache:
   timeout: 900
