@@ -91,14 +91,13 @@ bool
 Database::asyncFetch(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
-    std::shared_ptr<NodeObject>&,
     std::function<void(std::shared_ptr<NodeObject>&)>&& cb)
 {
     // Post a read
     std::lock_guard lock(readLock_);
     read_[hash].emplace_back(ledgerSeq, std::move(cb));
     readCondVar_.notify_one();
-    return false;
+    return true;
 }
 
 void
