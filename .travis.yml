@@ -419,6 +419,8 @@ before_cache:
   - cd ${TRAVIS_HOME}
   - if [ -f cache_ignore.tar ] ; then $SUDO tar xvf cache_ignore.tar; fi
   - cd ${TRAVIS_BUILD_DIR}
+  # Display what changed in the cache before updating the cache
+  - find $CACHE_DIR -mmin -30 -ls
 
 cache:
   timeout: 900
