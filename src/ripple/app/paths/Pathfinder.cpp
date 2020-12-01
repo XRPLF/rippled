@@ -23,11 +23,13 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/app/paths/Tuning.h>
+#include <ripple/app/paths/impl/PathfinderUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/PaymentSandbox.h>
+
 #include <tuple>
 
 /*
@@ -143,6 +145,13 @@ pathTypeToString(Pathfinder::PathType const& type)
     return ret;
 }
 
+// Return the smallest amount of useful liquidity for a given amount, and the
+// total number of paths we have to evaluate.
+STAmount
+smallestUsefulAmount(STAmount const& amount, int maxPaths)
+{
+    return divide(amount, STAmount(maxPaths + 2), amount.issue());
+}
 }  // namespace
 
 Pathfinder::Pathfinder(
@@ -169,12 +178,7 @@ Pathfinder::Pathfinder(
           1u,
           0,
           true)))
-    , convert_all_(
-          mDstAmount ==
-          STAmount(
-              mDstAmount.issue(),
-              STAmount::cMaxValue,
-              STAmount::cMaxOffset))
+    , convert_all_(convertAllCheck(mDstAmount))
     , mLedger(cache->getLedger())
     , mRLCache(cache)
     , app_(app)
@@ -395,25 +399,10 @@ Pathfinder::getPathLiquidity(
     }
 }
 
-namespace {
-
-// Return the smallest amount of useful liquidity for a given amount, and the
-// total number of paths we have to evaluate.
-STAmount
-smallestUsefulAmount(STAmount const& amount, int maxPaths)
-{
-    return divide(amount, STAmount(maxPaths + 2), amount.issue());
-}
-
-}  // namespace
-
 void
 Pathfinder::computePathRanks(int maxPaths)
 {
-    mRemainingAmount = convert_all_
-        ? STAmount(
-              mDstAmount.issue(), STAmount::cMaxValue, STAmount::cMaxOffset)
-        : mDstAmount;
+    mRemainingAmount = convertAmount(mDstAmount, convert_all_);
 
     // Must subtract liquidity in default path from remaining amount.
     try
@@ -496,19 +485,17 @@ Pathfinder::rankPaths(
     rankedPaths.clear();
     rankedPaths.reserve(paths.size());
 
-    STAmount saMinDstAmount;
-    if (convert_all_)
-    {
+    auto const saMinDstAmount = [&]() -> STAmount {
+        if (!convert_all_)
+        {
+            // Ignore paths that move only very small amounts.
+            return smallestUsefulAmount(mDstAmount, maxPaths);
+        }
+
         // On convert_all_ partialPaymentAllowed will be set to true
         // and requiring a huge amount will find the highest liquidity.
-        saMinDstAmount = STAmount(
-            mDstAmount.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
-    }
-    else
-    {
-        // Ignore paths that move only very small amounts.
-        saMinDstAmount = smallestUsefulAmount(mDstAmount, maxPaths);
-    }
+        return largestAmount(mDstAmount);
+    }();
 
     for (int i = 0; i < paths.size(); ++i)
     {
