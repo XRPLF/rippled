@@ -129,9 +129,9 @@ inline constexpr std::array<char const*, 1> AcquireShardDBInit{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Pragma for Ledger and Transaction databases with complete shards
+// Pragma for Ledger and Transaction databases with final shards
 // These override the CommonDBPragma values defined above.
-inline constexpr std::array<char const*, 2> CompleteShardDBPragma{
+inline constexpr std::array<char const*, 2> FinalShardDBPragma{
     {"PRAGMA synchronous=OFF;", "PRAGMA journal_mode=OFF;"}};
 
 ////////////////////////////////////////////////////////////////////////////////
