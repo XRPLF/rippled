@@ -34,6 +34,8 @@
 
 namespace ripple {
 
+LocalValue<bool> stAmountCanonicalizeSwitchover(true);
+
 static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
 static const std::uint64_t tenTo17 = tenTo14 * 1000;
@@ -662,11 +664,21 @@ STAmount::canonicalize()
         // native currency amounts should always have an offset of zero
         mIsNative = true;
 
-        if (mValue == 0)
+        // log(2^64,10) ~ 19.2
+        if (mValue == 0 || mOffset <= -20)
         {
+            mValue = 0;
             mOffset = 0;
             mIsNegative = false;
             return;
+        }
+
+        if (*stAmountCanonicalizeSwitchover)
+        {
+            // log(cMaxNativeN, 10) == 17
+            if (mOffset > 17)
+                Throw<std::runtime_error>(
+                    "Native currency amount out of range");
         }
 
         while (mOffset < 0)
@@ -677,6 +689,14 @@ STAmount::canonicalize()
 
         while (mOffset > 0)
         {
+            if (*stAmountCanonicalizeSwitchover)
+            {
+                // N.B. do not move the overflow check to after the
+                // multiplication
+                if (mValue > cMaxNativeN)
+                    Throw<std::runtime_error>(
+                        "Native currency amount out of range");
+            }
             mValue *= 10;
             --mOffset;
         }
