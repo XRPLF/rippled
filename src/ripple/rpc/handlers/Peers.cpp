@@ -32,17 +32,31 @@ doPeers(RPC::JsonContext& context)
 {
     Json::Value jvResult(Json::objectValue);
 
+    jvResult[jss::peers] = context.app.overlay().json();
+
+    // Legacy support
+    if (context.apiVersion == 1)
     {
-        jvResult[jss::peers] = context.app.overlay().json();
+        for (auto& p : jvResult[jss::peers])
+        {
+            if (auto s = p[jss::track].asString(); !s.empty())
+            {
+                if (s == "diverged")
+                    p["sanity"] = "insane";
+                if (s == "unknown")
+                    p["sanity"] = "unknown";
+            }
+        }
+    }
 
-        auto const now = context.app.timeKeeper().now();
-        auto const self = context.app.nodeIdentity().first;
+    auto const now = context.app.timeKeeper().now();
+    auto const self = context.app.nodeIdentity().first;
 
-        Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
-        std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
+    Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
+    std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
 
-        context.app.cluster().for_each([&cluster, now, ref, &self](
-                                           ClusterNode const& node) {
+    context.app.cluster().for_each(
+        [&cluster, now, ref, &self](ClusterNode const& node) {
             if (node.identity() == self)
                 return;
 
@@ -60,7 +74,6 @@ doPeers(RPC::JsonContext& context)
                     ? 0
                     : (now - node.getReportTime()).count();
         });
-    }
 
     return jvResult;
 }
