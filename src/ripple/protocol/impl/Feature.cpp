@@ -134,6 +134,7 @@ detail::supportedAmendments()
         //"NegativeUNL",      // Commented out to prevent automatic enablement
         "TicketBatch",
         "FlowSortStrands",
+        "fixSTAmountCanonicalize",
     };
     return supported;
 }
@@ -188,7 +189,8 @@ uint256 const
     fixAmendmentMajorityCalc        = *getRegisteredFeature("fixAmendmentMajorityCalc"),
     featureNegativeUNL              = *getRegisteredFeature("NegativeUNL"),
     featureTicketBatch              = *getRegisteredFeature("TicketBatch"),
-    featureFlowSortStrands          = *getRegisteredFeature("FlowSortStrands");
+    featureFlowSortStrands          = *getRegisteredFeature("FlowSortStrands"),
+    fixSTAmountCanonicalize         = *getRegisteredFeature("fixSTAmountCanonicalize");
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.

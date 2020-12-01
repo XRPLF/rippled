@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <ripple/basics/IOUAmount.h>
+#include <ripple/basics/LocalValue.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/SField.h>
@@ -470,6 +471,32 @@ isXRP(STAmount const& amount)
 {
     return isXRP(amount.issue().currency);
 }
+
+// Since `canonicalize` does not have access to a ledger, this is needed to put
+// the low-level routine stAmountCanonicalize on an amendment switch. Only
+// transactions need to use this switchover. Outside of a transaction it's safe
+// to unconditionally use the new behavior.
+extern LocalValue<bool> stAmountCanonicalizeSwitchover;
+
+/** RAII class to set and restore the STAmount canonicalize switchover.
+ */
+
+class STAmountSO
+{
+public:
+    explicit STAmountSO(bool v) : saved_(*stAmountCanonicalizeSwitchover)
+    {
+        *stAmountCanonicalizeSwitchover = v;
+    }
+
+    ~STAmountSO()
+    {
+        *stAmountCanonicalizeSwitchover = saved_;
+    }
+
+private:
+    bool saved_;
+};
 
 }  // namespace ripple
 
