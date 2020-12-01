@@ -31,7 +31,6 @@
 #include <nudb/nudb.hpp>
 
 #include <atomic>
-#include <tuple>
 
 namespace ripple {
 namespace NodeStore {
@@ -253,6 +252,7 @@ private:
     Application& app_;
     beast::Journal const j_;
     mutable std::mutex mutex_;
+    mutable std::mutex storedMutex_;
 
     // Shard Index
     std::uint32_t const index_;
@@ -316,11 +316,8 @@ private:
     initSQLite(std::lock_guard<std::mutex> const&);
 
     // Write SQLite entries for this ledger
-    // Lock over mutex_ required
     [[nodiscard]] bool
-    storeSQLite(
-        std::shared_ptr<Ledger const> const& ledger,
-        std::lock_guard<std::mutex> const&);
+    storeSQLite(std::shared_ptr<Ledger const> const& ledger);
 
     // Set storage and file descriptor usage stats
     // Lock over mutex_ required
