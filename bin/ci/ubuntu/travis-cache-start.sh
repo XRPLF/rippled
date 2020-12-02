@@ -2,6 +2,21 @@
 # some cached files create churn, so save them here for
 # later restoration before packing the cache
 set -eux
+clean_cache="travis_clean_cache"
+if [[ ! ( "${TRAVIS_JOB_NAME}" =~ "windows" || \
+    "${TRAVIS_JOB_NAME}" =~ "prereq-keep" ) ]] && \
+    ( [[ "${TRAVIS_COMMIT_MESSAGE}" =~ "${clean_cache}" ]] || \
+        ( [[ -v TRAVIS_PULL_REQUEST_SHA && \
+            "${TRAVIS_PULL_REQUEST_SHA}" != "" ]] && \
+          git log -1 "${TRAVIS_PULL_REQUEST_SHA}" | grep -cq "${clean_cache}" -
+        )
+    )
+then
+    find ${TRAVIS_HOME}/_cache -maxdepth 2 -type d
+    rm -rf ${TRAVIS_HOME}/_cache
+    mkdir -p ${TRAVIS_HOME}/_cache
+fi
+
 pushd ${TRAVIS_HOME}
 if [ -f cache_ignore.tar ] ; then
     rm -f cache_ignore.tar
