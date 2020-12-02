@@ -362,7 +362,7 @@ matrix:
         # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
     - <<: *windows
       stage: windep-boost
-      name: prereq-boost
+      name: prereq-keep-boost
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
