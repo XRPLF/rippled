@@ -21,9 +21,7 @@ services:
   - docker
 
 stages:
-  - windep-ssl
-  - windep-grpc
-  - windep-libarchive
+  - windep-vcpkg
   - windep-boost
   - build
 
@@ -35,6 +33,7 @@ env:
     # change this if we get more VM capacity
     - MAX_TIME_MIN=80
     - CACHE_DIR=${TRAVIS_HOME}/_cache
+    - CACHE_EXAMINE_CMD="find ${CACHE_DIR} -maxdepth 3 -type d"
     - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
     - PARALLEL_TESTS=true
     # this is NOT used by linux container based builds (which already have boost installed)
@@ -51,6 +50,14 @@ env:
     - CCACHE_NOHASHDIR=true
     - CCACHE_DIR=${CACHE_DIR}/ccache
 
+before_install:
+  - export NUM_PROCESSORS=$(nproc)
+  - echo "NUM PROC is ${NUM_PROCESSORS}"
+  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
+  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
+  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
+  - bin/ci/ubuntu/travis-cache-start.sh
+
 matrix:
   fast_finish: true
   allow_failures:
@@ -64,11 +71,10 @@ matrix:
     # allow the rest of the builds to continue. They may succeed if the
     # dependency is already cached. These do not need to be retried if
     # _any_ of the Windows builds succeed.
-    - stage: windep-ssl
-    - stage: windep-grpc
-    - stage: windep-libarchive
+    - stage: windep-vcpkg
     - stage: windep-boost
 
+  # https://docs.travis-ci.com/user/build-config-yaml#usage-of-yaml-anchors-and-aliases
   include:
     # debug builds
     - &linux
@@ -317,10 +323,12 @@ matrix:
       before_script:
         - export BLD_CONFIG=Release
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dassert=ON"
+        # - ${CACHE_EXAMINE_CMD}
     - <<: *macos
       name: ipv6 (macos)
       before_script:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
+        # - ${CACHE_EXAMINE_CMD}
     - <<: *macos
       osx_image: xcode11.2
       name: xcode11, debug
@@ -347,30 +355,23 @@ matrix:
           -DCMAKE_VERBOSE_MAKEFILE=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
-      stage: windep-ssl
-      name: prereq-ssl
+      stage: windep-vcpkg
+      name: prereq-vcpkg
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
       script:
         - df -h
+        - env
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh openssl
-    - <<: *windows
-      stage: windep-grpc
-      name: prereq-grpc
-      script:
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh grpc
-    - <<: *windows
-      stage: windep-libarchive
-      name: prereq-libarchive
-      script:
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh libarchive[lz4]
         # TBD consider rocksdb via vcpkg if/when we can build with the
         # vcpkg version
         # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
     - <<: *windows
       stage: windep-boost
-      name: prereq-boost
+      name: prereq-keep-boost
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
@@ -384,6 +385,7 @@ matrix:
       name: windows, debug
       before_script:
         - export BLD_CONFIG=Debug
+        # - ${CACHE_EXAMINE_CMD}
       script:
         - df -h
         - . ./bin/sh/setup-msvc.sh
@@ -397,6 +399,7 @@ matrix:
       name: windows, release
       before_script:
         - export BLD_CONFIG=Release
+        # - ${CACHE_EXAMINE_CMD}
     - <<: *windows-bld
       name: windows, visual studio, debug
       script:
@@ -425,25 +428,19 @@ matrix:
         # fixed in the future, it should be possible to remove these
         # workarounds.
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -DBoost_NO_BOOST_CMAKE=ON -DBoost_COMPILER=-vc141"
+        # - ${CACHE_EXAMINE_CMD}
 
 before_cache:
   - if [ $(uname) = "Linux" ] ; then SUDO="sudo"; else SUDO=""; fi
   - cd ${TRAVIS_HOME}
   - if [ -f cache_ignore.tar ] ; then $SUDO tar xvf cache_ignore.tar; fi
   - cd ${TRAVIS_BUILD_DIR}
+  # - ${CACHE_EXAMINE_CMD}
 
 cache:
   timeout: 900
   directories:
     - $CACHE_DIR
-
-before_install:
-  - export NUM_PROCESSORS=$(nproc)
-  - echo "NUM PROC is ${NUM_PROCESSORS}"
-  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
-  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
-  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
-  - bin/ci/ubuntu/travis-cache-start.sh
 
 notifications:
   email: false
