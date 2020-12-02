@@ -112,25 +112,23 @@ public:
     makeTable(
         Application& app,
         std::chrono::seconds majorityTime,
-        Section const supported,
-        Section const enabled,
-        Section const vetoed)
+        Section const& supported,
+        Section const& enabled,
+        Section const& vetoed)
     {
-        auto t = make_AmendmentTable(
+        return make_AmendmentTable(
             app, majorityTime, supported, enabled, vetoed, journal);
-        return t;
     }
 
     std::unique_ptr<AmendmentTable>
     makeTable(
         test::jtx::Env& env,
         std::chrono::seconds majorityTime,
-        Section const supported,
-        Section const enabled,
-        Section const vetoed)
+        Section const& supported,
+        Section const& enabled,
+        Section const& vetoed)
     {
-        return make_AmendmentTable(
-            env.app(), majorityTime, supported, enabled, vetoed, journal);
+        return makeTable(env.app(), majorityTime, supported, enabled, vetoed);
     }
 
     std::unique_ptr<AmendmentTable>

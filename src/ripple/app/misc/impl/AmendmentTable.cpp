@@ -243,8 +243,10 @@ private:
         std::lock_guard<std::mutex> const& sl) const;
 
     void
-    persistVote(uint256 const& amendment, std::string const& name, bool vote)
-        const;
+    persistVote(
+        uint256 const& amendment,
+        std::string const& name,
+        bool vote_to_veto) const;
 
 public:
     AmendmentTableImpl(
@@ -324,29 +326,27 @@ AmendmentTableImpl::AmendmentTableImpl(
     std::lock_guard sl(mutex_);
 
     // Find out if the FeatureVotes table exists in WalletDB
-    bool FeatureVotesExist;
-    {
+    bool const featureVotesExist = [this]() {
         auto db = db_.checkoutDb();
         soci::transaction tr(*db);
         std::string sql =
             "SELECT count(*) FROM sqlite_master "
             "WHERE type='table' AND name='FeatureVotes'";
-        boost::optional<int> FeatureVotesCount;
-        *db << sql, soci::into(FeatureVotesCount);
-        FeatureVotesExist = static_cast<bool>(*FeatureVotesCount);
-    }
+        boost::optional<int> featureVotesCount;
+        *db << sql, soci::into(featureVotesCount);
+        bool exists = static_cast<bool>(*featureVotesCount);
 
-    // Create FeatureVotes table in WalletDB if it doesn't exist
-    if (!FeatureVotesExist)
-    {
-        auto db = db_.checkoutDb();
-        soci::transaction tr(*db);
-        *db << "CREATE TABLE  FeatureVotes ( "
-               "AmendmentHash      CHARACTER(64) NOT NULL, "
-               "AmendmentName      TEXT, "
-               "Veto               INTEGER NOT NULL );";
-        tr.commit();
-    }
+        // Create FeatureVotes table in WalletDB if it doesn't exist
+        if (!exists)
+        {
+            *db << "CREATE TABLE  FeatureVotes ( "
+                   "AmendmentHash      CHARACTER(64) NOT NULL, "
+                   "AmendmentName      TEXT, "
+                   "Veto               INTEGER NOT NULL );";
+            tr.commit();
+        }
+        return exists;
+    }();
 
     // Parse supported amendments
     for (auto const& a : parseSection(supported))
@@ -366,7 +366,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     // Parse enabled amendments from config
     for (auto const& a : parseSection(enabled))
     {
-        if (FeatureVotesExist)
+        if (featureVotesExist)
         {  // If the table existed, warn about duplicate config info
             JLOG(j_.warn()) << "[amendments] section in config file ignored"
                                " in favor of data in db/wallet.db.";
@@ -379,10 +379,10 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
     }
 
-    // Parse enabled amendments from config
+    // Parse vetoed amendments from config
     for (auto const& a : parseSection(vetoed))
     {
-        if (FeatureVotesExist)
+        if (featureVotesExist)
         {  // If the table existed, warn about duplicate config info
             JLOG(j_.warn())
                 << "[veto_amendments] section in config file ignored"
@@ -412,22 +412,23 @@ AmendmentTableImpl::AmendmentTableImpl(
         "SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes";
     boost::optional<std::string> amendment_hash;
     boost::optional<std::string> amendment_name;
-    boost::optional<int> vote;
+    boost::optional<int> vote_to_veto;
     soci::statement st =
         (db->prepare << sql,
          soci::into(amendment_hash),
          soci::into(amendment_name),
-         soci::into(vote));
+         soci::into(vote_to_veto));
     st.execute();
     while (st.fetch())
     {
         uint256 amend_hash = from_hex_text<uint256>(*amendment_hash);
-        if (*vote)  // if veto
+        if (*vote_to_veto)
         {
             // Unknown amendments are effectively vetoed already
             if (auto s = get(amend_hash, sl))
             {
-                JLOG(j_.info()) << "Amendment " << amend_hash << " is vetoed.";
+                JLOG(j_.info()) << "Amendment {" << *amendment_name << ", "
+                                << amend_hash << "} is vetoed.";
                 if (!amendment_name->empty())
                     s->name = *amendment_name;
                 s->vetoed = true;
@@ -437,8 +438,8 @@ AmendmentTableImpl::AmendmentTableImpl(
         {
             if (auto s = add(amend_hash, sl))
             {
-                JLOG(j_.debug())
-                    << "Amendment " << amend_hash << " is enabled.";
+                JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", "
+                                 << amend_hash << "} is un-vetoed.";
                 if (!amendment_name->empty())
                     s->name = *amendment_name;
                 s->vetoed = false;
@@ -498,7 +499,7 @@ void
 AmendmentTableImpl::persistVote(
     uint256 const& amendment,
     std::string const& name,
-    bool vote) const
+    bool vote_to_veto) const
 {
     auto db = db_.checkoutDb();
     soci::transaction tr(*db);
@@ -507,7 +508,7 @@ AmendmentTableImpl::persistVote(
         "('";
     sql += to_string(amendment);
     sql += "', '" + name;
-    sql += "', '" + std::to_string(int{vote}) + "');";
+    sql += "', '" + std::to_string(int{vote_to_veto}) + "');";
     *db << sql;
     tr.commit();
 }
