@@ -21,9 +21,7 @@ services:
   - docker
 
 stages:
-  - windep-ssl
-  - windep-grpc
-  - windep-libarchive
+  - windep-vcpkg
   - windep-boost
   - build
 
@@ -51,6 +49,14 @@ env:
     - CCACHE_NOHASHDIR=true
     - CCACHE_DIR=${CACHE_DIR}/ccache
 
+before_install:
+  - export NUM_PROCESSORS=$(nproc)
+  - echo "NUM PROC is ${NUM_PROCESSORS}"
+  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
+  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
+  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
+  - bin/ci/ubuntu/travis-cache-start.sh
+
 matrix:
   fast_finish: true
   allow_failures:
@@ -64,11 +70,10 @@ matrix:
     # allow the rest of the builds to continue. They may succeed if the
     # dependency is already cached. These do not need to be retried if
     # _any_ of the Windows builds succeed.
-    - stage: windep-ssl
-    - stage: windep-grpc
-    - stage: windep-libarchive
+    - stage: windep-vcpkg
     - stage: windep-boost
 
+  # https://docs.travis-ci.com/user/build-config-yaml#usage-of-yaml-anchors-and-aliases
   include:
     # debug builds
     - &linux
@@ -335,30 +340,23 @@ matrix:
           -DCMAKE_VERBOSE_MAKEFILE=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
-      stage: windep-ssl
-      name: prereq-ssl
+      stage: windep-vcpkg
+      name: prereq-vcpkg
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
       script:
         - df -h
+        - env
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh openssl
-    - <<: *windows
-      stage: windep-grpc
-      name: prereq-grpc
-      script:
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh grpc
-    - <<: *windows
-      stage: windep-libarchive
-      name: prereq-libarchive
-      script:
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh libarchive[lz4]
         # TBD consider rocksdb via vcpkg if/when we can build with the
         # vcpkg version
         # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
     - <<: *windows
       stage: windep-boost
-      name: prereq-boost
+      name: prereq-keep-boost
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
@@ -425,14 +423,6 @@ cache:
   timeout: 900
   directories:
     - $CACHE_DIR
-
-before_install:
-  - export NUM_PROCESSORS=$(nproc)
-  - echo "NUM PROC is ${NUM_PROCESSORS}"
-  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
-  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
-  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
-  - bin/ci/ubuntu/travis-cache-start.sh
 
 notifications:
   email: false
