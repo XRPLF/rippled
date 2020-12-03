@@ -158,36 +158,33 @@ DatabaseRotatingImp::fetchNodeObject(
 
     // See if the node object exists in the cache
     std::shared_ptr<NodeObject> nodeObject;
+
+    auto [writable, archive] = [&] {
+        std::lock_guard lock(mutex_);
+        return std::make_pair(writableBackend_, archiveBackend_);
+    }();
+
+    // Try to fetch from the writable backend
+    nodeObject = fetch(writable);
+    if (!nodeObject)
     {
-        auto [writable, archive] = [&] {
-            std::lock_guard lock(mutex_);
-            return std::make_pair(writableBackend_, archiveBackend_);
-        }();
-
-        fetchReport.wentToDisk = true;
-
-        // Try to fetch from the writable backend
-        nodeObject = fetch(writable);
-        if (!nodeObject)
-        {
-            // Otherwise try to fetch from the archive backend
-            nodeObject = fetch(archive);
-            if (nodeObject)
-            {
-                {
-                    // Refresh the writable backend pointer
-                    std::lock_guard lock(mutex_);
-                    writable = writableBackend_;
-                }
-
-                // Update writable backend with data from the archive backend
-                writable->store(nodeObject);
-            }
-        }
-
+        // Otherwise try to fetch from the archive backend
+        nodeObject = fetch(archive);
         if (nodeObject)
-            fetchReport.wasFound = true;
+        {
+            {
+                // Refresh the writable backend pointer
+                std::lock_guard lock(mutex_);
+                writable = writableBackend_;
+            }
+
+            // Update writable backend with data from the archive backend
+            writable->store(nodeObject);
+        }
     }
+
+    if (nodeObject)
+        fetchReport.wasFound = true;
 
     return nodeObject;
 }

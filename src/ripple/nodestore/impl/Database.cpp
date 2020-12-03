@@ -91,7 +91,7 @@ void
 Database::asyncFetch(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
-    std::function<void(std::shared_ptr<NodeObject>&)>&& cb)
+    std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
     // Post a read
     std::lock_guard lock(readLock_);
@@ -155,8 +155,7 @@ Database::fetchNodeObject(
         ++fetchHitCount_;
         fetchSz_ += nodeObject->getData().size();
     }
-    if (fetchReport.wentToDisk)
-        ++fetchTotalCount_;
+    ++fetchTotalCount_;
 
     fetchReport.elapsed =
         duration_cast<milliseconds>(steady_clock::now() - begin);
@@ -273,7 +272,7 @@ Database::threadEntry()
         uint256 lastHash;
         std::vector<std::pair<
             std::uint32_t,
-            std::function<void(std::shared_ptr<NodeObject>&)>>>
+            std::function<void(std::shared_ptr<NodeObject> const&)>>>
             entry;
 
         {
@@ -300,10 +299,7 @@ Database::threadEntry()
         }
 
         for (auto const& req : entry)
-        {
-            auto obj = fetchNodeObject(lastHash, req.first, FetchType::async);
-            req.second(obj);
-        }
+            req.second(fetchNodeObject(lastHash, req.first, FetchType::async));
     }
 }
 

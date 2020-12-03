@@ -147,7 +147,7 @@ public:
     asyncFetch(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
-        std::function<void(std::shared_ptr<NodeObject>&)>&& callback);
+        std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
 
     /** Store a ledger from a different database.
 
@@ -260,7 +260,7 @@ private:
         uint256,
         std::vector<std::pair<
             std::uint32_t,
-            std::function<void(std::shared_ptr<NodeObject>&)>>>>
+            std::function<void(std::shared_ptr<NodeObject> const&)>>>>
         read_;
 
     // last read

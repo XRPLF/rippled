@@ -245,47 +245,43 @@ Shard::fetchNodeObject(uint256 const& hash, FetchReport& fetchReport)
     if (!scopedCount)
         return nullptr;
 
-    // See if the node object exists in the cache
     std::shared_ptr<NodeObject> nodeObject;
+
+    // Try the backend
+    Status status;
+    try
     {
-        // Try the backend
-        fetchReport.wentToDisk = true;
-
-        Status status;
-        try
-        {
-            status = backend_->fetch(hash.data(), &nodeObject);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.fatal())
-                << "shard " << index_ << ". Exception caught in function "
-                << __func__ << ". Error: " << e.what();
-            return nullptr;
-        }
-
-        switch (status)
-        {
-            case ok:
-            case notFound:
-                break;
-            case dataCorrupt: {
-                JLOG(j_.fatal())
-                    << "shard " << index_ << ". Corrupt node object at hash "
-                    << to_string(hash);
-                break;
-            }
-            default: {
-                JLOG(j_.warn())
-                    << "shard " << index_ << ". Unknown status=" << status
-                    << " fetching node object at hash " << to_string(hash);
-                break;
-            }
-        }
-
-        if (nodeObject)
-            fetchReport.wasFound = true;
+        status = backend_->fetch(hash.data(), &nodeObject);
     }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
+        return nullptr;
+    }
+
+    switch (status)
+    {
+        case ok:
+        case notFound:
+            break;
+        case dataCorrupt: {
+            JLOG(j_.fatal())
+                << "shard " << index_ << ". Corrupt node object at hash "
+                << to_string(hash);
+            break;
+        }
+        default: {
+            JLOG(j_.warn())
+                << "shard " << index_ << ". Unknown status=" << status
+                << " fetching node object at hash " << to_string(hash);
+            break;
+        }
+    }
+
+    if (nodeObject)
+        fetchReport.wasFound = true;
 
     return nodeObject;
 }

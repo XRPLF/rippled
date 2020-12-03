@@ -153,8 +153,9 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject>& object)
-    const
+SHAMap::finishFetch(
+    SHAMapHash const& hash,
+    std::shared_ptr<NodeObject> const& object) const
 {
     assert(backed_);
     if (!object)
@@ -174,13 +175,13 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject>& object)
             makeSlice(object->getData()), hash);
         if (node)
             canonicalize(hash, node);
+        return node;
     }
     catch (std::exception const&)
     {
         JLOG(journal_.warn()) << "Invalid DB node " << hash;
         return std::shared_ptr<SHAMapTreeNode>();
     }
-    return node;
 }
 
 // See if a sync filter has a node
@@ -388,7 +389,7 @@ SHAMap::descendAsync(
                 hash.as_uint256(),
                 ledgerSeq_,
                 [this, hash, cb{std::move(callback)}](
-                    std::shared_ptr<NodeObject>& object) {
+                    std::shared_ptr<NodeObject> const& object) {
                     auto node = finishFetch(hash, object);
                     cb(node, hash);
                 });

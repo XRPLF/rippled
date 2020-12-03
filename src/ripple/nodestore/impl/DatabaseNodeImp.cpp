@@ -48,44 +48,38 @@ DatabaseNodeImp::fetchNodeObject(
     std::uint32_t,
     FetchReport& fetchReport)
 {
-    // See if the node object exists in the cache
     std::shared_ptr<NodeObject> nodeObject;
-    if (1)
+    Status status;
+
+    try
     {
-        // Try the backend
-        fetchReport.wentToDisk = true;
-
-        Status status;
-        try
-        {
-            status = backend_->fetch(hash.data(), &nodeObject);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.fatal()) << "Exception, " << e.what();
-            Rethrow();
-        }
-
-        switch (status)
-        {
-            case ok:
-                ++fetchHitCount_;
-                if (nodeObject)
-                    fetchSz_ += nodeObject->getData().size();
-                break;
-            case notFound:
-                break;
-            case dataCorrupt:
-                JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
-                break;
-            default:
-                JLOG(j_.warn()) << "Unknown status=" << status;
-                break;
-        }
-
-        if (nodeObject)
-            fetchReport.wasFound = true;
+        status = backend_->fetch(hash.data(), &nodeObject);
     }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.fatal()) << "Exception, " << e.what();
+        Rethrow();
+    }
+
+    switch (status)
+    {
+        case ok:
+            ++fetchHitCount_;
+            if (nodeObject)
+                fetchSz_ += nodeObject->getData().size();
+            break;
+        case notFound:
+            break;
+        case dataCorrupt:
+            JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
+            break;
+        default:
+            JLOG(j_.warn()) << "Unknown status=" << status;
+            break;
+    }
+
+    if (nodeObject)
+        fetchReport.wasFound = true;
 
     return nodeObject;
 }
