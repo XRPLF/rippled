@@ -19,7 +19,7 @@ Use `apt-get` to install the dependencies provided by the distribution
 
 ```
 $ apt-get update
-$ apt-get install -y gcc g++ wget git cmake protobuf-compiler libprotobuf-dev libssl-dev
+$ apt-get install -y gcc g++ wget git cmake pkg-config protobuf-compiler libprotobuf-dev libssl-dev
 ```
 
 Advanced users can choose to install newer versions of gcc, or the clang compiler.
