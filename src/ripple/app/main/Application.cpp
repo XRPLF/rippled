@@ -981,11 +981,6 @@ public:
     //
 
     void
-    onPrepare() override
-    {
-    }
-
-    void
     onStart() override
     {
         JLOG(m_journal.info()) << "Application starting. Version is "

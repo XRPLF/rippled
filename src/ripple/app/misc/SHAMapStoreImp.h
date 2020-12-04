@@ -246,14 +246,10 @@ private:
     // the main "run()".
     Health
     health();
+
     //
     // Stoppable
     //
-    void
-    onPrepare() override
-    {
-    }
-
     void
     onStart() override
     {
