@@ -123,12 +123,22 @@ buffersBegin(BufferSequence const& bufs)
         bufs);
 }
 
+template <typename BufferSequence>
+auto
+buffersEnd(BufferSequence const& bufs)
+{
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(
+        bufs);
+}
+
 /** Parse a message header
  * @return a seated optional if the message header was successfully
  *         parsed. An unseated optional otherwise, in which case
  *         @param ec contains more information:
  *         - set to `errc::success` if not enough bytes were present
  *         - set to `errc::no_message` if a valid header was not present
+ *         @bufs - sequence of input buffers, can't be empty
+ *         @size input data size
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
@@ -141,6 +151,7 @@ parseMessageHeader(
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
+    assert(iter != buffersEnd(bufs));
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1

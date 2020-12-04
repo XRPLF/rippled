@@ -1500,7 +1500,10 @@ vp_squelched=1
                     boost::asio::ip::address::from_string("172.1.1.100");
 
                 setEnv(outboundEnable);
-                auto request = ripple::makeRequest(true, env_.app().config());
+                auto request = ripple::makeRequest(
+                    true,
+                    env_.app().config().COMPRESSION,
+                    env_.app().config().VP_REDUCE_RELAY_ENABLE);
                 http_request_type http_request;
                 http_request.version(request.version());
                 http_request.base() = request.base();

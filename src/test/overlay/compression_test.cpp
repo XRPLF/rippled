@@ -445,7 +445,10 @@ public:
                 boost::asio::ip::address::from_string("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
-            auto request = ripple::makeRequest(true, env->app().config());
+            auto request = ripple::makeRequest(
+                true,
+                env->app().config().COMPRESSION,
+                env->app().config().VP_REDUCE_RELAY_ENABLE);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();

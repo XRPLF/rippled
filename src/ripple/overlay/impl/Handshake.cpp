@@ -28,7 +28,6 @@
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
-#include <regex>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
@@ -60,8 +59,13 @@ isFeatureValue(
     auto const fvalue = getFeatureValue(headers, feature);
     if (!fvalue)
         return false;
-    boost::regex rx(value);
-    return boost::regex_search(fvalue.value(), rx);
+    auto test = [&](auto r) {
+        boost::regex rx(r);
+        return boost::regex_search(fvalue.value(), rx);
+    };
+    // could be a single value or a comma separated list of values
+    return test("^" + value + "$") || test("^" + value + ",") ||
+        test("," + value + ",") + test("," + value + "$");
 }
 
 bool
@@ -73,12 +77,12 @@ featureEnabled(
 }
 
 std::string
-makeFeaturesRequestHeader(Config const& config)
+makeFeaturesRequestHeader(bool comprEnabled, bool vpReduceRelayEnabled)
 {
     std::stringstream str;
-    if (config.COMPRESSION)
+    if (comprEnabled)
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (config.VP_REDUCE_RELAY_ENABLE)
+    if (vpReduceRelayEnabled)
         str << FEATURE_VPRR << "=1";
     return str.str();
 }
@@ -86,12 +90,13 @@ makeFeaturesRequestHeader(Config const& config)
 std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
-    Config const& config)
+    bool comprEnabled,
+    bool vpReduceRelayEnabled)
 {
     std::stringstream str;
-    if (config.COMPRESSION && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
+    if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (config.VP_REDUCE_RELAY_ENABLE && featureEnabled(headers, FEATURE_VPRR))
+    if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
         str << FEATURE_VPRR << "=1";
     return str.str();
 }
@@ -354,7 +359,8 @@ verifyHandshake(
 }
 
 auto
-makeRequest(bool crawlPublic, Config const& config) -> request_type
+makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled)
+    -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
@@ -365,7 +371,9 @@ makeRequest(bool crawlPublic, Config const& config) -> request_type
     m.insert("Connection", "Upgrade");
     m.insert("Connect-As", "Peer");
     m.insert("Crawl", crawlPublic ? "public" : "private");
-    m.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(config));
+    m.insert(
+        "X-Protocol-Ctl",
+        makeFeaturesRequestHeader(comprEnabled, vpReduceRelayEnabled));
     return m;
 }
 
@@ -389,7 +397,11 @@ makeResponse(
     resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawlPublic ? "public" : "private");
     resp.insert(
-        "X-Protocol-Ctl", makeFeaturesResponseHeader(req, app.config()));
+        "X-Protocol-Ctl",
+        makeFeaturesResponseHeader(
+            req,
+            app.config().COMPRESSION,
+            app.config().VP_REDUCE_RELAY_ENABLE));
 
     buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
 

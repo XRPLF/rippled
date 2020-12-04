@@ -94,11 +94,12 @@ verifyHandshake(
 /** Make outbound http request
 
    @param crawlPublic if true then server's IP/Port are included in crawl
-   @param config server's configuration
+   @param comprEnabled if true then compression feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @return http request with empty body
  */
 request_type
-makeRequest(bool crawlPublic, Config const& config);
+makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled);
 
 /** Make http response
 
@@ -201,24 +202,27 @@ peerFeatureEnabled(
 }
 
 /** Make request header X-Protocol-Ctl value with supported features
-   @param config server's configuration
+   @param comprEnabled if true then compression feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
-makeFeaturesRequestHeader(Config const& config);
+makeFeaturesRequestHeader(bool comprEnabled, bool vpReduceRelayEnabled);
 
 /** Make response header X-Protocol-Ctl value with supported features.
     If the request has a feature that we support enabled
     and the feature's configuration is enabled then enable this feature in
     the response header.
    @param header request's header
-   @param config server's configuration
+   @param comprEnabled if true then compression feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
-    Config const& config);
+    bool comprEnabled,
+    bool vpReduceRelayEnabled);
 
 }  // namespace ripple
 
