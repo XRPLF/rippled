@@ -178,21 +178,15 @@ RootStoppable::isStopping() const
 }
 
 void
-RootStoppable::prepare()
-{
-    if (m_prepared.exchange(true) == false)
-        prepareRecursive();
-}
-
-void
 RootStoppable::start()
 {
     // Courtesy call to prepare.
-    if (m_prepared.exchange(true) == false)
-        prepareRecursive();
+    if (m_prepared.exchange(true))
+        return;
 
-    if (m_started.exchange(true) == false)
-        startRecursive();
+    prepareRecursive();
+    m_started.exchange(true);
+    startRecursive();
 }
 
 void

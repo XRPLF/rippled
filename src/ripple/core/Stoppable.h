@@ -360,17 +360,9 @@ public:
     bool
     isStopping() const;
 
-    /** Prepare all contained Stoppable objects.
-        This calls onPrepare for all Stoppable objects in the tree.
-        Calls made after the first have no effect.
-        Thread safety:
-            May be called from any thread.
-    */
-    void
-    prepare();
-
-    /** Start all contained Stoppable objects.
-        The default implementation does nothing.
+    /** Prepare and start all contained Stoppable objects.
+        This calls onPrepare for all Stoppable objects in the tree, bottom-up,
+        then calls onStart for the same, top-down.
         Calls made after the first have no effect.
         Thread safety:
             May be called from any thread.

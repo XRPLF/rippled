@@ -1631,7 +1631,6 @@ void
 ApplicationImp::doStart(bool withTimers)
 {
     startTimers_ = withTimers;
-    prepare();
     start();
 }
 
