@@ -261,8 +261,6 @@ private:
     void
     onStop() override;
     // Called when all child Stoppable objects have stoped
-    void
-    onChildrenStopped() override;
 };
 
 }  // namespace ripple
