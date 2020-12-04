@@ -403,17 +403,6 @@ public:
     alertable_sleep_until(std::chrono::system_clock::time_point const& t);
 
 private:
-    /*  Notify a root stoppable and children to stop, without waiting.
-        Has no effect if the stoppable was already notified.
-
-        Returns true on the first call to this method, false otherwise.
-
-        Thread safety:
-            Safe to call from any thread at any time.
-    */
-    bool
-    stopAsync(beast::Journal j);
-
     std::atomic<bool> m_prepared{false};
     std::atomic<bool> m_started{false};
     std::atomic<bool> m_calledStop{false};

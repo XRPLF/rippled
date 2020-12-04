@@ -195,13 +195,6 @@ RootStoppable::stop(beast::Journal j)
     // Must have a prior call to start()
     assert(m_started);
 
-    if (stopAsync(j))
-        stopRecursive(j);
-}
-
-bool
-RootStoppable::stopAsync(beast::Journal j)
-{
     bool alreadyCalled;
     {
         // Even though m_calledStop is atomic, we change its value under a
@@ -214,8 +207,8 @@ RootStoppable::stopAsync(beast::Journal j)
     if (alreadyCalled)
     {
         if (auto stream = j.warn())
-            stream << "Stoppable::stop called again";
-        return false;
+            stream << "RootStoppable::stop called again";
+        return;
     }
 
     // Wait until all in-flight JobQueue Jobs are completed.
@@ -224,7 +217,7 @@ RootStoppable::stopAsync(beast::Journal j)
 
     c_.notify_all();
     stopAsyncRecursive(j);
-    return true;
+    stopRecursive(j);
 }
 
 }  // namespace ripple
