@@ -297,6 +297,7 @@ runUnitTests(
                 boost::process::exe = exe_name, boost::process::args = args);
 
         int bad_child_exits = 0;
+        int terminated_child_exits = 0;
         for (auto& c : children)
         {
             try
@@ -309,10 +310,11 @@ runUnitTests(
             {
                 // wait throws if process was terminated with a signal
                 ++bad_child_exits;
+                ++terminated_child_exits;
             }
         }
 
-        parent_runner.add_failures(bad_child_exits);
+        parent_runner.add_failures(terminated_child_exits);
         anyMissing(parent_runner, multi_selector(pattern));
 
         if (parent_runner.any_failed() || bad_child_exits)
