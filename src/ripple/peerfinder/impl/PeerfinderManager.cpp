@@ -228,11 +228,6 @@ public:
     }
 
     void
-    onStart() override
-    {
-    }
-
-    void
     onStop() override
     {
         close();

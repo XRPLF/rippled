@@ -150,7 +150,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal)
-    : SHAMapStore(parent)
+    : Stoppable("SHAMapStore", parent)
     , app_(app)
     , scheduler_(scheduler)
     , journal_(journal)
@@ -731,6 +731,7 @@ SHAMapStoreImp::health()
 void
 SHAMapStoreImp::onStop()
 {
+    // This is really a check for `if (thread_)`.
     if (deleteInterval_)
     {
         {
@@ -738,26 +739,12 @@ SHAMapStoreImp::onStop()
             stop_ = true;
         }
         cond_.notify_one();
+        // stopped() will be called by the thread_ running run(),
+        // when it reaches the check for stop_.
     }
     else
     {
-        stopped();
-    }
-}
-
-void
-SHAMapStoreImp::onChildrenStopped()
-{
-    if (deleteInterval_)
-    {
-        {
-            std::lock_guard lock(mutex_);
-            stop_ = true;
-        }
-        cond_.notify_one();
-    }
-    else
-    {
+        // There is no thread running run(), so we must call stopped().
         stopped();
     }
 }

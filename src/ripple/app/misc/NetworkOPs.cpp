@@ -607,7 +607,33 @@ public:
     // Stoppable.
 
     void
-    onStop() override;
+    onStop() override
+    {
+        {
+            boost::system::error_code ec;
+            heartbeatTimer_.cancel(ec);
+            if (ec)
+            {
+                JLOG(m_journal.error())
+                    << "NetworkOPs: heartbeatTimer cancel error: "
+                    << ec.message();
+            }
+
+            ec.clear();
+            clusterTimer_.cancel(ec);
+            if (ec)
+            {
+                JLOG(m_journal.error())
+                    << "NetworkOPs: clusterTimer cancel error: "
+                    << ec.message();
+            }
+        }
+        // Make sure that any waitHandlers pending in our timers are done
+        // before we declare ourselves stopped.
+        using namespace std::chrono_literals;
+        waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
+        stopped();
+    }
 
 private:
     void
@@ -673,7 +699,6 @@ private:
     ConsensusPhase mLastConsensusPhase;
 
     LedgerMaster& m_ledgerMaster;
-    std::shared_ptr<InboundLedger> mAcquiringLedger;
 
     SubInfoMapType mSubAccount;
     SubInfoMapType mSubRTAccount;
@@ -3514,34 +3539,6 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
     }
     mRpcSubMap.erase(strUrl);
     return true;
-}
-
-void
-NetworkOPsImp::onStop()
-{
-    mAcquiringLedger.reset();
-    {
-        boost::system::error_code ec;
-        heartbeatTimer_.cancel(ec);
-        if (ec)
-        {
-            JLOG(m_journal.error())
-                << "NetworkOPs: heartbeatTimer cancel error: " << ec.message();
-        }
-
-        ec.clear();
-        clusterTimer_.cancel(ec);
-        if (ec)
-        {
-            JLOG(m_journal.error())
-                << "NetworkOPs: clusterTimer cancel error: " << ec.message();
-        }
-    }
-    // Make sure that any waitHandlers pending in our timers are done
-    // before we declare ourselves stopped.
-    using namespace std::chrono_literals;
-    waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
-    stopped();
 }
 
 #ifndef USE_NEW_BOOK_PAGE
