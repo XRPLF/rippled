@@ -26,7 +26,6 @@
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
-#include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/protocol/SystemParameters.h>
 
 #include <thread>
