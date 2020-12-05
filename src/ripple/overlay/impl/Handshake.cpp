@@ -56,16 +56,13 @@ isFeatureValue(
     std::string const& feature,
     std::string const& value)
 {
-    auto const fvalue = getFeatureValue(headers, feature);
-    if (!fvalue)
-        return false;
-    auto test = [&](auto r) {
-        boost::regex rx(r);
-        return boost::regex_search(fvalue.value(), rx);
-    };
-    // could be a single value or a comma separated list of values
-    return test("^" + value + "$") || test("^" + value + ",") ||
-        test("," + value + ",") + test("," + value + "$");
+    if (auto const fvalue = getFeatureValue(headers, feature))
+    {
+        auto const values = beast::rfc2616::split_commas(fvalue.value());
+        return std::find(values.begin(), values.end(), value) != values.end();
+    }
+
+    return false;
 }
 
 bool
