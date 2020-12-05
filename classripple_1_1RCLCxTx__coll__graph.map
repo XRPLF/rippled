@@ -1,9 +1,10 @@
 <map id="ripple::RCLCxTx" name="ripple::RCLCxTx">
-<area shape="rect" id="node1" title="Represents a transaction in RCLConsensus." alt="" coords="235,407,359,433"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapItem.html" title=" " alt="" coords="222,317,373,344"/>
-<area shape="rect" id="node3" href="$classripple_1_1base__uint.html" title=" " alt="" coords="95,213,236,255"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,95,173,136"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="38,5,141,32"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="197,102,285,129"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="260,213,425,255"/>
+<area shape="rect" id="node1" title="Represents a transaction in RCLConsensus." alt="" coords="965,78,1089,105"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapItem.html" title=" " alt="" coords="741,78,892,105"/>
+<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="488,5,651,47"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="499,71,640,112"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,41,389,83"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,49,108,75"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,109,349,135"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="487,136,652,177"/>
 </map>

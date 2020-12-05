@@ -13,7 +13,7 @@
 <area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,600,349,627"/>
 <area shape="rect" id="node23" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="526,613,657,640"/>
 <area shape="rect" id="node26" href="$classripple_1_1base__uint.html" title=" " alt="" coords="488,547,695,589"/>
-<area shape="rect" id="node30" href="$classripple_1_1base__uint.html" title=" " alt="" coords="521,454,662,495"/>
+<area shape="rect" id="node30" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="521,454,662,495"/>
 <area shape="rect" id="node31" href="$classripple_1_1base__uint.html" title=" " alt="" coords="521,722,662,763"/>
 <area shape="rect" id="node44" href="$classripple_1_1STTx.html" title=" " alt="" coords="841,876,940,903"/>
 <area shape="rect" id="node11" href="$classripple_1_1test_1_1ManualTimeKeeper.html" title=" " alt="" coords="1544,138,1724,179"/>

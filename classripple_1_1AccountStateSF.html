@@ -106,7 +106,7 @@ Collaboration diagram for ripple::AccountStateSF:</div>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="1130,694,1301,735"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="309,822,477,863"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="512,933,719,960"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="757,715,899,757"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="757,715,899,757"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="757,883,899,925"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="349,747,437,773"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="1120,764,1311,791"/>
@@ -124,8 +124,8 @@ Collaboration diagram for ripple::AccountStateSF:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a1390ee25ddfc2103e72bde80f8274bbf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AccountStateSF.html#a1390ee25ddfc2103e72bde80f8274bbf">AccountStateSF</a> (<a class="el" href="classripple_1_1NodeStore_1_1Database.html">NodeStore::Database</a> &amp;db, <a class="el" href="classripple_1_1AbstractFetchPackContainer.html">AbstractFetchPackContainer</a> &amp;fp)</td></tr>
 <tr class="separator:a1390ee25ddfc2103e72bde80f8274bbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ce71dfd93bbdb8584da4677ab0c235c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AccountStateSF.html#a6ce71dfd93bbdb8584da4677ab0c235c">gotNode</a> (bool fromFilter, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;nodeHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;nodeData, <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a> type) const override</td></tr>
-<tr class="separator:a6ce71dfd93bbdb8584da4677ab0c235c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65c0d95f27ac37c25f70915e3704ff71"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AccountStateSF.html#a65c0d95f27ac37c25f70915e3704ff71">gotNode</a> (bool fromFilter, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;nodeHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;nodeData, <a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type) const override</td></tr>
+<tr class="separator:a65c0d95f27ac37c25f70915e3704ff71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08d504422867106427aedf103af743bb"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AccountStateSF.html#a08d504422867106427aedf103af743bb">getNode</a> (<a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;nodeHash) const override</td></tr>
 <tr class="separator:a08d504422867106427aedf103af743bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -171,8 +171,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a6ce71dfd93bbdb8584da4677ab0c235c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ce71dfd93bbdb8584da4677ab0c235c">&#9670;&nbsp;</a></span>gotNode()</h2>
+<a id="a65c0d95f27ac37c25f70915e3704ff71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65c0d95f27ac37c25f70915e3704ff71">&#9670;&nbsp;</a></span>gotNode()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -207,7 +207,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a>&#160;</td>
           <td class="paramname"><em>type</em>&#160;</td>
         </tr>
         <tr>
@@ -223,7 +223,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1SHAMapSyncFilter.html#acdf3556e82ae8ac3b1b40cc66f692f08">ripple::SHAMapSyncFilter</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1SHAMapSyncFilter.html#a52d6a1cab3037707977a764d146d939f">ripple::SHAMapSyncFilter</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="AccountStateSF_8cpp_source.html#l00025">25</a> of file <a class="el" href="AccountStateSF_8cpp_source.html">AccountStateSF.cpp</a>.</p>
 

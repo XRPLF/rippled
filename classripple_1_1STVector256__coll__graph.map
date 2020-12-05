@@ -6,7 +6,7 @@
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="262,5,349,32"/>
 <area shape="rect" id="node6" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="239,56,371,83"/>
 <area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="831,126,973,167"/>
-<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="509,131,651,173"/>
+<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="509,131,651,173"/>
 <area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,123,389,165"/>
 <area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,131,108,157"/>
 <area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,191,349,217"/>

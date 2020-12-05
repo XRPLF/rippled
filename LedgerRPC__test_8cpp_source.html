@@ -320,10 +320,10 @@ $(function() {
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        Env env{*<span class="keyword">this</span>, envconfig(no_admin)};</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        env.close();</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        <span class="comment">//        env.close();</span></div>
 <div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        jvParams[jss::ledger_index] = 3u;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        jvParams[jss::ledger_index] = 1u;</div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        jvParams[jss::full] = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> jrr =</div>
 <div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
@@ -379,7 +379,7 @@ $(function() {
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            BEAST_EXPECT(jrr.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::node));</div>
 <div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            BEAST_EXPECT(jrr[jss::node][jss::Account] == alice.human());</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;10000000000&quot;</span>);</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;10000000000&quot;</span>);</div>
 <div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            accountRootIndex = jrr[jss::index].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
 <div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        }</div>
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        {</div>
@@ -407,7 +407,7 @@ $(function() {
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            BEAST_EXPECT(!jrr.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::node_binary));</div>
 <div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            BEAST_EXPECT(jrr.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::node));</div>
 <div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            BEAST_EXPECT(jrr[jss::node][jss::Account] == alice.human());</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;10000000000&quot;</span>);</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;10000000000&quot;</span>);</div>
 <div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        }</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        {</div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            <span class="comment">// Request alice&#39;s account root by index, but with binary == false.</span></div>
@@ -418,7 +418,7 @@ $(function() {
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            BEAST_EXPECT(jrr.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::node));</div>
 <div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            BEAST_EXPECT(jrr[jss::node][jss::Account] == alice.human());</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;10000000000&quot;</span>);</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;10000000000&quot;</span>);</div>
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        }</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        {</div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <span class="comment">// Request using a corrupted AccountID.</span></div>
@@ -464,8 +464,8 @@ $(function() {
 <div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == jss::Check);</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a6ce87ac14b2fb3093c011c546163c7f0">sfSendMax</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;100000000&quot;</span>);</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == jss::Check);</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#aa693ff83cdfe0f5cb821db0000b22928">sfSendMax</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;100000000&quot;</span>);</div>
 <div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        }</div>
 <div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        {</div>
 <div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            <span class="comment">// Request an index that is not a check.  We&#39;ll use alice&#39;s</span></div>
@@ -516,10 +516,10 @@ $(function() {
 <div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160; </div>
 <div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] ==</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] ==</div>
 <div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;                jss::DepositPreauth);</div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">sfAccount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == alice.human());</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a3f9226cc13c50ec1c8dd129f3f55bce0">sfAuthorize</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == becky.human());</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == alice.human());</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ab8cfecc4098614f8b9c6c0bc8d9723e7">sfAuthorize</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == becky.human());</div>
 <div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;            depositPreauthIndex = jrr[jss::node][jss::index].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
 <div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        }</div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        {</div>
@@ -531,10 +531,10 @@ $(function() {
 <div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] ==</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] ==</div>
 <div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;                jss::DepositPreauth);</div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">sfAccount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == alice.human());</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a3f9226cc13c50ec1c8dd129f3f55bce0">sfAuthorize</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == becky.human());</div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == alice.human());</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ab8cfecc4098614f8b9c6c0bc8d9723e7">sfAuthorize</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == becky.human());</div>
 <div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;        }</div>
 <div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;        {</div>
 <div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            <span class="comment">// Malformed request: deposit_preauth neither object nor string.</span></div>
@@ -658,7 +658,7 @@ $(function() {
 <div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;            jvParams[jss::ledger_hash] = ledgerHash;</div>
 <div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>].<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() == 32);</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>].<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() == 32);</div>
 <div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;        }</div>
 <div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        {</div>
 <div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;            <span class="comment">// Locate directory by directory root.</span></div>
@@ -688,7 +688,7 @@ $(function() {
 <div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;            BEAST_EXPECT(jrr[jss::index] != dirRootIndex);</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>].<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() == 2);</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>].<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() == 2);</div>
 <div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;        }</div>
 <div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        {</div>
 <div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;            <span class="comment">// Locate directory by owner and sub_index.</span></div>
@@ -700,7 +700,7 @@ $(function() {
 <div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;            BEAST_EXPECT(jrr[jss::index] != dirRootIndex);</div>
-<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>].<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() == 2);</div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>].<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() == 2);</div>
 <div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;        }</div>
 <div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;        {</div>
 <div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;            <span class="comment">// Null directory argument.</span></div>
@@ -778,7 +778,7 @@ $(function() {
 <div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;            jv[jss::Account] = account.human();</div>
 <div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;            jv[jss::Destination] = to.human();</div>
 <div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;            jv[jss::Amount] = amount.getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            jv[<a class="code" href="namespaceripple.html#a6387398e0f4ed9ffc061fa818d0ca765">sfFinishAfter</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] =</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            jv[<a class="code" href="namespaceripple.html#a512ffe74f26a9616aa021796b3a2a227">sfFinishAfter</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] =</div>
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;                cancelAfter.time_since_epoch().count() + 2;</div>
 <div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;            <span class="keywordflow">return</span> jv;</div>
 <div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;        };</div>
@@ -964,8 +964,8 @@ $(function() {
 <div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;            jv[jss::Account] = account.human();</div>
 <div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;            jv[jss::Destination] = to.human();</div>
 <div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;            jv[jss::Amount] = amount.getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;            jv[<a class="code" href="namespaceripple.html#a6cc6560106db63c65ae13706017386c6">sfSettleDelay</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] = settleDelay.count();</div>
-<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;            jv[<a class="code" href="namespaceripple.html#a30b618e8944f06b6bec7ee4e4bc0662a">sfPublicKey</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(pk.slice());</div>
+<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;            jv[<a class="code" href="namespaceripple.html#aa1125568f116779d0ad145c06a607791">sfSettleDelay</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] = settleDelay.count();</div>
+<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;            jv[<a class="code" href="namespaceripple.html#a16991de33a4e83d355de9c387c712a4e">sfPublicKey</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(pk.slice());</div>
 <div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;            <span class="keywordflow">return</span> jv;</div>
 <div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;        };</div>
 <div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160; </div>
@@ -983,9 +983,9 @@ $(function() {
 <div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;            jvParams[jss::ledger_hash] = ledgerHash;</div>
 <div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ae9a68b1471828c45f17351005e7f79fb">sfAmount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;57000000&quot;</span>);</div>
-<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;0&quot;</span>);</div>
-<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a6cc6560106db63c65ae13706017386c6">sfSettleDelay</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == 18);</div>
+<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a29758397ce451beaa436c3a9dfc83030">sfAmount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;57000000&quot;</span>);</div>
+<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == <span class="stringliteral">&quot;0&quot;</span>);</div>
+<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#aa1125568f116779d0ad145c06a607791">sfSettleDelay</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == 18);</div>
 <div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;        }</div>
 <div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;        {</div>
 <div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;            <span class="comment">// Request an index that is not a payment channel.</span></div>
@@ -1029,9 +1029,9 @@ $(function() {
 <div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>][jss::value] == <span class="stringliteral">&quot;-97&quot;</span>);</div>
+<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>][jss::value] == <span class="stringliteral">&quot;-97&quot;</span>);</div>
 <div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a4f29578bd1b3d2d1225a87890489e7ca">sfHighLimit</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>][jss::value] == <span class="stringliteral">&quot;999&quot;</span>);</div>
+<div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>][jss::value] == <span class="stringliteral">&quot;999&quot;</span>);</div>
 <div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;        }</div>
 <div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;        {</div>
 <div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160;            <span class="comment">// ripple_state is not an object.</span></div>
@@ -1208,8 +1208,8 @@ $(function() {
 <div class="line"><a name="l01137"></a><span class="lineno"> 1137</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jrr = env.rpc(</div>
 <div class="line"><a name="l01138"></a><span class="lineno"> 1138</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_entry&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
 <div class="line"><a name="l01139"></a><span class="lineno"> 1139</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l01140"></a><span class="lineno"> 1140</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == jss::Ticket);</div>
-<div class="line"><a name="l01141"></a><span class="lineno"> 1141</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#ad19efd60683c2165b7c961432ab0f012">sfTicketSequence</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == tkt1);</div>
+<div class="line"><a name="l01140"></a><span class="lineno"> 1140</span>&#160;                jrr[jss::node][<a class="code" href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">sfLedgerEntryType</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == jss::Ticket);</div>
+<div class="line"><a name="l01141"></a><span class="lineno"> 1141</span>&#160;            BEAST_EXPECT(jrr[jss::node][<a class="code" href="namespaceripple.html#a385ab11f319f7b8d477e2ccff9f19cbc">sfTicketSequence</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] == tkt1);</div>
 <div class="line"><a name="l01142"></a><span class="lineno"> 1142</span>&#160;        }</div>
 <div class="line"><a name="l01143"></a><span class="lineno"> 1143</span>&#160;        {</div>
 <div class="line"><a name="l01144"></a><span class="lineno"> 1144</span>&#160;            <span class="comment">// Second real ticket requested by account and sequence.</span></div>
@@ -1412,415 +1412,413 @@ $(function() {
 <div class="line"><a name="l01345"></a><span class="lineno"> 1345</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
 <div class="line"><a name="l01346"></a><span class="lineno"> 1346</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
 <div class="line"><a name="l01347"></a><span class="lineno"> 1347</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01348"></a><span class="lineno"> 1348</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
-<div class="line"><a name="l01349"></a><span class="lineno"> 1349</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
-<div class="line"><a name="l01350"></a><span class="lineno"> 1350</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;3&quot;</span>);</div>
-<div class="line"><a name="l01351"></a><span class="lineno"> 1351</span>&#160; </div>
-<div class="line"><a name="l01352"></a><span class="lineno"> 1352</span>&#160;            <span class="comment">// request with non-string ledger_hash</span></div>
-<div class="line"><a name="l01353"></a><span class="lineno"> 1353</span>&#160;            jvParams[jss::ledger_hash] = 2;</div>
-<div class="line"><a name="l01354"></a><span class="lineno"> 1354</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01355"></a><span class="lineno"> 1355</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01356"></a><span class="lineno"> 1356</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01357"></a><span class="lineno"> 1357</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01358"></a><span class="lineno"> 1358</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a name="l01359"></a><span class="lineno"> 1359</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerHashNotString&quot;</span>);</div>
-<div class="line"><a name="l01360"></a><span class="lineno"> 1360</span>&#160; </div>
-<div class="line"><a name="l01361"></a><span class="lineno"> 1361</span>&#160;            <span class="comment">// malformed (non hex) hash</span></div>
-<div class="line"><a name="l01362"></a><span class="lineno"> 1362</span>&#160;            jvParams[jss::ledger_hash] =</div>
-<div class="line"><a name="l01363"></a><span class="lineno"> 1363</span>&#160;                <span class="stringliteral">&quot;ZZZZZZZZZZZD92E49E75D81A8826A2E6&quot;</span></div>
-<div class="line"><a name="l01364"></a><span class="lineno"> 1364</span>&#160;                <span class="stringliteral">&quot;5A75FD71FC3FD6F36FEB803C5F1D812D&quot;</span>;</div>
-<div class="line"><a name="l01365"></a><span class="lineno"> 1365</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01366"></a><span class="lineno"> 1366</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01367"></a><span class="lineno"> 1367</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01368"></a><span class="lineno"> 1368</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01369"></a><span class="lineno"> 1369</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a name="l01370"></a><span class="lineno"> 1370</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerHashMalformed&quot;</span>);</div>
-<div class="line"><a name="l01371"></a><span class="lineno"> 1371</span>&#160; </div>
-<div class="line"><a name="l01372"></a><span class="lineno"> 1372</span>&#160;            <span class="comment">// properly formed, but just doesn&#39;t exist</span></div>
-<div class="line"><a name="l01373"></a><span class="lineno"> 1373</span>&#160;            jvParams[jss::ledger_hash] =</div>
-<div class="line"><a name="l01374"></a><span class="lineno"> 1374</span>&#160;                <span class="stringliteral">&quot;8C3EEDB3124D92E49E75D81A8826A2E6&quot;</span></div>
-<div class="line"><a name="l01375"></a><span class="lineno"> 1375</span>&#160;                <span class="stringliteral">&quot;5A75FD71FC3FD6F36FEB803C5F1D812D&quot;</span>;</div>
-<div class="line"><a name="l01376"></a><span class="lineno"> 1376</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01379"></a><span class="lineno"> 1379</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01380"></a><span class="lineno"> 1380</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;lgrNotFound&quot;</span>);</div>
-<div class="line"><a name="l01381"></a><span class="lineno"> 1381</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerNotFound&quot;</span>);</div>
-<div class="line"><a name="l01382"></a><span class="lineno"> 1382</span>&#160;        }</div>
-<div class="line"><a name="l01383"></a><span class="lineno"> 1383</span>&#160; </div>
-<div class="line"><a name="l01384"></a><span class="lineno"> 1384</span>&#160;        {</div>
-<div class="line"><a name="l01385"></a><span class="lineno"> 1385</span>&#160;            <span class="comment">// access via the ledger_index field, keyword index values</span></div>
-<div class="line"><a name="l01386"></a><span class="lineno"> 1386</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l01387"></a><span class="lineno"> 1387</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;closed&quot;</span>;</div>
-<div class="line"><a name="l01388"></a><span class="lineno"> 1388</span>&#160;            <span class="keyword">auto</span> jrr = env.rpc(</div>
-<div class="line"><a name="l01389"></a><span class="lineno"> 1389</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01390"></a><span class="lineno"> 1390</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01391"></a><span class="lineno"> 1391</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01392"></a><span class="lineno"> 1392</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
-<div class="line"><a name="l01393"></a><span class="lineno"> 1393</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
-<div class="line"><a name="l01394"></a><span class="lineno"> 1394</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;5&quot;</span>);</div>
-<div class="line"><a name="l01395"></a><span class="lineno"> 1395</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_index));</div>
-<div class="line"><a name="l01396"></a><span class="lineno"> 1396</span>&#160; </div>
-<div class="line"><a name="l01397"></a><span class="lineno"> 1397</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;validated&quot;</span>;</div>
-<div class="line"><a name="l01398"></a><span class="lineno"> 1398</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01400"></a><span class="lineno"> 1400</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01402"></a><span class="lineno"> 1402</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
-<div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
-<div class="line"><a name="l01404"></a><span class="lineno"> 1404</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;5&quot;</span>);</div>
-<div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160; </div>
-<div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
-<div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01409"></a><span class="lineno"> 1409</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01411"></a><span class="lineno"> 1411</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
-<div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;6&quot;</span>);</div>
-<div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));</div>
-<div class="line"><a name="l01414"></a><span class="lineno"> 1414</span>&#160; </div>
-<div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;            <span class="comment">// ask for a bad ledger keyword</span></div>
-<div class="line"><a name="l01416"></a><span class="lineno"> 1416</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;invalid&quot;</span>;</div>
-<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01420"></a><span class="lineno"> 1420</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a name="l01422"></a><span class="lineno"> 1422</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerIndexMalformed&quot;</span>);</div>
-<div class="line"><a name="l01423"></a><span class="lineno"> 1423</span>&#160; </div>
-<div class="line"><a name="l01424"></a><span class="lineno"> 1424</span>&#160;            <span class="comment">// numeric index</span></div>
-<div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> i : {1, 2, 3, 4, 5, 6})</div>
-<div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160;            {</div>
-<div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160;                jvParams[jss::ledger_index] = i;</div>
-<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;                jrr = env.rpc(</div>
-<div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160;                    <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;                    <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160;                    boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;                BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
-<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;                <span class="keywordflow">if</span> (i &lt; 6)</div>
-<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;                    BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
-<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160;                    jrr[jss::ledger][jss::ledger_index] == <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
-<div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160;            }</div>
-<div class="line"><a name="l01438"></a><span class="lineno"> 1438</span>&#160; </div>
-<div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;            <span class="comment">// numeric index - out of range</span></div>
-<div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160;            jvParams[jss::ledger_index] = 7;</div>
-<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;            jrr = env.rpc(</div>
-<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
-<div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;lgrNotFound&quot;</span>);</div>
-<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerNotFound&quot;</span>);</div>
-<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160;        }</div>
-<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160;    }</div>
-<div class="line"><a name="l01449"></a><span class="lineno"> 1449</span>&#160; </div>
-<div class="line"><a name="l01450"></a><span class="lineno"> 1450</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l01451"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80"> 1451</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80">testNoQueue</a>()</div>
-<div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160;    {</div>
-<div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;        testcase(<span class="stringliteral">&quot;Ledger with queueing disabled&quot;</span>);</div>
-<div class="line"><a name="l01454"></a><span class="lineno"> 1454</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l01455"></a><span class="lineno"> 1455</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l01456"></a><span class="lineno"> 1456</span>&#160; </div>
-<div class="line"><a name="l01457"></a><span class="lineno"> 1457</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a name="l01458"></a><span class="lineno"> 1458</span>&#160;        jv[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
-<div class="line"><a name="l01459"></a><span class="lineno"> 1459</span>&#160;        jv[jss::queue] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01460"></a><span class="lineno"> 1460</span>&#160;        jv[jss::expand] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160; </div>
-<div class="line"><a name="l01462"></a><span class="lineno"> 1462</span>&#160;        <span class="keyword">auto</span> jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;        BEAST_EXPECT(!jrr.isMember(jss::queue_data));</div>
-<div class="line"><a name="l01464"></a><span class="lineno"> 1464</span>&#160;    }</div>
-<div class="line"><a name="l01465"></a><span class="lineno"> 1465</span>&#160; </div>
-<div class="line"><a name="l01466"></a><span class="lineno"> 1466</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l01467"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b"> 1467</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b">testQueue</a>()</div>
-<div class="line"><a name="l01468"></a><span class="lineno"> 1468</span>&#160;    {</div>
-<div class="line"><a name="l01469"></a><span class="lineno"> 1469</span>&#160;        testcase(<span class="stringliteral">&quot;Ledger with Queued Transactions&quot;</span>);</div>
-<div class="line"><a name="l01470"></a><span class="lineno"> 1470</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l01471"></a><span class="lineno"> 1471</span>&#160;        Env env{*<span class="keyword">this</span>, envconfig([](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
-<div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;                    <span class="keyword">auto</span>&amp; section = cfg-&gt;section(<span class="stringliteral">&quot;transaction_queue&quot;</span>);</div>
-<div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160;                    section.set(<span class="stringliteral">&quot;minimum_txn_in_ledger_standalone&quot;</span>, <span class="stringliteral">&quot;3&quot;</span>);</div>
-<div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;                    section.set(<span class="stringliteral">&quot;normal_consensus_increase_percent&quot;</span>, <span class="stringliteral">&quot;0&quot;</span>);</div>
-<div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;                    <span class="keywordflow">return</span> cfg;</div>
-<div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160;                })};</div>
-<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160; </div>
-<div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;        jv[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
-<div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;        jv[jss::queue] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160;        jv[jss::expand] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01482"></a><span class="lineno"> 1482</span>&#160; </div>
-<div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;        Account <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
-<div class="line"><a name="l01484"></a><span class="lineno"> 1484</span>&#160;        Account <span class="keyword">const</span> bob{<span class="stringliteral">&quot;bob&quot;</span>};</div>
-<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;        Account <span class="keyword">const</span> charlie{<span class="stringliteral">&quot;charlie&quot;</span>};</div>
-<div class="line"><a name="l01486"></a><span class="lineno"> 1486</span>&#160;        Account <span class="keyword">const</span> daria{<span class="stringliteral">&quot;daria&quot;</span>};</div>
-<div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;        env.fund(XRP(10000), alice);</div>
-<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;        env.fund(XRP(10000), bob);</div>
-<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160;        env.close();</div>
-<div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;        env.fund(XRP(10000), charlie);</div>
-<div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160;        env.fund(XRP(10000), daria);</div>
-<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;        env.close();</div>
-<div class="line"><a name="l01493"></a><span class="lineno"> 1493</span>&#160; </div>
-<div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160;        <span class="keyword">auto</span> jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160;        BEAST_EXPECT(!jrr.isMember(jss::queue_data));</div>
-<div class="line"><a name="l01496"></a><span class="lineno"> 1496</span>&#160; </div>
-<div class="line"><a name="l01497"></a><span class="lineno"> 1497</span>&#160;        <span class="comment">// Fill the open ledger</span></div>
-<div class="line"><a name="l01498"></a><span class="lineno"> 1498</span>&#160;        <span class="keywordflow">for</span> (;;)</div>
-<div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160;        {</div>
-<div class="line"><a name="l01500"></a><span class="lineno"> 1500</span>&#160;            <span class="keyword">auto</span> metrics = env.app().getTxQ().getMetrics(*env.current());</div>
-<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160;            <span class="keywordflow">if</span> (metrics.openLedgerFeeLevel &gt; metrics.minProcessingFeeLevel)</div>
-<div class="line"><a name="l01502"></a><span class="lineno"> 1502</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01503"></a><span class="lineno"> 1503</span>&#160;            env(noop(alice));</div>
-<div class="line"><a name="l01504"></a><span class="lineno"> 1504</span>&#160;        }</div>
-<div class="line"><a name="l01505"></a><span class="lineno"> 1505</span>&#160; </div>
-<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160;        BEAST_EXPECT(env.current()-&gt;info().seq == 5);</div>
-<div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;        <span class="comment">// Put some txs in the queue</span></div>
-<div class="line"><a name="l01508"></a><span class="lineno"> 1508</span>&#160;        <span class="comment">// Alice</span></div>
-<div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160;        <span class="keyword">auto</span> aliceSeq = env.seq(alice);</div>
-<div class="line"><a name="l01510"></a><span class="lineno"> 1510</span>&#160;        env(pay(alice, <span class="stringliteral">&quot;george&quot;</span>, XRP(1000)),</div>
-<div class="line"><a name="l01511"></a><span class="lineno"> 1511</span>&#160;            json(R<span class="stringliteral">&quot;({&quot;LastLedgerSequence&quot;:7})&quot;),</span></div>
-<div class="line"><a name="l01512"></a><span class="lineno"> 1512</span>&#160;<span class="stringliteral">            ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</span></div>
-<div class="line"><a name="l01513"></a><span class="lineno"> 1513</span>&#160;<span class="stringliteral">        env(offer(alice, XRP(50000), alice[</span><span class="stringliteral">&quot;USD&quot;</span>](5000)),</div>
-<div class="line"><a name="l01514"></a><span class="lineno"> 1514</span>&#160;            seq(aliceSeq + 1),</div>
-<div class="line"><a name="l01515"></a><span class="lineno"> 1515</span>&#160;            ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</div>
-<div class="line"><a name="l01516"></a><span class="lineno"> 1516</span>&#160;        env(noop(alice), seq(aliceSeq + 2), ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</div>
-<div class="line"><a name="l01517"></a><span class="lineno"> 1517</span>&#160;        <span class="comment">// Bob</span></div>
-<div class="line"><a name="l01518"></a><span class="lineno"> 1518</span>&#160;        <span class="keyword">auto</span> batch = [&amp;env](Account a) {</div>
-<div class="line"><a name="l01519"></a><span class="lineno"> 1519</span>&#160;            <span class="keyword">auto</span> aSeq = env.seq(a);</div>
-<div class="line"><a name="l01520"></a><span class="lineno"> 1520</span>&#160;            <span class="comment">// Enough fee to get in front of alice in the queue</span></div>
-<div class="line"><a name="l01521"></a><span class="lineno"> 1521</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
-<div class="line"><a name="l01522"></a><span class="lineno"> 1522</span>&#160;            {</div>
-<div class="line"><a name="l01523"></a><span class="lineno"> 1523</span>&#160;                env(noop(a), fee(1000 + i), seq(aSeq + i), ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</div>
-<div class="line"><a name="l01524"></a><span class="lineno"> 1524</span>&#160;            }</div>
-<div class="line"><a name="l01525"></a><span class="lineno"> 1525</span>&#160;        };</div>
-<div class="line"><a name="l01526"></a><span class="lineno"> 1526</span>&#160;        batch(bob);</div>
-<div class="line"><a name="l01527"></a><span class="lineno"> 1527</span>&#160;        <span class="comment">// Charlie</span></div>
-<div class="line"><a name="l01528"></a><span class="lineno"> 1528</span>&#160;        batch(charlie);</div>
-<div class="line"><a name="l01529"></a><span class="lineno"> 1529</span>&#160;        <span class="comment">// Daria</span></div>
-<div class="line"><a name="l01530"></a><span class="lineno"> 1530</span>&#160;        batch(daria);</div>
-<div class="line"><a name="l01531"></a><span class="lineno"> 1531</span>&#160; </div>
-<div class="line"><a name="l01532"></a><span class="lineno"> 1532</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01533"></a><span class="lineno"> 1533</span>&#160;        BEAST_EXPECT(jrr[jss::queue_data].size() == 33);</div>
-<div class="line"><a name="l01534"></a><span class="lineno"> 1534</span>&#160; </div>
-<div class="line"><a name="l01535"></a><span class="lineno"> 1535</span>&#160;        <span class="comment">// Close enough ledgers so that alice&#39;s first tx expires.</span></div>
+<div class="line"><a name="l01348"></a><span class="lineno"> 1348</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a name="l01349"></a><span class="lineno"> 1349</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerHashMalformed&quot;</span>);</div>
+<div class="line"><a name="l01350"></a><span class="lineno"> 1350</span>&#160; </div>
+<div class="line"><a name="l01351"></a><span class="lineno"> 1351</span>&#160;            <span class="comment">// request with non-string ledger_hash</span></div>
+<div class="line"><a name="l01352"></a><span class="lineno"> 1352</span>&#160;            jvParams[jss::ledger_hash] = 2;</div>
+<div class="line"><a name="l01353"></a><span class="lineno"> 1353</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01354"></a><span class="lineno"> 1354</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01355"></a><span class="lineno"> 1355</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01356"></a><span class="lineno"> 1356</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01357"></a><span class="lineno"> 1357</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a name="l01358"></a><span class="lineno"> 1358</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerHashNotString&quot;</span>);</div>
+<div class="line"><a name="l01359"></a><span class="lineno"> 1359</span>&#160; </div>
+<div class="line"><a name="l01360"></a><span class="lineno"> 1360</span>&#160;            <span class="comment">// malformed (non hex) hash</span></div>
+<div class="line"><a name="l01361"></a><span class="lineno"> 1361</span>&#160;            jvParams[jss::ledger_hash] =</div>
+<div class="line"><a name="l01362"></a><span class="lineno"> 1362</span>&#160;                <span class="stringliteral">&quot;ZZZZZZZZZZZD92E49E75D81A8826A2E6&quot;</span></div>
+<div class="line"><a name="l01363"></a><span class="lineno"> 1363</span>&#160;                <span class="stringliteral">&quot;5A75FD71FC3FD6F36FEB803C5F1D812D&quot;</span>;</div>
+<div class="line"><a name="l01364"></a><span class="lineno"> 1364</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01365"></a><span class="lineno"> 1365</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01366"></a><span class="lineno"> 1366</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01367"></a><span class="lineno"> 1367</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01368"></a><span class="lineno"> 1368</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a name="l01369"></a><span class="lineno"> 1369</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerHashMalformed&quot;</span>);</div>
+<div class="line"><a name="l01370"></a><span class="lineno"> 1370</span>&#160; </div>
+<div class="line"><a name="l01371"></a><span class="lineno"> 1371</span>&#160;            <span class="comment">// properly formed, but just doesn&#39;t exist</span></div>
+<div class="line"><a name="l01372"></a><span class="lineno"> 1372</span>&#160;            jvParams[jss::ledger_hash] =</div>
+<div class="line"><a name="l01373"></a><span class="lineno"> 1373</span>&#160;                <span class="stringliteral">&quot;8C3EEDB3124D92E49E75D81A8826A2E6&quot;</span></div>
+<div class="line"><a name="l01374"></a><span class="lineno"> 1374</span>&#160;                <span class="stringliteral">&quot;5A75FD71FC3FD6F36FEB803C5F1D812D&quot;</span>;</div>
+<div class="line"><a name="l01375"></a><span class="lineno"> 1375</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01376"></a><span class="lineno"> 1376</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01379"></a><span class="lineno"> 1379</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;lgrNotFound&quot;</span>);</div>
+<div class="line"><a name="l01380"></a><span class="lineno"> 1380</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerNotFound&quot;</span>);</div>
+<div class="line"><a name="l01381"></a><span class="lineno"> 1381</span>&#160;        }</div>
+<div class="line"><a name="l01382"></a><span class="lineno"> 1382</span>&#160; </div>
+<div class="line"><a name="l01383"></a><span class="lineno"> 1383</span>&#160;        {</div>
+<div class="line"><a name="l01384"></a><span class="lineno"> 1384</span>&#160;            <span class="comment">// access via the ledger_index field, keyword index values</span></div>
+<div class="line"><a name="l01385"></a><span class="lineno"> 1385</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l01386"></a><span class="lineno"> 1386</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;closed&quot;</span>;</div>
+<div class="line"><a name="l01387"></a><span class="lineno"> 1387</span>&#160;            <span class="keyword">auto</span> jrr = env.rpc(</div>
+<div class="line"><a name="l01388"></a><span class="lineno"> 1388</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01389"></a><span class="lineno"> 1389</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01390"></a><span class="lineno"> 1390</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01391"></a><span class="lineno"> 1391</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
+<div class="line"><a name="l01392"></a><span class="lineno"> 1392</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
+<div class="line"><a name="l01393"></a><span class="lineno"> 1393</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;5&quot;</span>);</div>
+<div class="line"><a name="l01394"></a><span class="lineno"> 1394</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_index));</div>
+<div class="line"><a name="l01395"></a><span class="lineno"> 1395</span>&#160; </div>
+<div class="line"><a name="l01396"></a><span class="lineno"> 1396</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;validated&quot;</span>;</div>
+<div class="line"><a name="l01397"></a><span class="lineno"> 1397</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01398"></a><span class="lineno"> 1398</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01400"></a><span class="lineno"> 1400</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
+<div class="line"><a name="l01402"></a><span class="lineno"> 1402</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
+<div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;5&quot;</span>);</div>
+<div class="line"><a name="l01404"></a><span class="lineno"> 1404</span>&#160; </div>
+<div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
+<div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01409"></a><span class="lineno"> 1409</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
+<div class="line"><a name="l01411"></a><span class="lineno"> 1411</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;6&quot;</span>);</div>
+<div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160;            BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));</div>
+<div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160; </div>
+<div class="line"><a name="l01414"></a><span class="lineno"> 1414</span>&#160;            <span class="comment">// ask for a bad ledger keyword</span></div>
+<div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;invalid&quot;</span>;</div>
+<div class="line"><a name="l01416"></a><span class="lineno"> 1416</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01420"></a><span class="lineno"> 1420</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerIndexMalformed&quot;</span>);</div>
+<div class="line"><a name="l01422"></a><span class="lineno"> 1422</span>&#160; </div>
+<div class="line"><a name="l01423"></a><span class="lineno"> 1423</span>&#160;            <span class="comment">// numeric index</span></div>
+<div class="line"><a name="l01424"></a><span class="lineno"> 1424</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> i : {1, 2, 3, 4, 5, 6})</div>
+<div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160;            {</div>
+<div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160;                jvParams[jss::ledger_index] = i;</div>
+<div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160;                jrr = env.rpc(</div>
+<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;                    <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160;                    <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;                    boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160;                BEAST_EXPECT(jrr.isMember(jss::ledger));</div>
+<div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;                <span class="keywordflow">if</span> (i &lt; 6)</div>
+<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;                    BEAST_EXPECT(jrr.isMember(jss::ledger_hash));</div>
+<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;                    jrr[jss::ledger][jss::ledger_index] == <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
+<div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160;            }</div>
+<div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160; </div>
+<div class="line"><a name="l01438"></a><span class="lineno"> 1438</span>&#160;            <span class="comment">// numeric index - out of range</span></div>
+<div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;            jvParams[jss::ledger_index] = 7;</div>
+<div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160;            jrr = env.rpc(</div>
+<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;                <span class="stringliteral">&quot;ledger&quot;</span>,</div>
+<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;lgrNotFound&quot;</span>);</div>
+<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;ledgerNotFound&quot;</span>);</div>
+<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160;        }</div>
+<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160;    }</div>
+<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160; </div>
+<div class="line"><a name="l01449"></a><span class="lineno"> 1449</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l01450"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80"> 1450</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80">testNoQueue</a>()</div>
+<div class="line"><a name="l01451"></a><span class="lineno"> 1451</span>&#160;    {</div>
+<div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160;        testcase(<span class="stringliteral">&quot;Ledger with queueing disabled&quot;</span>);</div>
+<div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l01454"></a><span class="lineno"> 1454</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l01455"></a><span class="lineno"> 1455</span>&#160; </div>
+<div class="line"><a name="l01456"></a><span class="lineno"> 1456</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a name="l01457"></a><span class="lineno"> 1457</span>&#160;        jv[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
+<div class="line"><a name="l01458"></a><span class="lineno"> 1458</span>&#160;        jv[jss::queue] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01459"></a><span class="lineno"> 1459</span>&#160;        jv[jss::expand] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01460"></a><span class="lineno"> 1460</span>&#160; </div>
+<div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160;        <span class="keyword">auto</span> jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01462"></a><span class="lineno"> 1462</span>&#160;        BEAST_EXPECT(!jrr.isMember(jss::queue_data));</div>
+<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;    }</div>
+<div class="line"><a name="l01464"></a><span class="lineno"> 1464</span>&#160; </div>
+<div class="line"><a name="l01465"></a><span class="lineno"> 1465</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l01466"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b"> 1466</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b">testQueue</a>()</div>
+<div class="line"><a name="l01467"></a><span class="lineno"> 1467</span>&#160;    {</div>
+<div class="line"><a name="l01468"></a><span class="lineno"> 1468</span>&#160;        testcase(<span class="stringliteral">&quot;Ledger with Queued Transactions&quot;</span>);</div>
+<div class="line"><a name="l01469"></a><span class="lineno"> 1469</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l01470"></a><span class="lineno"> 1470</span>&#160;        Env env{*<span class="keyword">this</span>, envconfig([](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
+<div class="line"><a name="l01471"></a><span class="lineno"> 1471</span>&#160;                    <span class="keyword">auto</span>&amp; section = cfg-&gt;section(<span class="stringliteral">&quot;transaction_queue&quot;</span>);</div>
+<div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;                    section.set(<span class="stringliteral">&quot;minimum_txn_in_ledger_standalone&quot;</span>, <span class="stringliteral">&quot;3&quot;</span>);</div>
+<div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160;                    section.set(<span class="stringliteral">&quot;normal_consensus_increase_percent&quot;</span>, <span class="stringliteral">&quot;0&quot;</span>);</div>
+<div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;                    <span class="keywordflow">return</span> cfg;</div>
+<div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;                })};</div>
+<div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160; </div>
+<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;        jv[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
+<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;        jv[jss::queue] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;        jv[jss::expand] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160; </div>
+<div class="line"><a name="l01482"></a><span class="lineno"> 1482</span>&#160;        Account <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;        Account <span class="keyword">const</span> bob{<span class="stringliteral">&quot;bob&quot;</span>};</div>
+<div class="line"><a name="l01484"></a><span class="lineno"> 1484</span>&#160;        Account <span class="keyword">const</span> charlie{<span class="stringliteral">&quot;charlie&quot;</span>};</div>
+<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;        Account <span class="keyword">const</span> daria{<span class="stringliteral">&quot;daria&quot;</span>};</div>
+<div class="line"><a name="l01486"></a><span class="lineno"> 1486</span>&#160;        env.fund(XRP(10000), alice);</div>
+<div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;        env.fund(XRP(10000), bob);</div>
+<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;        env.close();</div>
+<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160;        env.fund(XRP(10000), charlie);</div>
+<div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;        env.fund(XRP(10000), daria);</div>
+<div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160;        env.close();</div>
+<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160; </div>
+<div class="line"><a name="l01493"></a><span class="lineno"> 1493</span>&#160;        <span class="keyword">auto</span> jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160;        BEAST_EXPECT(!jrr.isMember(jss::queue_data));</div>
+<div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160; </div>
+<div class="line"><a name="l01496"></a><span class="lineno"> 1496</span>&#160;        <span class="comment">// Fill the open ledger</span></div>
+<div class="line"><a name="l01497"></a><span class="lineno"> 1497</span>&#160;        <span class="keywordflow">for</span> (;;)</div>
+<div class="line"><a name="l01498"></a><span class="lineno"> 1498</span>&#160;        {</div>
+<div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160;            <span class="keyword">auto</span> metrics = env.app().getTxQ().getMetrics(*env.current());</div>
+<div class="line"><a name="l01500"></a><span class="lineno"> 1500</span>&#160;            <span class="keywordflow">if</span> (metrics.openLedgerFeeLevel &gt; metrics.minProcessingFeeLevel)</div>
+<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01502"></a><span class="lineno"> 1502</span>&#160;            env(noop(alice));</div>
+<div class="line"><a name="l01503"></a><span class="lineno"> 1503</span>&#160;        }</div>
+<div class="line"><a name="l01504"></a><span class="lineno"> 1504</span>&#160; </div>
+<div class="line"><a name="l01505"></a><span class="lineno"> 1505</span>&#160;        BEAST_EXPECT(env.current()-&gt;info().seq == 5);</div>
+<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160;        <span class="comment">// Put some txs in the queue</span></div>
+<div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;        <span class="comment">// Alice</span></div>
+<div class="line"><a name="l01508"></a><span class="lineno"> 1508</span>&#160;        <span class="keyword">auto</span> aliceSeq = env.seq(alice);</div>
+<div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160;        env(pay(alice, <span class="stringliteral">&quot;george&quot;</span>, XRP(1000)),</div>
+<div class="line"><a name="l01510"></a><span class="lineno"> 1510</span>&#160;            json(R<span class="stringliteral">&quot;({&quot;LastLedgerSequence&quot;:7})&quot;),</span></div>
+<div class="line"><a name="l01511"></a><span class="lineno"> 1511</span>&#160;<span class="stringliteral">            ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</span></div>
+<div class="line"><a name="l01512"></a><span class="lineno"> 1512</span>&#160;<span class="stringliteral">        env(offer(alice, XRP(50000), alice[</span><span class="stringliteral">&quot;USD&quot;</span>](5000)),</div>
+<div class="line"><a name="l01513"></a><span class="lineno"> 1513</span>&#160;            seq(aliceSeq + 1),</div>
+<div class="line"><a name="l01514"></a><span class="lineno"> 1514</span>&#160;            ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</div>
+<div class="line"><a name="l01515"></a><span class="lineno"> 1515</span>&#160;        env(noop(alice), seq(aliceSeq + 2), ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</div>
+<div class="line"><a name="l01516"></a><span class="lineno"> 1516</span>&#160;        <span class="comment">// Bob</span></div>
+<div class="line"><a name="l01517"></a><span class="lineno"> 1517</span>&#160;        <span class="keyword">auto</span> batch = [&amp;env](Account a) {</div>
+<div class="line"><a name="l01518"></a><span class="lineno"> 1518</span>&#160;            <span class="keyword">auto</span> aSeq = env.seq(a);</div>
+<div class="line"><a name="l01519"></a><span class="lineno"> 1519</span>&#160;            <span class="comment">// Enough fee to get in front of alice in the queue</span></div>
+<div class="line"><a name="l01520"></a><span class="lineno"> 1520</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
+<div class="line"><a name="l01521"></a><span class="lineno"> 1521</span>&#160;            {</div>
+<div class="line"><a name="l01522"></a><span class="lineno"> 1522</span>&#160;                env(noop(a), fee(1000 + i), seq(aSeq + i), ter(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>));</div>
+<div class="line"><a name="l01523"></a><span class="lineno"> 1523</span>&#160;            }</div>
+<div class="line"><a name="l01524"></a><span class="lineno"> 1524</span>&#160;        };</div>
+<div class="line"><a name="l01525"></a><span class="lineno"> 1525</span>&#160;        batch(bob);</div>
+<div class="line"><a name="l01526"></a><span class="lineno"> 1526</span>&#160;        <span class="comment">// Charlie</span></div>
+<div class="line"><a name="l01527"></a><span class="lineno"> 1527</span>&#160;        batch(charlie);</div>
+<div class="line"><a name="l01528"></a><span class="lineno"> 1528</span>&#160;        <span class="comment">// Daria</span></div>
+<div class="line"><a name="l01529"></a><span class="lineno"> 1529</span>&#160;        batch(daria);</div>
+<div class="line"><a name="l01530"></a><span class="lineno"> 1530</span>&#160; </div>
+<div class="line"><a name="l01531"></a><span class="lineno"> 1531</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01532"></a><span class="lineno"> 1532</span>&#160;        BEAST_EXPECT(jrr[jss::queue_data].size() == 33);</div>
+<div class="line"><a name="l01533"></a><span class="lineno"> 1533</span>&#160; </div>
+<div class="line"><a name="l01534"></a><span class="lineno"> 1534</span>&#160;        <span class="comment">// Close enough ledgers so that alice&#39;s first tx expires.</span></div>
+<div class="line"><a name="l01535"></a><span class="lineno"> 1535</span>&#160;        env.close();</div>
 <div class="line"><a name="l01536"></a><span class="lineno"> 1536</span>&#160;        env.close();</div>
 <div class="line"><a name="l01537"></a><span class="lineno"> 1537</span>&#160;        env.close();</div>
-<div class="line"><a name="l01538"></a><span class="lineno"> 1538</span>&#160;        env.close();</div>
-<div class="line"><a name="l01539"></a><span class="lineno"> 1539</span>&#160;        BEAST_EXPECT(env.current()-&gt;info().seq == 8);</div>
-<div class="line"><a name="l01540"></a><span class="lineno"> 1540</span>&#160; </div>
-<div class="line"><a name="l01541"></a><span class="lineno"> 1541</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01542"></a><span class="lineno"> 1542</span>&#160;        BEAST_EXPECT(jrr[jss::queue_data].size() == 11);</div>
-<div class="line"><a name="l01543"></a><span class="lineno"> 1543</span>&#160; </div>
-<div class="line"><a name="l01544"></a><span class="lineno"> 1544</span>&#160;        env.close();</div>
-<div class="line"><a name="l01545"></a><span class="lineno"> 1545</span>&#160; </div>
-<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01547"></a><span class="lineno"> 1547</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> txid1;</div>
-<div class="line"><a name="l01548"></a><span class="lineno"> 1548</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> txid2;</div>
-<div class="line"><a name="l01549"></a><span class="lineno"> 1549</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))</div>
-<div class="line"><a name="l01550"></a><span class="lineno"> 1550</span>&#160;        {</div>
-<div class="line"><a name="l01551"></a><span class="lineno"> 1551</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
-<div class="line"><a name="l01552"></a><span class="lineno"> 1552</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
-<div class="line"><a name="l01553"></a><span class="lineno"> 1553</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l01555"></a><span class="lineno"> 1555</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 10);</div>
-<div class="line"><a name="l01556"></a><span class="lineno"> 1556</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
-<div class="line"><a name="l01557"></a><span class="lineno"> 1557</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx = txj[jss::tx];</div>
-<div class="line"><a name="l01558"></a><span class="lineno"> 1558</span>&#160;            BEAST_EXPECT(tx[jss::Account] == alice.human());</div>
-<div class="line"><a name="l01559"></a><span class="lineno"> 1559</span>&#160;            BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);</div>
-<div class="line"><a name="l01560"></a><span class="lineno"> 1560</span>&#160;            txid1 = tx[jss::hash].asString();</div>
-<div class="line"><a name="l01561"></a><span class="lineno"> 1561</span>&#160;        }</div>
-<div class="line"><a name="l01562"></a><span class="lineno"> 1562</span>&#160; </div>
-<div class="line"><a name="l01563"></a><span class="lineno"> 1563</span>&#160;        env.close();</div>
-<div class="line"><a name="l01564"></a><span class="lineno"> 1564</span>&#160; </div>
-<div class="line"><a name="l01565"></a><span class="lineno"> 1565</span>&#160;        jv[jss::expand] = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l01566"></a><span class="lineno"> 1566</span>&#160; </div>
-<div class="line"><a name="l01567"></a><span class="lineno"> 1567</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01568"></a><span class="lineno"> 1568</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))</div>
-<div class="line"><a name="l01569"></a><span class="lineno"> 1569</span>&#160;        {</div>
-<div class="line"><a name="l01570"></a><span class="lineno"> 1570</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
-<div class="line"><a name="l01571"></a><span class="lineno"> 1571</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
-<div class="line"><a name="l01572"></a><span class="lineno"> 1572</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l01573"></a><span class="lineno"> 1573</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l01574"></a><span class="lineno"> 1574</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 9);</div>
-<div class="line"><a name="l01575"></a><span class="lineno"> 1575</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
-<div class="line"><a name="l01576"></a><span class="lineno"> 1576</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
-<div class="line"><a name="l01577"></a><span class="lineno"> 1577</span>&#160;            BEAST_EXPECT(txj[jss::tx] == txid1);</div>
-<div class="line"><a name="l01578"></a><span class="lineno"> 1578</span>&#160;        }</div>
-<div class="line"><a name="l01579"></a><span class="lineno"> 1579</span>&#160; </div>
-<div class="line"><a name="l01580"></a><span class="lineno"> 1580</span>&#160;        env.close();</div>
-<div class="line"><a name="l01581"></a><span class="lineno"> 1581</span>&#160; </div>
-<div class="line"><a name="l01582"></a><span class="lineno"> 1582</span>&#160;        jv[jss::expand] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01583"></a><span class="lineno"> 1583</span>&#160;        jv[jss::binary] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160; </div>
-<div class="line"><a name="l01585"></a><span class="lineno"> 1585</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01586"></a><span class="lineno"> 1586</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))</div>
-<div class="line"><a name="l01587"></a><span class="lineno"> 1587</span>&#160;        {</div>
-<div class="line"><a name="l01588"></a><span class="lineno"> 1588</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
-<div class="line"><a name="l01589"></a><span class="lineno"> 1589</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
-<div class="line"><a name="l01590"></a><span class="lineno"> 1590</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l01591"></a><span class="lineno"> 1591</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l01592"></a><span class="lineno"> 1592</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 8);</div>
-<div class="line"><a name="l01593"></a><span class="lineno"> 1593</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
-<div class="line"><a name="l01594"></a><span class="lineno"> 1594</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
-<div class="line"><a name="l01595"></a><span class="lineno"> 1595</span>&#160;            BEAST_EXPECT(txj[jss::tx].isMember(jss::tx_blob));</div>
-<div class="line"><a name="l01596"></a><span class="lineno"> 1596</span>&#160; </div>
-<div class="line"><a name="l01597"></a><span class="lineno"> 1597</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj2 = jrr[jss::queue_data][1u];</div>
-<div class="line"><a name="l01598"></a><span class="lineno"> 1598</span>&#160;            BEAST_EXPECT(txj2[jss::account] == alice.human());</div>
-<div class="line"><a name="l01599"></a><span class="lineno"> 1599</span>&#160;            BEAST_EXPECT(txj2[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l01600"></a><span class="lineno"> 1600</span>&#160;            BEAST_EXPECT(txj2[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l01601"></a><span class="lineno"> 1601</span>&#160;            BEAST_EXPECT(txj2[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 10);</div>
-<div class="line"><a name="l01602"></a><span class="lineno"> 1602</span>&#160;            BEAST_EXPECT(!txj2.isMember(<span class="stringliteral">&quot;last_result&quot;</span>));</div>
-<div class="line"><a name="l01603"></a><span class="lineno"> 1603</span>&#160;            BEAST_EXPECT(txj2.isMember(jss::tx));</div>
-<div class="line"><a name="l01604"></a><span class="lineno"> 1604</span>&#160;            BEAST_EXPECT(txj2[jss::tx].isMember(jss::tx_blob));</div>
-<div class="line"><a name="l01605"></a><span class="lineno"> 1605</span>&#160;        }</div>
-<div class="line"><a name="l01606"></a><span class="lineno"> 1606</span>&#160; </div>
-<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i != 9; ++i)</div>
-<div class="line"><a name="l01608"></a><span class="lineno"> 1608</span>&#160;        {</div>
-<div class="line"><a name="l01609"></a><span class="lineno"> 1609</span>&#160;            env.close();</div>
-<div class="line"><a name="l01610"></a><span class="lineno"> 1610</span>&#160;        }</div>
-<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160; </div>
-<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;        jv[jss::expand] = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160;        jv[jss::binary] = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160; </div>
-<div class="line"><a name="l01615"></a><span class="lineno"> 1615</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01616"></a><span class="lineno"> 1616</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))</div>
-<div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;        {</div>
-<div class="line"><a name="l01618"></a><span class="lineno"> 1618</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
-<div class="line"><a name="l01619"></a><span class="lineno"> 1619</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
-<div class="line"><a name="l01620"></a><span class="lineno"> 1620</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l01621"></a><span class="lineno"> 1621</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l01622"></a><span class="lineno"> 1622</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 1);</div>
-<div class="line"><a name="l01623"></a><span class="lineno"> 1623</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
-<div class="line"><a name="l01624"></a><span class="lineno"> 1624</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
-<div class="line"><a name="l01625"></a><span class="lineno"> 1625</span>&#160;            BEAST_EXPECT(txj[jss::tx] != txid1);</div>
-<div class="line"><a name="l01626"></a><span class="lineno"> 1626</span>&#160;            txid2 = txj[jss::tx].asString();</div>
-<div class="line"><a name="l01627"></a><span class="lineno"> 1627</span>&#160;        }</div>
-<div class="line"><a name="l01628"></a><span class="lineno"> 1628</span>&#160; </div>
-<div class="line"><a name="l01629"></a><span class="lineno"> 1629</span>&#160;        jv[jss::full] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01630"></a><span class="lineno"> 1630</span>&#160; </div>
-<div class="line"><a name="l01631"></a><span class="lineno"> 1631</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
-<div class="line"><a name="l01632"></a><span class="lineno"> 1632</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))</div>
-<div class="line"><a name="l01633"></a><span class="lineno"> 1633</span>&#160;        {</div>
-<div class="line"><a name="l01634"></a><span class="lineno"> 1634</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
-<div class="line"><a name="l01635"></a><span class="lineno"> 1635</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
-<div class="line"><a name="l01636"></a><span class="lineno"> 1636</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l01637"></a><span class="lineno"> 1637</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l01638"></a><span class="lineno"> 1638</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 1);</div>
-<div class="line"><a name="l01639"></a><span class="lineno"> 1639</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
-<div class="line"><a name="l01640"></a><span class="lineno"> 1640</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
-<div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx = txj[jss::tx];</div>
-<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;            BEAST_EXPECT(tx[jss::Account] == alice.human());</div>
-<div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;            BEAST_EXPECT(tx[jss::TransactionType] == jss::AccountSet);</div>
-<div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;            BEAST_EXPECT(tx[jss::hash] == txid2);</div>
-<div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;        }</div>
-<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;    }</div>
-<div class="line"><a name="l01647"></a><span class="lineno"> 1647</span>&#160; </div>
-<div class="line"><a name="l01648"></a><span class="lineno"> 1648</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l01649"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393"> 1649</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393">testLedgerAccountsOption</a>()</div>
-<div class="line"><a name="l01650"></a><span class="lineno"> 1650</span>&#160;    {</div>
-<div class="line"><a name="l01651"></a><span class="lineno"> 1651</span>&#160;        testcase(<span class="stringliteral">&quot;Ledger Request, Accounts Option&quot;</span>);</div>
-<div class="line"><a name="l01652"></a><span class="lineno"> 1652</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l01653"></a><span class="lineno"> 1653</span>&#160; </div>
-<div class="line"><a name="l01654"></a><span class="lineno"> 1654</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l01655"></a><span class="lineno"> 1655</span>&#160; </div>
-<div class="line"><a name="l01656"></a><span class="lineno"> 1656</span>&#160;        env.close();</div>
-<div class="line"><a name="l01657"></a><span class="lineno"> 1657</span>&#160; </div>
-<div class="line"><a name="l01658"></a><span class="lineno"> 1658</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> index;</div>
-<div class="line"><a name="l01659"></a><span class="lineno"> 1659</span>&#160;        {</div>
-<div class="line"><a name="l01660"></a><span class="lineno"> 1660</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l01661"></a><span class="lineno"> 1661</span>&#160;            jvParams[jss::ledger_index] = 3u;</div>
-<div class="line"><a name="l01662"></a><span class="lineno"> 1662</span>&#160;            jvParams[jss::accounts] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01663"></a><span class="lineno"> 1663</span>&#160;            jvParams[jss::expand] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01664"></a><span class="lineno"> 1664</span>&#160;            jvParams[jss::type] = <span class="stringliteral">&quot;hashes&quot;</span>;</div>
-<div class="line"><a name="l01665"></a><span class="lineno"> 1665</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr =</div>
-<div class="line"><a name="l01666"></a><span class="lineno"> 1666</span>&#160;                env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l01667"></a><span class="lineno"> 1667</span>&#160;            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));</div>
-<div class="line"><a name="l01668"></a><span class="lineno"> 1668</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());</div>
-<div class="line"><a name="l01669"></a><span class="lineno"> 1669</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);</div>
-<div class="line"><a name="l01670"></a><span class="lineno"> 1670</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l01671"></a><span class="lineno"> 1671</span>&#160;                jrr[jss::ledger][jss::accountState][0u][<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] ==</div>
-<div class="line"><a name="l01672"></a><span class="lineno"> 1672</span>&#160;                jss::LedgerHashes);</div>
-<div class="line"><a name="l01673"></a><span class="lineno"> 1673</span>&#160;            index = jrr[jss::ledger][jss::accountState][0u][<span class="stringliteral">&quot;index&quot;</span>].asString();</div>
-<div class="line"><a name="l01674"></a><span class="lineno"> 1674</span>&#160;        }</div>
-<div class="line"><a name="l01675"></a><span class="lineno"> 1675</span>&#160;        {</div>
-<div class="line"><a name="l01676"></a><span class="lineno"> 1676</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l01677"></a><span class="lineno"> 1677</span>&#160;            jvParams[jss::ledger_index] = 3u;</div>
-<div class="line"><a name="l01678"></a><span class="lineno"> 1678</span>&#160;            jvParams[jss::accounts] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01679"></a><span class="lineno"> 1679</span>&#160;            jvParams[jss::expand] = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l01680"></a><span class="lineno"> 1680</span>&#160;            jvParams[jss::type] = <span class="stringliteral">&quot;hashes&quot;</span>;</div>
-<div class="line"><a name="l01681"></a><span class="lineno"> 1681</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr =</div>
-<div class="line"><a name="l01682"></a><span class="lineno"> 1682</span>&#160;                env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l01683"></a><span class="lineno"> 1683</span>&#160;            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));</div>
-<div class="line"><a name="l01684"></a><span class="lineno"> 1684</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());</div>
-<div class="line"><a name="l01685"></a><span class="lineno"> 1685</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);</div>
-<div class="line"><a name="l01686"></a><span class="lineno"> 1686</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u] == index);</div>
-<div class="line"><a name="l01687"></a><span class="lineno"> 1687</span>&#160;        }</div>
-<div class="line"><a name="l01688"></a><span class="lineno"> 1688</span>&#160;    }</div>
-<div class="line"><a name="l01689"></a><span class="lineno"> 1689</span>&#160; </div>
-<div class="line"><a name="l01690"></a><span class="lineno"> 1690</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l01691"></a><span class="lineno"> 1691</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l01692"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#abbafb9158567841d3ce81a0ee5f954ba"> 1692</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#abbafb9158567841d3ce81a0ee5f954ba">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l01693"></a><span class="lineno"> 1693</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l01694"></a><span class="lineno"> 1694</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ad2c48fcad36d8180f75bff57a657337e">testLedgerRequest</a>();</div>
-<div class="line"><a name="l01695"></a><span class="lineno"> 1695</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a2ba728b8f3a0ab1844f9beb8f1b6aa39">testBadInput</a>();</div>
-<div class="line"><a name="l01696"></a><span class="lineno"> 1696</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a09363031f4fe1e6f8a5a72c447a9293a">testLedgerCurrent</a>();</div>
-<div class="line"><a name="l01697"></a><span class="lineno"> 1697</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#aac75adc3929f58999d91f21912e24e26">testMissingLedgerEntryLedgerHash</a>();</div>
-<div class="line"><a name="l01698"></a><span class="lineno"> 1698</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a668721745cd0bc9f73449afe68a318b1">testLedgerFull</a>();</div>
-<div class="line"><a name="l01699"></a><span class="lineno"> 1699</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a3f2cca5d2a38ae42a24cd6cd1b4bab15">testLedgerFullNonAdmin</a>();</div>
-<div class="line"><a name="l01700"></a><span class="lineno"> 1700</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ab028e86674cbb2cf6b0b530183c14c58">testLedgerAccounts</a>();</div>
-<div class="line"><a name="l01701"></a><span class="lineno"> 1701</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ad4e9d9909f936f4655bfeb05d347443e">testLedgerEntryAccountRoot</a>();</div>
-<div class="line"><a name="l01702"></a><span class="lineno"> 1702</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a3673b70a465c8df505656b86121b2cf8">testLedgerEntryCheck</a>();</div>
-<div class="line"><a name="l01703"></a><span class="lineno"> 1703</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a9c5e2c28a66046a8d02ad655956a8e59">testLedgerEntryDepositPreauth</a>();</div>
-<div class="line"><a name="l01704"></a><span class="lineno"> 1704</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a6d97a0d575938ede162ac7a202fa68b6">testLedgerEntryDirectory</a>();</div>
-<div class="line"><a name="l01705"></a><span class="lineno"> 1705</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a77b33974a78b873836071ec83cacf7ac">testLedgerEntryEscrow</a>();</div>
-<div class="line"><a name="l01706"></a><span class="lineno"> 1706</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a8d711c2c90c5aa06cc09e31a50903eb3">testLedgerEntryOffer</a>();</div>
-<div class="line"><a name="l01707"></a><span class="lineno"> 1707</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#aaa81a08ac938a3d3d6a769638da082c6">testLedgerEntryPayChan</a>();</div>
-<div class="line"><a name="l01708"></a><span class="lineno"> 1708</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ad424a93e08a6e57546221add310b123d">testLedgerEntryRippleState</a>();</div>
-<div class="line"><a name="l01709"></a><span class="lineno"> 1709</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#aed774f98182f3dcc294a9a16879600ef">testLedgerEntryTicket</a>();</div>
-<div class="line"><a name="l01710"></a><span class="lineno"> 1710</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a2faaa3dfea69216a1d3e585fb7fe114f">testLedgerEntryUnknownOption</a>();</div>
-<div class="line"><a name="l01711"></a><span class="lineno"> 1711</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a2f07bf50ea7cb38a59f1975ccd324eb5">testLookupLedger</a>();</div>
-<div class="line"><a name="l01712"></a><span class="lineno"> 1712</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80">testNoQueue</a>();</div>
-<div class="line"><a name="l01713"></a><span class="lineno"> 1713</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b">testQueue</a>();</div>
-<div class="line"><a name="l01714"></a><span class="lineno"> 1714</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393">testLedgerAccountsOption</a>();</div>
-<div class="line"><a name="l01715"></a><span class="lineno"> 1715</span>&#160;    }</div>
-<div class="line"><a name="l01716"></a><span class="lineno"> 1716</span>&#160;};</div>
-<div class="line"><a name="l01717"></a><span class="lineno"> 1717</span>&#160; </div>
-<div class="line"><a name="l01718"></a><span class="lineno"> 1718</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(LedgerRPC, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l01719"></a><span class="lineno"> 1719</span>&#160; </div>
-<div class="line"><a name="l01720"></a><span class="lineno"> 1720</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l01538"></a><span class="lineno"> 1538</span>&#160;        BEAST_EXPECT(env.current()-&gt;info().seq == 8);</div>
+<div class="line"><a name="l01539"></a><span class="lineno"> 1539</span>&#160; </div>
+<div class="line"><a name="l01540"></a><span class="lineno"> 1540</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01541"></a><span class="lineno"> 1541</span>&#160;        BEAST_EXPECT(jrr[jss::queue_data].size() == 11);</div>
+<div class="line"><a name="l01542"></a><span class="lineno"> 1542</span>&#160; </div>
+<div class="line"><a name="l01543"></a><span class="lineno"> 1543</span>&#160;        env.close();</div>
+<div class="line"><a name="l01544"></a><span class="lineno"> 1544</span>&#160; </div>
+<div class="line"><a name="l01545"></a><span class="lineno"> 1545</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> txid1;</div>
+<div class="line"><a name="l01547"></a><span class="lineno"> 1547</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> txid2;</div>
+<div class="line"><a name="l01548"></a><span class="lineno"> 1548</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))</div>
+<div class="line"><a name="l01549"></a><span class="lineno"> 1549</span>&#160;        {</div>
+<div class="line"><a name="l01550"></a><span class="lineno"> 1550</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
+<div class="line"><a name="l01551"></a><span class="lineno"> 1551</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
+<div class="line"><a name="l01552"></a><span class="lineno"> 1552</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l01553"></a><span class="lineno"> 1553</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 10);</div>
+<div class="line"><a name="l01555"></a><span class="lineno"> 1555</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
+<div class="line"><a name="l01556"></a><span class="lineno"> 1556</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx = txj[jss::tx];</div>
+<div class="line"><a name="l01557"></a><span class="lineno"> 1557</span>&#160;            BEAST_EXPECT(tx[jss::Account] == alice.human());</div>
+<div class="line"><a name="l01558"></a><span class="lineno"> 1558</span>&#160;            BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);</div>
+<div class="line"><a name="l01559"></a><span class="lineno"> 1559</span>&#160;            txid1 = tx[jss::hash].asString();</div>
+<div class="line"><a name="l01560"></a><span class="lineno"> 1560</span>&#160;        }</div>
+<div class="line"><a name="l01561"></a><span class="lineno"> 1561</span>&#160; </div>
+<div class="line"><a name="l01562"></a><span class="lineno"> 1562</span>&#160;        env.close();</div>
+<div class="line"><a name="l01563"></a><span class="lineno"> 1563</span>&#160; </div>
+<div class="line"><a name="l01564"></a><span class="lineno"> 1564</span>&#160;        jv[jss::expand] = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01565"></a><span class="lineno"> 1565</span>&#160; </div>
+<div class="line"><a name="l01566"></a><span class="lineno"> 1566</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01567"></a><span class="lineno"> 1567</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))</div>
+<div class="line"><a name="l01568"></a><span class="lineno"> 1568</span>&#160;        {</div>
+<div class="line"><a name="l01569"></a><span class="lineno"> 1569</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
+<div class="line"><a name="l01570"></a><span class="lineno"> 1570</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
+<div class="line"><a name="l01571"></a><span class="lineno"> 1571</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l01572"></a><span class="lineno"> 1572</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l01573"></a><span class="lineno"> 1573</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 9);</div>
+<div class="line"><a name="l01574"></a><span class="lineno"> 1574</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
+<div class="line"><a name="l01575"></a><span class="lineno"> 1575</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
+<div class="line"><a name="l01576"></a><span class="lineno"> 1576</span>&#160;            BEAST_EXPECT(txj[jss::tx] == txid1);</div>
+<div class="line"><a name="l01577"></a><span class="lineno"> 1577</span>&#160;        }</div>
+<div class="line"><a name="l01578"></a><span class="lineno"> 1578</span>&#160; </div>
+<div class="line"><a name="l01579"></a><span class="lineno"> 1579</span>&#160;        env.close();</div>
+<div class="line"><a name="l01580"></a><span class="lineno"> 1580</span>&#160; </div>
+<div class="line"><a name="l01581"></a><span class="lineno"> 1581</span>&#160;        jv[jss::expand] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01582"></a><span class="lineno"> 1582</span>&#160;        jv[jss::binary] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01583"></a><span class="lineno"> 1583</span>&#160; </div>
+<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01585"></a><span class="lineno"> 1585</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))</div>
+<div class="line"><a name="l01586"></a><span class="lineno"> 1586</span>&#160;        {</div>
+<div class="line"><a name="l01587"></a><span class="lineno"> 1587</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
+<div class="line"><a name="l01588"></a><span class="lineno"> 1588</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
+<div class="line"><a name="l01589"></a><span class="lineno"> 1589</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l01590"></a><span class="lineno"> 1590</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l01591"></a><span class="lineno"> 1591</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 8);</div>
+<div class="line"><a name="l01592"></a><span class="lineno"> 1592</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
+<div class="line"><a name="l01593"></a><span class="lineno"> 1593</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
+<div class="line"><a name="l01594"></a><span class="lineno"> 1594</span>&#160;            BEAST_EXPECT(txj[jss::tx].isMember(jss::tx_blob));</div>
+<div class="line"><a name="l01595"></a><span class="lineno"> 1595</span>&#160; </div>
+<div class="line"><a name="l01596"></a><span class="lineno"> 1596</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj2 = jrr[jss::queue_data][1u];</div>
+<div class="line"><a name="l01597"></a><span class="lineno"> 1597</span>&#160;            BEAST_EXPECT(txj2[jss::account] == alice.human());</div>
+<div class="line"><a name="l01598"></a><span class="lineno"> 1598</span>&#160;            BEAST_EXPECT(txj2[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l01599"></a><span class="lineno"> 1599</span>&#160;            BEAST_EXPECT(txj2[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l01600"></a><span class="lineno"> 1600</span>&#160;            BEAST_EXPECT(txj2[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 10);</div>
+<div class="line"><a name="l01601"></a><span class="lineno"> 1601</span>&#160;            BEAST_EXPECT(!txj2.isMember(<span class="stringliteral">&quot;last_result&quot;</span>));</div>
+<div class="line"><a name="l01602"></a><span class="lineno"> 1602</span>&#160;            BEAST_EXPECT(txj2.isMember(jss::tx));</div>
+<div class="line"><a name="l01603"></a><span class="lineno"> 1603</span>&#160;            BEAST_EXPECT(txj2[jss::tx].isMember(jss::tx_blob));</div>
+<div class="line"><a name="l01604"></a><span class="lineno"> 1604</span>&#160;        }</div>
+<div class="line"><a name="l01605"></a><span class="lineno"> 1605</span>&#160; </div>
+<div class="line"><a name="l01606"></a><span class="lineno"> 1606</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i != 9; ++i)</div>
+<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;        {</div>
+<div class="line"><a name="l01608"></a><span class="lineno"> 1608</span>&#160;            env.close();</div>
+<div class="line"><a name="l01609"></a><span class="lineno"> 1609</span>&#160;        }</div>
+<div class="line"><a name="l01610"></a><span class="lineno"> 1610</span>&#160; </div>
+<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160;        jv[jss::expand] = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;        jv[jss::binary] = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160; </div>
+<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01615"></a><span class="lineno"> 1615</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))</div>
+<div class="line"><a name="l01616"></a><span class="lineno"> 1616</span>&#160;        {</div>
+<div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
+<div class="line"><a name="l01618"></a><span class="lineno"> 1618</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
+<div class="line"><a name="l01619"></a><span class="lineno"> 1619</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l01620"></a><span class="lineno"> 1620</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l01621"></a><span class="lineno"> 1621</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 1);</div>
+<div class="line"><a name="l01622"></a><span class="lineno"> 1622</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
+<div class="line"><a name="l01623"></a><span class="lineno"> 1623</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
+<div class="line"><a name="l01624"></a><span class="lineno"> 1624</span>&#160;            BEAST_EXPECT(txj[jss::tx] != txid1);</div>
+<div class="line"><a name="l01625"></a><span class="lineno"> 1625</span>&#160;            txid2 = txj[jss::tx].asString();</div>
+<div class="line"><a name="l01626"></a><span class="lineno"> 1626</span>&#160;        }</div>
+<div class="line"><a name="l01627"></a><span class="lineno"> 1627</span>&#160; </div>
+<div class="line"><a name="l01628"></a><span class="lineno"> 1628</span>&#160;        jv[jss::full] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01629"></a><span class="lineno"> 1629</span>&#160; </div>
+<div class="line"><a name="l01630"></a><span class="lineno"> 1630</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jv))[jss::result];</div>
+<div class="line"><a name="l01631"></a><span class="lineno"> 1631</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))</div>
+<div class="line"><a name="l01632"></a><span class="lineno"> 1632</span>&#160;        {</div>
+<div class="line"><a name="l01633"></a><span class="lineno"> 1633</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; txj = jrr[jss::queue_data][0u];</div>
+<div class="line"><a name="l01634"></a><span class="lineno"> 1634</span>&#160;            BEAST_EXPECT(txj[jss::account] == alice.human());</div>
+<div class="line"><a name="l01635"></a><span class="lineno"> 1635</span>&#160;            BEAST_EXPECT(txj[jss::fee_level] == <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l01636"></a><span class="lineno"> 1636</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;preflight_result&quot;</span>] == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l01637"></a><span class="lineno"> 1637</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;retries_remaining&quot;</span>] == 1);</div>
+<div class="line"><a name="l01638"></a><span class="lineno"> 1638</span>&#160;            BEAST_EXPECT(txj[<span class="stringliteral">&quot;last_result&quot;</span>] == <span class="stringliteral">&quot;terPRE_SEQ&quot;</span>);</div>
+<div class="line"><a name="l01639"></a><span class="lineno"> 1639</span>&#160;            BEAST_EXPECT(txj.isMember(jss::tx));</div>
+<div class="line"><a name="l01640"></a><span class="lineno"> 1640</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx = txj[jss::tx];</div>
+<div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160;            BEAST_EXPECT(tx[jss::Account] == alice.human());</div>
+<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;            BEAST_EXPECT(tx[jss::TransactionType] == jss::AccountSet);</div>
+<div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;            BEAST_EXPECT(tx[jss::hash] == txid2);</div>
+<div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;        }</div>
+<div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;    }</div>
+<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160; </div>
+<div class="line"><a name="l01647"></a><span class="lineno"> 1647</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l01648"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393"> 1648</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393">testLedgerAccountsOption</a>()</div>
+<div class="line"><a name="l01649"></a><span class="lineno"> 1649</span>&#160;    {</div>
+<div class="line"><a name="l01650"></a><span class="lineno"> 1650</span>&#160;        testcase(<span class="stringliteral">&quot;Ledger Request, Accounts Option&quot;</span>);</div>
+<div class="line"><a name="l01651"></a><span class="lineno"> 1651</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l01652"></a><span class="lineno"> 1652</span>&#160; </div>
+<div class="line"><a name="l01653"></a><span class="lineno"> 1653</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l01654"></a><span class="lineno"> 1654</span>&#160; </div>
+<div class="line"><a name="l01655"></a><span class="lineno"> 1655</span>&#160;        env.close();</div>
+<div class="line"><a name="l01656"></a><span class="lineno"> 1656</span>&#160; </div>
+<div class="line"><a name="l01657"></a><span class="lineno"> 1657</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> index;</div>
+<div class="line"><a name="l01658"></a><span class="lineno"> 1658</span>&#160;        {</div>
+<div class="line"><a name="l01659"></a><span class="lineno"> 1659</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l01660"></a><span class="lineno"> 1660</span>&#160;            jvParams[jss::ledger_index] = 3u;</div>
+<div class="line"><a name="l01661"></a><span class="lineno"> 1661</span>&#160;            jvParams[jss::accounts] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01662"></a><span class="lineno"> 1662</span>&#160;            jvParams[jss::expand] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01663"></a><span class="lineno"> 1663</span>&#160;            jvParams[jss::type] = <span class="stringliteral">&quot;hashes&quot;</span>;</div>
+<div class="line"><a name="l01664"></a><span class="lineno"> 1664</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr =</div>
+<div class="line"><a name="l01665"></a><span class="lineno"> 1665</span>&#160;                env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l01666"></a><span class="lineno"> 1666</span>&#160;            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));</div>
+<div class="line"><a name="l01667"></a><span class="lineno"> 1667</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());</div>
+<div class="line"><a name="l01668"></a><span class="lineno"> 1668</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);</div>
+<div class="line"><a name="l01669"></a><span class="lineno"> 1669</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l01670"></a><span class="lineno"> 1670</span>&#160;                jrr[jss::ledger][jss::accountState][0u][<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] ==</div>
+<div class="line"><a name="l01671"></a><span class="lineno"> 1671</span>&#160;                jss::LedgerHashes);</div>
+<div class="line"><a name="l01672"></a><span class="lineno"> 1672</span>&#160;            index = jrr[jss::ledger][jss::accountState][0u][<span class="stringliteral">&quot;index&quot;</span>].asString();</div>
+<div class="line"><a name="l01673"></a><span class="lineno"> 1673</span>&#160;        }</div>
+<div class="line"><a name="l01674"></a><span class="lineno"> 1674</span>&#160;        {</div>
+<div class="line"><a name="l01675"></a><span class="lineno"> 1675</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l01676"></a><span class="lineno"> 1676</span>&#160;            jvParams[jss::ledger_index] = 3u;</div>
+<div class="line"><a name="l01677"></a><span class="lineno"> 1677</span>&#160;            jvParams[jss::accounts] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01678"></a><span class="lineno"> 1678</span>&#160;            jvParams[jss::expand] = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01679"></a><span class="lineno"> 1679</span>&#160;            jvParams[jss::type] = <span class="stringliteral">&quot;hashes&quot;</span>;</div>
+<div class="line"><a name="l01680"></a><span class="lineno"> 1680</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr =</div>
+<div class="line"><a name="l01681"></a><span class="lineno"> 1681</span>&#160;                env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger&quot;</span>, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l01682"></a><span class="lineno"> 1682</span>&#160;            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));</div>
+<div class="line"><a name="l01683"></a><span class="lineno"> 1683</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());</div>
+<div class="line"><a name="l01684"></a><span class="lineno"> 1684</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);</div>
+<div class="line"><a name="l01685"></a><span class="lineno"> 1685</span>&#160;            BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u] == index);</div>
+<div class="line"><a name="l01686"></a><span class="lineno"> 1686</span>&#160;        }</div>
+<div class="line"><a name="l01687"></a><span class="lineno"> 1687</span>&#160;    }</div>
+<div class="line"><a name="l01688"></a><span class="lineno"> 1688</span>&#160; </div>
+<div class="line"><a name="l01689"></a><span class="lineno"> 1689</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l01690"></a><span class="lineno"> 1690</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l01691"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerRPC__test.html#abbafb9158567841d3ce81a0ee5f954ba"> 1691</a></span>&#160;    <a class="code" href="classripple_1_1LedgerRPC__test.html#abbafb9158567841d3ce81a0ee5f954ba">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l01692"></a><span class="lineno"> 1692</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l01693"></a><span class="lineno"> 1693</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ad2c48fcad36d8180f75bff57a657337e">testLedgerRequest</a>();</div>
+<div class="line"><a name="l01694"></a><span class="lineno"> 1694</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a2ba728b8f3a0ab1844f9beb8f1b6aa39">testBadInput</a>();</div>
+<div class="line"><a name="l01695"></a><span class="lineno"> 1695</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a09363031f4fe1e6f8a5a72c447a9293a">testLedgerCurrent</a>();</div>
+<div class="line"><a name="l01696"></a><span class="lineno"> 1696</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#aac75adc3929f58999d91f21912e24e26">testMissingLedgerEntryLedgerHash</a>();</div>
+<div class="line"><a name="l01697"></a><span class="lineno"> 1697</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a668721745cd0bc9f73449afe68a318b1">testLedgerFull</a>();</div>
+<div class="line"><a name="l01698"></a><span class="lineno"> 1698</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a3f2cca5d2a38ae42a24cd6cd1b4bab15">testLedgerFullNonAdmin</a>();</div>
+<div class="line"><a name="l01699"></a><span class="lineno"> 1699</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ab028e86674cbb2cf6b0b530183c14c58">testLedgerAccounts</a>();</div>
+<div class="line"><a name="l01700"></a><span class="lineno"> 1700</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ad4e9d9909f936f4655bfeb05d347443e">testLedgerEntryAccountRoot</a>();</div>
+<div class="line"><a name="l01701"></a><span class="lineno"> 1701</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a3673b70a465c8df505656b86121b2cf8">testLedgerEntryCheck</a>();</div>
+<div class="line"><a name="l01702"></a><span class="lineno"> 1702</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a9c5e2c28a66046a8d02ad655956a8e59">testLedgerEntryDepositPreauth</a>();</div>
+<div class="line"><a name="l01703"></a><span class="lineno"> 1703</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a6d97a0d575938ede162ac7a202fa68b6">testLedgerEntryDirectory</a>();</div>
+<div class="line"><a name="l01704"></a><span class="lineno"> 1704</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a77b33974a78b873836071ec83cacf7ac">testLedgerEntryEscrow</a>();</div>
+<div class="line"><a name="l01705"></a><span class="lineno"> 1705</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a8d711c2c90c5aa06cc09e31a50903eb3">testLedgerEntryOffer</a>();</div>
+<div class="line"><a name="l01706"></a><span class="lineno"> 1706</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#aaa81a08ac938a3d3d6a769638da082c6">testLedgerEntryPayChan</a>();</div>
+<div class="line"><a name="l01707"></a><span class="lineno"> 1707</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#ad424a93e08a6e57546221add310b123d">testLedgerEntryRippleState</a>();</div>
+<div class="line"><a name="l01708"></a><span class="lineno"> 1708</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#aed774f98182f3dcc294a9a16879600ef">testLedgerEntryTicket</a>();</div>
+<div class="line"><a name="l01709"></a><span class="lineno"> 1709</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a2faaa3dfea69216a1d3e585fb7fe114f">testLedgerEntryUnknownOption</a>();</div>
+<div class="line"><a name="l01710"></a><span class="lineno"> 1710</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a2f07bf50ea7cb38a59f1975ccd324eb5">testLookupLedger</a>();</div>
+<div class="line"><a name="l01711"></a><span class="lineno"> 1711</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80">testNoQueue</a>();</div>
+<div class="line"><a name="l01712"></a><span class="lineno"> 1712</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b">testQueue</a>();</div>
+<div class="line"><a name="l01713"></a><span class="lineno"> 1713</span>&#160;        <a class="code" href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393">testLedgerAccountsOption</a>();</div>
+<div class="line"><a name="l01714"></a><span class="lineno"> 1714</span>&#160;    }</div>
+<div class="line"><a name="l01715"></a><span class="lineno"> 1715</span>&#160;};</div>
+<div class="line"><a name="l01716"></a><span class="lineno"> 1716</span>&#160; </div>
+<div class="line"><a name="l01717"></a><span class="lineno"> 1717</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(LedgerRPC, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l01718"></a><span class="lineno"> 1718</span>&#160; </div>
+<div class="line"><a name="l01719"></a><span class="lineno"> 1719</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_ad424a93e08a6e57546221add310b123d"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#ad424a93e08a6e57546221add310b123d">ripple::LedgerRPC_test::testLedgerEntryRippleState</a></div><div class="ttdeci">void testLedgerEntryRippleState()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00931">LedgerRPC_test.cpp:931</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a2faaa3dfea69216a1d3e585fb7fe114f"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a2faaa3dfea69216a1d3e585fb7fe114f">ripple::LedgerRPC_test::testLedgerEntryUnknownOption</a></div><div class="ttdeci">void testLedgerEntryUnknownOption()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01224">LedgerRPC_test.cpp:1224</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a2f07bf50ea7cb38a59f1975ccd324eb5"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a2f07bf50ea7cb38a59f1975ccd324eb5">ripple::LedgerRPC_test::testLookupLedger</a></div><div class="ttdeci">void testLookupLedger()</div><div class="ttdoc">ledger RPC requests as a way to drive input options to lookupLedger.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01246">LedgerRPC_test.cpp:1246</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa693ff83cdfe0f5cb821db0000b22928"><div class="ttname"><a href="namespaceripple.html#aa693ff83cdfe0f5cb821db0000b22928">ripple::sfSendMax</a></div><div class="ttdeci">const SF_AMOUNT sfSendMax</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_aed774f98182f3dcc294a9a16879600ef"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#aed774f98182f3dcc294a9a16879600ef">ripple::LedgerRPC_test::testLedgerEntryTicket</a></div><div class="ttdeci">void testLedgerEntryTicket()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01106">LedgerRPC_test.cpp:1106</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a17d40ddaaa1efdd012235e36224df2e8"><div class="ttname"><a href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">ripple::sfLedgerEntryType</a></div><div class="ttdeci">const SF_U16 sfLedgerEntryType(access, STI_UINT16, 1, &quot;LedgerEntryType&quot;, SField::sMD_Never)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00346">SField.h:346</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a29758397ce451beaa436c3a9dfc83030"><div class="ttname"><a href="namespaceripple.html#a29758397ce451beaa436c3a9dfc83030">ripple::sfAmount</a></div><div class="ttdeci">const SF_AMOUNT sfAmount</div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00042">json_value.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a8d711c2c90c5aa06cc09e31a50903eb3"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a8d711c2c90c5aa06cc09e31a50903eb3">ripple::LedgerRPC_test::testLedgerEntryOffer</a></div><div class="ttdeci">void testLedgerEntryOffer()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00791">LedgerRPC_test.cpp:791</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af0fe0cd9ec9c5f73998088d7d133c394"><div class="ttname"><a href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">ripple::sfAccount</a></div><div class="ttdeci">const SF_Account sfAccount(access, STI_ACCOUNT, 1, &quot;Account&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00481">SField.h:481</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a67daa130f5e87d9a4aa2c86653c2cc80"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80">ripple::LedgerRPC_test::testNoQueue</a></div><div class="ttdeci">void testNoQueue()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01451">LedgerRPC_test.cpp:1451</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a67daa130f5e87d9a4aa2c86653c2cc80"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a67daa130f5e87d9a4aa2c86653c2cc80">ripple::LedgerRPC_test::testNoQueue</a></div><div class="ttdeci">void testNoQueue()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01450">LedgerRPC_test.cpp:1450</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a385ab11f319f7b8d477e2ccff9f19cbc"><div class="ttname"><a href="namespaceripple.html#a385ab11f319f7b8d477e2ccff9f19cbc">ripple::sfTicketSequence</a></div><div class="ttdeci">const SF_UINT32 sfTicketSequence</div></div>
 <div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00042">ValidatorList.cpp:42</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae9a68b1471828c45f17351005e7f79fb"><div class="ttname"><a href="namespaceripple.html#ae9a68b1471828c45f17351005e7f79fb">ripple::sfAmount</a></div><div class="ttdeci">const SF_Amount sfAmount(access, STI_AMOUNT, 1, &quot;Amount&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00441">SField.h:441</a></div></div>
 <div class="ttc" id="aclassripple_1_1SField_html_a45acf918dce2b1e3e40c6344a49f7b51"><div class="ttname"><a href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">ripple::SField::jsonName</a></div><div class="ttdeci">const Json::StaticString jsonName</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00133">SField.h:133</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a4f29578bd1b3d2d1225a87890489e7ca"><div class="ttname"><a href="namespaceripple.html#a4f29578bd1b3d2d1225a87890489e7ca">ripple::sfHighLimit</a></div><div class="ttdeci">const SF_Amount sfHighLimit(access, STI_AMOUNT, 7, &quot;HighLimit&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00447">SField.h:447</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6387398e0f4ed9ffc061fa818d0ca765"><div class="ttname"><a href="namespaceripple.html#a6387398e0f4ed9ffc061fa818d0ca765">ripple::sfFinishAfter</a></div><div class="ttdeci">const SF_U32 sfFinishAfter(access, STI_UINT32, 37, &quot;FinishAfter&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00390">SField.h:390</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8c00e62edb06efd9df0fc8bf0cbec613"><div class="ttname"><a href="namespaceripple.html#a8c00e62edb06efd9df0fc8bf0cbec613">ripple::getTicketIndex</a></div><div class="ttdeci">uint256 getTicketIndex(AccountID const &amp;account, std::uint32_t ticketSeq)</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00111">Indexes.cpp:111</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8c00e62edb06efd9df0fc8bf0cbec613"><div class="ttname"><a href="namespaceripple.html#a8c00e62edb06efd9df0fc8bf0cbec613">ripple::getTicketIndex</a></div><div class="ttdeci">uint256 getTicketIndex(AccountID const &amp;account, std::uint32_t ticketSeq)</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00116">Indexes.cpp:116</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html">ripple::LedgerRPC_test</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00031">LedgerRPC_test.cpp:31</a></div></div>
 <div class="ttc" id="areplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/replace.html">std::string::replace</a></div><div class="ttdeci">T replace(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e"><div class="ttname"><a href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">ripple::terQUEUED</a></div><div class="ttdeci">@ terQUEUED</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00200">TER.h:200</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5db6a436a1b570fd3fdfc1583c34883f"><div class="ttname"><a href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">ripple::sfIndexes</a></div><div class="ttdeci">const SF_VECTOR256 sfIndexes</div></div>
 <div class="ttc" id="astructripple_1_1Keylet_html_a482983062843a8682fcea76a309c73db"><div class="ttname"><a href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">ripple::Keylet::key</a></div><div class="ttdeci">uint256 key</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00041">Keylet.h:41</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a6e4239bfa55f7978dec37a384ae6e393"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393">ripple::LedgerRPC_test::testLedgerAccountsOption</a></div><div class="ttdeci">void testLedgerAccountsOption()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01649">LedgerRPC_test.cpp:1649</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a6e4239bfa55f7978dec37a384ae6e393"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a6e4239bfa55f7978dec37a384ae6e393">ripple::LedgerRPC_test::testLedgerAccountsOption</a></div><div class="ttdeci">void testLedgerAccountsOption()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01648">LedgerRPC_test.cpp:1648</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a3f2cca5d2a38ae42a24cd6cd1b4bab15"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a3f2cca5d2a38ae42a24cd6cd1b4bab15">ripple::LedgerRPC_test::testLedgerFullNonAdmin</a></div><div class="ttdeci">void testLedgerFullNonAdmin()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00245">LedgerRPC_test.cpp:245</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa1125568f116779d0ad145c06a607791"><div class="ttname"><a href="namespaceripple.html#aa1125568f116779d0ad145c06a607791">ripple::sfSettleDelay</a></div><div class="ttdeci">const SF_UINT32 sfSettleDelay</div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a668721745cd0bc9f73449afe68a318b1"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a668721745cd0bc9f73449afe68a318b1">ripple::LedgerRPC_test::testLedgerFull</a></div><div class="ttdeci">void testLedgerFull()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00225">LedgerRPC_test.cpp:225</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a1a79f0c33d1405fe85c40d63a49658bd"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">ripple::RPC::contains_error</a></div><div class="ttdeci">bool contains_error(Json::Value const &amp;json)</div><div class="ttdoc">Returns true if the json contains an rpc error specification.</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8cpp_source.html#l00218">ErrorCodes.cpp:218</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html"><div class="ttname"><a href="classripple_1_1PublicKey.html">ripple::PublicKey</a></div><div class="ttdoc">A public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00059">PublicKey.h:59</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a50c370db96b4fdcdd202d9c2c38afce9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00129">Indexes.cpp:129</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6ce87ac14b2fb3093c011c546163c7f0"><div class="ttname"><a href="namespaceripple.html#a6ce87ac14b2fb3093c011c546163c7f0">ripple::sfSendMax</a></div><div class="ttdeci">const SF_Amount sfSendMax(access, STI_AMOUNT, 9, &quot;SendMax&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00449">SField.h:449</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a50c370db96b4fdcdd202d9c2c38afce9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00134">Indexes.cpp:134</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_aeab9eeb6657fd427dcf7677e5bb7834c"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#aeab9eeb6657fd427dcf7677e5bb7834c">ripple::LedgerRPC_test::makeBadAddress</a></div><div class="ttdeci">std::string makeBadAddress(std::string good)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00056">LedgerRPC_test.cpp:56</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a2ba728b8f3a0ab1844f9beb8f1b6aa39"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a2ba728b8f3a0ab1844f9beb8f1b6aa39">ripple::LedgerRPC_test::testBadInput</a></div><div class="ttdeci">void testBadInput()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00114">LedgerRPC_test.cpp:114</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8"><div class="ttname"><a href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div></div>
-<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a73af9c92439943da5687c66bc759921b"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b">ripple::LedgerRPC_test::testQueue</a></div><div class="ttdeci">void testQueue()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01467">LedgerRPC_test.cpp:1467</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a73af9c92439943da5687c66bc759921b"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a73af9c92439943da5687c66bc759921b">ripple::LedgerRPC_test::testQueue</a></div><div class="ttdeci">void testQueue()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01466">LedgerRPC_test.cpp:1466</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_ad4e9d9909f936f4655bfeb05d347443e"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#ad4e9d9909f936f4655bfeb05d347443e">ripple::LedgerRPC_test::testLedgerEntryAccountRoot</a></div><div class="ttdeci">void testLedgerEntryAccountRoot()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00284">LedgerRPC_test.cpp:284</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00042">STAmount.h:42</a></div></div>
@@ -1828,31 +1826,32 @@ $(function() {
 <div class="ttc" id="aclassJson_1_1Value_html_a23c7027ca674f989f90564d63ef36c74"><div class="ttname"><a href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">Json::Value::size</a></div><div class="ttdeci">UInt size() const</div><div class="ttdoc">Number of values in array or object.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00706">json_value.cpp:706</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a77b33974a78b873836071ec83cacf7ac"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a77b33974a78b873836071ec83cacf7ac">ripple::LedgerRPC_test::testLedgerEntryEscrow</a></div><div class="ttdeci">void testLedgerEntryEscrow()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00690">LedgerRPC_test.cpp:690</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_ad6d4df2227321bab05e86667609a7fad"><div class="ttname"><a href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">Json::Value::isMember</a></div><div class="ttdeci">bool isMember(const char *key) const</div><div class="ttdoc">Return true if the object has a member named key.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00932">json_value.cpp:932</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ab8cfecc4098614f8b9c6c0bc8d9723e7"><div class="ttname"><a href="namespaceripple.html#ab8cfecc4098614f8b9c6c0bc8d9723e7">ripple::sfAuthorize</a></div><div class="ttdeci">const SF_ACCOUNT sfAuthorize</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_abbafb9158567841d3ce81a0ee5f954ba"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#abbafb9158567841d3ce81a0ee5f954ba">ripple::LedgerRPC_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01692">LedgerRPC_test.cpp:1692</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7a057a09039ceedfe09aa311644c91b9"><div class="ttname"><a href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">ripple::sfIndexes</a></div><div class="ttdeci">const SF_Vec256 sfIndexes(access, STI_VECTOR256, 1, &quot;Indexes&quot;, SField::sMD_Never)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00494">SField.h:494</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a78b8a880e6176b96eea2351ce8b9db77"><div class="ttname"><a href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">ripple::sfHighLimit</a></div><div class="ttdeci">const SF_AMOUNT sfHighLimit</div></div>
+<div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_abbafb9158567841d3ce81a0ee5f954ba"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#abbafb9158567841d3ce81a0ee5f954ba">ripple::LedgerRPC_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l01691">LedgerRPC_test.cpp:1691</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac7449e3a832f265ac8970ed52b580399"><div class="ttname"><a href="namespaceripple.html#ac7449e3a832f265ac8970ed52b580399">ripple::tfUniversal</a></div><div class="ttdeci">const std::uint32_t tfUniversal</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00049">TxFlags.h:49</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a6d97a0d575938ede162ac7a202fa68b6"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a6d97a0d575938ede162ac7a202fa68b6">ripple::LedgerRPC_test::testLedgerEntryDirectory</a></div><div class="ttdeci">void testLedgerEntryDirectory()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00551">LedgerRPC_test.cpp:551</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad19efd60683c2165b7c961432ab0f012"><div class="ttname"><a href="namespaceripple.html#ad19efd60683c2165b7c961432ab0f012">ripple::sfTicketSequence</a></div><div class="ttdeci">const SF_U32 sfTicketSequence(access, STI_UINT32, 41, &quot;TicketSequence&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00394">SField.h:394</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_aac75adc3929f58999d91f21912e24e26"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#aac75adc3929f58999d91f21912e24e26">ripple::LedgerRPC_test::testMissingLedgerEntryLedgerHash</a></div><div class="ttdeci">void testMissingLedgerEntryLedgerHash()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00206">LedgerRPC_test.cpp:206</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a30b618e8944f06b6bec7ee4e4bc0662a"><div class="ttname"><a href="namespaceripple.html#a30b618e8944f06b6bec7ee4e4bc0662a">ripple::sfPublicKey</a></div><div class="ttdeci">const SF_Blob sfPublicKey(access, STI_VL, 1, &quot;PublicKey&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00458">SField.h:458</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_aaa81a08ac938a3d3d6a769638da082c6"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#aaa81a08ac938a3d3d6a769638da082c6">ripple::LedgerRPC_test::testLedgerEntryPayChan</a></div><div class="ttdeci">void testLedgerEntryPayChan()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00874">LedgerRPC_test.cpp:874</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a302900f43b3d504ce71926534d7277e6"><div class="ttname"><a href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">ripple::sfBalance</a></div><div class="ttdeci">const SF_Amount sfBalance(access, STI_AMOUNT, 2, &quot;Balance&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00442">SField.h:442</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a1f7996e37533aaaacae959144c95c9e9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a1f7996e37533aaaacae959144c95c9e9">ripple::keylet::payChan</a></div><div class="ttdeci">Keylet payChan(AccountID const &amp;src, AccountID const &amp;dst, std::uint32_t seq) noexcept</div><div class="ttdoc">A PaymentChannel.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00320">Indexes.cpp:320</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a95e082491139cffc65c01b6fcaa3edfe"><div class="ttname"><a href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">ripple::sfLedgerEntryType</a></div><div class="ttdeci">const SF_UINT16 sfLedgerEntryType</div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a1f7996e37533aaaacae959144c95c9e9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a1f7996e37533aaaacae959144c95c9e9">ripple::keylet::payChan</a></div><div class="ttdeci">Keylet payChan(AccountID const &amp;src, AccountID const &amp;dst, std::uint32_t seq) noexcept</div><div class="ttdoc">A PaymentChannel.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00325">Indexes.cpp:325</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_ab028e86674cbb2cf6b0b530183c14c58"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#ab028e86674cbb2cf6b0b530183c14c58">ripple::LedgerRPC_test::testLedgerAccounts</a></div><div class="ttdeci">void testLedgerAccounts()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00264">LedgerRPC_test.cpp:264</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a></div><div class="ttdeci">@ nullValue</div><div class="ttdoc">'null' value</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00036">json_value.h:36</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ab8a9c54401e8209fca7396c6b9c610f4"><div class="ttname"><a href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">ripple::sfBalance</a></div><div class="ttdeci">const SF_AMOUNT sfBalance</div></div>
 <div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00156">Feature.h:156</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6cc6560106db63c65ae13706017386c6"><div class="ttname"><a href="namespaceripple.html#a6cc6560106db63c65ae13706017386c6">ripple::sfSettleDelay</a></div><div class="ttdeci">const SF_U32 sfSettleDelay(access, STI_UINT32, 39, &quot;SettleDelay&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00392">SField.h:392</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_af5a63958686496574543bdfeb4b68ffa"><div class="ttname"><a href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">ripple::featureTicketBatch</a></div><div class="ttdeci">const uint256 featureTicketBatch</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00189">Feature.cpp:189</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a3673b70a465c8df505656b86121b2cf8"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a3673b70a465c8df505656b86121b2cf8">ripple::LedgerRPC_test::testLedgerEntryCheck</a></div><div class="ttdeci">void testLedgerEntryCheck()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00373">LedgerRPC_test.cpp:373</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a512ffe74f26a9616aa021796b3a2a227"><div class="ttname"><a href="namespaceripple.html#a512ffe74f26a9616aa021796b3a2a227">ripple::sfFinishAfter</a></div><div class="ttdeci">const SF_UINT32 sfFinishAfter</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00037">Account.h:37</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00067">strHex.h:67</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5bab99595719d22579e10d21cf048eb0"><div class="ttname"><a href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">ripple::sfAccount</a></div><div class="ttdeci">const SF_ACCOUNT sfAccount</div></div>
+<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00045">strHex.h:45</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a9c5e2c28a66046a8d02ad655956a8e59"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a9c5e2c28a66046a8d02ad655956a8e59">ripple::LedgerRPC_test::testLedgerEntryDepositPreauth</a></div><div class="ttdeci">void testLedgerEntryDepositPreauth()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00420">LedgerRPC_test.cpp:420</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3f9226cc13c50ec1c8dd129f3f55bce0"><div class="ttname"><a href="namespaceripple.html#a3f9226cc13c50ec1c8dd129f3f55bce0">ripple::sfAuthorize</a></div><div class="ttdeci">const SF_Account sfAuthorize(access, STI_ACCOUNT, 5, &quot;Authorize&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00485">SField.h:485</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a66624dcb8f66cb8548d032ff97030aa4"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a66624dcb8f66cb8548d032ff97030aa4">ripple::keylet::check</a></div><div class="ttdeci">Keylet check(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">A Check.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00277">Indexes.cpp:277</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a66624dcb8f66cb8548d032ff97030aa4"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a66624dcb8f66cb8548d032ff97030aa4">ripple::keylet::check</a></div><div class="ttdeci">Keylet check(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">A Check.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00282">Indexes.cpp:282</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="anamespaceripple_html_a16991de33a4e83d355de9c387c712a4e"><div class="ttname"><a href="namespaceripple.html#a16991de33a4e83d355de9c387c712a4e">ripple::sfPublicKey</a></div><div class="ttdeci">const SF_VL sfPublicKey</div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a09363031f4fe1e6f8a5a72c447a9293a"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a09363031f4fe1e6f8a5a72c447a9293a">ripple::LedgerRPC_test::testLedgerCurrent</a></div><div class="ttdeci">void testLedgerCurrent()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00188">LedgerRPC_test.cpp:188</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerRPC__test_html_a99424fe6e049020d57aa87b485e3355c"><div class="ttname"><a href="classripple_1_1LedgerRPC__test.html#a99424fe6e049020d57aa87b485e3355c">ripple::LedgerRPC_test::checkErrorValue</a></div><div class="ttdeci">void checkErrorValue(Json::Value const &amp;jv, std::string const &amp;err, std::string const &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRPC__test_8cpp_source.html#l00034">LedgerRPC_test.cpp:34</a></div></div>

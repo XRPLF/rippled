@@ -75,7 +75,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1InboundLedgersImp-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::InboundLedgersImp Class Reference</div>  </div>
+<div class="title">ripple::InboundLedgersImp Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -116,7 +116,7 @@ Collaboration diagram for ripple::InboundLedgersImp:</div>
 <area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="293,1293,479,1334"/>
 <area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,1285,188,1341"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="53,1377,141,1404"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="911,1497,1053,1538"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="911,1497,1053,1538"/>
 <area shape="rect" title=" " alt="" coords="608,1228,755,1255"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="2395,1307,2583,1363"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="2014,1337,2201,1378"/>
@@ -148,8 +148,6 @@ Collaboration diagram for ripple::InboundLedgersImp:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a31710803eab4ab1860c1fe349f39711f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a31710803eab4ab1860c1fe349f39711f">u256_acq_pair</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a> &gt; &gt;</td></tr>
-<tr class="separator:a31710803eab4ab1860c1fe349f39711f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b264439abc0967cb47ebd106c0d62f6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgers.html#a0b264439abc0967cb47ebd106c0d62f6">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
 <tr class="separator:a0b264439abc0967cb47ebd106c0d62f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -161,16 +159,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4410398a5eaebf565d5355feba32dd9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a970ca13c3ac53d4be592a7e9d000cf2b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a970ca13c3ac53d4be592a7e9d000cf2b">find</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash) override</td></tr>
 <tr class="separator:a970ca13c3ac53d4be592a7e9d000cf2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abfc12c995a6773b258e2b28be963eb64"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#abfc12c995a6773b258e2b28be963eb64">gotLedgerData</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; peer, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; packet_ptr) override</td></tr>
-<tr class="memdesc:abfc12c995a6773b258e2b28be963eb64"><td class="mdescLeft">&#160;</td><td class="mdescRight">We received a TMLedgerData from a peer.  <a href="classripple_1_1InboundLedgersImp.html#abfc12c995a6773b258e2b28be963eb64">More...</a><br /></td></tr>
-<tr class="separator:abfc12c995a6773b258e2b28be963eb64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac207b111ec4c0ddbe9e63e2d91f595fc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#ac207b111ec4c0ddbe9e63e2d91f595fc">gotLedgerData</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; peer, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; packet) override</td></tr>
+<tr class="memdesc:ac207b111ec4c0ddbe9e63e2d91f595fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">We received a TMLedgerData from a peer.  <a href="classripple_1_1InboundLedgersImp.html#ac207b111ec4c0ddbe9e63e2d91f595fc">More...</a><br /></td></tr>
+<tr class="separator:ac207b111ec4c0ddbe9e63e2d91f595fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bf9e1542579f52723b136fa43dbe1e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a6bf9e1542579f52723b136fa43dbe1e7">logFailure</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;h, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) override</td></tr>
 <tr class="separator:a6bf9e1542579f52723b136fa43dbe1e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4a2ffebfe62cf8b4d606c0590e866c7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#ae4a2ffebfe62cf8b4d606c0590e866c7">isFailure</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;h) override</td></tr>
 <tr class="separator:ae4a2ffebfe62cf8b4d606c0590e866c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a244d8c6a1979e4b898e118eac9de38d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a244d8c6a1979e4b898e118eac9de38d3">doLedgerData</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> hash)</td></tr>
-<tr class="memdesc:a244d8c6a1979e4b898e118eac9de38d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called (indirectly) only by <a class="el" href="classripple_1_1InboundLedgersImp.html#abfc12c995a6773b258e2b28be963eb64" title="We received a TMLedgerData from a peer.">gotLedgerData()</a>.  <a href="classripple_1_1InboundLedgersImp.html#a244d8c6a1979e4b898e118eac9de38d3">More...</a><br /></td></tr>
-<tr class="separator:a244d8c6a1979e4b898e118eac9de38d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d940d88767dd473bf0a68efa2208b27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a6d940d88767dd473bf0a68efa2208b27">gotStaleData</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; packet_ptr) override</td></tr>
 <tr class="memdesc:a6d940d88767dd473bf0a68efa2208b27"><td class="mdescLeft">&#160;</td><td class="mdescRight">We got some data for a ledger we are no longer acquiring Since we paid the price to receive it, we might as well stash it in case we need it.  <a href="classripple_1_1InboundLedgersImp.html#a6d940d88767dd473bf0a68efa2208b27">More...</a><br /></td></tr>
 <tr class="separator:a6d940d88767dd473bf0a68efa2208b27"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -190,6 +185,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a56c2e865dd2f67eef9cf7516d5f57876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13863a89515101f87c811717eff67560"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a13863a89515101f87c811717eff67560">onStop</a> () override</td></tr>
 <tr class="separator:a13863a89515101f87c811717eff67560"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d8a7699ca582b7fd8eab345f10c021d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgers.html#a0d8a7699ca582b7fd8eab345f10c021d">find</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;hash)=0</td></tr>
+<tr class="separator:a0d8a7699ca582b7fd8eab345f10c021d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
 <tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
@@ -212,8 +209,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a3c77855d96e88fd8ac245d2d3c2e88ce"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a3c77855d96e88fd8ac245d2d3c2e88ce">kReacquireInterval</a></td></tr>
-<tr class="separator:a3c77855d96e88fd8ac245d2d3c2e88ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab4b6d26cec310e818addc98ff2126f8"><td class="memItemLeft" align="right" valign="top">static constexpr const <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#aab4b6d26cec310e818addc98ff2126f8">kReacquireInterval</a> {5}</td></tr>
+<tr class="separator:aab4b6d26cec310e818addc98ff2126f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -295,22 +292,6 @@ Private Attributes</h2></td></tr>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00036">36</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a31710803eab4ab1860c1fe349f39711f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31710803eab4ab1860c1fe349f39711f">&#9670;&nbsp;</a></span>u256_acq_pair</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1InboundLedgersImp.html#a31710803eab4ab1860c1fe349f39711f">ripple::InboundLedgersImp::u256_acq_pair</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a>&gt; &gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00046">46</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a98e06b0295d6738c56ec1272d1735bff"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a98e06b0295d6738c56ec1272d1735bff">&#9670;&nbsp;</a></span>ScopedLockType</h2>
 
@@ -331,7 +312,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00410">410</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00398">398</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -355,7 +336,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00413">413</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00401">401</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -446,7 +427,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00051">51</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00049">49</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -493,7 +474,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#ad346b5eb8ce7d749218ad3fb1ef45530">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00068">68</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00066">66</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -516,7 +497,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a970ca13c3ac53d4be592a7e9d000cf2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a970ca13c3ac53d4be592a7e9d000cf2b">&#9670;&nbsp;</a></span>find()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a970ca13c3ac53d4be592a7e9d000cf2b">&#9670;&nbsp;</a></span>find() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -534,19 +515,17 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a0d8a7699ca582b7fd8eab345f10c021d">ripple::InboundLedgers</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00132">132</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00130">130</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
-<a id="abfc12c995a6773b258e2b28be963eb64"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abfc12c995a6773b258e2b28be963eb64">&#9670;&nbsp;</a></span>gotLedgerData()</h2>
+<a id="ac207b111ec4c0ddbe9e63e2d91f595fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac207b111ec4c0ddbe9e63e2d91f595fc">&#9670;&nbsp;</a></span>gotLedgerData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -570,7 +549,7 @@ Here is the call graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt;&#160;</td>
-          <td class="paramname"><em>packet_ptr</em>&#160;</td>
+          <td class="paramname"><em>packet</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -589,7 +568,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a600000acda36c21ecc1f29defe89a278">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00166">166</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00164">164</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -629,7 +608,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a5c5d7da0b302fc02ed81082c32fcd48d">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00206">206</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00202">202</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -659,29 +638,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#abfa7313dd062dc0f416dfa71d8dad546">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00214">214</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a244d8c6a1979e4b898e118eac9de38d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a244d8c6a1979e4b898e118eac9de38d3">&#9670;&nbsp;</a></span>doLedgerData()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::InboundLedgersImp::doLedgerData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a>&#160;</td>
-          <td class="paramname"><em>hash</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Called (indirectly) only by <a class="el" href="classripple_1_1InboundLedgersImp.html#abfc12c995a6773b258e2b28be963eb64" title="We received a TMLedgerData from a peer.">gotLedgerData()</a>. </p>
-
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00224">224</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00210">210</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -714,7 +671,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#ad9450051586f5f5ae5a0297d15fdbfdf">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00237">237</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00225">225</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -743,7 +700,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a0dd139449bf0efa340edb0b3265032c6">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00270">270</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00258">258</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -774,7 +731,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#aa8e8fceb23a3f9bf00b604c9c0a69d87">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00279">279</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00267">267</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -805,7 +762,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#aff8b120dd69c652db5c3327d7eab5f8d">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00288">288</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00276">276</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -834,7 +791,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a51a2b07c207e628f159aa89e6402250d">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00295">295</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00283">283</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -863,7 +820,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#ac03c12b9aad2af653f21f72411205d1e">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00333">333</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00321">321</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -892,7 +849,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a2bb3b2c716ef8839a360493277a0c53d">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00354">354</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00342">342</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -921,7 +878,33 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a264fc685562692d9b237a7de9469e5c4">ripple::InboundLedgers</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00397">397</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00385">385</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a0d8a7699ca582b7fd8eab345f10c021d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d8a7699ca582b7fd8eab345f10c021d">&#9670;&nbsp;</a></span>find() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a>&gt; ripple::InboundLedgers::find </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;&#160;</td>
+          <td class="paramname"><em>hash</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -1462,8 +1445,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a3c77855d96e88fd8ac245d2d3c2e88ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c77855d96e88fd8ac245d2d3c2e88ce">&#9670;&nbsp;</a></span>kReacquireInterval</h2>
+<a id="aab4b6d26cec310e818addc98ff2126f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab4b6d26cec310e818addc98ff2126f8">&#9670;&nbsp;</a></span>kReacquireInterval</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1472,17 +1455,17 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a> ripple::InboundLedgersImp::kReacquireInterval</td>
+          <td class="memname">constexpr const <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a> ripple::InboundLedgersImp::kReacquireInterval {5}</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00049">49</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00047">47</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -1506,7 +1489,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00408">408</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00396">396</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -1530,7 +1513,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00411">411</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00399">399</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -1554,7 +1537,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00414">414</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00402">402</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -1578,7 +1561,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00416">416</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00404">404</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -1602,7 +1585,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00418">418</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00406">406</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>

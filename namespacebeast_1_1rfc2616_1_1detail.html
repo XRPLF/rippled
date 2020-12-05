@@ -66,17 +66,127 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">beast::rfc2616::detail Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html">ci_equal_pred</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a925ecf7f71d4c843b48ebab095a8a7a7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">is_lws</a> (char c)</td></tr>
+<tr class="memdesc:a925ecf7f71d4c843b48ebab095a8a7a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if <code>c</code> is linear white space.  <a href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">More...</a><br /></td></tr>
+<tr class="separator:a925ecf7f71d4c843b48ebab095a8a7a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31469be8bbe3ac07f5afe5228c4a4848"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">is_white</a> (char c)</td></tr>
+<tr class="memdesc:a31469be8bbe3ac07f5afe5228c4a4848"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if <code>c</code> is any whitespace character.  <a href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">More...</a><br /></td></tr>
+<tr class="separator:a31469be8bbe3ac07f5afe5228c4a4848"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf0fd842667ee98fe6c34fd2542386a6"><td class="memTemplParams" colspan="2">template&lt;class FwdIter &gt; </td></tr>
+<tr class="memitem:acf0fd842667ee98fe6c34fd2542386a6"><td class="memTemplItemLeft" align="right" valign="top">FwdIter&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a> (FwdIter first, FwdIter last)</td></tr>
+<tr class="separator:acf0fd842667ee98fe6c34fd2542386a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03ec1be0dd2f0462bcf5ebf57bab3fbc"><td class="memTemplParams" colspan="2">template&lt;class String &gt; </td></tr>
+<tr class="memitem:a03ec1be0dd2f0462bcf5ebf57bab3fbc"><td class="memTemplItemLeft" align="right" valign="top">String&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616_1_1detail.html#a03ec1be0dd2f0462bcf5ebf57bab3fbc">trim_right</a> (String const &amp;s)</td></tr>
+<tr class="separator:a03ec1be0dd2f0462bcf5ebf57bab3fbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a925ecf7f71d4c843b48ebab095a8a7a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a925ecf7f71d4c843b48ebab095a8a7a7">&#9670;&nbsp;</a></span>is_lws()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool beast::rfc2616::detail::is_lws </td>
+          <td>(</td>
+          <td class="paramtype">char&#160;</td>
+          <td class="paramname"><em>c</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns <code>true</code> if <code>c</code> is linear white space. </p>
+<p>This excludes the CRLF sequence allowed for line continuations. </p>
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00045">45</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
+<a id="a31469be8bbe3ac07f5afe5228c4a4848"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31469be8bbe3ac07f5afe5228c4a4848">&#9670;&nbsp;</a></span>is_white()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool beast::rfc2616::detail::is_white </td>
+          <td>(</td>
+          <td class="paramtype">char&#160;</td>
+          <td class="paramname"><em>c</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns <code>true</code> if <code>c</code> is any whitespace character. </p>
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00052">52</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
+<a id="acf0fd842667ee98fe6c34fd2542386a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf0fd842667ee98fe6c34fd2542386a6">&#9670;&nbsp;</a></span>trim_right() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FwdIter &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">FwdIter beast::rfc2616::detail::trim_right </td>
+          <td>(</td>
+          <td class="paramtype">FwdIter&#160;</td>
+          <td class="paramname"><em>first</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">FwdIter&#160;</td>
+          <td class="paramname"><em>last</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00069">69</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
+<a id="a03ec1be0dd2f0462bcf5ebf57bab3fbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03ec1be0dd2f0462bcf5ebf57bab3fbc">&#9670;&nbsp;</a></span>trim_right() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class String &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">String beast::rfc2616::detail::trim_right </td>
+          <td>(</td>
+          <td class="paramtype">String const &amp;&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00084">84</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

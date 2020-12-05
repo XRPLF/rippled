@@ -212,8 +212,6 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a83405987133d6adfe08d0acd1217c9da"><td class="memItemLeft" align="right" valign="top">static char const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a83405987133d6adfe08d0acd1217c9da">getCountedObjectName</a> ()</td></tr>
-<tr class="separator:a83405987133d6adfe08d0acd1217c9da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e007f454719831e6885ef33158dc0f7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a0e007f454719831e6885ef33158dc0f7">transactionFromSQL</a> (boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; const &amp;ledgerSeq, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;status, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> const &amp;rawTxn, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="separator:a0e007f454719831e6885ef33158dc0f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d9dd8c919e755ebf57e2586f3f86a1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843">TransStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ab9d9dd8c919e755ebf57e2586f3f86a1">sqlTransactionStatus</a> (boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;status)</td></tr>
@@ -227,8 +225,8 @@ Static Public Member Functions</h2></td></tr>
 Static Private Member Functions</h2></td></tr>
 <tr class="memitem:ae5e4540293b10b7f48aee802865a2b70"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ae5e4540293b10b7f48aee802865a2b70">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, boost::optional&lt; <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt;&gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
 <tr class="separator:ae5e4540293b10b7f48aee802865a2b70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memItemLeft" align="right" valign="top">static Counter &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#a741285b9c90fcfd9d0087d3c17f75cfe">getCounter</a> () noexcept</td></tr>
-<tr class="separator:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#acde6c67ea432f6bb32d2ecb5db786ce8">getCounter</a> () noexcept</td></tr>
+<tr class="separator:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -270,7 +268,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00070">70</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00064">64</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -286,7 +284,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00071">71</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00065">65</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -336,33 +334,6 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a83405987133d6adfe08d0acd1217c9da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83405987133d6adfe08d0acd1217c9da">&#9670;&nbsp;</a></span>getCountedObjectName()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static char const* ripple::Transaction::getCountedObjectName </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00065">65</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
-
-</div>
-</div>
 <a id="a0e007f454719831e6885ef33158dc0f7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0e007f454719831e6885ef33158dc0f7">&#9670;&nbsp;</a></span>transactionFromSQL()</h2>
 
@@ -456,7 +427,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00089">89</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00083">83</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -475,7 +446,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00095">95</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00089">89</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -494,7 +465,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00101">101</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00095">95</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -513,7 +484,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00107">107</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00101">101</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -532,7 +503,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00113">113</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00107">107</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -551,7 +522,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00119">119</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00113">113</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -571,7 +542,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00125">125</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00119">119</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -621,7 +592,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00134">134</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00128">128</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -641,7 +612,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00140">140</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00134">134</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -662,7 +633,7 @@ Private Attributes</h2></td></tr>
 
 <p>Set this flag once added to a batch. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00149">149</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00143">143</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -684,7 +655,7 @@ Private Attributes</h2></td></tr>
 <p>Detect if transaction is being batched. </p>
 <dl class="section return"><dt>Returns</dt><dd>Whether transaction is being applied within a batch. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00160">160</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00154">154</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -705,7 +676,7 @@ Private Attributes</h2></td></tr>
 
 <p>Indicate that transaction application has been attempted. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00169">169</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00163">163</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -727,7 +698,7 @@ Private Attributes</h2></td></tr>
 <p>getSubmitResult Return submit result </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="structripple_1_1Transaction_1_1SubmitResult.html">SubmitResult</a> struct </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00209">209</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00203">203</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -748,7 +719,7 @@ Private Attributes</h2></td></tr>
 
 <p>clearSubmitResult Clear all flags in <a class="el" href="structripple_1_1Transaction_1_1SubmitResult.html">SubmitResult</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00218">218</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00212">212</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -769,7 +740,7 @@ Private Attributes</h2></td></tr>
 
 <p>setApplied Set this flag once was applied to open ledger </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00227">227</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00221">221</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -790,7 +761,7 @@ Private Attributes</h2></td></tr>
 
 <p>setQueued Set this flag once was put into heldtxns queue </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00236">236</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00230">230</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -811,7 +782,7 @@ Private Attributes</h2></td></tr>
 
 <p>setBroadcast Set this flag once was broadcasted via network </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00245">245</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00239">239</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -832,7 +803,7 @@ Private Attributes</h2></td></tr>
 
 <p>setKept Set this flag once was put to localtxns queue </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00254">254</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00248">248</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -854,7 +825,7 @@ Private Attributes</h2></td></tr>
 <p>getCurrentLedgerState Get current ledger state of transaction </p>
 <dl class="section return"><dt>Returns</dt><dd>Current ledger state </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00286">286</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00280">280</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -907,7 +878,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00299">299</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00293">293</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1085,8 +1056,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a741285b9c90fcfd9d0087d3c17f75cfe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a741285b9c90fcfd9d0087d3c17f75cfe">&#9670;&nbsp;</a></span>getCounter()</h2>
+<a id="acde6c67ea432f6bb32d2ecb5db786ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde6c67ea432f6bb32d2ecb5db786ce8">&#9670;&nbsp;</a></span>getCounter()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1095,7 +1066,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static Counter&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a>  &gt;::getCounter</td>
+          <td class="memname">static auto&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a>  &gt;::getCounter</td>
         </tr>
       </table>
   </td>
@@ -1105,7 +1076,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00153">153</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -1130,7 +1101,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00336">336</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00330">330</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1154,7 +1125,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00338">338</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00332">332</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1178,7 +1149,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00339">339</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00333">333</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1202,7 +1173,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00340">340</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00334">334</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1226,7 +1197,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00341">341</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00335">335</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1252,7 +1223,7 @@ Private Attributes</h2></td></tr>
 
 <p>different ways for transaction to be accepted </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00344">344</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00338">338</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1276,7 +1247,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00346">346</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00340">340</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1300,7 +1271,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00348">348</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00342">342</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1324,7 +1295,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00349">349</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00343">343</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1348,7 +1319,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00350">350</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00344">344</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>

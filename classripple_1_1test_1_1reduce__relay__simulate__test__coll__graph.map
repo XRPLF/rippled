@@ -28,7 +28,7 @@
 <area shape="rect" id="node41" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="540,460,672,487"/>
 <area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,635,349,661"/>
 <area shape="rect" id="node43" href="$classripple_1_1base__uint.html" title=" " alt="" coords="503,610,709,651"/>
-<area shape="rect" id="node46" href="$classripple_1_1base__uint.html" title=" " alt="" coords="535,778,677,819"/>
+<area shape="rect" id="node46" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="535,778,677,819"/>
 <area shape="rect" id="node47" href="$classripple_1_1base__uint.html" title=" " alt="" coords="535,713,677,754"/>
 <area shape="rect" id="node22" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="901,453,1012,480"/>
 <area shape="rect" id="node29" href="$classripple_1_1test_1_1jtx_1_1Env.html" title="A transaction testing environment." alt="" coords="1692,741,1841,768"/>

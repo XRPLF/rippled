@@ -1,6 +1,6 @@
 <map id="ripple::OrderBook" name="ripple::OrderBook">
 <area shape="rect" id="node1" title="Describes a serialized ledger entry for an order book." alt="" coords="1233,68,1369,95"/>
-<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title=" " alt="" coords="519,34,661,75"/>
+<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="519,34,661,75"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,17,389,58"/>
 <area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,99,689,141"/>
 <area shape="rect" id="node9" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,165,693,206"/>

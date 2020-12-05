@@ -89,50 +89,39 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/strHex.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keywordtype">int</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">   27</a></span>&#160;<a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c)</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keyword">struct </span>HexTab</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    {</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordtype">int</span> hex[256];</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        HexTab()</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        {</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">std::fill</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a>(hex), <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a>(hex), -1);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                hex[<span class="charliteral">&#39;0&#39;</span> + i] = i;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 6; ++i)</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            {</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                hex[<span class="charliteral">&#39;A&#39;</span> + i] = 10 + i;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                hex[<span class="charliteral">&#39;a&#39;</span> + i] = 10 + i;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            }</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        }</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        operator[](<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">        </span>{</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="keywordflow">return</span> hex[c];</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    };</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">static</span> HexTab xtab;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">return</span> xtab[c];</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/array.html">array</a>&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keywordtype">int</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">   26</a></span>&#160;<a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c)</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keyword">static</span> constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;int, 256&gt;</a> <span class="keyword">const</span> xtab = []() {</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;int, 256&gt;</a> t{};</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; x : t)</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;            x = -1;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            t[<span class="charliteral">&#39;0&#39;</span> + i] = i;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 6; ++i)</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            t[<span class="charliteral">&#39;A&#39;</span> + i] = 10 + i;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            t[<span class="charliteral">&#39;a&#39;</span> + i] = 10 + i;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        }</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span> t;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }();</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">return</span> xtab[c];</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00027">strHex.cpp:27</a></div></div>
-<div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
-<div class="ttc" id="afill_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/fill.html">std::fill</a></div><div class="ttdeci">T fill(T... args)</div></div>
+<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00026">strHex.cpp:26</a></div></div>
+<div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/array.html">array</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
-<div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a></div><div class="ttdeci">T end(T... args)</div></div>
-<div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

@@ -447,94 +447,93 @@ $(function() {
 <div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                {</div>
 <div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                    <span class="comment">// Uh oh, corrupted data!</span></div>
 <div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                    JLOG(m_journal.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;                        &lt;&lt; <span class="stringliteral">&quot;Corrupt NodeObject #&quot;</span></div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                        &lt;&lt; from_hex_text&lt;uint256&gt;(it-&gt;key().data());</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                }</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            }</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            {</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;                <span class="comment">// VFALCO NOTE What does it mean to find an</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                <span class="comment">//             incorrectly sized key? Corruption?</span></div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                JLOG(m_journal.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Bad key size = &quot;</span> &lt;&lt; it-&gt;key().size();</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            }</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        }</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    }</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160; </div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    getWriteLoad()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        <span class="keywordflow">return</span> m_batch.getWriteLoad();</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    }</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160; </div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    setDeletePath()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;        m_deletePath = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    }</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160; </div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160; </div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    writeBatch(<a class="code" href="namespaceripple_1_1NodeStore.html#ae0e4b79f8eb3ffa0bf8fcaf848643202">Batch</a> <span class="keyword">const</span>&amp; batch)<span class="keyword"> override</span></div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;        storeBatch(batch);</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    }</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160; </div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    <a class="code" href="namespaceripple.html#a018bcf9b2ddbc1ace229d8c0a37fdd79">verify</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    }</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160; </div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    fdRequired()<span class="keyword"> const override</span></div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;        <span class="keywordflow">return</span> fdRequired_;</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    }</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;};</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160; </div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160; </div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;<span class="keyword">class </span>RocksDBFactory : <span class="keyword">public</span> Factory</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;{</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    RocksDBEnv m_env;</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160; </div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    RocksDBFactory()</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    {</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;        <a class="code" href="classripple_1_1NodeStore_1_1Manager.html#a59f9bcb7e6049d1b4c557891992f6cab">Manager::instance</a>().<a class="code" href="classripple_1_1NodeStore_1_1Manager.html#ab1f23554e59a7319ffe3e235cd7028c3">insert</a>(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    }</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160; </div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    ~RocksDBFactory()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;        <a class="code" href="classripple_1_1NodeStore_1_1Manager.html#a59f9bcb7e6049d1b4c557891992f6cab">Manager::instance</a>().<a class="code" href="classripple_1_1NodeStore_1_1Manager.html#a9b76452a117753769c60071959d65f23">erase</a>(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;    }</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160; </div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    getName()<span class="keyword"> const override</span></div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;RocksDB&quot;</span>;</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;    }</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160; </div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Backend&gt;</a></div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    createInstance(</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;        <span class="keywordtype">size_t</span> keyBytes,</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;        Section <span class="keyword">const</span>&amp; keyValues,</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>,</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        Scheduler&amp; scheduler,</div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)<span class="keyword"> override</span></div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;        <span class="keywordflow">return</span> std::make_unique&lt;RocksDBBackend&gt;(</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;            keyBytes, keyValues, scheduler, journal, &amp;m_env);</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    }</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;};</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;<span class="keyword">static</span> RocksDBFactory rocksDBFactory;</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160; </div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;                        &lt;&lt; <span class="stringliteral">&quot;Corrupt NodeObject #&quot;</span> &lt;&lt; it-&gt;key().ToString(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                }</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            }</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            {</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;                <span class="comment">// VFALCO NOTE What does it mean to find an</span></div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;                <span class="comment">//             incorrectly sized key? Corruption?</span></div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                JLOG(m_journal.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Bad key size = &quot;</span> &lt;&lt; it-&gt;key().size();</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            }</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        }</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    }</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <span class="keywordtype">int</span></div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    getWriteLoad()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        <span class="keywordflow">return</span> m_batch.getWriteLoad();</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    }</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    setDeletePath()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;        m_deletePath = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    }</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160; </div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    writeBatch(<a class="code" href="namespaceripple_1_1NodeStore.html#ae0e4b79f8eb3ffa0bf8fcaf848643202">Batch</a> <span class="keyword">const</span>&amp; batch)<span class="keyword"> override</span></div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        storeBatch(batch);</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;    }</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160; </div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <a class="code" href="namespaceripple.html#a018bcf9b2ddbc1ace229d8c0a37fdd79">verify</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    }</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160; </div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;    <span class="keywordtype">int</span></div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    fdRequired()<span class="keyword"> const override</span></div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        <span class="keywordflow">return</span> fdRequired_;</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    }</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;};</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160; </div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160; </div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;<span class="keyword">class </span>RocksDBFactory : <span class="keyword">public</span> Factory</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;{</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    RocksDBEnv m_env;</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160; </div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    RocksDBFactory()</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    {</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;        <a class="code" href="classripple_1_1NodeStore_1_1Manager.html#a59f9bcb7e6049d1b4c557891992f6cab">Manager::instance</a>().<a class="code" href="classripple_1_1NodeStore_1_1Manager.html#ab1f23554e59a7319ffe3e235cd7028c3">insert</a>(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    }</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160; </div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;    ~RocksDBFactory()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        <a class="code" href="classripple_1_1NodeStore_1_1Manager.html#a59f9bcb7e6049d1b4c557891992f6cab">Manager::instance</a>().<a class="code" href="classripple_1_1NodeStore_1_1Manager.html#a9b76452a117753769c60071959d65f23">erase</a>(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;    }</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160; </div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    getName()<span class="keyword"> const override</span></div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;RocksDB&quot;</span>;</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;    }</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160; </div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Backend&gt;</a></div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;    createInstance(</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;        <span class="keywordtype">size_t</span> keyBytes,</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;        Section <span class="keyword">const</span>&amp; keyValues,</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>,</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        Scheduler&amp; scheduler,</div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)<span class="keyword"> override</span></div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        <span class="keywordflow">return</span> std::make_unique&lt;RocksDBBackend&gt;(</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;            keyBytes, keyValues, scheduler, journal, &amp;m_env);</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;    }</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;};</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160; </div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;<span class="keyword">static</span> RocksDBFactory rocksDBFactory;</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160; </div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160; </div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>
 <div class="ttc" id="afor_each_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a></div><div class="ttdeci">T for_each(T... args)</div></div>

@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structripple_1_1PeerFinder_1_1Config-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -81,9 +82,10 @@ Collaboration diagram for ripple::PeerFinder::Config:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1PeerFinder_1_1Config__coll__graph.png" border="0" usemap="#ripple_1_1PeerFinder_1_1Config_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1PeerFinder_1_1Config_coll__map" id="ripple_1_1PeerFinder_1_1Config_coll__map">
-<area shape="rect" title="PeerFinder configuration settings." alt="" coords="48,95,183,136"/>
+<area shape="rect" title="PeerFinder configuration settings." alt="" coords="108,124,243,165"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="132,5,219,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="243,5,331,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -92,9 +94,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a189d9cacf39182df611c2e0ba2dd177f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#a189d9cacf39182df611c2e0ba2dd177f">Config</a> ()</td></tr>
 <tr class="memdesc:a189d9cacf39182df611c2e0ba2dd177f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a configuration with default values.  <a href="structripple_1_1PeerFinder_1_1Config.html#a189d9cacf39182df611c2e0ba2dd177f">More...</a><br /></td></tr>
 <tr class="separator:a189d9cacf39182df611c2e0ba2dd177f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad557c8b67a83898efbc48d324efce514"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#ad557c8b67a83898efbc48d324efce514">calcOutPeers</a> () const</td></tr>
-<tr class="memdesc:ad557c8b67a83898efbc48d324efce514"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a suitable value for outPeers according to the rules.  <a href="structripple_1_1PeerFinder_1_1Config.html#ad557c8b67a83898efbc48d324efce514">More...</a><br /></td></tr>
-<tr class="separator:ad557c8b67a83898efbc48d324efce514"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af22578657f9b42b4c0b66cb6289761aa"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#af22578657f9b42b4c0b66cb6289761aa">calcOutPeers</a> () const</td></tr>
+<tr class="memdesc:af22578657f9b42b4c0b66cb6289761aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a suitable value for outPeers according to the rules.  <a href="structripple_1_1PeerFinder_1_1Config.html#af22578657f9b42b4c0b66cb6289761aa">More...</a><br /></td></tr>
+<tr class="separator:af22578657f9b42b4c0b66cb6289761aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fde17254835e48c5b090bb00fe337e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#a7fde17254835e48c5b090bb00fe337e9">applyTuning</a> ()</td></tr>
 <tr class="memdesc:a7fde17254835e48c5b090bb00fe337e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjusts the values so they follow the business rules.  <a href="structripple_1_1PeerFinder_1_1Config.html#a7fde17254835e48c5b090bb00fe337e9">More...</a><br /></td></tr>
 <tr class="separator:a7fde17254835e48c5b090bb00fe337e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -102,14 +104,23 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a0003a9384327d7c4a4823fa736bf86cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the configuration into a property stream.  <a href="structripple_1_1PeerFinder_1_1Config.html#a0003a9384327d7c4a4823fa736bf86cc">More...</a><br /></td></tr>
 <tr class="separator:a0003a9384327d7c4a4823fa736bf86cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a9321a565c8d2fac0bbc77cb24582fc94"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structripple_1_1PeerFinder_1_1Config.html">Config</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#a9321a565c8d2fac0bbc77cb24582fc94">makeConfig</a> (<a class="el" href="classripple_1_1Config.html">ripple::Config</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> port, bool validationPublicKey, int <a class="el" href="structripple_1_1PeerFinder_1_1Config.html#a46decaaf39a6782668b563d2d774ddb5">ipLimit</a>)</td></tr>
+<tr class="memdesc:a9321a565c8d2fac0bbc77cb24582fc94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make <a class="el" href="structripple_1_1PeerFinder_1_1Config.html" title="PeerFinder configuration settings.">PeerFinder::Config</a> from configuration parameters.  <a href="structripple_1_1PeerFinder_1_1Config.html#a9321a565c8d2fac0bbc77cb24582fc94">More...</a><br /></td></tr>
+<tr class="separator:a9321a565c8d2fac0bbc77cb24582fc94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:abba35b1a687d5a8b95781659d6c898a0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#abba35b1a687d5a8b95781659d6c898a0">maxPeers</a></td></tr>
-<tr class="memdesc:abba35b1a687d5a8b95781659d6c898a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The largest number of public peer slots to allow.  <a href="structripple_1_1PeerFinder_1_1Config.html#abba35b1a687d5a8b95781659d6c898a0">More...</a><br /></td></tr>
-<tr class="separator:abba35b1a687d5a8b95781659d6c898a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab75b1955d44575516367c88b495aa2b0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#ab75b1955d44575516367c88b495aa2b0">outPeers</a></td></tr>
-<tr class="memdesc:ab75b1955d44575516367c88b495aa2b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of automatic outbound connections to maintain.  <a href="structripple_1_1PeerFinder_1_1Config.html#ab75b1955d44575516367c88b495aa2b0">More...</a><br /></td></tr>
-<tr class="separator:ab75b1955d44575516367c88b495aa2b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0026277cfc4914ecc8d136e5a94ef8e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#aa0026277cfc4914ecc8d136e5a94ef8e">maxPeers</a></td></tr>
+<tr class="memdesc:aa0026277cfc4914ecc8d136e5a94ef8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The largest number of public peer slots to allow.  <a href="structripple_1_1PeerFinder_1_1Config.html#aa0026277cfc4914ecc8d136e5a94ef8e">More...</a><br /></td></tr>
+<tr class="separator:aa0026277cfc4914ecc8d136e5a94ef8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9a20f47b40f06984c08aed2ca613613"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#ab9a20f47b40f06984c08aed2ca613613">outPeers</a></td></tr>
+<tr class="memdesc:ab9a20f47b40f06984c08aed2ca613613"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of automatic outbound connections to maintain.  <a href="structripple_1_1PeerFinder_1_1Config.html#ab9a20f47b40f06984c08aed2ca613613">More...</a><br /></td></tr>
+<tr class="separator:ab9a20f47b40f06984c08aed2ca613613"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67c60a2f6d0ef7a67fc7144f09f57d04"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#a67c60a2f6d0ef7a67fc7144f09f57d04">inPeers</a></td></tr>
+<tr class="memdesc:a67c60a2f6d0ef7a67fc7144f09f57d04"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of automatic inbound connections to maintain.  <a href="structripple_1_1PeerFinder_1_1Config.html#a67c60a2f6d0ef7a67fc7144f09f57d04">More...</a><br /></td></tr>
+<tr class="separator:a67c60a2f6d0ef7a67fc7144f09f57d04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9b3a48e05361caa57d3e0c09e37a166"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html#af9b3a48e05361caa57d3e0c09e37a166">peerPrivate</a> = true</td></tr>
 <tr class="memdesc:af9b3a48e05361caa57d3e0c09e37a166"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>true</code> if we want our IP address kept private.  <a href="structripple_1_1PeerFinder_1_1Config.html#af9b3a48e05361caa57d3e0c09e37a166">More...</a><br /></td></tr>
 <tr class="separator:af9b3a48e05361caa57d3e0c09e37a166"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,7 +143,7 @@ Public Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="namespaceripple_1_1PeerFinder.html">PeerFinder</a> configuration settings. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00040">40</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00041">41</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a189d9cacf39182df611c2e0ba2dd177f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a189d9cacf39182df611c2e0ba2dd177f">&#9670;&nbsp;</a></span>Config()</h2>
@@ -156,14 +167,14 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad557c8b67a83898efbc48d324efce514"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad557c8b67a83898efbc48d324efce514">&#9670;&nbsp;</a></span>calcOutPeers()</h2>
+<a id="af22578657f9b42b4c0b66cb6289761aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af22578657f9b42b4c0b66cb6289761aa">&#9670;&nbsp;</a></span>calcOutPeers()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">double ripple::PeerFinder::Config::calcOutPeers </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::PeerFinder::Config::calcOutPeers </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -173,7 +184,7 @@ Public Attributes</h2></td></tr>
 
 <p>Returns a suitable value for outPeers according to the rules. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00037">37</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00038">38</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -194,7 +205,7 @@ Public Attributes</h2></td></tr>
 
 <p>Adjusts the values so they follow the business rules. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00044">44</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00046">46</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -216,19 +227,81 @@ Public Attributes</h2></td></tr>
 
 <p>Write the configuration into a property stream. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00070">70</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00066">66</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9321a565c8d2fac0bbc77cb24582fc94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9321a565c8d2fac0bbc77cb24582fc94">&#9670;&nbsp;</a></span>makeConfig()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html">Config</a> ripple::PeerFinder::Config::makeConfig </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">ripple::Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a>&#160;</td>
+          <td class="paramname"><em>port</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>validationPublicKey</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ipLimit</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Make <a class="el" href="structripple_1_1PeerFinder_1_1Config.html" title="PeerFinder configuration settings.">PeerFinder::Config</a> from configuration parameters. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">config</td><td>server's configuration </td></tr>
+    <tr><td class="paramname">port</td><td>server's listening port </td></tr>
+    <tr><td class="paramname">validationPublicKey</td><td>true if validation public key is not empty </td></tr>
+    <tr><td class="paramname">ipLimit</td><td>limit of incoming connections per IP </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structripple_1_1PeerFinder_1_1Config.html" title="PeerFinder configuration settings.">PeerFinder::Config</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00078">78</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="abba35b1a687d5a8b95781659d6c898a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abba35b1a687d5a8b95781659d6c898a0">&#9670;&nbsp;</a></span>maxPeers</h2>
+<a id="aa0026277cfc4914ecc8d136e5a94ef8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0026277cfc4914ecc8d136e5a94ef8e">&#9670;&nbsp;</a></span>maxPeers</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ripple::PeerFinder::Config::maxPeers</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::PeerFinder::Config::maxPeers</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -236,26 +309,45 @@ Public Attributes</h2></td></tr>
 <p>The largest number of public peer slots to allow. </p>
 <p>This includes both inbound and outbound, but does not include fixed peers. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00046">46</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00047">47</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
-<a id="ab75b1955d44575516367c88b495aa2b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab75b1955d44575516367c88b495aa2b0">&#9670;&nbsp;</a></span>outPeers</h2>
+<a id="ab9a20f47b40f06984c08aed2ca613613"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9a20f47b40f06984c08aed2ca613613">&#9670;&nbsp;</a></span>outPeers</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">double ripple::PeerFinder::Config::outPeers</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::PeerFinder::Config::outPeers</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>The number of automatic outbound connections to maintain. </p>
-<p>Outbound connections are only maintained if autoConnect is <code>true</code>. The value can be fractional; The decision to round up or down will be made using a per-process pseudorandom number and a probability proportional to the fractional part. Example: If outPeers is 9.3, then 30% of nodes will maintain 9 outbound connections, while 70% of nodes will maintain 10 outbound connections. </p>
+<p>Outbound connections are only maintained if autoConnect is <code>true</code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00058">58</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00053">53</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+
+</div>
+</div>
+<a id="a67c60a2f6d0ef7a67fc7144f09f57d04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67c60a2f6d0ef7a67fc7144f09f57d04">&#9670;&nbsp;</a></span>inPeers</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::PeerFinder::Config::inPeers</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The number of automatic inbound connections to maintain. </p>
+<p>Inbound connections are only maintained if wantIncoming is <code>true</code>. </p>
+
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00059">59</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -273,7 +365,7 @@ Public Attributes</h2></td></tr>
 
 <p><code>true</code> if we want our IP address kept private. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00061">61</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00062">62</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -291,7 +383,7 @@ Public Attributes</h2></td></tr>
 
 <p><code>true</code> if we want to accept incoming connections. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00064">64</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00065">65</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -309,7 +401,7 @@ Public Attributes</h2></td></tr>
 
 <p><code>true</code> if we want to establish connections automatically </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00067">67</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00068">68</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -327,7 +419,7 @@ Public Attributes</h2></td></tr>
 
 <p>The listening port number. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00070">70</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00071">71</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -345,7 +437,7 @@ Public Attributes</h2></td></tr>
 
 <p>The set of features we advertise. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00073">73</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00074">74</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -363,7 +455,7 @@ Public Attributes</h2></td></tr>
 
 <p>Limit how many incoming connections we allow per IP. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00076">76</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00077">77</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>

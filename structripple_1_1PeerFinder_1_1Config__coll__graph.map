@@ -1,5 +1,6 @@
 <map id="ripple::PeerFinder::Config" name="ripple::PeerFinder::Config">
-<area shape="rect" id="node1" title="PeerFinder configuration settings." alt="" coords="48,95,183,136"/>
+<area shape="rect" id="node1" title="PeerFinder configuration settings." alt="" coords="108,124,243,165"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="132,5,219,32"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="243,5,331,32"/>
 </map>

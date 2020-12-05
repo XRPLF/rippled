@@ -67,7 +67,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="structripple_1_1RCLCxPeerPos_1_1Data-members.html">List of all members</a>  </div>
@@ -94,7 +93,7 @@ Collaboration diagram for ripple::RCLCxPeerPos::Data:</div>
 <area shape="rect" href="classripple_1_1ConsensusProposal.html" title=" " alt="" coords="853,213,1068,254"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,125,108,152"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,147,389,189"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="541,147,682,189"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="541,147,682,189"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="541,278,682,319"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,329,349,356"/>
 <area shape="rect" href="classripple_1_1PublicKey.html" title="A public key." alt="" coords="546,344,677,371"/>
@@ -110,11 +109,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5f30e204e8c1ba2a4f4a94ea186be2a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RCLCxPeerPos_1_1Data.html#a5f30e204e8c1ba2a4f4a94ea186be2a0">Data</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;<a class="el" href="classripple_1_1RCLCxPeerPos.html#ae755e970550b6ffaf5d5d18468c40488">publicKey</a>, <a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;<a class="el" href="classripple_1_1RCLCxPeerPos.html#af7dbd15db4bfc7852a84f0cc7dd27685">signature</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;suppress, <a class="el" href="classripple_1_1RCLCxPeerPos.html#afef6574cc04e0877e8f23f76cc688390">Proposal</a> &amp;&amp;<a class="el" href="classripple_1_1RCLCxPeerPos.html#abaaee52d3710a96e8c78aa725646b46e">proposal</a>)</td></tr>
 <tr class="separator:a5f30e204e8c1ba2a4f4a94ea186be2a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a48041c34258d491790bb47cc120a1800"><td class="memItemLeft" align="right" valign="top">static char const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RCLCxPeerPos_1_1Data.html#a48041c34258d491790bb47cc120a1800">getCountedObjectName</a> ()</td></tr>
-<tr class="separator:a48041c34258d491790bb47cc120a1800"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ae963c9edae557cc929544b2ac58436b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RCLCxPeerPos_1_1Data.html#ae963c9edae557cc929544b2ac58436b8">publicKey_</a></td></tr>
@@ -128,8 +122,8 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
-<tr class="memitem:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memItemLeft" align="right" valign="top">static Counter &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#a741285b9c90fcfd9d0087d3c17f75cfe">getCounter</a> () noexcept</td></tr>
-<tr class="separator:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#acde6c67ea432f6bb32d2ecb5db786ce8">getCounter</a> () noexcept</td></tr>
+<tr class="separator:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -178,8 +172,8 @@ Static Private Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a48041c34258d491790bb47cc120a1800"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a48041c34258d491790bb47cc120a1800">&#9670;&nbsp;</a></span>getCountedObjectName()</h2>
+<a id="acde6c67ea432f6bb32d2ecb5db786ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde6c67ea432f6bb32d2ecb5db786ce8">&#9670;&nbsp;</a></span>getCounter()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -188,34 +182,7 @@ Static Private Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static char const* ripple::RCLCxPeerPos::Data::getCountedObjectName </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RCLCxPeerPos_8h_source.html#l00118">118</a> of file <a class="el" href="RCLCxPeerPos_8h_source.html">RCLCxPeerPos.h</a>.</p>
-
-</div>
-</div>
-<a id="a741285b9c90fcfd9d0087d3c17f75cfe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a741285b9c90fcfd9d0087d3c17f75cfe">&#9670;&nbsp;</a></span>getCounter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static Counter&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="structripple_1_1RCLCxPeerPos_1_1Data.html">Data</a>  &gt;::getCounter</td>
+          <td class="memname">static auto&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="structripple_1_1RCLCxPeerPos_1_1Data.html">Data</a>  &gt;::getCounter</td>
         </tr>
       </table>
   </td>
@@ -225,7 +192,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00153">153</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>

@@ -131,28 +131,27 @@ $(function() {
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">auto</span> feature = table.find(context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::feature].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>());</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">if</span> (!feature &amp;&amp;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        !feature.SetHexExact(context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::feature].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>()))</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ab114d40490d1a6a0ab2fa6053167d461">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a5a9afe2f583b5c5e615979d14c00e7bd">rpcBAD_FEATURE</a>);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::vetoed))</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    {</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::vetoed].<a class="code" href="classJson_1_1Value.html#ab693fb7b9b1595bb0adc49658bbf780d">asBool</a>())</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            table.veto(feature);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            table.unVeto(feature);</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvReply = table.getJson(feature);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">auto</span> m = majorities.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/find.html">find</a>(feature);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">if</span> (m != majorities.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/end.html">end</a>())</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        jvReply[jss::majority] = m-&gt;second.time_since_epoch().count();</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordflow">return</span> jvReply;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;}</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">if</span> (!feature &amp;&amp; !feature.parseHex(context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::feature].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>()))</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ab114d40490d1a6a0ab2fa6053167d461">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a5a9afe2f583b5c5e615979d14c00e7bd">rpcBAD_FEATURE</a>);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::vetoed))</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    {</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::vetoed].<a class="code" href="classJson_1_1Value.html#ab693fb7b9b1595bb0adc49658bbf780d">asBool</a>())</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            table.veto(feature);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            table.unVeto(feature);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvReply = table.getJson(feature);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">auto</span> m = majorities.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/find.html">find</a>(feature);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">if</span> (m != majorities.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/end.html">end</a>())</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        jvReply[jss::majority] = m-&gt;second.time_since_epoch().count();</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">return</span> jvReply;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a7e45064237d4d038b191bf0d0279b086"><div class="ttname"><a href="namespaceripple.html#a7e45064237d4d038b191bf0d0279b086">ripple::doFeature</a></div><div class="ttdeci">Json::Value doFeature(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Feature1_8cpp_source.html#l00036">Feature1.cpp:36</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html">ripple::RPC::JsonContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00053">Context.h:53</a></div></div>

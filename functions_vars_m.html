@@ -220,7 +220,6 @@ $(function() {
 : <a class="el" href="classbeast_1_1io__latency__probe.html#a783c2279e0f950923ffdbdd8997ce8c3">beast::io_latency_probe&lt; Clock &gt;</a>
 , <a class="el" href="classbeast_1_1Journal__test_1_1TestSink.html#a4d63c6a77e309dd32a939695c2d81a3c">beast::Journal_test::TestSink</a>
 , <a class="el" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">ripple::basic_semaphore&lt; Mutex, CondVar &gt;</a>
-, <a class="el" href="classripple_1_1CountedObjects_1_1CounterBase.html#afc7318c0d81f827efc30b206f797234e">ripple::CountedObjects::CounterBase</a>
 , <a class="el" href="classripple_1_1CountedObjects.html#a5c3ab28dd19d17e2604950bf4f2c2799">ripple::CountedObjects</a>
 </li>
 <li>m_cv
@@ -302,7 +301,7 @@ $(function() {
 <li>m_head
 : <a class="el" href="classbeast_1_1List.html#a0506a9fc63652b7d9119265fbf5ffb76">beast::List&lt; T, Tag &gt;</a>
 , <a class="el" href="classbeast_1_1LockFreeStack.html#aef700416cc2ea924eb020e0be2ed63de">beast::LockFreeStack&lt; Element, Tag &gt;</a>
-, <a class="el" href="classripple_1_1CountedObjects.html#a30b17d61c4a3e8a31f019cb830e55bed">ripple::CountedObjects</a>
+, <a class="el" href="classripple_1_1CountedObjects.html#a24507136e67f38befc76c65d531c3ec6">ripple::CountedObjects</a>
 </li>
 <li>m_heldLedger
 : <a class="el" href="classripple_1_1LedgerHolder.html#ad1b0d556cfdf69766990a195a745ae50">ripple::LedgerHolder</a>
@@ -336,7 +335,6 @@ $(function() {
 </li>
 <li>m_inbound
 : <a class="el" href="classripple_1_1PeerFinder_1_1SlotImp.html#a6024e3ceb32896081ebcb3659887ba65">ripple::PeerFinder::SlotImp</a>
-, <a class="el" href="classripple_1_1PeerImp.html#a3c7ad21f3b16cbc781a035ed61fc735d">ripple::PeerImp</a>
 </li>
 <li>m_inboundLedgers
 : <a class="el" href="classripple_1_1ApplicationImp.html#a6425d282fc0ff792aa4cfbd870c03589">ripple::ApplicationImp</a>
@@ -528,7 +526,6 @@ $(function() {
 <li>m_next
 : <a class="el" href="classbeast_1_1detail_1_1ListNode.html#a0191120d6a1323110ea03739320bc39b">beast::detail::ListNode&lt; T, Tag &gt;</a>
 , <a class="el" href="classbeast_1_1LockFreeStack_1_1Node.html#ad22a1b7dfd0b06904624e1ccac666716">beast::LockFreeStack&lt; Element, Tag &gt;::Node</a>
-, <a class="el" href="classripple_1_1CountedObjects_1_1CounterBase.html#a7d3ec6a20c3cdfbde49dcd3ec2778b6b">ripple::CountedObjects::CounterBase</a>
 </li>
 <li>m_node
 : <a class="el" href="classbeast_1_1detail_1_1ListIterator.html#a9b3afe207729b5d2c247b8707d873540">beast::detail::ListIterator&lt; N &gt;</a>
@@ -655,9 +652,6 @@ $(function() {
 </li>
 <li>m_root
 : <a class="el" href="classripple_1_1Stoppable.html#a3a889a7b2e1b4c0fd463c51abfaa0ee0">ripple::Stoppable</a>
-</li>
-<li>m_roundingThreshold
-: <a class="el" href="classripple_1_1PeerFinder_1_1Counts.html#a667674d309fe98171353ec1fb8676bd3">ripple::PeerFinder::Counts</a>
 </li>
 <li>m_runningTaskCount
 : <a class="el" href="classripple_1_1Workers.html#ae016b648511f4b8cb6fccf95b72dfc68">ripple::Workers</a>
@@ -890,6 +884,15 @@ $(function() {
 , <a class="el" href="classripple_1_1ValidatorKeys.html#a183b4ce6c755f2788f75bfabd9a8dcb7">ripple::ValidatorKeys</a>
 , <a class="el" href="structripple_1_1ValidatorToken.html#a51bc78fe3021e0f53177c30707b792fb">ripple::ValidatorToken</a>
 </li>
+<li>manifestListSeq_
+: <a class="el" href="classripple_1_1OverlayImpl.html#a4888f79cc6166a92dd3061621fb5d3ef">ripple::OverlayImpl</a>
+</li>
+<li>manifestLock_
+: <a class="el" href="classripple_1_1OverlayImpl.html#a744cd710ad06c438b6af9313bbeb3e67">ripple::OverlayImpl</a>
+</li>
+<li>manifestMessage_
+: <a class="el" href="classripple_1_1OverlayImpl.html#a4690e3dc0ec8663844df7c17936c238f">ripple::OverlayImpl</a>
+</li>
 <li>mantissa_
 : <a class="el" href="classripple_1_1IOUAmount.html#a44f1b32037a68e67d02237a170c5425b">ripple::IOUAmount</a>
 </li>
@@ -960,6 +963,9 @@ $(function() {
 <li>max_
 : <a class="el" href="structripple_1_1SHAMap_1_1MissingNodes.html#a55ea2bafa18548792a05de96107370de">ripple::SHAMap::MissingNodes</a>
 </li>
+<li>MAX_DIVERGED_TIME
+: <a class="el" href="classripple_1_1Config.html#aac747943f79d948ec042dfa588b3e80c">ripple::Config</a>
+</li>
 <li>MAX_HANDLERS
 : <a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#a26f00f9d0063c6885f34fca8329dba24">ripple::DatabaseBody::reader</a>
 </li>
@@ -983,6 +989,9 @@ $(function() {
 </li>
 <li>MAX_TRANSACTIONS
 : <a class="el" href="classripple_1_1Config.html#aaacad0d0903fb374b24db9effcbca989">ripple::Config</a>
+</li>
+<li>MAX_UNKNOWN_TIME
+: <a class="el" href="classripple_1_1Config.html#af1f63280c28cae7d8793155858f20d37">ripple::Config</a>
 </li>
 <li>maxAttempts_
 : <a class="el" href="classripple_1_1RPC_1_1ShardVerificationScheduler.html#a0bc1ba9bf597f9af68cd09d41c225b7f">ripple::RPC::ShardVerificationScheduler</a>
@@ -1039,7 +1048,7 @@ $(function() {
 : <a class="el" href="classripple_1_1NodeStore_1_1TestBase.html#ad39a6497220b05f74700b9c888ab3a8c">ripple::NodeStore::TestBase</a>
 </li>
 <li>maxPeers
-: <a class="el" href="structripple_1_1PeerFinder_1_1Config.html#abba35b1a687d5a8b95781659d6c898a0">ripple::PeerFinder::Config</a>
+: <a class="el" href="structripple_1_1PeerFinder_1_1Config.html#aa0026277cfc4914ecc8d136e5a94ef8e">ripple::PeerFinder::Config</a>
 , <a class="el" href="structripple_1_1PeerFinder_1_1Sim_1_1Params.html#ac1b894eb193a60dc87d2fcfacc11959e">ripple::PeerFinder::Sim::Params</a>
 </li>
 <li>maxPreimageLength
@@ -1111,7 +1120,7 @@ $(function() {
 : <a class="el" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">ripple::TransactionMaster</a>
 </li>
 <li>mChildren
-: <a class="el" href="classripple_1_1SHAMapInnerNode.html#aebc71b6d80676d850b40a149645b99bf">ripple::SHAMapInnerNode</a>
+: <a class="el" href="classripple_1_1SHAMapInnerNode.html#a39d5cb4fd2376d62ddfa0cebae9809cb">ripple::SHAMapInnerNode</a>
 </li>
 <li>mClosedLedger
 : <a class="el" href="classripple_1_1LedgerMaster.html#ad839bc4815ef40e0f0a74143fb29771f">ripple::LedgerMaster</a>
@@ -1159,9 +1168,6 @@ $(function() {
 </li>
 <li>mDelivered
 : <a class="el" href="classripple_1_1TxMeta.html#a64b1cce8e3eb8ce993ddbe07dde68cf9">ripple::TxMeta</a>
-</li>
-<li>mDepth
-: <a class="el" href="classripple_1_1SHAMapNodeID.html#aeafd89cda4c7fa6f611e580bf0c76ba5">ripple::SHAMapNodeID</a>
 </li>
 <li>mDeqSites
 : <a class="el" href="classripple_1_1HTTPClientImp.html#aaa2c53daf04ffac40570485b052a1661">ripple::HTTPClientImp</a>
@@ -1292,7 +1298,6 @@ $(function() {
 <li>mHash
 : <a class="el" href="classripple_1_1NodeObject.html#a6ad47f35682d6d6cb59c8d8c4b868cbd">ripple::NodeObject</a>
 , <a class="el" href="classripple_1_1PeerSet.html#a0a79a33d6012ccbc0f7e21e561d8f113">ripple::PeerSet</a>
-, <a class="el" href="classripple_1_1SHAMapAbstractNode.html#ab06fd22b6fadd92aedeb8a9f3bef273a">ripple::SHAMapAbstractNode</a>
 </li>
 <li>mHashes
 : <a class="el" href="classripple_1_1SHAMapInnerNode.html#a9c5a779b0bbd40e5ce29848f5f49dc62">ripple::SHAMapInnerNode</a>
@@ -1438,9 +1443,6 @@ $(function() {
 <li>mIssuerID
 : <a class="el" href="classripple_1_1STPathElement.html#a98774be41505b8c473e5319e493748ce">ripple::STPathElement</a>
 </li>
-<li>mItem
-: <a class="el" href="classripple_1_1SHAMapTreeNode.html#a75727e0b58820d659bab779abe47958b">ripple::SHAMapTreeNode</a>
-</li>
 <li>mJob
 : <a class="el" href="classripple_1_1Job.html#af9b541a8e225e74a4a7a5e91bbef3009">ripple::Job</a>
 </li>
@@ -1550,9 +1552,6 @@ $(function() {
 </li>
 <li>mName
 : <a class="el" href="classripple_1_1Job.html#a0a015e98a2158b6fcdb707983edd2082">ripple::Job</a>
-</li>
-<li>mNodeID
-: <a class="el" href="classripple_1_1SHAMapNodeID.html#a832b1fdcce1d16cb6c01b2098b37007b">ripple::SHAMapNodeID</a>
 </li>
 <li>mNodes
 : <a class="el" href="classripple_1_1TxMeta.html#a24e9687eec93402f2c9583f44d390772">ripple::TxMeta</a>
@@ -1703,7 +1702,6 @@ $(function() {
 , <a class="el" href="classripple_1_1InfoSub.html#ac89276a6152e096c7262189f51464a46">ripple::InfoSub</a>
 , <a class="el" href="classripple_1_1OrderBookDB.html#a13cb47374afa8b3d429a48cadaed0c86">ripple::OrderBookDB</a>
 , <a class="el" href="classripple_1_1RPCSubImp.html#a98f5f71002592131850a7dbf340e5dee">ripple::RPCSubImp</a>
-, <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a4a3f326fdcbc05976d4fa56cc03d33e0">ripple::SHAMapAbstractNode</a>
 </li>
 <li>mSet
 : <a class="el" href="classripple_1_1InboundTransactionSet.html#affbed21ad5556f668549946ee3050f78">ripple::InboundTransactionSet</a>
@@ -1820,7 +1818,6 @@ $(function() {
 <li>mType
 : <a class="el" href="classripple_1_1Job.html#aba9b6441ec53d750edc217c2ed81de25">ripple::Job</a>
 , <a class="el" href="classripple_1_1NodeObject.html#a159339b44a5fae85a9ad86b486817519">ripple::NodeObject</a>
-, <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a1f0d3da3e068b94a48abc2c413faef8d">ripple::SHAMapAbstractNode</a>
 , <a class="el" href="classripple_1_1STObject.html#a0556c8f6162fb73209b0b501c6dd40d1">ripple::STObject</a>
 , <a class="el" href="classripple_1_1STPathElement.html#a6b3994d61544852d7e10ee047b22aa21">ripple::STPathElement</a>
 </li>
@@ -1878,7 +1875,7 @@ $(function() {
 , <a class="el" href="classripple_1_1NodeStore_1_1TaskQueue.html#a8175de06ffcfceb698815efe924b7bcc">ripple::NodeStore::TaskQueue</a>
 , <a class="el" href="classripple_1_1OverlayImpl.html#a7df56f21d09513351c98a973f4022836">ripple::OverlayImpl</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Checker.html#a49eef0fb4d19a4b689c0198720e152a7">ripple::PeerFinder::Checker&lt; Protocol &gt;</a>
-, <a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#ad0cc1f750a4fefb530551d80e03bbf7d">ripple::PeerImp::Metrics</a>
+, <a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#ad8de70bc8c28ad444c8705efeafe6e96">ripple::PeerImp::Metrics</a>
 , <a class="el" href="classripple_1_1PeerReservationTable.html#adf2c2218edfa8006026e49e0c2345dc9">ripple::PeerReservationTable</a>
 , <a class="el" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">ripple::PendingSaves</a>
 , <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#ac64e671807b0a09696d1392244b795dd">ripple::perf::PerfLogImp</a>
@@ -1895,7 +1892,7 @@ $(function() {
 , <a class="el" href="classripple_1_1TimeKeeperImpl.html#ab7d9974b4a95cfaf37e34e7bb1e9c178">ripple::TimeKeeperImpl</a>
 , <a class="el" href="classripple_1_1TxQ.html#a63a8817d4a8b421e026e1454c4ba4646">ripple::TxQ</a>
 , <a class="el" href="classripple_1_1Validations.html#a3ed6c001b0138dd244ed95088416bbaf">ripple::Validations&lt; Adaptor &gt;</a>
-, <a class="el" href="classripple_1_1ValidatorList.html#a557b7cbe6e4a43df56025123e62b91e7">ripple::ValidatorList</a>
+, <a class="el" href="classripple_1_1ValidatorList.html#a94f8763278cc8e85a241cfccaed69183">ripple::ValidatorList</a>
 , <a class="el" href="classripple_1_1Workers_1_1Worker.html#a4ed9df58fdb5b752f248ac61aedbf0fc">ripple::Workers::Worker</a>
 </li>
 <li>mutex_run_

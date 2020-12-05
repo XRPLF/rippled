@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1ConsensusResult.html" title="Encapsulates the result of consensus." alt="" coords="5,5,183,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeObject.html" title="A simple object that the Ledger uses to store entries." alt="" coords="216,13,359,39"/>
 </map>

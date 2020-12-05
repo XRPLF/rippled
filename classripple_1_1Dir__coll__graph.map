@@ -20,7 +20,7 @@
 <area shape="rect" id="node18" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/aligned_storage.html" title=" " alt="" coords="606,288,761,329"/>
 <area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="639,385,727,411"/>
 <area shape="rect" id="node21" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1421,377,1563,419"/>
-<area shape="rect" id="node31" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1421,457,1563,499"/>
+<area shape="rect" id="node31" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="1421,457,1563,499"/>
 <area shape="rect" id="node20" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="1411,239,1573,280"/>
 <area shape="rect" id="node32" href="$structripple_1_1Keylet.html" title="A pair of SHAMap key and LedgerEntryType." alt="" coords="1872,334,1980,361"/>
 <area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="1147,439,1315,480"/>

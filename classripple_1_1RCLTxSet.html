@@ -83,19 +83,19 @@ Collaboration diagram for ripple::RCLTxSet:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1RCLTxSet__coll__graph.png" border="0" usemap="#ripple_1_1RCLTxSet_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1RCLTxSet_coll__map" id="ripple_1_1RCLTxSet_coll__map">
-<area shape="rect" title="Represents a set of transactions in RCLConsensus." alt="" coords="2025,111,2152,137"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1765,103,1936,145"/>
-<area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="1573,111,1695,137"/>
+<area shape="rect" title="Represents a set of transactions in RCLConsensus." alt="" coords="1975,111,2101,137"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1715,103,1885,145"/>
+<area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="1523,111,1644,137"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,83,108,109"/>
-<area shape="rect" href="classripple_1_1SHAMapAbstractNode.html" title=" " alt="" coords="972,83,1181,109"/>
+<area shape="rect" href="classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="964,83,1147,109"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,134,389,175"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1281,74,1468,115"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1247,74,1417,115"/>
 <area shape="rect" href="classripple_1_1SHAMapHash.html" title=" " alt="" coords="719,143,873,169"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="487,145,628,186"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,201,349,228"/>
-<area shape="rect" href="classripple_1_1Family.html" title=" " alt="" coords="1319,140,1430,167"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1319,191,1430,217"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="1003,191,1150,217"/>
+<area shape="rect" href="classripple_1_1Family.html" title=" " alt="" coords="1277,140,1387,167"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1277,191,1387,217"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="982,191,1129,217"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -207,7 +207,7 @@ Public Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00113">113</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00114">114</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>
@@ -235,7 +235,7 @@ Public Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00122">122</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00123">123</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>
@@ -265,7 +265,7 @@ Public Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether the transaction is in the set. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00132">132</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00133">133</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>
@@ -295,7 +295,7 @@ Public Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>A shared pointer to the <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Since find may not succeed, this returns a <code><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title="STL class.">std::shared_ptr</a>&lt;const <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&gt;</code> rather than a Tx, which cannot refer to a missing transaction. The generic consensus code uses the shared_ptr semantics to know whether the find was successful and properly creates a Tx as needed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00149">149</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00150">150</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>
@@ -316,7 +316,7 @@ Public Attributes</h2></td></tr>
 
 <p>The unique ID/hash of the transaction set. </p>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00156">156</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00157">157</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>
@@ -345,7 +345,7 @@ Public Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Map of transactions in this set and <code>j</code> but not both. The key is the transaction ID and the value is a bool of the transaction exists in this set. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00170">170</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00171">171</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>
@@ -364,7 +364,7 @@ Public Attributes</h2></td></tr>
 
 <p>The <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> representing the transactions. </p>
 
-<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00189">189</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RCLCxTx_8h_source.html#l00190">190</a> of file <a class="el" href="RCLCxTx_8h_source.html">RCLCxTx.h</a>.</p>
 
 </div>
 </div>

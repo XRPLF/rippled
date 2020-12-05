@@ -91,15 +91,15 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_BASICS_RANDOM_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/cxx17/type_traits.h&gt;</span>  <span class="comment">// &lt;type_traits&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/xor_shift_engine.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a>&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a>&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a>&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/limits.html">limits</a>&gt;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/random.html">random</a>&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/xor_shift_engine.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a>&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a>&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a>&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/limits.html">limits</a>&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/random.html">random</a>&gt;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
@@ -264,6 +264,7 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html">beast::detail::xor_shift_engine</a></div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00032">xor_shift_engine.h:32</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a37fc7093cfe63d4e2cab63d40aa813dd"><div class="ttname"><a href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">ripple::rand_bool</a></div><div class="ttdeci">bool rand_bool(Engine &amp;engine)</div><div class="ttdoc">Return a random boolean value.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2basics_2random_8h_source.html#l00196">ripple/basics/random.h:196</a></div></div>
 <div class="ttc" id="anumeric_limits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a></div></div>
+<div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

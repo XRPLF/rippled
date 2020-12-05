@@ -109,7 +109,7 @@ Collaboration diagram for ripple::ShardFamily:</div>
 <area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="301,51,484,107"/>
 <area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="11,59,179,100"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="349,1591,437,1618"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="652,1616,793,1657"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="652,1616,793,1657"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="652,1784,793,1825"/>
 <area shape="rect" title=" " alt="" coords="1073,165,1219,191"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="2149,1134,2304,1161"/>
@@ -169,7 +169,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af60de01428537d83e4ac262634d9da0b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#af60de01428537d83e4ac262634d9da0b">getFullBelowCacheSize</a> ()</td></tr>
 <tr class="memdesc:af60de01428537d83e4ac262634d9da0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the number of entries in the cache.  <a href="classripple_1_1ShardFamily.html#af60de01428537d83e4ac262634d9da0b">More...</a><br /></td></tr>
 <tr class="separator:af60de01428537d83e4ac262634d9da0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc6a801e0955565a379da9e0abd6fe82"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a8a5475899d6d9374b34aa3ce21c7946f">TreeNodeCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#adc6a801e0955565a379da9e0abd6fe82">getTreeNodeCache</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq) override</td></tr>
+<tr class="memitem:adc6a801e0955565a379da9e0abd6fe82"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#acffabb2b30913f9687dbf65f4afc0a19">TreeNodeCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#adc6a801e0955565a379da9e0abd6fe82">getTreeNodeCache</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq) override</td></tr>
 <tr class="memdesc:adc6a801e0955565a379da9e0abd6fe82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a pointer to the <a class="el" href="classripple_1_1Family.html">Family</a> Tree Node Cache.  <a href="classripple_1_1ShardFamily.html#adc6a801e0955565a379da9e0abd6fe82">More...</a><br /></td></tr>
 <tr class="separator:adc6a801e0955565a379da9e0abd6fe82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f0b1a9c4b41e4686c05002db647f3a1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#a7f0b1a9c4b41e4686c05002db647f3a1">getTreeNodeCacheSize</a> ()</td></tr>
@@ -203,7 +203,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ab5745d3f27a833fbf06256c494ea0a49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac997c55e5011655da91d48ac91f63f1f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#ac997c55e5011655da91d48ac91f63f1f">fbCacheMutex_</a></td></tr>
 <tr class="separator:ac997c55e5011655da91d48ac91f63f1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7c352755902c5cdf3962cec0c6e89d9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a8a5475899d6d9374b34aa3ce21c7946f">TreeNodeCache</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#af7c352755902c5cdf3962cec0c6e89d9">tnCache_</a></td></tr>
+<tr class="memitem:af7c352755902c5cdf3962cec0c6e89d9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#acffabb2b30913f9687dbf65f4afc0a19">TreeNodeCache</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#af7c352755902c5cdf3962cec0c6e89d9">tnCache_</a></td></tr>
 <tr class="separator:af7c352755902c5cdf3962cec0c6e89d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a58407cfca73cd08135dc87fe500c99"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#a7a58407cfca73cd08135dc87fe500c99">tnCacheMutex_</a></td></tr>
 <tr class="separator:a7a58407cfca73cd08135dc87fe500c99"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -566,7 +566,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a8a5475899d6d9374b34aa3ce21c7946f">TreeNodeCache</a> &gt; ripple::ShardFamily::getTreeNodeCache </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#acffabb2b30913f9687dbf65f4afc0a19">TreeNodeCache</a> &gt; ripple::ShardFamily::getTreeNodeCache </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>ledgerSeq</em></td><td>)</td>
@@ -937,7 +937,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#a8a5475899d6d9374b34aa3ce21c7946f">TreeNodeCache</a>&gt; &gt; ripple::ShardFamily::tnCache_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#acffabb2b30913f9687dbf65f4afc0a19">TreeNodeCache</a>&gt; &gt; ripple::ShardFamily::tnCache_</td>
         </tr>
       </table>
   </td>

@@ -137,7 +137,7 @@ $(function() {
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                env.client().invoke(<span class="stringliteral">&quot;transaction_entry&quot;</span>, params)[jss::result];</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;transactionNotFound&quot;</span>);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;malformedRequest&quot;</span>);</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        }</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>

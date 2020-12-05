@@ -1,12 +1,8 @@
 <map id="ripple::SHAMapTreeNode" name="ripple::SHAMapTreeNode">
-<area shape="rect" id="node1" title=" " alt="" coords="141,511,324,537"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapAbstractNode.html" title=" " alt="" coords="21,414,231,441"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="73,95,241,136"/>
-<area shape="rect" id="node4" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="78,317,233,344"/>
-<area shape="rect" id="node5" href="$classripple_1_1base__uint.html" title=" " alt="" coords="101,213,242,255"/>
-<area shape="rect" id="node9" href="$classripple_1_1SHAMapItem.html" title=" " alt="" coords="265,317,416,344"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="265,102,353,129"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="255,407,426,448"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="266,213,431,255"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,407,188,433"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="45,5,148,32"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="113,95,281,136"/>
+<area shape="rect" id="node3" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="127,317,282,344"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="149,213,290,255"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="305,102,393,129"/>
 </map>

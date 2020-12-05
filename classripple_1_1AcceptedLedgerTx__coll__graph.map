@@ -24,7 +24,7 @@
 <area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="901,366,989,393"/>
 <area shape="rect" id="node22" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1323,397,1464,439"/>
 <area shape="rect" id="node46" href="$classripple_1_1AccountIDCache.html" title="Caches the base58 representations of AccountIDs." alt="" coords="1760,243,1933,270"/>
-<area shape="rect" id="node48" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1151,196,1292,237"/>
+<area shape="rect" id="node48" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="1151,196,1292,237"/>
 <area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="549,567,652,594"/>
 <area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="861,272,1029,313"/>
 <area shape="rect" id="node24" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="3049,65,3143,91"/>

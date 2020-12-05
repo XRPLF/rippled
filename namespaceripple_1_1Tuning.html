@@ -76,22 +76,14 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
 <tr class="memitem:a38b288f78ba70f14d8efdb54ca50dac5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <br />
-&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5ad268eb8ea6723478c8381ec8194ec68e">readBufferBytes</a> = 4096, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a27377d76803ce00ba366f07801dd22ad">maxInsaneTime</a> = 60, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a253f3493b547ea1d2ca0058af755b4ea">maxUnknownTime</a> = 300, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a4f88a3d050694949f7d665ee465492a8">saneLedgerLimit</a> = 24, 
-<br />
-&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5aeadd8e9f97638e46d49401088fcdbe6a">insaneLedgerLimit</a> = 128, 
+&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a991f7034b02d9b550b1c64a597c0faaf">convergedLedgerLimit</a> = 24, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5ac19611797683cae3c0d7e80c69508d6d">divergedLedgerLimit</a> = 128, 
 <a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a22752773d462ba2999ad6ba76a8887bb">maxReplyNodes</a> = 8192, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a09d72f4227000272a58dfa7f1aebae27">checkSeconds</a> = 32, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a92bcaeadc61032c1c16ccf6ef25281ce">timerSeconds</a> = 8, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5ab1675121c898e98033db8e9111642e6f">sendqIntervals</a> = 4, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5ab1675121c898e98033db8e9111642e6f">sendqIntervals</a> = 4, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a6db4cbbcb7048c35ac7057a8df0ec17a">noPing</a> = 10, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5ac53e07d6dbec8160ba8b4631a39fe84f">dropSendQueue</a> = 192, 
+&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5ac53e07d6dbec8160ba8b4631a39fe84f">dropSendQueue</a> = 192, 
 <a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a18c2b9f69bcc5e76875aa02bfb0908ec">targetSendQueue</a> = 128, 
-<br />
-&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5abdc936f3cecce920c48b176c0f8bc0a7">sendQueueLogFreq</a> = 64, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5abdc936f3cecce920c48b176c0f8bc0a7">sendQueueLogFreq</a> = 64, 
 <a class="el" href="namespaceripple_1_1Tuning.html#a38b288f78ba70f14d8efdb54ca50dac5a253dac09e40a5b8076dc4ea672e6aba7">checkIdlePeers</a> = 4
 <br />
  }</td></tr>
@@ -99,9 +91,9 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a325369e4577f48f897f7862ce09ca861"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1Tuning.html#a325369e4577f48f897f7862ce09ca861">peerHighLatency</a> {300}</td></tr>
-<tr class="memdesc:a325369e4577f48f897f7862ce09ca861"><td class="mdescLeft">&#160;</td><td class="mdescRight">The threshold above which we treat a peer connection as high latency.  <a href="namespaceripple_1_1Tuning.html#a325369e4577f48f897f7862ce09ca861">More...</a><br /></td></tr>
-<tr class="separator:a325369e4577f48f897f7862ce09ca861"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ea075928ccbe3bf56b2790975b9d8d1"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1Tuning.html#a6ea075928ccbe3bf56b2790975b9d8d1">readBufferBytes</a> = 16384</td></tr>
+<tr class="memdesc:a6ea075928ccbe3bf56b2790975b9d8d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of buffer used to read from the socket.  <a href="namespaceripple_1_1Tuning.html#a6ea075928ccbe3bf56b2790975b9d8d1">More...</a><br /></td></tr>
+<tr class="separator:a6ea075928ccbe3bf56b2790975b9d8d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
 <a id="a38b288f78ba70f14d8efdb54ca50dac5"></a>
@@ -116,25 +108,13 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5ad268eb8ea6723478c8381ec8194ec68e"></a>readBufferBytes&#160;</td><td class="fielddoc"><p>Size of buffer used to read from the socket. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a991f7034b02d9b550b1c64a597c0faaf"></a>convergedLedgerLimit&#160;</td><td class="fielddoc"><p>How many ledgers off a server can be and we will still consider it converged. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a27377d76803ce00ba366f07801dd22ad"></a>maxInsaneTime&#160;</td><td class="fielddoc"><p>How long a server can remain insane before we disconnected it (if outbound) </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a253f3493b547ea1d2ca0058af755b4ea"></a>maxUnknownTime&#160;</td><td class="fielddoc"><p>How long a server can remain unknown before we disconnect it (if outbound) </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a4f88a3d050694949f7d665ee465492a8"></a>saneLedgerLimit&#160;</td><td class="fielddoc"><p>How many ledgers off a server can be and we will still consider it sane. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5aeadd8e9f97638e46d49401088fcdbe6a"></a>insaneLedgerLimit&#160;</td><td class="fielddoc"><p>How many ledgers off a server has to be before we consider it insane. </p>
+<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5ac19611797683cae3c0d7e80c69508d6d"></a>divergedLedgerLimit&#160;</td><td class="fielddoc"><p>How many ledgers off a server has to be before we consider it diverged. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a22752773d462ba2999ad6ba76a8887bb"></a>maxReplyNodes&#160;</td><td class="fielddoc"><p>The maximum number of ledger entries in a single reply. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a09d72f4227000272a58dfa7f1aebae27"></a>checkSeconds&#160;</td><td class="fielddoc"><p>How often we check connections (seconds) </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a92bcaeadc61032c1c16ccf6ef25281ce"></a>timerSeconds&#160;</td><td class="fielddoc"><p>How often we latency/sendq probe connections. </p>
-</td></tr>
 <tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5ab1675121c898e98033db8e9111642e6f"></a>sendqIntervals&#160;</td><td class="fielddoc"><p>How many timer intervals a sendq has to stay large before we disconnect. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5a6db4cbbcb7048c35ac7057a8df0ec17a"></a>noPing&#160;</td><td class="fielddoc"><p>How many timer intervals we can go without a ping reply. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a38b288f78ba70f14d8efdb54ca50dac5ac53e07d6dbec8160ba8b4631a39fe84f"></a>dropSendQueue&#160;</td><td class="fielddoc"><p>How many messages on a send queue before we refuse queries. </p>
 </td></tr>
@@ -151,8 +131,8 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="a325369e4577f48f897f7862ce09ca861"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a325369e4577f48f897f7862ce09ca861">&#9670;&nbsp;</a></span>peerHighLatency</h2>
+<a id="a6ea075928ccbe3bf56b2790975b9d8d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ea075928ccbe3bf56b2790975b9d8d1">&#9670;&nbsp;</a></span>readBufferBytes</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -161,7 +141,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::Tuning::peerHighLatency {300}</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::Tuning::readBufferBytes = 16384</td>
         </tr>
       </table>
   </td>
@@ -171,9 +151,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>The threshold above which we treat a peer connection as high latency. </p>
+<p>Size of buffer used to read from the socket. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2impl_2Tuning_8h_source.html#l00080">80</a> of file <a class="el" href="overlay_2impl_2Tuning_8h_source.html">overlay/impl/Tuning.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2impl_2Tuning_8h_source.html#l00060">60</a> of file <a class="el" href="overlay_2impl_2Tuning_8h_source.html">overlay/impl/Tuning.h</a>.</p>
 
 </div>
 </div>

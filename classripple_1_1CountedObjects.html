@@ -85,17 +85,18 @@ Collaboration diagram for ripple::CountedObjects:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1CountedObjects__coll__graph.png" border="0" usemap="#ripple_1_1CountedObjects_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1CountedObjects_coll__map" id="ripple_1_1CountedObjects_coll__map">
-<area shape="rect" title="Manages all counted object types." alt="" coords="5,303,176,329"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="19,5,162,32"/>
-<area shape="rect" href="classripple_1_1CountedObjects_1_1CounterBase.html" title="Implementation for CountedObject." alt="" coords="127,95,297,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="107,199,357,240"/>
+<area shape="rect" title="Manages all counted object types." alt="" coords="11,303,182,329"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="5,5,148,32"/>
+<area shape="rect" href="classripple_1_1CountedObjects_1_1Counter.html" title="Implementation for CountedObject." alt="" coords="131,95,302,136"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="113,199,331,240"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="173,5,260,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObjects_1_1CounterBase.html">CounterBase</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implementation for <a class="el" href="classripple_1_1CountedObject.html">CountedObject</a>.  <a href="classripple_1_1CountedObjects_1_1CounterBase.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObjects_1_1Counter.html">Counter</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implementation for <a class="el" href="classripple_1_1CountedObject.html">CountedObject</a>.  <a href="classripple_1_1CountedObjects_1_1Counter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
@@ -126,13 +127,13 @@ Private Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a5c3ab28dd19d17e2604950bf4f2c2799"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObjects.html#a5c3ab28dd19d17e2604950bf4f2c2799">m_count</a></td></tr>
 <tr class="separator:a5c3ab28dd19d17e2604950bf4f2c2799"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30b17d61c4a3e8a31f019cb830e55bed"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="el" href="classripple_1_1CountedObjects_1_1CounterBase.html">CounterBase</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObjects.html#a30b17d61c4a3e8a31f019cb830e55bed">m_head</a></td></tr>
-<tr class="separator:a30b17d61c4a3e8a31f019cb830e55bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24507136e67f38befc76c65d531c3ec6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="el" href="classripple_1_1CountedObjects_1_1Counter.html">Counter</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObjects.html#a24507136e67f38befc76c65d531c3ec6">m_head</a></td></tr>
+<tr class="separator:a24507136e67f38befc76c65d531c3ec6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Manages all counted object types. </p>
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00031">31</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00032">32</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="aaa626af4f6765d39980905bc2713dde2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaa626af4f6765d39980905bc2713dde2">&#9670;&nbsp;</a></span>Entry</h2>
@@ -146,7 +147,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00037">37</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00038">38</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -162,7 +163,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00038">38</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00039">39</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -190,7 +191,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8cpp_source.html#l00033">33</a> of file <a class="el" href="CountedObject_8cpp_source.html">CountedObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8cpp_source.html#l00034">34</a> of file <a class="el" href="CountedObject_8cpp_source.html">CountedObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -243,7 +244,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8cpp_source.html#l00026">26</a> of file <a class="el" href="CountedObject_8cpp_source.html">CountedObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8cpp_source.html#l00027">27</a> of file <a class="el" href="CountedObject_8cpp_source.html">CountedObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -263,7 +264,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8cpp_source.html#l00038">38</a> of file <a class="el" href="CountedObject_8cpp_source.html">CountedObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8cpp_source.html#l00039">39</a> of file <a class="el" href="CountedObject_8cpp_source.html">CountedObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -288,12 +289,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00096">96</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00110">110</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
-<a id="a30b17d61c4a3e8a31f019cb830e55bed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30b17d61c4a3e8a31f019cb830e55bed">&#9670;&nbsp;</a></span>m_head</h2>
+<a id="a24507136e67f38befc76c65d531c3ec6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24507136e67f38befc76c65d531c3ec6">&#9670;&nbsp;</a></span>m_head</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -302,7 +303,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="el" href="classripple_1_1CountedObjects_1_1CounterBase.html">CounterBase</a>*&gt; ripple::CountedObjects::m_head</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="el" href="classripple_1_1CountedObjects_1_1Counter.html">Counter</a>*&gt; ripple::CountedObjects::m_head</td>
         </tr>
       </table>
   </td>
@@ -312,7 +313,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00097">97</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00111">111</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>

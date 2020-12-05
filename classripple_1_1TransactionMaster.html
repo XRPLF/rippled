@@ -122,8 +122,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a977772a4a08b7f7f16e872392493d403"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a977772a4a08b7f7f16e872392493d403">fetch</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
 <tr class="memdesc:a977772a4a08b7f7f16e872392493d403"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch transaction from the cache or database.  <a href="classripple_1_1TransactionMaster.html#a977772a4a08b7f7f16e872392493d403">More...</a><br /></td></tr>
 <tr class="separator:a977772a4a08b7f7f16e872392493d403"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25ec22bbc4c4943e49614df7dd57aa23"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a25ec22bbc4c4943e49614df7dd57aa23">fetch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt; const &amp;item, <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uCommitLedger)</td></tr>
-<tr class="separator:a25ec22bbc4c4943e49614df7dd57aa23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7ce0fd52f91dbc995cf127f1f555079"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#ae7ce0fd52f91dbc995cf127f1f555079">fetch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt; const &amp;item, <a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uCommitLedger)</td></tr>
+<tr class="separator:ae7ce0fd52f91dbc995cf127f1f555079"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f89069c62a078affbaad8fabb41d563"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a2f89069c62a078affbaad8fabb41d563">inLedger</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledger)</td></tr>
 <tr class="separator:a2f89069c62a078affbaad8fabb41d563"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfb688396e9aed123c909f739e44a0cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">canonicalize</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; *pTransaction)</td></tr>
@@ -306,8 +306,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a25ec22bbc4c4943e49614df7dd57aa23"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a25ec22bbc4c4943e49614df7dd57aa23">&#9670;&nbsp;</a></span>fetch() <span class="overload">[3/3]</span></h2>
+<a id="ae7ce0fd52f91dbc995cf127f1f555079"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7ce0fd52f91dbc995cf127f1f555079">&#9670;&nbsp;</a></span>fetch() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -321,7 +321,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a>&#160;</td>
           <td class="paramname"><em>type</em>, </td>
         </tr>
         <tr>

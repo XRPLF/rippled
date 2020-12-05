@@ -1,0 +1,5 @@
+<map id="ripple::CountedObjects::Counter" name="ripple::CountedObjects::Counter">
+<area shape="rect" id="node1" title="Implementation for CountedObject." alt="" coords="61,95,231,136"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="5,5,148,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="172,5,259,32"/>
+</map>

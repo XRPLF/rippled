@@ -76,7 +76,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>RIPEMD-160 digest.  
+<p><a class="el" href="classripple_1_1Message.html">Message</a> digest functions used in the codebase.  
  <a href="structripple_1_1openssl__ripemd160__hasher.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
@@ -95,8 +95,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a72acff76663ad6e93c2047dcf4b16f03"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">beast::endian</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1openssl__ripemd160__hasher.html#a72acff76663ad6e93c2047dcf4b16f03">endian</a> = <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">beast::endian::native</a></td></tr>
-<tr class="separator:a72acff76663ad6e93c2047dcf4b16f03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa948aa235dc7bdbd6e383711b0ecfadf"><td class="memItemLeft" align="right" valign="top">static constexpr const auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1openssl__ripemd160__hasher.html#aa948aa235dc7bdbd6e383711b0ecfadf">endian</a> = boost::endian::order::native</td></tr>
+<tr class="separator:aa948aa235dc7bdbd6e383711b0ecfadf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -104,10 +104,12 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a97c2ae8638102fa22b83ed757f68f62b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>RIPEMD-160 digest. </p>
+<div class="textblock"><p><a class="el" href="classripple_1_1Message.html">Message</a> digest functions used in the codebase. </p>
+<dl class="section note"><dt>Note</dt><dd>These are modeled to meet the requirements of <code>Hasher</code> in the <code>hash_append</code> interface, discussed in proposal:</dd></dl>
+<p>N3980 "Types Don't Know #" <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html</a> RIPEMD-160 digest</p>
 <dl class="section note"><dt>Note</dt><dd>This uses the OpenSSL implementation </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00047">47</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00046">46</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a3f625a5482bfce3339394143b6f01fe8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3f625a5482bfce3339394143b6f01fe8">&#9670;&nbsp;</a></span>result_type</h2>
@@ -121,7 +123,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00052">52</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00051">51</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
 
 </div>
 </div>
@@ -212,8 +214,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a72acff76663ad6e93c2047dcf4b16f03"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72acff76663ad6e93c2047dcf4b16f03">&#9670;&nbsp;</a></span>endian</h2>
+<a id="aa948aa235dc7bdbd6e383711b0ecfadf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa948aa235dc7bdbd6e383711b0ecfadf">&#9670;&nbsp;</a></span>endian</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -222,17 +224,17 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">beast::endian</a> ripple::openssl_ripemd160_hasher::endian = <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">beast::endian::native</a></td>
+          <td class="memname">constexpr const auto ripple::openssl_ripemd160_hasher::endian = boost::endian::order::native</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00050">50</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00049">49</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
 
 </div>
 </div>
@@ -256,7 +258,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00062">62</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="digest_8h_source.html#l00061">61</a> of file <a class="el" href="digest_8h_source.html">digest.h</a>.</p>
 
 </div>
 </div>

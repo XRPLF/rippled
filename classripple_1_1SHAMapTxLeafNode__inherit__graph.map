@@ -1,0 +1,6 @@
+<map id="ripple::SHAMapTxLeafNode" name="ripple::SHAMapTxLeafNode">
+<area shape="rect" id="node1" title="A leaf node for a transaction." alt="" coords="101,169,300,196"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="5,87,188,114"/>
+<area shape="rect" id="node3" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="5,5,188,32"/>
+<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="213,80,397,121"/>
+</map>

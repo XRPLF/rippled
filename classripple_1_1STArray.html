@@ -68,7 +68,6 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
@@ -220,11 +219,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9a76e581a75199f68e028722160958e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a9a76e581a75199f68e028722160958e4">addFieldID</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const</td></tr>
 <tr class="separator:a9a76e581a75199f68e028722160958e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a3afb0886333c9ddc7d6009eda7c5b5c5"><td class="memItemLeft" align="right" valign="top">static char const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a3afb0886333c9ddc7d6009eda7c5b5c5">getCountedObjectName</a> ()</td></tr>
-<tr class="separator:a3afb0886333c9ddc7d6009eda7c5b5c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
 <tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
@@ -243,8 +237,8 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
-<tr class="memitem:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memItemLeft" align="right" valign="top">static Counter &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#a741285b9c90fcfd9d0087d3c17f75cfe">getCounter</a> () noexcept</td></tr>
-<tr class="separator:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#acde6c67ea432f6bb32d2ecb5db786ce8">getCounter</a> () noexcept</td></tr>
+<tr class="separator:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -291,7 +285,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00042">42</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00036">36</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -307,7 +301,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00043">43</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00037">37</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -323,7 +317,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00044">44</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00038">38</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -522,33 +516,6 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a3afb0886333c9ddc7d6009eda7c5b5c5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3afb0886333c9ddc7d6009eda7c5b5c5">&#9670;&nbsp;</a></span>getCountedObjectName()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static char const* ripple::STArray::getCountedObjectName </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00037">37</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
-
-</div>
-</div>
 <a id="a99ab04632b42d2c51ae033449674c8fa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a99ab04632b42d2c51ae033449674c8fa">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
 
@@ -631,7 +598,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a1002d0c1e5d5991f043abdc61c72211f">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00059">59</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00053">53</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -671,7 +638,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0c488c0c2d41d96972e1966f64fec655">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00065">65</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00059">59</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -691,7 +658,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00071">71</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00065">65</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -711,7 +678,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00077">77</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00071">71</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -730,7 +697,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00083">83</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00077">77</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -749,7 +716,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00089">89</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00083">83</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -771,7 +738,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00096">96</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00090">90</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -791,7 +758,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00102">102</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00096">96</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -811,7 +778,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00108">108</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00102">102</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -830,7 +797,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00114">114</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00108">108</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -849,7 +816,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00120">120</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00114">114</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -868,7 +835,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00126">126</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00120">120</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -887,7 +854,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00132">132</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00126">126</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -906,7 +873,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00138">138</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00132">132</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -925,7 +892,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00144">144</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00138">138</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -944,7 +911,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00149">149</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00143">143</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -964,7 +931,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00154">154</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00148">148</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -992,7 +959,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00159">159</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00153">153</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1150,7 +1117,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00178">178</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00172">172</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1170,7 +1137,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00183">183</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00177">177</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1199,7 +1166,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a233469e9eb1efaa8639b384628fcef62">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00189">189</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00183">183</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1258,7 +1225,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00196">196</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00190">190</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1286,7 +1253,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00055">55</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00045">45</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1314,7 +1281,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00061">61</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00051">51</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1403,7 +1370,7 @@ template&lt;class D &gt; </div>
 <p>A <a class="el" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format.">STBase</a> is a field. </p>
 <p>This sets the name. </p>
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00128">128</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00113">113</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1430,7 +1397,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00135">135</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00120">120</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1458,7 +1425,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00141">141</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00126">126</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1508,8 +1475,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a741285b9c90fcfd9d0087d3c17f75cfe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a741285b9c90fcfd9d0087d3c17f75cfe">&#9670;&nbsp;</a></span>getCounter()</h2>
+<a id="acde6c67ea432f6bb32d2ecb5db786ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde6c67ea432f6bb32d2ecb5db786ce8">&#9670;&nbsp;</a></span>getCounter()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1518,7 +1485,7 @@ template&lt;class T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static Counter&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1STArray.html">STArray</a>  &gt;::getCounter</td>
+          <td class="memname">static auto&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1STArray.html">STArray</a>  &gt;::getCounter</td>
         </tr>
       </table>
   </td>
@@ -1528,7 +1495,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00153">153</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>

@@ -844,7 +844,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00816">816</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00813">813</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -885,7 +885,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00839">839</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00836">836</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -929,7 +929,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00885">885</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00882">882</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1007,7 +1007,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The <a class="el" href="namespaceJson.html" title="JSON (JavaScript Object Notation).">Json</a> state. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00909">909</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00906">906</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1089,7 +1089,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01007">1007</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01004">1004</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1118,7 +1118,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Check if our previous ledger matches the network's. </p>
 <p>If the previous ledger differs, we are no longer in sync with the network and need to bow out/switch modes. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01052">1052</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01049">1049</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1146,7 +1146,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>If we radically changed our consensus context for some reason, we need to replay recent proposals so that they're not lost. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01075">1075</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01072">1072</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1217,7 +1217,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Handle pre-close phase. </p>
 <p>In the pre-close phase, the ledger is open as we wait for new transactions. After enough time has elapsed, we will close the ledger, switch to the establish phase and start the consensus process. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01092">1092</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01089">1089</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1247,7 +1247,7 @@ template&lt;class Adaptor &gt; </div>
 <p>In the establish phase, the ledger has closed and we work with peers to reach consensus. Update our position only on the timer, and in this phase.</p>
 <p>If we have consensus, move to the accepted phase. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01259">1259</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01256">1256</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1281,7 +1281,7 @@ template&lt;class Adaptor &gt; </div>
 <p>No particular threshold guarantees consensus. Lower thresholds are easier to achieve than higher, but higher thresholds are more likely to reach consensus. Cycle through the phases if lack of synchronization continues.</p>
 <p>Current information indicates that no phase is likely to be intrinsically better than any other: the lower the threshold, the less likely that up-to-date nodes will be able to reach consensus without the laggards. But the higher the threshold, the longer the likely resulting pause. 100% is slightly less desirable in the long run because the potential of a single dawdling peer to slow down everything else. So if we accept that no phase is any better than any other phase, but that all of them will potentially enable us to arrive at consensus, cycling through them seems to be appropriate. Further, if we do reach the point of having to cycle back around, then it's likely that something else out of the scope of this delay mechanism is wrong with the network.</p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01145">1145</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01142">1142</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1307,7 +1307,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01306">1306</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01303">1303</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1333,7 +1333,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01358">1358</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01355">1355</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1359,7 +1359,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01542">1542</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01539">1539</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1389,7 +1389,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01620">1620</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01614">1614</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1429,7 +1429,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01679">1679</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01673">1673</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1455,7 +1455,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01603">1603</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01597">1597</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1485,7 +1485,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01698">1698</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01692">1692</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -2064,10 +2064,10 @@ template&lt;class Adaptor &gt; </div>
 </div>
 </div><!-- contents -->
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1Consensus_html_a6e81235f0c5f91c23cbe1938ffe8a9e3"><div class="ttname"><a href="classripple_1_1Consensus.html#a6e81235f0c5f91c23cbe1938ffe8a9e3">ripple::Consensus::getJson</a></div><div class="ttdeci">Json::Value getJson(bool full) const</div><div class="ttdoc">Get the Json state of the consensus process.</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00909">Consensus.h:909</a></div></div>
+<div class="ttc" id="aclassripple_1_1Consensus_html_a6e81235f0c5f91c23cbe1938ffe8a9e3"><div class="ttname"><a href="classripple_1_1Consensus.html#a6e81235f0c5f91c23cbe1938ffe8a9e3">ripple::Consensus::getJson</a></div><div class="ttdeci">Json::Value getJson(bool full) const</div><div class="ttdoc">Get the Json state of the consensus process.</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00906">Consensus.h:906</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_ad0357314ce3da5e84d4b4fdadb07f11b"><div class="ttname"><a href="classripple_1_1Consensus.html#ad0357314ce3da5e84d4b4fdadb07f11b">ripple::Consensus::Result</a></div><div class="ttdeci">ConsensusResult&lt; Adaptor &gt; Result</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00295">Consensus.h:295</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa761b49f905eb9fd8c8ae754a0eb7504"><div class="ttname"><a href="namespaceripple.html#aa761b49f905eb9fd8c8ae754a0eb7504">ripple::erase</a></div><div class="ttdeci">void erase(STObject &amp;st, TypedField&lt; U &gt; const &amp;f)</div><div class="ttdoc">Remove a field in an STObject.</div><div class="ttdef"><b>Definition:</b> <a href="STExchange_8h_source.html#l00171">STExchange.h:171</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad584345ad1d39fa2234a298a991f8e66"><div class="ttname"><a href="namespaceripple.html#ad584345ad1d39fa2234a298a991f8e66">ripple::compare</a></div><div class="ttdeci">int compare(base_uint&lt; Bits, Tag &gt; const &amp;a, base_uint&lt; Bits, Tag &gt; const &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00497">base_uint.h:497</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad584345ad1d39fa2234a298a991f8e66"><div class="ttname"><a href="namespaceripple.html#ad584345ad1d39fa2234a298a991f8e66">ripple::compare</a></div><div class="ttdeci">int compare(base_uint&lt; Bits, Tag &gt; const &amp;a, base_uint&lt; Bits, Tag &gt; const &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00461">base_uint.h:461</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a641a3e0e3bb00ef33619c4ef9a26bbed"><div class="ttname"><a href="classripple_1_1Consensus.html#a641a3e0e3bb00ef33619c4ef9a26bbed">ripple::Consensus::prevLedgerID</a></div><div class="ttdeci">Ledger_t::ID prevLedgerID() const</div><div class="ttdoc">Get the previous ledger ID.</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00411">Consensus.h:411</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_ac0595ebca5fc6577d86cb4b4dddaef3e"><div class="ttname"><a href="classripple_1_1Consensus.html#ac0595ebca5fc6577d86cb4b4dddaef3e">ripple::Consensus::NodeID_t</a></div><div class="ttdeci">typename Adaptor::NodeID_t NodeID_t</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00287">Consensus.h:287</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bdab314439bc1697845de3749d51dca7c15"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdab314439bc1697845de3749d51dca7c15">ripple::HashPrefix::proposal</a></div><div class="ttdeci">@ proposal</div><div class="ttdoc">proposal for signing</div></div>

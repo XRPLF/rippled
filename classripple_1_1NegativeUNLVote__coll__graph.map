@@ -3,7 +3,7 @@
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="749,5,901,61"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,37,108,64"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,59,389,101"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="505,70,647,111"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="505,70,647,111"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,127,349,153"/>
 <area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="779,148,871,175"/>
 <area shape="rect" id="node8" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="770,199,881,225"/>

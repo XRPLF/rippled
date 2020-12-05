@@ -107,8 +107,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a2d026876537b3f43fe1af11f915f7e79"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">beast::endian</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a2d026876537b3f43fe1af11f915f7e79">endian</a> = <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">beast::endian::native</a></td></tr>
-<tr class="separator:a2d026876537b3f43fe1af11f915f7e79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad757205d826af867fa0a449873dc5333"><td class="memItemLeft" align="right" valign="top">static constexpr const auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#ad757205d826af867fa0a449873dc5333">endian</a> = boost::endian::order::native</td></tr>
+<tr class="separator:ad757205d826af867fa0a449873dc5333"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -316,8 +316,8 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
 
 </div>
 </div>
-<a id="a2d026876537b3f43fe1af11f915f7e79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d026876537b3f43fe1af11f915f7e79">&#9670;&nbsp;</a></span>endian</h2>
+<a id="ad757205d826af867fa0a449873dc5333"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad757205d826af867fa0a449873dc5333">&#9670;&nbsp;</a></span>endian</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -326,12 +326,12 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">beast::endian</a> beast::xxhasher::endian = <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">beast::endian::native</a></td>
+          <td class="memname">constexpr const auto beast::xxhasher::endian = boost::endian::order::native</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

@@ -1,10 +1,10 @@
 <map id="beast::insight::detail::GroupsImp" name="beast::insight::detail::GroupsImp">
-<area shape="rect" id="node1" title=" " alt="" coords="1096,49,1251,90"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Groups.html" title="A container for managing a set of metric groups." alt="" coords="781,5,945,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="760,56,967,83"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="781,107,945,178"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="509,104,596,131"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="459,155,647,181"/>
-<area shape="rect" id="node7" href="$classbeast_1_1insight_1_1Group.html" title="A collector front&#45;end that manages a group of metrics." alt="" coords="231,155,388,181"/>
-<area shape="rect" id="node8" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,155,181,181"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1255,49,1409,90"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Groups.html" title="A container for managing a set of metric groups." alt="" coords="981,5,1145,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="433,56,640,83"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,81,181,108"/>
+<area shape="rect" id="node8" href="$classbeast_1_1insight_1_1Group.html" title="A collector front&#45;end that manages a group of metrics." alt="" coords="252,107,409,133"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="981,107,1145,178"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="715,157,801,184"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="664,107,852,133"/>
 </map>

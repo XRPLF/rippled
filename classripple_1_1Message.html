@@ -103,6 +103,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aaac68e258d1fda75e275e9545b25a98c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#aaac68e258d1fda75e275e9545b25a98c">Message</a> (::google::protobuf::Message const &amp;message, int type, boost::optional&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; const &amp;validator={})</td></tr>
 <tr class="memdesc:aaac68e258d1fda75e275e9545b25a98c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1Message.html#aaac68e258d1fda75e275e9545b25a98c">More...</a><br /></td></tr>
 <tr class="separator:aaac68e258d1fda75e275e9545b25a98c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e14d9326c8907aac58a5de4668c5840"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a6e14d9326c8907aac58a5de4668c5840">getBufferSize</a> ()</td></tr>
+<tr class="memdesc:a6e14d9326c8907aac58a5de4668c5840"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the size of the packed but uncompressed message data.  <a href="classripple_1_1Message.html#a6e14d9326c8907aac58a5de4668c5840">More...</a><br /></td></tr>
+<tr class="separator:a6e14d9326c8907aac58a5de4668c5840"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59548b6f1be088035f2858fae9eda66b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; uint8_t &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a59548b6f1be088035f2858fae9eda66b">getBuffer</a> (<a class="el" href="namespaceripple_1_1compression.html#a63d59b12f7e712c378860771ef3fdf5f">Compressed</a> tryCompressed)</td></tr>
 <tr class="memdesc:a59548b6f1be088035f2858fae9eda66b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the packed message data.  <a href="classripple_1_1Message.html#a59548b6f1be088035f2858fae9eda66b">More...</a><br /></td></tr>
 <tr class="separator:a59548b6f1be088035f2858fae9eda66b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -249,6 +252,27 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a6e14d9326c8907aac58a5de4668c5840"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e14d9326c8907aac58a5de4668c5840">&#9670;&nbsp;</a></span>getBufferSize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::Message::getBufferSize </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Retrieve the size of the packed but uncompressed message data. </p>
+
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00181">181</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a59548b6f1be088035f2858fae9eda66b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59548b6f1be088035f2858fae9eda66b">&#9670;&nbsp;</a></span>getBuffer()</h2>
 
@@ -274,7 +298,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Payload buffer </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00181">181</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00187">187</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -295,7 +319,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the traffic category. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00078">78</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00082">82</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -316,7 +340,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the validator's key. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00085">85</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00089">89</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -468,7 +492,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Message.html">Message</a> type </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00195">195</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00201">201</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -493,7 +517,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00091">91</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00095">95</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -517,7 +541,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00092">92</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00096">96</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -541,7 +565,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00093">93</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00097">97</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -565,7 +589,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00094">94</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00098">98</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -589,7 +613,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00095">95</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00099">99</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>

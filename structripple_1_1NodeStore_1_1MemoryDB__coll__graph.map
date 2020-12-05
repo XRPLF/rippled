@@ -5,7 +5,7 @@
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="991,98,1161,139"/>
 <area shape="rect" id="node5" href="$classripple_1_1NodeObject.html" title="A simple object that the Ledger uses to store entries." alt="" coords="764,120,907,147"/>
 <area shape="rect" id="node6" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="503,106,665,147"/>
-<area shape="rect" id="node7" href="$classripple_1_1base__uint.html" title=" " alt="" coords="513,41,655,82"/>
+<area shape="rect" id="node7" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="513,41,655,82"/>
 <area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,41,389,82"/>
 <area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,48,108,75"/>
 <area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,151,349,177"/>

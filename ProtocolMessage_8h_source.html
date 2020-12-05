@@ -304,144 +304,150 @@ $(function() {
 <div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;}  <span class="comment">// namespace detail</span></div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Buffers, <span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::size_t, boost::system::error_code&gt;</a></div>
-<div class="line"><a name="l00265"></a><span class="lineno"><a class="line" href="namespaceripple.html#afefdc5f68766886964c223163f6343d5">  265</a></span>&#160;<a class="code" href="namespaceripple.html#afefdc5f68766886964c223163f6343d5">invokeProtocolMessage</a>(Buffers <span class="keyword">const</span>&amp; buffers, Handler&amp; handler)</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;{</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::size_t, boost::system::error_code&gt;</a> result = {0, {}};</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160; </div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> size = boost::asio::buffer_size(buffers);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keywordflow">if</span> (size == 0)</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">auto</span> header = <a class="code" href="namespaceripple_1_1detail.html#a53781b6133b2886d1cecd74f6e92fc6b">detail::parseMessageHeader</a>(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>, buffers, size);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="comment">// If we can&#39;t parse the header then it may be that we don&#39;t have enough</span></div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="comment">// bytes yet, or because the message was cut off (if error_code is success).</span></div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="comment">// Otherwise we failed to match the header&#39;s marker (error_code is set to</span></div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="comment">// no_message) or the compression algorithm is invalid (error_code is</span></div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <span class="comment">// protocol_error) and signal an error.</span></div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="keywordflow">if</span> (!header)</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Buffers, <span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::size_t, boost::system::error_code&gt;</a></div>
+<div class="line"><a name="l00270"></a><span class="lineno"><a class="line" href="namespaceripple.html#a320fee67ee6b1d8ce780998df8ffc35e">  270</a></span>&#160;<a class="code" href="namespaceripple.html#a320fee67ee6b1d8ce780998df8ffc35e">invokeProtocolMessage</a>(</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    Buffers <span class="keyword">const</span>&amp; buffers,</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    Handler&amp; handler,</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&amp; hint)</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;{</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::size_t, boost::system::error_code&gt;</a> result = {0, {}};</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> size = boost::asio::buffer_size(buffers);</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keywordflow">if</span> (size == 0)</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="keyword">auto</span> header = <a class="code" href="namespaceripple_1_1detail.html#a53781b6133b2886d1cecd74f6e92fc6b">detail::parseMessageHeader</a>(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>, buffers, size);</div>
 <div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160; </div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="comment">// We implement a maximum size for protocol messages. Sending a message</span></div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="comment">// whose size exceeds this may result in the connection being dropped. A</span></div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="comment">// larger message size may be supported in the future or negotiated as</span></div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="comment">// part of a protocol upgrade.</span></div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <span class="keywordflow">if</span> (header-&gt;payload_wire_size &gt; <a class="code" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(64) ||</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        header-&gt;uncompressed_size &gt; <a class="code" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(64))</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    {</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = make_error_code(boost::system::errc::message_size);</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    }</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    <span class="comment">// We requested uncompressed messages from the peer but received compressed.</span></div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="keywordflow">if</span> (!handler.compressionEnabled() &amp;&amp;</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        header-&gt;algorithm != <a class="code" href="namespaceripple_1_1compression.html#ac4e4ca1236f472d7e218c3f69cd8605ba6adf97f83acf6453d4a6a4b1070f3754">compression::Algorithm::None</a>)</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="comment">// If we can&#39;t parse the header then it may be that we don&#39;t have enough</span></div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="comment">// bytes yet, or because the message was cut off (if error_code is success).</span></div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="comment">// Otherwise we failed to match the header&#39;s marker (error_code is set to</span></div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="comment">// no_message) or the compression algorithm is invalid (error_code is</span></div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <span class="comment">// protocol_error) and signal an error.</span></div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    <span class="keywordflow">if</span> (!header)</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <span class="comment">// We implement a maximum size for protocol messages. Sending a message</span></div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    <span class="comment">// whose size exceeds this may result in the connection being dropped. A</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="comment">// larger message size may be supported in the future or negotiated as</span></div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    <span class="comment">// part of a protocol upgrade.</span></div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="keywordflow">if</span> (header-&gt;payload_wire_size &gt; <a class="code" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(64) ||</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        header-&gt;uncompressed_size &gt; <a class="code" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(64))</div>
 <div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    {</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = make_error_code(boost::system::errc::protocol_error);</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = make_error_code(boost::system::errc::message_size);</div>
 <div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        <span class="keywordflow">return</span> result;</div>
 <div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    }</div>
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <span class="comment">// We don&#39;t have the whole message yet. This isn&#39;t an error but we have</span></div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="comment">// nothing to do.</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">if</span> (header-&gt;total_wire_size &gt; size)</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160; </div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="keywordtype">bool</span> success;</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160; </div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="keywordflow">switch</span> (header-&gt;message_type)</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    {</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="keywordflow">case</span> protocol::mtMANIFESTS:</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            success = detail::invoke&lt;protocol::TMManifests&gt;(</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        <span class="keywordflow">case</span> protocol::mtPING:</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            success =</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                detail::invoke&lt;protocol::TMPing&gt;(*header, buffers, handler);</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        <span class="keywordflow">case</span> protocol::mtCLUSTER:</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            success =</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                detail::invoke&lt;protocol::TMCluster&gt;(*header, buffers, handler);</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_SHARD_INFO:</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            success = detail::invoke&lt;protocol::TMGetShardInfo&gt;(</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        <span class="keywordflow">case</span> protocol::mtSHARD_INFO:</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            success = detail::invoke&lt;protocol::TMShardInfo&gt;(</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_PEER_SHARD_INFO:</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            success = detail::invoke&lt;protocol::TMGetPeerShardInfo&gt;(</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        <span class="keywordflow">case</span> protocol::mtPEER_SHARD_INFO:</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            success = detail::invoke&lt;protocol::TMPeerShardInfo&gt;(</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        <span class="keywordflow">case</span> protocol::mtENDPOINTS:</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            success = detail::invoke&lt;protocol::TMEndpoints&gt;(</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="keywordflow">case</span> protocol::mtTRANSACTION:</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            success = detail::invoke&lt;protocol::TMTransaction&gt;(</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_LEDGER:</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            success = detail::invoke&lt;protocol::TMGetLedger&gt;(</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <span class="keywordflow">case</span> protocol::mtLEDGER_DATA:</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            success = detail::invoke&lt;protocol::TMLedgerData&gt;(</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        <span class="keywordflow">case</span> protocol::mtPROPOSE_LEDGER:</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            success = detail::invoke&lt;protocol::TMProposeSet&gt;(</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        <span class="keywordflow">case</span> protocol::mtSTATUS_CHANGE:</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            success = detail::invoke&lt;protocol::TMStatusChange&gt;(</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        <span class="keywordflow">case</span> protocol::mtHAVE_SET:</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            success = detail::invoke&lt;protocol::TMHaveTransactionSet&gt;(</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        <span class="keywordflow">case</span> protocol::mtVALIDATION:</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            success = detail::invoke&lt;protocol::TMValidation&gt;(</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <span class="keywordflow">case</span> protocol::mtVALIDATORLIST:</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            success = detail::invoke&lt;protocol::TMValidatorList&gt;(</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_OBJECTS:</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;            success = detail::invoke&lt;protocol::TMGetObjectByHash&gt;(</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                *header, buffers, handler);</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <span class="keywordflow">case</span> protocol::mtSQUELCH:</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            success =</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;                detail::invoke&lt;protocol::TMSquelch&gt;(*header, buffers, handler);</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            handler.onMessageUnknown(header-&gt;message_type);</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            success = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    }</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160; </div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = header-&gt;total_wire_size;</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <span class="keywordflow">if</span> (!success)</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = make_error_code(boost::system::errc::bad_message);</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;}</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160; </div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <span class="comment">// We requested uncompressed messages from the peer but received compressed.</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="keywordflow">if</span> (!handler.compressionEnabled() &amp;&amp;</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        header-&gt;algorithm != <a class="code" href="namespaceripple_1_1compression.html#ac4e4ca1236f472d7e218c3f69cd8605ba6adf97f83acf6453d4a6a4b1070f3754">compression::Algorithm::None</a>)</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    {</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = make_error_code(boost::system::errc::protocol_error);</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    }</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="comment">// We don&#39;t have the whole message yet. This isn&#39;t an error but we have</span></div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="comment">// nothing to do.</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="keywordflow">if</span> (header-&gt;total_wire_size &gt; size)</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    {</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        hint = header-&gt;total_wire_size - size;</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    <span class="keywordtype">bool</span> success;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <span class="keywordflow">switch</span> (header-&gt;message_type)</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    {</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        <span class="keywordflow">case</span> protocol::mtMANIFESTS:</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            success = detail::invoke&lt;protocol::TMManifests&gt;(</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        <span class="keywordflow">case</span> protocol::mtPING:</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            success =</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                detail::invoke&lt;protocol::TMPing&gt;(*header, buffers, handler);</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        <span class="keywordflow">case</span> protocol::mtCLUSTER:</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            success =</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                detail::invoke&lt;protocol::TMCluster&gt;(*header, buffers, handler);</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_SHARD_INFO:</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            success = detail::invoke&lt;protocol::TMGetShardInfo&gt;(</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <span class="keywordflow">case</span> protocol::mtSHARD_INFO:</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            success = detail::invoke&lt;protocol::TMShardInfo&gt;(</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_PEER_SHARD_INFO:</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            success = detail::invoke&lt;protocol::TMGetPeerShardInfo&gt;(</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">case</span> protocol::mtPEER_SHARD_INFO:</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            success = detail::invoke&lt;protocol::TMPeerShardInfo&gt;(</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        <span class="keywordflow">case</span> protocol::mtENDPOINTS:</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            success = detail::invoke&lt;protocol::TMEndpoints&gt;(</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <span class="keywordflow">case</span> protocol::mtTRANSACTION:</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            success = detail::invoke&lt;protocol::TMTransaction&gt;(</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_LEDGER:</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            success = detail::invoke&lt;protocol::TMGetLedger&gt;(</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        <span class="keywordflow">case</span> protocol::mtLEDGER_DATA:</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            success = detail::invoke&lt;protocol::TMLedgerData&gt;(</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        <span class="keywordflow">case</span> protocol::mtPROPOSE_LEDGER:</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            success = detail::invoke&lt;protocol::TMProposeSet&gt;(</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        <span class="keywordflow">case</span> protocol::mtSTATUS_CHANGE:</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            success = detail::invoke&lt;protocol::TMStatusChange&gt;(</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="keywordflow">case</span> protocol::mtHAVE_SET:</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            success = detail::invoke&lt;protocol::TMHaveTransactionSet&gt;(</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keywordflow">case</span> protocol::mtVALIDATION:</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            success = detail::invoke&lt;protocol::TMValidation&gt;(</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="keywordflow">case</span> protocol::mtVALIDATORLIST:</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            success = detail::invoke&lt;protocol::TMValidatorList&gt;(</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;        <span class="keywordflow">case</span> protocol::mtGET_OBJECTS:</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            success = detail::invoke&lt;protocol::TMGetObjectByHash&gt;(</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;                *header, buffers, handler);</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        <span class="keywordflow">case</span> protocol::mtSQUELCH:</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            success =</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;                detail::invoke&lt;protocol::TMSquelch&gt;(*header, buffers, handler);</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            handler.onMessageUnknown(header-&gt;message_type);</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            success = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    }</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160; </div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = header-&gt;total_wire_size;</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160; </div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <span class="keywordflow">if</span> (!success)</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = make_error_code(boost::system::errc::bad_message);</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;}</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160; </div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aresize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/resize.html">std::vector::resize</a></div><div class="ttdeci">T resize(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1MessageHeader_html_a90b9e0938ab622359fbee6d062a9a4ba"><div class="ttname"><a href="structripple_1_1detail_1_1MessageHeader.html#a90b9e0938ab622359fbee6d062a9a4ba">ripple::detail::MessageHeader::message_type</a></div><div class="ttdeci">std::uint16_t message_type</div><div class="ttdoc">The type of the message.</div><div class="ttdef"><b>Definition:</b> <a href="ProtocolMessage_8h_source.html#l00108">ProtocolMessage.h:108</a></div></div>
@@ -471,9 +477,9 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1compression_html_a65e2ec5e871a86d15892ae7d696a83c9"><div class="ttname"><a href="namespaceripple_1_1compression.html#a65e2ec5e871a86d15892ae7d696a83c9">ripple::compression::decompress</a></div><div class="ttdeci">std::size_t decompress(InputStream &amp;in, std::size_t inSize, std::uint8_t *decompressed, std::size_t decompressedSize, Algorithm algorithm=Algorithm::LZ4)</div><div class="ttdoc">Decompress input stream.</div><div class="ttdef"><b>Definition:</b> <a href="Compression_8h_source.html#l00050">Compression.h:50</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
-<div class="ttc" id="anamespaceripple_html_afefdc5f68766886964c223163f6343d5"><div class="ttname"><a href="namespaceripple.html#afefdc5f68766886964c223163f6343d5">ripple::invokeProtocolMessage</a></div><div class="ttdeci">std::pair&lt; std::size_t, boost::system::error_code &gt; invokeProtocolMessage(Buffers const &amp;buffers, Handler &amp;handler)</div><div class="ttdoc">Calls the handler for up to one protocol message in the passed buffers.</div><div class="ttdef"><b>Definition:</b> <a href="ProtocolMessage_8h_source.html#l00265">ProtocolMessage.h:265</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1compression_html_a879a2a52c8f0b5818e800452b990443e"><div class="ttname"><a href="namespaceripple_1_1compression.html#a879a2a52c8f0b5818e800452b990443e">ripple::compression::headerBytesCompressed</a></div><div class="ttdeci">constexpr std::size_t headerBytesCompressed</div><div class="ttdef"><b>Definition:</b> <a href="Compression_8h_source.html#l00032">Compression.h:32</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a320fee67ee6b1d8ce780998df8ffc35e"><div class="ttname"><a href="namespaceripple.html#a320fee67ee6b1d8ce780998df8ffc35e">ripple::invokeProtocolMessage</a></div><div class="ttdeci">std::pair&lt; std::size_t, boost::system::error_code &gt; invokeProtocolMessage(Buffers const &amp;buffers, Handler &amp;handler, std::size_t &amp;hint)</div><div class="ttdoc">Calls the handler for up to one protocol message in the passed buffers.</div><div class="ttdef"><b>Definition:</b> <a href="ProtocolMessage_8h_source.html#l00270">ProtocolMessage.h:270</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/data.html">std::vector::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
 <div class="ttc" id="ais_base_of_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_base_of.html">std::is_base_of</a></div></div>
