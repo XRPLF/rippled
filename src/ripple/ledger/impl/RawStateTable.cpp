@@ -61,9 +61,13 @@ public:
     bool
     equal(base_type const& impl) const override
     {
-        auto const& other = dynamic_cast<sles_iter_impl const&>(impl);
-        assert(end1_ == other.end1_ && end0_ == other.end0_);
-        return iter1_ == other.iter1_ && iter0_ == other.iter0_;
+        if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
+        {
+            assert(end1_ == p->end1_ && end0_ == p->end0_);
+            return iter1_ == p->iter1_ && iter0_ == p->iter0_;
+        }
+
+        return false;
     }
 
     void

@@ -564,7 +564,10 @@ private:
     pointer item_ = nullptr;
 
 public:
-    const_iterator() = default;
+    const_iterator() = delete;
+    const_iterator(const_iterator const& other) = default;
+
+    ~const_iterator() = default;
 
     reference
     operator*() const;
@@ -578,7 +581,7 @@ public:
 
 private:
     explicit const_iterator(SHAMap const* map);
-    const_iterator(SHAMap const* map, pointer item);
+    const_iterator(SHAMap const* map, std::nullptr_t);
     const_iterator(SHAMap const* map, pointer item, SharedPtrNodeStack&& stack);
 
     friend bool
@@ -586,16 +589,16 @@ private:
     friend class SHAMap;
 };
 
-inline SHAMap::const_iterator::const_iterator(SHAMap const* map)
-    : map_(map), item_(nullptr)
+inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
-    auto temp = map_->peekFirstItem(stack_);
-    if (temp)
+    assert(map_ != nullptr);
+
+    if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();
 }
 
-inline SHAMap::const_iterator::const_iterator(SHAMap const* map, pointer item)
-    : map_(map), item_(item)
+inline SHAMap::const_iterator::const_iterator(SHAMap const* map, std::nullptr_t)
+    : map_(map)
 {
 }
 
@@ -622,8 +625,7 @@ SHAMap::const_iterator::operator->() const
 inline SHAMap::const_iterator&
 SHAMap::const_iterator::operator++()
 {
-    auto temp = map_->peekNextItem(item_->key(), stack_);
-    if (temp)
+    if (auto temp = map_->peekNextItem(item_->key(), stack_))
         item_ = temp->peekItem().get();
     else
         item_ = nullptr;
