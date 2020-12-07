@@ -37,7 +37,6 @@ static_assert(!std::is_move_constructible<SHAMap>{}, "");
 static_assert(!std::is_move_assignable<SHAMap>{}, "");
 
 static_assert(std::is_nothrow_destructible<SHAMap::const_iterator>{}, "");
-static_assert(std::is_default_constructible<SHAMap::const_iterator>{}, "");
 static_assert(std::is_copy_constructible<SHAMap::const_iterator>{}, "");
 static_assert(std::is_copy_assignable<SHAMap::const_iterator>{}, "");
 static_assert(std::is_move_constructible<SHAMap::const_iterator>{}, "");
