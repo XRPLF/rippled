@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
+    Copyright (c) 2020 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -27,9 +27,7 @@ namespace test {
 class handshake_test : public beast::unit_test::suite
 {
 public:
-    handshake_test()
-    {
-    }
+    handshake_test() = default;
 
     void
     testHandshake()
