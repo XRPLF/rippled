@@ -52,11 +52,12 @@ auto
 ReadViewFwdRange<ValueType>::iterator::operator=(iterator const& other)
     -> iterator&
 {
-    if (this == &other)
-        return *this;
-    view_ = other.view_;
-    impl_ = other.impl_ ? other.impl_->copy() : nullptr;
-    cache_ = other.cache_;
+    if (this != &other)
+    {
+        view_ = other.view_;
+        impl_ = other.impl_ ? other.impl_->copy() : nullptr;
+        cache_ = other.cache_;
+    }
     return *this;
 }
 
@@ -65,9 +66,13 @@ auto
 ReadViewFwdRange<ValueType>::iterator::operator=(iterator&& other) noexcept
     -> iterator&
 {
-    view_ = other.view_;
-    impl_ = std::move(other.impl_);
-    cache_ = std::move(other.cache_);
+    if (this != &other)
+    {
+        view_ = other.view_;
+        impl_ = std::move(other.impl_);
+        cache_ = std::move(other.cache_);
+    }
+
     return *this;
 }
 
@@ -76,7 +81,11 @@ bool
 ReadViewFwdRange<ValueType>::iterator::operator==(iterator const& other) const
 {
     assert(view_ == other.view_);
-    return impl_->equal(*other.impl_);
+
+    if (impl_ != nullptr && other.impl_ != nullptr)
+        return impl_->equal(*other.impl_);
+
+    return impl_ == other.impl_;
 }
 
 template <class ValueType>
@@ -107,7 +116,7 @@ auto
 ReadViewFwdRange<ValueType>::iterator::operator++() -> iterator&
 {
     impl_->increment();
-    cache_ = boost::none;
+    cache_.reset();
     return *this;
 }
 
