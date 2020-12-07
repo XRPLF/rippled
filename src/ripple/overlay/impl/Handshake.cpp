@@ -57,10 +57,7 @@ isFeatureValue(
     std::string const& value)
 {
     if (auto const fvalue = getFeatureValue(headers, feature))
-    {
-        auto const values = beast::rfc2616::split_commas(fvalue.value());
-        return std::find(values.begin(), values.end(), value) != values.end();
-    }
+        return beast::rfc2616::token_in_list(fvalue.value(), value);
 
     return false;
 }
