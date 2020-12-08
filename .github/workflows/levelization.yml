@@ -1,0 +1,18 @@
+name: levelization
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-18.04
+    env:
+      CLANG_VERSION: 10
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check levelization
+      run: Builds/levelization/levelization.sh
+    - name: Check for differences
+      run: git diff --exit-code
+      # If this workflow fails, and you have improved levelization, run
+      # Builds/levelization/levelization.sh, and commit the changes to
+      # loops.txt.

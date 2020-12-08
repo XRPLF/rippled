@@ -1,0 +1,54 @@
+Loop: ripple.app ripple.core
+  ripple.app > ripple.core
+
+Loop: ripple.app ripple.ledger
+  ripple.app > ripple.ledger
+
+Loop: ripple.app ripple.net
+  ripple.app > ripple.net
+
+Loop: ripple.app ripple.nodestore
+  ripple.app > ripple.nodestore
+
+Loop: ripple.app ripple.overlay
+  ripple.overlay ~= ripple.app
+
+Loop: ripple.app ripple.rpc
+  ripple.rpc > ripple.app
+
+Loop: ripple.app ripple.shamap
+  ripple.app > ripple.shamap
+
+Loop: ripple.basics ripple.core
+  ripple.core > ripple.basics
+
+Loop: ripple.basics ripple.json
+  ripple.json ~= ripple.basics
+
+Loop: ripple.basics ripple.protocol
+  ripple.protocol > ripple.basics
+
+Loop: ripple.basics ripple.rpc
+  ripple.rpc > ripple.basics
+
+Loop: ripple.core ripple.net
+  ripple.net > ripple.core
+
+Loop: ripple.crypto ripple.protocol
+  ripple.protocol > ripple.crypto
+
+Loop: ripple.net ripple.rpc
+  ripple.rpc > ripple.net
+
+Loop: ripple.nodestore ripple.overlay
+  ripple.overlay == ripple.nodestore
+
+Loop: ripple.overlay ripple.rpc
+  ripple.rpc ~= ripple.overlay
+
+Loop: test.jtx test.toplevel
+  test.toplevel > test.jtx
+
+Loop: test.jtx test.unit_test
+  test.unit_test == test.jtx
+
