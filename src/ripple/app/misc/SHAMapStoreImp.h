@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
 #include <chrono>
@@ -33,7 +34,7 @@ namespace ripple {
 
 class NetworkOPs;
 
-class SHAMapStoreImp : public SHAMapStore
+class SHAMapStoreImp : public Stoppable, public SHAMapStore
 {
 private:
     struct SavedState

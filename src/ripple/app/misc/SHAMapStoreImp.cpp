@@ -150,7 +150,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal)
-    : SHAMapStore(parent)
+    : Stoppable("SHAMapStore", parent)
     , app_(app)
     , scheduler_(scheduler)
     , journal_(journal)
