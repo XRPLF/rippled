@@ -1,0 +1,4 @@
+<map id="ripple::TaggedPointer" name="ripple::TaggedPointer">
+<area shape="rect" id="node1" title="TaggedPointer is a combination of a pointer and a mask stored in the lowest two bits." alt="" coords="5,124,164,151"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="32,5,137,32"/>
+</map>
