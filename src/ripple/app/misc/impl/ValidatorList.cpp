@@ -195,20 +195,23 @@ ValidatorList::load(
 }
 
 boost::filesystem::path
-ValidatorList::GetCacheFileName(PublicKey const& pubKey)
+ValidatorList::GetCacheFileName(
+    ValidatorList::unique_lock const&,
+    PublicKey const& pubKey)
 {
     return dataPath_ / (filePrefix_ + strHex(pubKey));
 }
 
 void
 ValidatorList::CacheValidatorFile(
+    ValidatorList::unique_lock const& lock,
     PublicKey const& pubKey,
     PublisherList const& publisher)
 {
     if (dataPath_.empty())
         return;
 
-    boost::filesystem::path const filename = GetCacheFileName(pubKey);
+    boost::filesystem::path const filename = GetCacheFileName(lock, pubKey);
 
     boost::system::error_code ec;
 
@@ -310,7 +313,7 @@ ValidatorList::applyList(
 
     Json::Value list;
     PublicKey pubKey;
-    auto const result = verify(list, pubKey, manifest, blob, signature);
+    auto const result = verify(lock, list, pubKey, manifest, blob, signature);
     if (result != ListDisposition::accepted)
     {
         if (result == ListDisposition::same_sequence &&
@@ -429,7 +432,7 @@ ValidatorList::applyList(
     }
 
     // Cache the validator list in a file
-    CacheValidatorFile(pubKey, publisher);
+    CacheValidatorFile(lock, pubKey, publisher);
 
     return applyResult;
 }
@@ -452,7 +455,7 @@ ValidatorList::loadLists()
         if (publisher.available)
             continue;
 
-        boost::filesystem::path const filename = GetCacheFileName(pubKey);
+        boost::filesystem::path const filename = GetCacheFileName(lock, pubKey);
 
         auto const fullPath{canonical(filename, ec)};
         if (ec)
@@ -489,6 +492,7 @@ ValidatorList::loadLists()
 
 ListDisposition
 ValidatorList::verify(
+    ValidatorList::unique_lock const& lock,
     Json::Value& list,
     PublicKey& pubKey,
     std::string const& manifest,
@@ -507,7 +511,7 @@ ValidatorList::verify(
 
     if (revoked && result == ManifestDisposition::accepted)
     {
-        removePublisherList(pubKey);
+        removePublisherList(lock, pubKey);
         publisherLists_.erase(pubKey);
     }
 
@@ -558,12 +562,19 @@ ValidatorList::listed(PublicKey const& identity) const
 }
 
 bool
+ValidatorList::trusted(
+    ValidatorList::shared_lock const&,
+    PublicKey const& identity) const
+{
+    auto const pubKey = validatorManifests_.getMasterKey(identity);
+    return trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end();
+}
+
+bool
 ValidatorList::trusted(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
-
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
-    return trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end();
+    return trusted(read_lock, identity);
 }
 
 boost::optional<PublicKey>
@@ -578,14 +589,22 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 }
 
 boost::optional<PublicKey>
-ValidatorList::getTrustedKey(PublicKey const& identity) const
+ValidatorList::getTrustedKey(
+    ValidatorList::shared_lock const&,
+    PublicKey const& identity) const
 {
-    std::shared_lock read_lock{mutex_};
-
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end())
         return pubKey;
     return boost::none;
+}
+
+boost::optional<PublicKey>
+ValidatorList::getTrustedKey(PublicKey const& identity) const
+{
+    std::shared_lock read_lock{mutex_};
+
+    return getTrustedKey(read_lock, identity);
 }
 
 bool
@@ -603,7 +622,9 @@ ValidatorList::localPublicKey() const
 }
 
 bool
-ValidatorList::removePublisherList(PublicKey const& publisherKey)
+ValidatorList::removePublisherList(
+    ValidatorList::unique_lock const&,
+    PublicKey const& publisherKey)
 {
     auto const iList = publisherLists_.find(publisherKey);
     if (iList == publisherLists_.end())
@@ -631,16 +652,21 @@ ValidatorList::removePublisherList(PublicKey const& publisherKey)
 }
 
 std::size_t
-ValidatorList::count() const
+ValidatorList::count(ValidatorList::shared_lock const&) const
 {
-    std::shared_lock read_lock{mutex_};
     return publisherLists_.size();
 }
 
-boost::optional<TimeKeeper::time_point>
-ValidatorList::expires() const
+std::size_t
+ValidatorList::count() const
 {
     std::shared_lock read_lock{mutex_};
+    return count(read_lock);
+}
+
+boost::optional<TimeKeeper::time_point>
+ValidatorList::expires(ValidatorList::shared_lock const&) const
+{
     boost::optional<TimeKeeper::time_point> res{boost::none};
     for (auto const& p : publisherLists_)
     {
@@ -655,6 +681,13 @@ ValidatorList::expires() const
     return res;
 }
 
+boost::optional<TimeKeeper::time_point>
+ValidatorList::expires() const
+{
+    std::shared_lock read_lock{mutex_};
+    return expires(read_lock);
+}
+
 Json::Value
 ValidatorList::getJson() const
 {
@@ -662,14 +695,14 @@ ValidatorList::getJson() const
 
     std::shared_lock read_lock{mutex_};
 
-    res[jss::validation_quorum] = static_cast<Json::UInt>(quorum());
+    res[jss::validation_quorum] = static_cast<Json::UInt>(quorum_);
 
     {
         auto& x = (res[jss::validator_list] = Json::objectValue);
 
-        x[jss::count] = static_cast<Json::UInt>(count());
+        x[jss::count] = static_cast<Json::UInt>(count(read_lock));
 
-        if (auto when = expires())
+        if (auto when = expires(read_lock))
         {
             if (*when == TimeKeeper::time_point::max())
             {
@@ -767,7 +800,7 @@ ValidatorList::for_each_listed(
     std::shared_lock read_lock{mutex_};
 
     for (auto const& v : keyListings_)
-        func(v.first, trusted(v.first));
+        func(v.first, trusted(read_lock, v.first));
 }
 
 void
@@ -903,7 +936,7 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     {
         if (list.second.available &&
             list.second.expiration <= timeKeeper_.now())
-            removePublisherList(list.first);
+            removePublisherList(lock, list.first);
     }
 
     TrustChanges trustChanges;
@@ -997,7 +1030,7 @@ ValidatorList::getNegativeUNL() const
 void
 ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
 {
-    std::lock_guard lock{mutex_};
+    std::unique_lock lock{mutex_};
     negativeUNL_ = negUnl;
 }
 
@@ -1017,7 +1050,7 @@ ValidatorList::negativeUNLFilter(
                 ret.end(),
                 [&](auto const& v) -> bool {
                     if (auto const masterKey =
-                            getTrustedKey(v->getSignerPublic());
+                            getTrustedKey(read_lock, v->getSignerPublic());
                         masterKey)
                     {
                         return negativeUNL_.count(*masterKey);
