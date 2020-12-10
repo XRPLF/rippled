@@ -141,6 +141,8 @@ class ValidatorList
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
     boost::shared_mutex mutable mutex_;
+    using unique_lock = std::unique_lock<boost::shared_mutex>;
+    using shared_lock = std::shared_lock<boost::shared_mutex>;
 
     std::atomic<std::size_t> quorum_;
     boost::optional<std::size_t> minimumQuorum_;
@@ -506,7 +508,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        std::shared_lock read_lock{mutex_};
+        shared_lock read_lock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 
@@ -542,15 +544,58 @@ public:
         std::vector<std::shared_ptr<STValidation>>&& validations) const;
 
 private:
+    /** Return the number of configured validator list sites. */
+    std::size_t
+    count(shared_lock const&) const;
+
+    /** Returns `true` if public key is trusted
+
+    @param identity Validation public key
+
+    @par Thread Safety
+
+    May be called concurrently
+    */
+    bool
+    trusted(shared_lock const&, PublicKey const& identity) const;
+
+    /** Returns master public key if public key is trusted
+
+    @param identity Validation public key
+
+    @return `boost::none` if key is not trusted
+
+    @par Thread Safety
+
+    May be called concurrently
+    */
+    boost::optional<PublicKey>
+    getTrustedKey(shared_lock const&, PublicKey const& identity) const;
+
+    /** Return the time when the validator list will expire
+
+    @note This may be a time in the past if a published list has not
+    been updated since its expiration. It will be boost::none if any
+    configured published list has not been fetched.
+
+    @par Thread Safety
+    May be called concurrently
+    */
+    boost::optional<TimeKeeper::time_point>
+    expires(shared_lock const&) const;
+
     /** Get the filename used for caching UNLs
      */
     boost::filesystem::path
-    GetCacheFileName(PublicKey const& pubKey);
+    GetCacheFileName(unique_lock const&, PublicKey const& pubKey);
 
     /** Write a JSON UNL to a cache file
      */
     void
-    CacheValidatorFile(PublicKey const& pubKey, PublisherList const& publisher);
+    CacheValidatorFile(
+        unique_lock const& lock,
+        PublicKey const& pubKey,
+        PublisherList const& publisher);
 
     /** Check response for trusted valid published list
 
@@ -562,6 +607,7 @@ private:
     */
     ListDisposition
     verify(
+        unique_lock const&,
         Json::Value& list,
         PublicKey& pubKey,
         std::string const& manifest,
@@ -579,7 +625,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(PublicKey const& publisherKey);
+    removePublisherList(unique_lock const&, PublicKey const& publisherKey);
 
     /** Return quorum for trusted validator set
 
