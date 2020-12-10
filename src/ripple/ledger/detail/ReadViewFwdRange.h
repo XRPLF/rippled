@@ -147,7 +147,6 @@ public:
 
 protected:
     ReadView const* view_;
-    boost::optional<iterator> mutable end_;
 };
 
 }  // namespace detail

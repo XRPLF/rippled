@@ -204,7 +204,7 @@ public:
         explicit sles_type(ReadView const& view);
         iterator
         begin() const;
-        iterator const&
+        iterator
         end() const;
         iterator
         upper_bound(key_type const& key) const;
@@ -217,7 +217,7 @@ public:
         empty() const;
         iterator
         begin() const;
-        iterator const&
+        iterator
         end() const;
     };
 
