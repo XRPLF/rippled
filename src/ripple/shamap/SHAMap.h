@@ -589,8 +589,7 @@ private:
     friend class SHAMap;
 };
 
-inline SHAMap::const_iterator::const_iterator(SHAMap const* map)
-    : map_(map)
+inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
     assert(map_ != nullptr);
 
