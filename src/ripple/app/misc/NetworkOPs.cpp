@@ -640,7 +640,6 @@ public:
     void
     onStop() override
     {
-        mAcquiringLedger.reset();
         {
             boost::system::error_code ec;
             heartbeatTimer_.cancel(ec);
@@ -730,7 +729,6 @@ private:
     ConsensusPhase mLastConsensusPhase;
 
     LedgerMaster& m_ledgerMaster;
-    std::shared_ptr<InboundLedger> mAcquiringLedger;
 
     SubInfoMapType mSubAccount;
     SubInfoMapType mSubRTAccount;
