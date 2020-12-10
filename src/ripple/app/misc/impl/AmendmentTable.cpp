@@ -421,7 +421,12 @@ AmendmentTableImpl::AmendmentTableImpl(
     st.execute();
     while (st.fetch())
     {
-        uint256 amend_hash = from_hex_text<uint256>(*amendment_hash);
+        uint256 amend_hash;
+        if (!amend_hash.parseHex(*amendment_hash))
+        {
+            Throw<std::runtime_error>(
+                "Invalid amendment ID '" + *amendment_hash + " in wallet.db");
+        }
         if (*vote_to_veto)
         {
             // Unknown amendments are effectively vetoed already
