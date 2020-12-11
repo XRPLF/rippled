@@ -234,10 +234,16 @@ matrix:
         - BUILD_TYPE=Debug
     - <<: *linux
       compiler: clang-9
-      name: clang-9
+      name: clang-9, debug
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
         - BUILD_TYPE=Debug
+    - <<: *linux
+      compiler: clang-9
+      name: clang-9, release
+      env:
+        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+        - BUILD_TYPE=Release
     # verify build with min version of cmake
     - <<: *linux
       compiler: gcc-8
