@@ -49,6 +49,8 @@ SHAMapInnerNode::SHAMapInnerNode(
 {
 }
 
+SHAMapInnerNode::~SHAMapInnerNode() = default;
+
 template <class F>
 void
 SHAMapInnerNode::iterChildren(F&& f) const
