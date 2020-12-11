@@ -63,51 +63,51 @@ void
 Workers::setNumberOfThreads(int numberOfThreads)
 {
     static int instance{0};
-    if (m_numberOfThreads != numberOfThreads)
+    if (m_numberOfThreads == numberOfThreads)
+        return;
+
+    if (perfLog_)
+        perfLog_->resizeJobs(numberOfThreads);
+
+    if (numberOfThreads > m_numberOfThreads)
     {
-        if (perfLog_)
-            perfLog_->resizeJobs(numberOfThreads);
+        // Increasing the number of working threads
+        int const amount = numberOfThreads - m_numberOfThreads;
 
-        if (numberOfThreads > m_numberOfThreads)
+        for (int i = 0; i < amount; ++i)
         {
-            // Increasing the number of working threads
-            int const amount = numberOfThreads - m_numberOfThreads;
+            // See if we can reuse a paused worker
+            Worker* worker = m_paused.pop_front();
 
-            for (int i = 0; i < amount; ++i)
+            if (worker != nullptr)
             {
-                // See if we can reuse a paused worker
-                Worker* worker = m_paused.pop_front();
-
-                if (worker != nullptr)
-                {
-                    // If we got here then the worker thread is at [1]
-                    // This will unblock their call to wait()
-                    //
-                    worker->notify();
-                }
-                else
-                {
-                    worker = new Worker(*this, m_threadNames, instance++);
-                    m_everyone.push_front(worker);
-                }
+                // If we got here then the worker thread is at [1]
+                // This will unblock their call to wait()
+                //
+                worker->notify();
+            }
+            else
+            {
+                worker = new Worker(*this, m_threadNames, instance++);
+                m_everyone.push_front(worker);
             }
         }
-        else
-        {
-            // Decreasing the number of working threads
-            int const amount = m_numberOfThreads - numberOfThreads;
-
-            for (int i = 0; i < amount; ++i)
-            {
-                ++m_pauseCount;
-
-                // Pausing a thread counts as one "internal task"
-                m_semaphore.notify();
-            }
-        }
-
-        m_numberOfThreads = numberOfThreads;
     }
+    else
+    {
+        // Decreasing the number of working threads
+        int const amount = m_numberOfThreads - numberOfThreads;
+
+        for (int i = 0; i < amount; ++i)
+        {
+            ++m_pauseCount;
+
+            // Pausing a thread counts as one "internal task"
+            m_semaphore.notify();
+        }
+    }
+
+    m_numberOfThreads = numberOfThreads;
 }
 
 void
@@ -183,8 +183,10 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    std::lock_guard lock{mutex_};
-    ++wakeCount_;
+    {
+        std::lock_guard lock{mutex_};
+        ++wakeCount_;
+    }
     wakeup_.notify_one();
 }
 
