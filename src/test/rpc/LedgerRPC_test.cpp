@@ -22,7 +22,6 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
@@ -1107,7 +1106,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     {
         testcase("ledger_entry Request Ticket");
         using namespace test::jtx;
-        Env env{*this, supported_amendments() | featureTicketBatch};
+        Env env{*this};
         env.close();
 
         // Create two tickets.

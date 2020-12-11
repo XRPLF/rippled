@@ -204,7 +204,7 @@ public:
         using namespace test::jtx;
 
         testcase("Ticket regular key");
-        Env env{*this, supported_amendments() | featureTicketBatch};
+        Env env{*this};
         Account const alice{"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();

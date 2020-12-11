@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
@@ -309,10 +308,7 @@ public:
         // Put a bunch of different LedgerEntryTypes into a ledger
         using namespace test::jtx;
         using namespace std::chrono;
-        Env env{
-            *this,
-            envconfig(validator, ""),
-            supported_amendments() | featureTicketBatch};
+        Env env{*this, envconfig(validator, "")};
 
         Account const gw{"gateway"};
         auto const USD = gw["USD"];

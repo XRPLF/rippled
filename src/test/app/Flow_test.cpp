@@ -754,7 +754,7 @@ struct Flow_test : public beast::unit_test::suite
         Account const carol("carol");
 
         {
-            Env env(*this, supported_amendments());
+            Env env(*this);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
 
@@ -1360,7 +1360,6 @@ struct Flow_test : public beast::unit_test::suite
         auto const bob = Account("bob");
 
         Env env(*this, features);
-        BEAST_EXPECT(features[featureTicketBatch]);
 
         env.fund(XRP(10000), alice);
 
@@ -1407,7 +1406,7 @@ struct Flow_test : public beast::unit_test::suite
         testRIPD1449();
 
         using namespace jtx;
-        auto const sa = supported_amendments() | featureTicketBatch;
+        auto const sa = supported_amendments();
         testWithFeats(sa - featureFlowCross);
         testWithFeats(sa);
         testEmptyStrand(sa);
@@ -1420,7 +1419,7 @@ struct Flow_manual_test : public Flow_test
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments() | featureTicketBatch;
+        auto const all = supported_amendments();
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
 
