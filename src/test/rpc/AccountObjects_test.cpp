@@ -346,7 +346,7 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        Env env(*this, supported_amendments() | featureTicketBatch);
+        Env env(*this);
 
         // Make a lambda we can use to get "account_objects" easily.
         auto acct_objs = [&env](Account const& acct, char const* type) {

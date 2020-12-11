@@ -110,7 +110,7 @@ public:
 
         testcase("Basics");
 
-        Env env{*this, supported_amendments() | featureTicketBatch};
+        Env env{*this};
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -791,7 +791,7 @@ public:
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        Env env{*this, supported_amendments() | featureTicketBatch};
+        Env env{*this};
         env.fund(XRP(100000), alice, bob);
         env.close();
 

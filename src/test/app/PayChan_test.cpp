@@ -652,7 +652,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Create a channel where dst disallows XRP.  Ignore that flag,
             // since it's just advisory.
-            Env env(*this, supported_amendments());
+            Env env(*this);
             env.fund(XRP(10000), alice, bob);
             env(fset(bob, asfDisallowXRP));
             auto const chan = channel(alice, bob, env.seq(alice));
@@ -677,7 +677,7 @@ struct PayChan_test : public beast::unit_test::suite
             // Claim to a channel where dst disallows XRP (channel is
             // created before disallow xrp is set).  Ignore that flag
             // since it is just advisory.
-            Env env(*this, supported_amendments());
+            Env env(*this);
             env.fund(XRP(10000), alice, bob);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
@@ -1588,7 +1588,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // Test with adding the paychan to the recipient's owner directory
-            Env env(*this, supported_amendments());
+            Env env(*this);
             env.fund(XRP(10000), alice, bob);
             env(create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
@@ -1884,7 +1884,7 @@ struct PayChan_test : public beast::unit_test::suite
         testcase("using tickets");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
-        Env env(*this, supported_amendments() | featureTicketBatch);
+        Env env(*this);
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto USDA = alice["USD"];

@@ -1758,7 +1758,7 @@ class Check_test : public beast::unit_test::suite
         Account const bob{"bob"};
         IOU const USD{gw["USD"]};
 
-        Env env{*this, supported_amendments() | featureTicketBatch};
+        Env env{*this};
         env.fund(XRP(1000), gw, alice, bob);
         env.close();
 
