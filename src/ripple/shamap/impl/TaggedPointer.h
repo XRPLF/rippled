@@ -217,11 +217,6 @@ public:
     getChildIndex(std::uint16_t isBranch, int i) const;
 };
 
-inline TaggedPointer::~TaggedPointer()
-{
-    destroyHashesAndChildren();
-}
-
 }  // namespace ripple
 
 #endif
