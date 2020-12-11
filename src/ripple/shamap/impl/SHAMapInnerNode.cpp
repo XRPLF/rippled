@@ -49,9 +49,7 @@ SHAMapInnerNode::SHAMapInnerNode(
 {
 }
 
-SHAMapInnerNode::~SHAMapInnerNode()
-{
-}
+SHAMapInnerNode::~SHAMapInnerNode() = default;
 
 template <class F>
 void
