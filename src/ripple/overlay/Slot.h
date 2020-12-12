@@ -378,11 +378,10 @@ Slot<clock_type>::update(
                 if (journal_.debug())
                     str << k << " ";
                 v.state = PeerState::Squelched;
-                auto duration =
+                std::chrono::seconds duration =
                     getSquelchDuration(peers_.size() - MAX_SELECTED_PEERS);
                 v.expire = now + duration;
-                handler_.squelch(
-                    validator, k, duration_cast<seconds>(duration).count());
+                handler_.squelch(validator, k, duration.count());
             }
         }
         JLOG(journal_.debug()) << "update: squelching " << Slice(validator)
