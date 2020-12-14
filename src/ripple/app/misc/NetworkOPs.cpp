@@ -261,19 +261,13 @@ public:
 
 public:
     OperatingMode
-    getOperatingMode() const override
-    {
-        return mMode;
-    }
+    getOperatingMode() const override;
 
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
 
     std::string
-    strOperatingMode(bool const admin = false) const override
-    {
-        return strOperatingMode(mMode, admin);
-    }
+    strOperatingMode(bool const admin = false) const override;
 
     //
     // Transaction operations.
@@ -391,10 +385,7 @@ public:
     void
     endConsensus() override;
     void
-    setStandAlone() override
-    {
-        setMode(OperatingMode::FULL);
-    }
+    setStandAlone() override;
 
     /** Called to initially start our timers.
         Not called for stand-alone mode.
@@ -403,68 +394,35 @@ public:
     setStateTimer() override;
 
     void
-    setNeedNetworkLedger() override
-    {
-        needNetworkLedger_ = true;
-    }
+    setNeedNetworkLedger() override;
     void
-    clearNeedNetworkLedger() override
-    {
-        needNetworkLedger_ = false;
-    }
+    clearNeedNetworkLedger() override;
     bool
-    isNeedNetworkLedger() override
-    {
-        return needNetworkLedger_;
-    }
+    isNeedNetworkLedger() override;
     bool
-    isFull() override
-    {
-        return !needNetworkLedger_ && (mMode == OperatingMode::FULL);
-    }
+    isFull() override;
 
     void
     setMode(OperatingMode om) override;
 
     bool
-    isFunctionallyBlocked() override
-    {
-        return isAmendmentBlocked() || isUNLBlocked();
-    }
+    isBlocked() override;
     bool
-    isAmendmentBlocked() override
-    {
-        return amendmentBlocked_;
-    }
+    isAmendmentBlocked() override;
     void
     setAmendmentBlocked() override;
     bool
-    isAmendmentWarned() override
-    {
-        return !amendmentBlocked_ && amendmentWarned_;
-    }
+    isAmendmentWarned() override;
     void
-    setAmendmentWarned() override
-    {
-        amendmentWarned_ = true;
-    }
+    setAmendmentWarned() override;
     void
-    clearAmendmentWarned() override
-    {
-        amendmentWarned_ = false;
-    }
+    clearAmendmentWarned() override;
     bool
-    isUNLBlocked() override
-    {
-        return unlBlocked_;
-    }
+    isUNLBlocked() override;
     void
     setUNLBlocked() override;
     void
-    clearUNLBlocked() override
-    {
-        unlBlocked_ = false;
-    }
+    clearUNLBlocked() override;
     void
     consensusViewChange() override;
 
@@ -487,15 +445,9 @@ public:
     reportConsensusStateChange(ConsensusPhase phase);
 
     void
-    updateLocalTx(ReadView const& view) override
-    {
-        m_localTX->sweep(view);
-    }
+    updateLocalTx(ReadView const& view) override;
     std::size_t
-    getLocalTxCount() override
-    {
-        return m_localTX->size();
-    }
+    getLocalTxCount() override;
 
     // Helper function to generate SQL query to get transactions.
     std::string
@@ -655,34 +607,7 @@ public:
     // Stoppable.
 
     void
-    onStop() override
-    {
-        mAcquiringLedger.reset();
-        {
-            boost::system::error_code ec;
-            heartbeatTimer_.cancel(ec);
-            if (ec)
-            {
-                JLOG(m_journal.error())
-                    << "NetworkOPs: heartbeatTimer cancel error: "
-                    << ec.message();
-            }
-
-            ec.clear();
-            clusterTimer_.cancel(ec);
-            if (ec)
-            {
-                JLOG(m_journal.error())
-                    << "NetworkOPs: clusterTimer cancel error: "
-                    << ec.message();
-            }
-        }
-        // Make sure that any waitHandlers pending in our timers are done
-        // before we declare ourselves stopped.
-        using namespace std::chrono_literals;
-        waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
-        stopped();
-    }
+    onStop() override;
 
 private:
     void
@@ -845,47 +770,7 @@ private:
 
 private:
     void
-    collect_metrics()
-    {
-        auto [counters, mode, start] = accounting_.getCounterData();
-        auto const current =
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::system_clock::now() - start);
-        counters[static_cast<std::size_t>(mode)].dur += current;
-
-        std::lock_guard lock(m_statsMutex);
-        m_stats.disconnected_duration.set(
-            counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)]
-                .dur.count());
-        m_stats.connected_duration.set(
-            counters[static_cast<std::size_t>(OperatingMode::CONNECTED)]
-                .dur.count());
-        m_stats.syncing_duration.set(
-            counters[static_cast<std::size_t>(OperatingMode::SYNCING)]
-                .dur.count());
-        m_stats.tracking_duration.set(
-            counters[static_cast<std::size_t>(OperatingMode::TRACKING)]
-                .dur.count());
-        m_stats.full_duration.set(
-            counters[static_cast<std::size_t>(OperatingMode::FULL)]
-                .dur.count());
-
-        m_stats.disconnected_transitions.set(
-            counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)]
-                .transitions);
-        m_stats.connected_transitions.set(
-            counters[static_cast<std::size_t>(OperatingMode::CONNECTED)]
-                .transitions);
-        m_stats.syncing_transitions.set(
-            counters[static_cast<std::size_t>(OperatingMode::SYNCING)]
-                .transitions);
-        m_stats.tracking_transitions.set(
-            counters[static_cast<std::size_t>(OperatingMode::TRACKING)]
-                .transitions);
-        m_stats.full_transitions.set(
-            counters[static_cast<std::size_t>(OperatingMode::FULL)]
-                .transitions);
-    }
+    collect_metrics();
 };
 
 //------------------------------------------------------------------------------
@@ -904,6 +789,48 @@ std::array<Json::StaticString const, 5> const
          Json::StaticString(stateNames[4])}};
 
 //------------------------------------------------------------------------------
+inline OperatingMode
+NetworkOPsImp::getOperatingMode() const
+{
+    return mMode;
+}
+
+inline std::string
+NetworkOPsImp::strOperatingMode(bool const admin /* = false */) const
+{
+    return strOperatingMode(mMode, admin);
+}
+
+inline void
+NetworkOPsImp::setStandAlone()
+{
+    setMode(OperatingMode::FULL);
+}
+
+inline void
+NetworkOPsImp::setNeedNetworkLedger()
+{
+    needNetworkLedger_ = true;
+}
+
+inline void
+NetworkOPsImp::clearNeedNetworkLedger()
+{
+    needNetworkLedger_ = false;
+}
+
+inline bool
+NetworkOPsImp::isNeedNetworkLedger()
+{
+    return needNetworkLedger_;
+}
+
+inline bool
+NetworkOPsImp::isFull()
+{
+    return !needNetworkLedger_ && (mMode == OperatingMode::FULL);
+}
+
 std::string
 NetworkOPsImp::getHostId(bool forAdmin)
 {
@@ -1572,6 +1499,18 @@ NetworkOPsImp::getOwnerInfo(
 // Other
 //
 
+inline bool
+NetworkOPsImp::isBlocked()
+{
+    return isAmendmentBlocked() || isUNLBlocked();
+}
+
+inline bool
+NetworkOPsImp::isAmendmentBlocked()
+{
+    return amendmentBlocked_;
+}
+
 void
 NetworkOPsImp::setAmendmentBlocked()
 {
@@ -1579,11 +1518,41 @@ NetworkOPsImp::setAmendmentBlocked()
     setMode(OperatingMode::TRACKING);
 }
 
+inline bool
+NetworkOPsImp::isAmendmentWarned()
+{
+    return !amendmentBlocked_ && amendmentWarned_;
+}
+
+inline void
+NetworkOPsImp::setAmendmentWarned()
+{
+    amendmentWarned_ = true;
+}
+
+inline void
+NetworkOPsImp::clearAmendmentWarned()
+{
+    amendmentWarned_ = false;
+}
+
+inline bool
+NetworkOPsImp::isUNLBlocked()
+{
+    return unlBlocked_;
+}
+
 void
 NetworkOPsImp::setUNLBlocked()
 {
     unlBlocked_ = true;
     setMode(OperatingMode::CONNECTED);
+}
+
+inline void
+NetworkOPsImp::clearUNLBlocked()
+{
+    unlBlocked_ = false;
 }
 
 bool
@@ -2988,6 +2957,17 @@ NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
         [this, phase](Job&) { pubConsensus(phase); });
 }
 
+inline void
+NetworkOPsImp::updateLocalTx(ReadView const& view)
+{
+    m_localTX->sweep(view);
+}
+inline std::size_t
+NetworkOPsImp::getLocalTxCount()
+{
+    return m_localTX->size();
+}
+
 // This routine should only be used to publish accepted or validated
 // transactions.
 Json::Value
@@ -3538,6 +3518,34 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
     return true;
 }
 
+void
+NetworkOPsImp::onStop()
+{
+    mAcquiringLedger.reset();
+    {
+        boost::system::error_code ec;
+        heartbeatTimer_.cancel(ec);
+        if (ec)
+        {
+            JLOG(m_journal.error())
+                << "NetworkOPs: heartbeatTimer cancel error: " << ec.message();
+        }
+
+        ec.clear();
+        clusterTimer_.cancel(ec);
+        if (ec)
+        {
+            JLOG(m_journal.error())
+                << "NetworkOPs: clusterTimer cancel error: " << ec.message();
+        }
+    }
+    // Make sure that any waitHandlers pending in our timers are done
+    // before we declare ourselves stopped.
+    using namespace std::chrono_literals;
+    waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
+    stopped();
+}
+
 #ifndef USE_NEW_BOOK_PAGE
 
 // NIKB FIXME this should be looked at. There's no reason why this shouldn't
@@ -3894,6 +3902,44 @@ NetworkOPsImp::getBookPage(
 }
 
 #endif
+
+inline void
+NetworkOPsImp::collect_metrics()
+{
+    auto [counters, mode, start] = accounting_.getCounterData();
+    auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::system_clock::now() - start);
+    counters[static_cast<std::size_t>(mode)].dur += current;
+
+    std::lock_guard lock(m_statsMutex);
+    m_stats.disconnected_duration.set(
+        counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)]
+            .dur.count());
+    m_stats.connected_duration.set(
+        counters[static_cast<std::size_t>(OperatingMode::CONNECTED)]
+            .dur.count());
+    m_stats.syncing_duration.set(
+        counters[static_cast<std::size_t>(OperatingMode::SYNCING)].dur.count());
+    m_stats.tracking_duration.set(
+        counters[static_cast<std::size_t>(OperatingMode::TRACKING)]
+            .dur.count());
+    m_stats.full_duration.set(
+        counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
+
+    m_stats.disconnected_transitions.set(
+        counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)]
+            .transitions);
+    m_stats.connected_transitions.set(
+        counters[static_cast<std::size_t>(OperatingMode::CONNECTED)]
+            .transitions);
+    m_stats.syncing_transitions.set(
+        counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
+    m_stats.tracking_transitions.set(
+        counters[static_cast<std::size_t>(OperatingMode::TRACKING)]
+            .transitions);
+    m_stats.full_transitions.set(
+        counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
+}
 
 //------------------------------------------------------------------------------
 

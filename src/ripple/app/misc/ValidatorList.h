@@ -36,14 +36,12 @@
 #include <shared_mutex>
 
 namespace protocol {
-// predeclaration
 class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
 namespace ripple {
 
-// predeclaration
 class Overlay;
 class HashRouter;
 class Message;
@@ -117,8 +115,12 @@ struct TrustChanges
 /** Used to represent the information stored in the blobs_v2 Json array */
 struct ValidatorBlobInfo
 {
+    // base-64 encoded JSON containing the validator list.
     std::string blob;
+    // hex-encoded signature of the blob using the publisher's signing key
     std::string signature;
+    // base-64 or hex-encoded manifest containing the publisher's master and
+    // signing public keys
     boost::optional<std::string> manifest;
 };
 
@@ -179,8 +181,12 @@ class ValidatorList
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
         std::string siteUri;
+        // base-64 encoded JSON containing the validator list.
         std::string rawBlob;
+        // hex-encoded signature of the blob using the publisher's signing key
         std::string rawSignature;
+        // base-64 or hex-encoded manifest containing the publisher's master and
+        // signing public keys
         boost::optional<std::string> rawManifest;
         uint256 hash;
     };
@@ -188,7 +194,25 @@ class ValidatorList
     struct PublisherListCollection
     {
         PublisherStatus status;
+        /*
+        The `current` VL is the one which
+         1. Has the largest sequence number that
+         2. Has ever been effective (the effective date is absent or in the
+            past).
+        If this VL has expired, all VLs with previous sequence numbers
+        will also be considered expired, and thus there will be no valid VL
+        until one with a larger sequence number becomes effective. This is to
+        prevent allowing old VLs to reactivate.
+        */
         PublisherList current;
+        /*
+        The `remaining` list holds any relevant VLs which have a larger sequence
+        number than current. By definition they will all have an effective date
+        in the future. Relevancy will be determined by sorting the VLs by
+        sequence number, then iterating over the list and removing any VLs for
+        which the following VL (ignoring gaps) has the same or earlier effective
+        date.
+        */
         std::map<std::size_t, PublisherList> remaining;
         boost::optional<std::size_t> maxSequence;
         // The hash of the full set if sent in a single message
@@ -203,8 +227,8 @@ class ValidatorList
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
     boost::shared_mutex mutable mutex_;
-    using unique_lock = std::unique_lock<boost::shared_mutex>;
-    using shared_lock = std::shared_lock<boost::shared_mutex>;
+    using lock_guard = std::lock_guard<decltype(mutex_)>;
+    using shared_lock = std::shared_lock<decltype(mutex_)>;
 
     std::atomic<std::size_t> quorum_;
     boost::optional<std::size_t> minimumQuorum_;
@@ -232,7 +256,7 @@ class ValidatorList
     static constexpr std::uint32_t supportedListVersions[]{1, 2};
     // In the initial release, to prevent potential abuse and attacks, any VL
     // collection with more than 5 entries will be considered malformed.
-    static constexpr std::size_t MAX_SUPPORTED_BLOBS = 5;
+    static constexpr std::size_t maxSupportedBlobs = 5;
     // Prefix of the file name used to store cache files.
     static const std::string filePrefix_;
 
@@ -254,44 +278,19 @@ public:
     struct PublisherListStats
     {
         explicit PublisherListStats() = default;
-
-        explicit PublisherListStats(ListDisposition d)
-        {
-            ++dispositions[d];
-        }
-
+        explicit PublisherListStats(ListDisposition d);
         PublisherListStats(
             ListDisposition d,
             PublicKey key,
             PublisherStatus stat,
-            std::size_t seq)
-            : publisherKey(key), status(stat), sequence(seq)
-        {
-            ++dispositions[d];
-        }
+            std::size_t seq);
 
         ListDisposition
-        bestDisposition() const
-        {
-            return dispositions.empty() ? ListDisposition::invalid
-                                        : dispositions.begin()->first;
-        }
-
+        bestDisposition() const;
         ListDisposition
-        worstDisposition() const
-        {
-            return dispositions.empty() ? ListDisposition::invalid
-                                        : dispositions.rbegin()->first;
-        }
-
+        worstDisposition() const;
         void
-        mergeDispositions(PublisherListStats const& src)
-        {
-            for (auto const [disp, count] : src.dispositions)
-            {
-                dispositions[disp] += count;
-            }
-        }
+        mergeDispositions(PublisherListStats const& src);
 
         // Tracks the dispositions of each processed list and how many times it
         // occurred
@@ -307,10 +306,7 @@ public:
         explicit MessageWithHash(
             std::shared_ptr<Message> const& message_,
             uint256 hash_,
-            std::size_t num_)
-            : message(message_), hash(hash_), numVLs(num_)
-        {
-        }
+            std::size_t num_);
         std::shared_ptr<Message> message;
         uint256 hash;
         std::size_t numVLs = 0;
@@ -318,21 +314,21 @@ public:
 
     /** Load configured trusted keys.
 
-            @param localSigningKey This node's validation public key
+        @param localSigningKey This node's validation public key
 
-            @param configKeys List of trusted keys from config. Each entry
-       consists of a base58 encoded validation public key, optionally followed
-       by a comment.
+        @param configKeys List of trusted keys from config. Each entry
+        consists of a base58 encoded validation public key, optionally followed
+        by a comment.
 
-            @param publisherKeys List of trusted publisher public keys. Each
-       entry contains a base58 encoded account public key.
+        @param publisherKeys List of trusted publisher public keys. Each
+        entry contains a base58 encoded account public key.
 
-            @par Thread Safety
+        @par Thread Safety
 
-            May be called concurrently
+        May be called concurrently
 
-            @return `false` if an entry is invalid or unparsable
-        */
+        @return `false` if an entry is invalid or unparsable
+    */
     bool
     load(
         PublicKey const& localSigningKey,
@@ -363,7 +359,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         HashRouter& hashRouter,
-        beast::Journal const j);
+        beast::Journal j);
 
     [[nodiscard]] static std::pair<std::size_t, std::size_t>
     buildValidatorListMessages(
@@ -376,35 +372,35 @@ public:
         std::vector<MessageWithHash>& messages,
         std::size_t maxSize = maximiumMessageSize);
 
-    /** Apply published list of public keys, then broadcast it to all
-    peers that have not seen it or sent it.
+    /** Apply multiple published lists of public keys, then broadcast it to all
+        peers that have not seen it or sent it.
 
-    @param manifest base64-encoded publisher key manifest
+        @param manifest base64-encoded publisher key manifest
 
-    @param version Version of published list format
+        @param version Version of published list format
 
-    @param blobs Vector of BlobInfos representing one or more encoded
-        validator lists and signatures (and optional manifests)
+        @param blobs Vector of BlobInfos representing one or more encoded
+            validator lists and signatures (and optional manifests)
 
-    @param siteUri Uri of the site from which the list was validated
+        @param siteUri Uri of the site from which the list was validated
 
-    @param hash Hash of the data parameters
+        @param hash Hash of the data parameters
 
-    @param overlay Overlay object which will handle sending the message
+        @param overlay Overlay object which will handle sending the message
 
-    @param hashRouter HashRouter object which will determine which
-        peers not to send to
+        @param hashRouter HashRouter object which will determine which
+            peers not to send to
 
-    @param networkOPs NetworkOPs object which will be informed if there
-        is a valid VL
+        @param networkOPs NetworkOPs object which will be informed if there
+            is a valid VL
 
-    @return `ListDisposition::accepted`, plus some of the publisher
-        information, if list was successfully applied
+        @return `ListDisposition::accepted`, plus some of the publisher
+            information, if list was successfully applied
 
-    @par Thread Safety
+        @par Thread Safety
 
-    May be called concurrently
-*/
+        May be called concurrently
+    */
     PublisherListStats
     applyListsAndBroadcast(
         std::string const& manifest,
@@ -416,7 +412,26 @@ public:
         HashRouter& hashRouter,
         NetworkOPs& networkOPs);
 
-    /** TODO: Document this once the interface settles */
+    /** Apply multiple published lists of public keys.
+
+        @param manifest base64-encoded publisher key manifest
+
+        @param version Version of published list format
+
+        @param blobs Vector of BlobInfos representing one or more encoded
+        validator lists and signatures (and optional manifests)
+
+        @param siteUri Uri of the site from which the list was validated
+
+        @param hash Optional hash of the data parameters
+
+        @return `ListDisposition::accepted`, plus some of the publisher
+        information, if list was successfully applied
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
     PublisherListStats
     applyLists(
         std::string const& manifest,
@@ -749,14 +764,14 @@ private:
         std::uint32_t version,
         std::string siteUri,
         boost::optional<uint256> const& hash,
-        unique_lock const&);
+        lock_guard const&);
 
     void
     updatePublisherList(
         PublicKey const& pubKey,
         PublisherList const& current,
         std::vector<PublicKey> const& oldList,
-        unique_lock const&);
+        lock_guard const&);
 
     static void
     buildBlobInfos(
@@ -774,7 +789,7 @@ private:
         uint256 const& hash,
         Overlay& overlay,
         HashRouter& hashRouter,
-        beast::Journal const j);
+        beast::Journal j);
 
     static void
     sendValidatorList(
@@ -787,12 +802,12 @@ private:
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
         HashRouter& hashRouter,
-        beast::Journal const j);
+        beast::Journal j);
 
     /** Get the filename used for caching UNLs
      */
     boost::filesystem::path
-    getCacheFileName(unique_lock const&, PublicKey const& pubKey) const;
+    getCacheFileName(lock_guard const&, PublicKey const& pubKey) const;
 
     /** Build a Json representation of the collection, suitable for
         writing to a cache file, or serving to a /vl/ query
@@ -801,8 +816,17 @@ private:
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
-        beast::Journal const j,
-        boost::optional<std::uint32_t> forceVersion = {});
+        beast::Journal j);
+
+    /** Build a Json representation of the collection, suitable for
+    writing to a cache file, or serving to a /vl/ query
+    */
+    static Json::Value
+    buildFileData(
+        std::string const& pubKey,
+        PublisherListCollection const& pubCollection,
+        boost::optional<std::uint32_t> forceVersion,
+        beast::Journal j);
 
     template <class Hasher>
     friend void
@@ -815,7 +839,7 @@ private:
     /** Write a JSON UNL to a cache file
      */
     void
-    cacheValidatorFile(unique_lock const& lock, PublicKey const& pubKey) const;
+    cacheValidatorFile(lock_guard const& lock, PublicKey const& pubKey) const;
 
     /** Check response for trusted valid published list
 
@@ -827,7 +851,7 @@ private:
     */
     ListDisposition
     verify(
-        unique_lock const&,
+        lock_guard const&,
         Json::Value& list,
         PublicKey& pubKey,
         std::string const& manifest,
@@ -846,7 +870,7 @@ private:
     */
     bool
     removePublisherList(
-        unique_lock const&,
+        lock_guard const&,
         PublicKey const& publisherKey,
         PublisherStatus reason);
 

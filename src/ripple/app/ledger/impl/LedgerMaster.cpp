@@ -352,7 +352,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());
     mLedgerHistory.validatedLedger(l, consensusHash);
     app_.getAmendmentTable().doValidatedLedger(l);
-    if (!app_.getOPs().isFunctionallyBlocked())
+    if (!app_.getOPs().isBlocked())
     {
         if (app_.getAmendmentTable().hasUnsupportedEnabled())
         {

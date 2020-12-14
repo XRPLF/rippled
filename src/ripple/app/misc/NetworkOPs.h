@@ -201,7 +201,7 @@ public:
     virtual void
     setMode(OperatingMode om) = 0;
     virtual bool
-    isFunctionallyBlocked() = 0;
+    isBlocked() = 0;
     virtual bool
     isAmendmentBlocked() = 0;
     virtual void

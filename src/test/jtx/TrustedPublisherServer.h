@@ -57,7 +57,11 @@ class TrustedPublisherServer
     socket_type sock_;
     endpoint_type ep_;
     boost::asio::ip::tcp::acceptor acceptor_;
+    // Generates a version 1 validator list, using the int parameter as the
+    // actual version.
     std::function<std::string(int)> getList_;
+    // Generates a version 2 validator list, using the int parameter as the
+    // actual version.
     std::function<std::string(int)> getList2_;
 
     // The SSL context is required, and holds certificates
@@ -91,6 +95,18 @@ class TrustedPublisherServer
 
         sslCtx_.use_tmp_dh(boost::asio::buffer(dh().data(), dh().size()));
     }
+
+    struct BlobInfo
+    {
+        BlobInfo(std::string b, std::string s) : blob(b), signature(s)
+        {
+        }
+
+        // base-64 encoded JSON containing the validator list.
+        std::string blob;
+        // hex-encoded signature of the blob using the publisher's signing key
+        std::string signature;
+    };
 
 public:
     struct Validator
@@ -176,9 +192,10 @@ public:
         auto const manifest = makeManifestString(
             publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
 
-        std::vector<std::pair<std::string, std::string>> blobInfo;
+        std::vector<BlobInfo> blobInfo;
         blobInfo.reserve(futures.size() + 1);
-        auto const [data, blob] = [&]() {
+        auto const [data, blob] = [&]() -> std::pair<std::string, std::string> {
+            // Builds the validator list, then encodes it into a blob.
             std::string data = "{\"sequence\":" + std::to_string(sequence) +
                 ",\"expiration\":" +
                 std::to_string(validUntil.time_since_epoch().count()) +
@@ -198,6 +215,7 @@ public:
         auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
         blobInfo.emplace_back(blob, sig);
         getList_ = [blob = blob, sig, manifest, version](int interval) {
+            // Build the contents of a version 1 format UNL file
             std::stringstream l;
             l << "{\"blob\":\"" << blob << "\""
               << ",\"signature\":\"" << sig << "\""
@@ -230,13 +248,14 @@ public:
             blobInfo.emplace_back(blob, sig);
         }
         getList2_ = [blobInfo, manifest, version](int interval) {
+            // Build the contents of a version 2 format UNL file
             // Use `version + 1` to get 2 for most tests, but have
             // a "bad" version number for tests that provide an override.
             std::stringstream l;
             for (auto const& info : blobInfo)
             {
-                l << "{\"blob\":\"" << info.first << "\""
-                  << ",\"signature\":\"" << info.second << "\"},";
+                l << "{\"blob\":\"" << info.blob << "\""
+                  << ",\"signature\":\"" << info.signature << "\"},";
             }
             std::string blobs = l.str();
             blobs.pop_back();
@@ -694,7 +713,8 @@ make_TrustedPublisherServer(
     boost::asio::io_context& ioc,
     std::vector<TrustedPublisherServer::Validator> const& validators,
     NetClock::time_point validUntil,
-    std::vector<std::pair<NetClock::time_point, NetClock::time_point>> futures,
+    std::vector<std::pair<NetClock::time_point, NetClock::time_point>> const&
+        futures,
     bool useSSL = false,
     int version = 1,
     bool immediateStart = true,

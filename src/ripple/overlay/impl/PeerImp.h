@@ -43,7 +43,6 @@
 
 namespace ripple {
 
-// predeclaration
 struct ValidatorBlobInfo;
 
 class PeerImp : public Peer,

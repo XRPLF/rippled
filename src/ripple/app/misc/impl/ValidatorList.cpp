@@ -68,6 +68,53 @@ to_string(ListDisposition disposition)
     return "unknown";
 }
 
+ValidatorList::PublisherListStats::PublisherListStats(ListDisposition d)
+{
+    ++dispositions[d];
+}
+
+ValidatorList::PublisherListStats::PublisherListStats(
+    ListDisposition d,
+    PublicKey key,
+    PublisherStatus stat,
+    std::size_t seq)
+    : publisherKey(key), status(stat), sequence(seq)
+{
+    ++dispositions[d];
+}
+
+ListDisposition
+ValidatorList::PublisherListStats::bestDisposition() const
+{
+    return dispositions.empty() ? ListDisposition::invalid
+                                : dispositions.begin()->first;
+}
+
+ListDisposition
+ValidatorList::PublisherListStats::worstDisposition() const
+{
+    return dispositions.empty() ? ListDisposition::invalid
+                                : dispositions.rbegin()->first;
+}
+
+void
+ValidatorList::PublisherListStats::mergeDispositions(
+    PublisherListStats const& src)
+{
+    for (auto const [disp, count] : src.dispositions)
+    {
+        dispositions[disp] += count;
+    }
+}
+
+ValidatorList::MessageWithHash::MessageWithHash(
+    std::shared_ptr<Message> const& message_,
+    uint256 hash_,
+    std::size_t num_)
+    : message(message_), hash(hash_), numVLs(num_)
+{
+}
+
 const std::string ValidatorList::filePrefix_ = "cache.";
 
 ValidatorList::ValidatorList(
@@ -105,7 +152,7 @@ ValidatorList::load(
         ")?"                 // end optional comment block
     );
 
-    std::unique_lock lock{mutex_};
+    std::lock_guard lock{mutex_};
 
     JLOG(j_.debug())
         << "Loading configured trusted validator list publisher keys";
@@ -203,7 +250,7 @@ ValidatorList::load(
 
 boost::filesystem::path
 ValidatorList::getCacheFileName(
-    ValidatorList::unique_lock const&,
+    ValidatorList::lock_guard const&,
     PublicKey const& pubKey) const
 {
     return dataPath_ / (filePrefix_ + strHex(pubKey));
@@ -214,8 +261,18 @@ Json::Value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
-    beast::Journal const j,
-    boost::optional<std::uint32_t> forceVersion /* = {} */)
+    beast::Journal j)
+{
+    return buildFileData(pubKey, pubCollection, {}, j);
+}
+
+// static
+Json::Value
+ValidatorList::buildFileData(
+    std::string const& pubKey,
+    ValidatorList::PublisherListCollection const& pubCollection,
+    boost::optional<std::uint32_t> forceVersion,
+    beast::Journal j)
 {
     Json::Value value(Json::objectValue);
 
@@ -274,7 +331,7 @@ ValidatorList::buildFileData(
 
 void
 ValidatorList::cacheValidatorFile(
-    ValidatorList::unique_lock const& lock,
+    ValidatorList::lock_guard const& lock,
     PublicKey const& pubKey) const
 {
     if (dataPath_.empty())
@@ -330,7 +387,7 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
         default: {
             if (!body.isMember(jss::blobs_v2) ||
                 !body[jss::blobs_v2].isArray() ||
-                body[jss::blobs_v2].size() > MAX_SUPPORTED_BLOBS ||
+                body[jss::blobs_v2].size() > maxSupportedBlobs ||
                 // If any of the v1 fields are present, the VL is malformed
                 body.isMember(jss::blob) || body.isMember(jss::signature))
                 return {};
@@ -371,7 +428,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
 std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
 {
-    if (body.blobs_size() > MAX_SUPPORTED_BLOBS)
+    if (body.blobs_size() > maxSupportedBlobs)
         return {};
     std::vector<ValidatorBlobInfo> result;
     result.reserve(body.blobs_size());
@@ -629,7 +686,7 @@ ValidatorList::sendValidatorList(
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::vector<ValidatorList::MessageWithHash>& messages,
     HashRouter& hashRouter,
-    beast::Journal const j)
+    beast::Journal j)
 {
     std::size_t const messageVersion =
         peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation)
@@ -700,7 +757,7 @@ ValidatorList::sendValidatorList(
     std::string const& rawManifest,
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     HashRouter& hashRouter,
-    beast::Journal const j)
+    beast::Journal j)
 {
     std::vector<ValidatorList::MessageWithHash> messages;
     sendValidatorList(
@@ -751,7 +808,7 @@ ValidatorList::broadcastBlobs(
     uint256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
-    beast::Journal const j)
+    beast::Journal j)
 {
     auto const toSkip = hashRouter.shouldRelay(hash);
 
@@ -877,7 +934,7 @@ ValidatorList::applyLists(
             version) != 1)
         return PublisherListStats{ListDisposition::unsupported_version};
 
-    std::unique_lock lock{mutex_};
+    std::lock_guard lock{mutex_};
 
     PublisherListStats result;
     for (auto const& blobInfo : blobs)
@@ -942,7 +999,7 @@ ValidatorList::updatePublisherList(
     PublicKey const& pubKey,
     PublisherList const& current,
     std::vector<PublicKey> const& oldList,
-    ValidatorList::unique_lock const&)
+    ValidatorList::lock_guard const&)
 {
     // Update keyListings_ for added and removed keys
     std::vector<PublicKey> const& publisherList = current.list;
@@ -1010,7 +1067,7 @@ ValidatorList::applyList(
     std::uint32_t version,
     std::string siteUri,
     boost::optional<uint256> const& hash,
-    ValidatorList::unique_lock const& lock)
+    ValidatorList::lock_guard const& lock)
 {
     using namespace std::string_literals;
 
@@ -1154,7 +1211,7 @@ ValidatorList::loadLists()
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    std::unique_lock lock{mutex_};
+    std::lock_guard lock{mutex_};
 
     std::vector<std::string> sites;
     sites.reserve(publisherLists_.size());
@@ -1202,7 +1259,7 @@ ValidatorList::loadLists()
 
 ListDisposition
 ValidatorList::verify(
-    ValidatorList::unique_lock const& lock,
+    ValidatorList::lock_guard const& lock,
     Json::Value& list,
     PublicKey& pubKey,
     std::string const& manifest,
@@ -1362,7 +1419,7 @@ ValidatorList::localPublicKey() const
 
 bool
 ValidatorList::removePublisherList(
-    ValidatorList::unique_lock const&,
+    ValidatorList::lock_guard const&,
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
@@ -1644,7 +1701,7 @@ ValidatorList::getAvailable(
         return {};
 
     Json::Value value =
-        buildFileData(std::string{pubKey}, iter->second, j_, forceVersion);
+        buildFileData(std::string{pubKey}, iter->second, forceVersion, j_);
 
     return value;
 }
@@ -1726,7 +1783,7 @@ ValidatorList::updateTrusted(
     if (timeKeeper_.now() > closeTime + 30s)
         closeTime = timeKeeper_.now();
 
-    std::unique_lock lock{mutex_};
+    std::lock_guard lock{mutex_};
 
     // Rotate pending and remove expired published lists
     bool good = true;
@@ -1895,7 +1952,7 @@ ValidatorList::getNegativeUNL() const
 void
 ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
 {
-    std::unique_lock lock{mutex_};
+    std::lock_guard lock{mutex_};
     negativeUNL_ = negUnl;
 }
 
