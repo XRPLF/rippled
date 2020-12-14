@@ -174,35 +174,33 @@ RootStoppable::~RootStoppable()
 bool
 RootStoppable::isStopping() const
 {
-    return m_calledStop;
+    return stopEntered_;
 }
 
 void
 RootStoppable::start()
 {
-    // Courtesy call to prepare.
-    if (m_prepared.exchange(true))
+    if (startEntered_.exchange(true))
         return;
-
     prepareRecursive();
-    m_started.exchange(true);
     startRecursive();
+    startExited_ = true;
 }
 
 void
 RootStoppable::stop(beast::Journal j)
 {
     // Must have a prior call to start()
-    assert(m_started);
+    assert(startExited_);
 
     bool alreadyCalled;
     {
-        // Even though m_calledStop is atomic, we change its value under a
+        // Even though stopEntered_ is atomic, we change its value under a
         // lock.  This removes a small timing window that occurs if the
-        // waiting thread is handling a spurious wakeup while m_calledStop
+        // waiting thread is handling a spurious wakeup while stopEntered_
         // changes state.
         std::unique_lock<std::mutex> lock(m_);
-        alreadyCalled = m_calledStop.exchange(true);
+        alreadyCalled = stopEntered_.exchange(true);
     }
     if (alreadyCalled)
     {

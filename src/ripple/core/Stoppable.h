@@ -339,6 +339,7 @@ private:
     std::string m_name;
     RootStoppable& m_root;
     Child m_child;
+    // TODO [C++20]: Use std::atomic_flag instead.
     std::atomic<bool> m_stopped{false};
     std::atomic<bool> m_childrenStopped{false};
     Children m_children;
@@ -373,8 +374,8 @@ public:
     /** Notify a root stoppable and children to stop, and block until stopped.
         Has no effect if the stoppable was already notified.
         This blocks until the stoppable and all of its children have stopped.
-        Undefined behavior results if stop() is called without a previous call
-        to start().
+        Undefined behavior results if stop() is called without finishing
+        a previous call to start().
         Thread safety:
             Safe to call from any thread not associated with a Stoppable.
     */
@@ -385,7 +386,7 @@ public:
     bool
     started() const
     {
-        return m_started;
+        return startExited_;
     }
 
     /* JobQueue uses this method for Job counting. */
@@ -403,9 +404,10 @@ public:
     alertable_sleep_until(std::chrono::system_clock::time_point const& t);
 
 private:
-    std::atomic<bool> m_prepared{false};
-    std::atomic<bool> m_started{false};
-    std::atomic<bool> m_calledStop{false};
+    // TODO [C++20]: Use std::atomic_flag instead.
+    std::atomic<bool> startEntered_{false};
+    std::atomic<bool> startExited_{false};
+    std::atomic<bool> stopEntered_{false};
     std::mutex m_;
     std::condition_variable c_;
     JobCounter jobCounter_;
@@ -427,9 +429,11 @@ RootStoppable::alertable_sleep_until(
     std::chrono::system_clock::time_point const& t)
 {
     std::unique_lock<std::mutex> lock(m_);
-    if (m_calledStop)
+    if (stopEntered_)
         return true;
-    return c_.wait_until(lock, t, [this] { return m_calledStop.load(); });
+    // TODO [C++20]: When `stopEntered_` is changed to a `std::atomic_flag`,
+    // this call to `load` needs to change to a call to `test`.
+    return c_.wait_until(lock, t, [this] { return stopEntered_.load(); });
 }
 
 inline bool
