@@ -126,7 +126,7 @@ public:
     private:
         ReadView const* view_ = nullptr;
         std::unique_ptr<iter_base> impl_;
-        boost::optional<value_type> mutable cache_;
+        std::optional<value_type> mutable cache_;
     };
 
     static_assert(std::is_nothrow_move_constructible<iterator>{}, "");
@@ -147,7 +147,6 @@ public:
 
 protected:
     ReadView const* view_;
-    boost::optional<iterator> mutable end_;
 };
 
 }  // namespace detail

@@ -108,6 +108,7 @@ public:
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&
     operator=(SHAMapInnerNode const&) = delete;
+    ~SHAMapInnerNode();
 
     std::shared_ptr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const override;

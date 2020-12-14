@@ -45,8 +45,9 @@ public:
     bool
     equal(base_type const& impl) const override
     {
-        auto const& other = dynamic_cast<txs_iter_impl const&>(impl);
-        return iter_ == other.iter_;
+        if (auto const p = dynamic_cast<txs_iter_impl const*>(&impl))
+            return iter_ == p->iter_;
+        return false;
     }
 
     void
