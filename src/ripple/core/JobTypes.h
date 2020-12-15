@@ -106,6 +106,12 @@ public:
         return types;
     }
 
+    static std::string const&
+    name(JobType jt)
+    {
+        return instance().get(jt).name();
+    }
+
     JobTypeInfo const&
     get(JobType jt) const
     {

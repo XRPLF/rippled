@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/temp_dir.h>
@@ -47,6 +48,16 @@
 
 namespace ripple {
 namespace NodeStore {
+
+std::unique_ptr<Backend>
+make_Backend(
+    Section const& config,
+    Scheduler& scheduler,
+    beast::Journal journal)
+{
+    return Manager::instance().make_Backend(
+        config, megabytes(4), scheduler, journal);
+}
 
 // Fill memory with random bits
 template <class Generator>
@@ -261,7 +272,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -318,7 +329,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -389,7 +400,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -462,7 +473,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -551,7 +562,7 @@ public:
     do_work(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->setDeletePath();
         backend->open();
