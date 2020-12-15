@@ -113,6 +113,21 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq) = 0;
 
+    /* Check if two ledgers are in the same database
+
+        If these two sequence numbers map to the same database,
+        the result of a fetch with either sequence number would
+        be identical.
+
+        @param s1 The first sequence number
+        @param s2 The second sequence number
+
+        @return 'true' if both ledgers would be in the same DB
+
+    */
+    virtual bool
+    isSameDB(std::uint32_t s1, std::uint32_t s2) = 0;
+
     /** Fetch a node object.
         If the object is known to be not in the database, isn't found in the
         database during the fetch, or failed to load correctly during the fetch,

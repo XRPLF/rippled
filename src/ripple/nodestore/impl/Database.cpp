@@ -298,8 +298,17 @@ Database::threadEntry()
             readLastHash_ = lastHash;
         }
 
+        auto seq = entry[0].first;
+        auto obj = fetchNodeObject(lastHash, seq, FetchType::async);
+
         for (auto const& req : entry)
-            req.second(fetchNodeObject(lastHash, req.first, FetchType::async));
+        {
+            if ((seq == req.first) || isSameDB(req.first, seq))
+                req.second(obj);
+            else
+                req.second(
+                    fetchNodeObject(lastHash, req.first, FetchType::async));
+        }
     }
 }
 

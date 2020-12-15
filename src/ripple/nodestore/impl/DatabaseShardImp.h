@@ -139,6 +139,12 @@ public:
     std::int32_t
     getWriteLoad() const override;
 
+    bool
+    isSameDB(std::uint32_t s1, std::uint32_t s2) override
+    {
+        return seqToShardIndex(s1) == seqToShardIndex(s2);
+    }
+
     void
     store(
         NodeObjectType type,

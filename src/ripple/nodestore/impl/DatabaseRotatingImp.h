@@ -63,6 +63,12 @@ public:
     void
     import(Database& source) override;
 
+    bool isSameDB(std::uint32_t, std::uint32_t) override
+    {
+        // rotating store acts as one logical database
+        return true;
+    }
+
     void
     store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
         override;
