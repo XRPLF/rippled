@@ -30,11 +30,6 @@ DummyScheduler::scheduleTask(Task& task)
 }
 
 void
-DummyScheduler::scheduledTasksStopped()
-{
-}
-
-void
 DummyScheduler::onFetch(const FetchReport& report)
 {
 }
