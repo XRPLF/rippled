@@ -42,6 +42,28 @@
 namespace ripple {
 namespace perf {
 
+/** A box coupling data with a mutex for locking access to it. */
+template <typename T>
+struct Locked
+{
+    T value;
+    mutable std::mutex mutex;
+
+    Locked() = default;
+    Locked(T const& value) : value(value)
+    {
+    }
+    Locked(T&& value) : value(std::move(value))
+    {
+    }
+    Locked(Locked const& rhs) : value(rhs.value)
+    {
+    }
+    Locked(Locked&& rhs) : value(std::move(rhs.value))
+    {
+    }
+};
+
 /**
  * Implementation class for PerfLog.
  */
@@ -59,27 +81,13 @@ class PerfLogImp : public PerfLog, Stoppable
          */
         struct Rpc
         {
-            // Keep all items that need to be synchronized in one place
-            // to minimize copy overhead while locked.
-            struct Sync
-            {
-                // Counters for each time a method starts and then either
-                // finishes successfully or with an exception.
-                std::uint64_t started{0};
-                std::uint64_t finished{0};
-                std::uint64_t errored{0};
-                // Cumulative duration of all finished and errored method calls.
-                microseconds duration{0};
-            };
-
-            Sync sync;
-            mutable std::mutex mut;
-
-            Rpc() = default;
-
-            Rpc(Rpc const& orig) : sync(orig.sync)
-            {
-            }
+            // Counters for each time a method starts and then either
+            // finishes successfully or with an exception.
+            std::uint64_t started{0};
+            std::uint64_t finished{0};
+            std::uint64_t errored{0};
+            // Cumulative duration of all finished and errored method calls.
+            microseconds duration{0};
         };
 
         /**
@@ -87,39 +95,21 @@ class PerfLogImp : public PerfLog, Stoppable
          */
         struct Jq
         {
-            // Keep all items that need to be synchronized in one place
-            // to minimize copy overhead while locked.
-            struct Sync
-            {
-                // Counters for each time a job is enqueued, begins to run,
-                // finishes.
-                std::uint64_t queued{0};
-                std::uint64_t started{0};
-                std::uint64_t finished{0};
-                // Cumulative duration of all jobs' queued and running times.
-                microseconds queuedDuration{0};
-                microseconds runningDuration{0};
-            };
-
-            Sync sync;
-            std::string const label;
-            mutable std::mutex mut;
-
-            Jq(std::string const& labelArg) : label(labelArg)
-            {
-            }
-
-            Jq(Jq const& orig) : sync(orig.sync), label(orig.label)
-            {
-            }
+            // Counters for each time a job is enqueued, begins to run,
+            // finishes.
+            std::uint64_t queued{0};
+            std::uint64_t started{0};
+            std::uint64_t finished{0};
+            // Cumulative duration of all jobs' queued and running times.
+            microseconds queuedDuration{0};
+            microseconds runningDuration{0};
         };
 
         // rpc_ and jq_ do not need mutex protection because all
         // keys and values are created before more threads are started.
-        std::unordered_map<std::string, Rpc> rpc_;
-        std::unordered_map<std::underlying_type_t<JobType>, Jq> jq_;
+        std::unordered_map<std::string, Locked<Rpc>> rpc_;
+        std::unordered_map<JobType, Locked<Jq>> jq_;
         std::vector<std::pair<JobType, steady_time_point>> jobs_;
-        int workers_{0};
         mutable std::mutex jobsMutex_;
         std::unordered_map<std::uint64_t, MethodStart> methods_;
         mutable std::mutex methodsMutex_;
