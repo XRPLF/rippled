@@ -79,30 +79,27 @@ PerfLogImp::Counters::countersJson() const
     Rpc totalRpc;
     for (auto const& proc : rpc_)
     {
-        Json::Value p(Json::objectValue);
-        {
-            auto const sync =
-                [&proc]() -> boost::optional<Counters::Rpc::Sync> {
-                std::lock_guard lock(proc.second.mut);
-                if (!proc.second.sync.started && !proc.second.sync.finished &&
-                    !proc.second.sync.errored)
-                {
-                    return boost::none;
-                }
-                return proc.second.sync;
-            }();
-            if (!sync)
-                continue;
+        auto const sync = [&proc]() -> boost::optional<Counters::Rpc::Sync> {
+            std::lock_guard lock(proc.second.mut);
+            if (!proc.second.sync.started && !proc.second.sync.finished &&
+                !proc.second.sync.errored)
+            {
+                return boost::none;
+            }
+            return proc.second.sync;
+        }();
+        if (!sync)
+            continue;
 
-            p[jss::started] = std::to_string(sync->started);
-            totalRpc.sync.started += sync->started;
-            p[jss::finished] = std::to_string(sync->finished);
-            totalRpc.sync.finished += sync->finished;
-            p[jss::errored] = std::to_string(sync->errored);
-            totalRpc.sync.errored += sync->errored;
-            p[jss::duration_us] = std::to_string(sync->duration.count());
-            totalRpc.sync.duration += sync->duration;
-        }
+        Json::Value p(Json::objectValue);
+        p[jss::started] = std::to_string(sync->started);
+        totalRpc.sync.started += sync->started;
+        p[jss::finished] = std::to_string(sync->finished);
+        totalRpc.sync.finished += sync->finished;
+        p[jss::errored] = std::to_string(sync->errored);
+        totalRpc.sync.errored += sync->errored;
+        p[jss::duration_us] = std::to_string(sync->duration.count());
+        totalRpc.sync.duration += sync->duration;
         rpcobj[proc.first] = p;
     }
 
@@ -232,34 +229,34 @@ PerfLogImp::Counters::currentJson() const
 void
 PerfLogImp::openLog()
 {
-    if (!setup_.perfLog.empty())
+    if (setup_.perfLog.empty())
+        return;
+
+    if (logFile_.is_open())
+        logFile_.close();
+
+    auto logDir = setup_.perfLog.parent_path();
+    if (!boost::filesystem::is_directory(logDir))
     {
-        if (logFile_.is_open())
-            logFile_.close();
-
-        auto logDir = setup_.perfLog.parent_path();
-        if (!boost::filesystem::is_directory(logDir))
+        boost::system::error_code ec;
+        boost::filesystem::create_directories(logDir, ec);
+        if (ec)
         {
-            boost::system::error_code ec;
-            boost::filesystem::create_directories(logDir, ec);
-            if (ec)
-            {
-                JLOG(j_.fatal()) << "Unable to create performance log "
-                                    "directory "
-                                 << logDir << ": " << ec.message();
-                signalStop_();
-                return;
-            }
-        }
-
-        logFile_.open(setup_.perfLog.c_str(), std::ios::out | std::ios::app);
-
-        if (!logFile_)
-        {
-            JLOG(j_.fatal())
-                << "Unable to open performance log " << setup_.perfLog << ".";
+            JLOG(j_.fatal()) << "Unable to create performance log "
+                                "directory "
+                             << logDir << ": " << ec.message();
             signalStop_();
+            return;
         }
+    }
+
+    logFile_.open(setup_.perfLog.c_str(), std::ios::out | std::ios::app);
+
+    if (!logFile_)
+    {
+        JLOG(j_.fatal()) << "Unable to open performance log " << setup_.perfLog
+                         << ".";
+        signalStop_();
     }
 }
 
@@ -305,7 +302,6 @@ PerfLogImp::report()
     report[jss::workers] = counters_.workers_;
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
-    auto cur = counters_.currentJson();
     report[jss::current_activities] = counters_.currentJson();
 
     logFile_ << Json::Compact{std::move(report)} << std::endl;
