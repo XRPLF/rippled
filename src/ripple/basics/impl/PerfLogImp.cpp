@@ -183,12 +183,6 @@ PerfLogImp::Counters::currentJson() const
         if (j.first == jtINVALID)
             continue;
         Json::Value jobj(Json::objectValue);
-        auto const e = jq_.find(j.first);
-        if (e == jq_.end())
-        {
-            assert(false);
-            continue;
-        }
         jobj[jss::job] = JobTypes::name(j.first);
         jobj[jss::duration_us] = std::to_string(
             std::chrono::duration_cast<microseconds>(present - j.second)
