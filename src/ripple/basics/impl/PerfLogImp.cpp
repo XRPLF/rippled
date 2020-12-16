@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -298,7 +299,11 @@ PerfLogImp::report()
 
     Json::Value report(Json::objectValue);
     report[jss::time] = to_string(date::floor<microseconds>(present));
-    report[jss::workers] = counters_.workers_;
+    {
+        std::lock_guard lock{counters_.jobsMutex_};
+        report[jss::workers] =
+            static_cast<unsigned int>(counters_.jobs_.size());
+    }
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
     report[jss::current_activities] = counters_.currentJson();
@@ -437,7 +442,6 @@ void
 PerfLogImp::resizeJobs(int const resize)
 {
     std::lock_guard lock(counters_.jobsMutex_);
-    counters_.workers_ = resize;
     if (resize > counters_.jobs_.size())
         counters_.jobs_.resize(resize, {jtINVALID, steady_time_point()});
 }

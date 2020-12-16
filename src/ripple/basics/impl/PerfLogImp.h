@@ -110,7 +110,6 @@ class PerfLogImp : public PerfLog, Stoppable
         std::unordered_map<std::string, Locked<Rpc>> rpc_;
         std::unordered_map<JobType, Locked<Jq>> jq_;
         std::vector<std::pair<JobType, steady_time_point>> jobs_;
-        int workers_{0};
         mutable std::mutex jobsMutex_;
         std::unordered_map<std::uint64_t, MethodStart> methods_;
         mutable std::mutex methodsMutex_;
