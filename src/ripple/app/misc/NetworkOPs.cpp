@@ -1515,7 +1515,7 @@ void
 NetworkOPsImp::setAmendmentBlocked()
 {
     amendmentBlocked_ = true;
-    setMode(OperatingMode::TRACKING);
+    setMode(OperatingMode::CONNECTED);
 }
 
 inline bool
@@ -2152,10 +2152,8 @@ NetworkOPsImp::setMode(OperatingMode om)
             om = OperatingMode::CONNECTED;
     }
 
-    if ((om > OperatingMode::CONNECTED) && isUNLBlocked())
+    if ((om > OperatingMode::CONNECTED) && isBlocked())
         om = OperatingMode::CONNECTED;
-    else if ((om > OperatingMode::TRACKING) && isAmendmentBlocked())
-        om = OperatingMode::TRACKING;
 
     if (mMode == om)
         return;

@@ -2119,6 +2119,18 @@ ApplicationImp::serverOkay(std::string& reason)
         return false;
     }
 
+    if (getOPs().isAmendmentBlocked())
+    {
+        reason = "Server version too old";
+        return false;
+    }
+
+    if (getOPs().isUNLBlocked())
+    {
+        reason = "No valid validator list available";
+        return false;
+    }
+
     if (getOPs().getOperatingMode() < OperatingMode::SYNCING)
     {
         reason = "Not synchronized with network";
@@ -2131,18 +2143,6 @@ ApplicationImp::serverOkay(std::string& reason)
     if (getFeeTrack().isLoadedLocal())
     {
         reason = "Too much load";
-        return false;
-    }
-
-    if (getOPs().isAmendmentBlocked())
-    {
-        reason = "Server version too old";
-        return false;
-    }
-
-    if (getOPs().isUNLBlocked())
-    {
-        reason = "No valid validator list available";
         return false;
     }
 

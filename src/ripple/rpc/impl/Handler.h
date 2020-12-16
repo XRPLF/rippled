@@ -77,17 +77,6 @@ template <class T>
 error_code_i
 conditionMet(Condition condition_required, T& context)
 {
-    if ((condition_required & NEEDS_NETWORK_CONNECTION) &&
-        (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
-    {
-        JLOG(context.j.info()) << "Insufficient network mode for RPC: "
-                               << context.netOps.strOperatingMode();
-
-        if (context.apiVersion == 1)
-            return rpcNO_NETWORK;
-        return rpcNOT_SYNCED;
-    }
-
     if (context.app.getOPs().isAmendmentBlocked() &&
         (condition_required & NEEDS_CURRENT_LEDGER ||
          condition_required & NEEDS_CLOSED_LEDGER))
@@ -100,6 +89,17 @@ conditionMet(Condition condition_required, T& context)
          condition_required & NEEDS_CLOSED_LEDGER))
     {
         return rpcEXPIRED_VALIDATOR_LIST;
+    }
+
+    if ((condition_required & NEEDS_NETWORK_CONNECTION) &&
+        (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
+    {
+        JLOG(context.j.info()) << "Insufficient network mode for RPC: "
+                               << context.netOps.strOperatingMode();
+
+        if (context.apiVersion == 1)
+            return rpcNO_NETWORK;
+        return rpcNOT_SYNCED;
     }
 
     if (!context.app.config().standalone() &&
