@@ -260,6 +260,7 @@ PerfLogImp::run()
     {
         {
             std::unique_lock<std::mutex> lock(mutex_);
+            cond_.wait_until(lock, lastLog_ + setup_.logInterval);
             if (stop_)
             {
                 return;
@@ -269,7 +270,6 @@ PerfLogImp::run()
                 openLog();
                 rotate_ = false;
             }
-            cond_.wait_until(lock, lastLog_ + setup_.logInterval);
         }
         report();
     }
