@@ -23,18 +23,7 @@
 
 #include <array>
 
-// #define FORCE_BOOST_POOL 1
-#if FORCE_BOOST_POOL || !__has_include(<memory_resource>)
-#define USE_BOOST_POOL 1
-#else
-#define USE_BOOST_POOL 0
-#endif
-
-#if USE_BOOST_POOL
 #include <boost/pool/pool_alloc.hpp>
-#else
-#include <memory_resource>
-#endif
 
 namespace ripple {
 
@@ -101,8 +90,6 @@ boundariesIndex(std::uint8_t numChildren)
         boundaries.begin(),
         std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
 }
-
-#if USE_BOOST_POOL
 
 template <std::size_t... I>
 std::array<std::function<void*()>, boundaries.size()> initAllocateArrayFuns(
@@ -171,38 +158,6 @@ deallocateArrays(std::uint8_t boundaryIndex, void* p)
     assert(isFromArrayFuns[boundaryIndex](p));
     freeArrayFuns[boundaryIndex](p);
 }
-#else
-
-template <std::size_t... I>
-std::array<std::pmr::synchronized_pool_resource, boundaries.size()>
-    initPmrArrayFuns(std::index_sequence<I...>)
-{
-    return std::array<std::pmr::synchronized_pool_resource, boundaries.size()>{
-        std::pmr::synchronized_pool_resource{std::pmr::pool_options{
-            /* max_blocks_per_chunk */ chunksPerBlock[I],
-            /* largest_required_pool_block */ chunksPerBlock[I]}}...,
-    };
-}
-std::array<std::pmr::synchronized_pool_resource, boundaries.size()>
-    pmrArrayFuns =
-        initPmrArrayFuns(std::make_index_sequence<boundaries.size()>{});
-
-// This function returns an untagged pointer
-[[nodiscard]] inline std::pair<std::uint8_t, void*>
-allocateArrays(std::uint8_t numChildren)
-{
-    auto const i = boundariesIndex(numChildren);
-    return {i, pmrArrayFuns[i].allocate(arrayChunkSizeBytes[i])};
-}
-
-// This function takes an untagged pointer
-inline void
-deallocateArrays(std::uint8_t boundaryIndex, void* p)
-{
-    return pmrArrayFuns[boundaryIndex].deallocate(
-        p, arrayChunkSizeBytes[boundaryIndex]);
-}
-#endif
 
 [[nodiscard]] inline int
 popcnt16(std::uint16_t a)
