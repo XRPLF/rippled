@@ -1376,32 +1376,29 @@ vp_squelched=1
         });
     }
 
+    struct Handler : public reduce_relay::SquelchHandler
+    {
+        Handler() : maxDuration_(0)
+        {
+        }
+        void
+        squelch(PublicKey const&, Peer::id_t, std::uint32_t duration)
+            const override
+        {
+            if (duration > maxDuration_)
+                maxDuration_ = duration;
+        }
+        void
+        unsquelch(PublicKey const&, Peer::id_t) const override
+        {
+        }
+        mutable int maxDuration_;
+    };
+
     void
     testRandomSquelch(bool l)
     {
         doTest("Random Squelch", l, [&](bool l) {
-            struct Handler : public reduce_relay::SquelchHandler
-            {
-                Handler() : maxDuration_(0)
-                {
-                }
-                void
-                squelch(
-                    PublicKey const& validator,
-                    Peer::id_t id,
-                    std::uint32_t duration) const override
-                {
-                    if (duration > maxDuration_)
-                        maxDuration_ = duration;
-                }
-                void
-                unsquelch(PublicKey const& validator, Peer::id_t id)
-                    const override
-                {
-                }
-                mutable int maxDuration_;
-            };
-
             PublicKey validator = std::get<0>(randomKeyPair(KeyType::ed25519));
             Handler handler;
 
