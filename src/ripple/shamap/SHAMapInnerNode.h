@@ -103,7 +103,7 @@ private:
 public:
     explicit SHAMapInnerNode(
         std::uint32_t cowid,
-        std::uint8_t numAllocatedChildren = branchFactor);
+        std::uint8_t numAllocatedChildren = 2);
 
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&
