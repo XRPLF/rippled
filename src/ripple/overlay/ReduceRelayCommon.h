@@ -44,7 +44,7 @@ static constexpr auto IDLED = std::chrono::seconds{8};
 static constexpr uint16_t MIN_MESSAGE_THRESHOLD = 9;
 static constexpr uint16_t MAX_MESSAGE_THRESHOLD = 10;
 // Max selected peers to choose as the source of messages from validator
-static constexpr uint16_t MAX_SELECTED_PEERS = 3;
+static constexpr uint16_t MAX_SELECTED_PEERS = 5;
 // Wait before reduce-relay feature is enabled on boot up to let
 // the server establish peer connections
 static constexpr auto WAIT_ON_BOOTUP = std::chrono::minutes{10};
