@@ -183,10 +183,8 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    {
-        std::lock_guard lock{mutex_};
-        ++wakeCount_;
-    }
+    std::lock_guard lock{mutex_};
+    ++wakeCount_;
     wakeup_.notify_one();
 }
 
