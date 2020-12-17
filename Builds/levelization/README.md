@@ -6,8 +6,7 @@ having or creating cyclic dependencies.
 rippled code is organized into directories under `src/rippled` (and
 `src/test`) representing modules. The modules are intended to be
 organized into "tiers" or "levels" such that a module from one level can
-only include code from the same or lower levels, though including code
-from the same level is not encouraged. Additionally, a module
+only include code from lower levels. Additionally, a module
 in one level should never include code in an `impl` folder of any level
 other than it's own.
 
@@ -30,11 +29,12 @@ The table below summarizes the _desired_ division of modules.
 | 07           | ripple/shamap ripple/overlay
 | 08           | ripple/app
 | 09           | ripple/rpc
-| 10           | test/jtx test/unit_test test/beast test/csf
-| 11           | test/crypto test/conditions test/json test/resource test/shamap test/peerfinder test/basics test/overlay
-| 12           | test
-| 13           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore
-| 14           | test/rpc test/app
+| 10           | test/jtx test/beast test/csf
+| 11           | test/unit_test
+| 12           | test/crypto test/conditions test/json test/resource test/shamap test/peerfinder test/basics test/overlay
+| 13           | test
+| 14           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore
+| 15           | test/rpc test/app
 
 (Note that `test` levelization is *much* less important and *much* less
 strictly enforced than `ripple` levelization, other than the requirement
@@ -42,9 +42,14 @@ that `test` code should *never* be included in `ripple` code.)
 
 ## Validation
 
-The [levelization.sh](levelization.sh) script can be run at any time on
-a checked out repo, and will do an analysis of all the `#include`s in
-the rippled source. It generates many files of [results](results):
+The [levelization.sh](levelization.sh) script takes no parameters,
+reads no environment variables, and can be run from any directory,
+as long as it is in the expected location in the rippled repo.
+It can be run at any time from within a checked out repo, and will
+do an analysis of all the `#include`s in
+the rippled source. The only caveat is that it runs much slower
+under Windows than in Linux. It hasn't yet been tested under MacOS.
+It generates many files of [results](results):
 
 * `rawincludes.txt`: The raw dump of the `#includes`
 * `paths.txt`: A second dump grouping the source module
@@ -72,3 +77,19 @@ the rippled source. It generates many files of [results](results):
   they are improvements or not, so if you have resolved any issues or
   done anything else to improve levelization, run `levelization.sh`,
   and commit the updated results.
+
+The  `loops.txt` and `ordering.txt` files relate the modules
+using comparison signs, which indicate the number of times each
+module is included in the other.
+
+* `A > B` means that A is included in B significantly more than B is included in A, and thus A should probably be at a higher level. `ordering.txt` will only include these types of results, because by definition `B` doesn't include `A` at all, otherwise it would be in `loops.txt`.
+* `A ~= B` means that A and B are included in each other a different number of times, but the values are so close that the script can't definitively say that one should be above the other.
+* `A == B` means that A and B include each other the same number of times, so the script has no clue which should be higher.
+
+The committed files hide the detailed values intentionally, to
+prevent false alarms and merging issues, and because it's easy to
+get those details locally.
+
+1. Run `levelization.sh`
+2. Grep the modules in `paths.txt`.
+   * For example, if a cycle is found `A ~= B`, simply `grep -w A Builds/levelization/results/paths.txt | grep -w B`

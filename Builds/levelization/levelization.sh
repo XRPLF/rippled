@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Usage: levelization.sh
+# This script takes no parameters, reads no environment variables,
+# and can be run from any directory, as long as it is in the expected
+# location in the repo.
+
 pushd $( dirname $0 )
 rm -rfv results
 mkdir results
@@ -11,7 +16,7 @@ grep -r '#include.*/.*\.h' src/ripple/ src/test/ | \
 popd
 pushd results
 
-OLDIFS=${IFS}
+oldifs=${IFS}
 IFS=:
 mkdir includes
 mkdir includedby
@@ -54,8 +59,8 @@ echo Sort and dedup paths
 sort -ds paths.txt | uniq -c | tee sortedpaths.txt
 mv sortedpaths.txt paths.txt
 exec 3>&- #close fd 3
-IFS=${OLDIFS}
-unset OLDIFS
+IFS=${oldifs}
+unset oldifs
 
 echo Split into flat-file database
 exec 4<paths.txt # open paths.txt for input
