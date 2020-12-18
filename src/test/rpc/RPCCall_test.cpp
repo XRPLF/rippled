@@ -4301,6 +4301,37 @@ static RPCCallTestData const rpcCallTestArray[] = {
     ]
     })"},
 
+    // nodetoshard_status
+    // -------------------------------------------------------------------
+    {"nodetoshard_status: minimal.",
+     __LINE__,
+     {
+         "nodetoshard_status",
+     },
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "nodetoshard_status",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+      }
+    ]
+    })"},
+    {"nodetoshard_status: too many arguments.",
+     __LINE__,
+     {"nodetoshard_status", "extra"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "nodetoshard_status",
+    "params" : [
+      {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+      }
+    ]
+    })"},
+
     // owner_info
     // ------------------------------------------------------------------
     {"owner_info: minimal.",

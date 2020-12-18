@@ -179,6 +179,8 @@ JSS(converge_time);          // out: NetworkOPs
 JSS(converge_time_s);        // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
+JSS(currentShard);           // out: NodeToShardStatus
+JSS(currentShardIndex);      // out: NodeToShardStatus
 JSS(currency);               // in: paths/PathRequest, STAmount
                              // out: STPathSet, STAmount,
                              //      AccountLines
@@ -245,6 +247,8 @@ JSS(fee_mult_max);          // in: TransactionSign
 JSS(fee_ref);               // out: NetworkOPs
 JSS(fetch_pack);            // out: NetworkOPs
 JSS(first);                 // out: rpc/Version
+JSS(firstSequence);         // out: NodeToShardStatus
+JSS(firstShardIndex);       // out: NodeToShardStatus
 JSS(finished);
 JSS(fix_txns);              // in: LedgerCleaner
 JSS(flags);                 // out: AccountOffers,
@@ -295,6 +299,8 @@ JSS(key);                         // out
 JSS(key_type);                    // in/out: WalletPropose, TransactionSign
 JSS(latency);                     // out: PeerImp
 JSS(last);                        // out: RPCVersion
+JSS(lastSequence);                // out: NodeToShardStatus
+JSS(lastShardIndex);              // out: NodeToShardStatus
 JSS(last_close);                  // out: NetworkOPs
 JSS(last_refresh_time);           // out: ValidatorSite
 JSS(last_refresh_status);         // out: ValidatorSite
@@ -513,6 +519,7 @@ JSS(state_accounting);    // out: NetworkOPs
 JSS(state_now);           // in: Subscribe
 JSS(status);              // error
 JSS(stop);                // in: LedgerCleaner
+JSS(storedSeqs);          // out: NodeToShardStatus
 JSS(streams);             // in: Subscribe, Unsubscribe
 JSS(strict);              // in: AccountCurrencies, AccountInfo
 JSS(sub_index);           // in: LedgerEntry

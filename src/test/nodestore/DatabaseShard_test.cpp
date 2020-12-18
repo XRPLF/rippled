@@ -19,6 +19,7 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
@@ -34,6 +35,7 @@
 #include <numeric>
 #include <openssl/ripemd.h>
 #include <test/jtx.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/nodestore/TestBase.h>
 
 namespace ripple {
@@ -1043,53 +1045,6 @@ class DatabaseShard_test : public TestBase
         }
     }
 
-    void
-    testImport(std::uint64_t const seedValue)
-    {
-        testcase("Import node store");
-
-        using namespace test::jtx;
-
-        beast::temp_dir shardDir;
-        {
-            beast::temp_dir nodeDir;
-            Env env{*this, testConfig(shardDir.path(), nodeDir.path())};
-            DatabaseShard* db = env.app().getShardStore();
-            Database& ndb = env.app().getNodeStore();
-            BEAST_EXPECT(db);
-
-            TestData data(seedValue, 4, 2);
-            if (!BEAST_EXPECT(data.makeLedgers(env)))
-                return;
-
-            for (std::uint32_t i = 0; i < 2 * ledgersPerShard; ++i)
-                BEAST_EXPECT(saveLedger(ndb, *data.ledgers_[i]));
-
-            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0));
-            db->import(ndb);
-            for (std::uint32_t i = 1; i <= 2; ++i)
-                waitShard(*db, i);
-            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x6));
-        }
-        {
-            Env env{*this, testConfig(shardDir.path())};
-            DatabaseShard* db = env.app().getShardStore();
-            BEAST_EXPECT(db);
-
-            TestData data(seedValue, 4, 2);
-            if (!BEAST_EXPECT(data.makeLedgers(env)))
-                return;
-
-            for (std::uint32_t i = 1; i <= 2; ++i)
-                waitShard(*db, i);
-
-            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x6));
-
-            for (std::uint32_t i = 0; i < 2 * ledgersPerShard; ++i)
-                checkLedger(data, *db, *data.ledgers_[i]);
-        }
-    }
-
     std::string
     ripemd160File(std::string filename)
     {
@@ -1170,6 +1125,137 @@ class DatabaseShard_test : public TestBase
     }
 
     void
+    testImport(std::uint64_t const seedValue)
+    {
+        testcase("Import node store");
+
+        using namespace test::jtx;
+
+        beast::temp_dir shardDir;
+        {
+            beast::temp_dir nodeDir;
+            Env env{*this, testConfig(shardDir.path(), nodeDir.path())};
+            DatabaseShard* db = env.app().getShardStore();
+            Database& ndb = env.app().getNodeStore();
+            BEAST_EXPECT(db);
+
+            TestData data(seedValue, 4, 2);
+            if (!BEAST_EXPECT(data.makeLedgers(env)))
+                return;
+
+            for (std::uint32_t i = 0; i < 2 * ledgersPerShard; ++i)
+                BEAST_EXPECT(saveLedger(ndb, *data.ledgers_[i]));
+
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0));
+            db->importDatabase(ndb);
+            for (std::uint32_t i = 1; i <= 2; ++i)
+                waitShard(*db, i);
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x6));
+        }
+        {
+            Env env{*this, testConfig(shardDir.path())};
+            DatabaseShard* db = env.app().getShardStore();
+            BEAST_EXPECT(db);
+
+            TestData data(seedValue, 4, 2);
+            if (!BEAST_EXPECT(data.makeLedgers(env)))
+                return;
+
+            for (std::uint32_t i = 1; i <= 2; ++i)
+                waitShard(*db, i);
+
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x6));
+
+            for (std::uint32_t i = 0; i < 2 * ledgersPerShard; ++i)
+                checkLedger(data, *db, *data.ledgers_[i]);
+        }
+    }
+
+    void
+    testImportWithOnlineDelete(std::uint64_t const seedValue)
+    {
+        testcase("Import node store with online delete");
+
+        using namespace test::jtx;
+        using test::CaptureLogs;
+
+        beast::temp_dir shardDir;
+        beast::temp_dir nodeDir;
+        std::string capturedLogs;
+
+        {
+            auto c = testConfig(shardDir.path(), nodeDir.path());
+            auto& section = c->section(ConfigSection::nodeDatabase());
+            section.set("online_delete", "550");
+
+            // Adjust the log level to capture relevant output
+            c->section(SECTION_RPC_STARTUP)
+                .append(
+                    "{ \"command\": \"log_level\", \"severity\": \"trace\" "
+                    "}");
+
+            std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
+            Env env{*this, std::move(c), std::move(logs)};
+
+            DatabaseShard* db = env.app().getShardStore();
+            Database& ndb = env.app().getNodeStore();
+            BEAST_EXPECT(db);
+
+            auto const shardCount = 4;
+            TestData data(seedValue, 4, shardCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env)))
+                return;
+
+            // Start the import
+            db->importDatabase(ndb);
+
+            while (!db->getDatabaseImportSequence())
+            {
+                // Wait until the import starts
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+
+            auto& store = env.app().getSHAMapStore();
+            auto lastRotated = store.getLastRotated();
+
+            auto pauseVerifier = std::thread([lastRotated, &store, db, this] {
+                while (true)
+                {
+                    // Make sure database rotations dont interfere
+                    // with the import
+
+                    if (store.getLastRotated() != lastRotated)
+                    {
+                        // A rotation occurred during shard import. Not
+                        // necessarily an error
+                        auto sequence = db->getDatabaseImportSequence();
+                        BEAST_EXPECT(!sequence || sequence >= lastRotated);
+
+                        break;
+                    }
+                }
+            });
+
+            data = TestData(seedValue * 2, 4, shardCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env, shardCount)))
+            {
+                pauseVerifier.join();
+                return;
+            }
+
+            pauseVerifier.join();
+            BEAST_EXPECT(store.getLastRotated() != lastRotated);
+        }
+
+        // Database rotation should have been postponed at some
+        // point during the import
+        auto const expectedLogMessage =
+            "rotation would interfere with ShardStore import";
+        BEAST_EXPECT(
+            capturedLogs.find(expectedLogMessage) != std::string::npos);
+    }
+
+    void
     testImportWithHistoricalPaths(std::uint64_t const seedValue)
     {
         testcase("Import with historical paths");
@@ -1204,19 +1290,19 @@ class DatabaseShard_test : public TestBase
             Database& ndb = env.app().getNodeStore();
             BEAST_EXPECT(db);
 
-            auto const ledgerCount = 4;
+            auto const shardCount = 4;
 
-            TestData data(seedValue, 4, ledgerCount);
+            TestData data(seedValue, 4, shardCount);
             if (!BEAST_EXPECT(data.makeLedgers(env)))
                 return;
 
-            for (std::uint32_t i = 0; i < ledgerCount * ledgersPerShard; ++i)
+            for (std::uint32_t i = 0; i < shardCount * ledgersPerShard; ++i)
                 BEAST_EXPECT(saveLedger(ndb, *data.ledgers_[i]));
 
             BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0));
 
-            db->import(ndb);
-            for (std::uint32_t i = 1; i <= ledgerCount; ++i)
+            db->importDatabase(ndb);
+            for (std::uint32_t i = 1; i <= shardCount; ++i)
                 waitShard(*db, i);
 
             BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0b11110));
@@ -1242,7 +1328,7 @@ class DatabaseShard_test : public TestBase
 
             // All historical shards should be stored
             // at historical paths
-            BEAST_EXPECT(historicalPathCount == ledgerCount - 2);
+            BEAST_EXPECT(historicalPathCount == shardCount - 2);
         }
 
         // Test importing with a single historical
@@ -1262,19 +1348,19 @@ class DatabaseShard_test : public TestBase
             Database& ndb = env.app().getNodeStore();
             BEAST_EXPECT(db);
 
-            auto const ledgerCount = 4;
+            auto const shardCount = 4;
 
-            TestData data(seedValue * 2, 4, ledgerCount);
+            TestData data(seedValue * 2, 4, shardCount);
             if (!BEAST_EXPECT(data.makeLedgers(env)))
                 return;
 
-            for (std::uint32_t i = 0; i < ledgerCount * ledgersPerShard; ++i)
+            for (std::uint32_t i = 0; i < shardCount * ledgersPerShard; ++i)
                 BEAST_EXPECT(saveLedger(ndb, *data.ledgers_[i]));
 
             BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0));
 
-            db->import(ndb);
-            for (std::uint32_t i = 1; i <= ledgerCount; ++i)
+            db->importDatabase(ndb);
+            for (std::uint32_t i = 1; i <= shardCount; ++i)
                 waitShard(*db, i);
 
             BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0b11110));
@@ -1293,7 +1379,7 @@ class DatabaseShard_test : public TestBase
 
             // All historical shards should be stored
             // at historical paths
-            BEAST_EXPECT(historicalPathCount == ledgerCount - 2);
+            BEAST_EXPECT(historicalPathCount == shardCount - 2);
         }
     }
 
@@ -1331,9 +1417,9 @@ class DatabaseShard_test : public TestBase
             DatabaseShard* db = env.app().getShardStore();
             BEAST_EXPECT(db);
 
-            auto const ledgerCount = 4;
+            auto const shardCount = 4;
 
-            TestData data(seedValue, 4, ledgerCount);
+            TestData data(seedValue, 4, shardCount);
             if (!BEAST_EXPECT(data.makeLedgers(env)))
                 return;
 
@@ -1341,10 +1427,10 @@ class DatabaseShard_test : public TestBase
             std::uint64_t bitMask = 0;
 
             // Add ten shards to the Shard Database
-            for (std::uint32_t i = 0; i < ledgerCount; ++i)
+            for (std::uint32_t i = 0; i < shardCount; ++i)
             {
-                auto n = createShard(data, *db, ledgerCount);
-                if (!BEAST_EXPECT(n && *n >= 1 && *n <= ledgerCount))
+                auto n = createShard(data, *db, shardCount);
+                if (!BEAST_EXPECT(n && *n >= 1 && *n <= shardCount))
                     return;
                 bitMask |= 1ll << *n;
                 BEAST_EXPECT(
@@ -1405,19 +1491,19 @@ class DatabaseShard_test : public TestBase
 
             // All historical shards should be stored
             // at historical paths
-            BEAST_EXPECT(historicalPathCount == ledgerCount - 2);
+            BEAST_EXPECT(historicalPathCount == shardCount - 2);
 
-            data = TestData(seedValue * 2, 4, ledgerCount);
-            if (!BEAST_EXPECT(data.makeLedgers(env, ledgerCount)))
+            data = TestData(seedValue * 2, 4, shardCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env, shardCount)))
                 return;
 
             // Add ten more shards to the Shard Database
             // to exercise recent shard rotation
-            for (std::uint32_t i = 0; i < ledgerCount; ++i)
+            for (std::uint32_t i = 0; i < shardCount; ++i)
             {
-                auto n = createShard(data, *db, ledgerCount * 2, ledgerCount);
+                auto n = createShard(data, *db, shardCount * 2, shardCount);
                 if (!BEAST_EXPECT(
-                        n && *n >= 1 + ledgerCount && *n <= ledgerCount * 2))
+                        n && *n >= 1 + shardCount && *n <= shardCount * 2))
                     return;
                 bitMask |= 1ll << *n;
                 BEAST_EXPECT(
@@ -1467,7 +1553,7 @@ class DatabaseShard_test : public TestBase
 
             // All historical shards should be stored
             // at historical paths
-            BEAST_EXPECT(historicalPathCount == (ledgerCount * 2) - 2);
+            BEAST_EXPECT(historicalPathCount == (shardCount * 2) - 2);
         }
     }
 
@@ -1529,21 +1615,26 @@ public:
     void
     run() override
     {
-        std::uint64_t const seedValue = 51;
+        auto seedValue = [] {
+            static std::uint64_t seedValue = 41;
+            seedValue += 10;
+            return seedValue;
+        };
 
         testStandalone();
-        testCreateShard(seedValue);
-        testReopenDatabase(seedValue + 10);
-        testGetCompleteShards(seedValue + 20);
-        testPrepareShards(seedValue + 30);
-        testImportShard(seedValue + 40);
-        testCorruptedDatabase(seedValue + 50);
-        testIllegalFinalKey(seedValue + 60);
-        testImport(seedValue + 70);
-        testDeterministicShard(seedValue + 80);
-        testImportWithHistoricalPaths(seedValue + 90);
-        testPrepareWithHistoricalPaths(seedValue + 100);
-        testOpenShardManagement(seedValue + 110);
+        testCreateShard(seedValue());
+        testReopenDatabase(seedValue());
+        testGetCompleteShards(seedValue());
+        testPrepareShards(seedValue());
+        testImportShard(seedValue());
+        testCorruptedDatabase(seedValue());
+        testIllegalFinalKey(seedValue());
+        testDeterministicShard(seedValue());
+        testImport(seedValue());
+        testImportWithOnlineDelete(seedValue());
+        testImportWithHistoricalPaths(seedValue());
+        testPrepareWithHistoricalPaths(seedValue());
+        testOpenShardManagement(seedValue());
     }
 };
 
