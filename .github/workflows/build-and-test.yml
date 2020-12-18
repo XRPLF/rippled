@@ -15,15 +15,19 @@ env:
 jobs:
   job:
     name: Build and test rippled
+    continue-on-error: ${{ matrix.canfail }}
     runs-on: ubuntu-18.04
     # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
     container:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
     strategy:
-        matrix:
-            # docker image has clang 7,8,9 & gcc 6,7,8,9
-            CC: [ "gcc-8", "clang-8" ]
-            BUILD_TYPE: [ Debug, Release ]
+      fail-fast: false
+      matrix:
+        # docker image has clang 7,8,9 & gcc 6,7,8,9
+        CC: [ "gcc-8", "clang-8" ]
+        BUILD_TYPE: [ Debug, Release ]
+        canfail: [ false ]
+        # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     env:
       CC: ${{ matrix.CC }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
@@ -47,13 +51,12 @@ jobs:
         shell: bash
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
-          echo "CC: ${CC}, CXX: ${CXX}"
+          ls -l /usr/bin/{gcc,g++,clang}*
           export CXX=${CC/gcc/g++}
           export CXX=${CXX/clang/clang++}
-          echo "CC: ${CC}, CXX: ${CXX}"
-          echo "Looking for CC:"
+          echo "Looking for CC ${CC}:"
           type -a ${CC}
-          echo "Looking for CXX:"
+          echo "Looking for CXX ${CXX}:"
           type -a ${CXX}
           mkdir build
           cd build
@@ -70,7 +73,7 @@ jobs:
 #       - name: cache stats before
 #         run: ccache -s
       - name: Debug output
-        if: ${{ always() }}
+        if: always()
         shell: bash
         run: |
           set -x
@@ -88,3 +91,4 @@ jobs:
               cat ${file}
             fi
           done
+          ls -l /usr/bin
