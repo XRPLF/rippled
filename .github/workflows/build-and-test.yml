@@ -14,17 +14,20 @@ env:
 
 jobs:
   job:
-    name: gcc-8, debug
+    name: Build and test rippled
     runs-on: ubuntu-18.04
     # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
     container:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
+    strategy:
+        matrix:
+            CC: [ gcc-8, clang-8 ]
+            BUILD_TYPE: [ Debug, Release ]
     env:
-      CC: gcc-8
-      CXX: g++-8
-      BUILD_TYPE: Debug
+      CC: ${{ matrix.CC }}
+      BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v2
 #       - name: cache
 #         uses: actions/cache@v2
@@ -33,17 +36,24 @@ jobs:
 #         with:
 #           path: ${{ env.CACHE_DIR }}
 #           key:  ${{ runner.os }}-build-${{ env.cache-name }}
-      - name: dump-environment
-        run: env
+      - name: Dump-environment
+        run: |
+          env
+          set | grep =
 #       - name: cache stats before
 #         run: ccache -s
       - name: Configure
+        shell: bash
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
+          echo "CC: ${CC}, CXX: ${CXX}"
+          export CXX=${CC/gcc/g++}
+          export CXX=${CXX/clang/clang++}
+          echo "CC: ${CC}, CXX: ${CXX}"
           mkdir build
           cd build
           cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
-      - name: Build rippled ${{ env.BUILD_TYPE }}
+      - name: Build rippled
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
           echo Building with $( nproc ) jobs
