@@ -21,7 +21,8 @@ jobs:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
     strategy:
         matrix:
-            CC: [ gcc-8, clang-8 ]
+            # docker image has clang 7,8,9 & gcc 6,7,8,9
+            CC: [ "gcc-8", "clang-8" ]
             BUILD_TYPE: [ Debug, Release ]
     env:
       CC: ${{ matrix.CC }}
@@ -50,6 +51,10 @@ jobs:
           export CXX=${CC/gcc/g++}
           export CXX=${CXX/clang/clang++}
           echo "CC: ${CC}, CXX: ${CXX}"
+          echo "Looking for CC:"
+          type -a ${CC}
+          echo "Looking for CXX:"
+          type -a ${CXX}
           mkdir build
           cd build
           cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
@@ -64,3 +69,22 @@ jobs:
           build/rippled --unittest --unittest-jobs=$( nproc )
 #       - name: cache stats before
 #         run: ccache -s
+      - name: Debug output
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -x
+          cd build
+          echo Home is ${HOME}
+          echo PWD is $PWD
+          ls -l
+          pwd
+          for file in CMakeOutput.log CMakeError.log
+          do
+            file="CMakeFiles/${file}"
+            if [ -f ${file} ]
+            then
+              ls -l ${file}
+              cat ${file}
+            fi
+          done
