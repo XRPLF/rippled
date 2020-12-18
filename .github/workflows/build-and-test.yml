@@ -3,11 +3,11 @@ on: [push, pull_request]
 
 env:
   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
-#   NINJA_BUILD: true
+  NINJA_BUILD: true
 #   CACHE_DIR: ${{ env.GITHUB_WORKSPACE }}/_cache
 #   NIH_CACHE_ROOT: ${{ env.CACHE_DIR }}/nih_c
 #   PARALLEL_TESTS: true
-#   USE_CCACHE: true
+  USE_CCACHE: true
 #   CCACHE_BASEDIR: ${{ env.GITHUB_WORKSPACE }}
 #   CCACHE_NOHASHDIR: true
 #   CCACHE_DIR: ${{ env.CACHE_DIR }}/ccache
@@ -20,8 +20,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Current travis: gcc-8 clang-8 gcc-9 clang-9
         # docker image has clang 7,8,9 & gcc 6,7,8,9
-        CC: [ "gcc-7", "gcc-9", "clang-6", "clang-7" , "clang-8" , "clang-9"  ]
+        CC: [ "gcc-9", "clang-8" , "clang-9"  ]
         BUILD_TYPE: [ Debug, Release ]
         canfail: [ false ]
         image: [ "rippleci/rippled-ci-builder:2020-01-08" ]
@@ -29,19 +30,19 @@ jobs:
             # docker image has clang 10 & gcc 7,8
           - CC: "gcc-8"
             BUILD_TYPE: Debug
-            image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
+            image: "rippleci/rippled-ci-builder:2944b78d22db"
             canfail: false
           - CC: "gcc-8"
             BUILD_TYPE: Release
-            image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
+            image: "rippleci/rippled-ci-builder:2944b78d22db"
             canfail: false
           - CC: "clang-10"
             BUILD_TYPE: Debug
-            image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
+            image: "rippleci/rippled-ci-builder:2944b78d22db"
             canfail: false
           - CC: "clang-10"
             BUILD_TYPE: Release
-            image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
+            image: "rippleci/rippled-ci-builder:2944b78d22db"
             canfail: false
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
@@ -64,6 +65,7 @@ jobs:
         run: |
           env
           set | grep =
+          find ${BOOST_ROOT} -type f -ls
 #       - name: cache stats before
 #         run: ccache -s
       - name: Configure
@@ -89,11 +91,19 @@ jobs:
           build/rippled --unittest --unittest-jobs=$( nproc )
 #       - name: cache stats after
 #         run: ccache -s
+      - name: Build and test script
+        if: failure()
+        shell: bash
+        run: |
+          export CXX=${CC/gcc/g++}
+          export CXX=${CXX/clang/clang++}
+          export NUM_PROCESSORS=$( nproc )
+          bin/ci/ubuntu/build-and-test.sh
       - name: Debug output
         if: always()
         shell: bash
         run: |
-          cd build
+          if [ -d build ]; then cd build; fi
           for file in CMakeOutput.log CMakeError.log
           do
             file="CMakeFiles/${file}"
