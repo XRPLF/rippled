@@ -14,7 +14,7 @@ env:
 
 jobs:
   job:
-    name: Build and test rippled
+    name: Linux
     runs-on: ubuntu-18.04
     # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
     strategy:
@@ -79,7 +79,7 @@ jobs:
           ${CXX} --version
           mkdir build
           cd build
-          cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
+          cmake ${{ env.CMAKE_EXTRA_ARGS }} ..
       - name: Build rippled
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
