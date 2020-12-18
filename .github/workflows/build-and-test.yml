@@ -21,12 +21,20 @@ jobs:
       fail-fast: false
       matrix:
         # docker image has clang 7,8,9 & gcc 6,7,8,9
-        CC: [ "gcc-7", "gcc-8", "gcc-9", "clang-6", "clang-7" , "clang-8" , "clang-9"  ]
+        CC: [ "gcc-7", "gcc-9", "clang-6", "clang-7" , "clang-8" , "clang-9"  ]
         BUILD_TYPE: [ Debug, Release ]
         canfail: [ false ]
         image: [ "rippleci/rippled-ci-builder:2020-01-08" ]
         include:
             # docker image has clang 10 & gcc 7,8
+          - CC: "gcc-8"
+            BUILD_TYPE: Debug
+            image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
+            canfail: false
+          - CC: "gcc-8"
+            BUILD_TYPE: Release
+            image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
+            canfail: false
           - CC: "clang-10"
             BUILD_TYPE: Debug
             image: "docker://rippleci/rippled-ci-builder:2944b78d22db"
@@ -62,13 +70,11 @@ jobs:
         shell: bash
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
-          ls -l /usr/bin/{gcc,g++,clang}*
           export CXX=${CC/gcc/g++}
           export CXX=${CXX/clang/clang++}
-          echo "Looking for CC ${CC}:"
-          type -a ${CC}
-          echo "Looking for CXX ${CXX}:"
-          type -a ${CXX}
+          cmake --version
+          ${CC} --version
+          ${CXX} --version
           mkdir build
           cd build
           cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
@@ -81,18 +87,13 @@ jobs:
         run: |
           echo Running $( nproc ) parallel tests
           build/rippled --unittest --unittest-jobs=$( nproc )
-#       - name: cache stats before
+#       - name: cache stats after
 #         run: ccache -s
       - name: Debug output
         if: always()
         shell: bash
         run: |
-          set -x
           cd build
-          echo Home is ${HOME}
-          echo PWD is $PWD
-          ls -l
-          pwd
           for file in CMakeOutput.log CMakeError.log
           do
             file="CMakeFiles/${file}"
@@ -102,4 +103,3 @@ jobs:
               cat ${file}
             fi
           done
-          ls -l /usr/bin
