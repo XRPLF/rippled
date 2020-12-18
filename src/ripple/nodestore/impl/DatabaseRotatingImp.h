@@ -61,7 +61,7 @@ public:
     getWriteLoad() const override;
 
     void
-    import(Database& source) override;
+    importDatabase(Database& source) override;
 
     bool isSameDB(std::uint32_t, std::uint32_t) override
     {

@@ -929,7 +929,7 @@ public:
             using namespace std::chrono;
             auto const start = steady_clock::now();
 
-            m_nodeStore->import(*source);
+            m_nodeStore->importDatabase(*source);
 
             auto const elapsed =
                 duration_cast<seconds>(steady_clock::now() - start);
@@ -2110,7 +2110,7 @@ ApplicationImp::nodeToShards()
         JLOG(m_journal.fatal()) << "Invalid [shard_db] configuration";
         return false;
     }
-    shardStore_->import(getNodeStore());
+    shardStore_->importDatabase(getNodeStore());
     return true;
 }
 

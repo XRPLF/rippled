@@ -89,6 +89,8 @@ doLogRotate(RPC::JsonContext&);
 Json::Value
 doManifest(RPC::JsonContext&);
 Json::Value
+doNodeToShardStatus(RPC::JsonContext&);
+Json::Value
 doNoRippleCheck(RPC::JsonContext&);
 Json::Value
 doOwnerInfo(RPC::JsonContext&);

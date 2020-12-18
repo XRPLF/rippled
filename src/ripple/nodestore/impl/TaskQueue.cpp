@@ -24,9 +24,9 @@
 namespace ripple {
 namespace NodeStore {
 
-TaskQueue::TaskQueue(Stoppable& parent)
-    : Stoppable("TaskQueue", parent)
-    , workers_(*this, nullptr, "Shard store taskQueue", 1)
+TaskQueue::TaskQueue(Stoppable& parent, std::string const& name)
+    : Stoppable(name + " TaskQueue", parent)
+    , workers_(*this, nullptr, name + " taskQueue", 1)
 {
 }
 

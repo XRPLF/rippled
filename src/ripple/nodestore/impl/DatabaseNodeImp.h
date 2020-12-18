@@ -102,7 +102,7 @@ public:
     }
 
     void
-    import(Database& source) override
+    importDatabase(Database& source) override
     {
         importInternal(*backend_.get(), source);
     }

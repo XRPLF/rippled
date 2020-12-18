@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2019 Ripple Labs Inc.
+    Copyright (c) 2021 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,45 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
-#define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
-
-#include <ripple/core/Stoppable.h>
-#include <ripple/core/impl/Workers.h>
-
-#include <functional>
-#include <queue>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/json/json_value.h>
+#include <ripple/nodestore/DatabaseShard.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/jss.h>
+#include <ripple/rpc/Context.h>
 
 namespace ripple {
-namespace NodeStore {
 
-class TaskQueue : public Stoppable, private Workers::Callback
+Json::Value
+doNodeToShardStatus(RPC::JsonContext& context)
 {
-public:
-    explicit TaskQueue(
-        Stoppable& parent,
-        std::string const& name = "Shard store");
+    Json::Value ret(Json::objectValue);
 
-    void
-    onStop() override;
+    if (auto const shardStore = context.app.getShardStore())
+        ret[jss::info] = shardStore->getDatabaseImportStatus();
+    else
+        ret = RPC::make_error(rpcINTERNAL, "No shard store");
 
-    /** Adds a task to the queue
+    return ret;
+}
 
-        @param task std::function with signature void()
-    */
-    void
-    addTask(std::function<void()> task);
-
-private:
-    std::mutex mutex_;
-    Workers workers_;
-    std::queue<std::function<void()>> tasks_;
-
-    void
-    processTask(int instance) override;
-};
-
-}  // namespace NodeStore
 }  // namespace ripple
-
-#endif

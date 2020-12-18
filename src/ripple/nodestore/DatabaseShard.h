@@ -101,7 +101,9 @@ public:
     virtual std::string
     getPreShards() = 0;
 
-    /** Import a shard into the shard database
+    /** Import a shard from the shard archive handler into the
+        shard database. This differs from 'importDatabase' which
+        imports the contents of the NodeStore
 
         @param shardIndex Shard index to import
         @param srcDir The directory to import from
@@ -271,6 +273,17 @@ public:
      */
     virtual boost::filesystem::path const&
     getRootDir() const = 0;
+
+    virtual Json::Value
+    getDatabaseImportStatus() const = 0;
+
+    /** Returns the first ledger sequence of the shard currently being imported
+        from the NodeStore
+
+        @return The ledger sequence or an unseated value if no import is running
+     */
+    virtual std::optional<std::uint32_t>
+    getDatabaseImportSequence() const = 0;
 
     /** The number of ledgers in a shard */
     static constexpr std::uint32_t ledgersPerShardDefault{16384u};

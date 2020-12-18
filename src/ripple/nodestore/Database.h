@@ -84,7 +84,7 @@ public:
 
     /** Import objects from another database. */
     virtual void
-    import(Database& source) = 0;
+    importDatabase(Database& source) = 0;
 
     /** Retrieve the estimated number of pending write operations.
         This is used for diagnostics.

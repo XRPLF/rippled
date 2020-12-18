@@ -72,7 +72,7 @@ DatabaseRotatingImp::getWriteLoad() const
 }
 
 void
-DatabaseRotatingImp::import(Database& source)
+DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
         std::lock_guard lock(mutex_);

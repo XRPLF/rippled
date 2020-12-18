@@ -506,7 +506,7 @@ public:
                 srcBackendType + "'");
 
             // Do the import
-            dest->import(*src);
+            dest->importDatabase(*src);
 
             // Get the results of the import
             fetchCopyOfBatch(*dest, &copy, batch);
