@@ -1257,6 +1257,7 @@ public:
             {"log_level", &RPCParser::parseLogLevel, 0, 2},
             {"logrotate", &RPCParser::parseAsIs, 0, 0},
             {"manifest", &RPCParser::parseManifest, 1, 1},
+            {"nodetoshard_status", &RPCParser::parseAsIs, 0, 0},
             {"owner_info", &RPCParser::parseAccountItems, 1, 3},
             {"peers", &RPCParser::parseAsIs, 0, 0},
             {"ping", &RPCParser::parseAsIs, 0, 0},

@@ -134,7 +134,10 @@ public:
         @param source The application node store.
     */
     void
-    import(Database& source) override;
+    importDatabase(Database& source) override;
+
+    void
+    doImportDatabase();
 
     std::int32_t
     getWriteLoad() const override;
@@ -160,6 +163,12 @@ public:
 
     void
     sweep() override;
+
+    Json::Value
+    getDatabaseImportStatus() const override;
+
+    std::optional<std::uint32_t>
+    getDatabaseImportSequence() const override;
 
     bool
     callForLedgerSQL(
@@ -203,6 +212,37 @@ private:
         historical  // Needs a historical path
     };
 
+    struct DatabaseImportStatus
+    {
+        DatabaseImportStatus(
+            std::uint32_t const earliestIndex,
+            std::uint32_t const latestIndex,
+            std::uint32_t const currentIndex)
+            : earliestIndex(earliestIndex)
+            , latestIndex(latestIndex)
+            , currentIndex(currentIndex)
+        {
+        }
+
+        // Index of the first shard to be imported
+        std::uint32_t earliestIndex{0};
+
+        // Index of the last shard to be imported
+        std::uint32_t latestIndex{0};
+
+        // Index of the shard currently being imported
+        std::uint32_t currentIndex{0};
+
+        // First ledger sequence of the current shard
+        std::uint32_t firstSeq{0};
+
+        // Last ledger sequence of the current shard
+        std::uint32_t lastSeq{0};
+
+        // The shard currently being imported
+        std::weak_ptr<Shard> currentShard;
+    };
+
     Application& app_;
     mutable std::mutex mutex_;
     bool init_{false};
@@ -216,7 +256,7 @@ private:
     // Shards held by this server
     std::map<std::uint32_t, std::shared_ptr<Shard>> shards_;
 
-    // Shard indexes being imported
+    // Shard indexes being imported from the shard archive handler
     std::set<std::uint32_t> preparedIndexes_;
 
     // Shard index being acquired from the peer network
@@ -258,7 +298,7 @@ private:
     std::uint32_t const openFinalLimit_;
 
     // File name used to mark shards being imported from node store
-    static constexpr auto importMarker_ = "import";
+    static constexpr auto databaseImportMarker_ = "database_import";
 
     // latestShardIndex_ and secondLatestShardIndex hold the indexes
     // of the shards most recently confirmed by the network. These
@@ -269,6 +309,12 @@ private:
     // by the database.
     std::optional<std::uint32_t> latestShardIndex_;
     std::optional<std::uint32_t> secondLatestShardIndex_;
+
+    // Struct used for node store import progress
+    std::unique_ptr<DatabaseImportStatus> databaseImportStatus_;
+
+    // Thread for running node store import
+    std::thread databaseImporter_;
 
     // Initialize settings from the configuration file
     // Lock must be held
@@ -284,7 +330,7 @@ private:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        Throw<std::runtime_error>("Shard store import not supported");
+        Throw<std::runtime_error>("Import from shard store not supported");
     }
 
     // Randomly select a shard index not stored
