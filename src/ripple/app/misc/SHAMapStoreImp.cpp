@@ -301,9 +301,31 @@ SHAMapStoreImp::run()
             state_db_.setLastRotated(lastRotated);
         }
 
+        bool const readyToRotate =
+            validatedSeq >= lastRotated + deleteInterval_ &&
+            canDelete_ >= lastRotated - 1 && !health();
+
+        // Make sure we don't delete ledgers currently being
+        // imported into the ShardStore
+        bool const waitForImport = readyToRotate && [this, lastRotated] {
+            if (auto shardStore = app_.getShardStore())
+            {
+                if (auto sequence = shardStore->getDatabaseImportSequence())
+                    return sequence <= lastRotated - 1;
+            }
+
+            return false;
+        }();
+
+        if (waitForImport)
+        {
+            JLOG(journal_.info())
+                << "NOT rotating validatedSeq " << validatedSeq
+                << " as rotation would interfere with ShardStore import";
+        }
+
         // will delete up to (not including) lastRotated
-        if (validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1 && !health())
+        if (readyToRotate && !waitForImport)
         {
             JLOG(journal_.warn())
                 << "rotating  validatedSeq " << validatedSeq << " lastRotated "

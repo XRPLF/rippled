@@ -197,6 +197,15 @@ public:
         removeOnDestroy_ = true;
     }
 
+    std::string
+    getStoredSeqs()
+    {
+        if (!acquireInfo_)
+            return "";
+
+        return to_string(acquireInfo_->storedSeqs);
+    }
+
     /**
      * @brief callForLedgerSQL Checks out ledger database for the shard and
      *        calls given callback function passing shard index and session
