@@ -13,8 +13,8 @@ env:
 #   CCACHE_DIR: ${{ env.CACHE_DIR }}/ccache
 
 jobs:
-  job:
-    name: Linux
+  linux1:
+    name: Linux 1
     runs-on: ubuntu-18.04
     # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
     strategy:
@@ -25,29 +25,57 @@ jobs:
         CC: [ "gcc-9", "clang-8" , "clang-9"  ]
         BUILD_TYPE: [ Debug, Release ]
         canfail: [ false ]
-        image: [ "rippleci/rippled-ci-builder:2020-01-08" ]
-        include:
-            # docker image has clang 10 & gcc 7,8
-          - CC: "gcc-8"
-            BUILD_TYPE: Debug
-            image: "rippleci/rippled-ci-builder:2944b78d22db"
-            canfail: false
-          - CC: "gcc-8"
-            BUILD_TYPE: Release
-            image: "rippleci/rippled-ci-builder:2944b78d22db"
-            canfail: false
-          - CC: "clang-10"
-            BUILD_TYPE: Debug
-            image: "rippleci/rippled-ci-builder:2944b78d22db"
-            canfail: false
-          - CC: "clang-10"
-            BUILD_TYPE: Release
-            image: "rippleci/rippled-ci-builder:2944b78d22db"
-            canfail: false
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:
-      image: ${{ matrix.image }}
+      image: "rippleci/rippled-ci-builder:2020-01-08"
+    env:
+      CC: ${{ matrix.CC }}
+      BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+#       - name: cache
+#         uses: actions/cache@v2
+#         env:
+#           cache-name: linux-cache
+#         with:
+#           path: ${{ env.CACHE_DIR }}
+#           key:  ${{ runner.os }}-build-${{ env.cache-name }}
+      - name: Dump-environment
+        run: |
+          env
+          set | grep =
+          find ${BOOST_ROOT} -type f -ls
+#       - name: cache stats before
+#         run: ccache -s
+      - name: Build and test
+        shell: bash
+        run: |
+          export CXX=${CC/gcc/g++}
+          export CXX=${CXX/clang/clang++}
+          export NUM_PROCESSORS=$( nproc )
+          bin/ci/ubuntu/build-and-test.sh
+      - name: Debug output
+        if: always()
+        shell: bash
+        run: find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \;
+  linux2:
+    name: Linux 2
+    runs-on: ubuntu-18.04
+    # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+    strategy:
+      fail-fast: false
+      matrix:
+        # Current travis: gcc-8 clang-8 gcc-9 clang-9
+        # docker image has clang 7,8,9 & gcc 6,7,8,9
+        CC: [ "gcc-8", "clang-10"  ]
+        BUILD_TYPE: [ Debug, Release ]
+        canfail: [ false ]
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    continue-on-error: ${{ matrix.canfail }}
+    container:
+      image: "rippleci/rippled-ci-builder:2944b78d22db"
     env:
       CC: ${{ matrix.CC }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
@@ -79,7 +107,7 @@ jobs:
           ${CXX} --version
           mkdir build
           cd build
-          cmake ${{ env.CMAKE_EXTRA_ARGS }} ..
+          cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
       - name: Build rippled
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
@@ -91,25 +119,7 @@ jobs:
           build/rippled --unittest --unittest-jobs=$( nproc )
 #       - name: cache stats after
 #         run: ccache -s
-      - name: Build and test script
-        if: failure()
-        shell: bash
-        run: |
-          export CXX=${CC/gcc/g++}
-          export CXX=${CXX/clang/clang++}
-          export NUM_PROCESSORS=$( nproc )
-          bin/ci/ubuntu/build-and-test.sh
       - name: Debug output
         if: always()
         shell: bash
-        run: |
-          if [ -d build ]; then cd build; fi
-          for file in CMakeOutput.log CMakeError.log
-          do
-            file="CMakeFiles/${file}"
-            if [ -f ${file} ]
-            then
-              ls -l ${file}
-              cat ${file}
-            fi
-          done
+        run: find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \;
