@@ -273,7 +273,6 @@ install (
 install (
   FILES
     src/ripple/beast/hash/hash_append.h
-    src/ripple/beast/hash/meta.h
     src/ripple/beast/hash/uhash.h
     src/ripple/beast/hash/xxhasher.h
   DESTINATION include/ripple/beast/hash)
