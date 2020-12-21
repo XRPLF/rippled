@@ -37,7 +37,7 @@ public:
         auto lc_result = env.rpc("ledger_closed")[jss::result];
         BEAST_EXPECT(
             lc_result[jss::ledger_hash] ==
-            "8AEDBB96643962F1D40F01E25632ABB3C56C9F04B0231EE4B18248B90173D189");
+            "A15F7FBE0B06286915D971BF9802C9431CD7DE40E2AC7D07C409EDB1C0715C60");
         BEAST_EXPECT(lc_result[jss::ledger_index] == 2);
 
         env.close();
@@ -52,7 +52,7 @@ public:
         lc_result = env.rpc("ledger_closed")[jss::result];
         BEAST_EXPECT(
             lc_result[jss::ledger_hash] ==
-            "7C3EEDB3124D92E49E75D81A8826A2E65A75FD71FC3FD6F36FEB803C5F1D812D");
+            "2E81FC6EC0DD943197E0C7E3FBE9AE307F2775F2F7485BB37307984C3C0F2340");
         BEAST_EXPECT(lc_result[jss::ledger_index] == 3);
     }
 

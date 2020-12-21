@@ -164,6 +164,7 @@ public:
 
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
+    Application& app,
     std::chrono::seconds majorityTime,
     Section const& supported,
     Section const& enabled,

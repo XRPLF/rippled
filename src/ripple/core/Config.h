@@ -52,8 +52,6 @@ enum class SizedItem : std::size_t {
     ledgerSize,
     ledgerAge,
     ledgerFetch,
-    nodeCacheSize,
-    nodeCacheAge,
     hashNodeDBCache,
     txnDBCache,
     lgrDBCache,

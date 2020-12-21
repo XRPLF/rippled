@@ -58,24 +58,6 @@ Database::~Database()
 }
 
 void
-Database::waitReads()
-{
-    std::unique_lock<std::mutex> lock(readLock_);
-    // Wake in two generations.
-    // Each generation is a full pass over the space.
-    // If we're in generation N and you issue a request,
-    // that request will only be done during generation N
-    // if it happens to land after where the pass currently is.
-    // But, if not, it will definitely be done during generation
-    // N+1 since the request was in the table before that pass
-    // even started. So when you reach generation N+2,
-    // you know the request is done.
-    std::uint64_t const wakeGen = readGen_ + 2;
-    while (!readShut_ && !read_.empty() && (readGen_ < wakeGen))
-        readGenCondVar_.wait(lock);
-}
-
-void
 Database::onStop()
 {
     // After stop time we can no longer use the JobQueue for background
@@ -99,7 +81,6 @@ Database::stopReadThreads()
 
         readShut_ = true;
         readCondVar_.notify_all();
-        readGenCondVar_.notify_all();
     }
 
     for (auto& e : readThreads_)
@@ -107,12 +88,15 @@ Database::stopReadThreads()
 }
 
 void
-Database::asyncFetch(uint256 const& hash, std::uint32_t ledgerSeq)
+Database::asyncFetch(
+    uint256 const& hash,
+    std::uint32_t ledgerSeq,
+    std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
     // Post a read
     std::lock_guard lock(readLock_);
-    if (read_.emplace(hash, ledgerSeq).second)
-        readCondVar_.notify_one();
+    read_[hash].emplace_back(ledgerSeq, std::move(cb));
+    readCondVar_.notify_one();
 }
 
 void
@@ -171,8 +155,7 @@ Database::fetchNodeObject(
         ++fetchHitCount_;
         fetchSz_ += nodeObject->getData().size();
     }
-    if (fetchReport.wentToDisk)
-        ++fetchTotalCount_;
+    ++fetchTotalCount_;
 
     fetchReport.elapsed =
         duration_cast<milliseconds>(steady_clock::now() - begin);
@@ -183,9 +166,7 @@ Database::fetchNodeObject(
 bool
 Database::storeLedger(
     Ledger const& srcLedger,
-    std::shared_ptr<Backend> dstBackend,
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> dstPCache,
-    std::shared_ptr<KeyCache<uint256>> dstNCache)
+    std::shared_ptr<Backend> dstBackend)
 {
     auto fail = [&](std::string const& msg) {
         JLOG(j_.error()) << "Source ledger sequence " << srcLedger.info().seq
@@ -193,8 +174,6 @@ Database::storeLedger(
         return false;
     };
 
-    if (!dstPCache || !dstNCache)
-        return fail("Invalid destination cache");
     if (srcLedger.info().hash.isZero())
         return fail("Invalid hash");
     if (srcLedger.info().accountHash.isZero())
@@ -209,12 +188,7 @@ Database::storeLedger(
     auto storeBatch = [&]() {
         std::uint64_t sz{0};
         for (auto const& nodeObject : batch)
-        {
-            dstPCache->canonicalize_replace_cache(
-                nodeObject->getHash(), nodeObject);
-            dstNCache->erase(nodeObject->getHash());
             sz += nodeObject->getData().size();
-        }
 
         try
         {
@@ -296,13 +270,16 @@ Database::threadEntry()
     while (true)
     {
         uint256 lastHash;
-        std::uint32_t lastSeq;
+        std::vector<std::pair<
+            std::uint32_t,
+            std::function<void(std::shared_ptr<NodeObject> const&)>>>
+            entry;
+
         {
             std::unique_lock<std::mutex> lock(readLock_);
             while (!readShut_ && read_.empty())
             {
                 // All work is done
-                readGenCondVar_.notify_all();
                 readCondVar_.wait(lock);
             }
             if (readShut_)
@@ -312,19 +289,26 @@ Database::threadEntry()
             auto it = read_.lower_bound(readLastHash_);
             if (it == read_.end())
             {
+                // start over from the beginning
                 it = read_.begin();
-                // A generation has completed
-                ++readGen_;
-                readGenCondVar_.notify_all();
             }
             lastHash = it->first;
-            lastSeq = it->second;
+            entry = std::move(it->second);
             read_.erase(it);
             readLastHash_ = lastHash;
         }
 
-        // Perform the read
-        fetchNodeObject(lastHash, lastSeq, FetchType::async);
+        auto seq = entry[0].first;
+        auto obj = fetchNodeObject(lastHash, seq, FetchType::async);
+
+        for (auto const& req : entry)
+        {
+            if ((seq == req.first) || isSameDB(req.first, seq))
+                req.second(obj);
+            else
+                req.second(
+                    fetchNodeObject(lastHash, req.first, FetchType::async));
+        }
     }
 }
 

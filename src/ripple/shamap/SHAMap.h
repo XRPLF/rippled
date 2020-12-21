@@ -392,12 +392,16 @@ private:
     descendThrow(std::shared_ptr<SHAMapInnerNode> const&, int branch) const;
 
     // Descend with filter
+    // If pending, callback is called as if it called fetchNodeNT
+    using descendCallback =
+        std::function<void(std::shared_ptr<SHAMapTreeNode>, SHAMapHash const&)>;
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
         int branch,
         SHAMapSyncFilter* filter,
-        bool& pending) const;
+        bool& pending,
+        descendCallback&&) const;
 
     std::pair<SHAMapTreeNode*, SHAMapNodeID>
     descend(
@@ -468,9 +472,17 @@ private:
         // such as std::vector, can't be used here.
         std::stack<StackEntry, std::deque<StackEntry>> stack_;
 
-        // nodes we may acquire from deferred reads
-        std::vector<std::tuple<SHAMapInnerNode*, SHAMapNodeID, int>>
-            deferredReads_;
+        // nodes we may have acquired from deferred reads
+        using DeferredNode = std::tuple<
+            SHAMapInnerNode*,                  // parent node
+            SHAMapNodeID,                      // parent node ID
+            int,                               // branch
+            std::shared_ptr<SHAMapTreeNode>>;  // node
+
+        int deferred_;
+        std::mutex deferLock_;
+        std::condition_variable deferCondVar_;
+        std::vector<DeferredNode> finishedReads_;
 
         // nodes we need to resume after we get their children from deferred
         // reads
@@ -485,9 +497,10 @@ private:
             , filter_(filter)
             , maxDefer_(maxDefer)
             , generation_(generation)
+            , deferred_(0)
         {
             missingNodes_.reserve(max);
-            deferredReads_.reserve(maxDefer);
+            finishedReads_.reserve(maxDefer);
         }
     };
 
@@ -496,6 +509,12 @@ private:
     gmn_ProcessNodes(MissingNodes&, MissingNodes::StackEntry& node);
     void
     gmn_ProcessDeferredReads(MissingNodes&);
+
+    // fetch from DB helper function
+    std::shared_ptr<SHAMapTreeNode>
+    finishFetch(
+        SHAMapHash const& hash,
+        std::shared_ptr<NodeObject> const& object) const;
 };
 
 inline void

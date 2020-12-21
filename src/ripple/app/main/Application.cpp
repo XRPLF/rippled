@@ -964,9 +964,6 @@ public:
 
         // tune caches
         using namespace std::chrono;
-        m_nodeStore->tune(
-            config_->getValueFor(SizedItem::nodeCacheSize),
-            seconds{config_->getValueFor(SizedItem::nodeCacheAge)});
 
         m_ledgerMaster->tune(
             config_->getValueFor(SizedItem::ledgerSize),
@@ -1355,6 +1352,7 @@ ApplicationImp::setup()
         Section enabledAmendments = config_->section(SECTION_AMENDMENTS);
 
         m_amendmentTable = make_AmendmentTable(
+            *this,
             config().AMENDMENT_MAJORITY_TIME,
             supportedAmendments,
             enabledAmendments,

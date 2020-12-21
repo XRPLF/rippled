@@ -176,8 +176,6 @@ Shard::tryClose()
     acquireInfo_.reset();
 
     // Reset caches to reduce memory use
-    pCache_->reset();
-    nCache_->reset();
     app_.getShardFamily()->getFullBelowCache(lastSeq_)->reset();
     app_.getShardFamily()->getTreeNodeCache(lastSeq_)->reset();
 
@@ -225,8 +223,6 @@ Shard::storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject)
     if (!scopedCount)
         return false;
 
-    pCache_->canonicalize_replace_cache(nodeObject->getHash(), nodeObject);
-
     try
     {
         backend_->store(nodeObject);
@@ -239,7 +235,6 @@ Shard::storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject)
         return false;
     }
 
-    nCache_->erase(nodeObject->getHash());
     return true;
 }
 
@@ -250,80 +245,45 @@ Shard::fetchNodeObject(uint256 const& hash, FetchReport& fetchReport)
     if (!scopedCount)
         return nullptr;
 
-    // See if the node object exists in the cache
-    auto nodeObject{pCache_->fetch(hash)};
-    if (!nodeObject && !nCache_->touch_if_exists(hash))
+    std::shared_ptr<NodeObject> nodeObject;
+
+    // Try the backend
+    Status status;
+    try
     {
-        // Try the backend
-        fetchReport.wentToDisk = true;
+        status = backend_->fetch(hash.data(), &nodeObject);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
+        return nullptr;
+    }
 
-        Status status;
-        try
-        {
-            status = backend_->fetch(hash.data(), &nodeObject);
-        }
-        catch (std::exception const& e)
-        {
+    switch (status)
+    {
+        case ok:
+        case notFound:
+            break;
+        case dataCorrupt: {
             JLOG(j_.fatal())
-                << "shard " << index_ << ". Exception caught in function "
-                << __func__ << ". Error: " << e.what();
-            return nullptr;
+                << "shard " << index_ << ". Corrupt node object at hash "
+                << to_string(hash);
+            break;
         }
-
-        switch (status)
-        {
-            case ok:
-            case notFound:
-                break;
-            case dataCorrupt: {
-                JLOG(j_.fatal())
-                    << "shard " << index_ << ". Corrupt node object at hash "
-                    << to_string(hash);
-                break;
-            }
-            default: {
-                JLOG(j_.warn())
-                    << "shard " << index_ << ". Unknown status=" << status
-                    << " fetching node object at hash " << to_string(hash);
-                break;
-            }
-        }
-
-        if (!nodeObject)
-        {
-            // Just in case a write occurred
-            nodeObject = pCache_->fetch(hash);
-            if (!nodeObject)
-                // We give up
-                nCache_->insert(hash);
-        }
-        else
-        {
-            // Ensure all threads get the same object
-            pCache_->canonicalize_replace_client(hash, nodeObject);
-            fetchReport.wasFound = true;
-
-            // Since this was a 'hard' fetch, we will log it
-            JLOG(j_.trace()) << "HOS: " << hash << " fetch: in shard db";
+        default: {
+            JLOG(j_.warn())
+                << "shard " << index_ << ". Unknown status=" << status
+                << " fetching node object at hash " << to_string(hash);
+            break;
         }
     }
 
+    if (nodeObject)
+        fetchReport.wasFound = true;
+
     return nodeObject;
-}
-
-bool
-Shard::fetchNodeObjectFromCache(
-    uint256 const& hash,
-    std::shared_ptr<NodeObject>& nodeObject)
-{
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return false;
-
-    nodeObject = pCache_->fetch(hash);
-    if (nodeObject || nCache_->touch_if_exists(hash))
-        return true;
-    return false;
 }
 
 Shard::StoreLedgerResult
@@ -369,12 +329,7 @@ Shard::storeLedger(
     auto storeBatch = [&]() {
         std::uint64_t sz{0};
         for (auto const& nodeObject : batch)
-        {
-            pCache_->canonicalize_replace_cache(
-                nodeObject->getHash(), nodeObject);
-            nCache_->erase(nodeObject->getHash());
             sz += nodeObject->getData().size();
-        }
 
         try
         {
@@ -530,38 +485,7 @@ Shard::containsLedger(std::uint32_t ledgerSeq) const
 void
 Shard::sweep()
 {
-    boost::optional<Shard::Count> scopedCount;
-    {
-        std::lock_guard lock(mutex_);
-        if (!backend_ || !backend_->isOpen())
-        {
-            JLOG(j_.error()) << "shard " << index_ << " not initialized";
-            return;
-        }
-
-        scopedCount.emplace(&backendCount_);
-    }
-
-    pCache_->sweep();
-    nCache_->sweep();
-}
-
-int
-Shard::getDesiredAsyncReadCount()
-{
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return 0;
-    return pCache_->getTargetSize() / asyncDivider;
-}
-
-float
-Shard::getCacheHitRate()
-{
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return 0;
-    return pCache_->getHitRate();
+    // nothing to do
 }
 
 std::chrono::steady_clock::time_point
@@ -712,8 +636,6 @@ Shard::finalize(
     auto const treeNodeCache{shardFamily.getTreeNodeCache(lastSeq_)};
 
     // Reset caches to reduce memory usage
-    pCache_->reset();
-    nCache_->reset();
     fullBelowCache->reset();
     treeNodeCache->reset();
 
@@ -767,8 +689,6 @@ Shard::finalize(
         next = std::move(ledger);
         --ledgerSeq;
 
-        pCache_->reset();
-        nCache_->reset();
         fullBelowCache->reset();
         treeNodeCache->reset();
     }
@@ -858,9 +778,6 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         lgrSQLiteDB_.reset();
         txSQLiteDB_.reset();
         acquireInfo_.reset();
-
-        pCache_.reset();
-        nCache_.reset();
 
         state_ = acquire;
 
@@ -981,14 +898,6 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
             std::string(". Exception caught in function ") + __func__ +
             ". Error: " + e.what());
     }
-
-    // Set backend caches
-    auto const size{config.getValueFor(SizedItem::nodeCacheSize, 0)};
-    auto const age{
-        std::chrono::seconds{config.getValueFor(SizedItem::nodeCacheAge, 0)}};
-    auto const name{"shard " + std::to_string(index_)};
-    pCache_ = std::make_unique<PCache>(name, size, age, stopwatch(), j_);
-    nCache_ = std::make_unique<NCache>(name, stopwatch(), size, age);
 
     if (!initSQLite(lock))
         return fail({});

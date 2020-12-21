@@ -141,7 +141,11 @@ parseMessageHeader(
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
 
-    // Check valid header
+    // Check valid header compressed message:
+    // - 4 bits are the compression algorithm, 1st bit is always set to 1
+    // - 2 bits are always set to 0
+    // - 26 bits are the payload size
+    // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
         hdr.header_size = headerBytesCompressed;
@@ -159,7 +163,7 @@ parseMessageHeader(
             return boost::none;
         }
 
-        hdr.algorithm = static_cast<compression::Algorithm>(*iter);
+        hdr.algorithm = static_cast<compression::Algorithm>(*iter & 0xF0);
 
         if (hdr.algorithm != compression::Algorithm::LZ4)
         {
@@ -184,6 +188,9 @@ parseMessageHeader(
         return hdr;
     }
 
+    // Check valid header uncompressed message:
+    // - 6 bits are set to 0
+    // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
         hdr.header_size = headerBytes;

@@ -1251,19 +1251,15 @@ class LedgerRPC_test : public beast::unit_test::suite
                                           // no amendments
         env.fund(XRP(10000), "alice");
         env.close();
+        log << env.closed()->info().hash;
         env.fund(XRP(10000), "bob");
         env.close();
+        log << env.closed()->info().hash;
         env.fund(XRP(10000), "jim");
         env.close();
+        log << env.closed()->info().hash;
         env.fund(XRP(10000), "jill");
 
-        // closed ledger hashes are:
-        // 1 - AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936C7
-        // 2 - 8AEDBB96643962F1D40F01E25632ABB3C56C9F04B0231EE4B18248B90173D189
-        // 3 - 7C3EEDB3124D92E49E75D81A8826A2E65A75FD71FC3FD6F36FEB803C5F1D812D
-        // 4 - 9F9E6A4ECAA84A08FF94713FA41C3151177D6222EA47DD2F0020CA49913EE2E6
-        // 5 - C516522DE274EB52CE69A3D22F66DD73A53E16597E06F7A86F66DF7DD4309173
-        //
         {
             // access via the legacy ledger field, keyword index values
             Json::Value jvParams;
@@ -1326,8 +1322,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             // access via the ledger_hash field
             Json::Value jvParams;
             jvParams[jss::ledger_hash] =
-                "7C3EEDB3124D92E49E75D81A8826A2E6"
-                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+                "2E81FC6EC0DD943197E0C7E3FBE9AE30"
+                "7F2775F2F7485BB37307984C3C0F2340";
             auto jrr = env.rpc(
                 "json",
                 "ledger",
@@ -1339,8 +1335,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             // extra leading hex chars in hash will be ignored
             jvParams[jss::ledger_hash] =
                 "DEADBEEF"
-                "7C3EEDB3124D92E49E75D81A8826A2E6"
-                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+                "2E81FC6EC0DD943197E0C7E3FBE9AE30"
+                "7F2775F2F7485BB37307984C3C0F2340";
             jrr = env.rpc(
                 "json",
                 "ledger",
@@ -1359,8 +1355,8 @@ class LedgerRPC_test : public beast::unit_test::suite
 
             // malformed (non hex) hash
             jvParams[jss::ledger_hash] =
-                "ZZZZZZZZZZZD92E49E75D81A8826A2E6"
-                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+                "2E81FC6EC0DD943197EGC7E3FBE9AE30"
+                "7F2775F2F7485BB37307984C3C0F2340";
             jrr = env.rpc(
                 "json",
                 "ledger",

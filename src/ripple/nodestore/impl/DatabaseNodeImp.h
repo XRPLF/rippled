@@ -43,17 +43,6 @@ public:
         Section const& config,
         beast::Journal j)
         : Database(name, parent, scheduler, readThreads, config, j)
-        , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
-              name,
-              cacheTargetSize,
-              cacheTargetAge,
-              stopwatch(),
-              j))
-        , nCache_(std::make_shared<KeyCache<uint256>>(
-              name,
-              stopwatch(),
-              cacheTargetSize,
-              cacheTargetAge))
         , backend_(std::move(backend))
     {
         assert(backend_);
@@ -88,45 +77,22 @@ public:
     store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
         override;
 
-    bool
-    asyncFetch(
-        uint256 const& hash,
-        std::uint32_t ledgerSeq,
-        std::shared_ptr<NodeObject>& nodeObject) override;
+    bool isSameDB(std::uint32_t, std::uint32_t) override
+    {
+        // only one database
+        return true;
+    }
 
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
     {
-        return Database::storeLedger(*srcLedger, backend_, pCache_, nCache_);
+        return Database::storeLedger(*srcLedger, backend_);
     }
-
-    int getDesiredAsyncReadCount(std::uint32_t) override
-    {
-        // We prefer a client not fill our cache
-        // We don't want to push data out of the cache
-        // before it's retrieved
-        return pCache_->getTargetSize() / asyncDivider;
-    }
-
-    float
-    getCacheHitRate() override
-    {
-        return pCache_->getHitRate();
-    }
-
-    void
-    tune(int size, std::chrono::seconds age) override;
 
     void
     sweep() override;
 
 private:
-    // Positive cache
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> pCache_;
-
-    // Negative cache
-    std::shared_ptr<KeyCache<uint256>> nCache_;
-
     // Persistent key/value storage
     std::shared_ptr<Backend> backend_;
 

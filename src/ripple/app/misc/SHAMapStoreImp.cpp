@@ -639,8 +639,6 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache(dbRotating_->getPositiveCache()))
-        return;
     if (freshenCache(*treeNodeCache_))
         return;
     if (freshenCache(app_.getMasterTransaction().getCache()))

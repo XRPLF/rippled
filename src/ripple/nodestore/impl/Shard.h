@@ -115,11 +115,6 @@ public:
     [[nodiscard]] std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, FetchReport& fetchReport);
 
-    [[nodiscard]] bool
-    fetchNodeObjectFromCache(
-        uint256 const& hash,
-        std::shared_ptr<NodeObject>& nodeObject);
-
     /** Store a ledger.
 
         @param srcLedger The ledger to store.
@@ -158,12 +153,6 @@ public:
     {
         return dir_;
     }
-
-    [[nodiscard]] int
-    getDesiredAsyncReadCount();
-
-    [[nodiscard]] float
-    getCacheHitRate();
 
     [[nodiscard]] std::chrono::steady_clock::time_point
     getLastUse() const;
@@ -277,12 +266,6 @@ private:
     // The maximum number of ledgers the shard can store
     // The earliest shard may store fewer ledgers than subsequent shards
     std::uint32_t const maxLedgers_;
-
-    // Database positive cache
-    std::unique_ptr<PCache> pCache_;
-
-    // Database negative cache
-    std::unique_ptr<NCache> nCache_;
 
     // Path to database files
     boost::filesystem::path const dir_;
