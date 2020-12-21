@@ -16,7 +16,10 @@ reflect these rules. Whenever possible, developers should refactor any
 levelization violations they find (by moving files or individual
 classes). At the very least, don't make things worse.
 
-The table below summarizes the _desired_ division of modules.
+The table below summarizes the _desired_ division of modules. The levels
+are numbered from the bottom up with the lower level, lower numbered,
+more independent modules listed first, and the higher level, higher
+numbered modules with more dependencies listed later.
 
 | Level / Tier | Module(s)                                     |
 |--------------|-----------------------------------------------|
@@ -61,7 +64,8 @@ It generates many files of [results](results):
   that _include_ the module.
 * [`loops.txt`](results/loops.txt): A list of direct loops detected
   between modules as they actually exist, as opposed to how they are
-  desired as described above.
+  desired as described above. In a perfect repo, this file will be
+  empty.
   This file is committed to the repo, and is used by the [levelization
   Github workflow](../../.github/workflows/levelization.yml) to validate
   that nothing changed.
@@ -82,9 +86,18 @@ The  `loops.txt` and `ordering.txt` files relate the modules
 using comparison signs, which indicate the number of times each
 module is included in the other.
 
-* `A > B` means that A is included in B significantly more than B is included in A, and thus A should probably be at a higher level. `ordering.txt` will only include these types of results, because by definition `B` doesn't include `A` at all, otherwise it would be in `loops.txt`.
-* `A ~= B` means that A and B are included in each other a different number of times, but the values are so close that the script can't definitively say that one should be above the other.
-* `A == B` means that A and B include each other the same number of times, so the script has no clue which should be higher.
+* `A > B` means that A should probably be at a higher level than B,
+  because B is included in A significantly more than A is included in B.
+  These results can be included in both `loops.txt` and `ordering.txt`.
+  Because `ordering.txt`only includes relationships where B is not
+  included in A at all, it will only include these types of results.
+* `A ~= B` means that A and B are included in each other a different
+  number of times, but the values are so close that the script can't
+  definitively say that one should be above the other. These results
+  will only be included in `loops.txt`.
+* `A == B` means that A and B include each other the same number of
+  times, so the script has no clue which should be higher. These results
+  will only be included in `loops.txt`.
 
 The committed files hide the detailed values intentionally, to
 prevent false alarms and merging issues, and because it's easy to
@@ -92,4 +105,5 @@ get those details locally.
 
 1. Run `levelization.sh`
 2. Grep the modules in `paths.txt`.
-   * For example, if a cycle is found `A ~= B`, simply `grep -w A Builds/levelization/results/paths.txt | grep -w B`
+   * For example, if a cycle is found `A ~= B`, simply `grep -w
+     A Builds/levelization/results/paths.txt | grep -w B`

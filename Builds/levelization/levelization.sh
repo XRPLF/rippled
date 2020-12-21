@@ -20,7 +20,6 @@ oldifs=${IFS}
 IFS=:
 mkdir includes
 mkdir includedby
-# i=1000
 echo Build levelization paths
 exec 3< ${includes} # open rawincludes.txt for input
 while read -r -u 3 file include
@@ -29,7 +28,8 @@ do
     # If the "level" indicates a file, cut off the filename
     if [[ "${level##*.}" != "${level}" ]]
     then
-        # Keep the slash as a workaround for `sort` inconsistencies
+        # Use the "toplevel" label as a workaround for `sort`
+        # inconsistencies between different utility versions
         level="$( dirname ${level} )/toplevel"
     fi
     level=$( echo ${level} | tr '/' '.' )
@@ -38,7 +38,8 @@ do
         cut -d/ -f 1,2 )
     if [[ "${includelevel##*.}" != "${includelevel}" ]]
     then
-        # Keep the slash as a workaround for `sort` inconsistencies
+        # Use the "toplevel" label as a workaround for `sort`
+        # inconsistencies between different utility versions
         includelevel="$( dirname ${includelevel} )/toplevel"
     fi
     includelevel=$( echo ${includelevel} | tr '/' '.' )
@@ -47,13 +48,6 @@ do
     then
         echo $level $includelevel | tee -a paths.txt
     fi
-
-    # if [[ $i -gt 0 ]]
-    # then
-    #     i=$(( $i - 1 ))
-    # else
-    #     break
-    # fi
 done
 echo Sort and dedup paths
 sort -ds paths.txt | uniq -c | tee sortedpaths.txt
@@ -70,17 +64,6 @@ do
     echo ${level} ${count} | tee -a includedby/${include}
 done
 exec 4>&- #close fd 4
-
-# echo -e "\nIncludes:"
-# for level in includes/*
-# do
-#     echo "$( basename $level ) -> $( cat $level )"
-# done
-# echo -e "\n\nIncludedBy"
-# for level in includedby/*
-# do
-#     echo "$( basename $level ) -> $( cat $level )"
-# done
 
 loops="$( pwd )/loops.txt"
 ordering="$( pwd )/ordering.txt"
@@ -106,8 +89,8 @@ do
           fi
           sourcefreq=$( grep -w $source $include | cut -d\  -f2 )
           echo "Loop: $source $include"
-          # If the counts are close, indicate that the 
-          # two modules are on the same level.
+          # If the counts are close, indicate that the two modules are
+          # on the same level, though they shouldn't be
           if [[ $(( $includefreq - $sourcefreq )) -gt 3 ]]
           then
               echo -e "  $source > $include\n"
