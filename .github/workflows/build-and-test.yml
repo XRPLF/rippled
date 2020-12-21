@@ -50,7 +50,6 @@ jobs:
         run: |
           env
           set | grep =
-          find ${BOOST_ROOT} -type f -ls
 #       - name: cache stats before
 #         run: ccache -s
       - name: Build and test
@@ -76,8 +75,6 @@ jobs:
         CC: [ "gcc-8", "clang-10"  ]
         BUILD_TYPE: [ Debug, Release ]
         canfail: [ false ]
-        exclude:
-          - canfail: false
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:
@@ -99,7 +96,6 @@ jobs:
         run: |
           env
           set | grep =
-          find ${BOOST_ROOT} -type f -ls
 #       - name: cache stats before
 #         run: ccache -s
       - name: Configure
@@ -113,7 +109,8 @@ jobs:
           ${CXX} --version
           mkdir build
           cd build
-          cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
+          # -DBoost_NO_BOOST_CMAKE=ON
+          cmake ${{ env.CMAKE_EXTRA_ARGS }} ..
       - name: Build rippled
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
