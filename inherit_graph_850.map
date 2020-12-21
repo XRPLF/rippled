@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,185,61"/>
-<area shape="rect" id="node2" href="$structbeast_1_1static__and_3_01b0_00_01bN_8_8_8_01_4.html" title=" " alt="" coords="233,13,377,54"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,239,91"/>
+<area shape="rect" id="node2" href="$structbeast_1_1is__contiguously__hashable.html" title="Metafunction returning true if the type can be hashed in one call." alt="" coords="287,27,517,69"/>
 </map>

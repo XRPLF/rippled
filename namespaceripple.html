@@ -1554,15 +1554,12 @@ Enumerations</h2></td></tr>
 <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaf7624c41fe90d862b7797d38a7f0eb49">SizedItem::ledgerAge</a>, 
 <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba84e0eb5e4fbd74b1a9cafa3a2e072f64">SizedItem::ledgerFetch</a>, 
-<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaa5718f2502026a6a736043078c194ee3">SizedItem::nodeCacheSize</a>, 
-<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbada9ef4d9fa061179541ca02ba5f19ab9">SizedItem::nodeCacheAge</a>, 
-<br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbad57786faa593a26172cf6ce03a7558a8">SizedItem::hashNodeDBCache</a>, 
+<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbad57786faa593a26172cf6ce03a7558a8">SizedItem::hashNodeDBCache</a>, 
 <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaed21e4d346721b8707d57bfa1c92f258">SizedItem::txnDBCache</a>, 
-<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba9e9e534926f294eacc1b735a9da65965">SizedItem::lgrDBCache</a>, 
-<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba1f6a5079a4330adbc050540a9e9b5bdf">SizedItem::openFinalLimit</a>, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaa62741f39e8a8d667ccccd0642c08746">SizedItem::burstSize</a>
+&#160;&#160;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba9e9e534926f294eacc1b735a9da65965">SizedItem::lgrDBCache</a>, 
+<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba1f6a5079a4330adbc050540a9e9b5bdf">SizedItem::openFinalLimit</a>, 
+<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaa62741f39e8a8d667ccccd0642c08746">SizedItem::burstSize</a>
 <br />
  }</td></tr>
 <tr class="separator:a1b38e742ac7fe4c3a80a397e06b83dcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2250,8 +2247,8 @@ Functions</h2></td></tr>
 <tr class="memitem:aa63b459355503ca0fbf20ef1013ad036"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>, <a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa63b459355503ca0fbf20ef1013ad036">loadNodeIdentity</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="memdesc:aa63b459355503ca0fbf20ef1013ad036"><td class="mdescLeft">&#160;</td><td class="mdescRight">The cryptographic credentials identifying this server instance.  <a href="namespaceripple.html#aa63b459355503ca0fbf20ef1013ad036">More...</a><br /></td></tr>
 <tr class="separator:aa63b459355503ca0fbf20ef1013ad036"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35ced120460d637fbdbaae9a894feba8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1AmendmentTable.html">AmendmentTable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a35ced120460d637fbdbaae9a894feba8">make_AmendmentTable</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;supported, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;enabled, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;vetoed, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="separator:a35ced120460d637fbdbaae9a894feba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af161cd4a544a6a5d5cceac3133f9a865"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1AmendmentTable.html">AmendmentTable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af161cd4a544a6a5d5cceac3133f9a865">make_AmendmentTable</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;supported, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;enabled, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;vetoed, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
+<tr class="separator:af161cd4a544a6a5d5cceac3133f9a865"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae7f0e432d5fa980cfc588654bb6c77d7">operator&lt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;rhs)</td></tr>
 <tr class="separator:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbafe6bd675116b7d1c63c314fcd369d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1FeeVote_1_1Setup.html">FeeVote::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acbafe6bd675116b7d1c63c314fcd369d">setup_FeeVote</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section)</td></tr>
@@ -3264,7 +3261,7 @@ Functions</h2></td></tr>
 <tr class="separator:a5c727700ce6f90a3827de831bdf1edc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af60dce962bc1ac2461b5b2f418618d53"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af60dce962bc1ac2461b5b2f418618d53">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#ac4249fe49fd110562adb330d3122e163">sfUNLModifyDisabling</a>, &quot;UNLModifyDisabling&quot;, UINT8, 17)</td></tr>
 <tr class="separator:af60dce962bc1ac2461b5b2f418618d53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac841df9afbf3bdc99ec958444a0ad91"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aac841df9afbf3bdc99ec958444a0ad91">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">sfLedgerEntryType</a>, &quot;LedgerEntryType&quot;, UINT16, 1, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>)</td></tr>
+<tr class="memitem:aac841df9afbf3bdc99ec958444a0ad91"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aac841df9afbf3bdc99ec958444a0ad91">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">sfLedgerEntryType</a>, &quot;LedgerEntryType&quot;, UINT16, 1, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>)</td></tr>
 <tr class="separator:aac841df9afbf3bdc99ec958444a0ad91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f60b2d5005a2e92703648bdb51a5f0a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3f60b2d5005a2e92703648bdb51a5f0a">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a3de80dfbf6f7cdf152c70751e51ef399">sfTransactionType</a>, &quot;TransactionType&quot;, UINT16, 2)</td></tr>
 <tr class="separator:a3f60b2d5005a2e92703648bdb51a5f0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3278,7 +3275,7 @@ Functions</h2></td></tr>
 <tr class="separator:a89c99758f250f18c1481284d28948b06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b601429adeaba305833cf68bdad10ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7b601429adeaba305833cf68bdad10ff">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a586714bf3cbbbb406d6f169742bce0d5">sfSequence</a>, &quot;Sequence&quot;, UINT32, 4)</td></tr>
 <tr class="separator:a7b601429adeaba305833cf68bdad10ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a919bab8e680fc5293dd7954c97856b42"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a919bab8e680fc5293dd7954c97856b42">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a735d480bdbcfa9135a2e6cf5944fea50">sfPreviousTxnLgrSeq</a>, &quot;PreviousTxnLgrSeq&quot;, UINT32, 5, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>)</td></tr>
+<tr class="memitem:a919bab8e680fc5293dd7954c97856b42"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a919bab8e680fc5293dd7954c97856b42">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a735d480bdbcfa9135a2e6cf5944fea50">sfPreviousTxnLgrSeq</a>, &quot;PreviousTxnLgrSeq&quot;, UINT32, 5, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>)</td></tr>
 <tr class="separator:a919bab8e680fc5293dd7954c97856b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fbccdb7c890d1b95feece8db3425cfe"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7fbccdb7c890d1b95feece8db3425cfe">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a4a189668d64758cfcac4022778e496f5">sfLedgerSequence</a>, &quot;LedgerSequence&quot;, UINT32, 6)</td></tr>
 <tr class="separator:a7fbccdb7c890d1b95feece8db3425cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3390,13 +3387,13 @@ Functions</h2></td></tr>
 <tr class="separator:a34c114e6737f520322ec208af96de006"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b46b29d037f04e6b7d681c51341c52a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5b46b29d037f04e6b7d681c51341c52a">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#abcc301ecc7683914e2e7afef12548f15">sfAccountHash</a>, &quot;AccountHash&quot;, HASH256, 4)</td></tr>
 <tr class="separator:a5b46b29d037f04e6b7d681c51341c52a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abee7d9f062a6234b4a119873b3b6d5cd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abee7d9f062a6234b4a119873b3b6d5cd">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a97458443150cb9a76c32f56d1bff00f0">sfPreviousTxnID</a>, &quot;PreviousTxnID&quot;, HASH256, 5, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>)</td></tr>
+<tr class="memitem:abee7d9f062a6234b4a119873b3b6d5cd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abee7d9f062a6234b4a119873b3b6d5cd">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a97458443150cb9a76c32f56d1bff00f0">sfPreviousTxnID</a>, &quot;PreviousTxnID&quot;, HASH256, 5, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>)</td></tr>
 <tr class="separator:abee7d9f062a6234b4a119873b3b6d5cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05768d1e9c3193fd187072d2052bdd9e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a05768d1e9c3193fd187072d2052bdd9e">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a26096174d8e32c36ded448d96fd37112">sfLedgerIndex</a>, &quot;LedgerIndex&quot;, HASH256, 6)</td></tr>
 <tr class="separator:a05768d1e9c3193fd187072d2052bdd9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa48705543aa7e37121fb6a5cc781cfc6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa48705543aa7e37121fb6a5cc781cfc6">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a15f38d13f98b092ef3f2d743d60db0fb">sfWalletLocator</a>, &quot;WalletLocator&quot;, HASH256, 7)</td></tr>
 <tr class="separator:aa48705543aa7e37121fb6a5cc781cfc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8941f221923961d3875fedc66b054a64"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8941f221923961d3875fedc66b054a64">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a45b5800a054a4b98658a47c88aa8419a">sfRootIndex</a>, &quot;RootIndex&quot;, HASH256, 8, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aaac5fc3d945894a116e771a4b04e33847">SField::sMD_Always</a>)</td></tr>
+<tr class="memitem:a8941f221923961d3875fedc66b054a64"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8941f221923961d3875fedc66b054a64">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a45b5800a054a4b98658a47c88aa8419a">sfRootIndex</a>, &quot;RootIndex&quot;, HASH256, 8, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976caac5fc3d945894a116e771a4b04e33847">SField::sMD_Always</a>)</td></tr>
 <tr class="separator:a8941f221923961d3875fedc66b054a64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e2f678b55014c912dd565b7ca654523"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3e2f678b55014c912dd565b7ca654523">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a223c033d9df5cba0e91698eaee96cc70">sfAccountTxnID</a>, &quot;AccountTxnID&quot;, HASH256, 9)</td></tr>
 <tr class="separator:a3e2f678b55014c912dd565b7ca654523"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3450,9 +3447,9 @@ Functions</h2></td></tr>
 <tr class="separator:abbfec3b0de2c8720c98e53e405678fc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a2d6e8d17bd9217325e943c6ca9b5f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5a2d6e8d17bd9217325e943c6ca9b5f8">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a590913040d5c9a68f3bf1d4da20311ad">sfSigningPubKey</a>, &quot;SigningPubKey&quot;, VL, 3)</td></tr>
 <tr class="separator:a5a2d6e8d17bd9217325e943c6ca9b5f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab234b88f88c308f8f3daf1bf187e6e2d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab234b88f88c308f8f3daf1bf187e6e2d">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a61697c13ea8123e926a3df063c625245">sfTxnSignature</a>, &quot;TxnSignature&quot;, VL, 4, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
+<tr class="memitem:ab234b88f88c308f8f3daf1bf187e6e2d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab234b88f88c308f8f3daf1bf187e6e2d">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a61697c13ea8123e926a3df063c625245">sfTxnSignature</a>, &quot;TxnSignature&quot;, VL, 4, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
 <tr class="separator:ab234b88f88c308f8f3daf1bf187e6e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae95eb7bb89c3f74241119c98f599efe6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae95eb7bb89c3f74241119c98f599efe6">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a61932ff70203e248b70ca3b215667435">sfSignature</a>, &quot;Signature&quot;, VL, 6, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
+<tr class="memitem:ae95eb7bb89c3f74241119c98f599efe6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae95eb7bb89c3f74241119c98f599efe6">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a61932ff70203e248b70ca3b215667435">sfSignature</a>, &quot;Signature&quot;, VL, 6, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
 <tr class="separator:ae95eb7bb89c3f74241119c98f599efe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a105d1e519d7162dd90086920309833f1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a105d1e519d7162dd90086920309833f1">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a3cb8c107255b52f0702f97a3c3929a43">sfDomain</a>, &quot;Domain&quot;, VL, 7)</td></tr>
 <tr class="separator:a105d1e519d7162dd90086920309833f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3474,7 +3471,7 @@ Functions</h2></td></tr>
 <tr class="separator:ad1cda38cf3b21c728be36f71b5dbc2dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55dba90c157b7786caaf49446e7ab21b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a55dba90c157b7786caaf49446e7ab21b">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a5a932c347994f69a4f49670d63ec1ad9">sfCondition</a>, &quot;Condition&quot;, VL, 17)</td></tr>
 <tr class="separator:a55dba90c157b7786caaf49446e7ab21b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ecccef7abac4dec69f76b75c1d12a89"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1ecccef7abac4dec69f76b75c1d12a89">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#aebd6b4047aa2e572fbdc8c4247128e5a">sfMasterSignature</a>, &quot;MasterSignature&quot;, VL, 18, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
+<tr class="memitem:a1ecccef7abac4dec69f76b75c1d12a89"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1ecccef7abac4dec69f76b75c1d12a89">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#aebd6b4047aa2e572fbdc8c4247128e5a">sfMasterSignature</a>, &quot;MasterSignature&quot;, VL, 18, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
 <tr class="separator:a1ecccef7abac4dec69f76b75c1d12a89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c92727725ed022f6981a4c1b901aced"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8c92727725ed022f6981a4c1b901aced">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a5da1d364939981da98850cde32786ca8">sfUNLModifyValidator</a>, &quot;UNLModifyValidator&quot;, VL, 19)</td></tr>
 <tr class="separator:a8c92727725ed022f6981a4c1b901aced"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3496,7 +3493,7 @@ Functions</h2></td></tr>
 <tr class="separator:a1ce87dbaf8f60174b814729e4745d49b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56ab83e299eb7c3e986261036c3810be"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a56ab83e299eb7c3e986261036c3810be">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#add69afdd9c67ca7b7374b30f9d3e6d41">sfRegularKey</a>, &quot;RegularKey&quot;, ACCOUNT, 8)</td></tr>
 <tr class="separator:a56ab83e299eb7c3e986261036c3810be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a122dd3383e3ded770033ef01f1ced09e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a122dd3383e3ded770033ef01f1ced09e">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>, &quot;Indexes&quot;, VECTOR256, 1, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>)</td></tr>
+<tr class="memitem:a122dd3383e3ded770033ef01f1ced09e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a122dd3383e3ded770033ef01f1ced09e">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>, &quot;Indexes&quot;, VECTOR256, 1, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>)</td></tr>
 <tr class="separator:a122dd3383e3ded770033ef01f1ced09e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add020f79ce80bf2414d0fabb6f7fc066"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#add020f79ce80bf2414d0fabb6f7fc066">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#ab44eddba949c362c1be0f959ee9a2117">sfHashes</a>, &quot;Hashes&quot;, VECTOR256, 2)</td></tr>
 <tr class="separator:add020f79ce80bf2414d0fabb6f7fc066"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3530,7 +3527,7 @@ Functions</h2></td></tr>
 <tr class="separator:adb4bd055be4468398b77d746956d2228"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae87578280eabad783ebfac0dec3fa576"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae87578280eabad783ebfac0dec3fa576">CONSTRUCT_UNTYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a25781d261e5e805fdf2834ab4af7be30">sfDisabledValidator</a>, &quot;DisabledValidator&quot;, OBJECT, 19)</td></tr>
 <tr class="separator:ae87578280eabad783ebfac0dec3fa576"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b773c4437f2f26502bccdcafdb20eb8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4b773c4437f2f26502bccdcafdb20eb8">CONSTRUCT_UNTYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a22a86f3d2d6d958de794f8532d459bac">sfSigners</a>, &quot;Signers&quot;, ARRAY, 3, <a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
+<tr class="memitem:a4b773c4437f2f26502bccdcafdb20eb8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4b773c4437f2f26502bccdcafdb20eb8">CONSTRUCT_UNTYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a22a86f3d2d6d958de794f8532d459bac">sfSigners</a>, &quot;Signers&quot;, ARRAY, 3, <a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
 <tr class="separator:a4b773c4437f2f26502bccdcafdb20eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab176329b0327d1472ac2c064a0fcd805"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab176329b0327d1472ac2c064a0fcd805">CONSTRUCT_UNTYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#ac86da2e800a29d7feaead809f68d2991">sfSignerEntries</a>, &quot;SignerEntries&quot;, ARRAY, 4)</td></tr>
 <tr class="separator:ab176329b0327d1472ac2c064a0fcd805"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4304,14 +4301,17 @@ Variables</h2></td></tr>
 <tr class="memitem:a8d9f578e31d5fdf0e82150bc1a4ce374"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8d9f578e31d5fdf0e82150bc1a4ce374">ledgerDefaultTimeResolution</a> = <a class="el" href="namespaceripple.html#a969b4fa948e930037c26185ce3e28897">ledgerPossibleTimeResolutions</a>[2]</td></tr>
 <tr class="memdesc:a8d9f578e31d5fdf0e82150bc1a4ce374"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial resolution of ledger close time.  <a href="namespaceripple.html#a8d9f578e31d5fdf0e82150bc1a4ce374">More...</a><br /></td></tr>
 <tr class="separator:a8d9f578e31d5fdf0e82150bc1a4ce374"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09147d6c9f73ea585dcd8d71779102a0"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a09147d6c9f73ea585dcd8d71779102a0">ledgerGenesisTimeResolution</a> = <a class="el" href="namespaceripple.html#a969b4fa948e930037c26185ce3e28897">ledgerPossibleTimeResolutions</a>[0]</td></tr>
+<tr class="memdesc:a09147d6c9f73ea585dcd8d71779102a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close time resolution in genesis ledger.  <a href="namespaceripple.html#a09147d6c9f73ea585dcd8d71779102a0">More...</a><br /></td></tr>
+<tr class="separator:a09147d6c9f73ea585dcd8d71779102a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f267aafd9f164602b2b35a5da317a4c"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3f267aafd9f164602b2b35a5da317a4c">increaseLedgerTimeResolutionEvery</a> = 8</td></tr>
 <tr class="memdesc:a3f267aafd9f164602b2b35a5da317a4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we increase the close time resolution (in numbers of ledgers)  <a href="namespaceripple.html#a3f267aafd9f164602b2b35a5da317a4c">More...</a><br /></td></tr>
 <tr class="separator:a3f267aafd9f164602b2b35a5da317a4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a55bfc71b0bf18396dbf49bf88cf353f8">decreaseLedgerTimeResolutionEvery</a> = 1</td></tr>
 <tr class="memdesc:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we decrease the close time resolution (in numbers of ledgers)  <a href="namespaceripple.html#a55bfc71b0bf18396dbf49bf88cf353f8">More...</a><br /></td></tr>
 <tr class="separator:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1a5dc39161a0005b4e1bb076ba1ef47"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; int, 5 &gt; &gt;, 13 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af1a5dc39161a0005b4e1bb076ba1ef47">sizedItems</a></td></tr>
-<tr class="separator:af1a5dc39161a0005b4e1bb076ba1ef47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; int, 5 &gt; &gt;, 11 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a></td></tr>
+<tr class="separator:a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2611245485e6cfe23d56f1fa608de87d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">checkpointers</a></td></tr>
 <tr class="separator:a2611245485e6cfe23d56f1fa608de87d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc9d4275055c64612390b7f6af828811"><td class="memItemLeft" align="right" valign="top">static uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abc9d4275055c64612390b7f6af828811">SNTPQueryData</a> [48]</td></tr>
@@ -7044,8 +7044,6 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbacdae4987d98b9ac3e09734d700c51514"></a>ledgerSize&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbaf7624c41fe90d862b7797d38a7f0eb49"></a>ledgerAge&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcba84e0eb5e4fbd74b1a9cafa3a2e072f64"></a>ledgerFetch&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbaa5718f2502026a6a736043078c194ee3"></a>nodeCacheSize&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbada9ef4d9fa061179541ca02ba5f19ab9"></a>nodeCacheAge&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbad57786faa593a26172cf6ce03a7558a8"></a>hashNodeDBCache&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbaed21e4d346721b8707d57bfa1c92f258"></a>txnDBCache&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcba9e9e534926f294eacc1b735a9da65965"></a>lgrDBCache&#160;</td><td class="fielddoc"></td></tr>
@@ -9674,7 +9672,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02197">2197</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02195">2195</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -9786,8 +9784,8 @@ template&lt;class Object &gt; </div>
 
 </div>
 </div>
-<a id="a35ced120460d637fbdbaae9a894feba8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35ced120460d637fbdbaae9a894feba8">&#9670;&nbsp;</a></span>make_AmendmentTable()</h2>
+<a id="af161cd4a544a6a5d5cceac3133f9a865"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af161cd4a544a6a5d5cceac3133f9a865">&#9670;&nbsp;</a></span>make_AmendmentTable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -9795,6 +9793,12 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1AmendmentTable.html">AmendmentTable</a> &gt; ripple::make_AmendmentTable </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td>
           <td class="paramname"><em>majorityTime</em>, </td>
         </tr>
@@ -9830,7 +9834,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00695">695</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00813">813</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -10737,7 +10741,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00780">780</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00778">778</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -17868,7 +17872,7 @@ template&lt;class Rep , class Period , class Seq &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00077">77</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00080">80</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
 
 </div>
 </div>
@@ -17910,7 +17914,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><b>closeTime</b> rounded to the nearest multiple of <b>closeResolution</b>. Rounds up if <b>closeTime</b> is midway between multiples of <b>closeResolution</b>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00126">126</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00129">129</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
 
 </div>
 </div>
@@ -17959,7 +17963,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00149">149</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00152">152</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
 
 </div>
 </div>
@@ -18113,7 +18117,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00090">90</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00088">88</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -18143,7 +18147,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00138">138</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00136">136</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -18185,7 +18189,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00151">151</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00149">149</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -18213,7 +18217,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00186">186</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00184">184</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -21731,7 +21735,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00125">125</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00126">126</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -21775,7 +21779,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02484">2484</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02485">2485</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -21825,7 +21829,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02508">2508</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02509">2509</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -21899,7 +21903,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The number of bytes consumed, or the error code if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00270">270</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00277">277</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
@@ -24827,7 +24831,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -25113,7 +25117,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27359,7 +27363,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca27eebffbb3870e6dec971a4e5eab508e">SField::sMD_DeleteFinal</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27485,7 +27489,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aaac5fc3d945894a116e771a4b04e33847">SField::sMD_Always</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976caac5fc3d945894a116e771a4b04e33847">SField::sMD_Always</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28571,7 +28575,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -28623,7 +28627,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -29075,7 +29079,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -29527,7 +29531,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aa16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976ca16f5e124abba72dd7fee5cbc6a166bc1">SField::sMD_Never</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -30213,7 +30217,7 @@ any terminating null.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#ab6123d053903d175f545b12f1436984aae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html#a8f7d5c1bd12c0e1ce136c45ba8b2976cae46e414a936731e9c92ac910d935a6a0">SField::sMD_Default</a>&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -34718,7 +34722,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GetCounts_8cpp_source.html#l00156">156</a> of file <a class="el" href="GetCounts_8cpp_source.html">GetCounts.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GetCounts_8cpp_source.html#l00154">154</a> of file <a class="el" href="GetCounts_8cpp_source.html">GetCounts.cpp</a>.</p>
 
 </div>
 </div>
@@ -37124,7 +37128,7 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00647">647</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00666">666</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
 
 </div>
 </div>
@@ -37154,7 +37158,7 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00654">654</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00673">673</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
 
 </div>
 </div>
@@ -40872,6 +40876,32 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="a09147d6c9f73ea585dcd8d71779102a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09147d6c9f73ea585dcd8d71779102a0">&#9670;&nbsp;</a></span>ledgerGenesisTimeResolution</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr auto ripple::ledgerGenesisTimeResolution = <a class="el" href="namespaceripple.html#a969b4fa948e930037c26185ce3e28897">ledgerPossibleTimeResolutions</a>[0]</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Close time resolution in genesis ledger. </p>
+
+<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00047">47</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
+
+</div>
+</div>
 <a id="a3f267aafd9f164602b2b35a5da317a4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3f267aafd9f164602b2b35a5da317a4c">&#9670;&nbsp;</a></span>increaseLedgerTimeResolutionEvery</h2>
 
@@ -40894,7 +40924,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>How often we increase the close time resolution (in numbers of ledgers) </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00047">47</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00050">50</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
 
 </div>
 </div>
@@ -40920,12 +40950,12 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>How often we decrease the close time resolution (in numbers of ledgers) </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00050">50</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerTiming_8h_source.html#l00053">53</a> of file <a class="el" href="LedgerTiming_8h_source.html">LedgerTiming.h</a>.</p>
 
 </div>
 </div>
-<a id="af1a5dc39161a0005b4e1bb076ba1ef47"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1a5dc39161a0005b4e1bb076ba1ef47">&#9670;&nbsp;</a></span>sizedItems</h2>
+<a id="a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">&#9670;&nbsp;</a></span>sizedItems</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -40934,7 +40964,7 @@ template&lt;class Dest , class Src &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;int, 5&gt; &gt;, 13&gt; ripple::sizedItems</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;int, 5&gt; &gt;, 11&gt; ripple::sizedItems</td>
         </tr>
       </table>
   </td>
@@ -40954,8 +40984,6 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="line">        {SizedItem::ledgerSize, {{32, 128, 256, 384, 768}}},</div>
 <div class="line">        {SizedItem::ledgerAge, {{30, 90, 180, 240, 900}}},</div>
 <div class="line">        {SizedItem::ledgerFetch, {{2, 3, 4, 5, 8}}},</div>
-<div class="line">        {SizedItem::nodeCacheSize, {{16384, 32768, 131072, 262144, 524288}}},</div>
-<div class="line">        {SizedItem::nodeCacheAge, {{60, 90, 120, 900, 1800}}},</div>
 <div class="line">        {SizedItem::hashNodeDBCache, {{4, 12, 24, 64, 128}}},</div>
 <div class="line">        {SizedItem::txnDBCache, {{4, 12, 24, 64, 128}}},</div>
 <div class="line">        {SizedItem::lgrDBCache, {{4, 8, 16, 32, 128}}},</div>
@@ -45320,7 +45348,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8cpp_source.html#l00474">474</a> of file <a class="el" href="SHAMap_8cpp_source.html">SHAMap.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8cpp_source.html#l00479">479</a> of file <a class="el" href="SHAMap_8cpp_source.html">SHAMap.cpp</a>.</p>
 
 </div>
 </div>

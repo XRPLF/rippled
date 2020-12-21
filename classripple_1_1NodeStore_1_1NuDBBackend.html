@@ -122,12 +122,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1b03edf356922e780fe41987476f1f6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a1b03edf356922e780fe41987476f1f6a">fetch</a> (void const *key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; *pno) override</td></tr>
 <tr class="memdesc:a1b03edf356922e780fe41987476f1f6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a single object.  <a href="classripple_1_1NodeStore_1_1NuDBBackend.html#a1b03edf356922e780fe41987476f1f6a">More...</a><br /></td></tr>
 <tr class="separator:a1b03edf356922e780fe41987476f1f6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a727c895f6364eeaa8e524c1eb456f5df"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a727c895f6364eeaa8e524c1eb456f5df">canFetchBatch</a> () override</td></tr>
-<tr class="memdesc:a727c895f6364eeaa8e524c1eb456f5df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return <code>true</code> if batch fetches are optimized.  <a href="classripple_1_1NodeStore_1_1NuDBBackend.html#a727c895f6364eeaa8e524c1eb456f5df">More...</a><br /></td></tr>
-<tr class="separator:a727c895f6364eeaa8e524c1eb456f5df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e04de763e8f9767b4404605e4f8e749"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2e04de763e8f9767b4404605e4f8e749">fetchBatch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void const *const *keys) override</td></tr>
-<tr class="memdesc:a2e04de763e8f9767b4404605e4f8e749"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a batch synchronously.  <a href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2e04de763e8f9767b4404605e4f8e749">More...</a><br /></td></tr>
-<tr class="separator:a2e04de763e8f9767b4404605e4f8e749"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ffccad519a4ac36bb0329a186b4783f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a4ffccad519a4ac36bb0329a186b4783f">do_insert</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;no)</td></tr>
 <tr class="separator:a4ffccad519a4ac36bb0329a186b4783f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00c5d2a5073f3318fc0e52f255a1c212"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a00c5d2a5073f3318fc0e52f255a1c212">store</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;no) override</td></tr>
@@ -495,79 +489,6 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a727c895f6364eeaa8e524c1eb456f5df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a727c895f6364eeaa8e524c1eb456f5df">&#9670;&nbsp;</a></span>canFetchBatch()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::NodeStore::NuDBBackend::canFetchBatch </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return <code>true</code> if batch fetches are optimized. </p>
-
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">ripple::NodeStore::Backend</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00192">192</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a2e04de763e8f9767b4404605e4f8e749"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e04de763e8f9767b4404605e4f8e749">&#9670;&nbsp;</a></span>fetchBatch()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1NodeObject.html">NodeObject</a>&gt; &gt; ripple::NodeStore::NuDBBackend::fetchBatch </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void const *const *&#160;</td>
-          <td class="paramname"><em>keys</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Fetch a batch synchronously. </p>
-
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ae5c85e156a44b8b13040ecafab65976a">ripple::NodeStore::Backend</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00198">198</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a4ffccad519a4ac36bb0329a186b4783f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ffccad519a4ac36bb0329a186b4783f">&#9670;&nbsp;</a></span>do_insert()</h2>
 
@@ -584,7 +505,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00205">205</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00192">192</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -623,7 +544,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00218">218</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00205">205</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -656,7 +577,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00230">230</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00217">217</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -690,7 +611,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00243">243</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00230">230</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -721,7 +642,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ac4d7008b7a616ce05568da3e96a204ec">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00280">280</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00267">267</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -752,7 +673,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a898be5251e9216eb21938e3083c2d1ef">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00286">286</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00273">273</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -783,7 +704,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ad2c3057545b73aee8e671f127b0ae084">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00292">292</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00279">279</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -814,7 +735,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00311">311</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00298">298</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -843,7 +764,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00134">134</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00126">126</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

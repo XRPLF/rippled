@@ -129,12 +129,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad1c41ea346dc8b8202fd05f67349735c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ad1c41ea346dc8b8202fd05f67349735c">fetch</a> (void const *key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; *pObject) override</td></tr>
 <tr class="memdesc:ad1c41ea346dc8b8202fd05f67349735c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a single object.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#ad1c41ea346dc8b8202fd05f67349735c">More...</a><br /></td></tr>
 <tr class="separator:ad1c41ea346dc8b8202fd05f67349735c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99df01b9966c50d586f55f841d7226b6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a99df01b9966c50d586f55f841d7226b6">canFetchBatch</a> () override</td></tr>
-<tr class="memdesc:a99df01b9966c50d586f55f841d7226b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return <code>true</code> if batch fetches are optimized.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#a99df01b9966c50d586f55f841d7226b6">More...</a><br /></td></tr>
-<tr class="separator:a99df01b9966c50d586f55f841d7226b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a695be0ff463e8135f7b117f5d37c269d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a695be0ff463e8135f7b117f5d37c269d">fetchBatch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void const *const *keys) override</td></tr>
-<tr class="memdesc:a695be0ff463e8135f7b117f5d37c269d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a batch synchronously.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#a695be0ff463e8135f7b117f5d37c269d">More...</a><br /></td></tr>
-<tr class="separator:a695be0ff463e8135f7b117f5d37c269d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40130939ef641571abf616a970d63957"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a40130939ef641571abf616a970d63957">store</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;object) override</td></tr>
 <tr class="memdesc:a40130939ef641571abf616a970d63957"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a single object.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#a40130939ef641571abf616a970d63957">More...</a><br /></td></tr>
 <tr class="separator:a40130939ef641571abf616a970d63957"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -457,79 +451,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a99df01b9966c50d586f55f841d7226b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a99df01b9966c50d586f55f841d7226b6">&#9670;&nbsp;</a></span>canFetchBatch()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::NodeStore::MemoryBackend::canFetchBatch </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return <code>true</code> if batch fetches are optimized. </p>
-
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">ripple::NodeStore::Backend</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00151">151</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a695be0ff463e8135f7b117f5d37c269d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a695be0ff463e8135f7b117f5d37c269d">&#9670;&nbsp;</a></span>fetchBatch()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1NodeObject.html">NodeObject</a>&gt; &gt; ripple::NodeStore::MemoryBackend::fetchBatch </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void const *const *&#160;</td>
-          <td class="paramname"><em>keys</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Fetch a batch synchronously. </p>
-
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ae5c85e156a44b8b13040ecafab65976a">ripple::NodeStore::Backend</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00157">157</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a40130939ef641571abf616a970d63957"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a40130939ef641571abf616a970d63957">&#9670;&nbsp;</a></span>store()</h2>
 
@@ -565,7 +486,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00164">164</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00151">151</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -598,7 +519,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00172">172</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00159">159</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -632,7 +553,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00179">179</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00166">166</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -663,7 +584,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ac4d7008b7a616ce05568da3e96a204ec">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00187">187</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00174">174</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -694,7 +615,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a898be5251e9216eb21938e3083c2d1ef">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00193">193</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00180">180</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -725,7 +646,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ad2c3057545b73aee8e671f127b0ae084">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00198">198</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00185">185</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -756,7 +677,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00203">203</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00190">190</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -785,7 +706,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00134">134</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00126">126</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

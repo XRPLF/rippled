@@ -219,16 +219,17 @@ $(function() {
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;};</div>
 <div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;AmendmentTable&gt;</a></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<a class="code" href="namespaceripple.html#a35ced120460d637fbdbaae9a894feba8">make_AmendmentTable</a>(</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime,</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    Section <span class="keyword">const</span>&amp; supported,</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    Section <span class="keyword">const</span>&amp; enabled,</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    Section <span class="keyword">const</span>&amp; vetoed,</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal);</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<a class="code" href="namespaceripple.html#af161cd4a544a6a5d5cceac3133f9a865">make_AmendmentTable</a>(</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    Application&amp; app,</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime,</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    Section <span class="keyword">const</span>&amp; supported,</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    Section <span class="keyword">const</span>&amp; enabled,</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    Section <span class="keyword">const</span>&amp; vetoed,</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal);</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_ab6b00b336996c0b0a3fe2e8a8d5fa76a"><div class="ttname"><a href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">ripple::getMajorityAmendments</a></div><div class="ttdeci">majorityAmendments_t getMajorityAmendments(ReadView const &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00550">View.cpp:550</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a6f8b0cab74710c17299c1d37f3e05b48"><div class="ttname"><a href="namespaceripple.html#a6f8b0cab74710c17299c1d37f3e05b48">ripple::getEnabledAmendments</a></div><div class="ttdeci">std::set&lt; uint256 &gt; getEnabledAmendments(ReadView const &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00533">View.cpp:533</a></div></div>
@@ -248,8 +249,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1AmendmentTable_html_ad57021ddc7e6f87d04dd57fba582eb31"><div class="ttname"><a href="classripple_1_1AmendmentTable.html#ad57021ddc7e6f87d04dd57fba582eb31">ripple::AmendmentTable::unVeto</a></div><div class="ttdeci">virtual bool unVeto(uint256 const &amp;amendment)=0</div></div>
 <div class="ttc" id="aclassripple_1_1AmendmentTable_html_aef6ef4d534e0ef300563731966ed7f1d"><div class="ttname"><a href="classripple_1_1AmendmentTable.html#aef6ef4d534e0ef300563731966ed7f1d">ripple::AmendmentTable::~AmendmentTable</a></div><div class="ttdeci">virtual ~AmendmentTable()=default</div></div>
 <div class="ttc" id="aclassripple_1_1AmendmentTable_html_ade548ac91394d89376f0a8bfb1ebd903"><div class="ttname"><a href="classripple_1_1AmendmentTable.html#ade548ac91394d89376f0a8bfb1ebd903">ripple::AmendmentTable::isEnabled</a></div><div class="ttdeci">virtual bool isEnabled(uint256 const &amp;amendment) const =0</div></div>
-<div class="ttc" id="anamespaceripple_html_a35ced120460d637fbdbaae9a894feba8"><div class="ttname"><a href="namespaceripple.html#a35ced120460d637fbdbaae9a894feba8">ripple::make_AmendmentTable</a></div><div class="ttdeci">std::unique_ptr&lt; AmendmentTable &gt; make_AmendmentTable(std::chrono::seconds majorityTime, Section const &amp;supported, Section const &amp;enabled, Section const &amp;vetoed, beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="AmendmentTable_8cpp_source.html#l00695">AmendmentTable.cpp:695</a></div></div>
 <div class="ttc" id="atime_point_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point.html">std::chrono::time_point</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af161cd4a544a6a5d5cceac3133f9a865"><div class="ttname"><a href="namespaceripple.html#af161cd4a544a6a5d5cceac3133f9a865">ripple::make_AmendmentTable</a></div><div class="ttdeci">std::unique_ptr&lt; AmendmentTable &gt; make_AmendmentTable(Application &amp;app, std::chrono::seconds majorityTime, Section const &amp;supported, Section const &amp;enabled, Section const &amp;vetoed, beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="AmendmentTable_8cpp_source.html#l00813">AmendmentTable.cpp:813</a></div></div>
 <div class="ttc" id="aclassripple_1_1STTx_html"><div class="ttname"><a href="classripple_1_1STTx.html">ripple::STTx</a></div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00042">STTx.h:42</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>

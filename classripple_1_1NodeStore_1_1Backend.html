@@ -107,12 +107,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7d3224e43e89dc098962b986d70e9833"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">fetch</a> (void const *key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; *pObject)=0</td></tr>
 <tr class="memdesc:a7d3224e43e89dc098962b986d70e9833"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a single object.  <a href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">More...</a><br /></td></tr>
 <tr class="separator:a7d3224e43e89dc098962b986d70e9833"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26ec003b54dcceb03af5de57ddb5e545"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">canFetchBatch</a> ()=0</td></tr>
-<tr class="memdesc:a26ec003b54dcceb03af5de57ddb5e545"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return <code>true</code> if batch fetches are optimized.  <a href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">More...</a><br /></td></tr>
-<tr class="separator:a26ec003b54dcceb03af5de57ddb5e545"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5c85e156a44b8b13040ecafab65976a"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ae5c85e156a44b8b13040ecafab65976a">fetchBatch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void const *const *keys)=0</td></tr>
-<tr class="memdesc:ae5c85e156a44b8b13040ecafab65976a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a batch synchronously.  <a href="classripple_1_1NodeStore_1_1Backend.html#ae5c85e156a44b8b13040ecafab65976a">More...</a><br /></td></tr>
-<tr class="separator:ae5c85e156a44b8b13040ecafab65976a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8862f8d96713c985c3169e57cbb260c2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">store</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;object)=0</td></tr>
 <tr class="memdesc:a8862f8d96713c985c3169e57cbb260c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a single object.  <a href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">More...</a><br /></td></tr>
 <tr class="separator:a8862f8d96713c985c3169e57cbb260c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -345,75 +339,6 @@ Public Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>The result of the operation. </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ad1c41ea346dc8b8202fd05f67349735c">ripple::NodeStore::MemoryBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a1b03edf356922e780fe41987476f1f6a">ripple::NodeStore::NuDBBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a1dc8a4f932bb50366f9f967e5c35cb3a">ripple::NodeStore::NullBackend</a>.</p>
-
-</div>
-</div>
-<a id="a26ec003b54dcceb03af5de57ddb5e545"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26ec003b54dcceb03af5de57ddb5e545">&#9670;&nbsp;</a></span>canFetchBatch()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool ripple::NodeStore::Backend::canFetchBatch </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return <code>true</code> if batch fetches are optimized. </p>
-
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a727c895f6364eeaa8e524c1eb456f5df">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a99df01b9966c50d586f55f841d7226b6">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a131e97c3f271a6433b8c70802b1d134b">ripple::NodeStore::NullBackend</a>.</p>
-
-</div>
-</div>
-<a id="ae5c85e156a44b8b13040ecafab65976a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5c85e156a44b8b13040ecafab65976a">&#9670;&nbsp;</a></span>fetchBatch()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1NodeObject.html">NodeObject</a>&gt; &gt; ripple::NodeStore::Backend::fetchBatch </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void const *const *&#160;</td>
-          <td class="paramname"><em>keys</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Fetch a batch synchronously. </p>
-
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2e04de763e8f9767b4404605e4f8e749">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a695be0ff463e8135f7b117f5d37c269d">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a9357907a24a837c8c59ef5edc8f7b4b8">ripple::NodeStore::NullBackend</a>.</p>
 
 </div>
 </div>
@@ -650,7 +575,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00134">134</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00126">126</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>
