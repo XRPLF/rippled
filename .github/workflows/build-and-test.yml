@@ -16,6 +16,7 @@ jobs:
   linux1:
     name: Linux 1
     runs-on: ubuntu-18.04
+    timeout-minutes: 720
     # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
     strategy:
       fail-fast: false
@@ -66,6 +67,7 @@ jobs:
   linux2:
     name: Linux 2
     runs-on: ubuntu-18.04
+    timeout-minutes: 720
     # if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
     strategy:
       fail-fast: false
@@ -109,8 +111,7 @@ jobs:
           ${CXX} --version
           mkdir build
           cd build
-          # -DBoost_NO_BOOST_CMAKE=ON
-          cmake ${{ env.CMAKE_EXTRA_ARGS }} ..
+          cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
       - name: Build rippled
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
