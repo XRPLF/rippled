@@ -233,10 +233,16 @@ matrix:
     # misc alternative compilers
     - <<: *linux
       compiler: gcc-9
-      name: gcc-9
+      name: gcc-9, debug
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Debug
+    - <<: *linux
+      compiler: gcc-9
+      name: gcc-9, release
+      env:
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - BUILD_TYPE=Release
     - <<: *linux
       compiler: clang-9
       name: clang-9, debug
