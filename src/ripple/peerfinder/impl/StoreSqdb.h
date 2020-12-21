@@ -22,6 +22,8 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
+#include <ripple/peerfinder/impl/Store.h>
+
 #include <boost/optional.hpp>
 
 namespace ripple {

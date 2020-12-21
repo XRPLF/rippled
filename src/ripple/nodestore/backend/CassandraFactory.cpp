@@ -578,12 +578,6 @@ public:
         return ok;
     }
 
-    bool
-    canFetchBatch() override
-    {
-        return true;
-    }
-
     struct ReadCallbackData
     {
         CassandraBackend& backend;
@@ -812,11 +806,6 @@ public:
 
     void
     setDeletePath() override
-    {
-    }
-
-    void
-    verify() override
     {
     }
 

@@ -88,7 +88,6 @@ private:
 public:
     beast::Journal m_journal;
     size_t const m_keyBytes;
-    Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
     std::unique_ptr<rocksdb::DB> m_db;
@@ -104,7 +103,6 @@ public:
         : m_deletePath(false)
         , m_journal(journal)
         , m_keyBytes(keyBytes)
-        , m_scheduler(scheduler)
         , m_batch(*this, scheduler)
     {
         if (!get_if_exists(keyValues, "path", m_name))
@@ -305,12 +303,6 @@ public:
         return status;
     }
 
-    bool
-    canFetchBatch() override
-    {
-        return false;
-    }
-
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256 const*> const& hashes) override
     {
@@ -423,11 +415,6 @@ public:
     writeBatch(Batch const& batch) override
     {
         storeBatch(batch);
-    }
-
-    void
-    verify() override
-    {
     }
 
     /** Returns the number of file descriptors the backend expects to need */

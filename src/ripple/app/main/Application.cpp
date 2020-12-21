@@ -222,7 +222,6 @@ public:
     std::unique_ptr<DatabaseCon> mLedgerDB;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
-    std::vector<std::unique_ptr<Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
 

@@ -91,10 +91,6 @@ public:
     virtual Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
 
-    /** Return `true` if batch fetches are optimized. */
-    virtual bool
-    canFetchBatch() = 0;
-
     /** Fetch a batch synchronously. */
     virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256 const*> const& hashes) = 0;
@@ -135,23 +131,12 @@ public:
     virtual void
     setDeletePath() = 0;
 
-    /** Perform consistency checks on database. */
-    virtual void
-    verify() = 0;
-
     /** Returns the number of file descriptors the backend expects to need. */
     virtual int
     fdRequired() const = 0;
 
     virtual Counters const&
     counters() const = 0;
-
-    /** Returns true if the backend uses permanent storage. */
-    bool
-    backed() const
-    {
-        return fdRequired();
-    }
 };
 
 }  // namespace NodeStore

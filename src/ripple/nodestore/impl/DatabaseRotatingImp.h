@@ -96,19 +96,6 @@ private:
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
 
-    struct Backends
-    {
-        std::shared_ptr<Backend> const& writableBackend;
-        std::shared_ptr<Backend> const& archiveBackend;
-    };
-
-    Backends
-    getBackends() const
-    {
-        std::lock_guard lock(mutex_);
-        return Backends{writableBackend_, archiveBackend_};
-    }
-
     std::shared_ptr<NodeObject>
     fetchNodeObject(
         uint256 const& hash,
