@@ -239,10 +239,18 @@ matrix:
         - BUILD_TYPE=Debug
     - <<: *linux
       compiler: gcc-9
-      name: gcc-9, release
+      name: gcc-9, release, unity
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dunity=ON"
+    - <<: *linux
+      compiler: gcc-9
+      name: gcc-9, release, non-unity
+      env:
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dunity=OFF"
     - <<: *linux
       compiler: clang-9
       name: clang-9, debug
