@@ -25,6 +25,7 @@ jobs:
         # docker image has clang 7,8,9 & gcc 6,7,8,9
         CC: [ "gcc-9", "clang-8" , "clang-9"  ]
         BUILD_TYPE: [ Debug, Release ]
+        unity: [ "OFF", "ON" ]
         canfail: [ false ]
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
@@ -33,6 +34,7 @@ jobs:
     env:
       CC: ${{ matrix.CC }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
+      CMAKE_ADD: "-Dunity=${{ matrix.unity }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -72,6 +74,7 @@ jobs:
         # docker image has clang 7,8,9 & gcc 6,7,8,9
         CC: [ "gcc-8", "clang-10", "gcc-9", "gcc-7", "gcc-6"  ]
         BUILD_TYPE: [ Debug, Release ]
+        unity: [ "OFF", "ON" ]
         canfail: [ false ]
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
@@ -107,7 +110,7 @@ jobs:
           ${CXX} --version
           mkdir build
           cd build
-          cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
+          cmake -Dunity=${{ matrix.unity }} -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
       - name: Build rippled
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
