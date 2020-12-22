@@ -70,7 +70,7 @@ jobs:
       matrix:
         # Current travis: gcc-8 clang-8 gcc-9 clang-9
         # docker image has clang 7,8,9 & gcc 6,7,8,9
-        CC: [ "gcc-8", "clang-10"  ]
+        CC: [ "gcc-8", "clang-10", "gcc-9", "gcc-7", "gcc-6"  ]
         BUILD_TYPE: [ Debug, Release ]
         canfail: [ false ]
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
