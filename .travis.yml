@@ -31,7 +31,7 @@ env:
     - CMAKE_EXTRA_ARGS="-Dwerr=ON -Dwextra=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
-    - MAX_TIME_MIN=80
+    - MAX_TIME_MIN=120
     - CACHE_DIR=${TRAVIS_HOME}/_cache
     - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
     - PARALLEL_TESTS=true
@@ -244,7 +244,7 @@ matrix:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dunity=ON"
-        - NUM_PROCESSORS=2
+        - NUM_PROCESSORS=1
     - <<: *linux
       compiler: gcc-9
       name: gcc-9, release, non-unity
