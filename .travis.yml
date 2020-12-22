@@ -243,7 +243,7 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dunity=ON"
+        - CMAKE_ADD="-Dunity=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=9"
         - NUM_PROCESSORS=1
     - <<: *linux
       compiler: gcc-9
