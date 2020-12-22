@@ -26,10 +26,6 @@ jobs:
         CC: [ "gcc-9", "clang-8" , "clang-9"  ]
         BUILD_TYPE: [ Debug, Release ]
         canfail: [ false ]
-        exclude:
-          - CC: clang-8
-          - CC: clang-9
-          - BUILD_TYPE: Debug
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:
