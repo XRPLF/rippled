@@ -37,9 +37,7 @@ class Stoppable;
 class SHAMapStore
 {
 public:
-    virtual ~SHAMapStore()
-    {
-    }
+    virtual ~SHAMapStore() = default;
 
     /** Called by LedgerMaster every time a ledger validates. */
     virtual void
