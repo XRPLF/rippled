@@ -118,7 +118,7 @@ private:
     boost::optional<std::chrono::seconds> recoveryWaitTime_;
 
     // these do not exist upon SHAMapStore creation, but do exist
-    // as of onPrepare() or before
+    // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
     FullBelowCache* fullBelowCache_ = nullptr;
