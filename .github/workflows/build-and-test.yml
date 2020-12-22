@@ -23,7 +23,7 @@ jobs:
       matrix:
         # Current travis: gcc-8 clang-8 gcc-9 clang-9
         # docker image has clang 7,8,9 & gcc 6,7,8,9
-        CC: [ "gcc-9", "clang-8" , "clang-9" , "gcc-6", "gcc-7", "gcc-8", "clang-7" ]
+        CC: [ "gcc-9", "clang-8" , "clang-9" , "gcc-8" ]
         BUILD_TYPE: [ Debug, Release ]
         unity: [ "OFF", "ON" ]
         canfail: [ false ]
@@ -56,7 +56,8 @@ jobs:
         run: |
           export CXX=${CC/gcc/g++}
           export CXX=${CXX/clang/clang++}
-          export NUM_PROCESSORS=$( nproc )
+          export NUM_PROCESSORS=$(( $( nproc ) - 1 ))
+          echo NUM_PROCESSORS is ${NUM_PROCESSORS}
           bin/ci/ubuntu/build-and-test.sh
       - name: Debug output
         if: always()
@@ -72,7 +73,7 @@ jobs:
       matrix:
         # Current travis: gcc-8 clang-8 gcc-9 clang-9
         # docker image has clang 10 & gcc 7,8
-        CC: [ "gcc-8", "clang-10", "gcc-7"  ]
+        CC: [ "gcc-8", "clang-10" ]
         BUILD_TYPE: [ Debug, Release ]
         unity: [ "OFF", "ON" ]
         canfail: [ false ]

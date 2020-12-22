@@ -50,7 +50,7 @@ env:
     - CCACHE_DIR=${CACHE_DIR}/ccache
 
 before_install:
-  - export NUM_PROCESSORS=$(nproc)
+  - export NUM_PROCESSORS=${NUM_PROCESSORS:-$(nproc)}
   - echo "NUM PROC is ${NUM_PROCESSORS}"
   - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
   - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
@@ -244,6 +244,7 @@ matrix:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dunity=ON"
+        - NUM_PROCESSORS=2
     - <<: *linux
       compiler: gcc-9
       name: gcc-9, release, non-unity
