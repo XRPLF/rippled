@@ -38,6 +38,7 @@ jobs:
               BUILD_TYPE: "Release"
               unity: "unity=ON"
               NUM_PROCESSORS: 1
+              CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=5"
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:
@@ -45,7 +46,7 @@ jobs:
     env:
       CC: ${{ matrix.CC }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-      CMAKE_ADD: "-D${{ matrix.unity }} -DCMAKE_UNITY_BUILD_BATCH_SIZE=5"
+      CMAKE_ADD: "-D${{ matrix.unity }} ${{ matrix.CMAKE_ADD }}"
       NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
     steps:
       - name: Checkout
