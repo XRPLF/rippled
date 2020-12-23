@@ -37,8 +37,8 @@ jobs:
             - CC: "gcc-9"
               BUILD_TYPE: "Release"
               unity: "unity=ON"
-              NUM_PROCESSORS: 1
-              CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=5"
+              # NUM_PROCESSORS: 1
+              CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:
