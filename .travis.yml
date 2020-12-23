@@ -72,6 +72,12 @@ matrix:
     # _any_ of the Windows builds succeed.
     - stage: windep-vcpkg
     - stage: windep-boost
+  exclude:
+    - compiler: gcc-8
+    - compiler: clang-8
+    - compiler: clang-9
+    - os: osx
+    - os: windows
 
   # https://docs.travis-ci.com/user/build-config-yaml#usage-of-yaml-anchors-and-aliases
   include:

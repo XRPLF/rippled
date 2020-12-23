@@ -32,6 +32,11 @@ jobs:
             - CC: "clang-9"
             - CC: "gcc-8"
             - BUILD_TYPE: "Debug"
+        include:
+            - CC: "gcc-9"
+              BUILD_TYPE: "Release"
+              unity: "unity=ON"
+              NUM_PROCESSORS: 1
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:
@@ -40,6 +45,7 @@ jobs:
       CC: ${{ matrix.CC }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
       CMAKE_ADD: "-D${{ matrix.unity }} -DCMAKE_UNITY_BUILD_BATCH_SIZE=9"
+      NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -61,10 +67,10 @@ jobs:
         run: |
           export CXX=${CC/gcc/g++}
           export CXX=${CXX/clang/clang++}
-          export NUM_PROCESSORS=$(( $( nproc ) - 1 ))
+          export NUM_PROCESSORS=${NUM_PROCESSORS:-$( nproc )}
           echo NUM_PROCESSORS is ${NUM_PROCESSORS}
           if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
-          bin/ci/ubuntu/build-and-test.sh
+          # bin/ci/ubuntu/build-and-test.sh
       - name: Debug output
         if: always()
         shell: bash
