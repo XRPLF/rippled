@@ -33,6 +33,7 @@ jobs:
             - CC: "gcc-8"
             - BUILD_TYPE: "Debug"
         include:
+            # This include overrides the combo built in the matrix
             - CC: "gcc-9"
               BUILD_TYPE: "Release"
               unity: "unity=ON"
@@ -44,7 +45,7 @@ jobs:
     env:
       CC: ${{ matrix.CC }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-      CMAKE_ADD: "-D${{ matrix.unity }} -DCMAKE_UNITY_BUILD_BATCH_SIZE=9"
+      CMAKE_ADD: "-D${{ matrix.unity }} -DCMAKE_UNITY_BUILD_BATCH_SIZE=5"
       NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
     steps:
       - name: Checkout
@@ -70,11 +71,11 @@ jobs:
           export NUM_PROCESSORS=${NUM_PROCESSORS:-$( nproc )}
           echo NUM_PROCESSORS is ${NUM_PROCESSORS}
           if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
-          # bin/ci/ubuntu/build-and-test.sh
+          bin/ci/ubuntu/build-and-test.sh
       - name: Debug output
         if: always()
         shell: bash
-        run: find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \;
+        run: if [ -e build ] ; then find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \; ; fi
   linux2:
     name: Linux 2
     runs-on: ubuntu-18.04
@@ -140,4 +141,4 @@ jobs:
       - name: Debug output
         if: always()
         shell: bash
-        run: find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \;
+        run: if [ -e build ] ; then find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \; ; fi
