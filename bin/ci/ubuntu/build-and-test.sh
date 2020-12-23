@@ -33,6 +33,8 @@ if [ -x /usr/bin/time ] ; then
     : ${TIME:="Duration: %E"}
     export TIME
     time=/usr/bin/time
+elif type time >& /dev/null
+    time=time
 else
     time=
 fi

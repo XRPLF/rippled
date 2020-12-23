@@ -92,7 +92,7 @@ jobs:
         unity: [ "OFF", "ON" ]
         canfail: [ false ]
         exclude:
-          - canfail: false
+          - CC: "clang-10"
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
     container:

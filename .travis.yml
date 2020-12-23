@@ -250,7 +250,7 @@ matrix:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dunity=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
-        - NUM_PROCESSORS=1
+        # - NUM_PROCESSORS=2
     - <<: *linux
       compiler: gcc-9
       name: gcc-9, release, non-unity
