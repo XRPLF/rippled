@@ -244,13 +244,12 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         // a small senq periodically
         large_sendq_ = 0;
     }
-    else if (
-        journal_.active(beast::severities::kDebug) &&
-        (sendq_size % Tuning::sendQueueLogFreq) == 0)
+    else if (auto sink = journal_.debug();
+             sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        JLOG(journal_.debug()) << (n.empty() ? remote_address_.to_string() : n)
-                               << " sendq: " << sendq_size;
+        sink << (n.empty() ? remote_address_.to_string() : n)
+             << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -773,6 +772,16 @@ PeerImp::doAccept()
         return buf;
     }();
 
+    {
+        // Put a pseudo-message into the queue to hold any messages until we get
+        // the response. This message should never be sent, but create a ping
+        // just in case it "escapes".
+        protocol::TMPing message;
+        message.set_type(protocol::TMPing::ptPING);
+        message.set_seq(0);
+
+        send_queue_.push(std::make_shared<Message>(message, protocol::mtPING));
+    }
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
         stream_,
@@ -790,29 +799,6 @@ PeerImp::doAccept()
                 return doProtocolStart();
             return fail("Failed to write header");
         });
-}
-
-std::string
-PeerImp::name() const
-{
-    std::shared_lock read_lock{nameMutex_};
-    return name_;
-}
-
-std::string
-PeerImp::domain() const
-{
-    return headers_["Server-Domain"].to_string();
-}
-
-//------------------------------------------------------------------------------
-
-// Protocol logic
-
-void
-PeerImp::doProtocolStart()
-{
-    onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
     if (supportsFeature(ProtocolFeature::ValidatorListPropagation))
@@ -841,6 +827,29 @@ PeerImp::doProtocolStart()
             setPublisherListSequence(pubKey, sequence);
         });
     }
+}
+
+std::string
+PeerImp::name() const
+{
+    std::shared_lock read_lock{nameMutex_};
+    return name_;
+}
+
+std::string
+PeerImp::domain() const
+{
+    return headers_["Server-Domain"].to_string();
+}
+
+//------------------------------------------------------------------------------
+
+// Protocol logic
+
+void
+PeerImp::doProtocolStart()
+{
+    onReadMessage(error_code(), 0);
 
     if (auto m = overlay_.getManifestsMessage())
         send(m);
