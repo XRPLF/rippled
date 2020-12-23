@@ -1480,8 +1480,6 @@ ApplicationImp::setup()
             return false;
     }
 
-    validatorSites_->start();
-
     // start first consensus round
     if (!m_networkOPs->beginConsensus(
             m_ledgerMaster->getClosedLedger()->info().hash))
@@ -1595,6 +1593,7 @@ ApplicationImp::setup()
         }
     }
 
+    RPC::ShardArchiveHandler* shardArchiveHandler = nullptr;
     if (shardStore_)
     {
         try
@@ -1606,15 +1605,7 @@ ApplicationImp::setup()
 
             // Recovery is needed.
             if (handler)
-            {
-                if (!handler->start())
-                {
-                    JLOG(m_journal.fatal())
-                        << "Failed to start ShardArchiveHandler.";
-
-                    return false;
-                }
-            }
+                shardArchiveHandler = handler;
         }
         catch (std::exception const& e)
         {
@@ -1626,6 +1617,15 @@ ApplicationImp::setup()
             return false;
         }
     }
+
+    if (shardArchiveHandler && !shardArchiveHandler->start())
+    {
+        JLOG(m_journal.fatal()) << "Failed to start ShardArchiveHandler.";
+
+        return false;
+    }
+
+    validatorSites_->start();
 
     return true;
 }

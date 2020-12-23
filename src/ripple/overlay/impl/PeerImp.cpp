@@ -182,12 +182,8 @@ PeerImp::run()
     else
         doProtocolStart();
 
-    // Request shard info from peer
-    protocol::TMGetPeerShardInfo tmGPS;
-    tmGPS.set_hops(0);
-    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
-
-    setTimer();
+    // Anything else that needs to be done with the connection should be
+    // done in doProtocolStart
 }
 
 void
@@ -244,13 +240,12 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         // a small senq periodically
         large_sendq_ = 0;
     }
-    else if (
-        journal_.active(beast::severities::kDebug) &&
-        (sendq_size % Tuning::sendQueueLogFreq) == 0)
+    else if (auto sink = journal_.debug();
+             sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        JLOG(journal_.debug()) << (n.empty() ? remote_address_.to_string() : n)
-                               << " sendq: " << sendq_size;
+        sink << (n.empty() ? remote_address_.to_string() : n)
+             << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -780,18 +775,20 @@ PeerImp::doAccept()
         stream_,
         write_buffer->data(),
         boost::asio::transfer_all(),
-        [this, write_buffer, self = shared_from_this()](
-            error_code ec, std::size_t bytes_transferred) {
-            if (!socket_.is_open())
-                return;
-            if (ec == boost::asio::error::operation_aborted)
-                return;
-            if (ec)
-                return fail("onWriteResponse", ec);
-            if (write_buffer->size() == bytes_transferred)
-                return doProtocolStart();
-            return fail("Failed to write header");
-        });
+        bind_executor(
+            strand_,
+            [this, write_buffer, self = shared_from_this()](
+                error_code ec, std::size_t bytes_transferred) {
+                if (!socket_.is_open())
+                    return;
+                if (ec == boost::asio::error::operation_aborted)
+                    return;
+                if (ec)
+                    return fail("onWriteResponse", ec);
+                if (write_buffer->size() == bytes_transferred)
+                    return doProtocolStart();
+                return fail("Failed to write header");
+            }));
 }
 
 std::string
@@ -817,7 +814,7 @@ PeerImp::doProtocolStart()
     onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
-    if (supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    if (inbound_ && supportsFeature(ProtocolFeature::ValidatorListPropagation))
     {
         app_.validators().for_each_available(
             [&](std::string const& manifest,
@@ -844,6 +841,13 @@ PeerImp::doProtocolStart()
 
     if (auto m = overlay_.getManifestsMessage())
         send(m);
+
+    // Request shard info from peer
+    protocol::TMGetPeerShardInfo tmGPS;
+    tmGPS.set_hops(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
+
+    setTimer();
 }
 
 // Called repeatedly with protocol message data
