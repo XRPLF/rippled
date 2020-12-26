@@ -22,20 +22,14 @@
 
 #include <ripple/basics/contract.h>
 #include <algorithm>
+#include <cstdint>
 #include <lz4.h>
+#include <stdexcept>
+#include <vector>
 
 namespace ripple {
 
 namespace compression_algorithms {
-
-/** Convenience wrapper for Throw
- * @param message Message to log/throw
- */
-inline void
-doThrow(const char* message)
-{
-    Throw<std::runtime_error>(message);
-}
 
 /** LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
@@ -50,7 +44,7 @@ std::size_t
 lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
     if (inSize > UINT32_MAX)
-        doThrow("lz4 compress: invalid size");
+        Throw<std::runtime_error>("lz4 compress: invalid size");
 
     auto const outCapacity = LZ4_compressBound(inSize);
 
@@ -64,7 +58,7 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
         inSize,
         outCapacity);
     if (compressedSize == 0)
-        doThrow("lz4 compress: failed");
+        Throw<std::runtime_error>("lz4 compress: failed");
 
     return compressedSize;
 }
@@ -90,7 +84,7 @@ lz4Decompress(
         decompressedSize);
 
     if (ret <= 0 || ret != decompressedSize)
-        doThrow("lz4 decompress: failed");
+        Throw<std::runtime_error>("lz4 decompress: failed");
 
     return decompressedSize;
 }
@@ -153,7 +147,7 @@ lz4Decompress(
 
     if ((copiedInSize == 0 && chunkSize < inSize) ||
         (copiedInSize > 0 && copiedInSize != inSize))
-        doThrow("lz4 decompress: insufficient input size");
+        Throw<std::runtime_error>("lz4 decompress: insufficient input size");
 
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
 }
