@@ -410,6 +410,9 @@ private:
     fail(std::string const& name, error_code ec);
 
     void
+    failinstrand(std::string const& name, error_code ec);
+
+    void
     gracefulClose();
 
     void

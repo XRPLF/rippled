@@ -556,6 +556,22 @@ PeerImp::fail(std::string const& name, error_code ec)
     close();
 }
 
+void
+PeerImp::failinstrand(std::string const& name, error_code ec)
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(
+                (void (Peer::*)(std::string const&, error_code)) &
+                    PeerImp::fail,
+                shared_from_this(),
+                name,
+                ec));
+    else
+        return fail(name, ec);
+}
+
 boost::optional<RangeSet<std::uint32_t>>
 PeerImp::getShardIndexes() const
 {
@@ -794,7 +810,7 @@ PeerImp::doAccept()
             if (ec == boost::asio::error::operation_aborted)
                 return;
             if (ec)
-                return fail("onWriteResponse", ec);
+                return failinstrand("onWriteResponse", ec);
             if (write_buffer->size() == bytes_transferred)
                 return doProtocolStart();
             return fail("Failed to write header");
