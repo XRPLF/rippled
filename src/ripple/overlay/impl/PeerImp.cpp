@@ -182,12 +182,8 @@ PeerImp::run()
     else
         doProtocolStart();
 
-    // Request shard info from peer
-    protocol::TMGetPeerShardInfo tmGPS;
-    tmGPS.set_hops(0);
-    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
-
-    setTimer();
+    // Anything else that needs to be done with the connection should be
+    // done in doProtocolStart
 }
 
 void
@@ -788,16 +784,6 @@ PeerImp::doAccept()
         return buf;
     }();
 
-    {
-        // Put a pseudo-message into the queue to hold any messages until we get
-        // the response. This message should never be sent, but create a ping
-        // just in case it "escapes".
-        protocol::TMPing message;
-        message.set_type(protocol::TMPing::ptPING);
-        message.set_seq(0);
-
-        send_queue_.push(std::make_shared<Message>(message, protocol::mtPING));
-    }
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
         stream_,
@@ -815,9 +801,32 @@ PeerImp::doAccept()
                 return doProtocolStart();
             return fail("Failed to write header");
         });
+}
+
+std::string
+PeerImp::name() const
+{
+    std::shared_lock read_lock{nameMutex_};
+    return name_;
+}
+
+std::string
+PeerImp::domain() const
+{
+    return headers_["Server-Domain"].to_string();
+}
+
+//------------------------------------------------------------------------------
+
+// Protocol logic
+
+void
+PeerImp::doProtocolStart()
+{
+    onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
-    if (supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    if (inbound_ && supportsFeature(ProtocolFeature::ValidatorListPropagation))
     {
         app_.validators().for_each_available([&](std::string const& manifest,
                                                  std::string const& blob,
@@ -843,32 +852,16 @@ PeerImp::doAccept()
             setPublisherListSequence(pubKey, sequence);
         });
     }
-}
-
-std::string
-PeerImp::name() const
-{
-    std::shared_lock read_lock{nameMutex_};
-    return name_;
-}
-
-std::string
-PeerImp::domain() const
-{
-    return headers_["Server-Domain"].to_string();
-}
-
-//------------------------------------------------------------------------------
-
-// Protocol logic
-
-void
-PeerImp::doProtocolStart()
-{
-    onReadMessage(error_code(), 0);
 
     if (auto m = overlay_.getManifestsMessage())
         send(m);
+
+    // Request shard info from peer
+    protocol::TMGetPeerShardInfo tmGPS;
+    tmGPS.set_hops(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
+
+    setTimer();
 }
 
 // Called repeatedly with protocol message data
