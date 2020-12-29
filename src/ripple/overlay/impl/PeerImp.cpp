@@ -253,6 +253,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (sendq_size != 0)
         return;
 
+    assert(send_queue_.front());
     boost::asio::async_write(
         stream_,
         boost::asio::buffer(
@@ -784,6 +785,9 @@ PeerImp::doAccept()
         return buf;
     }();
 
+    // Put a placeholder in the send queue so no other messages will be
+    // sent until this one is complete.
+    send_queue_.push({});
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
         stream_,
@@ -791,6 +795,9 @@ PeerImp::doAccept()
         boost::asio::transfer_all(),
         [this, write_buffer, self = shared_from_this()](
             error_code ec, std::size_t bytes_transferred) {
+            // Remove the placeholder from the send queue.
+            assert(!send_queue_.front());
+            send_queue_.pop();
             if (!socket_.is_open())
                 return;
             if (ec == boost::asio::error::operation_aborted)
@@ -945,6 +952,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (!send_queue_.empty())
     {
         // Timeout on writes only
+        assert(send_queue_.front());
         return boost::asio::async_write(
             stream_,
             boost::asio::buffer(
