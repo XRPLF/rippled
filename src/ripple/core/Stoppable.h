@@ -225,13 +225,6 @@ public:
     inline JobCounter&
     jobCounter();
 
-    /** Sleep or wake up on stop.
-
-        @return `true` if we are stopping
-    */
-    bool
-    alertable_sleep_until(std::chrono::system_clock::time_point const& t);
-
 protected:
     /** Called by derived classes to indicate that the stoppable has stopped. */
     void
@@ -367,20 +360,12 @@ public:
         return jobCounter_;
     }
 
-    /** Sleep or wake up on stop.
-
-        @return `true` if we are stopping
-    */
-    bool
-    alertable_sleep_until(std::chrono::system_clock::time_point const& t);
-
 private:
     // TODO [C++20]: Use std::atomic_flag instead.
     std::atomic<bool> startEntered_{false};
     std::atomic<bool> startExited_{false};
     std::atomic<bool> stopEntered_{false};
     std::mutex m_;
-    std::condition_variable c_;
     JobCounter jobCounter_;
 };
 /** @} */
@@ -391,26 +376,6 @@ JobCounter&
 Stoppable::jobCounter()
 {
     return m_root.jobCounter();
-}
-
-//------------------------------------------------------------------------------
-
-inline bool
-RootStoppable::alertable_sleep_until(
-    std::chrono::system_clock::time_point const& t)
-{
-    std::unique_lock<std::mutex> lock(m_);
-    if (stopEntered_)
-        return true;
-    // TODO [C++20]: When `stopEntered_` is changed to a `std::atomic_flag`,
-    // this call to `load` needs to change to a call to `test`.
-    return c_.wait_until(lock, t, [this] { return stopEntered_.load(); });
-}
-
-inline bool
-Stoppable::alertable_sleep_until(std::chrono::system_clock::time_point const& t)
-{
-    return m_root.alertable_sleep_until(t);
 }
 
 }  // namespace ripple

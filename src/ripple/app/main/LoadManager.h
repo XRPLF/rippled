@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
 #include <ripple/core/Stoppable.h>
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -97,12 +98,16 @@ private:
     beast::Journal const journal_;
 
     std::thread thread_;
-    std::mutex mutex_;  // Guards deadLock_, armed_, and stop_.
+    std::mutex mutex_;  // Guards deadLock_, armed_, cv_
+    std::condition_variable cv_;
+    // LoadManager must be stoppable separately from other Stoppables
+    // for the ripple.app.Subscribe test. It must stop on its own signal,
+    // instead of waiting for RootStoppable::isStopping().
+    bool stop_ = false;
 
     std::chrono::steady_clock::time_point
         deadLock_;  // Detect server deadlocks.
     bool armed_;
-    bool stop_;
 
     friend std::unique_ptr<LoadManager>
     make_LoadManager(

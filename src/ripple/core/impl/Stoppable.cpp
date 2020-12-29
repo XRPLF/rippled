@@ -159,6 +159,8 @@ RootStoppable::~RootStoppable()
 bool
 RootStoppable::isStopping() const
 {
+    // TODO [C++20]: When `stopEntered_` is changed to a `std::atomic_flag`,
+    // this implicit call to `load` needs to change to a call to `test`.
     return stopEntered_;
 }
 
@@ -197,7 +199,6 @@ RootStoppable::stop(beast::Journal j)
     using namespace std::chrono_literals;
     jobCounter_.join(m_name.c_str(), 1s, j);
 
-    c_.notify_all();
     stopAsyncRecursive(j);
     stopRecursive(j);
 }
