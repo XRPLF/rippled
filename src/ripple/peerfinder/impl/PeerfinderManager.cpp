@@ -214,14 +214,8 @@ public:
         return m_logic.buildEndpointsForPeers();
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // Stoppable
-    //
-    //--------------------------------------------------------------------------
-
     void
-    onPrepare() override
+    start() override
     {
         m_store.open(m_sociConfig);
         m_logic.load();

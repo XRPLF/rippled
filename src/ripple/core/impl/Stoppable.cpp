@@ -77,11 +77,6 @@ Stoppable::stopped()
 }
 
 void
-Stoppable::onPrepare()
-{
-}
-
-void
 Stoppable::onStart()
 {
 }
@@ -98,16 +93,6 @@ Stoppable::onChildrenStopped()
 }
 
 //------------------------------------------------------------------------------
-
-void
-Stoppable::prepareRecursive()
-{
-    for (Children::const_iterator iter(m_children.cbegin());
-         iter != m_children.cend();
-         ++iter)
-        iter->stoppable->prepareRecursive();
-    onPrepare();
-}
 
 void
 Stoppable::startRecursive()
@@ -182,7 +167,6 @@ RootStoppable::start()
 {
     if (startEntered_.exchange(true))
         return;
-    prepareRecursive();
     startRecursive();
     startExited_ = true;
 }

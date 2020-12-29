@@ -494,7 +494,7 @@ OverlayImpl::checkStopped()
 }
 
 void
-OverlayImpl::onPrepare()
+OverlayImpl::onStart()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
@@ -503,6 +503,7 @@ OverlayImpl::onPrepare()
         setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
+    m_peerFinder->start();
 
     // Populate our boot cache: if there are no entries in [ips] then we use
     // the entries in [ips_fixed].
@@ -566,11 +567,6 @@ OverlayImpl::onPrepare()
                     m_peerFinder->addFixedPeer(name, ips);
             });
     }
-}
-
-void
-OverlayImpl::onStart()
-{
     auto const timer = std::make_shared<Timer>(*this);
     std::lock_guard lock(mutex_);
     list_.emplace(timer.get(), timer);

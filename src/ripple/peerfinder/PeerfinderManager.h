@@ -154,6 +154,10 @@ public:
     virtual void
     setConfig(Config const& config) = 0;
 
+    /** Transition to the started state, synchronously. */
+    virtual void
+    start() = 0;
+
     /** Returns the configuration for the manager. */
     virtual Config
     config() = 0;

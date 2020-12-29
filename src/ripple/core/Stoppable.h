@@ -56,23 +56,7 @@ class RootStoppable;
         hierarchy: Stoppable objects may themselves have Stoppable child
         objects. This captures the relationship of dependencies.
 
-    2.  prepare()
-
-        Because some components may depend on others, preparatory steps require
-        that all objects be first constructed. The prepare step calls all
-        Stoppable objects in the tree starting from the leaves and working up
-        to the root. In this stage we are guaranteed that all objects have been
-        constructed and are in a well-defined state.
-
-    3.  onPrepare()
-
-        This override is called for all Stoppable objects in the hierarchy
-        during the prepare stage. It is guaranteed that all child Stoppable
-        objects have already been prepared when this is called.
-
-        Objects are called children first.
-
-    4.  start()
+    2.  start()
 
         At this point all sub-components have been constructed and prepared,
         so it should be safe for them to be started. While some Stoppable
@@ -80,7 +64,7 @@ class RootStoppable;
         threads or call asynchronous i/o initiating functions like timers or
         sockets.
 
-    5.  onStart()
+    3.  onStart()
 
         This override is called for all Stoppable objects in the hierarchy
         during the start stage. It is guaranteed that no child Stoppable
@@ -90,12 +74,12 @@ class RootStoppable;
 
     This is the sequence of events involved in stopping:
 
-    6.  stopAsync() [optional]
+    4.  stopAsync() [optional]
 
         This notifies the root Stoppable and all its children that a stop is
         requested.
 
-    7.  stop()
+    5.  stop()
 
         This first calls stopAsync(), and then blocks on each child Stoppable in
         the in the tree from the bottom up, until the Stoppable indicates it has
@@ -103,7 +87,7 @@ class RootStoppable;
         when some external signal indicates that the process should stop. For
         example, an RPC 'stop' command, or a SIGINT POSIX signal.
 
-    8.  onStop()
+    6.  onStop()
 
         This override is called for the root Stoppable and all its children when
         stopAsync() is called. Derived classes should cancel pending I/O and
@@ -112,7 +96,7 @@ class RootStoppable;
 
         Objects are called parent first.
 
-    9.  onChildrenStopped()
+    7.  onChildrenStopped()
 
         This override is called when all the children have stopped. This informs
         the Stoppable that there should not be any more dependents making calls
@@ -121,7 +105,7 @@ class RootStoppable;
 
         Objects are called children first.
 
-    10. stopped()
+    8. stopped()
 
         The derived class calls this function to inform the Stoppable API that
         it has completed the stop. This unblocks the caller of stop().
@@ -254,16 +238,6 @@ protected:
     stopped();
 
 private:
-    /** Override called during preparation.
-        Since all other Stoppable objects in the tree have already been
-        constructed, this provides an opportunity to perform initialization
-       which depends on calling into other Stoppable objects. This call is made
-       on the same thread that called prepare(). The default implementation does
-       nothing. Guaranteed to only be called once.
-    */
-    virtual void
-    onPrepare();
-
     /** Override called during start. */
     virtual void
     onStart();
@@ -328,8 +302,6 @@ private:
     };
 
     void
-    prepareRecursive();
-    void
     startRecursive();
     void
     stopAsyncRecursive(beast::Journal j);
@@ -361,9 +333,8 @@ public:
     bool
     isStopping() const;
 
-    /** Prepare and start all contained Stoppable objects.
-        This calls onPrepare for all Stoppable objects in the tree, bottom-up,
-        then calls onStart for the same, top-down.
+    /** Start all contained Stoppable objects.
+        This calls onStart for all Stoppable objects in the tree, top-down.
         Calls made after the first have no effect.
         Thread safety:
             May be called from any thread.

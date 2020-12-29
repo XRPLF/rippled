@@ -74,11 +74,6 @@ class PerfLog_test : public beast::unit_test::suite
         // Interfaces for RootStoppable.  Made private to encourage the use
         // of doStart() and doStop().
         void
-        onPrepare() override
-        {
-        }
-
-        void
         onStart() override
         {
         }

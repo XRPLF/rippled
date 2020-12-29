@@ -50,22 +50,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 9, "D::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 0, "D::onStart called out of order");
+            test_.expect(++test_.count == 11, "D::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 11, "D::onStop called out of order");
+            test_.expect(--test_.count == 0, "D::onStop called out of order");
         }
 
         void
@@ -73,7 +66,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 2, "D::onChildrenStopped called out of order");
+                ++test_.count == 9, "D::onChildrenStopped called out of order");
         }
     };
 
@@ -88,22 +81,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 7, "J::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 1, "J::onStart called out of order");
+            test_.expect(++test_.count == 10, "J::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 10, "J::onStop called out of order");
+            test_.expect(--test_.count == 1, "J::onStop called out of order");
         }
 
         void
@@ -111,7 +97,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 4, "J::onChildrenStopped called out of order");
+                ++test_.count == 7, "J::onChildrenStopped called out of order");
         }
     };
 
@@ -127,22 +113,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 8, "E::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 2, "E::onStart called out of order");
+            test_.expect(++test_.count == 9, "E::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 9, "E::onStop called out of order");
+            test_.expect(--test_.count == 2, "E::onStop called out of order");
         }
 
         void
@@ -150,7 +129,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 3, "E::onChildrenStopped called out of order");
+                ++test_.count == 8, "E::onChildrenStopped called out of order");
         }
     };
 
@@ -165,22 +144,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 6, "F::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 3, "F::onStart called out of order");
+            test_.expect(++test_.count == 8, "F::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 8, "F::onStop called out of order");
+            test_.expect(--test_.count == 3, "F::onStop called out of order");
         }
 
         void
@@ -188,7 +160,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 5, "F::onChildrenStopped called out of order");
+                ++test_.count == 6, "F::onChildrenStopped called out of order");
         }
     };
 
@@ -226,22 +198,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 10, "A::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 4, "A::onStart called out of order");
+            test_.expect(++test_.count == 7, "A::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 7, "A::onStop called out of order");
+            test_.expect(--test_.count == 4, "A::onStop called out of order");
         }
 
         void
@@ -252,7 +217,8 @@ class Stoppable_test : public beast::unit_test::suite
                 ;
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 1, "A::onChildrenStopped called out of order");
+                ++test_.count == 10,
+                "A::onChildrenStopped called out of order");
             stop_ = stopped;
         }
     };
@@ -268,22 +234,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 4, "G::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 5, "G::onStart called out of order");
+            test_.expect(++test_.count == 6, "G::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 6, "G::onStop called out of order");
+            test_.expect(--test_.count == 5, "G::onStop called out of order");
         }
 
         void
@@ -291,7 +250,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 7, "G::onChildrenStopped called out of order");
+                ++test_.count == 4, "G::onChildrenStopped called out of order");
         }
     };
 
@@ -306,22 +265,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 3, "H::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 6, "H::onStart called out of order");
+            test_.expect(++test_.count == 5, "H::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 5, "H::onStop called out of order");
+            test_.expect(--test_.count == 6, "H::onStop called out of order");
         }
 
         void
@@ -329,7 +281,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 8, "H::onChildrenStopped called out of order");
+                ++test_.count == 3, "H::onChildrenStopped called out of order");
         }
     };
 
@@ -349,22 +301,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 5, "B::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 7, "B::onStart called out of order");
+            test_.expect(++test_.count == 4, "B::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 4, "B::onStop called out of order");
+            test_.expect(--test_.count == 7, "B::onStop called out of order");
         }
 
         void
@@ -372,7 +317,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 6, "B::onChildrenStopped called out of order");
+                ++test_.count == 5, "B::onChildrenStopped called out of order");
         }
     };
 
@@ -387,22 +332,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 1, "I::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 8, "I::onStart called out of order");
+            test_.expect(++test_.count == 3, "I::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 3, "I::onStop called out of order");
+            test_.expect(--test_.count == 8, "I::onStop called out of order");
         }
 
         void
@@ -410,8 +348,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 10,
-                "I::onChildrenStopped called out of order");
+                ++test_.count == 1, "I::onChildrenStopped called out of order");
         }
     };
 
@@ -427,22 +364,15 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 2, "C::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
-            test_.expect(--test_.count == 9, "C::onStart called out of order");
+            test_.expect(++test_.count == 2, "C::onStart called out of order");
         }
 
         void
         onStop() override
         {
-            test_.expect(++test_.count == 2, "C::onStop called out of order");
+            test_.expect(--test_.count == 9, "C::onStop called out of order");
         }
 
         void
@@ -450,7 +380,7 @@ class Stoppable_test : public beast::unit_test::suite
         {
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 9, "C::onChildrenStopped called out of order");
+                ++test_.count == 2, "C::onChildrenStopped called out of order");
         }
     };
 
@@ -481,24 +411,17 @@ class Stoppable_test : public beast::unit_test::suite
         }
 
         void
-        onPrepare() override
-        {
-            test_.expect(
-                ++test_.count == 11, "Root::onPrepare called out of order");
-        }
-
-        void
         onStart() override
         {
             test_.expect(
-                --test_.count == 10, "Root::onStart called out of order");
+                ++test_.count == 1, "Root::onStart called out of order");
         }
 
         void
         onStop() override
         {
             test_.expect(
-                ++test_.count == 1, "Root::onStop called out of order");
+                --test_.count == 10, "Root::onStop called out of order");
         }
 
         void
@@ -507,7 +430,7 @@ class Stoppable_test : public beast::unit_test::suite
             a_.join();
             Stoppable::stopped();
             test_.expect(
-                --test_.count == 0,
+                ++test_.count == 11,
                 "Root::onChildrenStopped called out of order");
         }
 

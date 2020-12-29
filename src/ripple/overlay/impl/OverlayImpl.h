@@ -508,9 +508,6 @@ private:
     checkStopped();
 
     void
-    onPrepare() override;
-
-    void
     onStart() override;
 
     void
