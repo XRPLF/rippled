@@ -22,57 +22,22 @@
 
 namespace ripple {
 
-NodeStoreScheduler::NodeStoreScheduler(Stoppable& parent)
-    : Stoppable("NodeStoreScheduler", parent)
+NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue)
+    : m_jobQueue(&jobQueue)
 {
-}
-
-void
-NodeStoreScheduler::setJobQueue(JobQueue& jobQueue)
-{
-    m_jobQueue = &jobQueue;
-}
-
-void
-NodeStoreScheduler::onStop()
-{
-}
-
-void
-NodeStoreScheduler::onChildrenStopped()
-{
-    assert(m_taskCount == 0);
-    stopped();
 }
 
 void
 NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 {
-    ++m_taskCount;
-    if (!m_jobQueue->addJob(jtWRITE, "NodeObject::store", [this, &task](Job&) {
-            doTask(task);
+    if (!m_jobQueue->addJob(jtWRITE, "NodeObject::store", [&task](Job&) {
+            task.performScheduledTask();
         }))
     {
         // Job not added, presumably because we're shutting down.
         // Recover by executing the task synchronously.
-        doTask(task);
+        task.performScheduledTask();
     }
-}
-
-void
-NodeStoreScheduler::doTask(NodeStore::Task& task)
-{
-    task.performScheduledTask();
-
-    // NOTE: It feels a bit off that there are two different methods that
-    // call stopped(): onChildrenStopped() and doTask().  There's a
-    // suspicion that, as long as the Stoppable tree is configured
-    // correctly, this call to stopped() in doTask() can never occur.
-    //
-    // However, until we increase our confidence that the suspicion is
-    // correct, we will leave this code in place.
-    if ((--m_taskCount == 0) && isStopping() && areChildrenStopped())
-        stopped();
 }
 
 void

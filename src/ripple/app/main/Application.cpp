@@ -167,6 +167,9 @@ public:
 #ifdef RIPPLED_REPORTING
     std::shared_ptr<PgPool> pgPool_;
 #endif
+
+    std::unique_ptr<CollectorManager> m_collectorManager;
+    std::unique_ptr<JobQueue> m_jobQueue;
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr<SHAMapStore> m_shaMapStore;
     PendingSaves pendingSaves_;
@@ -175,7 +178,6 @@ public:
 
     // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
-    std::unique_ptr<CollectorManager> m_collectorManager;
     CachedSLEs cachedSLEs_;
     std::pair<PublicKey, SecretKey> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
@@ -183,7 +185,6 @@ public:
     std::unique_ptr<Resource::Manager> m_resourceManager;
 
     // These are Stoppable-related
-    std::unique_ptr<JobQueue> m_jobQueue;
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
     std::unique_ptr<NodeStore::DatabaseShard> shardStore_;
@@ -288,7 +289,22 @@ public:
                                    : nullptr)
 #endif
 
-        , m_nodeStoreScheduler(*this)
+        , m_collectorManager(CollectorManager::New(
+              config_->section(SECTION_INSIGHT),
+              logs_->journal("Collector")))
+
+        // The JobQueue has to come pretty early since
+        // almost everything is a Stoppable child of the JobQueue.
+        //
+        , m_jobQueue(std::make_unique<JobQueue>(
+              m_collectorManager->group("jobq"),
+              *this,
+              logs_->journal("JobQueue"),
+              *logs_,
+              *perfLog_))
+
+        , m_nodeStoreScheduler(*m_jobQueue)
+
         , m_shaMapStore(make_SHAMapStore(
               *this,
               *this,
@@ -304,25 +320,12 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
 
-        , m_collectorManager(CollectorManager::New(
-              config_->section(SECTION_INSIGHT),
-              logs_->journal("Collector")))
         , cachedSLEs_(std::chrono::minutes(1), stopwatch())
         , validatorKeys_(*config_, m_journal)
 
         , m_resourceManager(Resource::make_Manager(
               m_collectorManager->collector(),
               logs_->journal("Resource")))
-
-        // The JobQueue has to come pretty early since
-        // almost everything is a Stoppable child of the JobQueue.
-        //
-        , m_jobQueue(std::make_unique<JobQueue>(
-              m_collectorManager->group("jobq"),
-              m_nodeStoreScheduler,
-              logs_->journal("JobQueue"),
-              *logs_,
-              *perfLog_))
 
         , m_nodeStore(m_shaMapStore->makeNodeStore("NodeStore.main", 4))
 
@@ -475,9 +478,6 @@ public:
         //  needs to be stopped will not get stopped correctly if it is
         //  started in this constructor.
         //
-
-        // VFALCO HACK
-        m_nodeStoreScheduler.setJobQueue(*m_jobQueue);
 
         add(m_ledgerMaster->getPropertySource());
     }
