@@ -228,9 +228,6 @@ public:
     void
     onStop() override;
 
-    void
-    onChildrenStopped() override;
-
     /** @return The earliest ledger sequence allowed
      */
     std::uint32_t
