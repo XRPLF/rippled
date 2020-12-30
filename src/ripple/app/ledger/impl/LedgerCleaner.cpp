@@ -51,8 +51,8 @@ class LedgerCleanerImp : public LedgerCleaner
 
     std::thread thread_;
 
-    enum class State : char { readyToClean = 0, startCleaning, cleaning };
-    State state_ = State::readyToClean;
+    enum class State : char { notCleaning = 0, cleaning };
+    State state_ = State::notCleaning;
     bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
@@ -108,6 +108,7 @@ public:
             wakeup_.notify_one();
         }
         thread_.join();
+        stopped();
     }
 
     //--------------------------------------------------------------------------
@@ -214,11 +215,8 @@ public:
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
 
-            if (state_ == State::readyToClean)
-            {
-                state_ = State::startCleaning;
-                wakeup_.notify_one();
-            }
+            state_ = State::cleaning;
+            wakeup_.notify_one();
         }
     }
 
@@ -229,35 +227,25 @@ public:
     //--------------------------------------------------------------------------
 private:
     void
-    init()
-    {
-        JLOG(j_.debug()) << "Initializing";
-    }
-
-    void
     run()
     {
         beast::setCurrentThreadName("LedgerCleaner");
         JLOG(j_.debug()) << "Started";
 
-        init();
-
         while (true)
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
+                state_ = State::notCleaning;
                 wakeup_.wait(lock, [this]() {
-                    return (shouldExit_ || state_ == State::startCleaning);
+                    return (shouldExit_ || state_ == State::cleaning);
                 });
                 if (shouldExit_)
                     break;
-
-                state_ = State::cleaning;
+                assert(state_ == State::cleaning);
             }
             doLedgerCleaner();
         }
-
-        stopped();
     }
 
     // VFALCO TODO This should return boost::optional<uint256>
@@ -413,12 +401,11 @@ private:
             bool doNodes;
             bool doTxns;
 
-            while (app_.getFeeTrack().isLoadedLocal())
+            if (app_.getFeeTrack().isLoadedLocal())
             {
                 JLOG(j_.debug()) << "Waiting for load to subside";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
-                if (shouldExit())
-                    return;
+                continue;
             }
 
             {
@@ -427,7 +414,6 @@ private:
                     (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
-                    state_ = State::readyToClean;
                     return;
                 }
                 ledgerIndex = maxRange_;
