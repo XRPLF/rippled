@@ -29,13 +29,13 @@
 namespace ripple {
 namespace NodeStore {
 
-class TaskQueue : public Stoppable, private Workers::Callback
+class TaskQueue : private Workers::Callback
 {
 public:
-    explicit TaskQueue(Stoppable& parent);
+    TaskQueue();
 
     void
-    onStop() override;
+    stop();
 
     /** Adds a task to the queue
 

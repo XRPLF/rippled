@@ -55,7 +55,6 @@ DatabaseShardImp::DatabaseShardImp(
           j)
     , app_(app)
     , parent_(parent)
-    , taskQueue_(std::make_unique<TaskQueue>(*this))
     , earliestShardIndex_(seqToShardIndex(earliestLedgerSeq()))
     , avgShardFileSz_(ledgersPerShard_ * kilobytes(192ull))
     , openFinalLimit_(
@@ -700,12 +699,12 @@ DatabaseShardImp::onStop()
 {
     // Stop read threads in base before data members are destroyed
     stopReadThreads();
-
-    std::lock_guard lock(mutex_);
-
-    // Notify shards to stop
-    for (auto const& e : shards_)
-        e.second->stop();
+    {
+        std::lock_guard lock(mutex_);
+        for (auto const& [_, shard] : shards_)
+            shard->stop();
+    }
+    taskQueue_.stop();
 }
 
 void
@@ -1292,10 +1291,10 @@ DatabaseShardImp::finalizeShard(
     bool writeSQLite,
     boost::optional<uint256> const& expectedHash)
 {
-    taskQueue_->addTask([this,
-                         wptr = std::weak_ptr<Shard>(shard),
-                         writeSQLite,
-                         expectedHash]() {
+    taskQueue_.addTask([this,
+                        wptr = std::weak_ptr<Shard>(shard),
+                        writeSQLite,
+                        expectedHash]() {
         if (isStopping())
             return;
 

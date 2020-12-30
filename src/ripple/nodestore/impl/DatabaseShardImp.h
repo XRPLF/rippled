@@ -179,7 +179,7 @@ private:
     std::unique_ptr<nudb::context> ctx_;
 
     // Queue of background tasks to be performed
-    std::unique_ptr<TaskQueue> taskQueue_;
+    TaskQueue taskQueue_;
 
     // Shards held by this server
     std::unordered_map<std::uint32_t, std::shared_ptr<Shard>> shards_;
