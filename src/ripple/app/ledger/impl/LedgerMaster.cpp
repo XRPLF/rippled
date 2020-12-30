@@ -184,12 +184,13 @@ LedgerMaster::LedgerMaster(
     Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal)
-    : Stoppable("LedgerMaster", parent)
-    , app_(app)
+    : app_(app)
     , m_journal(journal)
     , mLedgerHistory(collector, app)
-    , mLedgerCleaner(
-          detail::make_LedgerCleaner(app, *this, app_.journal("LedgerCleaner")))
+    , mLedgerCleaner(detail::make_LedgerCleaner(
+          app,
+          parent,
+          app_.journal("LedgerCleaner")))
     , standalone_(app_.config().standalone())
     , fetch_depth_(
           app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
@@ -1557,7 +1558,7 @@ LedgerMaster::newPFWork(
     }
     // If we're stopping don't give callers the expectation that their
     // request will be fulfilled, even if it may be serviced.
-    return mPathFindThread > 0 && !isStopping();
+    return mPathFindThread > 0 && !app_.isStopping();
 }
 
 std::recursive_mutex&

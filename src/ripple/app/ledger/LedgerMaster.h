@@ -34,7 +34,6 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/insight/Collector.h>
 #include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
@@ -69,7 +68,7 @@ public:
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
-class LedgerMaster : public Stoppable, public AbstractFetchPackContainer
+class LedgerMaster : public AbstractFetchPackContainer
 {
 public:
     // Age for last validated ledger if the process has yet to validate.

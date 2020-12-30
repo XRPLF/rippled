@@ -336,7 +336,7 @@ public:
               4,
               logs_->journal("ShardStore")))
 
-        , m_orderBookDB(*this, *m_jobQueue)
+        , m_orderBookDB(*this)
 
         , m_pathRequests(std::make_unique<PathRequests>(
               *this,
@@ -457,7 +457,7 @@ public:
               std::chrono::milliseconds(100),
               get_io_service())
         , grpcServer_(std::make_unique<GRPCServer>(*this, *m_jobQueue))
-        , reportingETL_(std::make_unique<ReportingETL>(*this, *m_ledgerMaster))
+        , reportingETL_(std::make_unique<ReportingETL>(*this, *this))
     {
         add(m_resourceManager.get());
 
@@ -498,6 +498,8 @@ public:
     checkSigs() const override;
     void
     checkSigs(bool) override;
+    bool
+    isStopping() const override;
     int
     fdRequired() const override;
 
@@ -1766,6 +1768,12 @@ void
 ApplicationImp::checkSigs(bool check)
 {
     checkSigs_ = check;
+}
+
+bool
+ApplicationImp::isStopping() const
+{
+    return Stoppable::isStopping();
 }
 
 int

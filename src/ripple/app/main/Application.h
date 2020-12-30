@@ -135,6 +135,8 @@ public:
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
+    virtual bool
+    isStopping() const = 0;
 
     //
     // ---
