@@ -553,22 +553,6 @@ PeerImp::fail(std::string const& name, error_code ec)
     close();
 }
 
-void
-PeerImp::failinstrand(std::string const& name, error_code ec)
-{
-    if (!strand_.running_in_this_thread())
-        return post(
-            strand_,
-            std::bind(
-                (void (Peer::*)(std::string const&, error_code)) &
-                    PeerImp::fail,
-                shared_from_this(),
-                name,
-                ec));
-    else
-        return fail(name, ec);
-}
-
 boost::optional<RangeSet<std::uint32_t>>
 PeerImp::getShardIndexes() const
 {
@@ -785,29 +769,26 @@ PeerImp::doAccept()
         return buf;
     }();
 
-    // Put a placeholder in the send queue so no other messages will be
-    // sent until this one is complete.
-    send_queue_.push({});
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
         stream_,
         write_buffer->data(),
         boost::asio::transfer_all(),
-        [this, write_buffer, self = shared_from_this()](
-            error_code ec, std::size_t bytes_transferred) {
-            // Remove the placeholder from the send queue.
-            assert(!send_queue_.front());
-            send_queue_.pop();
-            if (!socket_.is_open())
-                return;
-            if (ec == boost::asio::error::operation_aborted)
-                return;
-            if (ec)
-                return failinstrand("onWriteResponse", ec);
-            if (write_buffer->size() == bytes_transferred)
-                return doProtocolStart();
-            return fail("Failed to write header");
-        });
+        bind_executor(
+            strand_,
+            [this, write_buffer, self = shared_from_this()](
+                error_code ec, std::size_t bytes_transferred) {
+                assert(strand_.running_in_this_thread());
+                if (!socket_.is_open())
+                    return;
+                if (ec == boost::asio::error::operation_aborted)
+                    return;
+                if (ec)
+                    return fail("onWriteResponse", ec);
+                if (write_buffer->size() == bytes_transferred)
+                    return doProtocolStart();
+                return fail("Failed to write header");
+            }));
 }
 
 std::string
