@@ -135,12 +135,6 @@ public:
         NodeStore::Scheduler& scheduler,
         beast::Journal journal);
 
-    ~SHAMapStoreImp()
-    {
-        if (thread_.joinable())
-            thread_.join();
-    }
-
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
     {
@@ -248,9 +242,6 @@ private:
     Health
     health();
 
-    //
-    // Stoppable
-    //
     void
     onStart() override
     {
@@ -258,10 +249,8 @@ private:
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 
-    // Called when the application begins shutdown
     void
     onStop() override;
-    // Called when all child Stoppable objects have stoped
 };
 
 }  // namespace ripple
