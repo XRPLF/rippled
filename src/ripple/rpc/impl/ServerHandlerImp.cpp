@@ -49,6 +49,7 @@
 #include <boost/regex.hpp>
 #include <boost/type_traits.hpp>
 #include <algorithm>
+#include <mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -141,6 +142,11 @@ void
 ServerHandlerImp::onStop()
 {
     m_server->close();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        condition_.wait(lock, [this]() { return stopped_; });
+    }
+    stopped();
 }
 
 //------------------------------------------------------------------------------
@@ -150,11 +156,14 @@ ServerHandlerImp::onAccept(
     Session& session,
     boost::asio::ip::tcp::endpoint endpoint)
 {
-    std::lock_guard lock(countlock_);
+    auto const& port = session.port();
 
-    auto const c = ++count_[session.port()];
+    auto const c = [this, &port]() {
+        std::lock_guard lock(mutex_);
+        return ++count_[port];
+    }();
 
-    if (session.port().limit && c >= session.port().limit)
+    if (port.limit && c >= port.limit)
     {
         JLOG(m_journal.trace())
             << session.port().name << " is full; dropping " << endpoint;
@@ -357,14 +366,16 @@ ServerHandlerImp::onWSMessage(
 void
 ServerHandlerImp::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard lock(countlock_);
+    std::lock_guard lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandlerImp::onStopped(Server&)
 {
-    stopped();
+    std::lock_guard<std::mutex> lock(mutex_);
+    stopped_ = true;
+    condition_.notify_one();
 }
 
 //------------------------------------------------------------------------------
