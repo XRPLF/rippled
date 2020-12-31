@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
 #include <ripple/basics/LocalValue.h>
+#include <ripple/core/ClosureCounter.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/Stoppable.h>
@@ -165,8 +166,8 @@ public:
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
     {
-        if (auto optionalCountedJob = Stoppable::jobCounter().wrap(
-                std::forward<JobHandler>(jobHandler)))
+        if (auto optionalCountedJob =
+                jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {
             return addRefCountedJob(type, name, std::move(*optionalCountedJob));
         }
@@ -224,9 +225,12 @@ public:
     Json::Value
     getJson(int c = 0);
 
-    /** Block until no tasks running. */
+    /** Block until no jobs running. */
     void
     rendezvous();
+
+    void
+    onStop() override;
 
 private:
     friend class Coro;
@@ -237,6 +241,7 @@ private:
     mutable std::mutex m_mutex;
     std::uint64_t m_lastJob;
     std::set<Job> m_jobSet;
+    JobCounter jobCounter_;
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
 
@@ -261,13 +266,6 @@ private:
     collect();
     JobTypeData&
     getJobTypeData(JobType type);
-
-    void
-    onStop() override;
-
-    // Signals the service stopped if the stopped condition is met.
-    void
-    checkStopped(std::lock_guard<std::mutex> const& lock);
 
     // Adds a reference counted job to the JobQueue.
     //
@@ -354,9 +352,6 @@ private:
     // will be enough.
     int
     getJobLimit(JobType type);
-
-    void
-    onChildrenStopped() override;
 };
 
 /*

@@ -22,17 +22,12 @@
 
 #include <ripple/beast/core/LockFreeStack.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/core/ClosureCounter.h>
-#include <ripple/core/Job.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
 namespace ripple {
-
-// Give a reasonable name for the JobCounter
-using JobCounter = ClosureCounter<void, Job&>;
 
 class RootStoppable;
 
@@ -221,10 +216,6 @@ public:
     bool
     areChildrenStopped() const;
 
-    /* JobQueue uses this method for Job counting. */
-    inline JobCounter&
-    jobCounter();
-
 protected:
     /** Called by derived classes to indicate that the stoppable has stopped. */
     void
@@ -321,7 +312,7 @@ class RootStoppable : public Stoppable
 public:
     explicit RootStoppable(std::string name);
 
-    virtual ~RootStoppable();
+    virtual ~RootStoppable() = default;
 
     bool
     isStopping() const;
@@ -353,30 +344,14 @@ public:
         return startExited_;
     }
 
-    /* JobQueue uses this method for Job counting. */
-    JobCounter&
-    jobCounter()
-    {
-        return jobCounter_;
-    }
-
 private:
     // TODO [C++20]: Use std::atomic_flag instead.
     std::atomic<bool> startEntered_{false};
     std::atomic<bool> startExited_{false};
     std::atomic<bool> stopEntered_{false};
     std::mutex m_;
-    JobCounter jobCounter_;
 };
 /** @} */
-
-//------------------------------------------------------------------------------
-
-JobCounter&
-Stoppable::jobCounter()
-{
-    return m_root.jobCounter();
-}
 
 }  // namespace ripple
 

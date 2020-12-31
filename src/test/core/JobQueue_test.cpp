@@ -47,13 +47,11 @@ class JobQueue_test : public beast::unit_test::suite
                 ;
         }
         {
-            // If the JobQueue's JobCounter is join()ed we should no
+            // If the JobQueue is stopped, we should no
             // longer be able to add Jobs (and calling addJob() should
             // return false).
             using namespace std::chrono_literals;
-            beast::Journal j{env.app().journal("JobQueue_test")};
-            JobCounter& jCounter = jQueue.jobCounter();
-            jCounter.join("JobQueue_test", 1s, j);
+            jQueue.onStop();
 
             // The Job should never run, so having the Job access this
             // unprotected variable on the stack should be completely safe.
@@ -132,13 +130,11 @@ class JobQueue_test : public beast::unit_test::suite
             BEAST_EXPECT(yieldCount == 4);
         }
         {
-            // If the JobQueue's JobCounter is join()ed we should no
+            // If the JobQueue is stopped, we should no
             // longer be able to add a Coro (and calling postCoro() should
             // return false).
             using namespace std::chrono_literals;
-            beast::Journal j{env.app().journal("JobQueue_test")};
-            JobCounter& jCounter = jQueue.jobCounter();
-            jCounter.join("JobQueue_test", 1s, j);
+            jQueue.onStop();
 
             // The Coro should never run, so having the Coro access this
             // unprotected variable on the stack should be completely safe.

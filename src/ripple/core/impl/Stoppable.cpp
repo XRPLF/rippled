@@ -150,12 +150,6 @@ RootStoppable::RootStoppable(std::string name)
 {
 }
 
-RootStoppable::~RootStoppable()
-{
-    using namespace std::chrono_literals;
-    jobCounter_.join(m_name.c_str(), 1s, debugLog());
-}
-
 bool
 RootStoppable::isStopping() const
 {
@@ -194,10 +188,6 @@ RootStoppable::stop(beast::Journal j)
             stream << "RootStoppable::stop called again";
         return;
     }
-
-    // Wait until all in-flight JobQueue Jobs are completed.
-    using namespace std::chrono_literals;
-    jobCounter_.join(m_name.c_str(), 1s, j);
 
     stopAsyncRecursive(j);
     stopRecursive(j);

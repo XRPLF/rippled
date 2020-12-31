@@ -20,6 +20,7 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/JobQueue.h>
+#include <mutex>
 
 namespace ripple {
 
@@ -298,26 +299,21 @@ JobQueue::getJobTypeData(JobType type)
 void
 JobQueue::onStop()
 {
-    // onStop must be defined and empty here,
-    // otherwise the base class will do the wrong thing.
-}
-
-void
-JobQueue::checkStopped(std::lock_guard<std::mutex> const& lock)
-{
-    // We are stopped when all of the following are true:
-    //
-    //  1. A stop notification was received
-    //  2. All Stoppable children have stopped
-    //  3. There are no executing calls to processTask
-    //  4. There are no remaining Jobs in the job set
-    //  5. There are no suspended coroutines
-    //
-    if (isStopping() && areChildrenStopped() && (m_processCount == 0) &&
-        m_jobSet.empty() && nSuspend_ == 0)
+    using namespace std::chrono_literals;
+    jobCounter_.join("JobQueue", 1s, m_journal);
     {
-        stopped();
+        // After the JobCounter is joined, all jobs have finished executing
+        // (i.e. returned from `Job::doJob`) and no more are being accepted,
+        // but there may still be some threads between the return of
+        // `Job::doJob` and the return of `JobQueue::processTask`. That is why
+        // we must wait on the condition variable to make these assertions.
+        std::unique_lock<std::mutex> lock(m_mutex);
+        cv_.wait(lock, [&] { return m_processCount == 0 && m_jobSet.empty(); });
+        assert(m_processCount == 0);
+        assert(m_jobSet.empty());
+        assert(nSuspend_ == 0);
     }
+    stopped();
 }
 
 void
@@ -437,13 +433,12 @@ JobQueue::processTask(int instance)
 
     {
         std::lock_guard lock(m_mutex);
-        // Job should be destroyed before calling checkStopped
+        // Job should be destroyed before calling stopped()
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.
         finishJob(type);
         if (--m_processCount == 0 && m_jobSet.empty())
             cv_.notify_all();
-        checkStopped(lock);
     }
 
     // Note that when Job::~Job is called, the last reference
@@ -457,13 +452,6 @@ JobQueue::getJobLimit(JobType type)
     assert(j.type() != jtINVALID);
 
     return j.limit();
-}
-
-void
-JobQueue::onChildrenStopped()
-{
-    std::lock_guard lock(m_mutex);
-    checkStopped(lock);
 }
 
 }  // namespace ripple

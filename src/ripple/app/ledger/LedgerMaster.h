@@ -31,6 +31,7 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/insight/Collector.h>
 #include <ripple/beast/utility/PropertyStream.h>

@@ -23,6 +23,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/net/DatabaseDownloader.h>
 #include <ripple/rpc/ShardVerificationScheduler.h>
 
