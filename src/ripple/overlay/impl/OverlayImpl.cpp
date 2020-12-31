@@ -158,19 +158,6 @@ OverlayImpl::OverlayImpl(
     beast::PropertyStream::Source::add(m_peerFinder.get());
 }
 
-OverlayImpl::~OverlayImpl()
-{
-    stop();
-
-    // Block until dependent objects have been destroyed.
-    // This is just to catch improper use of the Stoppable API.
-    //
-    std::unique_lock<decltype(mutex_)> lock(mutex_);
-    cond_.wait(lock, [this] { return list_.empty(); });
-}
-
-//------------------------------------------------------------------------------
-
 Handoff
 OverlayImpl::onHandoff(
     std::unique_ptr<stream_type>&& stream_ptr,
@@ -485,14 +472,6 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 //
 //------------------------------------------------------------------------------
 
-// Caller must hold the mutex
-void
-OverlayImpl::checkStopped()
-{
-    if (isStopping() && areChildrenStopped() && list_.empty())
-        stopped();
-}
-
 void
 OverlayImpl::onStart()
 {
@@ -578,13 +557,11 @@ void
 OverlayImpl::onStop()
 {
     strand_.dispatch(std::bind(&OverlayImpl::stop, this));
-}
-
-void
-OverlayImpl::onChildrenStopped()
-{
-    std::lock_guard lock(mutex_);
-    checkStopped();
+    {
+        std::unique_lock<decltype(mutex_)> lock(mutex_);
+        cond_.wait(lock, [this] { return list_.empty(); });
+    }
+    stopped();
 }
 
 //------------------------------------------------------------------------------
@@ -1302,7 +1279,7 @@ OverlayImpl::remove(Child& child)
     std::lock_guard lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
-        checkStopped();
+        cond_.notify_all();
 }
 
 void

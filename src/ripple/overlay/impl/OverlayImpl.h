@@ -149,8 +149,6 @@ public:
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
-    ~OverlayImpl();
-
     OverlayImpl(OverlayImpl const&) = delete;
     OverlayImpl&
     operator=(OverlayImpl const&) = delete;
@@ -512,9 +510,6 @@ private:
 
     void
     onStop() override;
-
-    void
-    onChildrenStopped() override;
 
     //
     // PropertyStream
