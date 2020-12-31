@@ -728,8 +728,6 @@ DatabaseShardImp::onStop()
             JLOG(j_.warn()) << " shard " << shardIndex << " unexpired";
         }
     }
-
-    stopped();
 }
 
 void

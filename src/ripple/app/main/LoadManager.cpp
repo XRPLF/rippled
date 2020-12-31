@@ -99,7 +99,6 @@ LoadManager::onStop()
         JLOG(journal_.debug()) << "Stopping";
         thread_.join();
     }
-    stopped();
 }
 
 //------------------------------------------------------------------------------

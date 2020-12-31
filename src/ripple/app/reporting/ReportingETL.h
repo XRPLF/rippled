@@ -350,7 +350,6 @@ public:
             worker_.join();
 
         JLOG(journal_.debug()) << "Joined worker thread";
-        stopped();
     }
 
     ETLLoadBalancer&

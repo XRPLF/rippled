@@ -388,8 +388,6 @@ public:
 
         mLedgers.clear();
         mRecentFailures.clear();
-
-        stopped();
     }
 
 private:

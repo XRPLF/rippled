@@ -91,60 +91,6 @@ class RootStoppable;
 
         Objects are called parent first.
 
-    7.  onChildrenStopped()
-
-        This override is called when all the children have stopped. This informs
-        the Stoppable that there should not be any more dependents making calls
-        into its member functions. A Stoppable that has no children will still
-        have this function called.
-
-        Objects are called children first.
-
-    8. stopped()
-
-        The derived class calls this function to inform the Stoppable API that
-        it has completed the stop. This unblocks the caller of stop().
-
-        For stoppables which are only considered stopped when all of their
-        children have stopped, and their own internal logic indicates a stop, it
-        will be necessary to perform special actions in onChildrenStopped(). The
-        function areChildrenStopped() can be used after children have stopped,
-        but before the Stoppable logic itself has stopped, to determine if the
-        stoppable's logic is a true stop.
-
-        Pseudo code for this process is as follows:
-
-        @code
-
-        // Returns `true` if derived logic has stopped.
-        //
-        // When the logic stops, logicProcessingStop() is no longer called.
-        // If children are still active we need to wait until we get a
-        // notification that the children have stopped.
-        //
-        bool logicHasStopped ();
-
-        // Called when children have stopped
-        void onChildrenStopped ()
-        {
-            // We have stopped when the derived logic stops and children stop.
-            if (logicHasStopped)
-                stopped();
-        }
-
-        // derived-specific logic that executes periodically
-        void logicProcessingStep ()
-        {
-            // process
-            // ...
-
-            // now see if we've stopped
-            if (logicHasStopped() && areChildrenStopped())
-                stopped();
-        }
-
-        @endcode
-
         Derived class that manage one or more threads should typically notify
         those threads in onStop that they should exit. In the thread function,
         when the last thread is about to exit it would call stopped().
@@ -208,19 +154,6 @@ public:
     bool
     isStopping() const;
 
-    /** Returns `true` if the requested stop has completed. */
-    bool
-    isStopped() const;
-
-    /** Returns `true` if all children have stopped. */
-    bool
-    areChildrenStopped() const;
-
-protected:
-    /** Called by derived classes to indicate that the stoppable has stopped. */
-    void
-    stopped();
-
 private:
     /** Override called during start. */
     virtual void
@@ -229,7 +162,7 @@ private:
     /** Override called when the stop notification is issued.
 
         The call is made on an unspecified, implementation-specific thread.
-        onStop and onChildrenStopped will never be called concurrently, across
+        onStop will never be called concurrently, across
         all Stoppable objects descended from the same root, inclusive of the
         root.
 
@@ -248,28 +181,7 @@ private:
             Must be safe to call from any thread at any time.
     */
     virtual void
-    onStop();
-
-    /** Override called when all children have stopped.
-
-        The call is made on an unspecified, implementation-specific thread.
-        onStop and onChildrenStopped will never be called concurrently, across
-        all Stoppable objects descended from the same root, inclusive of the
-        root.
-
-        It is safe to call isStopping, isStopped, and  areChildrenStopped from
-        within this function; The values returned will always be valid and never
-        change during the callback.
-
-        The default implementation does nothing.
-
-        Thread safety:
-            May not block for long periods.
-            Guaranteed only to be called once.
-            Must be safe to call from any thread at any time.
-    */
-    virtual void
-    onChildrenStopped();
+    onStop() = 0;
 
     friend class RootStoppable;
 
@@ -289,19 +201,11 @@ private:
     startRecursive();
     void
     stopAsyncRecursive(beast::Journal j);
-    void
-    stopRecursive(beast::Journal j);
 
     std::string m_name;
     RootStoppable& m_root;
     Child m_child;
-    // TODO [C++20]: Use std::atomic_flag instead.
-    std::atomic<bool> m_stopped{false};
-    std::atomic<bool> m_childrenStopped{false};
     Children m_children;
-    std::condition_variable m_cv;
-    std::mutex m_mut;
-    bool m_is_stopping = false;
     bool hasParent_{false};
 };
 
@@ -336,6 +240,11 @@ public:
     */
     void
     stop(beast::Journal j);
+
+    void
+    onStop() override
+    {
+    }
 
     /** Return true if start() was ever called. */
     bool

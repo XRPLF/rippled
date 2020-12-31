@@ -146,7 +146,6 @@ ServerHandlerImp::onStop()
         std::unique_lock<std::mutex> lock(mutex_);
         condition_.wait(lock, [this]() { return stopped_; });
     }
-    stopped();
 }
 
 //------------------------------------------------------------------------------

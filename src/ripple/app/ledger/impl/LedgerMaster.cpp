@@ -732,7 +732,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
 
         if (it == ledgerHashes.end())
         {
-            if (app_.isShutdown())
+            if (app_.isStopping())
                 return;
 
             {

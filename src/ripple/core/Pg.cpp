@@ -507,7 +507,6 @@ PgPool::onStop()
     stop_ = true;
     cond_.notify_all();
     idle_.clear();
-    stopped();
     JLOG(j_.info()) << "stopped";
 }
 

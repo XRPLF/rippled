@@ -797,8 +797,6 @@ GRPCServer::onStop()
         thread_.join();
         running_ = false;
     }
-
-    stopped();
 }
 
 GRPCServer::~GRPCServer()

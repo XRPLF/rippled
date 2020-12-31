@@ -490,8 +490,6 @@ public:
     doStart(bool withTimers) override;
     void
     run() override;
-    bool
-    isShutdown() override;
     void
     signalStop() override;
     bool
@@ -1111,8 +1109,6 @@ public:
             [this](PublicKey const& pubKey) {
                 return validators().trustedPublisher(pubKey);
             });
-
-        stopped();
     }
 
     //--------------------------------------------------------------------------
@@ -1133,8 +1129,7 @@ public:
         // Only start the timer if waitHandlerCounter_ is not yet joined.
         if (auto optionalCountedHandler = waitHandlerCounter_.wrap(
                 [this](boost::system::error_code const& e) {
-                    if ((e.value() == boost::system::errc::success) &&
-                        (!m_jobQueue->isStopped()))
+                    if (e.value() == boost::system::errc::success)
                     {
                         m_jobQueue->addJob(
                             jtSWEEP, "sweep", [this](Job&) { doSweep(); });
@@ -1752,13 +1747,6 @@ ApplicationImp::signalStop()
 }
 
 bool
-ApplicationImp::isShutdown()
-{
-    // from Stoppable mixin
-    return isStopped();
-}
-
-bool
 ApplicationImp::checkSigs() const
 {
     return checkSigs_;
@@ -2186,7 +2174,7 @@ ApplicationImp::serverOkay(std::string& reason)
     if (!config().ELB_SUPPORT)
         return true;
 
-    if (isShutdown())
+    if (isStopping())
     {
         reason = "Server is shutting down";
         return false;

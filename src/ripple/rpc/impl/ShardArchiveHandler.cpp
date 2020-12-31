@@ -209,8 +209,6 @@ ShardArchiveHandler::onStop()
 
     timerCounter_.join(
         "ShardArchiveHandler", std::chrono::milliseconds(2000), j_);
-
-    stopped();
 }
 
 bool

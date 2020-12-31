@@ -392,7 +392,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -410,7 +409,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -426,7 +424,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -445,7 +442,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -767,7 +763,6 @@ SHAMapStoreImp::onStop()
         }
         thread_.join();
     }
-    stopped();
 }
 
 boost::optional<LedgerIndex>

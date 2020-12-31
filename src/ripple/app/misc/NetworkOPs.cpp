@@ -637,11 +637,9 @@ public:
                     << ec.message();
             }
         }
-        // Make sure that any waitHandlers pending in our timers are done
-        // before we declare ourselves stopped.
+        // Make sure that any waitHandlers pending in our timers are done.
         using namespace std::chrono_literals;
         waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
-        stopped();
     }
 
 private:

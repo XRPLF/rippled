@@ -244,8 +244,6 @@ public:
         std::lock_guard lock(mLock);
 
         m_map.clear();
-
-        stopped();
     }
 
 private:

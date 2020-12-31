@@ -232,6 +232,11 @@ public:
     void
     onStop() override;
 
+    // We may be able to move away from this, but we can keep it during the
+    // transition.
+    bool
+    isStopped() const;
+
 private:
     friend class Coro;
 
@@ -242,6 +247,7 @@ private:
     std::uint64_t m_lastJob;
     std::set<Job> m_jobSet;
     JobCounter jobCounter_;
+    std::atomic_bool stopped_{false};
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
 

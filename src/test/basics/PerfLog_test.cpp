@@ -81,14 +81,6 @@ class PerfLog_test : public beast::unit_test::suite
         void
         onStop() override
         {
-            if (areChildrenStopped())
-                stopped();
-        }
-
-        void
-        onChildrenStopped() override
-        {
-            onStop();
         }
 
     public:

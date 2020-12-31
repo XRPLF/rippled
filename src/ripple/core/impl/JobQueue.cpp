@@ -97,24 +97,8 @@ JobQueue::addRefCountedJob(
 
     {
         std::lock_guard lock(m_mutex);
-
-        // If this goes off it means that a child didn't follow
-        // the Stoppable API rules. A job may only be added if:
-        //
-        //  - The JobQueue has NOT stopped
-        //          AND
-        //      * We are currently processing jobs
-        //          OR
-        //      * We have have pending jobs
-        //          OR
-        //      * Not all children are stopped
-        //
-        assert(
-            !isStopped() &&
-            (m_processCount > 0 || !m_jobSet.empty() || !areChildrenStopped()));
-
-        std::pair<std::set<Job>::iterator, bool> result(m_jobSet.insert(
-            Job(type, name, ++m_lastJob, data.load(), func, m_cancelCallback)));
+        auto result = m_jobSet.emplace(
+            type, name, ++m_lastJob, data.load(), func, m_cancelCallback);
         queueJob(*result.first, lock);
     }
     return true;
@@ -312,8 +296,14 @@ JobQueue::onStop()
         assert(m_processCount == 0);
         assert(m_jobSet.empty());
         assert(nSuspend_ == 0);
+        stopped_ = true;
     }
-    stopped();
+}
+
+bool
+JobQueue::isStopped() const
+{
+    return stopped_;
 }
 
 void
@@ -433,7 +423,7 @@ JobQueue::processTask(int instance)
 
     {
         std::lock_guard lock(m_mutex);
-        // Job should be destroyed before calling stopped()
+        // Job should be destroyed before stopping
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.
         finishJob(type);

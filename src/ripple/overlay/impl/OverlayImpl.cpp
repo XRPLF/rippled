@@ -561,7 +561,6 @@ OverlayImpl::onStop()
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
     }
-    stopped();
 }
 
 //------------------------------------------------------------------------------
