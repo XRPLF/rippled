@@ -253,7 +253,6 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (sendq_size != 0)
         return;
 
-    assert(send_queue_.front());
     boost::asio::async_write(
         stream_,
         boost::asio::buffer(
@@ -778,7 +777,6 @@ PeerImp::doAccept()
             strand_,
             [this, write_buffer, self = shared_from_this()](
                 error_code ec, std::size_t bytes_transferred) {
-                assert(strand_.running_in_this_thread());
                 if (!socket_.is_open())
                     return;
                 if (ec == boost::asio::error::operation_aborted)
@@ -933,7 +931,6 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (!send_queue_.empty())
     {
         // Timeout on writes only
-        assert(send_queue_.front());
         return boost::asio::async_write(
             stream_,
             boost::asio::buffer(
