@@ -216,9 +216,6 @@ public:
     // Called when the application begins shutdown.
     void
     onStop() override;
-    // Called when all child Stoppable objects have stopped.
-    void
-    onChildrenStopped() override;
 };
 
 }  // namespace perf

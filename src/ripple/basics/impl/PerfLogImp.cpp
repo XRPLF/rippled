@@ -477,11 +477,6 @@ PerfLogImp::onStop()
         }
         thread_.join();
     }
-}
-
-void
-PerfLogImp::onChildrenStopped()
-{
     stopped();
 }
 
