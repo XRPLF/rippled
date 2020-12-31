@@ -32,22 +32,8 @@ Stoppable::Stoppable(std::string name, RootStoppable& root)
 Stoppable::Stoppable(std::string name, Stoppable& parent)
     : m_name(std::move(name)), m_root(parent.m_root), m_child(this)
 {
-    setParent(parent);
-}
-
-Stoppable::~Stoppable()
-{
-}
-
-void
-Stoppable::setParent(Stoppable& parent)
-{
-    assert(!hasParent_);
     assert(!parent.isStopping());
-    assert(std::addressof(m_root) == std::addressof(parent.m_root));
-
     parent.m_children.push_front(&m_child);
-    hasParent_ = true;
 }
 
 bool

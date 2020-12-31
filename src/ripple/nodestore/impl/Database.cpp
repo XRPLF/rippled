@@ -36,7 +36,7 @@ Database::Database(
     int readThreads,
     Section const& config,
     beast::Journal journal)
-    : Stoppable(name, parent.getRoot())
+    : Stoppable(name, parent)
     , j_(journal)
     , scheduler_(scheduler)
     , earliestLedgerSeq_(

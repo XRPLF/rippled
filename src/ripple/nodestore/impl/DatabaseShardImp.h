@@ -168,7 +168,6 @@ private:
     };
 
     Application& app_;
-    Stoppable& parent_;
     mutable std::mutex mutex_;
     bool init_{false};
 

@@ -79,7 +79,6 @@ public:
                 j);
         }
         assert(backend_);
-        setParent(parent);
     }
 
     ~DatabaseNodeImp() override

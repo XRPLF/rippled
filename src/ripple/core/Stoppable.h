@@ -133,22 +133,7 @@ public:
     Stoppable(std::string name, Stoppable& parent);
 
     /** Destroy the Stoppable. */
-    virtual ~Stoppable();
-
-    RootStoppable&
-    getRoot()
-    {
-        return m_root;
-    }
-
-    /** Set the parent of this Stoppable.
-
-        @note The Stoppable must not already have a parent.
-        The parent to be set cannot not be stopping.
-        Both roots must match.
-    */
-    void
-    setParent(Stoppable& parent);
+    virtual ~Stoppable() = default;
 
     /** Returns `true` if the stoppable should stop. */
     bool
@@ -206,7 +191,6 @@ private:
     RootStoppable& m_root;
     Child m_child;
     Children m_children;
-    bool hasParent_{false};
 };
 
 //------------------------------------------------------------------------------

@@ -41,7 +41,6 @@ DatabaseRotatingImp::DatabaseRotatingImp(
         fdRequired_ += writableBackend_->fdRequired();
     if (archiveBackend_)
         fdRequired_ += archiveBackend_->fdRequired();
-    setParent(parent);
 }
 
 void

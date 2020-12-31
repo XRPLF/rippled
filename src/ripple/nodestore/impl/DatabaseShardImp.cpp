@@ -54,7 +54,6 @@ DatabaseShardImp::DatabaseShardImp(
           app.config().section(ConfigSection::shardDatabase()),
           j)
     , app_(app)
-    , parent_(parent)
     , earliestShardIndex_(seqToShardIndex(earliestLedgerSeq()))
     , avgShardFileSz_(ledgersPerShard_ * kilobytes(192ull))
     , openFinalLimit_(
@@ -221,7 +220,6 @@ DatabaseShardImp::init()
         }
 
         updateStatus(lock);
-        setParent(parent_);
         init_ = true;
     }
 
