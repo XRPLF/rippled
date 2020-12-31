@@ -705,11 +705,7 @@ DatabaseShardImp::onStop()
             shard->stop();
     }
     taskQueue_.stop();
-}
 
-void
-DatabaseShardImp::onChildrenStopped()
-{
     std::vector<std::weak_ptr<Shard>> shards;
     {
         std::lock_guard lock(mutex_);

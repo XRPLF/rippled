@@ -126,9 +126,6 @@ public:
     void
     onStop() override;
 
-    void
-    onChildrenStopped() override;
-
     /** Import the application local node store
 
         @param source The application node store.
