@@ -24,13 +24,13 @@ The server software that powers the XRP Ledger is called `rippled` and is availa
 - **[Modern Features for Smart Contracts][]:** Features like Escrow, Checks, and Payment Channels support cutting-edge financial applications including the [Interledger Protocol](https://interledger.org/). This toolbox of advanced features comes with safety features like a process for amending the network and separate checks against invariant constraints.
 - **[On-Ledger Decentralized Exchange][]:** In addition to all the features that make XRP useful on its own, the XRP Ledger also has a fully-functional accounting system for tracking and trading obligations denominated in any way users want, and an exchange built into the protocol. The XRP Ledger can settle long, cross-currency payment paths and exchanges of multiple currencies in atomic transactions, bridging gaps of trust with XRP.
 
-[Censorship-Resistant Transaction Processing]: https://developers.ripple.com/xrp-ledger-overview.html#censorship-resistant-transaction-processing
-[Fast, Efficient Consensus Algorithm]: https://developers.ripple.com/xrp-ledger-overview.html#fast-efficient-consensus-algorithm
-[Finite XRP Supply]: https://developers.ripple.com/xrp-ledger-overview.html#finite-xrp-supply
-[Responsible Software Governance]: https://developers.ripple.com/xrp-ledger-overview.html#responsible-software-governance
-[Secure, Adaptable Cryptography]: https://developers.ripple.com/xrp-ledger-overview.html#secure-adaptable-cryptography
-[Modern Features for Smart Contracts]: https://developers.ripple.com/xrp-ledger-overview.html#modern-features-for-smart-contracts
-[On-Ledger Decentralized Exchange]: https://developers.ripple.com/xrp-ledger-overview.html#on-ledger-decentralized-exchange
+[Censorship-Resistant Transaction Processing]: https://xrpl.org/xrp-ledger-overview.html#censorship-resistant-transaction-processing
+[Fast, Efficient Consensus Algorithm]: https://xrpl.org/xrp-ledger-overview.html#fast-efficient-consensus-algorithm
+[Finite XRP Supply]: https://xrpl.org/xrp-ledger-overview.html#finite-xrp-supply
+[Responsible Software Governance]: https://xrpl.org/xrp-ledger-overview.html#responsible-software-governance
+[Secure, Adaptable Cryptography]: https://xrpl.org/xrp-ledger-overview.html#secure-adaptable-cryptography
+[Modern Features for Smart Contracts]: https://xrpl.org/xrp-ledger-overview.html#modern-features-for-smart-contracts
+[On-Ledger Decentralized Exchange]: https://xrpl.org/xrp-ledger-overview.html#on-ledger-decentralized-exchange
 
 
 ## Source Code
@@ -53,9 +53,9 @@ git-subtree. See those directories' README files for more details.
 
 ## See Also
 
-* [XRP Ledger Dev Portal](https://developers.ripple.com/)
-* [XRP News](https://ripple.com/category/xrp/)
-* [Setup and Installation](https://developers.ripple.com/install-rippled.html)
+* [XRP Ledger Dev Portal](https://xrpl.org/)
+* [XRP News](https://blog.ripplex.io/xrp/)
+* [Setup and Installation](https://xrpl.org/install-rippled.html)
 * [Doxygen](https://ripple.github.io/rippled)
 
 To learn about how Ripple is transforming global payments, visit
