@@ -260,8 +260,8 @@ PerfLogImp::run()
     {
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            cond_.wait_until(lock, lastLog_ + setup_.logInterval);
-            if (stop_)
+            if (cond_.wait_until(
+                    lock, lastLog_ + setup_.logInterval, [&] { return stop_; }))
             {
                 return;
             }
