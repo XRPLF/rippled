@@ -242,8 +242,9 @@ private:
     Health
     health();
 
+public:
     void
-    onStart() override
+    start() override
     {
         if (deleteInterval_)
             thread_ = std::thread(&SHAMapStoreImp::run, this);

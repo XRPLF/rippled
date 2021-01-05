@@ -95,6 +95,11 @@ class PerfLogTest : public PerfLog
     rotate() override
     {
     }
+
+    void
+    start() override
+    {
+    }
 };
 
 }  // namespace perf

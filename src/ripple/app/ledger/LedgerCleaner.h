@@ -40,6 +40,9 @@ public:
     /** Destroy the object. */
     virtual ~LedgerCleaner() = 0;
 
+    virtual void
+    start() = 0;
+
     /** Start a long running task to clean the ledger.
         The ledger is cleaned asynchronously, on an implementation defined
         thread. This function call does not block. The long running task

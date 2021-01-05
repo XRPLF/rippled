@@ -83,6 +83,9 @@ public:
 
     virtual ~Overlay() = default;
 
+    virtual void
+    start() = 0;
+
     /** Conditionally accept an incoming HTTP request. */
     virtual Handoff
     onHandoff(

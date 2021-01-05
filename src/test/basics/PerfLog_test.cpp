@@ -59,7 +59,6 @@ class PerfLog_test : public beast::unit_test::suite
 
         ~PerfLogParent() override
         {
-            doStop();
             cleanupPerfLogDir();
         }
 
@@ -72,30 +71,17 @@ class PerfLog_test : public beast::unit_test::suite
 
     private:
         // Interfaces for RootStoppable.  Made private to encourage the use
-        // of doStart() and doStop().
-        void
-        onStart() override
-        {
-        }
-
+        // of doStop().
         void
         onStop() override
         {
         }
 
     public:
-        // Test interfaces to start and stop the PerfLog
-        void
-        doStart()
-        {
-            start();
-        }
-
         void
         doStop()
         {
-            if (started())
-                stop(j_);
+            stop(j_);
         }
 
         // Interfaces for PerfLog file management
@@ -291,7 +277,7 @@ public:
             // Start PerfLog and wait long enough for PerfLog::report()
             // to not be able to write to its file.  That should cause no
             // problems.
-            parent.doStart();
+            perfLog->start();
             std::this_thread::sleep_for(parent.getLogInterval() * 10);
             parent.doStop();
 
@@ -344,7 +330,7 @@ public:
             // Start PerfLog and wait long enough for PerfLog::report()
             // to not be able to write to its file.  That should cause no
             // problems.
-            parent.doStart();
+            perfLog->start();
             std::this_thread::sleep_for(parent.getLogInterval() * 10);
             parent.doStop();
 
@@ -363,7 +349,7 @@ public:
         // Start up the PerfLog that we'll use for testing.
         PerfLogParent parent{j_};
         auto perfLog{getPerfLog(parent, withFile)};
-        parent.doStart();
+        perfLog->start();
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
@@ -569,7 +555,7 @@ public:
         // Start up the PerfLog that we'll use for testing.
         PerfLogParent parent{j_};
         auto perfLog{getPerfLog(parent, withFile)};
-        parent.doStart();
+        perfLog->start();
 
         // Get the all the JobTypes we can use to call the jobs interfaces
         // without causing an assert.
@@ -917,7 +903,7 @@ public:
         // Start up the PerfLog that we'll use for testing.
         PerfLogParent parent{j_};
         auto perfLog{getPerfLog(parent, withFile)};
-        parent.doStart();
+        perfLog->start();
 
         // Randomly select a job type and its name.
         JobType jobType;
@@ -1077,7 +1063,7 @@ public:
 
         // Start PerfLog and wait long enough for PerfLog::report()
         // to write to its file.
-        parent.doStart();
+        perfLog->start();
         waitForFileUpdate(parent);
 
         decltype(file_size(fullPath)) firstFileSize{0};

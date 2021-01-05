@@ -459,7 +459,7 @@ PerfLogImp::rotate()
 }
 
 void
-PerfLogImp::onStart()
+PerfLogImp::start()
 {
     if (setup_.perfLog.size())
         thread_ = std::thread(&PerfLogImp::run, this);

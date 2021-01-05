@@ -308,7 +308,7 @@ public:
     operator=(const GRPCServer&) = delete;
 
     void
-    onStart() override;
+    start();
 
     void
     onStop() override;

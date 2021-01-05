@@ -86,14 +86,8 @@ public:
             LogicError("LedgerCleanerImp::onStop not called.");
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // Stoppable
-    //
-    //--------------------------------------------------------------------------
-
     void
-    onStart() override
+    start() override
     {
         thread_ = std::thread{&LedgerCleanerImp::run, this};
     }

@@ -1787,6 +1787,12 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 }
 
 void
+LedgerMaster::start()
+{
+    mLedgerCleaner->start();
+}
+
+void
 LedgerMaster::doLedgerCleaner(Json::Value const& parameters)
 {
     mLedgerCleaner->doClean(parameters);

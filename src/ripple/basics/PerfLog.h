@@ -66,6 +66,9 @@ public:
 
     virtual ~PerfLog() = default;
 
+    virtual void
+    start() = 0;
+
     /**
      * Log start of RPC call.
      *

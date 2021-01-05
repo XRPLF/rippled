@@ -31,7 +31,7 @@ namespace ripple {
 
 class RootStoppable;
 
-/** Provides an interface for starting and stopping.
+/** Provides an interface for stopping.
 
     A common method of structuring server or peer to peer code is to isolate
     conceptual portions of functionality into individual classes, aggregated
@@ -39,8 +39,8 @@ class RootStoppable;
     Frequently, these components are dependent on each other in unavoidably
     complex ways. They also often use threads and perform asynchronous i/o
     operations involving sockets or other operating system objects. The process
-    of starting and stopping such a system can be complex. This interface
-    provides a set of behaviors for ensuring that the start and stop of a
+    of stopping such a system can be complex. This interface
+    provides a set of behaviors for ensuring that the stop of a
     composite application-style object is well defined.
 
     Upon the initialization of the composite object these steps are performed:
@@ -50,22 +50,6 @@ class RootStoppable;
         These are all typically derived from Stoppable. There can be a deep
         hierarchy: Stoppable objects may themselves have Stoppable child
         objects. This captures the relationship of dependencies.
-
-    2.  start()
-
-        At this point all sub-components have been constructed and prepared,
-        so it should be safe for them to be started. While some Stoppable
-        objects may do nothing in their start function, others will start
-        threads or call asynchronous i/o initiating functions like timers or
-        sockets.
-
-    3.  onStart()
-
-        This override is called for all Stoppable objects in the hierarchy
-        during the start stage. It is guaranteed that no child Stoppable
-        objects have been started when this is called.
-
-        Objects are called parent first.
 
     This is the sequence of events involved in stopping:
 
@@ -94,8 +78,6 @@ class RootStoppable;
         Derived class that manage one or more threads should typically notify
         those threads in onStop that they should exit. In the thread function,
         when the last thread is about to exit it would call stopped().
-
-    @note A Stoppable may not be restarted.
 
     The form of the Stoppable tree in the rippled application evolves as
     the source code changes and reacts to new demands. As of July in 2020
@@ -139,11 +121,6 @@ public:
     bool
     isStopping() const;
 
-private:
-    /** Override called during start. */
-    virtual void
-    onStart();
-
     /** Override called when the stop notification is issued.
 
         The call is made on an unspecified, implementation-specific thread.
@@ -168,6 +145,7 @@ private:
     virtual void
     onStop() = 0;
 
+private:
     friend class RootStoppable;
 
     struct Child;
@@ -182,8 +160,6 @@ private:
         Stoppable* stoppable;
     };
 
-    void
-    startRecursive();
     void
     stopAsyncRecursive(beast::Journal j);
 
@@ -205,20 +181,9 @@ public:
     bool
     isStopping() const;
 
-    /** Start all contained Stoppable objects.
-        This calls onStart for all Stoppable objects in the tree, top-down.
-        Calls made after the first have no effect.
-        Thread safety:
-            May be called from any thread.
-    */
-    void
-    start();
-
     /** Notify a root stoppable and children to stop, and block until stopped.
         Has no effect if the stoppable was already notified.
         This blocks until the stoppable and all of its children have stopped.
-        Undefined behavior results if stop() is called without finishing
-        a previous call to start().
         Thread safety:
             Safe to call from any thread not associated with a Stoppable.
     */
@@ -230,17 +195,8 @@ public:
     {
     }
 
-    /** Return true if start() was ever called. */
-    bool
-    started() const
-    {
-        return startExited_;
-    }
-
 private:
     // TODO [C++20]: Use std::atomic_flag instead.
-    std::atomic<bool> startEntered_{false};
-    std::atomic<bool> startExited_{false};
     std::atomic<bool> stopEntered_{false};
     std::mutex m_;
 };

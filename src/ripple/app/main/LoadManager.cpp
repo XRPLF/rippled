@@ -77,7 +77,7 @@ LoadManager::resetDeadlockDetector()
 //------------------------------------------------------------------------------
 
 void
-LoadManager::onStart()
+LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
     assert(!thread_.joinable());

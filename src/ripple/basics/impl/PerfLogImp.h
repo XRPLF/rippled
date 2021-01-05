@@ -210,9 +210,9 @@ public:
     void
     rotate() override;
 
-    // Called when application is ready to start threads.
     void
-    onStart() override;
+    start() override;
+
     // Called when the application begins shutdown.
     void
     onStop() override;

@@ -259,6 +259,10 @@ public:
 
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
+
+    void
+    start();
+
     void
     doLedgerCleaner(Json::Value const& parameters);
 

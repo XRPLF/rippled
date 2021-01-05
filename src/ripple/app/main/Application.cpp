@@ -468,8 +468,8 @@ public:
         // VFALCO - READ THIS!
         //
         //  Do not start threads, open sockets, or do any sort of "real work"
-        //  inside the constructor. Put it in onStart instead. Or if you must,
-        //  put it in setup (but everything in setup should be moved to onStart
+        //  inside the constructor. Put it in start instead. Or if you must,
+        //  put it in setup (but everything in setup should be moved to start
         //  anyway.
         //
         //  The reason is that the unit tests require an Application object to
@@ -1023,12 +1023,9 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    //
-    // Stoppable
-    //
 
     void
-    onStart() override
+    start()
     {
         JLOG(m_journal.info()) << "Application starting. Version is "
                                << BuildInfo::getVersionString();
@@ -1705,7 +1702,13 @@ void
 ApplicationImp::doStart(bool withTimers)
 {
     startTimers_ = withTimers;
-    start();
+    ApplicationImp::start();
+    m_loadManager->start();
+    m_shaMapStore->start();
+    overlay_->start();
+    grpcServer_->start();
+    m_ledgerMaster->start();
+    perfLog_->start();
 }
 
 void

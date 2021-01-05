@@ -42,22 +42,7 @@ Stoppable::isStopping() const
     return m_root.isStopping();
 }
 
-void
-Stoppable::onStart()
-{
-}
-
 //------------------------------------------------------------------------------
-
-void
-Stoppable::startRecursive()
-{
-    onStart();
-    for (Children::const_iterator iter(m_children.cbegin());
-         iter != m_children.cend();
-         ++iter)
-        iter->stoppable->startRecursive();
-}
 
 void
 Stoppable::stopAsyncRecursive(beast::Journal j)
@@ -86,20 +71,8 @@ RootStoppable::isStopping() const
 }
 
 void
-RootStoppable::start()
-{
-    if (startEntered_.exchange(true))
-        return;
-    startRecursive();
-    startExited_ = true;
-}
-
-void
 RootStoppable::stop(beast::Journal j)
 {
-    // Must have a prior call to start()
-    assert(startExited_);
-
     bool alreadyCalled;
     {
         // Even though stopEntered_ is atomic, we change its value under a

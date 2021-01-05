@@ -44,6 +44,9 @@ public:
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
 
     virtual void
+    start() = 0;
+
+    virtual void
     rendezvous() const = 0;
 
     virtual std::uint32_t

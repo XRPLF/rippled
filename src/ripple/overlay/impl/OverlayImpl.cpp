@@ -466,14 +466,8 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
     m_peers.erase(iter);
 }
 
-//------------------------------------------------------------------------------
-//
-// Stoppable
-//
-//------------------------------------------------------------------------------
-
 void
-OverlayImpl::onStart()
+OverlayImpl::start()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
