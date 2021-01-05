@@ -80,7 +80,7 @@ PerfLogImp::Counters::countersJson() const
     Rpc totalRpc;
     for (auto const& proc : rpc_)
     {
-        Rpc const* value;
+        Rpc value;
         {
             std::lock_guard lock(proc.second.mutex);
             if (!proc.second.value.started && !proc.second.value.finished &&
@@ -88,18 +88,18 @@ PerfLogImp::Counters::countersJson() const
             {
                 continue;
             }
-            value = &proc.second.value;
+            value = proc.second.value;
         }
 
         Json::Value p(Json::objectValue);
-        p[jss::started] = std::to_string(value->started);
-        totalRpc.started += value->started;
-        p[jss::finished] = std::to_string(value->finished);
-        totalRpc.finished += value->finished;
-        p[jss::errored] = std::to_string(value->errored);
-        totalRpc.errored += value->errored;
-        p[jss::duration_us] = std::to_string(value->duration.count());
-        totalRpc.duration += value->duration;
+        p[jss::started] = std::to_string(value.started);
+        totalRpc.started += value.started;
+        p[jss::finished] = std::to_string(value.finished);
+        totalRpc.finished += value.finished;
+        p[jss::errored] = std::to_string(value.errored);
+        totalRpc.errored += value.errored;
+        p[jss::duration_us] = std::to_string(value.duration.count());
+        totalRpc.duration += value.duration;
         rpcobj[proc.first] = p;
     }
 
@@ -119,7 +119,7 @@ PerfLogImp::Counters::countersJson() const
     Jq totalJq;
     for (auto const& proc : jq_)
     {
-        Jq const* value;
+        Jq value;
         {
             std::lock_guard lock(proc.second.mutex);
             if (!proc.second.value.queued && !proc.second.value.started &&
@@ -127,22 +127,22 @@ PerfLogImp::Counters::countersJson() const
             {
                 continue;
             }
-            value = &proc.second.value;
+            value = proc.second.value;
         }
 
         Json::Value j(Json::objectValue);
-        j[jss::queued] = std::to_string(value->queued);
-        totalJq.queued += value->queued;
-        j[jss::started] = std::to_string(value->started);
-        totalJq.started += value->started;
-        j[jss::finished] = std::to_string(value->finished);
-        totalJq.finished += value->finished;
+        j[jss::queued] = std::to_string(value.queued);
+        totalJq.queued += value.queued;
+        j[jss::started] = std::to_string(value.started);
+        totalJq.started += value.started;
+        j[jss::finished] = std::to_string(value.finished);
+        totalJq.finished += value.finished;
         j[jss::queued_duration_us] =
-            std::to_string(value->queuedDuration.count());
-        totalJq.queuedDuration += value->queuedDuration;
+            std::to_string(value.queuedDuration.count());
+        totalJq.queuedDuration += value.queuedDuration;
         j[jss::running_duration_us] =
-            std::to_string(value->runningDuration.count());
-        totalJq.runningDuration += value->runningDuration;
+            std::to_string(value.runningDuration.count());
+        totalJq.runningDuration += value.runningDuration;
         jqobj[JobTypes::name(proc.first)] = j;
     }
 
