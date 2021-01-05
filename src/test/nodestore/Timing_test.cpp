@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/temp_dir.h>
@@ -26,7 +27,6 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/unity/rocksdb.h>
 #include <boost/algorithm/string.hpp>
-#include "basics/ByteUtilities.h"
 #include <atomic>
 #include <beast/unit_test/thread.hpp>
 #include <chrono>

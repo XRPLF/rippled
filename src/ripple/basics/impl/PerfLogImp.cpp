@@ -21,10 +21,10 @@
 #include <ripple/basics/impl/PerfLogImp.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
 #include <boost/optional.hpp>
-#include "core/JobTypes.h"
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
