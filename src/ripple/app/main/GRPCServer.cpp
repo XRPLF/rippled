@@ -789,7 +789,7 @@ GRPCServer::start()
 }
 
 void
-GRPCServer::onStop()
+GRPCServer::stop()
 {
     if (running_)
     {

@@ -22,7 +22,6 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Charge.h>
@@ -294,11 +293,10 @@ private:
 
 };  // GRPCServerImpl
 
-class GRPCServer : public Stoppable
+class GRPCServer
 {
 public:
-    explicit GRPCServer(Application& app, Stoppable& parent)
-        : Stoppable("GRPCServer", parent), impl_(app)
+    explicit GRPCServer(Application& app) : impl_(app)
     {
     }
 
@@ -311,9 +309,9 @@ public:
     start();
 
     void
-    onStop() override;
+    stop();
 
-    ~GRPCServer() override;
+    ~GRPCServer();
 
 private:
     GRPCServerImpl impl_;

@@ -452,7 +452,7 @@ public:
               logs_->journal("Application"),
               std::chrono::milliseconds(100),
               get_io_service())
-        , grpcServer_(std::make_unique<GRPCServer>(*this, *m_jobQueue))
+        , grpcServer_(std::make_unique<GRPCServer>(*this))
         , reportingETL_(std::make_unique<ReportingETL>(*this, *this))
     {
         add(m_resourceManager.get());
@@ -1717,6 +1717,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    grpcServer_->stop();
     m_networkOPs->stop();
     m_ledgerMaster->stop();
     m_loadManager->stop();
