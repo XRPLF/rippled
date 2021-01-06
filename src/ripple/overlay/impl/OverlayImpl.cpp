@@ -130,7 +130,6 @@ OverlayImpl::OverlayImpl(
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
     , m_peerFinder(PeerFinder::make_Manager(
-          *this,
           io_service,
           stopwatch(),
           app_.journal("PeerFinder"),
@@ -555,6 +554,7 @@ OverlayImpl::onStop()
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
     }
+    m_peerFinder->stop();
 }
 
 //------------------------------------------------------------------------------

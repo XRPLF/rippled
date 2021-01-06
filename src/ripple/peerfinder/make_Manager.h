@@ -30,7 +30,6 @@ namespace PeerFinder {
 /** Create a new Manager. */
 std::unique_ptr<Manager>
 make_Manager(
-    Stoppable& parent,
     boost::asio::io_service& io_service,
     clock_type& clock,
     beast::Journal journal,

@@ -23,7 +23,6 @@
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/peerfinder/Slot.h>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -133,10 +132,10 @@ using Endpoints = std::vector<Endpoint>;
 enum class Result { duplicate, full, success };
 
 /** Maintains a set of IP addresses used for getting into the network. */
-class Manager : public Stoppable, public beast::PropertyStream::Source
+class Manager : public beast::PropertyStream::Source
 {
 protected:
-    explicit Manager(Stoppable& parent);
+    Manager() noexcept;
 
 public:
     /** Destroy the object.
@@ -157,6 +156,10 @@ public:
     /** Transition to the started state, synchronously. */
     virtual void
     start() = 0;
+
+    /** Transition to the stopped state, synchronously. */
+    virtual void
+    stop() = 0;
 
     /** Returns the configuration for the manager. */
     virtual Config
