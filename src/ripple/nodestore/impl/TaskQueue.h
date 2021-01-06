@@ -20,7 +20,6 @@
 #ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
 #define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
 
-#include <ripple/core/Stoppable.h>
 #include <ripple/core/impl/Workers.h>
 
 #include <functional>
