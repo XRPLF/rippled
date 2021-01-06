@@ -22,7 +22,6 @@
 
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/basics/CountedObject.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/resource/Consumer.h>
@@ -53,12 +52,11 @@ public:
 public:
     /** Abstracts the source of subscription data.
      */
-    class Source : public Stoppable
+    class Source
     {
-    protected:
-        Source(char const* name, Stoppable& parent);
-
     public:
+        virtual ~Source() = default;
+
         // For some reason, these were originally called "rt"
         // for "real time". They actually refer to whether
         // you get transactions as they occur or once their

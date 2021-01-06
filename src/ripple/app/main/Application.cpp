@@ -383,7 +383,6 @@ public:
               config_->START_VALID,
               *m_jobQueue,
               *m_ledgerMaster,
-              *m_jobQueue,
               validatorKeys_,
               get_io_service(),
               logs_->journal("NetworkOPs"),
@@ -1718,6 +1717,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    m_networkOPs->stop();
     m_ledgerMaster->stop();
     m_loadManager->stop();
     JLOG(m_journal.info()) << "Done.";
