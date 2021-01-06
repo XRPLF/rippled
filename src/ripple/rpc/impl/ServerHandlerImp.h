@@ -44,7 +44,7 @@ operator<(Port const& lhs, Port const& rhs)
     return lhs.name < rhs.name;
 }
 
-class ServerHandlerImp : public Stoppable
+class ServerHandlerImp
 {
 public:
     struct Setup
@@ -107,7 +107,6 @@ private:
 public:
     ServerHandlerImp(
         Application& app,
-        Stoppable& parent,
         boost::asio::io_service& io_service,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
@@ -127,12 +126,8 @@ public:
         return setup_;
     }
 
-    //
-    // Stoppable
-    //
-
     void
-    onStop() override;
+    stop();
 
     //
     // Handler

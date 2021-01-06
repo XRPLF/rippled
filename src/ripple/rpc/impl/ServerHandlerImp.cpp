@@ -104,14 +104,12 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 
 ServerHandlerImp::ServerHandlerImp(
     Application& app,
-    Stoppable& parent,
     boost::asio::io_service& io_service,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
     CollectorManager& cm)
-    : Stoppable("ServerHandler", parent)
-    , app_(app)
+    : app_(app)
     , m_resourceManager(resourceManager)
     , m_journal(app_.journal("Server"))
     , m_networkOPs(networkOPs)
@@ -139,12 +137,12 @@ ServerHandlerImp::setup(Setup const& setup, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 void
-ServerHandlerImp::onStop()
+ServerHandlerImp::stop()
 {
     m_server->close();
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        condition_.wait(lock, [this]() { return stopped_; });
+        condition_.wait(lock, [&] { return stopped_; });
     }
 }
 
@@ -1167,7 +1165,6 @@ setup_ServerHandler(Config const& config, std::ostream&& log)
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    Stoppable& parent,
     boost::asio::io_service& io_service,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
@@ -1175,7 +1172,7 @@ make_ServerHandler(
     CollectorManager& cm)
 {
     return std::make_unique<ServerHandlerImp>(
-        app, parent, io_service, jobQueue, networkOPs, resourceManager, cm);
+        app, io_service, jobQueue, networkOPs, resourceManager, cm);
 }
 
 }  // namespace ripple

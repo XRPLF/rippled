@@ -413,7 +413,6 @@ public:
 
         , serverHandler_(make_ServerHandler(
               *this,
-              *m_networkOPs,
               get_io_service(),
               *m_jobQueue,
               *m_networkOPs,
