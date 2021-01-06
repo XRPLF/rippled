@@ -434,8 +434,7 @@ public:
               *this,
               logs_->journal("Validations"))
 
-        , m_loadManager(
-              make_LoadManager(*this, *this, logs_->journal("LoadManager")))
+        , m_loadManager(make_LoadManager(*this, logs_->journal("LoadManager")))
 
         , txQ_(
               std::make_unique<TxQ>(setup_TxQ(*config_), logs_->journal("TxQ")))
@@ -1721,6 +1720,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    m_loadManager->stop();
     JLOG(m_journal.info()) << "Done.";
 }
 

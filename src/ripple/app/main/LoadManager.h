@@ -20,8 +20,9 @@
 #ifndef RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
-#include <ripple/core/Stoppable.h>
+#include <ripple/beast/utility/Journal.h>
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -41,9 +42,9 @@ class Application;
     The warning system is used instead of merely dropping, because hostile
     peers can just reconnect anyway.
 */
-class LoadManager : public Stoppable
+class LoadManager
 {
-    LoadManager(Application& app, Stoppable& parent, beast::Journal journal);
+    LoadManager(Application& app, beast::Journal journal);
 
 public:
     LoadManager() = delete;
@@ -86,7 +87,7 @@ public:
     start();
 
     void
-    onStop() override;
+    stop();
 
 private:
     void
@@ -99,9 +100,6 @@ private:
     std::thread thread_;
     std::mutex mutex_;  // Guards deadLock_, armed_, cv_
     std::condition_variable cv_;
-    // LoadManager must be stoppable separately from other Stoppables
-    // for the ripple.app.Subscribe test. It must stop on its own signal,
-    // instead of waiting for RootStoppable::isStopping().
     bool stop_ = false;
 
     std::chrono::steady_clock::time_point
@@ -109,14 +107,11 @@ private:
     bool armed_;
 
     friend std::unique_ptr<LoadManager>
-    make_LoadManager(
-        Application& app,
-        Stoppable& parent,
-        beast::Journal journal);
+    make_LoadManager(Application& app, beast::Journal journal);
 };
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal);
+make_LoadManager(Application& app, beast::Journal journal);
 
 }  // namespace ripple
 

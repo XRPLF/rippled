@@ -30,15 +30,8 @@
 
 namespace ripple {
 
-LoadManager::LoadManager(
-    Application& app,
-    Stoppable& parent,
-    beast::Journal journal)
-    : Stoppable("LoadManager", parent)
-    , app_(app)
-    , journal_(journal)
-    , deadLock_()
-    , armed_(false)
+LoadManager::LoadManager(Application& app, beast::Journal journal)
+    : app_(app), journal_(journal), deadLock_(), armed_(false)
 {
 }
 
@@ -46,7 +39,7 @@ LoadManager::~LoadManager()
 {
     try
     {
-        onStop();
+        stop();
     }
     catch (std::exception const& ex)
     {
@@ -86,7 +79,7 @@ LoadManager::start()
 }
 
 void
-LoadManager::onStop()
+LoadManager::stop()
 {
     {
         std::lock_guard<std::mutex> sl(mutex_);
@@ -201,9 +194,9 @@ LoadManager::run()
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal)
+make_LoadManager(Application& app, beast::Journal journal)
 {
-    return std::unique_ptr<LoadManager>{new LoadManager{app, parent, journal}};
+    return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }
 
 }  // namespace ripple
