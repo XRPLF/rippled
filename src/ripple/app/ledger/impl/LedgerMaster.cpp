@@ -181,16 +181,13 @@ shouldAcquire(
 LedgerMaster::LedgerMaster(
     Application& app,
     Stopwatch& stopwatch,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)
     , mLedgerHistory(collector, app)
-    , mLedgerCleaner(detail::make_LedgerCleaner(
-          app,
-          parent,
-          app_.journal("LedgerCleaner")))
+    , mLedgerCleaner(
+          detail::make_LedgerCleaner(app, app_.journal("LedgerCleaner")))
     , standalone_(app_.config().standalone())
     , fetch_depth_(
           app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
@@ -204,6 +201,12 @@ LedgerMaster::LedgerMaster(
           app_.journal("TaggedCache"))
     , m_stats(std::bind(&LedgerMaster::collect_metrics, this), collector)
 {
+}
+
+void
+LedgerMaster::stop()
+{
+    mLedgerCleaner->stop();
 }
 
 LedgerIndex

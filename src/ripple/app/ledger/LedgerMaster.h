@@ -79,11 +79,13 @@ public:
     explicit LedgerMaster(
         Application& app,
         Stopwatch& stopwatch,
-        Stoppable& parent,
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal);
 
     virtual ~LedgerMaster() = default;
+
+    void
+    stop();
 
     LedgerIndex
     getCurrentLedgerIndex();

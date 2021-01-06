@@ -72,18 +72,15 @@ class LedgerCleanerImp : public LedgerCleaner
 
     //--------------------------------------------------------------------------
 public:
-    LedgerCleanerImp(
-        Application& app,
-        Stoppable& stoppable,
-        beast::Journal journal)
-        : LedgerCleaner(stoppable), app_(app), j_(journal)
+    LedgerCleanerImp(Application& app, beast::Journal journal)
+        : app_(app), j_(journal)
     {
     }
 
     ~LedgerCleanerImp() override
     {
         if (thread_.joinable())
-            LogicError("LedgerCleanerImp::onStop not called.");
+            LogicError("LedgerCleanerImp::stop not called.");
     }
 
     void
@@ -93,7 +90,7 @@ public:
     }
 
     void
-    onStop() override
+    stop() override
     {
         JLOG(j_.info()) << "Stopping";
         {
@@ -380,7 +377,7 @@ private:
     void
     doLedgerCleaner()
     {
-        auto shouldExit = [this]() {
+        auto shouldExit = [&] {
             std::lock_guard lock(mutex_);
             return shouldExit_;
         };
@@ -457,18 +454,16 @@ private:
 
 //------------------------------------------------------------------------------
 
-LedgerCleaner::LedgerCleaner(Stoppable& parent)
-    : Stoppable("LedgerCleaner", parent)
-    , beast::PropertyStream::Source("ledgercleaner")
+LedgerCleaner::LedgerCleaner() : beast::PropertyStream::Source("ledgercleaner")
 {
 }
 
 LedgerCleaner::~LedgerCleaner() = default;
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner(Application& app, Stoppable& parent, beast::Journal journal)
+make_LedgerCleaner(Application& app, beast::Journal journal)
 {
-    return std::make_unique<LedgerCleanerImp>(app, parent, journal);
+    return std::make_unique<LedgerCleanerImp>(app, journal);
 }
 
 }  // namespace detail

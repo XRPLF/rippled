@@ -348,7 +348,6 @@ public:
         , m_ledgerMaster(std::make_unique<LedgerMaster>(
               *this,
               stopwatch(),
-              *m_jobQueue,
               m_collectorManager->collector(),
               logs_->journal("LedgerMaster")))
 
@@ -1719,6 +1718,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    m_ledgerMaster->stop();
     m_loadManager->stop();
     JLOG(m_journal.info()) << "Done.";
 }
