@@ -214,7 +214,6 @@ public:
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
-    bool startTimers_;
 
     std::unique_ptr<DatabaseCon> mTxnDB;
     std::unique_ptr<DatabaseCon> mLedgerDB;
@@ -445,8 +444,6 @@ public:
 
         , entropyTimer_(get_io_service())
 
-        , startTimers_(false)
-
         , m_signals(get_io_service())
 
         , checkSigs_(true)
@@ -487,7 +484,7 @@ public:
     bool
     setup() override;
     void
-    doStart(bool withTimers) override;
+    start(bool withTimers) override;
     void
     run() override;
     void
@@ -1023,24 +1020,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    void
-    start()
-    {
-        JLOG(m_journal.info()) << "Application starting. Version is "
-                               << BuildInfo::getVersionString();
-
-        using namespace std::chrono_literals;
-        if (startTimers_)
-        {
-            setSweepTimer();
-            setEntropyTimer();
-        }
-
-        m_io_latency_sampler.start();
-
-        m_resolver->start();
-    }
 
     // Called to indicate shutdown.
     void
@@ -1699,10 +1678,20 @@ ApplicationImp::setup()
 }
 
 void
-ApplicationImp::doStart(bool withTimers)
+ApplicationImp::start(bool withTimers)
 {
-    startTimers_ = withTimers;
-    ApplicationImp::start();
+    JLOG(m_journal.info()) << "Application starting. Version is "
+                           << BuildInfo::getVersionString();
+
+    using namespace std::chrono_literals;
+    if (withTimers)
+    {
+        setSweepTimer();
+        setEntropyTimer();
+    }
+
+    m_io_latency_sampler.start();
+    m_resolver->start();
     m_loadManager->start();
     m_shaMapStore->start();
     overlay_->start();

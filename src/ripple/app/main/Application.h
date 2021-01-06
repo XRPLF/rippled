@@ -124,7 +124,7 @@ public:
     virtual bool
     setup() = 0;
     virtual void
-    doStart(bool withTimers) = 0;
+    start(bool withTimers) = 0;
     virtual void
     run() = 0;
     virtual void
