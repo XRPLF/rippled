@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/PerfLog.h>
+#include <ripple/basics/impl/PerfLogImp.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/json_reader.h>
@@ -45,19 +45,11 @@ class PerfLog_test : public beast::unit_test::suite
     test::jtx::Env env_{*this};
     beast::Journal j_{env_.app().journal("PerfLog_test")};
 
-    // A PerfLog needs a Parent that is a Stoppable and a function to
-    // call if it wants to shutdown the system.  This class provides both.
-    struct PerfLogParent : public RootStoppable
+    struct PerfLogParent
     {
         bool stopSignaled{false};
-        beast::Journal j_;
 
-        explicit PerfLogParent(beast::Journal const& j)
-            : RootStoppable("testRootStoppable"), j_(j)
-        {
-        }
-
-        ~PerfLogParent() override
+        ~PerfLogParent()
         {
             cleanupPerfLogDir();
         }
@@ -69,21 +61,7 @@ class PerfLog_test : public beast::unit_test::suite
             stopSignaled = true;
         }
 
-    private:
-        // Interfaces for RootStoppable.  Made private to encourage the use
-        // of doStop().
-        void
-        onStop() override
-        {
-        }
-
     public:
-        void
-        doStop()
-        {
-            stop(j_);
-        }
-
         // Interfaces for PerfLog file management
         static path
         getPerfLogPath()
@@ -136,11 +114,11 @@ class PerfLog_test : public beast::unit_test::suite
     //------------------------------------------------------------------------------
 
     // Convenience function to return a PerfLog
-    std::unique_ptr<perf::PerfLog>
+    std::unique_ptr<perf::PerfLogImp>
     getPerfLog(PerfLogParent& parent, WithFile withFile)
     {
-        return perf::make_PerfLog(
-            parent.getSetup(withFile), parent, j_, [&parent]() {
+        return perf::make_PerfLogImp(
+            parent.getSetup(withFile), j_, [&parent]() {
                 return parent.signalStop();
             });
     }
@@ -242,7 +220,7 @@ public:
         auto const fullPath = perfLogPath / PerfLogParent::getPerfLogFileName();
         {
             // Verify a PerfLog creates its file when constructed.
-            PerfLogParent parent{j_};
+            PerfLogParent parent;
             BEAST_EXPECT(!exists(perfLogPath));
 
             auto perfLog{getPerfLog(parent, WithFile::yes)};
@@ -254,7 +232,7 @@ public:
             // Create a file where PerfLog wants to put its directory.
             // Make sure that PerfLog tries to shutdown the server since it
             // can't open its file.
-            PerfLogParent parent{j_};
+            PerfLogParent parent;
             if (!BEAST_EXPECT(!exists(perfLogPath)))
                 return;
 
@@ -279,7 +257,7 @@ public:
             // problems.
             perfLog->start();
             std::this_thread::sleep_for(parent.getLogInterval() * 10);
-            parent.doStop();
+            perfLog->stop();
 
             // Remove the file.
             remove(perfLogPath);
@@ -288,7 +266,7 @@ public:
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
-            PerfLogParent parent{j_};
+            PerfLogParent parent;
             if (!BEAST_EXPECT(!exists(perfLogPath)))
                 return;
 
@@ -332,7 +310,7 @@ public:
             // problems.
             perfLog->start();
             std::this_thread::sleep_for(parent.getLogInterval() * 10);
-            parent.doStop();
+            perfLog->stop();
 
             // Fix file permissions so the file can be cleaned up.
             boost::filesystem::permissions(
@@ -347,7 +325,7 @@ public:
     {
         // Exercise the rpc interfaces of PerfLog.
         // Start up the PerfLog that we'll use for testing.
-        PerfLogParent parent{j_};
+        PerfLogParent parent;
         auto perfLog{getPerfLog(parent, withFile)};
         perfLog->start();
 
@@ -510,7 +488,7 @@ public:
         waitForFileUpdate(parent);
 
         // Politely stop the PerfLog.
-        parent.doStop();
+        perfLog->stop();
 
         auto const fullPath =
             parent.getPerfLogPath() / parent.getPerfLogFileName();
@@ -553,7 +531,7 @@ public:
 
         // Exercise the jobs interfaces of PerfLog.
         // Start up the PerfLog that we'll use for testing.
-        PerfLogParent parent{j_};
+        PerfLogParent parent;
         auto perfLog{getPerfLog(parent, withFile)};
         perfLog->start();
 
@@ -855,7 +833,7 @@ public:
         waitForFileUpdate(parent);
 
         // Politely stop the PerfLog.
-        parent.doStop();
+        perfLog->stop();
 
         // Check file contents if that is appropriate.
         auto const fullPath =
@@ -901,7 +879,7 @@ public:
         // the PerLog behaves as well as possible if an invalid ID is passed.
 
         // Start up the PerfLog that we'll use for testing.
-        PerfLogParent parent{j_};
+        PerfLogParent parent;
         auto perfLog{getPerfLog(parent, withFile)};
         perfLog->start();
 
@@ -997,7 +975,7 @@ public:
         waitForFileUpdate(parent);
 
         // Politely stop the PerfLog.
-        parent.doStop();
+        perfLog->stop();
 
         // Check file contents if that is appropriate.
         auto const fullPath =
@@ -1045,7 +1023,7 @@ public:
         auto const perfLogPath{PerfLogParent::getPerfLogPath()};
         auto const fullPath = perfLogPath / PerfLogParent::getPerfLogFileName();
 
-        PerfLogParent parent{j_};
+        PerfLogParent parent;
         BEAST_EXPECT(!exists(perfLogPath));
 
         auto perfLog{getPerfLog(parent, withFile)};
@@ -1081,7 +1059,7 @@ public:
         perfLog->rotate();
         waitForFileUpdate(parent);
 
-        parent.doStop();
+        perfLog->stop();
 
         if (withFile == WithFile::no)
         {

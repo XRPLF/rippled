@@ -46,8 +46,8 @@
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
+#include <ripple/basics/impl/PerfLogImp.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -158,7 +158,7 @@ public:
     std::unique_ptr<TimeKeeper> timeKeeper_;
 
     beast::Journal m_journal;
-    std::unique_ptr<perf::PerfLog> perfLog_;
+    std::unique_ptr<perf::PerfLogImp> perfLog_;
     Application::MutexType m_masterMutex;
 
     // Required by the SHAMapStore
@@ -270,13 +270,12 @@ public:
         , m_journal(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
-        , perfLog_(perf::make_PerfLog(
+        , perfLog_(perf::make_PerfLogImp(
               perf::setup_PerfLog(
                   config_->section("perf"),
                   config_->CONFIG_DIR),
-              *this,
               logs_->journal("PerfLog"),
-              [this]() { signalStop(); }))
+              [&] { signalStop(); }))
 
         , m_txMaster(*this)
 #ifdef RIPPLED_REPORTING
@@ -1717,6 +1716,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    perfLog_->stop();
     grpcServer_->stop();
     m_networkOPs->stop();
     m_ledgerMaster->stop();

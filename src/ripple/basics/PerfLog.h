@@ -66,9 +66,6 @@ public:
 
     virtual ~PerfLog() = default;
 
-    virtual void
-    start() = 0;
-
     /**
      * Log start of RPC call.
      *
@@ -159,23 +156,6 @@ public:
     virtual void
     rotate() = 0;
 };
-
-}  // namespace perf
-
-class Section;
-class Stoppable;
-
-namespace perf {
-
-PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
-
-std::unique_ptr<PerfLog>
-make_PerfLog(
-    PerfLog::Setup const& setup,
-    Stoppable& parent,
-    beast::Journal journal,
-    std::function<void()>&& signalStop);
 
 }  // namespace perf
 }  // namespace ripple

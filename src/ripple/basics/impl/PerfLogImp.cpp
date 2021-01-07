@@ -313,20 +313,16 @@ PerfLogImp::report()
 
 PerfLogImp::PerfLogImp(
     Setup const& setup,
-    Stoppable& parent,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-    : Stoppable("PerfLogImp", parent)
-    , setup_(setup)
-    , j_(journal)
-    , signalStop_(std::move(signalStop))
+    : setup_(setup), j_(journal), signalStop_(std::move(signalStop))
 {
     openLog();
 }
 
 PerfLogImp::~PerfLogImp()
 {
-    onStop();
+    stop();
 }
 
 void
@@ -466,7 +462,7 @@ PerfLogImp::start()
 }
 
 void
-PerfLogImp::onStop()
+PerfLogImp::stop()
 {
     if (thread_.joinable())
     {
@@ -503,15 +499,13 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
     return setup;
 }
 
-std::unique_ptr<PerfLog>
-make_PerfLog(
+std::unique_ptr<PerfLogImp>
+make_PerfLogImp(
     PerfLog::Setup const& setup,
-    Stoppable& parent,
     beast::Journal journal,
     std::function<void()>&& signalStop)
 {
-    return std::make_unique<PerfLogImp>(
-        setup, parent, journal, std::move(signalStop));
+    return std::make_unique<PerfLogImp>(setup, journal, std::move(signalStop));
 }
 
 }  // namespace perf

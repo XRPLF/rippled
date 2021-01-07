@@ -23,7 +23,6 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <boost/asio/ip/host_name.hpp>
@@ -45,7 +44,7 @@ namespace perf {
 /**
  * Implementation class for PerfLog.
  */
-class PerfLogImp : public PerfLog, Stoppable
+class PerfLogImp : public PerfLog
 {
     /**
      * Track performance counters and currently executing tasks.
@@ -161,7 +160,6 @@ class PerfLogImp : public PerfLog, Stoppable
 public:
     PerfLogImp(
         Setup const& setup,
-        Stoppable& parent,
         beast::Journal journal,
         std::function<void()>&& signalStop);
 
@@ -211,12 +209,20 @@ public:
     rotate() override;
 
     void
-    start() override;
+    start();
 
-    // Called when the application begins shutdown.
     void
-    onStop() override;
+    stop();
 };
+
+PerfLog::Setup
+setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
+
+std::unique_ptr<PerfLogImp>
+make_PerfLogImp(
+    PerfLog::Setup const& setup,
+    beast::Journal journal,
+    std::function<void()>&& signalStop);
 
 }  // namespace perf
 }  // namespace ripple
