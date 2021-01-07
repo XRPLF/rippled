@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 """A script to test rippled in an infinite loop of start-sync-stop.
 
+- Requires Python 3.7+.
 - Can be stopped with SIGINT.
-- Tested on Python 3.8.
 - Has no dependencies outside the standard library.
 """
+
+import sys
+
+assert sys.version_info.major == 3 and sys.version_info.minor >= 7
 
 import argparse
 import asyncio
@@ -35,9 +39,9 @@ async def rippled(exe=DEFAULT_EXE, config=DEFAULT_CONFIG):
     """A context manager for a rippled process."""
     # Start the server.
     process = await asyncio.create_subprocess_exec(
-        exe,
+        str(exe),
         '--conf',
-        config,
+        str(config),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
