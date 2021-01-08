@@ -48,8 +48,10 @@ that `test` code should *never* be included in `ripple` code.)
 The [levelization.sh](levelization.sh) script takes no parameters,
 reads no environment variables, and can be run from any directory,
 as long as it is in the expected location in the rippled repo.
-It can be run at any time from within a checked out repo, and will
-do an analysis of all the `#include`s in
+It is strongly recommended that `git clean -ix` be run to clean up any
+stale files that might interfere with accurate results.
+Otherwise, `levelization.sh` can be run at any time from within
+a checked out repo, and will do an analysis of all the `#include`s in
 the rippled source. The only caveat is that it runs much slower
 under Windows than in Linux. It hasn't yet been tested under MacOS.
 It generates many files of [results](results):
