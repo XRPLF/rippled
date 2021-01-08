@@ -58,18 +58,14 @@ public:
     }
 };
 
-class InboundTransactionsImp : public InboundTransactions, public Stoppable
+class InboundTransactionsImp : public InboundTransactions
 {
 public:
-    Application& app_;
-
     InboundTransactionsImp(
         Application& app,
-        Stoppable& parent,
         beast::insight::Collector::ptr const& collector,
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
-        : Stoppable("InboundTransactions", parent)
-        , app_(app)
+        : app_(app)
         , m_seq(0)
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
@@ -116,7 +112,7 @@ public:
                 return it->second.mSet;
             }
 
-            if (!acquire || isStopping())
+            if (!acquire || stopping_)
                 return std::shared_ptr<SHAMap>();
 
             ta = std::make_shared<TransactionAcquire>(app_, hash);
@@ -239,18 +235,21 @@ public:
     }
 
     void
-    onStop() override
+    stop() override
     {
         std::lock_guard lock(mLock);
-
+        stopping_ = true;
         m_map.clear();
     }
 
 private:
     using MapType = hash_map<uint256, InboundTransactionSet>;
 
+    Application& app_;
+
     std::recursive_mutex mLock;
 
+    bool stopping_{false};
     MapType m_map;
     std::uint32_t m_seq;
 
@@ -267,12 +266,11 @@ InboundTransactions::~InboundTransactions() = default;
 std::unique_ptr<InboundTransactions>
 make_InboundTransactions(
     Application& app,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
     return std::make_unique<InboundTransactionsImp>(
-        app, parent, collector, std::move(gotSet));
+        app, collector, std::move(gotSet));
 }
 
 }  // namespace ripple

@@ -361,7 +361,6 @@ public:
 
         , m_inboundTransactions(make_InboundTransactions(
               *this,
-              *m_jobQueue,
               m_collectorManager->collector(),
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {
                   gotTXSet(set, fromAcquire);
@@ -1715,6 +1714,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    m_inboundTransactions->stop();
     overlay_->stop();
     perfLog_->stop();
     grpcServer_->stop();
