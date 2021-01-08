@@ -52,6 +52,8 @@ enum JobType {
     jtRPC,            // A websocket command from the client
     jtUPDATE_PF,      // Update pathfinding requests
     jtTRANSACTION,    // A transaction received from the network
+    jtMISSING_TXN,    // Request missing transactions
+    jtREQUESTED_TXN,  // Reply with requested transactions
     jtBATCH,          // Apply batched transactions
     jtADVANCE,        // Advance validated/acquired ledgers
     jtPUBLEDGER,      // Publish a fully-accepted ledger
@@ -65,8 +67,6 @@ enum JobType {
     jtNETOP_CLUSTER,  // NetworkOPs cluster peer report
     jtNETOP_TIMER,    // NetworkOPs net timer processing
     jtADMIN,          // An administrative operation
-    jtMISSING_TXN,    // Request missing transactions
-    jtREQUESTED_TXN,  // Reply with requested transactions
 
     // Special job types which are not dispatched by the job pool
     jtPEER,

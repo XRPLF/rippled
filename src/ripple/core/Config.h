@@ -222,16 +222,16 @@ public:
     // If tx reduce-relay feature is disabled
     // and this flag is enabled then some
     // tx-related metrics is collected. It
-    // is ignored if tx reduce-relay features is
+    // is ignored if tx reduce-relay feature is
     // enabled. It is used in debugging to compare
     // metrics with the feature disabled/enabled.
     bool TX_REDUCE_RELAY_METRICS = false;
     // Minimum peers a server should have before
     // selecting random peers
-    std::uint32_t TX_REDUCE_RELAY_MIN_PEERS = 20;
+    std::size_t TX_REDUCE_RELAY_MIN_PEERS = 20;
     // Percentage of peers with the tx reduce-relay feature enabled
     // to relay to out of total active peers
-    std::uint32_t TX_RELAY_PERCENTAGE = 25;
+    std::size_t TX_RELAY_PERCENTAGE = 25;
 
     // These override the command line client settings
     std::optional<beast::IP::Endpoint> rpc_ip;

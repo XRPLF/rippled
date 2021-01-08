@@ -1154,12 +1154,14 @@ OverlayImpl::getActivePeers() const
 Overlay::PeerSequence
 OverlayImpl::getActivePeers(
     std::set<Peer::id_t> const& toSkip,
+    std::size_t& active,
     std::size_t& disabled,
-    std::size_t& disabledInSkip) const
+    std::size_t& enabledInSkip) const
 {
     Overlay::PeerSequence ret;
     std::lock_guard lock(mutex_);
 
+    active = ids_.size();
     ret.reserve(ids_.size() - toSkip.size());
 
     for (auto& [id, w] : ids_)
@@ -1170,11 +1172,10 @@ OverlayImpl::getActivePeers(
             if (!p->txReduceRelayEnabled())
                 disabled++;
 
-            if (toSkip.find(id) == toSkip.end())
+            if (toSkip.count(id) == 0)
                 ret.emplace_back(std::move(p));
-            else if (!p->txReduceRelayEnabled())
-                // tx rr feature disabled and in toSkip
-                disabledInSkip++;
+            else if (p->txReduceRelayEnabled())
+                enabledInSkip++;
         }
     }
 
@@ -1304,52 +1305,53 @@ OverlayImpl::relay(
     std::set<Peer::id_t> const& toSkip)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
-
     std::size_t active = 0;
-    if (app_.config().TX_REDUCE_RELAY_ENABLE ||
-        app_.config().TX_REDUCE_RELAY_METRICS)
-        active = size();
+    std::size_t disabled = 0;
+    std::size_t enabledInSkip = 0;
+
+    // active peers excluding peers in toSkip
+    auto peers = getActivePeers(toSkip, active, disabled, enabledInSkip);
 
     if (!app_.config().TX_REDUCE_RELAY_ENABLE ||
         active < app_.config().TX_REDUCE_RELAY_MIN_PEERS)
     {
-        foreach(send_if_not(sm, peer_in_set(toSkip)));
-        if (app_.config().TX_REDUCE_RELAY_METRICS)
+        for (auto const& p : peers)
+            p->send(sm);
+        if (app_.config().TX_REDUCE_RELAY_ENABLE ||
+            app_.config().TX_REDUCE_RELAY_METRICS)
             txMetrics_.addMetrics(active, toSkip.size(), 0);
         return;
     }
 
-    std::size_t disabled = 0;
-    std::size_t disabledInSkip = 0;
-    // active peers excluding peers in toSkip
-    auto peers = getActivePeers(toSkip, disabled, disabledInSkip);
-
-    // select a fraction of all active peers with the feature enabled
-    auto toRelay = static_cast<std::size_t>(
-        app_.config().TX_RELAY_PERCENTAGE * (active - disabled) / 100);
+    // relay to min peers plus a fraction of active peers above min
+    // and disabled peers. exclude disabled peers because they
+    // are always relayed to.
+    auto exclude = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+    auto toRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+        (active - std::min(active, exclude)) *
+            app_.config().TX_RELAY_PERCENTAGE / 100;
 
     txMetrics_.addMetrics(toRelay, toSkip.size(), disabled);
 
-    // exclude peers which have the feature enabled and are in toSkip
-    toRelay = toRelay - std::min(toRelay, toSkip.size() - disabledInSkip);
-    if (toRelay)
+    if (active > exclude)
         std::shuffle(peers.begin(), peers.end(), default_prng());
 
     JLOG(journal_.debug()) << "relaying tx, active peers " << peers.size()
                            << " selected " << toRelay << " skip "
                            << toSkip.size() << " not enabled " << disabled;
 
-    std::uint16_t selected = 0;
-    for (auto p : peers)
+    // count skipped peers with the enabled feature towards the quota
+    std::uint16_t relayed = enabledInSkip;
+    for (auto const& p : peers)
     {
         // always relay to a peer with the disabled feature
         if (!p->txReduceRelayEnabled())
         {
             p->send(sm);
         }
-        else if (selected < toRelay)
+        else if (relayed < toRelay)
         {
-            selected++;
+            relayed++;
             p->send(sm);
         }
         else

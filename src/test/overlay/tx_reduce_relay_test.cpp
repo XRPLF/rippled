@@ -84,7 +84,8 @@ private:
             test(false, false, 20, 25);
             test(false, false, 20, 0, false);
             test(false, false, 20, 101, false);
-            test(false, false, 20, 10, false);
+            test(false, false, 9, 10, false);
+            test(false, false, 10, 9, false);
         });
     }
 
@@ -219,14 +220,9 @@ private:
         m.set_deferred(false);
         m.set_status(protocol::TransactionStatus::tsNEW);
         env.app().overlay().relay(uint256{0}, m, toSkip);
-        auto peerTest = [](std::uint16_t expectRelay,
-                           std::uint16_t expectQueue) {
-            return PeerTest::sendTx_ == expectRelay &&
-                PeerTest::queueTx_ == expectQueue;
-        };
         BEAST_EXPECT(
-            (!txRREnabled && peerTest(expectRelay, expectQueue)) ||
-            (txRREnabled && peerTest(expectRelay, expectQueue)));
+            PeerTest::sendTx_ == expectRelay &&
+            PeerTest::queueTx_ == expectQueue);
     }
 
     void
@@ -236,34 +232,37 @@ private:
         std::set<Peer::id_t> skip = {0, 1, 2, 3, 4};
         testConfig(log);
         // relay to all peers, no hash queue
-        testRelay("disabled", false, 10, 0, 10, 25, 10, 0);
-        // relay to all peers because min is higher than nPeers
-        testRelay("enabled, low min", true, 10, 0, 20, 25, 10, 0);
-        // relay to 25% of peers (0.25*60=15), queue the rest (45)
-        testRelay("enabled", true, 60, 0, 20, 25, 15, 45);
-        // relay to 25% of nPeers - nSkip (0.25*60-5)=10), queue the rest less
-        // skip (45)
-        testRelay("enabled, skip peers", true, 60, 0, 20, 25, 10, 45, skip);
-        // relay to 25% of (nPeers - disalbed) + disabled, (0.25*(70-10)+10=25),
-        // queue the rest (45)
-        testRelay("enabled, disabled peers", true, 70, 10, 20, 25, 25, 45);
-        // relay to 25% of (nPeers - disabled) - (skip - disabledInSkip) +
-        // disabledNotSkip) (0.25*(70-10)-(5-5)+5=20), queue the rest less skip
-        // (45)
-        testRelay(
-            "enabled, disabled & skip peers",
-            true,
-            70,
-            10,
-            20,
-            25,
-            20,
-            45,
-            skip);
-        // no relay because toRelay is equal to skip (0.25*20-5=0), queue all
-        // less skip (15)
-        testRelay(
-            "enabled, skip peers, no relay", true, 20, 0, 10, 25, 0, 15, skip);
+        testRelay("feature disabled", false, 10, 0, 10, 25, 10, 0);
+        // relay to nPeers - skip (10-5=5)
+        testRelay("feature disabled & skip", false, 10, 0, 10, 25, 5, 0, skip);
+        // relay to all peers because min is greater than nPeers
+        testRelay("relay all 1", true, 10, 0, 20, 25, 10, 0);
+        // relay to all peers because min + disabled is greater thant nPeers
+        testRelay("relay all 2", true, 20, 15, 10, 25, 20, 0);
+        // relay to minPeers + 25% of nPeers-minPeers (20+0.25*(60-20)=30),
+        // queue the rest (30)
+        testRelay("relay & queue", true, 60, 0, 20, 25, 30, 30);
+        // relay to minPeers + 25% of (nPeers - nPeers) - skip
+        // (20+0.25*(60-20)-5=25), queue the rest, skip counts towards relayed
+        // (60-25-5=30)
+        testRelay("skip", true, 60, 0, 20, 25, 25, 30, skip);
+        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disalbed)
+        // (20+10+0.25*(70-20-10)=40), queue the rest (30)
+        testRelay("disabled", true, 70, 10, 20, 25, 40, 30);
+        // relay to minPeers + disabled-not-in-skip + 25% of (nPeers - minPeers
+        // - disabled) (20+5+0.25*(70-20-10)=35), queue the rest, skip counts
+        // towards relayed (70-35-5=30))
+        testRelay("disabled & skip", true, 70, 10, 20, 25, 35, 30, skip);
+        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disabled)
+        // - skip (10+5+0.25*(15-10-5)-10=5), queue the rest, skip counts
+        // towards relayed (15-5-10=0)
+        skip = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        testRelay("disabled & skip, no queue", true, 15, 5, 10, 25, 5, 0, skip);
+        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disabled)
+        // - skip (10+2+0.25*(20-10-2)-14=0), queue the rest, skip counts
+        // towards relayed (20-14=6)
+        skip = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+        testRelay("disabled & skip, no relay", true, 20, 2, 10, 25, 0, 6, skip);
     }
 };
 

@@ -1553,7 +1553,7 @@ PeerImp::handleTransaction(
 
             // Erase only if the server has seen this tx. If the server has not
             // seen this tx then the tx could not has been queued for this peer.
-            if (eraseTxQueue && txReduceRelayEnabled())
+            else if (eraseTxQueue && txReduceRelayEnabled())
                 removeTxQueue(txID);
 
             return;
