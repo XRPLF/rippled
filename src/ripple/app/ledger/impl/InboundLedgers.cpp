@@ -33,7 +33,7 @@
 
 namespace ripple {
 
-class InboundLedgersImp : public InboundLedgers, public Stoppable
+class InboundLedgersImp : public InboundLedgers
 {
 private:
     Application& app_;
@@ -49,10 +49,8 @@ public:
     InboundLedgersImp(
         Application& app,
         clock_type& clock,
-        Stoppable& parent,
         beast::insight::Collector::ptr const& collector)
-        : Stoppable("InboundLedgers", parent)
-        , app_(app)
+        : app_(app)
         , fetchRate_(clock.now())
         , j_(app.journal("InboundLedger"))
         , m_clock(clock)
@@ -72,13 +70,15 @@ public:
         assert(
             reason != InboundLedger::Reason::SHARD ||
             (seq != 0 && app_.getShardStore()));
-        if (isStopping())
-            return {};
 
         bool isNew = true;
         std::shared_ptr<InboundLedger> inbound;
         {
             ScopedLockType sl(mLock);
+            if (stopping_)
+            {
+                return {};
+            }
             auto it = mLedgers.find(hash);
             if (it != mLedgers.end())
             {
@@ -382,10 +382,10 @@ public:
     }
 
     void
-    onStop() override
+    stop() override
     {
         ScopedLockType lock(mLock);
-
+        stopping_ = true;
         mLedgers.clear();
         mRecentFailures.clear();
     }
@@ -396,6 +396,7 @@ private:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
     std::recursive_mutex mLock;
 
+    bool stopping_ = false;
     using MapType = hash_map<uint256, std::shared_ptr<InboundLedger>>;
     MapType mLedgers;
 
@@ -410,10 +411,9 @@ std::unique_ptr<InboundLedgers>
 make_InboundLedgers(
     Application& app,
     InboundLedgers::clock_type& clock,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp>(app, clock, parent, collector);
+    return std::make_unique<InboundLedgersImp>(app, clock, collector);
 }
 
 }  // namespace ripple

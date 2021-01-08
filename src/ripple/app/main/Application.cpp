@@ -356,7 +356,6 @@ public:
         , m_inboundLedgers(make_InboundLedgers(
               *this,
               stopwatch(),
-              *m_jobQueue,
               m_collectorManager->collector()))
 
         , m_inboundTransactions(make_InboundTransactions(
@@ -1714,6 +1713,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    m_inboundLedgers->stop();
     m_inboundTransactions->stop();
     overlay_->stop();
     perfLog_->stop();
