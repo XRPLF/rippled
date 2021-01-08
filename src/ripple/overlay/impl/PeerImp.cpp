@@ -1940,7 +1940,7 @@ PeerImp::onValidatorListMessage(
             std::lock_guard<std::mutex> sl(recentLock_);
             assert(applyResult.sequence && applyResult.publisherKey);
             assert(
-                publisherListSequences_[*applyResult.publisherKey] ==
+                publisherListSequences_[*applyResult.publisherKey] <=
                 applyResult.sequence);
         }
 #endif  // !NDEBUG
