@@ -17,10 +17,16 @@ import json
 import logging
 import os
 from pathlib import Path
+import platform
 import subprocess
 import time
 import urllib.error
 import urllib.request
+
+# Enable asynchronous subprocesses on Windows. The default changed in 3.8.
+# https://docs.python.org/3.7/library/asyncio-platforms.html#subprocess-support-on-windows
+if platform.system() == 'Windows' and sys.version_info.minor < 8:
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 DEFAULT_EXE = 'rippled'
 DEFAULT_CONFIG = 'rippled.cfg'
@@ -79,8 +85,8 @@ async def sync(
         interval=DEFAULT_POLL_INTERVAL,
 ):
     """Poll rippled on an interval until it has been synced for a duration."""
-    stopwatch = 0
-    while stopwatch < duration:
+    start = time.perf_counter()
+    while (time.perf_counter() - start) < duration:
         await asyncio.sleep(interval)
 
         request = urllib.request.Request(
@@ -94,43 +100,33 @@ async def sync(
             try:
                 body = json.loads(response.read())
             except urllib.error.HTTPError as cause:
-                logging.warning(f'server_state returned s.o.t. JSON: {cause}')
-                stopwatch = 0
+                logging.warning(f'server_state returned not JSON: {cause}')
+                start = time.perf_counter()
                 continue
 
         try:
             state = body['result']['state']['server_state']
         except KeyError as cause:
             logging.warning(f'server_state response missing key: {cause.key}')
-            stopwatch = 0
+            start = time.perf_counter()
             continue
         logging.info(f'server_state: {state}')
-        if state in SYNC_STATES:
-            stopwatch += interval
-        else:
+        if state not in SYNC_STATES:
             # Require a contiguous sync state.
-            stopwatch = 0
+            start = time.perf_counter()
 
 
 async def loop(test, *, exe=DEFAULT_EXE, config=DEFAULT_CONFIG):
     """
     Start-test-stop rippled in an infinite loop.
 
-    Logs to a different file for each iteration.
+    Moves log to a different file after each iteration.
     """
     id = 0
     while True:
-        link = 'debug.log'
-        target = f'debug.{id}.log'
-        try:
-            os.unlink(link)
-            os.unlink(target)
-        except FileNotFoundError:
-            pass
-        os.symlink(target, link)
-        logging.info(f'iteration {id} logging to {target}')
+        logging.info(f'iteration: {id}')
         async with rippled(exe, config) as process:
-            start = time.time()
+            start = time.perf_counter()
             exited = asyncio.create_task(process.wait())
             tested = asyncio.create_task(test())
             # Try to sync as long as the process is running.
@@ -145,8 +141,9 @@ async def loop(test, *, exe=DEFAULT_EXE, config=DEFAULT_CONFIG):
             else:
                 assert done == {tested}
                 assert tested.exception() is None
-            end = time.time()
+            end = time.perf_counter()
             logging.info(f'synced after {end - start:.0f} seconds')
+        os.replace('debug.log', f'debug.{id}.log')
         id += 1
 
 
