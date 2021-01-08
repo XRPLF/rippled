@@ -971,7 +971,7 @@ PeerImp::onMessageBegin(
     fee_ = Resource::feeLightPeer;
     overlay_.reportTraffic(
         TrafficCount::categorize(*m, type, true), true, static_cast<int>(size));
-    JLOG(journal_.debug()) << "onMessageBegin: " << type << " " << size << " "
+    JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " "
                            << uncompressed_size << " " << isCompressed;
 }
 
