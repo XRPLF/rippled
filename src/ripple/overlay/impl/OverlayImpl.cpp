@@ -72,14 +72,16 @@ OverlayImpl::Timer::Timer(OverlayImpl& overlay)
 void
 OverlayImpl::Timer::stop()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    // This method is only ever called from the same strand that calls
+    // Timer::on_timer, ensuring they never execute concurrently.
+    stopping_ = true;
+    timer_.cancel();
 }
 
 void
-OverlayImpl::Timer::run()
+OverlayImpl::Timer::start()
 {
-    timer_.expires_from_now(std::chrono::seconds(1));
+    timer_.expires_after(std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
         &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
 }
@@ -87,7 +89,7 @@ OverlayImpl::Timer::run()
 void
 OverlayImpl::Timer::on_timer(error_code ec)
 {
-    if (ec || overlay_.isStopping())
+    if (ec || stopping_)
     {
         if (ec && ec != boost::asio::error::operation_aborted)
         {
@@ -103,9 +105,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
     if ((overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
-    timer_.expires_from_now(std::chrono::seconds(1));
-    timer_.async_wait(overlay_.strand_.wrap(std::bind(
-        &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
+    start();
 }
 
 //------------------------------------------------------------------------------
@@ -113,15 +113,13 @@ OverlayImpl::Timer::on_timer(error_code ec)
 OverlayImpl::OverlayImpl(
     Application& app,
     Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_service& io_service,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
-    : Overlay(parent)
-    , app_(app)
+    : app_(app)
     , io_service_(io_service)
     , work_(boost::in_place(std::ref(io_service_)))
     , strand_(io_service_)
@@ -543,13 +541,13 @@ OverlayImpl::start()
     std::lock_guard lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
-    timer->run();
+    timer->start();
 }
 
 void
-OverlayImpl::onStop()
+OverlayImpl::stop()
 {
-    strand_.dispatch(std::bind(&OverlayImpl::stop, this));
+    strand_.dispatch(std::bind(&OverlayImpl::stopChildren, this));
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -1276,7 +1274,7 @@ OverlayImpl::remove(Child& child)
 }
 
 void
-OverlayImpl::stop()
+OverlayImpl::stopChildren()
 {
     // Calling list_[].second->stop() may cause list_ to be modified
     // (OverlayImpl::remove() may be called on this same thread).  So
@@ -1530,11 +1528,10 @@ setup_Overlay(BasicConfig const& config)
     return setup;
 }
 
-std::unique_ptr<Overlay>
-make_Overlay(
+std::unique_ptr<OverlayImpl>
+make_OverlayImpl(
     Application& app,
     Overlay::Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
@@ -1545,7 +1542,6 @@ make_Overlay(
     return std::make_unique<OverlayImpl>(
         app,
         setup,
-        parent,
         serverHandler,
         resourceManager,
         resolver,

@@ -218,7 +218,7 @@ public:
     std::unique_ptr<DatabaseCon> mTxnDB;
     std::unique_ptr<DatabaseCon> mLedgerDB;
     std::unique_ptr<DatabaseCon> mWalletDB;
-    std::unique_ptr<Overlay> overlay_;
+    std::unique_ptr<OverlayImpl> overlay_;
     std::vector<std::unique_ptr<Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
@@ -1496,10 +1496,9 @@ ApplicationImp::setup()
     //             if (!config_.standalone())
     if (!config_->reporting())
     {
-        overlay_ = make_Overlay(
+        overlay_ = make_OverlayImpl(
             *this,
             setup_Overlay(*config_),
-            *m_jobQueue,
             *serverHandler_,
             *m_resourceManager,
             *m_resolver,
@@ -1716,6 +1715,7 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    overlay_->stop();
     perfLog_->stop();
     grpcServer_->stop();
     m_networkOPs->stop();

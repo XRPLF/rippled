@@ -21,8 +21,7 @@
 #define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 
 #include <ripple/basics/Resolver.h>
-#include <ripple/core/Stoppable.h>
-#include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <boost/asio/io_service.hpp>
@@ -34,11 +33,10 @@ Overlay::Setup
 setup_Overlay(BasicConfig const& config);
 
 /** Creates the implementation of Overlay. */
-std::unique_ptr<Overlay>
-make_Overlay(
+std::unique_ptr<OverlayImpl>
+make_OverlayImpl(
     Application& app,
     Overlay::Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
