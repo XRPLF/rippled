@@ -1026,13 +1026,7 @@ OverlayImpl::processValidatorList(
     if (!req.target().starts_with(prefix.data()) || !setup_.vlEnabled)
         return false;
 
-    auto key = req.target().substr(prefix.size());
-
-    if (key.empty())
-        return false;
-
-    // find the list
-    auto vl = app_.validators().getAvailable(key);
+    std::uint32_t version = 1;
 
     boost::beast::http::response<json_body> msg;
     msg.version(req.version());
@@ -1040,24 +1034,52 @@ OverlayImpl::processValidatorList(
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
-    if (!vl)
-    {
-        // 404 not found
-        msg.result(boost::beast::http::status::not_found);
+    auto fail = [&msg, &handoff](auto status) {
+        msg.result(status);
         msg.insert("Content-Length", "0");
 
         msg.body() = Json::nullValue;
+
+        msg.prepare_payload();
+        handoff.response = std::make_shared<SimpleWriter>(msg);
+        return true;
+    };
+
+    auto key = req.target().substr(prefix.size());
+
+    if (auto slash = key.find('/'); slash != boost::string_view::npos)
+    {
+        auto verString = key.substr(0, slash);
+        if (!boost::conversion::try_lexical_convert(verString, version))
+            return fail(boost::beast::http::status::bad_request);
+        key = key.substr(slash + 1);
+    }
+
+    if (key.empty())
+        return fail(boost::beast::http::status::bad_request);
+
+    // find the list
+    auto vl = app_.validators().getAvailable(key, version);
+
+    if (!vl)
+    {
+        // 404 not found
+        return fail(boost::beast::http::status::not_found);
+    }
+    else if (!*vl)
+    {
+        return fail(boost::beast::http::status::bad_request);
     }
     else
     {
         msg.result(boost::beast::http::status::ok);
 
         msg.body() = *vl;
-    }
 
-    msg.prepare_payload();
-    handoff.response = std::make_shared<SimpleWriter>(msg);
-    return true;
+        msg.prepare_payload();
+        handoff.response = std::make_shared<SimpleWriter>(msg);
+        return true;
+    }
 }
 
 bool
@@ -1366,7 +1388,7 @@ std::shared_ptr<Message>
 makeSquelchMessage(
     PublicKey const& validator,
     bool squelch,
-    uint64_t squelchDuration)
+    uint32_t squelchDuration)
 {
     protocol::TMSquelch m;
     m.set_squelch(squelch);
@@ -1380,12 +1402,11 @@ void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 {
     if (auto peer = findPeerByShortID(id);
-        peer && app_.config().REDUCE_RELAY_SQUELCH)
+        peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
     {
         // optimize - multiple message with different
         // validator might be sent to the same peer
-        auto m = makeSquelchMessage(validator, false, 0);
-        peer->send(m);
+        peer->send(makeSquelchMessage(validator, false, 0));
     }
 }
 
@@ -1396,10 +1417,9 @@ OverlayImpl::squelch(
     uint32_t squelchDuration) const
 {
     if (auto peer = findPeerByShortID(id);
-        peer && app_.config().REDUCE_RELAY_SQUELCH)
+        peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
     {
-        auto m = makeSquelchMessage(validator, true, squelchDuration);
-        peer->send(m);
+        peer->send(makeSquelchMessage(validator, true, squelchDuration));
     }
 }
 

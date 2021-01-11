@@ -43,6 +43,8 @@
 
 namespace ripple {
 
+struct ValidatorBlobInfo;
+
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
                 public OverlayImpl::Child
@@ -116,7 +118,8 @@ private:
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
-    squelch::Squelch<UptimeClock> squelch_;
+    reduce_relay::Squelch<UptimeClock> squelch_;
+    inline static std::atomic_bool reduceRelayReady_{false};
 
     // Notes on thread locking:
     //
@@ -166,6 +169,10 @@ private:
     hash_map<PublicKey, ShardInfo> shardInfo_;
 
     Compressed compressionEnabled_ = Compressed::Off;
+
+    // true if validation/proposal reduce-relay feature is enabled
+    // on the peer.
+    bool vpReduceRelayEnabled_ = false;
 
     friend class OverlayImpl;
 
@@ -457,6 +464,11 @@ private:
     void
     onWriteMessage(error_code ec, std::size_t bytes_transferred);
 
+    // Check if reduce-relay feature is enabled and
+    // reduce_relay::WAIT_ON_BOOTUP time passed since the start
+    bool
+    reduceRelayReady();
+
 public:
     //--------------------------------------------------------------------------
     //
@@ -471,7 +483,9 @@ public:
     onMessageBegin(
         std::uint16_t type,
         std::shared_ptr<::google::protobuf::Message> const& m,
-        std::size_t size);
+        std::size_t size,
+        std::size_t uncompressed_size,
+        bool isCompressed);
 
     void
     onMessageEnd(
@@ -509,6 +523,8 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMValidatorList> const& m);
     void
+    onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m);
+    void
     onMessage(std::shared_ptr<protocol::TMValidation> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
@@ -526,6 +542,13 @@ private:
 
     void
     doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+
+    void
+    onValidatorListMessage(
+        std::string const& messageType,
+        std::string const& manifest,
+        std::uint32_t version,
+        std::vector<ValidatorBlobInfo> const& blobs);
 
     void
     checkTransaction(
@@ -583,18 +606,32 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
+    , squelch_(app_.journal("Squelch"))
     , usage_(usage)
     , fee_(Resource::feeLightPeer)
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          headers_["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION
+          peerFeatureEnabled(
+              headers_,
+              FEATURE_COMPR,
+              "lz4",
+              app_.config().COMPRESSION)
               ? Compressed::On
               : Compressed::Off)
+    , vpReduceRelayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_VPRR,
+          app_.config().VP_REDUCE_RELAY_ENABLE))
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    JLOG(journal_.debug()) << "compression enabled "
+                           << (compressionEnabled_ == Compressed::On)
+                           << " vp reduce-relay enabled "
+                           << vpReduceRelayEnabled_ << " on " << remote_address_
+                           << " " << id_;
 }
 
 template <class FwdIt, class>

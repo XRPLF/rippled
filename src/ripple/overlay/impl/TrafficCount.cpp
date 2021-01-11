@@ -48,7 +48,8 @@ TrafficCount::categorize(
     if (type == protocol::mtTRANSACTION)
         return TrafficCount::category::transaction;
 
-    if (type == protocol::mtVALIDATORLIST)
+    if (type == protocol::mtVALIDATORLIST ||
+        type == protocol::mtVALIDATORLISTCOLLECTION)
         return TrafficCount::category::validatorlist;
 
     if (type == protocol::mtVALIDATION)

@@ -252,7 +252,7 @@ class AccountTx_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::chrono_literals;
 
-        Env env(*this, supported_amendments() | featureTicketBatch);
+        Env env(*this);
         Account const alice{"alice"};
         Account const alie{"alie"};
         Account const gw{"gw"};

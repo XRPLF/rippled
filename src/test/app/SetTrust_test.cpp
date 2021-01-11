@@ -114,7 +114,7 @@ public:
         using namespace jtx;
 
         //  Verify that TrustSet transactions can use tickets.
-        Env env{*this, supported_amendments() | featureTicketBatch};
+        Env env{*this};
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
         auto const USD = gw["USD"];

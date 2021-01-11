@@ -31,7 +31,6 @@
 #include <nudb/nudb.hpp>
 
 #include <atomic>
-#include <tuple>
 
 namespace ripple {
 namespace NodeStore {
@@ -115,11 +114,6 @@ public:
     [[nodiscard]] std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, FetchReport& fetchReport);
 
-    [[nodiscard]] bool
-    fetchNodeObjectFromCache(
-        uint256 const& hash,
-        std::shared_ptr<NodeObject>& nodeObject);
-
     /** Store a ledger.
 
         @param srcLedger The ledger to store.
@@ -158,12 +152,6 @@ public:
     {
         return dir_;
     }
-
-    [[nodiscard]] int
-    getDesiredAsyncReadCount();
-
-    [[nodiscard]] float
-    getCacheHitRate();
 
     [[nodiscard]] std::chrono::steady_clock::time_point
     getLastUse() const;
@@ -264,6 +252,7 @@ private:
     Application& app_;
     beast::Journal const j_;
     mutable std::mutex mutex_;
+    mutable std::mutex storedMutex_;
 
     // Shard Index
     std::uint32_t const index_;
@@ -277,12 +266,6 @@ private:
     // The maximum number of ledgers the shard can store
     // The earliest shard may store fewer ledgers than subsequent shards
     std::uint32_t const maxLedgers_;
-
-    // Database positive cache
-    std::unique_ptr<PCache> pCache_;
-
-    // Database negative cache
-    std::unique_ptr<NCache> nCache_;
 
     // Path to database files
     boost::filesystem::path const dir_;
@@ -333,11 +316,8 @@ private:
     initSQLite(std::lock_guard<std::mutex> const&);
 
     // Write SQLite entries for this ledger
-    // Lock over mutex_ required
     [[nodiscard]] bool
-    storeSQLite(
-        std::shared_ptr<Ledger const> const& ledger,
-        std::lock_guard<std::mutex> const&);
+    storeSQLite(std::shared_ptr<Ledger const> const& ledger);
 
     // Set storage and file descriptor usage stats
     // Lock over mutex_ required

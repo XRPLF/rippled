@@ -37,6 +37,12 @@ Release/*.*
 *.gcda
 *.gcov
 
+# Levelization checking
+Builds/levelization/results/rawincludes.txt
+Builds/levelization/results/paths.txt
+Builds/levelization/results/includes/
+Builds/levelization/results/includedby/
+
 # Ignore tmp directory.
 tmp
 

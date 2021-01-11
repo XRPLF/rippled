@@ -95,8 +95,32 @@ fi
 mkdir -p "build/${BUILD_DIR}"
 pushd "build/${BUILD_DIR}"
 
+# cleanup possible artifacts
+rm -fv CMakeFiles/CMakeOutput.log CMakeFiles/CMakeError.log
+# Clean up NIH directories which should be git repos, but aren't
+for nih_path in ${NIH_CACHE_ROOT}/*/*/*/src ${NIH_CACHE_ROOT}/*/*/src
+do
+  for dir in lz4 snappy rocksdb
+  do
+    if [ -e ${nih_path}/${dir} -a \! -e ${nih_path}/${dir}/.git ]
+    then
+      ls -la ${nih_path}/${dir}*
+      rm -rfv ${nih_path}/${dir}*
+    fi
+  done
+done
+
 # generate
 ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
+# Display the cmake output, to help with debugging if something fails
+for file in CMakeOutput.log CMakeError.log
+do
+  if [ -f CMakeFiles/${file} ]
+  then
+    ls -l CMakeFiles/${file}
+    cat CMakeFiles/${file}
+  fi
+done
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
 
@@ -144,6 +168,7 @@ else
         'ripple.tx.OversizeMeta'
         'ripple.consensus.DistributedValidators'
         'ripple.app.NoRippleCheckLimits'
+        'ripple.ripple_data.compression'
         'ripple.NodeStore.Timing'
         'ripple.consensus.ByzantineFailureSim'
         'beast.chrono.abstract_clock'

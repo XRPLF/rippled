@@ -101,7 +101,6 @@ class PerfLog_test : public beast::unit_test::suite
         void
         doStart()
         {
-            prepare();
             start();
         }
 

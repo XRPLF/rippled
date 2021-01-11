@@ -964,9 +964,6 @@ public:
 
         // tune caches
         using namespace std::chrono;
-        m_nodeStore->tune(
-            config_->getValueFor(SizedItem::nodeCacheSize),
-            seconds{config_->getValueFor(SizedItem::nodeCacheAge)});
 
         m_ledgerMaster->tune(
             config_->getValueFor(SizedItem::ledgerSize),
@@ -979,11 +976,6 @@ public:
     //
     // Stoppable
     //
-
-    void
-    onPrepare() override
-    {
-    }
 
     void
     onStart() override
@@ -1360,6 +1352,7 @@ ApplicationImp::setup()
         Section enabledAmendments = config_->section(SECTION_AMENDMENTS);
 
         m_amendmentTable = make_AmendmentTable(
+            *this,
             config().AMENDMENT_MAJORITY_TIME,
             supportedAmendments,
             enabledAmendments,
@@ -1482,8 +1475,6 @@ ApplicationImp::setup()
             return false;
     }
 
-    validatorSites_->start();
-
     // start first consensus round
     if (!m_networkOPs->beginConsensus(
             m_ledgerMaster->getClosedLedger()->info().hash))
@@ -1597,6 +1588,7 @@ ApplicationImp::setup()
         }
     }
 
+    RPC::ShardArchiveHandler* shardArchiveHandler = nullptr;
     if (shardStore_)
     {
         try
@@ -1608,15 +1600,7 @@ ApplicationImp::setup()
 
             // Recovery is needed.
             if (handler)
-            {
-                if (!handler->start())
-                {
-                    JLOG(m_journal.fatal())
-                        << "Failed to start ShardArchiveHandler.";
-
-                    return false;
-                }
-            }
+                shardArchiveHandler = handler;
         }
         catch (std::exception const& e)
         {
@@ -1629,6 +1613,15 @@ ApplicationImp::setup()
         }
     }
 
+    if (shardArchiveHandler && !shardArchiveHandler->start())
+    {
+        JLOG(m_journal.fatal()) << "Failed to start ShardArchiveHandler.";
+
+        return false;
+    }
+
+    validatorSites_->start();
+
     return true;
 }
 
@@ -1636,7 +1629,6 @@ void
 ApplicationImp::doStart(bool withTimers)
 {
     startTimers_ = withTimers;
-    prepare();
     start();
 }
 
@@ -2119,6 +2111,18 @@ ApplicationImp::serverOkay(std::string& reason)
         return false;
     }
 
+    if (getOPs().isAmendmentBlocked())
+    {
+        reason = "Server version too old";
+        return false;
+    }
+
+    if (getOPs().isUNLBlocked())
+    {
+        reason = "No valid validator list available";
+        return false;
+    }
+
     if (getOPs().getOperatingMode() < OperatingMode::SYNCING)
     {
         reason = "Not synchronized with network";
@@ -2131,12 +2135,6 @@ ApplicationImp::serverOkay(std::string& reason)
     if (getFeeTrack().isLoadedLocal())
     {
         reason = "Too much load";
-        return false;
-    }
-
-    if (getOPs().isAmendmentBlocked())
-    {
-        reason = "Server version too old";
         return false;
     }
 

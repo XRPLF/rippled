@@ -34,17 +34,6 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     Section const& config,
     beast::Journal j)
     : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
-    , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
-          name,
-          cacheTargetSize,
-          cacheTargetAge,
-          stopwatch(),
-          j))
-    , nCache_(std::make_shared<KeyCache<uint256>>(
-          name,
-          stopwatch(),
-          cacheTargetSize,
-          cacheTargetAge))
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
 {
@@ -101,7 +90,7 @@ DatabaseRotatingImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
         return writableBackend_;
     }();
 
-    return Database::storeLedger(*srcLedger, backend, pCache_, nCache_);
+    return Database::storeLedger(*srcLedger, backend);
 }
 
 void
@@ -112,7 +101,6 @@ DatabaseRotatingImp::store(
     std::uint32_t)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
-    pCache_->canonicalize_replace_cache(hash, nObj);
 
     auto const backend = [&] {
         std::lock_guard lock(mutex_);
@@ -120,40 +108,13 @@ DatabaseRotatingImp::store(
     }();
     backend->store(nObj);
 
-    nCache_->erase(hash);
     storeStats(1, nObj->getData().size());
-}
-
-bool
-DatabaseRotatingImp::asyncFetch(
-    uint256 const& hash,
-    std::uint32_t ledgerSeq,
-    std::shared_ptr<NodeObject>& nodeObject)
-{
-    // See if the object is in cache
-    nodeObject = pCache_->fetch(hash);
-    if (nodeObject || nCache_->touch_if_exists(hash))
-        return true;
-
-    // Otherwise post a read
-    Database::asyncFetch(hash, ledgerSeq);
-    return false;
-}
-
-void
-DatabaseRotatingImp::tune(int size, std::chrono::seconds age)
-{
-    pCache_->setTargetSize(size);
-    pCache_->setTargetAge(age);
-    nCache_->setTargetSize(size);
-    nCache_->setTargetAge(age);
 }
 
 void
 DatabaseRotatingImp::sweep()
 {
-    pCache_->sweep();
-    nCache_->sweep();
+    // nothing to do
 }
 
 std::shared_ptr<NodeObject>
@@ -196,55 +157,34 @@ DatabaseRotatingImp::fetchNodeObject(
     };
 
     // See if the node object exists in the cache
-    auto nodeObject{pCache_->fetch(hash)};
-    if (!nodeObject && !nCache_->touch_if_exists(hash))
+    std::shared_ptr<NodeObject> nodeObject;
+
+    auto [writable, archive] = [&] {
+        std::lock_guard lock(mutex_);
+        return std::make_pair(writableBackend_, archiveBackend_);
+    }();
+
+    // Try to fetch from the writable backend
+    nodeObject = fetch(writable);
+    if (!nodeObject)
     {
-        auto [writable, archive] = [&] {
-            std::lock_guard lock(mutex_);
-            return std::make_pair(writableBackend_, archiveBackend_);
-        }();
-
-        fetchReport.wentToDisk = true;
-
-        // Try to fetch from the writable backend
-        nodeObject = fetch(writable);
-        if (!nodeObject)
+        // Otherwise try to fetch from the archive backend
+        nodeObject = fetch(archive);
+        if (nodeObject)
         {
-            // Otherwise try to fetch from the archive backend
-            nodeObject = fetch(archive);
-            if (nodeObject)
             {
-                {
-                    // Refresh the writable backend pointer
-                    std::lock_guard lock(mutex_);
-                    writable = writableBackend_;
-                }
-
-                // Update writable backend with data from the archive backend
-                writable->store(nodeObject);
-                nCache_->erase(hash);
+                // Refresh the writable backend pointer
+                std::lock_guard lock(mutex_);
+                writable = writableBackend_;
             }
-        }
 
-        if (!nodeObject)
-        {
-            // Just in case a write occurred
-            nodeObject = pCache_->fetch(hash);
-            if (!nodeObject)
-                // We give up
-                nCache_->insert(hash);
-        }
-        else
-        {
-            fetchReport.wasFound = true;
-
-            // Ensure all threads get the same object
-            pCache_->canonicalize_replace_client(hash, nodeObject);
-
-            // Since this was a 'hard' fetch, we will log it
-            JLOG(j_.trace()) << "HOS: " << hash << " fetch: in shard db";
+            // Update writable backend with data from the archive backend
+            writable->store(nodeObject);
         }
     }
+
+    if (nodeObject)
+        fetchReport.wasFound = true;
 
     return nodeObject;
 }

@@ -1860,7 +1860,12 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
         auto& local = *nUnlKeys.begin();
         std::vector<std::string> cfgPublishers;
         validators.load(local, cfgKeys, cfgPublishers);
-        validators.updateTrusted(activeValidators);
+        validators.updateTrusted(
+            activeValidators,
+            env.timeKeeper().now(),
+            env.app().getOPs(),
+            env.app().overlay(),
+            env.app().getHashRouter());
         BEAST_EXPECT(validators.getTrustedMasterKeys().size() == numNodes);
         validators.setNegativeUNL(nUnlKeys);
         BEAST_EXPECT(validators.getNegativeUNL().size() == negUnlSize);

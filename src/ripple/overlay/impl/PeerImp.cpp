@@ -94,15 +94,30 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
+    , squelch_(app_.journal("Squelch"))
     , usage_(consumer)
     , fee_(Resource::feeLightPeer)
     , slot_(slot)
     , request_(std::move(request))
     , headers_(request_)
     , compressionEnabled_(
-          headers_["X-Offer-Compression"] == "lz4" ? Compressed::On
-                                                   : Compressed::Off)
+          peerFeatureEnabled(
+              headers_,
+              FEATURE_COMPR,
+              "lz4",
+              app_.config().COMPRESSION)
+              ? Compressed::On
+              : Compressed::Off)
+    , vpReduceRelayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_VPRR,
+          app_.config().VP_REDUCE_RELAY_ENABLE))
 {
+    JLOG(journal_.debug()) << " compression enabled "
+                           << (compressionEnabled_ == Compressed::On)
+                           << " vp reduce-relay enabled "
+                           << vpReduceRelayEnabled_ << " on " << remote_address_
+                           << " " << id_;
 }
 
 PeerImp::~PeerImp()
@@ -181,12 +196,8 @@ PeerImp::run()
     else
         doProtocolStart();
 
-    // Request shard info from peer
-    protocol::TMGetPeerShardInfo tmGPS;
-    tmGPS.set_hops(0);
-    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
-
-    setTimer();
+    // Anything else that needs to be done with the connection should be
+    // done in doProtocolStart
 }
 
 void
@@ -226,7 +237,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return;
 
     auto validator = m->getValidatorKey();
-    if (validator && squelch_.isSquelched(*validator))
+    if (validator && !squelch_.expireSquelch(*validator))
         return;
 
     overlay_.reportTraffic(
@@ -243,13 +254,12 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         // a small senq periodically
         large_sendq_ = 0;
     }
-    else if (
-        journal_.active(beast::severities::kDebug) &&
-        (sendq_size % Tuning::sendQueueLogFreq) == 0)
+    else if (auto sink = journal_.debug();
+             sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        JLOG(journal_.debug()) << (n.empty() ? remote_address_.to_string() : n)
-                               << " sendq: " << sendq_size;
+        sink << (n.empty() ? remote_address_.to_string() : n)
+             << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -432,6 +442,8 @@ PeerImp::supportsFeature(ProtocolFeature f) const
     {
         case ProtocolFeature::ValidatorListPropagation:
             return protocol_ >= make_protocol(2, 1);
+        case ProtocolFeature::ValidatorList2Propagation:
+            return protocol_ >= make_protocol(2, 2);
     }
     return false;
 }
@@ -741,54 +753,37 @@ PeerImp::doAccept()
     // XXX Set timer: connection idle (idle may vary depending on connection
     // type.)
 
-    auto write_buffer = [this, sharedValue]() {
-        auto buf = std::make_shared<boost::beast::multi_buffer>();
+    auto write_buffer = std::make_shared<boost::beast::multi_buffer>();
 
-        http_response_type resp;
-        resp.result(boost::beast::http::status::switching_protocols);
-        resp.version(request_.version());
-        resp.insert("Connection", "Upgrade");
-        resp.insert("Upgrade", to_string(protocol_));
-        resp.insert("Connect-As", "Peer");
-        resp.insert("Server", BuildInfo::getFullVersionString());
-        resp.insert(
-            "Crawl",
-            overlay_.peerFinder().config().peerPrivate ? "private" : "public");
-
-        if (request_["X-Offer-Compression"] == "lz4" &&
-            app_.config().COMPRESSION)
-            resp.insert("X-Offer-Compression", "lz4");
-
-        buildHandshake(
-            resp,
-            *sharedValue,
-            overlay_.setup().networkID,
-            overlay_.setup().public_ip,
-            remote_address_.address(),
-            app_);
-
-        boost::beast::ostream(*buf) << resp;
-
-        return buf;
-    }();
+    boost::beast::ostream(*write_buffer) << makeResponse(
+        !overlay_.peerFinder().config().peerPrivate,
+        request_,
+        overlay_.setup().public_ip,
+        remote_address_.address(),
+        *sharedValue,
+        overlay_.setup().networkID,
+        protocol_,
+        app_);
 
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
         stream_,
         write_buffer->data(),
         boost::asio::transfer_all(),
-        [this, write_buffer, self = shared_from_this()](
-            error_code ec, std::size_t bytes_transferred) {
-            if (!socket_.is_open())
-                return;
-            if (ec == boost::asio::error::operation_aborted)
-                return;
-            if (ec)
-                return fail("onWriteResponse", ec);
-            if (write_buffer->size() == bytes_transferred)
-                return doProtocolStart();
-            return fail("Failed to write header");
-        });
+        bind_executor(
+            strand_,
+            [this, write_buffer, self = shared_from_this()](
+                error_code ec, std::size_t bytes_transferred) {
+                if (!socket_.is_open())
+                    return;
+                if (ec == boost::asio::error::operation_aborted)
+                    return;
+                if (ec)
+                    return fail("onWriteResponse", ec);
+                if (write_buffer->size() == bytes_transferred)
+                    return doProtocolStart();
+                return fail("Failed to write header");
+            }));
 }
 
 std::string
@@ -814,35 +809,40 @@ PeerImp::doProtocolStart()
     onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
-    if (supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    if (inbound_ && supportsFeature(ProtocolFeature::ValidatorListPropagation))
     {
-        app_.validators().for_each_available([&](std::string const& manifest,
-                                                 std::string const& blob,
-                                                 std::string const& signature,
-                                                 std::uint32_t version,
-                                                 PublicKey const& pubKey,
-                                                 std::size_t sequence,
-                                                 uint256 const& hash) {
-            protocol::TMValidatorList vl;
+        app_.validators().for_each_available(
+            [&](std::string const& manifest,
+                std::uint32_t version,
+                std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+                PublicKey const& pubKey,
+                std::size_t maxSequence,
+                uint256 const& hash) {
+                ValidatorList::sendValidatorList(
+                    *this,
+                    0,
+                    pubKey,
+                    maxSequence,
+                    version,
+                    manifest,
+                    blobInfos,
+                    app_.getHashRouter(),
+                    p_journal_);
 
-            vl.set_manifest(manifest);
-            vl.set_blob(blob);
-            vl.set_signature(signature);
-            vl.set_version(version);
-
-            JLOG(p_journal_.debug())
-                << "Sending validator list for " << strHex(pubKey)
-                << " with sequence " << sequence << " to "
-                << remote_address_.to_string() << " (" << id_ << ")";
-            send(std::make_shared<Message>(vl, protocol::mtVALIDATORLIST));
-            // Don't send it next time.
-            app_.getHashRouter().addSuppressionPeer(hash, id_);
-            setPublisherListSequence(pubKey, sequence);
-        });
+                // Don't send it next time.
+                app_.getHashRouter().addSuppressionPeer(hash, id_);
+            });
     }
 
     if (auto m = overlay_.getManifestsMessage())
         send(m);
+
+    // Request shard info from peer
+    protocol::TMGetPeerShardInfo tmGPS;
+    tmGPS.set_hops(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
+
+    setTimer();
 }
 
 // Called repeatedly with protocol message data
@@ -966,13 +966,17 @@ void
 PeerImp::onMessageBegin(
     std::uint16_t type,
     std::shared_ptr<::google::protobuf::Message> const& m,
-    std::size_t size)
+    std::size_t size,
+    std::size_t uncompressed_size,
+    bool isCompressed)
 {
     load_event_ =
         app_.getJobQueue().makeLoadEvent(jtPEER, protocolMessageName(type));
     fee_ = Resource::feeLightPeer;
     overlay_.reportTraffic(
         TrafficCount::categorize(*m, type, true), true, static_cast<int>(size));
+    JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " "
+                           << uncompressed_size << " " << isCompressed;
 }
 
 void
@@ -1561,12 +1565,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     {
         // Count unique messages (Slots has it's own 'HashRouter'), which a peer
         // receives within IDLED seconds since the message has been relayed.
-        // Wait WAIT_ON_BOOTUP time to let the server establish connections to
-        // peers.
-        if (app_.config().REDUCE_RELAY_ENABLE && relayed &&
-            (stopwatch().now() - *relayed) < squelch::IDLED &&
-            squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                squelch::WAIT_ON_BOOTUP)
+        if (reduceRelayReady() && relayed &&
+            (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
@@ -1859,6 +1859,202 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
 }
 
 void
+PeerImp::onValidatorListMessage(
+    std::string const& messageType,
+    std::string const& manifest,
+    std::uint32_t version,
+    std::vector<ValidatorBlobInfo> const& blobs)
+{
+    // If there are no blobs, the message is malformed (possibly because of
+    // ValidatorList class rules), so charge accordingly and skip processing.
+    if (blobs.empty())
+    {
+        JLOG(p_journal_.warn()) << "Ignored malformed " << messageType
+                                << " from peer " << remote_address_;
+        // This shouldn't ever happen with a well-behaved peer
+        fee_ = Resource::feeHighBurdenPeer;
+        return;
+    }
+
+    auto const hash = sha512Half(manifest, blobs, version);
+
+    JLOG(p_journal_.debug())
+        << "Received " << messageType << " from " << remote_address_.to_string()
+        << " (" << id_ << ")";
+
+    if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
+    {
+        JLOG(p_journal_.debug())
+            << messageType << ": received duplicate " << messageType;
+        // Charging this fee here won't hurt the peer in the normal
+        // course of operation (ie. refresh every 5 minutes), but
+        // will add up if the peer is misbehaving.
+        fee_ = Resource::feeUnwantedData;
+        return;
+    }
+
+    auto const applyResult = app_.validators().applyListsAndBroadcast(
+        manifest,
+        version,
+        blobs,
+        remote_address_.to_string(),
+        hash,
+        app_.overlay(),
+        app_.getHashRouter(),
+        app_.getOPs());
+
+    JLOG(p_journal_.debug())
+        << "Processed " << messageType << " version " << version << " from "
+        << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
+                                     : "unknown or invalid publisher")
+        << " from " << remote_address_.to_string() << " (" << id_
+        << ") with best result " << to_string(applyResult.bestDisposition());
+
+    // Act based on the best result
+    switch (applyResult.bestDisposition())
+    {
+        // New list
+        case ListDisposition::accepted:
+        // Newest list is expired, and that needs to be broadcast, too
+        case ListDisposition::expired:
+        // Future list
+        case ListDisposition::pending: {
+            std::lock_guard<std::mutex> sl(recentLock_);
+
+            assert(applyResult.publisherKey);
+            auto const& pubKey = *applyResult.publisherKey;
+#ifndef NDEBUG
+            if (auto const iter = publisherListSequences_.find(pubKey);
+                iter != publisherListSequences_.end())
+            {
+                assert(iter->second < applyResult.sequence);
+            }
+#endif
+            publisherListSequences_[pubKey] = applyResult.sequence;
+        }
+        break;
+        case ListDisposition::same_sequence:
+        case ListDisposition::known_sequence:
+#ifndef NDEBUG
+        {
+            std::lock_guard<std::mutex> sl(recentLock_);
+            assert(applyResult.sequence && applyResult.publisherKey);
+            assert(
+                publisherListSequences_[*applyResult.publisherKey] <=
+                applyResult.sequence);
+        }
+#endif  // !NDEBUG
+
+        break;
+        case ListDisposition::stale:
+        case ListDisposition::untrusted:
+        case ListDisposition::invalid:
+        case ListDisposition::unsupported_version:
+            break;
+        default:
+            assert(false);
+    }
+
+    // Charge based on the worst result
+    switch (applyResult.worstDisposition())
+    {
+        case ListDisposition::accepted:
+        case ListDisposition::expired:
+        case ListDisposition::pending:
+            // No charges for good data
+            break;
+        case ListDisposition::same_sequence:
+        case ListDisposition::known_sequence:
+            // Charging this fee here won't hurt the peer in the normal
+            // course of operation (ie. refresh every 5 minutes), but
+            // will add up if the peer is misbehaving.
+            fee_ = Resource::feeUnwantedData;
+            break;
+        case ListDisposition::stale:
+            // There are very few good reasons for a peer to send an
+            // old list, particularly more than once.
+            fee_ = Resource::feeBadData;
+            break;
+        case ListDisposition::untrusted:
+            // Charging this fee here won't hurt the peer in the normal
+            // course of operation (ie. refresh every 5 minutes), but
+            // will add up if the peer is misbehaving.
+            fee_ = Resource::feeUnwantedData;
+            break;
+        case ListDisposition::invalid:
+            // This shouldn't ever happen with a well-behaved peer
+            fee_ = Resource::feeInvalidSignature;
+            break;
+        case ListDisposition::unsupported_version:
+            // During a version transition, this may be legitimate.
+            // If it happens frequently, that's probably bad.
+            fee_ = Resource::feeBadData;
+            break;
+        default:
+            assert(false);
+    }
+
+    // Log based on all the results.
+    for (auto const [disp, count] : applyResult.dispositions)
+    {
+        switch (disp)
+        {
+            // New list
+            case ListDisposition::accepted:
+                JLOG(p_journal_.debug())
+                    << "Applied " << count << " new " << messageType
+                    << "(s) from peer " << remote_address_;
+                break;
+            // Newest list is expired, and that needs to be broadcast, too
+            case ListDisposition::expired:
+                JLOG(p_journal_.debug())
+                    << "Applied " << count << " expired " << messageType
+                    << "(s) from peer " << remote_address_;
+                break;
+            // Future list
+            case ListDisposition::pending:
+                JLOG(p_journal_.debug())
+                    << "Processed " << count << " future " << messageType
+                    << "(s) from peer " << remote_address_;
+                break;
+            case ListDisposition::same_sequence:
+                JLOG(p_journal_.warn())
+                    << "Ignored " << count << " " << messageType
+                    << "(s) with current sequence from peer "
+                    << remote_address_;
+                break;
+            case ListDisposition::known_sequence:
+                JLOG(p_journal_.warn())
+                    << "Ignored " << count << " " << messageType
+                    << "(s) with future sequence from peer " << remote_address_;
+                break;
+            case ListDisposition::stale:
+                JLOG(p_journal_.warn())
+                    << "Ignored " << count << "stale " << messageType
+                    << "(s) from peer " << remote_address_;
+                break;
+            case ListDisposition::untrusted:
+                JLOG(p_journal_.warn())
+                    << "Ignored " << count << " untrusted " << messageType
+                    << "(s) from peer " << remote_address_;
+                break;
+            case ListDisposition::unsupported_version:
+                JLOG(p_journal_.warn())
+                    << "Ignored " << count << "unsupported version "
+                    << messageType << "(s) from peer " << remote_address_;
+                break;
+            case ListDisposition::invalid:
+                JLOG(p_journal_.warn())
+                    << "Ignored " << count << "invalid " << messageType
+                    << "(s) from peer " << remote_address_;
+                break;
+            default:
+                assert(false);
+        }
+    }
+}
+
+void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
 {
     try
@@ -1872,122 +2068,55 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
             fee_ = Resource::feeUnwantedData;
             return;
         }
-        auto const& manifest = m->manifest();
-        auto const& blob = m->blob();
-        auto const& signature = m->signature();
-        auto const version = m->version();
-        auto const hash = sha512Half(manifest, blob, signature, version);
-
-        JLOG(p_journal_.debug())
-            << "Received validator list from " << remote_address_.to_string()
-            << " (" << id_ << ")";
-
-        if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
-        {
-            JLOG(p_journal_.debug())
-                << "ValidatorList: received duplicate validator list";
-            // Charging this fee here won't hurt the peer in the normal
-            // course of operation (ie. refresh every 5 minutes), but
-            // will add up if the peer is misbehaving.
-            fee_ = Resource::feeUnwantedData;
-            return;
-        }
-
-        auto const applyResult = app_.validators().applyListAndBroadcast(
-            manifest,
-            blob,
-            signature,
-            version,
-            remote_address_.to_string(),
-            hash,
-            app_.overlay(),
-            app_.getHashRouter());
-        auto const disp = applyResult.disposition;
-
-        JLOG(p_journal_.debug())
-            << "Processed validator list from "
-            << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
-                                         : "unknown or invalid publisher")
-            << " from " << remote_address_.to_string() << " (" << id_
-            << ") with result " << to_string(disp);
-
-        switch (disp)
-        {
-            case ListDisposition::accepted:
-                JLOG(p_journal_.debug())
-                    << "Applied new validator list from peer "
-                    << remote_address_;
-                {
-                    std::lock_guard<std::mutex> sl(recentLock_);
-
-                    assert(applyResult.sequence && applyResult.publisherKey);
-                    auto const& pubKey = *applyResult.publisherKey;
-#ifndef NDEBUG
-                    if (auto const iter = publisherListSequences_.find(pubKey);
-                        iter != publisherListSequences_.end())
-                    {
-                        assert(iter->second < *applyResult.sequence);
-                    }
-#endif
-                    publisherListSequences_[pubKey] = *applyResult.sequence;
-                }
-                break;
-            case ListDisposition::same_sequence:
-                JLOG(p_journal_.warn())
-                    << "Validator list with current sequence from peer "
-                    << remote_address_;
-                // Charging this fee here won't hurt the peer in the normal
-                // course of operation (ie. refresh every 5 minutes), but
-                // will add up if the peer is misbehaving.
-                fee_ = Resource::feeUnwantedData;
-#ifndef NDEBUG
-                {
-                    std::lock_guard<std::mutex> sl(recentLock_);
-                    assert(applyResult.sequence && applyResult.publisherKey);
-                    assert(
-                        publisherListSequences_[*applyResult.publisherKey] ==
-                        *applyResult.sequence);
-                }
-#endif  // !NDEBUG
-
-                break;
-            case ListDisposition::stale:
-                JLOG(p_journal_.warn())
-                    << "Stale validator list from peer " << remote_address_;
-                // There are very few good reasons for a peer to send an
-                // old list, particularly more than once.
-                fee_ = Resource::feeBadData;
-                break;
-            case ListDisposition::untrusted:
-                JLOG(p_journal_.warn())
-                    << "Untrusted validator list from peer " << remote_address_;
-                // Charging this fee here won't hurt the peer in the normal
-                // course of operation (ie. refresh every 5 minutes), but
-                // will add up if the peer is misbehaving.
-                fee_ = Resource::feeUnwantedData;
-                break;
-            case ListDisposition::invalid:
-                JLOG(p_journal_.warn())
-                    << "Invalid validator list from peer " << remote_address_;
-                // This shouldn't ever happen with a well-behaved peer
-                fee_ = Resource::feeInvalidSignature;
-                break;
-            case ListDisposition::unsupported_version:
-                JLOG(p_journal_.warn())
-                    << "Unsupported version validator list from peer "
-                    << remote_address_;
-                // During a version transition, this may be legitimate.
-                // If it happens frequently, that's probably bad.
-                fee_ = Resource::feeBadData;
-                break;
-            default:
-                assert(false);
-        }
+        onValidatorListMessage(
+            "ValidatorList",
+            m->manifest(),
+            m->version(),
+            ValidatorList::parseBlobs(*m));
     }
     catch (std::exception const& e)
     {
         JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what()
                                 << " from peer " << remote_address_;
+        fee_ = Resource::feeBadData;
+    }
+}
+
+void
+PeerImp::onMessage(
+    std::shared_ptr<protocol::TMValidatorListCollection> const& m)
+{
+    try
+    {
+        if (!supportsFeature(ProtocolFeature::ValidatorList2Propagation))
+        {
+            JLOG(p_journal_.debug())
+                << "ValidatorListCollection: received validator list from peer "
+                << "using protocol version " << to_string(protocol_)
+                << " which shouldn't support this feature.";
+            fee_ = Resource::feeUnwantedData;
+            return;
+        }
+        else if (m->version() < 2)
+        {
+            JLOG(p_journal_.debug())
+                << "ValidatorListCollection: received invalid validator list "
+                   "version "
+                << m->version() << " from peer using protocol version "
+                << to_string(protocol_);
+            fee_ = Resource::feeBadData;
+            return;
+        }
+        onValidatorListMessage(
+            "ValidatorListCollection",
+            m->manifest(),
+            m->version(),
+            ValidatorList::parseBlobs(*m));
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, "
+                                << e.what() << " from peer " << remote_address_;
         fee_ = Resource::feeBadData;
     }
 }
@@ -2039,10 +2168,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // peer receives within IDLED seconds since the message has been
             // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
             // connections to peers.
-            if (app_.config().REDUCE_RELAY_ENABLE && (bool)relayed &&
-                (stopwatch().now() - *relayed) < squelch::IDLED &&
-                squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                    squelch::WAIT_ON_BOOTUP)
+            if (reduceRelayReady() && relayed &&
+                (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
             JLOG(p_journal_.trace()) << "Validation: duplicate";
@@ -2224,6 +2351,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
+    using on_message_fn =
+        void (PeerImp::*)(std::shared_ptr<protocol::TMSquelch> const&);
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(
+                (on_message_fn)&PeerImp::onMessage, shared_from_this(), m));
+
     if (!m->has_validatorpubkey())
     {
         charge(Resource::feeBadData);
@@ -2237,9 +2372,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
     PublicKey key(slice);
-    auto squelch = m->squelch();
-    auto duration = m->has_squelchduration() ? m->squelchduration() : 0;
-    auto sp = shared_from_this();
 
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
@@ -2249,15 +2381,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
 
-    if (!strand_.running_in_this_thread())
-        return post(strand_, [sp, key, squelch, duration]() {
-            sp->squelch_.squelch(key, squelch, duration);
-        });
+    std::uint32_t duration =
+        m->has_squelchduration() ? m->squelchduration() : 0;
+    if (!m->squelch())
+        squelch_.removeSquelch(key);
+    else if (!squelch_.addSquelch(key, std::chrono::seconds{duration}))
+        charge(Resource::feeBadData);
 
     JLOG(p_journal_.debug())
         << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
-
-    squelch_.squelch(key, squelch, duration);
 }
 
 //--------------------------------------------------------------------------
@@ -2421,9 +2553,7 @@ PeerImp::checkPropose(
         // as part of the squelch logic.
         auto haveMessage = app_.overlay().relay(
             *packet, peerPos.suppressionID(), peerPos.publicKey());
-        if (app_.config().REDUCE_RELAY_ENABLE && !haveMessage.empty() &&
-            squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                squelch::WAIT_ON_BOOTUP)
+        if (reduceRelayReady() && !haveMessage.empty())
             overlay_.updateSlotAndSquelch(
                 peerPos.suppressionID(),
                 peerPos.publicKey(),
@@ -2458,9 +2588,7 @@ PeerImp::checkValidation(
             // as part of the squelch logic.
             auto haveMessage =
                 overlay_.relay(*packet, suppression, val->getSignerPublic());
-            if (app_.config().REDUCE_RELAY_ENABLE && !haveMessage.empty() &&
-                squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                    squelch::WAIT_ON_BOOTUP)
+            if (reduceRelayReady() && !haveMessage.empty())
             {
                 overlay_.updateSlotAndSquelch(
                     suppression,
@@ -2902,6 +3030,16 @@ PeerImp::isHighLatency() const
 {
     std::lock_guard sl(recentLock_);
     return latency_ >= peerHighLatency;
+}
+
+bool
+PeerImp::reduceRelayReady()
+{
+    if (!reduceRelayReady_)
+        reduceRelayReady_ =
+            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+            reduce_relay::WAIT_ON_BOOTUP;
+    return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
 
 void

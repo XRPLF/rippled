@@ -5157,9 +5157,6 @@ public:
 
         using namespace jtx;
 
-        // Should be called with TicketBatch enabled.
-        BEAST_EXPECT(features[featureTicketBatch]);
-
         // Two goals for this test.
         //
         //  o Verify that offers can be created using tickets.
@@ -5279,9 +5276,6 @@ public:
         testcase("Ticket Cancel Offers");
 
         using namespace jtx;
-
-        // Should be called with TicketBatch enabled.
-        BEAST_EXPECT(features[featureTicketBatch]);
 
         // Verify that offers created with or without tickets can be canceled
         // by transactions with or without tickets.
@@ -5471,7 +5465,7 @@ public:
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments() | featureTicketBatch};
+        FeatureBitset const all{supported_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
@@ -5489,7 +5483,7 @@ class Offer_manual_test : public Offer_test
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments() | featureTicketBatch};
+        FeatureBitset const all{supported_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};

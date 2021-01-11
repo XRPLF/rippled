@@ -132,7 +132,7 @@ detail::supportedAmendments()
         "HardenedValidations",
         "fixAmendmentMajorityCalc",
         //"NegativeUNL",      // Commented out to prevent automatic enablement
-        //"TicketBatch",      // Commented out to prevent automatic enablement
+        "TicketBatch",
     };
     return supported;
 }

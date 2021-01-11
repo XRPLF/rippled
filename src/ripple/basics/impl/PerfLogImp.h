@@ -200,12 +200,6 @@ public:
     void
     rotate() override;
 
-    // Stoppable
-    void
-    onPrepare() override
-    {
-    }
-
     // Called when application is ready to start threads.
     void
     onStart() override;

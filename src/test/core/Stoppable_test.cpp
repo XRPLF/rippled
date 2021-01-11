@@ -476,7 +476,6 @@ class Stoppable_test : public beast::unit_test::suite
         void
         run()
         {
-            prepare();
             start();
             stop(journal_);
         }

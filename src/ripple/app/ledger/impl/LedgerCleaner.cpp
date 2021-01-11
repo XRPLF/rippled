@@ -93,11 +93,6 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    onPrepare() override
-    {
-    }
-
-    void
     onStart() override
     {
         thread_ = std::thread{&LedgerCleanerImp::run, this};

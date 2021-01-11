@@ -41,7 +41,7 @@
 namespace ripple {
 
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
-inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
+inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 11>
     sizedItems{{
         // FIXME: We should document each of these items, explaining exactly
         // what
@@ -53,8 +53,6 @@ inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
         {SizedItem::ledgerSize, {{32, 128, 256, 384, 768}}},
         {SizedItem::ledgerAge, {{30, 90, 180, 240, 900}}},
         {SizedItem::ledgerFetch, {{2, 3, 4, 5, 8}}},
-        {SizedItem::nodeCacheSize, {{16384, 32768, 131072, 262144, 524288}}},
-        {SizedItem::nodeCacheAge, {{60, 90, 120, 900, 1800}}},
         {SizedItem::hashNodeDBCache, {{4, 12, 24, 64, 128}}},
         {SizedItem::txnDBCache, {{4, 12, 24, 64, 128}}},
         {SizedItem::lgrDBCache, {{4, 8, 16, 32, 128}}},
@@ -525,8 +523,8 @@ Config::loadFromString(std::string const& fileContents)
     if (exists(SECTION_REDUCE_RELAY))
     {
         auto sec = section(SECTION_REDUCE_RELAY);
-        REDUCE_RELAY_ENABLE = sec.value_or("enable", false);
-        REDUCE_RELAY_SQUELCH = sec.value_or("squelch", false);
+        VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
+        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))

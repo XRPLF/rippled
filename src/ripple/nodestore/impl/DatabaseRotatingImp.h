@@ -63,52 +63,23 @@ public:
     void
     import(Database& source) override;
 
+    bool isSameDB(std::uint32_t, std::uint32_t) override
+    {
+        // rotating store acts as one logical database
+        return true;
+    }
+
     void
     store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
         override;
 
     bool
-    asyncFetch(
-        uint256 const& hash,
-        std::uint32_t ledgerSeq,
-        std::shared_ptr<NodeObject>& nodeObject) override;
-
-    bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
-
-    int getDesiredAsyncReadCount(std::uint32_t) override
-    {
-        // We prefer a client not fill our cache
-        // We don't want to push data out of the cache
-        // before it's retrieved
-        return pCache_->getTargetSize() / asyncDivider;
-    }
-
-    float
-    getCacheHitRate() override
-    {
-        return pCache_->getHitRate();
-    }
-
-    void
-    tune(int size, std::chrono::seconds age) override;
 
     void
     sweep() override;
 
-    TaggedCache<uint256, NodeObject> const&
-    getPositiveCache() override
-    {
-        return *pCache_;
-    }
-
 private:
-    // Positive cache
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> pCache_;
-
-    // Negative cache
-    std::shared_ptr<KeyCache<uint256>> nCache_;
-
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;

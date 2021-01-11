@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
 #include <chrono>
@@ -33,7 +34,7 @@ namespace ripple {
 
 class NetworkOPs;
 
-class SHAMapStoreImp : public SHAMapStore
+class SHAMapStoreImp : public Stoppable, public SHAMapStore
 {
 private:
     struct SavedState
@@ -117,7 +118,7 @@ private:
     boost::optional<std::chrono::seconds> recoveryWaitTime_;
 
     // these do not exist upon SHAMapStore creation, but do exist
-    // as of onPrepare() or before
+    // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
     FullBelowCache* fullBelowCache_ = nullptr;
@@ -246,14 +247,10 @@ private:
     // the main "run()".
     Health
     health();
+
     //
     // Stoppable
     //
-    void
-    onPrepare() override
-    {
-    }
-
     void
     onStart() override
     {
@@ -265,8 +262,6 @@ private:
     void
     onStop() override;
     // Called when all child Stoppable objects have stoped
-    void
-    onChildrenStopped() override;
 };
 
 }  // namespace ripple

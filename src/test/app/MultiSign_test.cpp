@@ -1491,9 +1491,6 @@ public:
         env.fund(XRP(2000), alice);
         env.close();
 
-        // If featureTicketBatch is not enabled expect massive failures.
-        BEAST_EXPECT(features[featureTicketBatch]);
-
         // Create a few tickets that alice can use up.
         std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 20));
@@ -1550,7 +1547,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments() | featureTicketBatch;
+        auto const all = supported_amendments();
 
         // The reserve required on a signer list changes based on.
         // featureMultiSignReserve.  Test both with and without.

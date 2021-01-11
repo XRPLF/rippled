@@ -80,14 +80,6 @@ public:
     virtual Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
 
-    /** Return `true` if batch fetches are optimized. */
-    virtual bool
-    canFetchBatch() = 0;
-
-    /** Fetch a batch synchronously. */
-    virtual std::vector<std::shared_ptr<NodeObject>>
-    fetchBatch(std::size_t n, void const* const* keys) = 0;
-
     /** Store a single object.
         Depending on the implementation this may happen immediately
         or deferred using a scheduled task.

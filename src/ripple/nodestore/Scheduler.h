@@ -37,7 +37,6 @@ struct FetchReport
 
     std::chrono::milliseconds elapsed;
     FetchType const fetchType;
-    bool wentToDisk = false;
     bool wasFound = false;
 };
 

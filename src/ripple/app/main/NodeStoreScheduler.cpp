@@ -78,12 +78,11 @@ NodeStoreScheduler::doTask(NodeStore::Task& task)
 void
 NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
-    if (report.wentToDisk)
-        m_jobQueue->addLoadEvents(
-            report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
-                                                            : jtNS_SYNC_READ,
-            1,
-            report.elapsed);
+    m_jobQueue->addLoadEvents(
+        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
+                                                        : jtNS_SYNC_READ,
+        1,
+        report.elapsed);
 }
 
 void

@@ -24,7 +24,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
 #include <boost/optional.hpp>
@@ -383,10 +382,7 @@ public:
         using namespace jtx;
         testcase("queue ticket");
 
-        Env env(
-            *this,
-            makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}),
-            supported_amendments() | featureTicketBatch);
+        Env env(*this, makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}));
 
         auto alice = Account("alice");
 
@@ -1797,10 +1793,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        Env env(
-            *this,
-            makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}),
-            supported_amendments() | featureTicketBatch);
+        Env env(*this, makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}));
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
@@ -2310,7 +2303,7 @@ public:
         using namespace std::chrono;
         testcase("consequences");
 
-        Env env(*this, supported_amendments() | featureTicketBatch);
+        Env env(*this);
         auto const alice = Account("alice");
         env.memoize(alice);
         env.memoize("bob");
@@ -2648,8 +2641,7 @@ public:
             makeConfig(
                 {{"minimum_txn_in_ledger_standalone", "1"},
                  {"ledgers_in_queue", "10"},
-                 {"maximum_txn_per_account", "11"}}),
-            supported_amendments() | featureTicketBatch);
+                 {"maximum_txn_per_account", "11"}}));
 
         // Alice will have the gaps.  Bob will keep the queue busy with
         // high fee transactions so alice's transactions can expire to leave
@@ -4037,10 +4029,7 @@ public:
         testcase("Ticket in queue and open ledger");
         using namespace jtx;
 
-        Env env(
-            *this,
-            makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}),
-            supported_amendments() | featureTicketBatch);
+        Env env(*this, makeConfig({{"minimum_txn_in_ledger_standalone", "3"}}));
 
         auto alice = Account("alice");
 
@@ -4340,8 +4329,7 @@ public:
              {"maximum_txn_per_account", "30"},
              {"minimum_queue_size", "50"}});
 
-        Env env(
-            *this, std::move(cfg), supported_amendments() | featureTicketBatch);
+        Env env(*this, std::move(cfg));
 
         // The noripple is to reduce the number of transactions required to
         // fund the accounts.  There is no rippling in this test.
@@ -4546,8 +4534,7 @@ public:
              {"maximum_txn_per_account", "30"},
              {"minimum_queue_size", "50"}});
 
-        Env env(
-            *this, std::move(cfg), supported_amendments() | featureTicketBatch);
+        Env env(*this, std::move(cfg));
 
         // The noripple is to reduce the number of transactions required to
         // fund the accounts.  There is no rippling in this test.

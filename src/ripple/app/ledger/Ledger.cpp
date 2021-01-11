@@ -184,7 +184,7 @@ Ledger::Ledger(
 {
     info_.seq = 1;
     info_.drops = INITIAL_XRP;
-    info_.closeTimeResolution = ledgerDefaultTimeResolution;
+    info_.closeTimeResolution = ledgerGenesisTimeResolution;
 
     static auto const id = calcAccountID(
         generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"))

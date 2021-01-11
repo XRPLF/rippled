@@ -139,6 +139,12 @@ public:
     std::int32_t
     getWriteLoad() const override;
 
+    bool
+    isSameDB(std::uint32_t s1, std::uint32_t s2) override
+    {
+        return seqToShardIndex(s1) == seqToShardIndex(s2);
+    }
+
     void
     store(
         NodeObjectType type,
@@ -147,22 +153,7 @@ public:
         std::uint32_t ledgerSeq) override;
 
     bool
-    asyncFetch(
-        uint256 const& hash,
-        std::uint32_t ledgerSeq,
-        std::shared_ptr<NodeObject>& nodeObject) override;
-
-    bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
-
-    int
-    getDesiredAsyncReadCount(std::uint32_t ledgerSeq) override;
-
-    float
-    getCacheHitRate() override;
-
-    void
-    tune(int size, std::chrono::seconds age) override{};
 
     void
     sweep() override;

@@ -43,6 +43,9 @@ std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] = {
 //! Initial resolution of ledger close time.
 auto constexpr ledgerDefaultTimeResolution = ledgerPossibleTimeResolutions[2];
 
+//! Close time resolution in genesis ledger
+auto constexpr ledgerGenesisTimeResolution = ledgerPossibleTimeResolutions[0];
+
 //! How often we increase the close time resolution (in numbers of ledgers)
 auto constexpr increaseLedgerTimeResolutionEvery = 8;
 
