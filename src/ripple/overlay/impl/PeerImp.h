@@ -699,7 +699,9 @@ PeerImp::PeerImp(
     JLOG(journal_.debug()) << "compression enabled "
                            << (compressionEnabled_ == Compressed::On)
                            << " vp reduce-relay enabled "
-                           << vpReduceRelayEnabled_ << " on " << remote_address_
+                           << vpReduceRelayEnabled_
+                           << " tx reduce-relay enabled "
+                           << txReduceRelayEnabled_ << " on " << remote_address_
                            << " " << id_;
 }
 
