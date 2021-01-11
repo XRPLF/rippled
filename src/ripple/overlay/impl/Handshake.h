@@ -95,16 +95,20 @@ verifyHandshake(
 
    @param crawlPublic if true then server's IP/Port are included in crawl
    @param comprEnabled if true then compression feature is enabled
-   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @param ledgerReplayEnabled if true then ledger-replay feature is enabled
+   @param txReduceRelayEnabled if true then transaction reduce-relay feature is
+   enabled
+   @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
+   feature is enabled
    @return http request with empty body
  */
 request_type
 makeRequest(
     bool crawlPublic,
     bool comprEnabled,
-    bool vpReduceRelayEnabled,
-    bool ledgerReplayEnabled);
+    bool ledgerReplayEnabled,
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled);
 
 /** Make http response
 
@@ -133,11 +137,15 @@ makeResponse(
 // The format is:
 // X-Protocol-Ctl: feature1=value1[,value2]*[\s*;\s*feature2=value1[,value2]*]*
 // value: \S+
-static constexpr char FEATURE_COMPR[] = "compr";  // compression
-static constexpr char FEATURE_VPRR[] =
-    "vprr";  // validation/proposal reduce-relay
-static constexpr char FEATURE_LEDGER_REPLAY[] =
-    "ledgerreplay";  // ledger replay
+
+// compression feature
+static constexpr char FEATURE_COMPR[] = "compr";
+// validation/proposal reduce-relay feature
+static constexpr char FEATURE_VPRR[] = "vprr";
+// transaction reduce-relay feature
+static constexpr char FEATURE_TXRR[] = "txrr";
+// ledger replay
+static constexpr char FEATURE_LEDGER_REPLAY[] = "ledgerreplay";
 static constexpr char DELIM_FEATURE[] = ";";
 static constexpr char DELIM_VALUE[] = ",";
 
@@ -210,15 +218,19 @@ peerFeatureEnabled(
 
 /** Make request header X-Protocol-Ctl value with supported features
    @param comprEnabled if true then compression feature is enabled
-   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @param ledgerReplayEnabled if true then ledger-replay feature is enabled
+   @param txReduceRelayEnabled if true then transaction reduce-relay feature is
+   enabled
+   @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
+   feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
 makeFeaturesRequestHeader(
     bool comprEnabled,
-    bool vpReduceRelayEnabled,
-    bool ledgerReplayEnabled);
+    bool ledgerReplayEnabled,
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled)
 
 /** Make response header X-Protocol-Ctl value with supported features.
     If the request has a feature that we support enabled
@@ -226,16 +238,21 @@ makeFeaturesRequestHeader(
     the response header.
    @param header request's header
    @param comprEnabled if true then compression feature is enabled
-   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @param ledgerReplayEnabled if true then ledger-replay feature is enabled
+   @param txReduceRelayEnabled if true then transaction reduce-relay feature is
+   enabled
+   @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
+   feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
     bool comprEnabled,
-    bool vpReduceRelayEnabled,
-    bool ledgerReplayEnabled);
+    bool ledgerReplayEnabled,
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled);
 
 }  // namespace ripple
 
