@@ -31,7 +31,6 @@ if platform.system() == 'Windows' and sys.version_info.minor < 8:
 
 DEFAULT_EXE = 'rippled'
 DEFAULT_CONFIGURATION_FILE = 'rippled.cfg'
-DEFAULT_PORT = 5005
 # Number of seconds to wait before forcefully terminating.
 PATIENCE = 120
 # Number of contiguous seconds in a sync state to be considered synced.
@@ -41,21 +40,38 @@ DEFAULT_POLL_INTERVAL = 5
 SYNC_STATES = ('full', 'validating', 'proposing')
 
 
-def find_log_file(config_file):
-    """Try to figure out what log file the user has chosen. Raises all kinds
-    of exceptions if there is any possibility of ambiguity."""
+def read_config(config_file):
     # strict = False: Allow duplicate keys, e.g. [rpc_startup].
     # all_no_value = True: Allow keys with no values. Generally, these
     # instances use the "key" as the value, and the section name is the key,
     # e.g. [debug_logfile].
     config = configparser.ConfigParser(strict=False, allow_no_value=True)
     config.read(config_file)
+    return config
+
+
+def find_log_file(config_file):
+    """Try to figure out what log file the user has chosen. Raises all kinds
+    of exceptions if there is any possibility of ambiguity."""
+    config = read_config(config_file)
     values = list(config['debug_logfile'].keys())
     if len(values) < 1:
-        raise ValueError(f'no [debug_logfile] in configuration file: {config_file}')
+        raise ValueError(
+            f'no [debug_logfile] in configuration file: {config_file}')
     if len(values) > 1:
-        raise ValueError(f'too many [debug_logfile] in configuration file: {config_file}')
+        raise ValueError(
+            f'too many [debug_logfile] in configuration file: {config_file}')
     return values[0]
+
+
+def find_http_port(config_file):
+    config = read_config(config_file)
+    names = list(config['server'].keys())
+    for name in names:
+        server = config[name]
+        if server.get('protocol', None) == 'http':
+            return server['port']
+    raise ValueError(f'no server in [server] for "http" protocol')
 
 
 @contextlib.asynccontextmanager
@@ -134,7 +150,10 @@ async def sync(
             start = time.perf_counter()
 
 
-async def loop(test, *, exe=DEFAULT_EXE, config_file=DEFAULT_CONFIGURATION_FILE):
+async def loop(test,
+               *,
+               exe=DEFAULT_EXE,
+               config_file=DEFAULT_CONFIGURATION_FILE):
     """
     Start-test-stop rippled in an infinite loop.
 
@@ -188,12 +207,6 @@ parser.add_argument(
     help='Path to configuration file.',
 )
 parser.add_argument(
-    '--port',
-    type=int,
-    default=DEFAULT_PORT,
-    help='The port chosen for JSON RPC.',
-)
-parser.add_argument(
     '--duration',
     type=int,
     default=DEFAULT_SYNC_DURATION,
@@ -207,9 +220,11 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+port = find_http_port(args.conf)
+
 
 def test():
-    return sync(args.port, duration=args.duration, interval=args.interval)
+    return sync(port, duration=args.duration, interval=args.interval)
 
 
 asyncio.run(loop(test, exe=args.rippled, config_file=args.conf))
