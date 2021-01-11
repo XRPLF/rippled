@@ -640,9 +640,9 @@ Config::loadFromString(std::string const& fileContents)
     {
         auto sec = section(SECTION_REDUCE_RELAY);
         VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
+        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
-        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
         TX_RELAY_PERCENTAGE = sec.value_or("tx_relay_percentage", 25);
         if (TX_RELAY_PERCENTAGE < 10 || TX_RELAY_PERCENTAGE > 100 ||
