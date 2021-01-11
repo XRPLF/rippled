@@ -20,51 +20,44 @@
 #ifndef BEAST_TYPE_NAME_H_INCLUDED
 #define BEAST_TYPE_NAME_H_INCLUDED
 
-#include <iostream>
+#include <cstdlib>
+#include <string>
 #include <type_traits>
 #include <typeinfo>
+
 #ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
-#include <cstdlib>
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace beast {
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4127)  // conditional expression is constant
-#endif
 
 template <typename T>
 std::string
 type_name()
 {
     using TR = typename std::remove_reference<T>::type;
-    std::unique_ptr<char, void (*)(void*)> own(
-#ifndef _MSC_VER
-        abi::__cxa_demangle(typeid(TR).name(), nullptr, nullptr, nullptr),
-#else
-        nullptr,
-#endif
-        std::free);
-    std::string r = own != nullptr ? own.get() : typeid(TR).name();
-    if (std::is_const<TR>::value)
-        r += " const";
-    if (std::is_volatile<TR>::value)
-        r += " volatile";
-    if (std::is_lvalue_reference<T>::value)
-        r += "&";
-    else if (std::is_rvalue_reference<T>::value)
-        r += "&&";
-    return r;
-}
 
-#ifdef _MSC_VER
-#pragma warning(pop)
+    std::string name = typeid(TR).name();
+
+#ifndef _MSC_VER
+    if (auto s = abi::__cxa_demangle(name.c_str(), nullptr, nullptr, nullptr))
+    {
+        name = s;
+        std::free(s);
+    }
 #endif
+
+    if (std::is_const<TR>::value)
+        name += " const";
+    if (std::is_volatile<TR>::value)
+        name += " volatile";
+    if (std::is_lvalue_reference<T>::value)
+        name += "&";
+    else if (std::is_rvalue_reference<T>::value)
+        name += "&&";
+
+    return name;
+}
 
 }  // namespace beast
 

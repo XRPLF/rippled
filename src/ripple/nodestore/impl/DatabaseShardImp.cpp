@@ -722,12 +722,7 @@ DatabaseShardImp::onChildrenStopped()
         }
     }
 
-    if (areChildrenStopped())
-        stopped();
-    else
-    {
-        JLOG(j_.warn()) << " Children failed to stop";
-    }
+    stopped();
 }
 
 void

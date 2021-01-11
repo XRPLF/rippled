@@ -57,7 +57,12 @@ class TrustedPublisherServer
     socket_type sock_;
     endpoint_type ep_;
     boost::asio::ip::tcp::acceptor acceptor_;
+    // Generates a version 1 validator list, using the int parameter as the
+    // actual version.
     std::function<std::string(int)> getList_;
+    // Generates a version 2 validator list, using the int parameter as the
+    // actual version.
+    std::function<std::string(int)> getList2_;
 
     // The SSL context is required, and holds certificates
     bool useSSL_;
@@ -90,6 +95,18 @@ class TrustedPublisherServer
 
         sslCtx_.use_tmp_dh(boost::asio::buffer(dh().data(), dh().size()));
     }
+
+    struct BlobInfo
+    {
+        BlobInfo(std::string b, std::string s) : blob(b), signature(s)
+        {
+        }
+
+        // base-64 encoded JSON containing the validator list.
+        std::string blob;
+        // hex-encoded signature of the blob using the publisher's signing key
+        std::string signature;
+    };
 
 public:
     struct Validator
@@ -144,14 +161,19 @@ public:
                 1)};
     }
 
-    // TrustedPublisherServer must be accessed through a shared_ptr
+    // TrustedPublisherServer must be accessed through a shared_ptr.
     // This constructor is only public so std::make_shared has access.
     // The function`make_TrustedPublisherServer` should be used to create
     // instances.
+    // The `futures` member is expected to be structured as
+    // effective / expiration time point pairs for use in version 2 UNLs
     TrustedPublisherServer(
         boost::asio::io_context& ioc,
         std::vector<Validator> const& validators,
-        NetClock::time_point expiration,
+        NetClock::time_point validUntil,
+        std::vector<
+            std::pair<NetClock::time_point, NetClock::time_point>> const&
+            futures,
         bool useSSL = false,
         int version = 1,
         bool immediateStart = true,
@@ -170,27 +192,78 @@ public:
         auto const manifest = makeManifestString(
             publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
 
-        std::string data = "{\"sequence\":" + std::to_string(sequence) +
-            ",\"expiration\":" +
-            std::to_string(expiration.time_since_epoch().count()) +
-            ",\"validators\":[";
+        std::vector<BlobInfo> blobInfo;
+        blobInfo.reserve(futures.size() + 1);
+        auto const [data, blob] = [&]() -> std::pair<std::string, std::string> {
+            // Builds the validator list, then encodes it into a blob.
+            std::string data = "{\"sequence\":" + std::to_string(sequence) +
+                ",\"expiration\":" +
+                std::to_string(validUntil.time_since_epoch().count()) +
+                ",\"validators\":[";
 
-        for (auto const& val : validators)
-        {
-            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
-                "\",\"manifest\":\"" + val.manifest + "\"},";
-        }
-        data.pop_back();
-        data += "]}";
-        std::string blob = base64_encode(data);
-        auto const sig = sign(keys.first, keys.second, makeSlice(data));
-        getList_ = [blob, sig, manifest, version](int interval) {
+            for (auto const& val : validators)
+            {
+                data += "{\"validation_public_key\":\"" +
+                    strHex(val.masterPublic) + "\",\"manifest\":\"" +
+                    val.manifest + "\"},";
+            }
+            data.pop_back();
+            data += "]}";
+            std::string blob = base64_encode(data);
+            return std::make_pair(data, blob);
+        }();
+        auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
+        blobInfo.emplace_back(blob, sig);
+        getList_ = [blob = blob, sig, manifest, version](int interval) {
+            // Build the contents of a version 1 format UNL file
             std::stringstream l;
             l << "{\"blob\":\"" << blob << "\""
-              << ",\"signature\":\"" << strHex(sig) << "\""
+              << ",\"signature\":\"" << sig << "\""
               << ",\"manifest\":\"" << manifest << "\""
               << ",\"refresh_interval\": " << interval
               << ",\"version\":" << version << '}';
+            return l.str();
+        };
+        for (auto const& future : futures)
+        {
+            std::string data = "{\"sequence\":" + std::to_string(++sequence) +
+                ",\"effective\":" +
+                std::to_string(future.first.time_since_epoch().count()) +
+                ",\"expiration\":" +
+                std::to_string(future.second.time_since_epoch().count()) +
+                ",\"validators\":[";
+
+            // Use the same set of validators for simplicity
+            for (auto const& val : validators)
+            {
+                data += "{\"validation_public_key\":\"" +
+                    strHex(val.masterPublic) + "\",\"manifest\":\"" +
+                    val.manifest + "\"},";
+            }
+            data.pop_back();
+            data += "]}";
+            std::string blob = base64_encode(data);
+            auto const sig =
+                strHex(sign(keys.first, keys.second, makeSlice(data)));
+            blobInfo.emplace_back(blob, sig);
+        }
+        getList2_ = [blobInfo, manifest, version](int interval) {
+            // Build the contents of a version 2 format UNL file
+            // Use `version + 1` to get 2 for most tests, but have
+            // a "bad" version number for tests that provide an override.
+            std::stringstream l;
+            for (auto const& info : blobInfo)
+            {
+                l << "{\"blob\":\"" << info.blob << "\""
+                  << ",\"signature\":\"" << info.signature << "\"},";
+            }
+            std::string blobs = l.str();
+            blobs.pop_back();
+            l.str(std::string());
+            l << "{\"blobs_v2\": [ " << blobs << "],\"manifest\":\"" << manifest
+              << "\""
+              << ",\"refresh_interval\": " << interval
+              << ",\"version\":" << (version + 1) << '}';
             return l.str();
         };
 
@@ -505,7 +578,26 @@ private:
                 res.keep_alive(req.keep_alive());
                 bool prepare = true;
 
-                if (boost::starts_with(path, "/validators"))
+                if (boost::starts_with(path, "/validators2"))
+                {
+                    res.result(http::status::ok);
+                    res.insert("Content-Type", "application/json");
+                    if (path == "/validators2/bad")
+                        res.body() = "{ 'bad': \"2']";
+                    else if (path == "/validators2/missing")
+                        res.body() = "{\"version\": 2}";
+                    else
+                    {
+                        int refresh = 5;
+                        constexpr char const* refreshPrefix =
+                            "/validators2/refresh/";
+                        if (boost::starts_with(path, refreshPrefix))
+                            refresh = boost::lexical_cast<unsigned int>(
+                                path.substr(strlen(refreshPrefix)));
+                        res.body() = getList2_(refresh);
+                    }
+                }
+                else if (boost::starts_with(path, "/validators"))
                 {
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
@@ -516,9 +608,11 @@ private:
                     else
                     {
                         int refresh = 5;
-                        if (boost::starts_with(path, "/validators/refresh"))
+                        constexpr char const* refreshPrefix =
+                            "/validators/refresh/";
+                        if (boost::starts_with(path, refreshPrefix))
                             refresh = boost::lexical_cast<unsigned int>(
-                                path.substr(20));
+                                path.substr(strlen(refreshPrefix)));
                         res.body() = getList_(refresh);
                     }
                 }
@@ -618,14 +712,16 @@ inline std::shared_ptr<TrustedPublisherServer>
 make_TrustedPublisherServer(
     boost::asio::io_context& ioc,
     std::vector<TrustedPublisherServer::Validator> const& validators,
-    NetClock::time_point expiration,
+    NetClock::time_point validUntil,
+    std::vector<std::pair<NetClock::time_point, NetClock::time_point>> const&
+        futures,
     bool useSSL = false,
     int version = 1,
     bool immediateStart = true,
     int sequence = 1)
 {
     auto const r = std::make_shared<TrustedPublisherServer>(
-        ioc, validators, expiration, useSSL, version, sequence);
+        ioc, validators, validUntil, futures, useSSL, version, sequence);
     if (immediateStart)
         r->start();
     return r;

@@ -22,6 +22,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -30,14 +31,22 @@
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <boost/asio/ssl.hpp>
+#include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/fields.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include <utility>
 
 namespace ripple {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
+using request_type =
+    boost::beast::http::request<boost::beast::http::empty_body>;
+using http_request_type =
+    boost::beast::http::request<boost::beast::http::dynamic_body>;
+using http_response_type =
+    boost::beast::http::response<boost::beast::http::dynamic_body>;
 
 /** Computes a shared value based on the SSL connection state.
 
@@ -48,7 +57,7 @@ using stream_type = boost::beast::ssl_stream<socket_type>;
     @param ssl the SSL/TLS connection state.
     @return A 256-bit value on success; an unseated optional otherwise.
 */
-boost::optional<uint256>
+std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal);
 
 /** Insert fields headers necessary for upgrading the link to the peer protocol.
@@ -57,7 +66,7 @@ void
 buildHandshake(
     boost::beast::http::fields& h,
     uint256 const& sharedValue,
-    boost::optional<std::uint32_t> networkID,
+    std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
     Application& app);
@@ -77,10 +86,143 @@ PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
     uint256 const& sharedValue,
-    boost::optional<std::uint32_t> networkID,
+    std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
     Application& app);
+
+/** Make outbound http request
+
+   @param crawlPublic if true then server's IP/Port are included in crawl
+   @param comprEnabled if true then compression feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   @return http request with empty body
+ */
+request_type
+makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled);
+
+/** Make http response
+
+   @param crawlPublic if true then server's IP/Port are included in crawl
+   @param req incoming http request
+   @param public_ip server's public IP
+   @param remote_ip peer's IP
+   @param sharedValue shared value based on the SSL connection state
+   @param networkID specifies what network we intend to connect to
+   @param version supported protocol version
+   @param app Application's reference to access some common properties
+   @return http response
+ */
+http_response_type
+makeResponse(
+    bool crawlPublic,
+    http_request_type const& req,
+    beast::IP::Address public_ip,
+    beast::IP::Address remote_ip,
+    uint256 const& sharedValue,
+    std::optional<std::uint32_t> networkID,
+    ProtocolVersion version,
+    Application& app);
+
+// Protocol features negotiated via HTTP handshake.
+// The format is:
+// X-Protocol-Ctl: feature1=value1[,value2]*[\s*;\s*feature2=value1[,value2]*]*
+// value: \S+
+static constexpr char FEATURE_COMPR[] = "compr";  // compression
+static constexpr char FEATURE_VPRR[] =
+    "vprr";  // validation/proposal reduce-relay
+static constexpr char DELIM_FEATURE[] = ";";
+static constexpr char DELIM_VALUE[] = ",";
+
+/** Get feature's header value
+   @param headers request/response header
+   @param feature name
+   @return seated optional with feature's value if the feature
+      is found in the header, unseated optional otherwise
+ */
+std::optional<std::string>
+getFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature);
+
+/** Check if a feature's value is equal to the specified value
+   @param headers request/response header
+   @param feature to check
+   @param value of the feature to check, must be a single value; i.e. not
+        value1,value2...
+   @return true if the feature's value matches the specified value, false if
+   doesn't match or the feature is not found in the header
+ */
+bool
+isFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature,
+    std::string const& value);
+
+/** Check if a feature is enabled
+   @param headers request/response header
+   @param feature to check
+   @return true if enabled
+ */
+bool
+featureEnabled(
+    boost::beast::http::fields const& headers,
+    std::string const& feature);
+
+/** Check if a feature should be enabled for a peer. The feature
+    is enabled if its configured value is true and the http header
+    has the specified feature value.
+   @tparam headers request (inbound) or response (outbound) header
+   @param request http headers
+   @param feature to check
+   @param config feature's configuration value
+   @param value feature's value to check in the headers
+   @return true if the feature is enabled
+ */
+template <typename headers>
+bool
+peerFeatureEnabled(
+    headers const& request,
+    std::string const& feature,
+    std::string value,
+    bool config)
+{
+    return config && isFeatureValue(request, feature, value);
+}
+
+/** Wrapper for enable(1)/disable type(0) of feature */
+template <typename headers>
+bool
+peerFeatureEnabled(
+    headers const& request,
+    std::string const& feature,
+    bool config)
+{
+    return config && peerFeatureEnabled(request, feature, "1", config);
+}
+
+/** Make request header X-Protocol-Ctl value with supported features
+   @param comprEnabled if true then compression feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   @return X-Protocol-Ctl header value
+ */
+std::string
+makeFeaturesRequestHeader(bool comprEnabled, bool vpReduceRelayEnabled);
+
+/** Make response header X-Protocol-Ctl value with supported features.
+    If the request has a feature that we support enabled
+    and the feature's configuration is enabled then enable this feature in
+    the response header.
+   @param header request's header
+   @param comprEnabled if true then compression feature is enabled
+   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   @return X-Protocol-Ctl header value
+ */
+std::string
+makeFeaturesResponseHeader(
+    http_request_type const& headers,
+    bool comprEnabled,
+    bool vpReduceRelayEnabled);
 
 }  // namespace ripple
 

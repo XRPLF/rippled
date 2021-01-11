@@ -21,7 +21,6 @@
 #ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
 #define BEAST_HASH_HASH_APPEND_H_INCLUDED
 
-#include <ripple/beast/hash/meta.h>
 #include <boost/container/flat_set.hpp>
 #include <boost/endian/conversion.hpp>
 #include <array>
@@ -140,8 +139,8 @@ template <class... T>
 struct is_uniquely_represented<std::tuple<T...>>
     : public std::integral_constant<
           bool,
-          static_and<is_uniquely_represented<T>::value...>::value &&
-              static_sum<sizeof(T)...>::value == sizeof(std::tuple<T...>)>
+          std::conjunction_v<is_uniquely_represented<T>...> &&
+              sizeof(std::tuple<T...>) == (sizeof(T) + ...)>
 {
     explicit is_uniquely_represented() = default;
 };

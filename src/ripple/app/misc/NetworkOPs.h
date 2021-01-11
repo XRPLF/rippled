@@ -201,6 +201,8 @@ public:
     virtual void
     setMode(OperatingMode om) = 0;
     virtual bool
+    isBlocked() = 0;
+    virtual bool
     isAmendmentBlocked() = 0;
     virtual void
     setAmendmentBlocked() = 0;
@@ -210,6 +212,12 @@ public:
     setAmendmentWarned() = 0;
     virtual void
     clearAmendmentWarned() = 0;
+    virtual bool
+    isUNLBlocked() = 0;
+    virtual void
+    setUNLBlocked() = 0;
+    virtual void
+    clearUNLBlocked() = 0;
     virtual void
     consensusViewChange() = 0;
 

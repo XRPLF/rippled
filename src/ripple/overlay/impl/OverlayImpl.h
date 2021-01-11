@@ -54,7 +54,7 @@ namespace ripple {
 class PeerImp;
 class BasicConfig;
 
-class OverlayImpl : public Overlay, public squelch::SquelchHandler
+class OverlayImpl : public Overlay, public reduce_relay::SquelchHandler
 {
 public:
     class Child
@@ -126,7 +126,7 @@ private:
 
     boost::optional<std::uint32_t> networkID_;
 
-    squelch::Slots<UptimeClock> slots_;
+    reduce_relay::Slots<UptimeClock> slots_;
 
     // A message with the list of manifests we send to peers
     std::shared_ptr<Message> manifestMessage_;

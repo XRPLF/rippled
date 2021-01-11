@@ -273,7 +273,6 @@ install (
 install (
   FILES
     src/ripple/beast/hash/hash_append.h
-    src/ripple/beast/hash/meta.h
     src/ripple/beast/hash/uhash.h
     src/ripple/beast/hash/xxhasher.h
   DESTINATION include/ripple/beast/hash)
@@ -859,6 +858,7 @@ target_sources (rippled PRIVATE
   src/test/overlay/short_read_test.cpp
   src/test/overlay/compression_test.cpp
   src/test/overlay/reduce_relay_test.cpp
+  src/test/overlay/handshake_test.cpp
   #[===============================[
      test sources:
        subdir: peerfinder

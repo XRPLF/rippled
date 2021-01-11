@@ -25,6 +25,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <stdexcept>
 
 namespace ripple {
 

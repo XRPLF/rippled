@@ -21,7 +21,6 @@
 #define RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <boost/optional.hpp>
@@ -29,17 +28,16 @@
 namespace ripple {
 
 class TransactionMaster;
+class Stoppable;
 
 /**
  * class to create database, launch online delete thread, and
  * related SQLite database
  */
-class SHAMapStore : public Stoppable
+class SHAMapStore
 {
 public:
-    SHAMapStore(Stoppable& parent) : Stoppable("SHAMapStore", parent)
-    {
-    }
+    virtual ~SHAMapStore() = default;
 
     /** Called by LedgerMaster every time a ledger validates. */
     virtual void

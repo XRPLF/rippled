@@ -477,14 +477,12 @@ PerfLogImp::onStop()
         }
         thread_.join();
     }
-    if (areChildrenStopped())
-        stopped();
 }
 
 void
 PerfLogImp::onChildrenStopped()
 {
-    onStop();
+    stopped();
 }
 
 //-----------------------------------------------------------------------------

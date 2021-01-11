@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 #define RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/overlay/Compression.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/messages.h>
@@ -33,6 +34,8 @@
 #include <type_traits>
 
 namespace ripple {
+
+constexpr std::size_t maximiumMessageSize = megabytes(64);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the
@@ -67,6 +70,12 @@ public:
     /** Retrieve the size of the packed but uncompressed message data. */
     std::size_t
     getBufferSize();
+
+    static std::size_t
+    messageSize(::google::protobuf::Message const& message);
+
+    static std::size_t
+    totalSize(::google::protobuf::Message const& message);
 
     /** Retrieve the packed message data. If compressed message is requested but
      * the message is not compressible then the uncompressed buffer is returned.
