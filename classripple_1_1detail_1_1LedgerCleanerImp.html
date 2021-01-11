@@ -129,9 +129,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af73e8650a1483d10a06d8c4276043260"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fce36cfc522d8faceaee7e758146903"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#a2fce36cfc522d8faceaee7e758146903">~LedgerCleanerImp</a> () override</td></tr>
 <tr class="separator:a2fce36cfc522d8faceaee7e758146903"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f8e1250b4903f039435451cb8175f61"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#a5f8e1250b4903f039435451cb8175f61">onPrepare</a> () override</td></tr>
-<tr class="memdesc:a5f8e1250b4903f039435451cb8175f61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called during preparation.  <a href="classripple_1_1detail_1_1LedgerCleanerImp.html#a5f8e1250b4903f039435451cb8175f61">More...</a><br /></td></tr>
-<tr class="separator:a5f8e1250b4903f039435451cb8175f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a363652c7715c7176bff335387f97991f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#a363652c7715c7176bff335387f97991f">onStart</a> () override</td></tr>
 <tr class="memdesc:a363652c7715c7176bff335387f97991f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called during start.  <a href="classripple_1_1detail_1_1LedgerCleanerImp.html#a363652c7715c7176bff335387f97991f">More...</a><br /></td></tr>
 <tr class="separator:a363652c7715c7176bff335387f97991f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -240,6 +237,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:adc5f204e5b1e54820158a093249dfde1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#adc5f204e5b1e54820158a093249dfde1">doLedgerCleaner</a> ()</td></tr>
 <tr class="memdesc:adc5f204e5b1e54820158a093249dfde1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the ledger cleaner.  <a href="classripple_1_1detail_1_1LedgerCleanerImp.html#adc5f204e5b1e54820158a093249dfde1">More...</a><br /></td></tr>
 <tr class="separator:adc5f204e5b1e54820158a093249dfde1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">onPrepare</a> ()</td></tr>
+<tr class="memdesc:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called during preparation.  <a href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">More...</a><br /></td></tr>
+<tr class="separator:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a944a3ffe59dc8f41185fe7b740aa3e8f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a944a3ffe59dc8f41185fe7b740aa3e8f">onChildrenStopped</a> ()</td></tr>
 <tr class="memdesc:a944a3ffe59dc8f41185fe7b740aa3e8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called when all children have stopped.  <a href="classripple_1_1Stoppable.html#a944a3ffe59dc8f41185fe7b740aa3e8f">More...</a><br /></td></tr>
 <tr class="separator:a944a3ffe59dc8f41185fe7b740aa3e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -430,38 +430,6 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a5f8e1250b4903f039435451cb8175f61"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f8e1250b4903f039435451cb8175f61">&#9670;&nbsp;</a></span>onPrepare()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::detail::LedgerCleanerImp::onPrepare </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Override called during preparation. </p>
-<p>Since all other <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects in the tree have already been constructed, this provides an opportunity to perform initialization which depends on calling into other <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects. This call is made on the same thread that called prepare(). The default implementation does nothing. Guaranteed to only be called once. </p>
-
-<p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">ripple::Stoppable</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00096">96</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a363652c7715c7176bff335387f97991f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a363652c7715c7176bff335387f97991f">&#9670;&nbsp;</a></span>onStart()</h2>
 
@@ -489,7 +457,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a0f24b7fcb7e8679dfd3783e9ffe3bbde">ripple::Stoppable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00101">101</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00096">96</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -524,7 +492,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a4278b4c199fbe20a75d69610a8970c03">ripple::Stoppable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00107">107</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00102">102</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -557,7 +525,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#accd7269755b1a27d4c66715edc1f5915">beast::PropertyStream::Source</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00125">125</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00120">120</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -597,7 +565,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1detail_1_1LedgerCleaner.html#acb802d08e7dafcc694a79f470e338cb6">ripple::detail::LedgerCleaner</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00150">150</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00145">145</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -624,7 +592,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00237">237</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00232">232</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -651,7 +619,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00243">243</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00238">238</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -689,7 +657,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00270">270</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00265">265</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -751,7 +719,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the ledger was cleaned. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00297">297</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00292">292</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -799,7 +767,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The hash of the ledger. This will be all-bits-zero if not found. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00355">355</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00350">350</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -828,7 +796,7 @@ Private Attributes</h2></td></tr>
 
 <p>Run the ledger cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00405">405</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00400">400</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -1000,7 +968,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00437">437</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00420">420</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -1031,7 +999,7 @@ Private Attributes</h2></td></tr>
 <p>Sleep or wake up on stop. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if we are stopping </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00455">455</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00440">440</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -1064,6 +1032,38 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ab2a5544b4bfc0dccdc6a2a46f6ff5d84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">&#9670;&nbsp;</a></span>onPrepare()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Stoppable::onPrepare </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Override called during preparation. </p>
+<p>Since all other <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects in the tree have already been constructed, this provides an opportunity to perform initialization which depends on calling into other <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects. This call is made on the same thread that called prepare(). The default implementation does nothing. Guaranteed to only be called once. </p>
+
+<p>Reimplemented in <a class="el" href="classripple_1_1OverlayImpl.html#addad297874d76d9df9fc2d7c903d7782">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a0419ed3fe1cbaff9a0e7b218ea8c7383">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a27bf534a255be28d9db438c2e650febe">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#a1f3cfa0cbcefd9779a0d6bbb33e929ad">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a3802f8ec07a49c257e7af4d6425c66d3">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#aca211ad8479955c5c3a8ff56c8b80f23">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#acb490a17968f0429b5e98fdab6165de0">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#a9c4f120d3d1257cb1922e6dedc6ebb7c">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a20612412402a342e2acc42a3f19936e7">ripple::PeerFinder::ManagerImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#a65baffca9446b7f05a5c4c561743698f">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#ab0d1bcc2b5c8349c9fedb83c880a0bcb">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#aeae3d11b4b4965ad1e41229b51eb3d10">ripple::test::Stoppable_test::J</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a46116902aa4f8b6f1a5c91a49854e8f0">ripple::PerfLog_test::PerfLogParent</a>, and <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#a247b2d122fe5ebeda596a7f0bff9d79a">ripple::test::Stoppable_test::D</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00080">80</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a944a3ffe59dc8f41185fe7b740aa3e8f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a944a3ffe59dc8f41185fe7b740aa3e8f">&#9670;&nbsp;</a></span>onChildrenStopped()</h2>
 
@@ -1093,7 +1093,7 @@ Private Attributes</h2></td></tr>
 <p>The default implementation does nothing.</p>
 <p>Thread safety: May not block for long periods. Guaranteed only to be called once. Must be safe to call from any thread at any time. </p>
 
-<p>Reimplemented in <a class="el" href="classripple_1_1OverlayImpl.html#a3a2a34dcf3647aad5b8860744fc4a324">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a2207576109879034546928ca55b1d700">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a02efcac1ce2652ab65cd909ddb6f836d">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#a0c3fb7cde430461b5ec75375c0ad6c54">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a01878ee5cc7e155ea8c626e7e02312a3">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1JobQueue.html#ae768881eecd962f76f12b290fe991cbe">ripple::JobQueue</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#a5e33be0f2cb72f8f88b874d940f04365">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#a04c59bc636bd73be750c95342d88b939">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1SHAMapStoreImp.html#a0c59947861cceb42b88e2218b581e985">ripple::SHAMapStoreImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#a39e3b1e4e61a89c77f67e1cea7b9ff6f">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a32612bcc8d906ddf25a412d4024b33da">ripple::perf::PerfLogImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1Database.html#ae84b30410af69ec7e7adcdb6265a4af8">ripple::NodeStore::Database</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#ae935bf8f308a9cf15568e36e5da6338c">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#a990e49f21b4787bb7e318887445cc6b2">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a54438fef32a52fb3c2109a0b01d14d34">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#ad9378ab66db740d19cb2aea688a1647a">ripple::test::Stoppable_test::J</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a8061f5ed2fbbdca8ea5438ea3b6a6c3f">ripple::PerfLog_test::PerfLogParent</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#a28e05fec1dc41788a0616d349f209ce2">ripple::test::Stoppable_test::D</a>, and <a class="el" href="classripple_1_1NodeStoreScheduler.html#a4f4bf5ea195e8d2cf94967e03e6ec375">ripple::NodeStoreScheduler</a>.</p>
+<p>Reimplemented in <a class="el" href="classripple_1_1OverlayImpl.html#a3a2a34dcf3647aad5b8860744fc4a324">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a2207576109879034546928ca55b1d700">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a02efcac1ce2652ab65cd909ddb6f836d">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#a0c3fb7cde430461b5ec75375c0ad6c54">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a01878ee5cc7e155ea8c626e7e02312a3">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1JobQueue.html#ae768881eecd962f76f12b290fe991cbe">ripple::JobQueue</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#a5e33be0f2cb72f8f88b874d940f04365">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#a04c59bc636bd73be750c95342d88b939">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#a39e3b1e4e61a89c77f67e1cea7b9ff6f">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1NodeStore_1_1Database.html#ae84b30410af69ec7e7adcdb6265a4af8">ripple::NodeStore::Database</a>, <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a32612bcc8d906ddf25a412d4024b33da">ripple::perf::PerfLogImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#ae935bf8f308a9cf15568e36e5da6338c">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#a990e49f21b4787bb7e318887445cc6b2">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a54438fef32a52fb3c2109a0b01d14d34">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#ad9378ab66db740d19cb2aea688a1647a">ripple::test::Stoppable_test::J</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a8061f5ed2fbbdca8ea5438ea3b6a6c3f">ripple::PerfLog_test::PerfLogParent</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#a28e05fec1dc41788a0616d349f209ce2">ripple::test::Stoppable_test::D</a>, and <a class="el" href="classripple_1_1NodeStoreScheduler.html#a4f4bf5ea195e8d2cf94967e03e6ec375">ripple::NodeStoreScheduler</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00096">96</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
 
@@ -2042,7 +2042,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00342">342</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00343">343</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -2066,7 +2066,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00343">343</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00344">344</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -2090,7 +2090,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00344">344</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00345">345</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -2114,7 +2114,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00345">345</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00346">346</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -2138,7 +2138,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00346">346</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00347">347</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -2162,7 +2162,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00347">347</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00348">348</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>
@@ -2186,7 +2186,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00348">348</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00349">349</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
 
 </div>
 </div>

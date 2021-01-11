@@ -136,9 +136,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a897618f37f9b01fa4d4811aeafb63e22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae5073a1095a9e85433182a1f3df33c2"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="structripple_1_1Port.html">Port</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1WSSession.html#aae5073a1095a9e85433182a1f3df33c2">port</a> () const =0</td></tr>
 <tr class="separator:aae5073a1095a9e85433182a1f3df33c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4d378cf640b42d55b0dba41193a8ec4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#aa4d378cf640b42d55b0dba41193a8ec4">request</a> () const override</td></tr>
+<tr class="memitem:aa4d378cf640b42d55b0dba41193a8ec4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#aa4d378cf640b42d55b0dba41193a8ec4">request</a> () const override</td></tr>
 <tr class="separator:aa4d378cf640b42d55b0dba41193a8ec4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14042236a3989e12b2b41379a25c03b0"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1WSSession.html#a14042236a3989e12b2b41379a25c03b0">request</a> () const =0</td></tr>
+<tr class="memitem:a14042236a3989e12b2b41379a25c03b0"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1WSSession.html#a14042236a3989e12b2b41379a25c03b0">request</a> () const =0</td></tr>
 <tr class="separator:a14042236a3989e12b2b41379a25c03b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a6edb475f753507ccf4721af10025ec"><td class="memItemLeft" align="right" valign="top">boost::asio::ip::tcp::endpoint const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a8a6edb475f753507ccf4721af10025ec">remote_endpoint</a> () const override</td></tr>
 <tr class="separator:a8a6edb475f753507ccf4721af10025ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -238,7 +238,7 @@ Private Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a536d3f109f99f6c5d52d83ecc1ed3f04"><td class="memItemLeft" align="right" valign="top">boost::beast::websocket::stream&lt; <a class="el" href="classripple_1_1PlainWSPeer.html#ac49d0ce68be9a561568e92aff78e6847">socket_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PlainWSPeer.html#a536d3f109f99f6c5d52d83ecc1ed3f04">ws_</a></td></tr>
 <tr class="separator:a536d3f109f99f6c5d52d83ecc1ed3f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55db665752370720603dd49e3fe7b72a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a55db665752370720603dd49e3fe7b72a">request_</a></td></tr>
+<tr class="memitem:a55db665752370720603dd49e3fe7b72a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a55db665752370720603dd49e3fe7b72a">request_</a></td></tr>
 <tr class="separator:a55db665752370720603dd49e3fe7b72a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af552981517f5316e974298a66bd53387"><td class="memItemLeft" align="right" valign="top">boost::beast::multi_buffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#af552981517f5316e974298a66bd53387">rb_</a></td></tr>
 <tr class="separator:af552981517f5316e974298a66bd53387"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -556,7 +556,7 @@ template&lt;class Body , class Headers &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a> const&amp; <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1PlainWSPeer.html">PlainWSPeer</a>&lt; Handler &gt;  &gt;::request</td>
+          <td class="memname"><a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const&amp; <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1PlainWSPeer.html">PlainWSPeer</a>&lt; Handler &gt;  &gt;::request</td>
         </tr>
       </table>
   </td>
@@ -580,7 +580,7 @@ template&lt;class Body , class Headers &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a> const&amp; ripple::WSSession::request </td>
+          <td class="memname">virtual <a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const&amp; ripple::WSSession::request </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1306,7 +1306,7 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a> <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1PlainWSPeer.html">PlainWSPeer</a>&lt; Handler &gt;  &gt;::request_</td>
+          <td class="memname"><a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1PlainWSPeer.html">PlainWSPeer</a>&lt; Handler &gt;  &gt;::request_</td>
         </tr>
       </table>
   </td>

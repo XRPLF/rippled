@@ -107,7 +107,7 @@ struct beast::is_contiguously_hashable&lt; T, HashAlgorithm &gt;</h3>
 <p>For <code><a class="el" href="structbeast_1_1is__contiguously__hashable.html" title="Metafunction returning true if the type can be hashed in one call.">is_contiguously_hashable</a>&lt;T&gt;::value</code> to be true, then for every combination of possible values of <code>T</code> held in <code>x</code> and <code>y</code>, if <code>x == y</code>, then it must be true that <code>memcmp(&amp;x, &amp;y, sizeof(T))</code> return 0; i.e. that <code>x</code> and <code>y</code> are represented by the same bit pattern.</p>
 <p>For example: A two's complement <code>int</code> should be contiguously hashable. Every bit pattern produces a unique value that does not compare equal to any other bit pattern's value. A IEEE floating point should not be contiguously hashable because -0. and 0. have different bit patterns, though they compare equal. </p>
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00184">184</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00183">183</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a87bbe410fc732e603a275e09aaf97d34"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a87bbe410fc732e603a275e09aaf97d34">&#9670;&nbsp;</a></span>is_contiguously_hashable()</h2>

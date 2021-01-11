@@ -66,7 +66,9 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="structstd_1_1hash_3_01ripple_1_1AccountID_01_4-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">std::hash&lt; ripple::AccountID &gt; Struct Reference</div>  </div>
@@ -78,7 +80,7 @@ Inheritance diagram for std::hash&lt; ripple::AccountID &gt;:</div>
 <div class="center"><img src="structstd_1_1hash_3_01ripple_1_1AccountID_01_4__inherit__graph.png" border="0" usemap="#std_1_1hash_3_01ripple_1_1AccountID_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="std_1_1hash_3_01ripple_1_1AccountID_01_4_inherit__map" id="std_1_1hash_3_01ripple_1_1AccountID_01_4_inherit__map">
 <area shape="rect" title=" " alt="" coords="5,95,147,136"/>
-<area shape="rect" title=" " alt="" coords="5,5,147,47"/>
+<area shape="rect" href="classripple_1_1hardened__hash.html" title="Seed functor once per construction." alt="" coords="5,5,147,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -86,20 +88,62 @@ Collaboration diagram for std::hash&lt; ripple::AccountID &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structstd_1_1hash_3_01ripple_1_1AccountID_01_4__coll__graph.png" border="0" usemap="#std_1_1hash_3_01ripple_1_1AccountID_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="std_1_1hash_3_01ripple_1_1AccountID_01_4_coll__map" id="std_1_1hash_3_01ripple_1_1AccountID_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,95,147,136"/>
-<area shape="rect" title=" " alt="" coords="5,5,147,47"/>
+<area shape="rect" title=" " alt="" coords="14,304,155,345"/>
+<area shape="rect" href="classripple_1_1hardened__hash.html" title="Seed functor once per construction." alt="" coords="14,213,155,255"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/pair.html" title=" " alt="" coords="5,109,164,151"/>
+<area shape="rect" title=" " alt="" coords="65,5,104,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a0447c9ec0860439ed67f13cd9d01b732"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a> = typename HashAlgorithm::result_type</td></tr>
+<tr class="separator:a0447c9ec0860439ed67f13cd9d01b732"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ada1835a5344b82a73bec111cb8316e61"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structstd_1_1hash_3_01ripple_1_1AccountID_01_4.html#ada1835a5344b82a73bec111cb8316e61">hash</a> ()=default</td></tr>
 <tr class="separator:ada1835a5344b82a73bec111cb8316e61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addb99e4c2034d9eb2027345e4f50ce34"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:addb99e4c2034d9eb2027345e4f50ce34"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">operator()</a> (T const &amp;t) const noexcept</td></tr>
+<tr class="separator:addb99e4c2034d9eb2027345e4f50ce34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a3765aed06bf6e6296439d0fc70c709a3"><td class="memItemLeft" align="right" valign="top">detail::seed_pair&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a></td></tr>
+<tr class="separator:a3765aed06bf6e6296439d0fc70c709a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="AccountID_8h_source.html#l00154">154</a> of file <a class="el" href="AccountID_8h_source.html">AccountID.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a0447c9ec0860439ed67f13cd9d01b732"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0447c9ec0860439ed67f13cd9d01b732">&#9670;&nbsp;</a></span>result_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class HashAlgorithm  = beast::xxhasher&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1hardened__hash.html">ripple::hardened_hash</a>&lt; HashAlgorithm &gt;::<a class="el" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a> =  typename HashAlgorithm::result_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="hardened__hash_8h_source.html#l00102">102</a> of file <a class="el" href="hardened__hash_8h_source.html">hardened_hash.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ada1835a5344b82a73bec111cb8316e61"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ada1835a5344b82a73bec111cb8316e61">&#9670;&nbsp;</a></span>hash()</h2>
 
@@ -122,6 +166,66 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="addb99e4c2034d9eb2027345e4f50ce34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addb99e4c2034d9eb2027345e4f50ce34">&#9670;&nbsp;</a></span>operator()()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class HashAlgorithm  = beast::xxhasher&gt; </div>
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a> <a class="el" href="classripple_1_1hardened__hash.html">ripple::hardened_hash</a>&lt; HashAlgorithm &gt;::operator() </td>
+          <td>(</td>
+          <td class="paramtype">T const &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="hardened__hash_8h_source.html#l00110">110</a> of file <a class="el" href="hardened__hash_8h_source.html">hardened_hash.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a3765aed06bf6e6296439d0fc70c709a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3765aed06bf6e6296439d0fc70c709a3">&#9670;&nbsp;</a></span>m_seeds</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class HashAlgorithm  = beast::xxhasher&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">detail::seed_pair <a class="el" href="classripple_1_1hardened__hash.html">ripple::hardened_hash</a>&lt; HashAlgorithm &gt;::m_seeds</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="hardened__hash_8h_source.html#l00099">99</a> of file <a class="el" href="hardened__hash_8h_source.html">hardened_hash.h</a>.</p>
 
 </div>
 </div>

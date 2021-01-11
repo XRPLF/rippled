@@ -1,0 +1,5 @@
+<map id="ripple::ValidatorList::PublisherListStats" name="ripple::ValidatorList::PublisherListStats">
+<area shape="rect" id="node1" title="Describes the result of processing a Validator List (UNL), including some of the information from the..." alt="" coords="5,199,153,240"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="35,5,123,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="149,95,343,136"/>
+</map>

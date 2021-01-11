@@ -344,11 +344,11 @@ $(function() {
 : <a class="el" href="structripple_1_1test_1_1AccountTx__test_1_1NodeSanity.html#a270cb6f52ce84cfc101a73861b901e35">ripple::test::AccountTx_test::NodeSanity</a>
 </li>
 <li>deleteIdlePeer()
-: <a class="el" href="classripple_1_1squelch_1_1Slot.html#a25096619a035a3f4b93f082e2fc9cb17">ripple::squelch::Slot&lt; clock_type &gt;</a>
+: <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#aa45e32fbe0cd5d2dcc726146b9295328">ripple::reduce_relay::Slot&lt; clock_type &gt;</a>
 </li>
 <li>deleteIdlePeers()
 : <a class="el" href="classripple_1_1OverlayImpl.html#a21ecf8c5c7a9b2f9dba05b1a07b89f06">ripple::OverlayImpl</a>
-, <a class="el" href="classripple_1_1squelch_1_1Slots.html#a3bb3bfd806b14124cb0543eee8541fdc">ripple::squelch::Slots&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1reduce__relay_1_1Slots.html#a343a426d5fd00c5db285d25c41261d8b">ripple::reduce_relay::Slots&lt; clock_type &gt;</a>
 , <a class="el" href="classripple_1_1test_1_1Overlay.html#ac22c1839b424fa08d288f7e8b2280e53">ripple::test::Overlay</a>
 , <a class="el" href="classripple_1_1test_1_1OverlaySim.html#a99364d64099e6d27af806964246ebf12">ripple::test::OverlaySim</a>
 </li>
@@ -367,8 +367,8 @@ $(function() {
 </li>
 <li>deletePeer()
 : <a class="el" href="classripple_1_1OverlayImpl.html#a522fb9ffec5625df2a15f19b2e629ba9">ripple::OverlayImpl</a>
-, <a class="el" href="classripple_1_1squelch_1_1Slot.html#ad22d9c9db4406cc917e8d5fe0e124db6">ripple::squelch::Slot&lt; clock_type &gt;</a>
-, <a class="el" href="classripple_1_1squelch_1_1Slots.html#a36a74dff477733864a285b0924b3dcdc">ripple::squelch::Slots&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a3588d6a33bbd8c51f3b3e415f90f7da7">ripple::reduce_relay::Slot&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1reduce__relay_1_1Slots.html#a2e8278ad904625304ffd967859e8a640">ripple::reduce_relay::Slots&lt; clock_type &gt;</a>
 , <a class="el" href="classripple_1_1test_1_1Overlay.html#a7af470228e54baf9d93a3ab2cc71a4d5">ripple::test::Overlay</a>
 , <a class="el" href="classripple_1_1test_1_1OverlaySim.html#a77e02bc9b7e72ce0dfe71746a762fddd">ripple::test::OverlaySim</a>
 , <a class="el" href="classripple_1_1test_1_1Validator.html#a7fedff3c795271c8739c7246c975650c">ripple::test::Validator</a>
@@ -513,6 +513,7 @@ $(function() {
 , <a class="el" href="classbeast_1_1insight_1_1GaugeImpl.html#acd3e2dbbaf5d66255f876a0b934a1b5d">beast::insight::GaugeImpl</a>
 , <a class="el" href="classbeast_1_1List.html#a868d9d7a9879ff1ac34bf24c33308691">beast::List&lt; T, Tag &gt;</a>
 , <a class="el" href="classbeast_1_1LockFreeStack.html#acc69aefb629e0761668a99569c397d8e">beast::LockFreeStack&lt; Element, Tag &gt;</a>
+, <a class="el" href="classbeast_1_1rfc2616_1_1list__iterator.html#ada6d8910043561c22411c32921ed3675">beast::rfc2616::list_iterator</a>
 , <a class="el" href="classJson_1_1ValueConstIterator.html#a3645bfcb24c1ca39119465d19e734e33">Json::ValueConstIterator</a>
 , <a class="el" href="classJson_1_1ValueIterator.html#a6b1402fc664f1c4442ce3267e3d7f14f">Json::ValueIterator</a>
 , <a class="el" href="classJson_1_1ValueIteratorBase.html#afea6c61bcdf1ad448a5d64f2eede6f40">Json::ValueIteratorBase</a>
@@ -585,7 +586,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ApplyView.html#ac157168b6d8afa47ec1956546dd268cb">ripple::ApplyView</a>
 </li>
 <li>dirRemove()
-: <a class="el" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ripple::ApplyView</a>
+: <a class="el" href="classripple_1_1ApplyView.html#add05adf228213dde2bc48821c0f7cc75">ripple::ApplyView</a>
 </li>
 <li>dirtyUp()
 : <a class="el" href="classripple_1_1SHAMap.html#a36ba184d7125776bff17e081e9e1d7ed">ripple::SHAMap</a>
@@ -622,8 +623,10 @@ $(function() {
 <li>disposition()
 : <a class="el" href="classripple_1_1Resource_1_1Consumer.html#ad7cedbf4822211a1c627483b36d8a2b4">ripple::Resource::Consumer</a>
 , <a class="el" href="classripple_1_1Resource_1_1Logic.html#aef42d962718ad2f7d2c732185e03b218">ripple::Resource::Logic</a>
-, <a class="el" href="structripple_1_1ValidatorList_1_1PublisherListStats.html#a742cd1f6fda6019fbfbfb2e13dd529d3">ripple::ValidatorList::PublisherListStats</a>
 , <a class="el" href="structripple_1_1ValidatorSite_1_1Site_1_1Status.html#ac30a88227005185ee3ce1e3ce8efa687">ripple::ValidatorSite::Site::Status</a>
+</li>
+<li>dispositions
+: <a class="el" href="structripple_1_1ValidatorList_1_1PublisherListStats.html#a517f509ad4f2032f1553def3e810a5a5">ripple::ValidatorList::PublisherListStats</a>
 </li>
 <li>Dispute_t
 : <a class="el" href="structripple_1_1ConsensusResult.html#afbc7370d887e28c1d37c38028d5813aa">ripple::ConsensusResult&lt; Traits &gt;</a>
@@ -661,7 +664,7 @@ $(function() {
 : <a class="el" href="classripple_1_1BaseWSPeer.html#a4f8fad887b045e6afb48940cb1a2e955">ripple::BaseWSPeer&lt; Handler, Impl &gt;</a>
 </li>
 <li>do_cross()
-: <a class="el" href="classripple_1_1BasicTaker.html#ac9e3e90e667dc1632ec1e703a1ac9237">ripple::BasicTaker</a>
+: <a class="el" href="classripple_1_1BasicTaker.html#ae67e802167cb58a7701345924fefe4ff">ripple::BasicTaker</a>
 </li>
 <li>do_detect()
 : <a class="el" href="classripple_1_1Door_1_1Detector.html#ab4e26e5b70cd1a74e712e03e5460a3d0">ripple::Door&lt; Handler &gt;::Detector</a>
@@ -908,14 +911,14 @@ $(function() {
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">ripple::FeeVoteImpl</a>
 </li>
 <li>doVoting()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ae4402ab8248766bc7556bdbb93225943">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#ab69ef448949faf9d80e80760d6574381">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a4eac7bf3be538741f7fa066c18b04fae">ripple::AmendmentTableImpl</a>
 , <a class="el" href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">ripple::FeeVote</a>
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#ad264dda6949150323ec3360ef094ecc5">ripple::FeeVoteImpl</a>
 , <a class="el" href="classripple_1_1NegativeUNLVote.html#ac58c464cefde1519ac23d1b51aa28833">ripple::NegativeUNLVote</a>
 </li>
 <li>downcast()
-: <a class="el" href="classripple_1_1STBase.html#a61b521e7125b47bab19a29c5ac5c836d">ripple::STBase</a>
+: <a class="el" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">ripple::STBase</a>
 </li>
 <li>download()
 : <a class="el" href="classripple_1_1HTTPDownloader.html#a0438f2d57582abab6b9ef9b942af9b6f">ripple::HTTPDownloader</a>

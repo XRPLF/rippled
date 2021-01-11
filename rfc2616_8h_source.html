@@ -108,183 +108,378 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
 <div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html">   38</a></span>&#160;<span class="keyword">namespace </span>detail {</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">   45</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">is_lws</a>(<span class="keywordtype">char</span> c)</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;{</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> c == <span class="charliteral">&#39; &#39;</span> || c == <span class="charliteral">&#39;\t&#39;</span>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">   52</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">is_white</a>(<span class="keywordtype">char</span> c)</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;{</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">switch</span> (c)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    {</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39; &#39;</span>:</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\f&#39;</span>:</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\n&#39;</span>:</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\r&#39;</span>:</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\t&#39;</span>:</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\v&#39;</span>:</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    };</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> FwdIter&gt;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;FwdIter</div>
-<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">   69</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a>(FwdIter first, FwdIter last)</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;{</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">if</span> (first == last)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">return</span> last;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordflow">do</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    {</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        --last;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">is_white</a>(*last))</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordflow">return</span> ++last;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    } <span class="keywordflow">while</span> (last != first);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordflow">return</span> first;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> String&gt;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;String</div>
-<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#a03ec1be0dd2f0462bcf5ebf57bab3fbc">   84</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a>(String <span class="keyword">const</span>&amp; s)</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a>;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a>;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keyword">auto</span> first(begin(s));</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">auto</span> last(end(s));</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    last = <a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a>(first, last);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">return</span> {first, last};</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;}</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}  <span class="comment">// namespace detail</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">template</span> &lt;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">class </span>FwdIt,</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">class </span>Result = <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::basic_string&lt;typename std::iterator_traits&lt;FwdIt&gt;::value_type</a>&gt;&gt;,</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keyword">class </span>Char&gt;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;Result</div>
-<div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">  110</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">split</a>(FwdIt first, FwdIt last, Char delim)</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;{</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keyword">using namespace </span>detail;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">using</span> <span class="keywordtype">string</span> = <span class="keyword">typename</span> Result::value_type;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    Result result;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    FwdIt iter = first;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keywordtype">string</span> e;</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keywordflow">while</span> (iter != last)</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    {</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        <span class="keywordflow">if</span> (*iter == <span class="charliteral">&#39;&quot;&#39;</span>)</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        {</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <span class="comment">// quoted-string</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            ++iter;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keywordflow">while</span> (iter != last)</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            {</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                <span class="keywordflow">if</span> (*iter == <span class="charliteral">&#39;&quot;&#39;</span>)</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                {</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                    ++iter;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                }</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                <span class="keywordflow">if</span> (*iter == <span class="charliteral">&#39;\\&#39;</span>)</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                {</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                    <span class="comment">// quoted-pair</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    ++iter;</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                    <span class="keywordflow">if</span> (iter != last)</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                        e.append(1, *iter++);</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html">   40</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html">ci_equal_pred</a></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;{</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html#a3e819bce48b9f012f357b19b1bfc6845">ci_equal_pred</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html#a7ac2727dd7b5976fc599154b6369b25b">   45</a></span>&#160;    <a class="code" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html#a7ac2727dd7b5976fc599154b6369b25b">operator()</a>(<span class="keywordtype">char</span> c1, <span class="keywordtype">char</span> c2)</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    {</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="comment">// VFALCO TODO Use a table lookup here</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">return</span> std::tolower(<span class="keyword">static_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span><span class="keyword">&gt;</span>(c1)) ==</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            std::tolower(<span class="keyword">static_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span><span class="keyword">&gt;</span>(c2));</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;};</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">   58</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">is_lws</a>(<span class="keywordtype">char</span> c)</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;{</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">return</span> c == <span class="charliteral">&#39; &#39;</span> || c == <span class="charliteral">&#39;\t&#39;</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">   65</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">is_white</a>(<span class="keywordtype">char</span> c)</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;{</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">switch</span> (c)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    {</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39; &#39;</span>:</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\f&#39;</span>:</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\n&#39;</span>:</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\r&#39;</span>:</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\t&#39;</span>:</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">case</span> <span class="charliteral">&#39;\v&#39;</span>:</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    };</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;}</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> FwdIter&gt;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;FwdIter</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">   82</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a>(FwdIter first, FwdIter last)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordflow">if</span> (first == last)</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">return</span> last;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">do</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    {</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        --last;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">is_white</a>(*last))</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keywordflow">return</span> ++last;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    } <span class="keywordflow">while</span> (last != first);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">return</span> first;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> String&gt;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;String</div>
+<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616_1_1detail.html#a03ec1be0dd2f0462bcf5ebf57bab3fbc">   97</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a>(String <span class="keyword">const</span>&amp; s)</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;{</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a>;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">auto</span> first(begin(s));</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">auto</span> last(end(s));</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    last = <a class="code" href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">trim_right</a>(first, last);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">return</span> {first, last};</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;}</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="keyword">template</span> &lt;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">class </span>FwdIt,</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">class </span>Result = <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::basic_string&lt;typename std::iterator_traits&lt;FwdIt&gt;::value_type</a>&gt;&gt;,</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">class </span>Char&gt;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;Result</div>
+<div class="line"><a name="l00123"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">  123</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">split</a>(FwdIt first, FwdIt last, Char delim)</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;{</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keyword">using namespace </span>detail;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keyword">using</span> <span class="keywordtype">string</span> = <span class="keyword">typename</span> Result::value_type;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    Result result;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    FwdIt iter = first;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordtype">string</span> e;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keywordflow">while</span> (iter != last)</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    {</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <span class="keywordflow">if</span> (*iter == <span class="charliteral">&#39;&quot;&#39;</span>)</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <span class="comment">// quoted-string</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            ++iter;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="keywordflow">while</span> (iter != last)</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            {</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                <span class="keywordflow">if</span> (*iter == <span class="charliteral">&#39;&quot;&#39;</span>)</div>
 <div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                {</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    <span class="comment">// qdtext</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                    e.append(1, *iter++);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    ++iter;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                    <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                }</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            }</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="keywordflow">if</span> (!e.empty())</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            {</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                result.emplace_back(std::move(e));</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                e.clear();</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            }</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        }</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (*iter == delim)</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        {</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            e = trim_right(e);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            <span class="keywordflow">if</span> (!e.empty())</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            {</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                result.emplace_back(std::move(e));</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                e.clear();</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            }</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            ++iter;</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        }</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (is_lws(*iter))</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        {</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            ++iter;</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        }</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        {</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            e.append(1, *iter++);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;        }</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    }</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keywordflow">if</span> (!e.empty())</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    {</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        e = trim_right(e);</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <span class="keywordflow">if</span> (!e.empty())</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            result.emplace_back(std::move(e));</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    }</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;}</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="keyword">template</span> &lt;</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    <span class="keyword">class </span>FwdIt,</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <span class="keyword">class </span>Result = <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::basic_string&lt;typename std::iterator_traits&lt;FwdIt&gt;::value_type</a>&gt;&gt;&gt;</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;Result</div>
-<div class="line"><a name="l00186"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">  186</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">split_commas</a>(FwdIt first, FwdIt last)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;{</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">split</a>(first, last, <span class="charliteral">&#39;,&#39;</span>);</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Result = std::vector&lt;std::<span class="keywordtype">string</span>&gt;&gt;</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;Result</div>
-<div class="line"><a name="l00193"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#ae322de61b901fb85572314f10ab6a100">  193</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">split_commas</a>(boost::beast::string_view <span class="keyword">const</span>&amp; s)</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;{</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">split_commas</a>(s.begin(), s.end());</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;}</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> isRequest, <span class="keyword">class</span> Body, <span class="keyword">class</span> Fields&gt;</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00200"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">  200</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">is_keep_alive</a>(boost::beast::http::message&lt;isRequest, Body, Fields&gt; <span class="keyword">const</span>&amp; m)</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;{</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    <span class="keywordflow">if</span> (m.version() &lt;= 10)</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        <span class="keywordflow">return</span> boost::beast::http::token_list{</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            m[boost::beast::http::field::connection]}</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;            .exists(<span class="stringliteral">&quot;keep-alive&quot;</span>);</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keywordflow">return</span> !boost::beast::http::token_list{</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        m[boost::beast::http::field::connection]}</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                .exists(<span class="stringliteral">&quot;close&quot;</span>);</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                <span class="keywordflow">if</span> (*iter == <span class="charliteral">&#39;\\&#39;</span>)</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                {</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    <span class="comment">// quoted-pair</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    ++iter;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    <span class="keywordflow">if</span> (iter != last)</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                        e.append(1, *iter++);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                }</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                {</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    <span class="comment">// qdtext</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                    e.append(1, *iter++);</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                }</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            }</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            <span class="keywordflow">if</span> (!e.empty())</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            {</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                result.emplace_back(std::move(e));</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                e.clear();</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            }</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        }</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (*iter == delim)</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        {</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            e = trim_right(e);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            <span class="keywordflow">if</span> (!e.empty())</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            {</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                result.emplace_back(std::move(e));</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                e.clear();</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;            }</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            ++iter;</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        }</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (is_lws(*iter))</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        {</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;            ++iter;</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        }</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        {</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            e.append(1, *iter++);</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        }</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    }</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160; </div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keywordflow">if</span> (!e.empty())</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    {</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        e = trim_right(e);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <span class="keywordflow">if</span> (!e.empty())</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            result.emplace_back(std::move(e));</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    }</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;}</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160; </div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;<span class="keyword">template</span> &lt;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keyword">class </span>FwdIt,</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keyword">class </span>Result = <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::basic_string&lt;typename std::iterator_traits&lt;FwdIt&gt;::value_type</a>&gt;&gt;&gt;</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;Result</div>
+<div class="line"><a name="l00199"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">  199</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">split_commas</a>(FwdIt first, FwdIt last)</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;{</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">split</a>(first, last, <span class="charliteral">&#39;,&#39;</span>);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;}</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Result = std::vector&lt;std::<span class="keywordtype">string</span>&gt;&gt;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;Result</div>
+<div class="line"><a name="l00206"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#ae322de61b901fb85572314f10ab6a100">  206</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">split_commas</a>(boost::beast::string_view <span class="keyword">const</span>&amp; s)</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;{</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">split_commas</a>(s.begin(), s.end());</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;}</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;}  <span class="comment">// namespace rfc2616</span></div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;}  <span class="comment">// namespace beast</span></div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
+<div class="line"><a name="l00221"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html">  221</a></span>&#160;<span class="keyword">class </span><a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a></div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;{</div>
+<div class="line"><a name="l00223"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">  223</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">iter_type</a> = boost::string_ref::const_iterator;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
+<div class="line"><a name="l00225"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a208ed4a9e8b5bd816e10e745f4510fa3">  225</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">iter_type</a> <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a208ed4a9e8b5bd816e10e745f4510fa3">it_</a>;</div>
+<div class="line"><a name="l00226"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a18c9f8a3a85e67a073eb8c203c462e97">  226</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">iter_type</a> <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a18c9f8a3a85e67a073eb8c203c462e97">end_</a>;</div>
+<div class="line"><a name="l00227"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a8a14e8ff40f1a7711b6cdc126ebc723b">  227</a></span>&#160;    boost::string_ref <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a8a14e8ff40f1a7711b6cdc126ebc723b">value_</a>;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00230"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a94a84ddcff7be679193f09486eaa9abe">  230</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a94a84ddcff7be679193f09486eaa9abe">value_type</a> = boost::string_ref;</div>
+<div class="line"><a name="l00231"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a4a1fbfee096717ce5d2d7e9081110ead">  231</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a4a1fbfee096717ce5d2d7e9081110ead">pointer</a> = <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a94a84ddcff7be679193f09486eaa9abe">value_type</a> <span class="keyword">const</span>*;</div>
+<div class="line"><a name="l00232"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#ab9f27f633a92c63076747b8a35a02c29">  232</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#ab9f27f633a92c63076747b8a35a02c29">reference</a> = <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a94a84ddcff7be679193f09486eaa9abe">value_type</a> <span class="keyword">const</span>&amp;;</div>
+<div class="line"><a name="l00233"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#ada6d8910043561c22411c32921ed3675">  233</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/ptrdiff_t.html">difference_type</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/ptrdiff_t.html">std::ptrdiff_t</a>;</div>
+<div class="line"><a name="l00234"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#ae10c85e0929cf07d08012df87ee4ad90">  234</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">iterator_category</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a>;</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
+<div class="line"><a name="l00236"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a7056e4bd8bc85b767dfefa9726b10d22">  236</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a7056e4bd8bc85b767dfefa9726b10d22">list_iterator</a>(<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">iter_type</a> begin, <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">iter_type</a> end) : it_(begin), end_(end)</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    {</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        <span class="keywordflow">if</span> (it_ != end_)</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            increment();</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    }</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#ab2e1c4c78459bae6de098951abc8723a">  243</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#ab2e1c4c78459bae6de098951abc8723a">operator==</a>(<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a> <span class="keyword">const</span>&amp; other)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        <span class="keywordflow">return</span> other.<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a208ed4a9e8b5bd816e10e745f4510fa3">it_</a> == it_ &amp;&amp; other.<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a18c9f8a3a85e67a073eb8c203c462e97">end_</a> == end_ &amp;&amp;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            other.<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a8a14e8ff40f1a7711b6cdc126ebc723b">value_</a>.size() == value_.size();</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    }</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#aa097398e3a32982815281bc66fe65f58">  250</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#aa097398e3a32982815281bc66fe65f58">operator!=</a>(<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a> <span class="keyword">const</span>&amp; other)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        <span class="keywordflow">return</span> !(*<span class="keyword">this</span> == other);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    }</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    reference</div>
+<div class="line"><a name="l00256"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#aa6b19e218b22501ea25913d0c87abc23">  256</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#aa6b19e218b22501ea25913d0c87abc23">operator*</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <span class="keywordflow">return</span> value_;</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    }</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    pointer</div>
+<div class="line"><a name="l00262"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a0b2665613b18114c5c9a6dee10e991c5">  262</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a0b2665613b18114c5c9a6dee10e991c5">operator-&gt;</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        <span class="keywordflow">return</span> &amp;*(*this);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    }</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a>&amp;</div>
+<div class="line"><a name="l00268"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a0b137be1ddc7a20d70b966994f82afc1">  268</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a0b137be1ddc7a20d70b966994f82afc1">operator++</a>()</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    {</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        increment();</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    }</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a></div>
+<div class="line"><a name="l00275"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#acc63f7c51a0a286353c4e711af94eb8f">  275</a></span>&#160;    <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#acc63f7c51a0a286353c4e711af94eb8f">operator++</a>(<span class="keywordtype">int</span>)</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    {</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <span class="keyword">auto</span> temp = *<span class="keyword">this</span>;</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        ++(*this);</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <span class="keywordflow">return</span> temp;</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    }</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    increment();</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;};</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span>&gt;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00290"></a><span class="lineno"><a class="line" href="classbeast_1_1rfc2616_1_1list__iterator.html#a5426dcb1878f609da4670fd6e3fb7d22">  290</a></span>&#160;<a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html#a5426dcb1878f609da4670fd6e3fb7d22">list_iterator::increment</a>()</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;{</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <span class="keyword">using namespace </span>detail;</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    value_.clear();</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="keywordflow">while</span> (it_ != end_)</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    {</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        <span class="keywordflow">if</span> (*it_ == <span class="charliteral">&#39;&quot;&#39;</span>)</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        {</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <span class="comment">// quoted-string</span></div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            ++it_;</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            <span class="keywordflow">if</span> (it_ == end_)</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            <span class="keywordflow">if</span> (*it_ != <span class="charliteral">&#39;&quot;&#39;</span>)</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            {</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                <span class="keyword">auto</span> start = it_;</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                <span class="keywordflow">for</span> (;;)</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                {</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                    ++it_;</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                    <span class="keywordflow">if</span> (it_ == end_)</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                    {</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                        value_ = boost::string_ref(</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                            &amp;*start, <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(start, it_));</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                        <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                    }</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                    <span class="keywordflow">if</span> (*it_ == <span class="charliteral">&#39;&quot;&#39;</span>)</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                    {</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                        value_ = boost::string_ref(</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                            &amp;*start, <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(start, it_));</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                        ++it_;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                        <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                    }</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                }</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            }</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            ++it_;</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        }</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (*it_ == <span class="charliteral">&#39;,&#39;</span>)</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        {</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            it_++;</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        }</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (is_lws(*it_))</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        {</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            ++it_;</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        }</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        {</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            <span class="keyword">auto</span> start = it_;</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="keywordflow">for</span> (;;)</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            {</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                ++it_;</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                <span class="keywordflow">if</span> (it_ == end_ || *it_ == <span class="charliteral">&#39;,&#39;</span> || is_lws(*it_))</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                {</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                    value_ =</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                        boost::string_ref(&amp;*start, <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(start, it_));</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                    <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                }</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            }</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        }</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    }</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;}</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00356"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#abb7732c99b68c4edfda069568544b33e">  356</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#abb7732c99b68c4edfda069568544b33e">ci_equal</a>(boost::string_ref s1, boost::string_ref s2)</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;{</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <span class="keywordflow">return</span> boost::range::equal(s1, s2, <a class="code" href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html">detail::ci_equal_pred</a>{});</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;}</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160; </div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;<span class="keyword">inline</span> boost::iterator_range&lt;list_iterator&gt;</div>
+<div class="line"><a name="l00363"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a2ff7243470231c919c117fa940cb6fee">  363</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a2ff7243470231c919c117fa940cb6fee">make_list</a>(boost::string_ref <span class="keyword">const</span>&amp; <a class="code" href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">field</a>)</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;{</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="keywordflow">return</span> boost::iterator_range&lt;list_iterator&gt;{</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a>{<a class="code" href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">field</a>.begin(), <a class="code" href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">field</a>.end()},</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        <a class="code" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a>{<a class="code" href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">field</a>.end(), <a class="code" href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">field</a>.end()}};</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;}</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160; </div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00376"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#accd76c534f760053842f265c2c09a5a9">  376</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#accd76c534f760053842f265c2c09a5a9">token_in_list</a>(boost::string_ref <span class="keyword">const</span>&amp; value, boost::string_ref <span class="keyword">const</span>&amp; token)</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;{</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : <a class="code" href="namespacebeast_1_1rfc2616.html#a2ff7243470231c919c117fa940cb6fee">make_list</a>(value))</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast_1_1rfc2616.html#abb7732c99b68c4edfda069568544b33e">ci_equal</a>(item, token))</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;}</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160; </div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> isRequest, <span class="keyword">class</span> Body, <span class="keyword">class</span> Fields&gt;</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00386"></a><span class="lineno"><a class="line" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">  386</a></span>&#160;<a class="code" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">is_keep_alive</a>(boost::beast::http::message&lt;isRequest, Body, Fields&gt; <span class="keyword">const</span>&amp; m)</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;{</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <span class="keywordflow">if</span> (m.version() &lt;= 10)</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        <span class="keywordflow">return</span> boost::beast::http::token_list{</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            m[boost::beast::http::field::connection]}</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            .exists(<span class="stringliteral">&quot;keep-alive&quot;</span>);</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <span class="keywordflow">return</span> !boost::beast::http::token_list{</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        m[boost::beast::http::field::connection]}</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                .exists(<span class="stringliteral">&quot;close&quot;</span>);</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;}</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160; </div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;}  <span class="comment">// namespace rfc2616</span></div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160; </div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a94a84ddcff7be679193f09486eaa9abe"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a94a84ddcff7be679193f09486eaa9abe">beast::rfc2616::list_iterator::value_type</a></div><div class="ttdeci">boost::string_ref value_type</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00230">rfc2616.h:230</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a208ed4a9e8b5bd816e10e745f4510fa3"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a208ed4a9e8b5bd816e10e745f4510fa3">beast::rfc2616::list_iterator::it_</a></div><div class="ttdeci">iter_type it_</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00225">rfc2616.h:225</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::basic_string</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_ab9f27f633a92c63076747b8a35a02c29"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#ab9f27f633a92c63076747b8a35a02c29">beast::rfc2616::list_iterator::reference</a></div><div class="ttdeci">value_type const  &amp; reference</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00232">rfc2616.h:232</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a4a1fbfee096717ce5d2d7e9081110ead"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a4a1fbfee096717ce5d2d7e9081110ead">beast::rfc2616::list_iterator::pointer</a></div><div class="ttdeci">value_type const  * pointer</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00231">rfc2616.h:231</a></div></div>
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_ab2e1c4c78459bae6de098951abc8723a"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#ab2e1c4c78459bae6de098951abc8723a">beast::rfc2616::list_iterator::operator==</a></div><div class="ttdeci">bool operator==(list_iterator const &amp;other) const</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00243">rfc2616.h:243</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a7bd10c38927e9300544721c81ba22bb1"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">beast::rfc2616::split</a></div><div class="ttdeci">Result split(FwdIt first, FwdIt last, Char delim)</div><div class="ttdoc">Parse a character sequence of values separated by commas.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00110">rfc2616.h:110</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a7bd10c38927e9300544721c81ba22bb1"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a7bd10c38927e9300544721c81ba22bb1">beast::rfc2616::split</a></div><div class="ttdeci">Result split(FwdIt first, FwdIt last, Char delim)</div><div class="ttdoc">Parse a character sequence of values separated by commas.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00123">rfc2616.h:123</a></div></div>
+<div class="ttc" id="astructbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred_html_a3e819bce48b9f012f357b19b1bfc6845"><div class="ttname"><a href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html#a3e819bce48b9f012f357b19b1bfc6845">beast::rfc2616::detail::ci_equal_pred::ci_equal_pred</a></div><div class="ttdeci">ci_equal_pred()=default</div></div>
 <div class="ttc" id="aiterator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iterator.html">iterator</a></div></div>
+<div class="ttc" id="aiterator_tags_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a></div></div>
+<div class="ttc" id="adistance_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a></div><div class="ttdeci">T distance(T... args)</div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a5426dcb1878f609da4670fd6e3fb7d22"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a5426dcb1878f609da4670fd6e3fb7d22">beast::rfc2616::list_iterator::increment</a></div><div class="ttdeci">void increment()</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00290">rfc2616.h:290</a></div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a9636e35eb0a45052354e43055540851d"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">beast::rfc2616::is_keep_alive</a></div><div class="ttdeci">bool is_keep_alive(boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;m)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00200">rfc2616.h:200</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_1_1detail_html_a925ecf7f71d4c843b48ebab095a8a7a7"><div class="ttname"><a href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">beast::rfc2616::detail::is_lws</a></div><div class="ttdeci">bool is_lws(char c)</div><div class="ttdoc">Returns true if c is linear white space.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00045">rfc2616.h:45</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a4c2f1ae5d7c29a1b452c4fa1d3751e8e"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">beast::rfc2616::split_commas</a></div><div class="ttdeci">Result split_commas(FwdIt first, FwdIt last)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00186">rfc2616.h:186</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_1_1detail_html_acf0fd842667ee98fe6c34fd2542386a6"><div class="ttname"><a href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">beast::rfc2616::detail::trim_right</a></div><div class="ttdeci">FwdIter trim_right(FwdIter first, FwdIter last)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00069">rfc2616.h:69</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a2ff7243470231c919c117fa940cb6fee"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a2ff7243470231c919c117fa940cb6fee">beast::rfc2616::make_list</a></div><div class="ttdeci">boost::iterator_range&lt; list_iterator &gt; make_list(boost::string_ref const &amp;field)</div><div class="ttdoc">Returns a range representing the list.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00363">rfc2616.h:363</a></div></div>
+<div class="ttc" id="astructbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred_html_a7ac2727dd7b5976fc599154b6369b25b"><div class="ttname"><a href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html#a7ac2727dd7b5976fc599154b6369b25b">beast::rfc2616::detail::ci_equal_pred::operator()</a></div><div class="ttdeci">bool operator()(char c1, char c2)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00045">rfc2616.h:45</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a9636e35eb0a45052354e43055540851d"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">beast::rfc2616::is_keep_alive</a></div><div class="ttdeci">bool is_keep_alive(boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;m)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00386">rfc2616.h:386</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a7056e4bd8bc85b767dfefa9726b10d22"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a7056e4bd8bc85b767dfefa9726b10d22">beast::rfc2616::list_iterator::list_iterator</a></div><div class="ttdeci">list_iterator(iter_type begin, iter_type end)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00236">rfc2616.h:236</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a0b2665613b18114c5c9a6dee10e991c5"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a0b2665613b18114c5c9a6dee10e991c5">beast::rfc2616::list_iterator::operator-&gt;</a></div><div class="ttdeci">pointer operator-&gt;() const</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00262">rfc2616.h:262</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html">beast::rfc2616::list_iterator</a></div><div class="ttdoc">Iterates through a comma separated list.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00221">rfc2616.h:221</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_1_1detail_html_a925ecf7f71d4c843b48ebab095a8a7a7"><div class="ttname"><a href="namespacebeast_1_1rfc2616_1_1detail.html#a925ecf7f71d4c843b48ebab095a8a7a7">beast::rfc2616::detail::is_lws</a></div><div class="ttdeci">bool is_lws(char c)</div><div class="ttdoc">Returns true if c is linear white space.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00058">rfc2616.h:58</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a8a14e8ff40f1a7711b6cdc126ebc723b"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a8a14e8ff40f1a7711b6cdc126ebc723b">beast::rfc2616::list_iterator::value_</a></div><div class="ttdeci">boost::string_ref value_</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00227">rfc2616.h:227</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a4c2f1ae5d7c29a1b452c4fa1d3751e8e"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a4c2f1ae5d7c29a1b452c4fa1d3751e8e">beast::rfc2616::split_commas</a></div><div class="ttdeci">Result split_commas(FwdIt first, FwdIt last)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00199">rfc2616.h:199</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_abb7732c99b68c4edfda069568544b33e"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#abb7732c99b68c4edfda069568544b33e">beast::rfc2616::ci_equal</a></div><div class="ttdeci">bool ci_equal(boost::string_ref s1, boost::string_ref s2)</div><div class="ttdoc">Returns true if two strings are equal.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00356">rfc2616.h:356</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_aa6b19e218b22501ea25913d0c87abc23"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#aa6b19e218b22501ea25913d0c87abc23">beast::rfc2616::list_iterator::operator*</a></div><div class="ttdeci">reference operator*() const</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00256">rfc2616.h:256</a></div></div>
+<div class="ttc" id="anamespacebeast_html_afc5f5e8520bf9ec3abd1f92d066ef7b9"><div class="ttname"><a href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">beast::field</a></div><div class="ttdeci">field_t&lt; CharT, Traits, Allocator &gt; field(std::basic_string&lt; CharT, Traits, Allocator &gt; const &amp;text, int width=8, int pad=0, bool right=false)</div><div class="ttdef"><b>Definition:</b> <a href="iosformat_8h_source.html#l00162">iosformat.h:162</a></div></div>
+<div class="ttc" id="astructbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred_html"><div class="ttname"><a href="structbeast_1_1rfc2616_1_1detail_1_1ci__equal__pred.html">beast::rfc2616::detail::ci_equal_pred</a></div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00040">rfc2616.h:40</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_accd76c534f760053842f265c2c09a5a9"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#accd76c534f760053842f265c2c09a5a9">beast::rfc2616::token_in_list</a></div><div class="ttdeci">bool token_in_list(boost::string_ref const &amp;value, boost::string_ref const &amp;token)</div><div class="ttdoc">Returns true if the specified token exists in the list.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00376">rfc2616.h:376</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_1_1detail_html_acf0fd842667ee98fe6c34fd2542386a6"><div class="ttname"><a href="namespacebeast_1_1rfc2616_1_1detail.html#acf0fd842667ee98fe6c34fd2542386a6">beast::rfc2616::detail::trim_right</a></div><div class="ttdeci">FwdIter trim_right(FwdIter first, FwdIter last)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00082">rfc2616.h:82</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_acc63f7c51a0a286353c4e711af94eb8f"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#acc63f7c51a0a286353c4e711af94eb8f">beast::rfc2616::list_iterator::operator++</a></div><div class="ttdeci">list_iterator operator++(int)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00275">rfc2616.h:275</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a10bf8aff80ee0afc494486868cef0977"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a10bf8aff80ee0afc494486868cef0977">beast::rfc2616::list_iterator::iter_type</a></div><div class="ttdeci">boost::string_ref::const_iterator iter_type</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00223">rfc2616.h:223</a></div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a18c9f8a3a85e67a073eb8c203c462e97"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a18c9f8a3a85e67a073eb8c203c462e97">beast::rfc2616::list_iterator::end_</a></div><div class="ttdeci">iter_type end_</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00226">rfc2616.h:226</a></div></div>
+<div class="ttc" id="aptrdiff_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/ptrdiff_t.html">std::ptrdiff_t</a></div></div>
 <div class="ttc" id="acctype_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cctype.html">cctype</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a></div><div class="ttdeci">T end(T... args)</div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_1_1detail_html_a31469be8bbe3ac07f5afe5228c4a4848"><div class="ttname"><a href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">beast::rfc2616::detail::is_white</a></div><div class="ttdeci">bool is_white(char c)</div><div class="ttdoc">Returns true if c is any whitespace character.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00052">rfc2616.h:52</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_1_1detail_html_a31469be8bbe3ac07f5afe5228c4a4848"><div class="ttname"><a href="namespacebeast_1_1rfc2616_1_1detail.html#a31469be8bbe3ac07f5afe5228c4a4848">beast::rfc2616::detail::is_white</a></div><div class="ttdeci">bool is_white(char c)</div><div class="ttdoc">Returns true if c is any whitespace character.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00065">rfc2616.h:65</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_a0b137be1ddc7a20d70b966994f82afc1"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#a0b137be1ddc7a20d70b966994f82afc1">beast::rfc2616::list_iterator::operator++</a></div><div class="ttdeci">list_iterator &amp; operator++()</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00268">rfc2616.h:268</a></div></div>
+<div class="ttc" id="aclassbeast_1_1rfc2616_1_1list__iterator_html_aa097398e3a32982815281bc66fe65f58"><div class="ttname"><a href="classbeast_1_1rfc2616_1_1list__iterator.html#aa097398e3a32982815281bc66fe65f58">beast::rfc2616::list_iterator::operator!=</a></div><div class="ttdeci">bool operator!=(list_iterator const &amp;other) const</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00250">rfc2616.h:250</a></div></div>
 <div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00585">base_uint.h:585</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->

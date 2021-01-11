@@ -1,6 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/runtime_error.html" title="STL class." alt="" coords="5,56,144,83"/>
-<area shape="rect" id="node2" href="$structJson_1_1error.html" title=" " alt="" coords="250,5,338,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1SHAMapMissingNode.html" title=" " alt="" coords="192,56,396,83"/>
-<area shape="rect" id="node4" href="$classripple_1_1STObject_1_1FieldErr.html" title=" " alt="" coords="203,107,385,133"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="5,13,97,39"/>
+<area shape="rect" id="node2" href="$structripple_1_1UptimeClock_1_1update__thread.html" title=" " alt="" coords="145,5,296,47"/>
 </map>

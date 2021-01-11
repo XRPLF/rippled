@@ -17,8 +17,8 @@
 <area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="299,460,457,487"/>
 <area shape="rect" id="node39" href="$classripple_1_1Resource_1_1Logic.html" title=" " alt="" coords="1419,264,1587,291"/>
 <area shape="rect" id="node11" href="$classbeast_1_1List.html" title=" " alt="" coords="285,1830,471,1871"/>
-<area shape="rect" id="node13" href="$classripple_1_1squelch_1_1SquelchHandler.html" title="Abstract class." alt="" coords="1017,1371,1193,1413"/>
-<area shape="rect" id="node14" href="$classripple_1_1squelch_1_1Slots.html" title=" " alt="" coords="1412,1371,1593,1413"/>
+<area shape="rect" id="node13" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="1029,1371,1180,1413"/>
+<area shape="rect" id="node14" href="$classripple_1_1reduce__relay_1_1Slots.html" title=" " alt="" coords="1392,1371,1613,1413"/>
 <area shape="rect" id="node16" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1049,816,1160,843"/>
 <area shape="rect" id="node17" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="635,781,781,808"/>
 <area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/weak_ptr.html" title=" " alt="" coords="1417,647,1588,689"/>

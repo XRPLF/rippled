@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
@@ -120,6 +121,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:adfda2892c626409bcbf86440c2c0b0e9"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#adfda2892c626409bcbf86440c2c0b0e9">messageSize</a> (::google::protobuf::Message const &amp;message)</td></tr>
+<tr class="separator:adfda2892c626409bcbf86440c2c0b0e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a4b11ee88a462956cab12969e833fbe"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a7a4b11ee88a462956cab12969e833fbe">totalSize</a> (::google::protobuf::Message const &amp;message)</td></tr>
+<tr class="separator:a7a4b11ee88a462956cab12969e833fbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
 <tr class="memitem:a2988842a363a695d1243861b13dd04bf"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a2988842a363a695d1243861b13dd04bf">Compressed</a> = <a class="el" href="namespaceripple_1_1compression.html#a63d59b12f7e712c378860771ef3fdf5f">compression::Compressed</a></td></tr>
@@ -154,7 +162,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00050">50</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00053">53</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a2988842a363a695d1243861b13dd04bf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2988842a363a695d1243861b13dd04bf">&#9670;&nbsp;</a></span>Compressed</h2>
@@ -176,7 +184,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00052">52</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00055">55</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -200,7 +208,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00053">53</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00056">56</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -269,7 +277,63 @@ Private Attributes</h2></td></tr>
 
 <p>Retrieve the size of the packed but uncompressed message data. </p>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00181">181</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00198">198</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adfda2892c626409bcbf86440c2c0b0e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfda2892c626409bcbf86440c2c0b0e9">&#9670;&nbsp;</a></span>messageSize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::Message::messageSize </td>
+          <td>(</td>
+          <td class="paramtype">::google::protobuf::Message const &amp;&#160;</td>
+          <td class="paramname"><em>message</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00051">51</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7a4b11ee88a462956cab12969e833fbe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a4b11ee88a462956cab12969e833fbe">&#9670;&nbsp;</a></span>totalSize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::Message::totalSize </td>
+          <td>(</td>
+          <td class="paramtype">::google::protobuf::Message const &amp;&#160;</td>
+          <td class="paramname"><em>message</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00062">62</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -298,7 +362,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Payload buffer </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00187">187</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00204">204</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -319,7 +383,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the traffic category. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00082">82</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00091">91</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -340,7 +404,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the validator's key. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00089">89</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00098">98</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -425,7 +489,7 @@ Private Attributes</h2></td></tr>
 </pre><p>The maximum size of a message at this time is 64 MB. Messages larger than this will be dropped and the recipient may, at its option, sever the link.</p>
 <dl class="section note"><dt>Note</dt><dd>While nominally a part of the wire protocol, the framing is subject to change; future versions of the code may negotiate the use of substantially different framing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00151">151</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00168">168</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -455,7 +519,7 @@ Private Attributes</h2></td></tr>
 <p>Try to compress the payload. </p>
 <p>Can be called concurrently by multiple peers but is compressed once. If the message is not compressible then the serialized buffer_ is used. </p>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00052">52</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00068">68</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -492,7 +556,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Message.html">Message</a> type </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00201">201</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00218">218</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -517,7 +581,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00095">95</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00104">104</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -541,7 +605,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00096">96</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00105">105</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -565,7 +629,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00097">97</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00106">106</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -589,7 +653,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00098">98</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00107">107</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -613,7 +677,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00099">99</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00108">108</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>

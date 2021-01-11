@@ -1,8 +1,0 @@
-<map id="ripple::squelch::Squelch&lt; clock_type &gt;" name="ripple::squelch::Squelch&lt; clock_type &gt;">
-<area shape="rect" id="node1" title="Maintains squelching of relaying messages from validators." alt="" coords="51,303,227,344"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="63,184,215,240"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,95,177,121"/>
-<area shape="rect" id="node4" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="202,95,333,121"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="163,5,257,32"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="282,5,370,32"/>
-</map>

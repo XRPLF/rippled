@@ -134,51 +134,51 @@ $(function() {
 <div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="classripple_1_1Workers.html#aeb667770c498316bc4611932c768141d">   63</a></span>&#160;<a class="code" href="classripple_1_1Workers.html#aeb667770c498316bc4611932c768141d">Workers::setNumberOfThreads</a>(<span class="keywordtype">int</span> numberOfThreads)</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;{</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">int</span> instance{0};</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a> != numberOfThreads)</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Workers.html#addb401754309403bc8a604f1dd7cfdf3">perfLog_</a>)</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <a class="code" href="classripple_1_1Workers.html#addb401754309403bc8a604f1dd7cfdf3">perfLog_</a>-&gt;<a class="code" href="classripple_1_1perf_1_1PerfLog.html#aa11365e44f61add50756e2e1b208fbc6">resizeJobs</a>(numberOfThreads);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">if</span> (numberOfThreads &gt; <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a>)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        {</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="comment">// Increasing the number of working threads</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            <span class="keywordtype">int</span> <span class="keyword">const</span> amount = numberOfThreads - <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a>;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; amount; ++i)</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            {</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                <span class="comment">// See if we can reuse a paused worker</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                <a class="code" href="classripple_1_1Workers_1_1Worker.html">Worker</a>* worker = <a class="code" href="classripple_1_1Workers.html#a7a1ec32f737f520240f0c07ac235cbb7">m_paused</a>.pop_front();</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                <span class="keywordflow">if</span> (worker != <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                {</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                    <span class="comment">// If we got here then the worker thread is at [1]</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                    <span class="comment">// This will unblock their call to wait()</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                    <span class="comment">//</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                    worker-&gt;<a class="code" href="classripple_1_1Workers_1_1Worker.html#a3e971f77e27f36e9b3647c5af6bcd6f6">notify</a>();</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                {</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                    worker = <span class="keyword">new</span> <a class="code" href="classripple_1_1Workers_1_1Worker.html">Worker</a>(*<span class="keyword">this</span>, <a class="code" href="classripple_1_1Workers.html#ab5e3a1411baa39373e04b428629d06c2">m_threadNames</a>, instance++);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                    <a class="code" href="classripple_1_1Workers.html#abb1521ec9d4ec37ec9488c858e682f47">m_everyone</a>.push_front(worker);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                }</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a> == numberOfThreads)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Workers.html#addb401754309403bc8a604f1dd7cfdf3">perfLog_</a>)</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <a class="code" href="classripple_1_1Workers.html#addb401754309403bc8a604f1dd7cfdf3">perfLog_</a>-&gt;<a class="code" href="classripple_1_1perf_1_1PerfLog.html#aa11365e44f61add50756e2e1b208fbc6">resizeJobs</a>(numberOfThreads);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">if</span> (numberOfThreads &gt; <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a>)</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="comment">// Increasing the number of working threads</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordtype">int</span> <span class="keyword">const</span> amount = numberOfThreads - <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; amount; ++i)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="comment">// See if we can reuse a paused worker</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <a class="code" href="classripple_1_1Workers_1_1Worker.html">Worker</a>* worker = <a class="code" href="classripple_1_1Workers.html#a7a1ec32f737f520240f0c07ac235cbb7">m_paused</a>.pop_front();</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="keywordflow">if</span> (worker != <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            {</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                <span class="comment">// If we got here then the worker thread is at [1]</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                <span class="comment">// This will unblock their call to wait()</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                <span class="comment">//</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                worker-&gt;<a class="code" href="classripple_1_1Workers_1_1Worker.html#a3e971f77e27f36e9b3647c5af6bcd6f6">notify</a>();</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            {</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                worker = <span class="keyword">new</span> <a class="code" href="classripple_1_1Workers_1_1Worker.html">Worker</a>(*<span class="keyword">this</span>, <a class="code" href="classripple_1_1Workers.html#ab5e3a1411baa39373e04b428629d06c2">m_threadNames</a>, instance++);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                <a class="code" href="classripple_1_1Workers.html#abb1521ec9d4ec37ec9488c858e682f47">m_everyone</a>.push_front(worker);</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            }</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        }</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        {</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            <span class="comment">// Decreasing the number of working threads</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            <span class="keywordtype">int</span> <span class="keyword">const</span> amount = <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a> - numberOfThreads;</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; amount; ++i)</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            {</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                ++<a class="code" href="classripple_1_1Workers.html#ad6f81ee7115e8654638dc5d73c4ffa6c">m_pauseCount</a>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                <span class="comment">// Pausing a thread counts as one &quot;internal task&quot;</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                <a class="code" href="classripple_1_1Workers.html#ae595b0b93152d054b16d804066cc22bb">m_semaphore</a>.<a class="code" href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">notify</a>();</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            }</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    }</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="comment">// Decreasing the number of working threads</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordtype">int</span> <span class="keyword">const</span> amount = <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a> - numberOfThreads;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; amount; ++i)</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        {</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            ++<a class="code" href="classripple_1_1Workers.html#ad6f81ee7115e8654638dc5d73c4ffa6c">m_pauseCount</a>;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="comment">// Pausing a thread counts as one &quot;internal task&quot;</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <a class="code" href="classripple_1_1Workers.html#ae595b0b93152d054b16d804066cc22bb">m_semaphore</a>.<a class="code" href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">notify</a>();</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        }</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a> = numberOfThreads;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    }</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    }</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="code" href="classripple_1_1Workers.html#aac432fb6a913d937af37cff47de44bf3">m_numberOfThreads</a> = numberOfThreads;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;}</div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="keywordtype">void</span></div>

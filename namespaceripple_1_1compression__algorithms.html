@@ -74,9 +74,6 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a7a25fc2be5a306f1056debb8fa3d8a35"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a> (const char *message)</td></tr>
-<tr class="memdesc:a7a25fc2be5a306f1056debb8fa3d8a35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience wrapper for Throw.  <a href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">More...</a><br /></td></tr>
-<tr class="separator:a7a25fc2be5a306f1056debb8fa3d8a35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8fb4610c8381afcf3d92ddfff9dbf0cf"><td class="memTemplParams" colspan="2">template&lt;typename BufferFactory &gt; </td></tr>
 <tr class="memitem:a8fb4610c8381afcf3d92ddfff9dbf0cf"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">lz4Compress</a> (void const *in, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize, BufferFactory &amp;&amp;bf)</td></tr>
 <tr class="memdesc:a8fb4610c8381afcf3d92ddfff9dbf0cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">LZ4 block compression.  <a href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">More...</a><br /></td></tr>
@@ -89,34 +86,6 @@ Functions</h2></td></tr>
 <tr class="separator:aa5001af4f7a6dad195e48601c3941785"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a7a25fc2be5a306f1056debb8fa3d8a35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7a25fc2be5a306f1056debb8fa3d8a35">&#9670;&nbsp;</a></span>doThrow()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::compression_algorithms::doThrow </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>message</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Convenience wrapper for Throw. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">message</td><td><a class="el" href="classripple_1_1Message.html">Message</a> to log/throw </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00035">35</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
-
-</div>
-</div>
 <a id="a8fb4610c8381afcf3d92ddfff9dbf0cf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8fb4610c8381afcf3d92ddfff9dbf0cf">&#9670;&nbsp;</a></span>lz4Compress()</h2>
 
@@ -168,7 +137,7 @@ template&lt;typename BufferFactory &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Size of compressed data, or zero if failed to compress </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00050">50</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00044">44</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
 
 </div>
 </div>
@@ -220,7 +189,7 @@ template&lt;typename BufferFactory &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>size of the decompressed data </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00080">80</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00074">74</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
 
 </div>
 </div>
@@ -282,7 +251,7 @@ template&lt;typename InputStream &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>size of the decompressed data </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00108">108</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CompressionAlgorithms_8h_source.html#l00102">102</a> of file <a class="el" href="CompressionAlgorithms_8h_source.html">CompressionAlgorithms.h</a>.</p>
 
 </div>
 </div>

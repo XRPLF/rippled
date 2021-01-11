@@ -594,8 +594,8 @@ $(function() {
 <div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;    <span class="keywordflow">if</span> (exists(SECTION_REDUCE_RELAY))</div>
 <div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;    {</div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;        <span class="keyword">auto</span> sec = section(SECTION_REDUCE_RELAY);</div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        REDUCE_RELAY_ENABLE = sec.value_or(<span class="stringliteral">&quot;enable&quot;</span>, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        REDUCE_RELAY_SQUELCH = sec.value_or(<span class="stringliteral">&quot;squelch&quot;</span>, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        VP_REDUCE_RELAY_ENABLE = sec.value_or(<span class="stringliteral">&quot;vp_enable&quot;</span>, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        VP_REDUCE_RELAY_SQUELCH = sec.value_or(<span class="stringliteral">&quot;vp_squelch&quot;</span>, <span class="keyword">false</span>);</div>
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;    }</div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160; </div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))</div>

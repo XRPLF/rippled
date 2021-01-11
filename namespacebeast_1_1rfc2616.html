@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#namespaces">Namespaces</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">beast::rfc2616 Namespace Reference</div>  </div>
@@ -76,6 +77,12 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacebeast_1_1rfc2616_1_1detail"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616_1_1detail.html">detail</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates through a comma separated list.  <a href="classbeast_1_1rfc2616_1_1list__iterator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -90,6 +97,16 @@ Functions</h2></td></tr>
 <tr class="memitem:ae322de61b901fb85572314f10ab6a100"><td class="memTemplParams" colspan="2">template&lt;class Result  = std::vector&lt;std::string&gt;&gt; </td></tr>
 <tr class="memitem:ae322de61b901fb85572314f10ab6a100"><td class="memTemplItemLeft" align="right" valign="top">Result&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616.html#ae322de61b901fb85572314f10ab6a100">split_commas</a> (boost::beast::string_view const &amp;s)</td></tr>
 <tr class="separator:ae322de61b901fb85572314f10ab6a100"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb7732c99b68c4edfda069568544b33e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616.html#abb7732c99b68c4edfda069568544b33e">ci_equal</a> (boost::string_ref s1, boost::string_ref s2)</td></tr>
+<tr class="memdesc:abb7732c99b68c4edfda069568544b33e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if two strings are equal.  <a href="namespacebeast_1_1rfc2616.html#abb7732c99b68c4edfda069568544b33e">More...</a><br /></td></tr>
+<tr class="separator:abb7732c99b68c4edfda069568544b33e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ff7243470231c919c117fa940cb6fee"><td class="memItemLeft" align="right" valign="top">boost::iterator_range&lt; <a class="el" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616.html#a2ff7243470231c919c117fa940cb6fee">make_list</a> (boost::string_ref const &amp;<a class="el" href="namespacebeast.html#afc5f5e8520bf9ec3abd1f92d066ef7b9">field</a>)</td></tr>
+<tr class="memdesc:a2ff7243470231c919c117fa940cb6fee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a range representing the list.  <a href="namespacebeast_1_1rfc2616.html#a2ff7243470231c919c117fa940cb6fee">More...</a><br /></td></tr>
+<tr class="separator:a2ff7243470231c919c117fa940cb6fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accd76c534f760053842f265c2c09a5a9"><td class="memTemplParams" colspan="2">template&lt;class  = void&gt; </td></tr>
+<tr class="memitem:accd76c534f760053842f265c2c09a5a9"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616.html#accd76c534f760053842f265c2c09a5a9">token_in_list</a> (boost::string_ref const &amp;value, boost::string_ref const &amp;token)</td></tr>
+<tr class="memdesc:accd76c534f760053842f265c2c09a5a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the specified token exists in the list.  <a href="namespacebeast_1_1rfc2616.html#accd76c534f760053842f265c2c09a5a9">More...</a><br /></td></tr>
+<tr class="separator:accd76c534f760053842f265c2c09a5a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9636e35eb0a45052354e43055540851d"><td class="memTemplParams" colspan="2">template&lt;bool isRequest, class Body , class Fields &gt; </td></tr>
 <tr class="memitem:a9636e35eb0a45052354e43055540851d"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">is_keep_alive</a> (boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;m)</td></tr>
 <tr class="separator:a9636e35eb0a45052354e43055540851d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,7 +149,7 @@ template&lt;class FwdIt , class Result  = std::vector&lt;        std::basic_stri
 <p>Parse a character sequence of values separated by commas. </p>
 <p>Double quotes and escape sequences will be converted. Excess white space, commas, double quotes, and empty elements are not copied. Format: #(token|quoted-string) Reference: <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2">http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00110">110</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00123">123</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
 
 </div>
 </div>
@@ -164,7 +181,7 @@ template&lt;class FwdIt , class Result  = std::vector&lt;        std::basic_stri
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00186">186</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00199">199</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
 
 </div>
 </div>
@@ -186,7 +203,97 @@ template&lt;class Result  = std::vector&lt;std::string&gt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00193">193</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00206">206</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
+<a id="abb7732c99b68c4edfda069568544b33e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb7732c99b68c4edfda069568544b33e">&#9670;&nbsp;</a></span>ci_equal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool beast::rfc2616::ci_equal </td>
+          <td>(</td>
+          <td class="paramtype">boost::string_ref&#160;</td>
+          <td class="paramname"><em>s1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::string_ref&#160;</td>
+          <td class="paramname"><em>s2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if two strings are equal. </p>
+<p>A case-insensitive comparison is used. </p>
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00356">356</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
+<a id="a2ff7243470231c919c117fa940cb6fee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ff7243470231c919c117fa940cb6fee">&#9670;&nbsp;</a></span>make_list()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::iterator_range&lt;<a class="el" href="classbeast_1_1rfc2616_1_1list__iterator.html">list_iterator</a>&gt; beast::rfc2616::make_list </td>
+          <td>(</td>
+          <td class="paramtype">boost::string_ref const &amp;&#160;</td>
+          <td class="paramname"><em>field</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a range representing the list. </p>
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00363">363</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+
+</div>
+</div>
+<a id="accd76c534f760053842f265c2c09a5a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accd76c534f760053842f265c2c09a5a9">&#9670;&nbsp;</a></span>token_in_list()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class  = void&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool beast::rfc2616::token_in_list </td>
+          <td>(</td>
+          <td class="paramtype">boost::string_ref const &amp;&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::string_ref const &amp;&#160;</td>
+          <td class="paramname"><em>token</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if the specified token exists in the list. </p>
+<p>A case-insensitive comparison is used. </p>
+
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00376">376</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
 
 </div>
 </div>
@@ -208,7 +315,7 @@ template&lt;bool isRequest, class Body , class Fields &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00200">200</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="rfc2616_8h_source.html#l00386">386</a> of file <a class="el" href="rfc2616_8h_source.html">rfc2616.h</a>.</p>
 
 </div>
 </div>

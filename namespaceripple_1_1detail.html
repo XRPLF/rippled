@@ -202,10 +202,16 @@ Functions</h2></td></tr>
 <tr class="memitem:a61680b1ed5b8dceb049aa254e85d1cc0"><td class="memTemplParams" colspan="2">template&lt;typename BufferSequence &gt; </td></tr>
 <tr class="memitem:a61680b1ed5b8dceb049aa254e85d1cc0"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a61680b1ed5b8dceb049aa254e85d1cc0">buffersBegin</a> (BufferSequence const &amp;bufs)</td></tr>
 <tr class="separator:a61680b1ed5b8dceb049aa254e85d1cc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53781b6133b2886d1cecd74f6e92fc6b"><td class="memTemplParams" colspan="2">template&lt;class BufferSequence &gt; </td></tr>
-<tr class="memitem:a53781b6133b2886d1cecd74f6e92fc6b"><td class="memTemplItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a53781b6133b2886d1cecd74f6e92fc6b">parseMessageHeader</a> (boost::system::error_code &amp;ec, BufferSequence const &amp;bufs, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> size)</td></tr>
-<tr class="memdesc:a53781b6133b2886d1cecd74f6e92fc6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse a message header.  <a href="namespaceripple_1_1detail.html#a53781b6133b2886d1cecd74f6e92fc6b">More...</a><br /></td></tr>
-<tr class="separator:a53781b6133b2886d1cecd74f6e92fc6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9572dd5505ee008eaf2476c1fa289e6b"><td class="memTemplParams" colspan="2">template&lt;typename BufferSequence &gt; </td></tr>
+<tr class="memitem:a9572dd5505ee008eaf2476c1fa289e6b"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9572dd5505ee008eaf2476c1fa289e6b">buffersEnd</a> (BufferSequence const &amp;bufs)</td></tr>
+<tr class="separator:a9572dd5505ee008eaf2476c1fa289e6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a363813d7b792c6285f6a2cb583f7bac8"><td class="memTemplParams" colspan="2">template&lt;class BufferSequence &gt; </td></tr>
+<tr class="memitem:a363813d7b792c6285f6a2cb583f7bac8"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a363813d7b792c6285f6a2cb583f7bac8">parseMessageHeader</a> (boost::system::error_code &amp;ec, BufferSequence const &amp;bufs, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> size)</td></tr>
+<tr class="memdesc:a363813d7b792c6285f6a2cb583f7bac8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse a message header.  <a href="namespaceripple_1_1detail.html#a363813d7b792c6285f6a2cb583f7bac8">More...</a><br /></td></tr>
+<tr class="separator:a363813d7b792c6285f6a2cb583f7bac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20a81ee04af435c6dab1bbefcba9bd8c"><td class="memTemplParams" colspan="2">template&lt;class T , class Buffers , class  = std::enable_if_t&lt;        std::is_base_of&lt;::google::protobuf::Message, T&gt;::value&gt;&gt; </td></tr>
+<tr class="memitem:a20a81ee04af435c6dab1bbefcba9bd8c"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a20a81ee04af435c6dab1bbefcba9bd8c">parseMessageContent</a> (<a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a> const &amp;header, Buffers const &amp;buffers)</td></tr>
+<tr class="separator:a20a81ee04af435c6dab1bbefcba9bd8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ebc7f9a2b695a1f5987457e5eaaf79b"><td class="memTemplParams" colspan="2">template&lt;class T , class Buffers , class Handler , class  = std::enable_if_t&lt;        std::is_base_of&lt;::google::protobuf::Message, T&gt;::value&gt;&gt; </td></tr>
 <tr class="memitem:a1ebc7f9a2b695a1f5987457e5eaaf79b"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a1ebc7f9a2b695a1f5987457e5eaaf79b">invoke</a> (<a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a> const &amp;header, Buffers const &amp;buffers, Handler &amp;handler)</td></tr>
 <tr class="separator:a1ebc7f9a2b695a1f5987457e5eaaf79b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -403,7 +409,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00495">495</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00490">490</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
 
 </div>
 </div>
@@ -782,12 +788,34 @@ template&lt;typename BufferSequence &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00119">119</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00122">122</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
-<a id="a53781b6133b2886d1cecd74f6e92fc6b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53781b6133b2886d1cecd74f6e92fc6b">&#9670;&nbsp;</a></span>parseMessageHeader()</h2>
+<a id="a9572dd5505ee008eaf2476c1fa289e6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9572dd5505ee008eaf2476c1fa289e6b">&#9670;&nbsp;</a></span>buffersEnd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename BufferSequence &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ripple::detail::buffersEnd </td>
+          <td>(</td>
+          <td class="paramtype">BufferSequence const &amp;&#160;</td>
+          <td class="paramname"><em>bufs</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00130">130</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+
+</div>
+</div>
+<a id="a363813d7b792c6285f6a2cb583f7bac8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a363813d7b792c6285f6a2cb583f7bac8">&#9670;&nbsp;</a></span>parseMessageHeader()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -795,7 +823,7 @@ template&lt;typename BufferSequence &gt; </div>
 template&lt;class BufferSequence &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a>&gt; ripple::detail::parseMessageHeader </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a>&gt; ripple::detail::parseMessageHeader </td>
           <td>(</td>
           <td class="paramtype">boost::system::error_code &amp;&#160;</td>
           <td class="paramname"><em>ec</em>, </td>
@@ -826,14 +854,46 @@ template&lt;class BufferSequence &gt; </div>
   <table class="params">
     <tr><td class="paramname">ec</td><td>contains more information:<ul>
 <li>set to <code>errc::success</code> if not enough bytes were present</li>
-<li>set to <code>errc::no_message</code> if a valid header was not present </li>
+<li>set to <code>errc::no_message</code> if a valid header was not present @bufs - sequence of input buffers, can't be empty @size input data size </li>
 </ul>
 </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00134">134</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00147">147</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+
+</div>
+</div>
+<a id="a20a81ee04af435c6dab1bbefcba9bd8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20a81ee04af435c6dab1bbefcba9bd8c">&#9670;&nbsp;</a></span>parseMessageContent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , class Buffers , class  = std::enable_if_t&lt;        std::is_base_of&lt;::google::protobuf::Message, T&gt;::value&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;T&gt; ripple::detail::parseMessageContent </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a> const &amp;&#160;</td>
+          <td class="paramname"><em>header</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Buffers const &amp;&#160;</td>
+          <td class="paramname"><em>buffers</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00242">242</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
@@ -871,7 +931,7 @@ template&lt;class T , class Buffers , class Handler , class  = std::enable_if_t&
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00229">229</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00277">277</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>

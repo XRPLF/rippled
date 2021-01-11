@@ -488,7 +488,7 @@ $(function() {
 <div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        testcase(<span class="stringliteral">&quot;Create Tickets that fail Preflight&quot;</span>);</div>
 <div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160; </div>
 <div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;        Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160; </div>
 <div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        Account <span class="keyword">const</span> master{env.master};</div>
 <div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160; </div>
@@ -537,7 +537,7 @@ $(function() {
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;        {</div>
 <div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;            <span class="comment">// Create tickets on a non-existent account.</span></div>
-<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;            Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;            env.memoize(alice);</div>
 <div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160; </div>
@@ -548,7 +548,7 @@ $(function() {
 <div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;        {</div>
 <div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;            <span class="comment">// Exceed the threshold where tickets can no longer be</span></div>
 <div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;            <span class="comment">// added to an account.</span></div>
-<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;            Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;            Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;            Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160; </div>
 <div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;            env.fund(XRP(100000), alice);</div>
@@ -587,7 +587,7 @@ $(function() {
 <div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;        }</div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;        {</div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;            <span class="comment">// Explore exceeding the ticket threshold from another angle.</span></div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;            Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160; </div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;            env.fund(XRP(100000), alice);</div>
@@ -627,7 +627,7 @@ $(function() {
 <div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        testcase(<span class="stringliteral">&quot;Create Ticket Insufficient Reserve&quot;</span>);</div>
 <div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160; </div>
 <div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;        Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160; </div>
 <div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;        <span class="comment">// Fund alice not quite enough to make the reserve for a Ticket.</span></div>
@@ -687,7 +687,7 @@ $(function() {
 <div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        testcase(<span class="stringliteral">&quot;Using Tickets&quot;</span>);</div>
 <div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160; </div>
 <div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;        Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160; </div>
 <div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;        env.fund(XRP(10000), alice);</div>
@@ -783,7 +783,7 @@ $(function() {
 <div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;        testcase(<span class="stringliteral">&quot;Transaction Database With Tickets&quot;</span>);</div>
 <div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
 <div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;        Env env{*<span class="keyword">this</span>, supported_amendments() | <a class="code" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a>};</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;        Env env{*<span class="keyword">this</span>};</div>
 <div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;        Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160; </div>
 <div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        env.fund(XRP(10000), alice);</div>

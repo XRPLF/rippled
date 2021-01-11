@@ -215,7 +215,7 @@ Validator Sites</h2>
 <p>This class manages the set of configured remote sites used to fetch the latest published recommended validator lists.</p>
 <p>Lists are fetched at a regular interval. Fetched lists are expected to be in JSON format and contain the following fields:</p>
 <ul>
-<li><code>"blob"</code>: Base64-encoded JSON string containing a <code>"sequence"</code>, <code>"expiration"</code>, and <code>"validators"</code> field. <code>"expiration"</code> contains the Ripple timestamp (seconds since January 1st, 2000 (00:00 UTC)) for when the list expires. <code>"validators"</code> contains an array of objects with a <code>"validation_public_key"</code> and optional <code>"manifest"</code> field. <code>"validation_public_key"</code> should be the hex-encoded master public key. <code>"manifest"</code> should be the base64-encoded validator manifest.</li>
+<li><code>"blob"</code>: Base64-encoded JSON string containing a <code>"sequence"</code>, <code>"validUntil"</code>, and <code>"validators"</code> field. <code>"validUntil"</code> contains the Ripple timestamp (seconds since January 1st, 2000 (00:00 UTC)) for when the list expires. <code>"validators"</code> contains an array of objects with a <code>"validation_public_key"</code> and optional <code>"manifest"</code> field. <code>"validation_public_key"</code> should be the hex-encoded master public key. <code>"manifest"</code> should be the base64-encoded validator manifest.</li>
 </ul>
 <ul>
 <li><code>"manifest"</code>: Base64-encoded serialization of a manifest containing the publisher's master and signing public keys.</li>
@@ -480,7 +480,7 @@ Validator Sites</h2>
 
 <p>Return JSON representation of configured validator sites. </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00606">606</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00644">644</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -642,7 +642,7 @@ Validator Sites</h2>
 
 <p>Store latest list fetched from site. </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00483">483</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00521">521</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -688,7 +688,7 @@ Validator Sites</h2>
 
 <p>Store latest list fetched from anywhere. </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00569">569</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00607">607</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -829,7 +829,7 @@ Validator Sites</h2>
 <p>Interpret a redirect response. </p>
 <p>lock over sites_mutex_ required </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00437">437</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00475">475</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>

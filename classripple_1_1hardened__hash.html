@@ -82,9 +82,10 @@ Inheritance diagram for ripple::hardened_hash&lt; HashAlgorithm &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1hardened__hash__inherit__graph.png" border="0" usemap="#ripple_1_1hardened__hash_3_01HashAlgorithm_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="ripple_1_1hardened__hash_3_01HashAlgorithm_01_4_inherit__map" id="ripple_1_1hardened__hash_3_01HashAlgorithm_01_4_inherit__map">
-<area shape="rect" title="Seed functor once per construction." alt="" coords="75,5,242,47"/>
-<area shape="rect" href="structstd_1_1hash_3_01ripple_1_1Currency_01_4.html" title=" " alt="" coords="5,95,147,136"/>
-<area shape="rect" href="structstd_1_1hash_3_01ripple_1_1Directory_01_4.html" title=" " alt="" coords="171,95,312,136"/>
+<area shape="rect" title="Seed functor once per construction." alt="" coords="5,71,172,112"/>
+<area shape="rect" href="structstd_1_1hash_3_01ripple_1_1AccountID_01_4.html" title=" " alt="" coords="220,5,361,47"/>
+<area shape="rect" href="structstd_1_1hash_3_01ripple_1_1Currency_01_4.html" title=" " alt="" coords="220,71,361,112"/>
+<area shape="rect" href="structstd_1_1hash_3_01ripple_1_1Directory_01_4.html" title=" " alt="" coords="220,136,361,177"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -124,16 +125,16 @@ class ripple::hardened_hash&lt; HashAlgorithm &gt;</h3>
 <p>A std compatible hash adapter that resists adversarial inputs. For this to work, T must implement in its own namespace:</p>
 <div class="fragment"><div class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> Hasher&gt;</div>
 <div class="line"><span class="keywordtype">void</span></div>
-<div class="line"><a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a> (Hasher&amp; h, T <span class="keyword">const</span>&amp; t) noexcept</div>
+<div class="line"><a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a> (Hasher&amp; h, T <span class="keyword">const</span>&amp; t) noexcept</div>
 <div class="line">{</div>
 <div class="line">    <span class="comment">// hash_append each base and member that should</span></div>
 <div class="line">    <span class="comment">//  participate in forming the hash</span></div>
 <div class="line">    <span class="keyword">using</span> <a class="code" href="namespacebeast.html#a4a9eebb8b68941c49b07763d7a95d456">beast::hash_append</a>;</div>
-<div class="line">    <a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a> (h, <span class="keyword">static_cast&lt;</span>T::base1 const&amp;<span class="keyword">&gt;</span>(t));</div>
-<div class="line">    <a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a> (h, <span class="keyword">static_cast&lt;</span>T::base2 const&amp;<span class="keyword">&gt;</span>(t));</div>
+<div class="line">    <a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a> (h, <span class="keyword">static_cast&lt;</span>T::base1 const&amp;<span class="keyword">&gt;</span>(t));</div>
+<div class="line">    <a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a> (h, <span class="keyword">static_cast&lt;</span>T::base2 const&amp;<span class="keyword">&gt;</span>(t));</div>
 <div class="line">    <span class="comment">// ...</span></div>
-<div class="line">    <a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a> (h, t.member1);</div>
-<div class="line">    <a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a> (h, t.member2);</div>
+<div class="line">    <a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a> (h, t.member1);</div>
+<div class="line">    <a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a> (h, t.member2);</div>
 <div class="line">    <span class="comment">// ...</span></div>
 <div class="line">}</div>
 </div><!-- fragment --><p>Do not use any version of Murmur or CityHash for the Hasher template parameter (the hashing algorithm). For details see <a href="https://131002.net/siphash/#at">https://131002.net/siphash/#at</a> </p>
@@ -241,8 +242,8 @@ template&lt;class HashAlgorithm  = beast::xxhasher&gt; </div>
 </div>
 </div>
 </div><!-- contents -->
-<div class="ttc" id="anamespacebeast_html_a4a9eebb8b68941c49b07763d7a95d456"><div class="ttname"><a href="namespacebeast.html#a4a9eebb8b68941c49b07763d7a95d456">beast::hash_append</a></div><div class="ttdeci">std::enable_if_t&lt; is_contiguously_hashable&lt; T, Hasher &gt;::value &gt; hash_append(Hasher &amp;h, T const &amp;t) noexcept</div><div class="ttdoc">Logically concatenate input data to a Hasher.</div><div class="ttdef"><b>Definition:</b> <a href="hash__append_8h_source.html#l00237">hash_append.h:237</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a06da0e52773c5c0841994317a3d5e3d0"><div class="ttname"><a href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">ripple::hash_append</a></div><div class="ttdeci">void hash_append(Hasher &amp;h, Slice const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00195">Slice.h:195</a></div></div>
+<div class="ttc" id="anamespacebeast_html_a4a9eebb8b68941c49b07763d7a95d456"><div class="ttname"><a href="namespacebeast.html#a4a9eebb8b68941c49b07763d7a95d456">beast::hash_append</a></div><div class="ttdeci">std::enable_if_t&lt; is_contiguously_hashable&lt; T, Hasher &gt;::value &gt; hash_append(Hasher &amp;h, T const &amp;t) noexcept</div><div class="ttdoc">Logically concatenate input data to a Hasher.</div><div class="ttdef"><b>Definition:</b> <a href="hash__append_8h_source.html#l00236">hash_append.h:236</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a9c3a01178261b6e8a98c0ea99f01d154"><div class="ttname"><a href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">ripple::hash_append</a></div><div class="ttdeci">void hash_append(Hasher &amp;h, ValidatorBlobInfo const &amp;blobInfo)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8h_source.html#l00897">ValidatorList.h:897</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

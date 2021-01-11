@@ -149,17 +149,17 @@ $(function() {
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="comment">// Get the current limit, then adjust it to what we need.</span></div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">struct </span>rlimit rl;</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordtype">int</span> available = 0;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordtype">int</span> <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a> = 0;</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">if</span> (getrlimit(RLIMIT_NOFILE, &amp;rl) == 0)</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    {</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="comment">// If the limit is infinite, then we are good.</span></div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keywordflow">if</span> (rl.rlim_cur == RLIM_INFINITY)</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            available = needed;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a> = needed;</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            available = rl.rlim_cur;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a> = rl.rlim_cur;</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="keywordflow">if</span> (available &lt; needed)</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a> &lt; needed)</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        {</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="comment">// Ignore the rlim_max, as the process may</span></div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            <span class="comment">// be configured to override it anyways. We</span></div>
@@ -167,17 +167,17 @@ $(function() {
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            rl.rlim_cur = needed;</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            <span class="keywordflow">if</span> (setrlimit(RLIMIT_NOFILE, &amp;rl) == 0)</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                available = rl.rlim_cur;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a> = rl.rlim_cur;</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        }</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    }</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordflow">if</span> (needed &gt; available)</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordflow">if</span> (needed &gt; <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a>)</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    {</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>() &lt;&lt; <span class="stringliteral">&quot;Insufficient number of file descriptors: &quot;</span> &lt;&lt; needed</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                  &lt;&lt; <span class="stringliteral">&quot; are needed, but only &quot;</span> &lt;&lt; available &lt;&lt; <span class="stringliteral">&quot; are available.&quot;</span>;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                  &lt;&lt; <span class="stringliteral">&quot; are needed, but only &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a> &lt;&lt; <span class="stringliteral">&quot; are available.&quot;</span>;</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Insufficient number of file descriptors: &quot;</span> &lt;&lt; needed</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                  &lt;&lt; <span class="stringliteral">&quot; are needed, but only &quot;</span> &lt;&lt; available</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                  &lt;&lt; <span class="stringliteral">&quot; are needed, but only &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a></div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                  &lt;&lt; <span class="stringliteral">&quot; are available.\n&quot;</span>;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
@@ -630,7 +630,7 @@ $(function() {
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;The database filesystem must have at least as &quot;</span></div>
 <div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;                             <span class="stringliteral">&quot;much free space as the size of &quot;</span></div>
 <div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;                          &lt;&lt; dbPath.string() &lt;&lt; <span class="stringliteral">&quot;, which is &quot;</span> &lt;&lt; dbSize</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot; bytes. Only &quot;</span> &lt;&lt; available</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot; bytes. Only &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a></div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot; bytes are available.\n&quot;</span>;</div>
 <div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;                <span class="keywordflow">return</span> -1;</div>
 <div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;            }</div>
@@ -931,6 +931,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Config_html_a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1"><div class="ttname"><a href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1">ripple::Config::LOAD_FILE</a></div><div class="ttdeci">@ LOAD_FILE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00122">Config.h:122</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/data.html">std::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a37eda33d77f068d8788e5a5a81a7cc77"><div class="ttname"><a href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">ripple::make_Application</a></div><div class="ttdeci">std::unique_ptr&lt; Application &gt; make_Application(std::unique_ptr&lt; Config &gt; config, std::unique_ptr&lt; Logs &gt; logs, std::unique_ptr&lt; TimeKeeper &gt; timeKeeper)</div><div class="ttdef"><b>Definition:</b> <a href="Application_8cpp_source.html#l02195">Application.cpp:2195</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb"><div class="ttname"><a href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">ripple::PublisherStatus::available</a></div><div class="ttdeci">@ available</div></div>
 <div class="ttc" id="astructripple_1_1ConfigSection_html_a44ee859a6705ddcac4e318602f8fe6ac"><div class="ttname"><a href="structripple_1_1ConfigSection.html#a44ee859a6705ddcac4e318602f8fe6ac">ripple::ConfigSection::nodeDatabase</a></div><div class="ttdeci">static std::string nodeDatabase()</div><div class="ttdef"><b>Definition:</b> <a href="ConfigSections_8h_source.html#l00033">ConfigSections.h:33</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::exception::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <!-- start footer part -->

@@ -92,110 +92,118 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/random.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/overlay/SquelchCommon.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/PublicKey.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a>&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Journal.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/overlay/ReduceRelayCommon.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/PublicKey.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a>&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">namespace </span>squelch {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="classripple_1_1squelch_1_1Squelch.html">   36</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1squelch_1_1Squelch.html">Squelch</a></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;{</div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1squelch_1_1Squelch.html#a83f7630bb69d953d138618bfa45355f3">   38</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classripple_1_1squelch_1_1Squelch.html#a83f7630bb69d953d138618bfa45355f3">time_point</a> = <span class="keyword">typename</span> clock_type::time_point;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classripple_1_1squelch_1_1Squelch.html#a6963d83725b8bb0d7922e52b39fa30e4">Squelch</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1squelch_1_1Squelch.html#aa074ddd98feb2925e6f6c88a9e1b0746">~Squelch</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classripple_1_1squelch_1_1Squelch.html#ae76cff9618e209609ff9d300067649c1">squelch</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator, <span class="keywordtype">bool</span> <a class="code" href="classripple_1_1squelch_1_1Squelch.html#ae76cff9618e209609ff9d300067649c1">squelch</a>, uint64_t squelchDuration);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classripple_1_1squelch_1_1Squelch.html#a862952d4fab3d5376a1668bf8b98be31">isSquelched</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1squelch_1_1Squelch.html#ac72848698f170200ad0459b9405643d9">getSquelchDuration</a>();</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">namespace </span>reduce_relay {</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html">   38</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html">Squelch</a></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#a0ecfb21882093e86e4d4373250bec31b">   40</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a0ecfb21882093e86e4d4373250bec31b">time_point</a> = <span class="keyword">typename</span> clock_type::time_point;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#af3ed37ca1b22b743b8aa41589a5123aa">   43</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#af3ed37ca1b22b743b8aa41589a5123aa">Squelch</a>(<a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal) : <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a02c3476f4872ff534932cff60ae8a5e2">journal_</a>(journal)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a61e701b522c4a98c742f18e594a549f8">~Squelch</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a8797f435b1f3aeb44c5ad48e4ce3a353">addSquelch</a>(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span>&amp; squelchDuration);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#ac1aefed79a18955197f5d7e8eaba7adc">removeSquelch</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator);</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classripple_1_1squelch_1_1Squelch.html#ad881ac948795b2592ae640b94de55d32">   67</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">hash_map&lt;PublicKey, time_point&gt;</a> <a class="code" href="classripple_1_1squelch_1_1Squelch.html#ad881ac948795b2592ae640b94de55d32">squelched_</a>;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;};</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="classripple_1_1squelch_1_1Squelch.html#ae76cff9618e209609ff9d300067649c1">   72</a></span>&#160;<a class="code" href="classripple_1_1squelch_1_1Squelch.html#ae76cff9618e209609ff9d300067649c1">Squelch&lt;clock_type&gt;::squelch</a>(</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">bool</span> squelch,</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    uint64_t squelchDuration)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;{</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">if</span> (squelch)</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    {</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        squelched_[validator] = [squelchDuration]() {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>(squelchDuration);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="keywordflow">return</span> clock_type::now() +</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a> &gt;= <a class="code" href="namespaceripple_1_1squelch.html#a272c5a6eeb6ec51f4b0ac3a266ac7884">MIN_UNSQUELCH_EXPIRE</a> &amp;&amp;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                  <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a> &lt;= <a class="code" href="namespaceripple_1_1squelch.html#ac444a9551236686b23a3175ecf8a11b2">MAX_UNSQUELCH_EXPIRE</a>)</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                     ? <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                     : getSquelchDuration());</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        }();</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        squelched_.erase(validator);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classripple_1_1squelch_1_1Squelch.html#a862952d4fab3d5376a1668bf8b98be31">   94</a></span>&#160;<a class="code" href="classripple_1_1squelch_1_1Squelch.html#a862952d4fab3d5376a1668bf8b98be31">Squelch&lt;clock_type&gt;::isSquelched</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator)</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">auto</span> now = clock_type::now();</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; it = squelched_.find(validator);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">if</span> (it == squelched_.end())</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (it-&gt;second &gt; now)</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    squelched_.erase(it);</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a></div>
-<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="classripple_1_1squelch_1_1Squelch.html#ac72848698f170200ad0459b9405643d9">  111</a></span>&#160;<a class="code" href="classripple_1_1squelch_1_1Squelch.html#ac72848698f170200ad0459b9405643d9">Squelch&lt;clock_type&gt;::getSquelchDuration</a>()</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;{</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">auto</span> d = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>(<a class="code" href="namespaceripple.html#a71a6227fec78db0b06595d62c06b25dc">ripple::rand_int</a>(</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <a class="code" href="namespaceripple_1_1squelch.html#a272c5a6eeb6ec51f4b0ac3a266ac7884">MIN_UNSQUELCH_EXPIRE</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>(), <a class="code" href="namespaceripple_1_1squelch.html#ac444a9551236686b23a3175ecf8a11b2">MAX_UNSQUELCH_EXPIRE</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>()));</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keywordflow">return</span> d;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;}  <span class="comment">// namespace squelch</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#abdb06bd66661220922e647ad49ae4647">expireSquelch</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#a5324a3cf61df6c46a7c6fd978aa517cc">   74</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">hash_map&lt;PublicKey, time_point&gt;</a> <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a5324a3cf61df6c46a7c6fd978aa517cc">squelched_</a>;</div>
+<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#a02c3476f4872ff534932cff60ae8a5e2">   75</a></span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> <a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a02c3476f4872ff534932cff60ae8a5e2">journal_</a>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;};</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#a8797f435b1f3aeb44c5ad48e4ce3a353">   80</a></span>&#160;<a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#a8797f435b1f3aeb44c5ad48e4ce3a353">Squelch&lt;clock_type&gt;::addSquelch</a>(</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span>&amp; squelchDuration)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordflow">if</span> (squelchDuration &gt;= <a class="code" href="namespaceripple_1_1reduce__relay.html#a97d9582e500aeeec2dc554a14bcf9af0">MIN_UNSQUELCH_EXPIRE</a> &amp;&amp;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        squelchDuration &lt;= <a class="code" href="namespaceripple_1_1reduce__relay.html#af6a298ebd3177be1776cf9be3e15db14">MAX_UNSQUELCH_EXPIRE_PEERS</a>)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    {</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        squelched_[validator] = clock_type::now() + squelchDuration;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    JLOG(journal_.error()) &lt;&lt; <span class="stringliteral">&quot;squelch: invalid squelch duration &quot;</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                           &lt;&lt; squelchDuration.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>();</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="comment">// unsquelch if invalid duration</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    removeSquelch(validator);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#ac1aefed79a18955197f5d7e8eaba7adc">  102</a></span>&#160;<a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#ac1aefed79a18955197f5d7e8eaba7adc">Squelch&lt;clock_type&gt;::removeSquelch</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator)</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;{</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    squelched_.erase(validator);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;}</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> clock_type&gt;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno"><a class="line" href="classripple_1_1reduce__relay_1_1Squelch.html#abdb06bd66661220922e647ad49ae4647">  109</a></span>&#160;<a class="code" href="classripple_1_1reduce__relay_1_1Squelch.html#abdb06bd66661220922e647ad49ae4647">Squelch&lt;clock_type&gt;::expireSquelch</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; validator)</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;{</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">auto</span> now = clock_type::now();</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; it = squelched_.find(validator);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">if</span> (it == squelched_.end())</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (it-&gt;second &gt; now)</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="comment">// squelch expired</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    squelched_.erase(it);</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="preprocessor">#endif  // RIPPLED_SQUELCH_H</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;}  <span class="comment">// namespace reduce_relay</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;<span class="preprocessor">#endif  // RIPPLED_SQUELCH_H</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_ad881ac948795b2592ae640b94de55d32"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#ad881ac948795b2592ae640b94de55d32">ripple::squelch::Squelch::squelched_</a></div><div class="ttdeci">hash_map&lt; PublicKey, time_point &gt; squelched_</div><div class="ttdoc">Maintains the list of squelched relaying to downstream peers.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00067">Squelch.h:67</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1squelch_html_ac444a9551236686b23a3175ecf8a11b2"><div class="ttname"><a href="namespaceripple_1_1squelch.html#ac444a9551236686b23a3175ecf8a11b2">ripple::squelch::MAX_UNSQUELCH_EXPIRE</a></div><div class="ttdeci">static constexpr seconds MAX_UNSQUELCH_EXPIRE</div><div class="ttdef"><b>Definition:</b> <a href="SquelchCommon_8h_source.html#l00033">SquelchCommon.h:33</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_a0ecfb21882093e86e4d4373250bec31b"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#a0ecfb21882093e86e4d4373250bec31b">ripple::reduce_relay::Squelch&lt; ripple::UptimeClock &gt;::time_point</a></div><div class="ttdeci">typename ripple::UptimeClock ::time_point time_point</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00040">Squelch.h:40</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_a61e701b522c4a98c742f18e594a549f8"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#a61e701b522c4a98c742f18e594a549f8">ripple::reduce_relay::Squelch::~Squelch</a></div><div class="ttdeci">virtual ~Squelch()=default</div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_ac1aefed79a18955197f5d7e8eaba7adc"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#ac1aefed79a18955197f5d7e8eaba7adc">ripple::reduce_relay::Squelch::removeSquelch</a></div><div class="ttdeci">void removeSquelch(PublicKey const &amp;validator)</div><div class="ttdoc">Remove the squelch.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00102">Squelch.h:102</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_a8797f435b1f3aeb44c5ad48e4ce3a353"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#a8797f435b1f3aeb44c5ad48e4ce3a353">ripple::reduce_relay::Squelch::addSquelch</a></div><div class="ttdeci">bool addSquelch(PublicKey const &amp;validator, std::chrono::seconds const &amp;squelchDuration)</div><div class="ttdoc">Squelch validation/proposal relaying for the validator.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00080">Squelch.h:80</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_abdb06bd66661220922e647ad49ae4647"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#abdb06bd66661220922e647ad49ae4647">ripple::reduce_relay::Squelch::expireSquelch</a></div><div class="ttdeci">bool expireSquelch(PublicKey const &amp;validator)</div><div class="ttdoc">Remove expired squelch.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00109">Squelch.h:109</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a></div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_a6963d83725b8bb0d7922e52b39fa30e4"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#a6963d83725b8bb0d7922e52b39fa30e4">ripple::squelch::Squelch::Squelch</a></div><div class="ttdeci">Squelch()=default</div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_ac72848698f170200ad0459b9405643d9"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#ac72848698f170200ad0459b9405643d9">ripple::squelch::Squelch::getSquelchDuration</a></div><div class="ttdeci">static seconds getSquelchDuration()</div><div class="ttdoc">Get random squelch duration between MIN_UNSQUELCH_EXPIRE and MAX_UNSQUELCH_EXPIRE.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00111">Squelch.h:111</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1squelch_html_a272c5a6eeb6ec51f4b0ac3a266ac7884"><div class="ttname"><a href="namespaceripple_1_1squelch.html#a272c5a6eeb6ec51f4b0ac3a266ac7884">ripple::squelch::MIN_UNSQUELCH_EXPIRE</a></div><div class="ttdeci">static constexpr seconds MIN_UNSQUELCH_EXPIRE</div><div class="ttdef"><b>Definition:</b> <a href="SquelchCommon_8h_source.html#l00032">SquelchCommon.h:32</a></div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_a83f7630bb69d953d138618bfa45355f3"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#a83f7630bb69d953d138618bfa45355f3">ripple::squelch::Squelch&lt; ripple::UptimeClock &gt;::time_point</a></div><div class="ttdeci">typename ripple::UptimeClock ::time_point time_point</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00038">Squelch.h:38</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a71a6227fec78db0b06595d62c06b25dc"><div class="ttname"><a href="namespaceripple.html#a71a6227fec78db0b06595d62c06b25dc">ripple::rand_int</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_integral&lt; Integral &gt;::value &amp;&amp;detail::is_engine&lt; Engine &gt;::value, Integral &gt; rand_int(Engine &amp;engine, Integral min, Integral max)</div><div class="ttdoc">Return a uniformly distributed random integer.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2basics_2random_8h_source.html#l00115">ripple/basics/random.h:115</a></div></div>
+<div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html">ripple::reduce_relay::Squelch</a></div><div class="ttdoc">Maintains squelching of relaying messages from validators.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00038">Squelch.h:38</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html"><div class="ttname"><a href="classripple_1_1PublicKey.html">ripple::PublicKey</a></div><div class="ttdoc">A public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00059">PublicKey.h:59</a></div></div>
 <div class="ttc" id="achrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a></div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_a862952d4fab3d5376a1668bf8b98be31"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#a862952d4fab3d5376a1668bf8b98be31">ripple::squelch::Squelch::isSquelched</a></div><div class="ttdeci">bool isSquelched(PublicKey const &amp;validator)</div><div class="ttdoc">Are the messages to this validator squelched.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00094">Squelch.h:94</a></div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_aa074ddd98feb2925e6f6c88a9e1b0746"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#aa074ddd98feb2925e6f6c88a9e1b0746">ripple::squelch::Squelch::~Squelch</a></div><div class="ttdeci">virtual ~Squelch()=default</div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1reduce__relay_html_a97d9582e500aeeec2dc554a14bcf9af0"><div class="ttname"><a href="namespaceripple_1_1reduce__relay.html#a97d9582e500aeeec2dc554a14bcf9af0">ripple::reduce_relay::MIN_UNSQUELCH_EXPIRE</a></div><div class="ttdeci">static constexpr auto MIN_UNSQUELCH_EXPIRE</div><div class="ttdef"><b>Definition:</b> <a href="ReduceRelayCommon_8h_source.html#l00034">ReduceRelayCommon.h:34</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html">ripple::squelch::Squelch</a></div><div class="ttdoc">Maintains squelching of relaying messages from validators.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00036">Squelch.h:36</a></div></div>
 <div class="ttc" id="acount_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">std::chrono::seconds::count</a></div><div class="ttdeci">T count(T... args)</div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_a02c3476f4872ff534932cff60ae8a5e2"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#a02c3476f4872ff534932cff60ae8a5e2">ripple::reduce_relay::Squelch::journal_</a></div><div class="ttdeci">const beast::Journal journal_</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00075">Squelch.h:75</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1reduce__relay_html_af6a298ebd3177be1776cf9be3e15db14"><div class="ttname"><a href="namespaceripple_1_1reduce__relay.html#af6a298ebd3177be1776cf9be3e15db14">ripple::reduce_relay::MAX_UNSQUELCH_EXPIRE_PEERS</a></div><div class="ttdeci">static constexpr auto MAX_UNSQUELCH_EXPIRE_PEERS</div><div class="ttdef"><b>Definition:</b> <a href="ReduceRelayCommon_8h_source.html#l00037">ReduceRelayCommon.h:37</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_a5324a3cf61df6c46a7c6fd978aa517cc"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#a5324a3cf61df6c46a7c6fd978aa517cc">ripple::reduce_relay::Squelch::squelched_</a></div><div class="ttdeci">hash_map&lt; PublicKey, time_point &gt; squelched_</div><div class="ttdoc">Maintains the list of squelched relaying to downstream peers.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00074">Squelch.h:74</a></div></div>
 <div class="ttc" id="aunordered_map_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1squelch_1_1Squelch_html_ae76cff9618e209609ff9d300067649c1"><div class="ttname"><a href="classripple_1_1squelch_1_1Squelch.html#ae76cff9618e209609ff9d300067649c1">ripple::squelch::Squelch::squelch</a></div><div class="ttdeci">void squelch(PublicKey const &amp;validator, bool squelch, uint64_t squelchDuration)</div><div class="ttdoc">Squelch/Unsquelch relaying for the validator.</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00072">Squelch.h:72</a></div></div>
+<div class="ttc" id="aclassripple_1_1reduce__relay_1_1Squelch_html_af3ed37ca1b22b743b8aa41589a5123aa"><div class="ttname"><a href="classripple_1_1reduce__relay_1_1Squelch.html#af3ed37ca1b22b743b8aa41589a5123aa">ripple::reduce_relay::Squelch::Squelch</a></div><div class="ttdeci">Squelch(beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="Squelch_8h_source.html#l00043">Squelch.h:43</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

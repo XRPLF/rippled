@@ -1,6 +1,6 @@
 <map id="ripple::test::TrustedPublisherServer::lambda" name="ripple::test::TrustedPublisherServer::lambda">
-<area shape="rect" id="node1" title=" " alt="" coords="844,102,1051,143"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1TrustedPublisherServer.html" title=" " alt="" coords="560,102,767,143"/>
+<area shape="rect" id="node1" title=" " alt="" coords="844,103,1051,145"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1TrustedPublisherServer.html" title=" " alt="" coords="560,103,767,145"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="185,5,399,61"/>
 <area shape="rect" id="node4" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="226,85,358,112"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,105,100,132"/>
