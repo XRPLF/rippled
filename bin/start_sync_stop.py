@@ -12,6 +12,7 @@ assert sys.version_info.major == 3 and sys.version_info.minor >= 7
 
 import argparse
 import asyncio
+import configparser
 import contextlib
 import json
 import logging
@@ -29,7 +30,7 @@ if platform.system() == 'Windows' and sys.version_info.minor < 8:
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 DEFAULT_EXE = 'rippled'
-DEFAULT_CONFIG = 'rippled.cfg'
+DEFAULT_CONFIGURATION_FILE = 'rippled.cfg'
 DEFAULT_PORT = 5005
 # Number of seconds to wait before forcefully terminating.
 PATIENCE = 120
@@ -40,14 +41,31 @@ DEFAULT_POLL_INTERVAL = 5
 SYNC_STATES = ('full', 'validating', 'proposing')
 
 
+def find_log_file(config_file):
+    """Try to figure out what log file the user has chosen. Raises all kinds
+    of exceptions if there is any possibility of ambiguity."""
+    # strict = False: Allow duplicate keys, e.g. [rpc_startup].
+    # all_no_value = True: Allow keys with no values. Generally, these
+    # instances use the "key" as the value, and the section name is the key,
+    # e.g. [debug_logfile].
+    config = configparser.ConfigParser(strict=False, allow_no_value=True)
+    config.read(config_file)
+    values = list(config['debug_logfile'].keys())
+    if len(values) < 1:
+        raise ValueError(f'no [debug_logfile] in configuration file: {config_file}')
+    if len(values) > 1:
+        raise ValueError(f'too many [debug_logfile] in configuration file: {config_file}')
+    return values[0]
+
+
 @contextlib.asynccontextmanager
-async def rippled(exe=DEFAULT_EXE, config=DEFAULT_CONFIG):
+async def rippled(exe=DEFAULT_EXE, config_file=DEFAULT_CONFIGURATION_FILE):
     """A context manager for a rippled process."""
     # Start the server.
     process = await asyncio.create_subprocess_exec(
         str(exe),
         '--conf',
-        str(config),
+        str(config_file),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -116,16 +134,17 @@ async def sync(
             start = time.perf_counter()
 
 
-async def loop(test, *, exe=DEFAULT_EXE, config=DEFAULT_CONFIG):
+async def loop(test, *, exe=DEFAULT_EXE, config_file=DEFAULT_CONFIGURATION_FILE):
     """
     Start-test-stop rippled in an infinite loop.
 
     Moves log to a different file after each iteration.
     """
+    log_file = find_log_file(config_file)
     id = 0
     while True:
         logging.info(f'iteration: {id}')
-        async with rippled(exe, config) as process:
+        async with rippled(exe, config_file) as process:
             start = time.perf_counter()
             exited = asyncio.create_task(process.wait())
             tested = asyncio.create_task(test())
@@ -143,7 +162,7 @@ async def loop(test, *, exe=DEFAULT_EXE, config=DEFAULT_CONFIG):
                 assert tested.exception() is None
             end = time.perf_counter()
             logging.info(f'synced after {end - start:.0f} seconds')
-        os.replace('debug.log', f'debug.{id}.log')
+        os.replace(log_file, f'debug.{id}.log')
         id += 1
 
 
@@ -165,7 +184,7 @@ parser.add_argument(
 parser.add_argument(
     '--conf',
     type=Path,
-    default=DEFAULT_CONFIG,
+    default=DEFAULT_CONFIGURATION_FILE,
     help='Path to configuration file.',
 )
 parser.add_argument(
@@ -193,4 +212,4 @@ def test():
     return sync(args.port, duration=args.duration, interval=args.interval)
 
 
-asyncio.run(loop(test, exe=args.rippled, config=args.conf))
+asyncio.run(loop(test, exe=args.rippled, config_file=args.conf))
