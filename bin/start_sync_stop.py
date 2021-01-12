@@ -26,7 +26,8 @@ import urllib.request
 
 # Enable asynchronous subprocesses on Windows. The default changed in 3.8.
 # https://docs.python.org/3.7/library/asyncio-platforms.html#subprocess-support-on-windows
-if platform.system() == 'Windows' and sys.version_info.minor < 8:
+if (platform.system() == 'Windows' and sys.version_info.major == 3
+        and sys.version_info.minor < 8):
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 DEFAULT_EXE = 'rippled'
