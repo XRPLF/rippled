@@ -163,7 +163,9 @@ private:
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
-        (nDisabled == 0) ? (void)request.insert("X-Offer-Reduce-Relay", "2")
+        (nDisabled == 0) ? (void)request.insert(
+                               "X-Protocol-Ctl",
+                               makeFeaturesRequestHeader(false, false, true))
                          : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_service&>(
