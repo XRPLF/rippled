@@ -1336,7 +1336,7 @@ OverlayImpl::relay(
     if (active > exclude)
         std::shuffle(peers.begin(), peers.end(), default_prng());
 
-    JLOG(journal_.debug()) << "relaying tx, active peers " << peers.size()
+    JLOG(journal_.trace()) << "relaying tx, active peers " << peers.size()
                            << " selected " << toRelay << " skip "
                            << toSkip.size() << " not enabled " << disabled;
 

@@ -123,10 +123,12 @@ PeerImp::PeerImp(
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    JLOG(journal_.debug()) << " compression enabled "
+    JLOG(journal_.debug()) << "compression enabled "
                            << (compressionEnabled_ == Compressed::On)
                            << " vp reduce-relay enabled "
-                           << vpReduceRelayEnabled_ << " on " << remote_address_
+                           << vpReduceRelayEnabled_
+                           << " tx reduce-relay enabled "
+                           << txReduceRelayEnabled_ << " on " << remote_address_
                            << " " << id_;
 }
 
@@ -303,7 +305,7 @@ PeerImp::sendTxQueue()
         std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
             ht.add_hashes(hash.data(), hash.size());
         });
-        JLOG(p_journal_.debug()) << "sendTxQueue " << txQueue_.size();
+        JLOG(p_journal_.trace()) << "sendTxQueue " << txQueue_.size();
         txQueue_.clear();
         send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
     }
@@ -323,7 +325,7 @@ PeerImp::addTxQueue(uint256 const& hash)
     }
 
     txQueue_.insert(hash);
-    JLOG(p_journal_.debug()) << "addTxQueue " << txQueue_.size();
+    JLOG(p_journal_.trace()) << "addTxQueue " << txQueue_.size();
 }
 
 void
@@ -335,7 +337,7 @@ PeerImp::removeTxQueue(uint256 const& hash)
             std::bind(&PeerImp::removeTxQueue, shared_from_this(), hash));
 
     auto removed = txQueue_.erase(hash);
-    JLOG(p_journal_.debug()) << "removeTxQueue " << removed;
+    JLOG(p_journal_.trace()) << "removeTxQueue " << removed;
 }
 
 void
@@ -1519,7 +1521,6 @@ PeerImp::handleTransaction(
     std::shared_ptr<protocol::TMTransaction> const& m,
     bool eraseTxQueue)
 {
-    JLOG(p_journal_.debug()) << "received transaction";
     if (tracking_.load() == Tracking::diverged)
         return;
 
@@ -2470,7 +2471,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 {
     protocol::TMGetObjectByHash& packet = *m;
 
-    JLOG(p_journal_.debug()) << "received TMGetObjectByHash " << packet.type()
+    JLOG(p_journal_.trace()) << "received TMGetObjectByHash " << packet.type()
                              << " " << packet.objects_size();
 
     if (packet.query())
@@ -2654,7 +2655,7 @@ PeerImp::handleHaveTransactions(
     tmBH.set_type(protocol::TMGetObjectByHash_ObjectType_otTRANSACTIONS);
     tmBH.set_query(true);
 
-    JLOG(p_journal_.debug())
+    JLOG(p_journal_.trace())
         << "received TMHaveTransactions " << m->hashes_size();
 
     for (std::uint32_t i = 0; i < m->hashes_size(); i++)
@@ -2671,7 +2672,7 @@ PeerImp::handleHaveTransactions(
 
         auto txn = app_.getMasterTransaction().fetch_from_cache(hash);
 
-        JLOG(p_journal_.debug()) << "checking transaction " << (bool)txn;
+        JLOG(p_journal_.trace()) << "checking transaction " << (bool)txn;
 
         if (!txn)
         {
@@ -2689,7 +2690,7 @@ PeerImp::handleHaveTransactions(
         }
     }
 
-    JLOG(p_journal_.debug())
+    JLOG(p_journal_.trace())
         << "transaction request object is " << tmBH.objects_size();
 
     if (tmBH.objects_size() > 0)
@@ -2707,7 +2708,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
         return;
     }
 
-    JLOG(p_journal_.debug())
+    JLOG(p_journal_.trace())
         << "received TMTransactions " << m->transactions_size();
 
     overlay_.addTxMetrics(m->transactions_size());
@@ -2821,7 +2822,7 @@ PeerImp::doTransactions(
 {
     protocol::TMTransactions reply;
 
-    JLOG(p_journal_.debug()) << "received TMGetObjectByHash requesting tx "
+    JLOG(p_journal_.trace()) << "received TMGetObjectByHash requesting tx "
                              << packet->objects_size();
 
     if (packet->objects_size() > reduce_relay::MAX_TX_QUEUE_SIZE)
