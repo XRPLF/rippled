@@ -42,12 +42,23 @@ SYNC_STATES = ('full', 'validating', 'proposing')
 
 def read_config(config_file):
     # strict = False: Allow duplicate keys, e.g. [rpc_startup].
-    # all_no_value = True: Allow keys with no values. Generally, these
+    # allow_no_value = True: Allow keys with no values. Generally, these
     # instances use the "key" as the value, and the section name is the key,
     # e.g. [debug_logfile].
-    config = configparser.ConfigParser(strict=False, allow_no_value=True)
+    # delimiters = ('='): Allow ':' as a character in Windows paths. Some of
+    # our "keys" are actually values, and we don't want to split them on ':'.
+    config = configparser.ConfigParser(
+        strict=False,
+        allow_no_value=True,
+        delimiters=('='),
+    )
     config.read(config_file)
     return config
+
+
+def to_list(value, separator=','):
+    """Parse a list from a delimited string value."""
+    return [s.strip() for s in value.split(separator) if s]
 
 
 def find_log_file(config_file):
@@ -69,8 +80,8 @@ def find_http_port(config_file):
     names = list(config['server'].keys())
     for name in names:
         server = config[name]
-        if server.get('protocol', None) == 'http':
-            return server['port']
+        if 'http' in to_list(server.get('protocol', '')):
+            return int(server['port'])
     raise ValueError(f'no server in [server] for "http" protocol')
 
 
@@ -227,4 +238,8 @@ def test():
     return sync(port, duration=args.duration, interval=args.interval)
 
 
-asyncio.run(loop(test, exe=args.rippled, config_file=args.conf))
+try:
+    asyncio.run(loop(test, exe=args.rippled, config_file=args.conf))
+except KeyboardInterrupt:
+    # Squelch the message. This is a normal mode of exit.
+    pass
