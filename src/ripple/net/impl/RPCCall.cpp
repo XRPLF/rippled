@@ -151,9 +151,11 @@ private:
     }
 
     static bool
-    validPublicKey(std::string const& strPk)
+    validPublicKey(
+        std::string const& strPk,
+        TokenType type = TokenType::AccountPublic)
     {
-        if (parseBase58<PublicKey>(TokenType::AccountPublic, strPk))
+        if (parseBase58<PublicKey>(type, strPk))
             return true;
 
         auto pkHex = strUnHex(strPk);
@@ -235,7 +237,7 @@ private:
             Json::Value jvRequest(Json::objectValue);
 
             std::string const strPk = jvParams[0u].asString();
-            if (!validPublicKey(strPk))
+            if (!validPublicKey(strPk, TokenType::NodePublic))
                 return rpcError(rpcPUBLIC_MALFORMED);
 
             jvRequest[jss::public_key] = strPk;
