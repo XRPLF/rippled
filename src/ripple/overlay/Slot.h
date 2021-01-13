@@ -20,8 +20,8 @@
 #ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
 #define RIPPLE_OVERLAY_SLOT_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/Log.h>
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/overlay/Peer.h>
@@ -549,8 +549,8 @@ public:
      * @param app Applicaton reference
      * @param handler Squelch/unsquelch implementation
      */
-    Slots(Application& app, SquelchHandler const& handler)
-        : handler_(handler), app_(app), journal_(app.journal("Slots"))
+    Slots(Logs& logs, SquelchHandler const& handler)
+        : handler_(handler), logs_(logs), journal_(logs.journal("Slots"))
     {
     }
     ~Slots() = default;
@@ -655,7 +655,7 @@ private:
 
     hash_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
-    Application& app_;
+    Logs& logs_;
     beast::Journal const journal_;
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
@@ -717,7 +717,7 @@ Slots<clock_type>::updateSlotAndSquelch(
         auto it = slots_
                       .emplace(std::make_pair(
                           validator,
-                          Slot<clock_type>(handler_, app_.journal("Slot"))))
+                          Slot<clock_type>(handler_, logs_.journal("Slot"))))
                       .first;
         it->second.update(validator, id, type);
     }

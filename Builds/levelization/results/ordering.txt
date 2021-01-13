@@ -163,6 +163,7 @@ test.overlay > ripple.basics
 test.overlay > ripple.beast
 test.overlay > ripple.core
 test.overlay > ripple.overlay
+test.overlay > ripple.peerfinder
 test.overlay > ripple.protocol
 test.overlay > ripple.shamap
 test.overlay > test.jtx
