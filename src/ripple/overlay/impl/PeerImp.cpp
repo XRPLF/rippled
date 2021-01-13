@@ -991,6 +991,17 @@ PeerImp::onMessageEnd(
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
 {
+    auto const s = m->list_size();
+
+    if (s == 0)
+    {
+        fee_ = Resource::feeUnwantedData;
+        return;
+    }
+
+    if (s > 100)
+        fee_ = Resource::feeMediumBurdenPeer;
+
     // VFALCO What's the right job type?
     auto that = shared_from_this();
     app_.getJobQueue().addJob(
