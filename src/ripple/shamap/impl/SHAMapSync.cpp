@@ -56,7 +56,6 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
     {
         while (pos < 16)
         {
-            uint256 childHash;
             if (!node->isEmptyBranch(pos))
             {
                 std::shared_ptr<SHAMapTreeNode> child =

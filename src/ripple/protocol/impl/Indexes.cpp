@@ -96,12 +96,8 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static uint256 const nextq = []() {
-        uint256 x;
-        (void)x.parseHex(
-            "0000000000000000000000000000000000000000000000010000000000000000");
-        return x;
-    }();
+    static constexpr uint256 nextq(
+        "0000000000000000000000000000000000000000000000010000000000000000");
     return uBase + nextq;
 }
 

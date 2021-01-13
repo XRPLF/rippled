@@ -25,6 +25,7 @@
 #ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/beast/utility/Zero.h>
@@ -177,20 +178,107 @@ private:
         memcpy(data_.data(), data, bytes);
     }
 
-public:
-    base_uint()
+    // Helper function to initialize a base_uint from a std::string_view.
+    enum class ParseResult {
+        okay,
+        badLength,
+        badChar,
+    };
+
+    constexpr std::pair<ParseResult, decltype(data_)>
+    parseFromStringView(std::string_view sv) noexcept
     {
-        *this = beast::zero;
+        // Local lambda that converts a single hex char to four bits and
+        // ORs those bits into a uint32_t.
+        auto hexCharToUInt = [](char c,
+                                std::uint32_t shift,
+                                std::uint32_t& accum) -> ParseResult {
+            std::uint32_t nibble = 0xFFu;
+            if (c < '0' || c > 'f')
+                return ParseResult::badChar;
+
+            if (c >= 'a')
+                nibble = static_cast<std::uint32_t>(c - 'a' + 0xA);
+            else if (c >= 'A')
+                nibble = static_cast<std::uint32_t>(c - 'A' + 0xA);
+            else if (c <= '9')
+                nibble = static_cast<std::uint32_t>(c - '0');
+
+            if (nibble > 0xFu)
+                return ParseResult::badChar;
+
+            accum |= (nibble << shift);
+
+            return ParseResult::okay;
+        };
+
+        std::pair<ParseResult, decltype(data_)> ret{ParseResult::okay, {}};
+
+        if (sv == "0")
+        {
+            return ret;
+        }
+
+        if (sv.size() != size() * 2)
+        {
+            ret.first = ParseResult::badLength;
+            return ret;
+        }
+
+        auto out = ret.second.data();
+
+        auto in = sv.begin();
+
+        while (in != sv.end())
+        {
+            std::uint32_t accum = {};
+            for (std::uint32_t shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
+            {
+                if (auto const result = hexCharToUInt(*in++, shift, accum);
+                    result != ParseResult::okay)
+                {
+                    ret.first = result;
+                    return ret;
+                }
+            }
+            *out++ = accum;
+        }
+        return ret;
     }
 
-    base_uint(beast::Zero)
+    constexpr decltype(data_)
+    parseFromStringViewThrows(std::string_view sv) noexcept(false)
     {
-        *this = beast::zero;
+        auto const result = parseFromStringView(sv);
+        if (result.first == ParseResult::badLength)
+            Throw<std::invalid_argument>("invalid length for hex string");
+
+        if (result.first == ParseResult::badChar)
+            Throw<std::range_error>("invalid hex character");
+
+        return result.second;
+    }
+
+public:
+    constexpr base_uint() : data_{}
+    {
+    }
+
+    constexpr base_uint(beast::Zero) : data_{}
+    {
     }
 
     explicit base_uint(std::uint64_t b)
     {
         *this = b;
+    }
+
+    // This constructor is intended to be used at compile time since it might
+    // throw at runtime.  Consider declaring this constructor consteval once
+    // we get to C++23.
+    explicit constexpr base_uint(std::string_view sv) noexcept(false)
+        : data_(parseFromStringViewThrows(sv))
+    {
     }
 
     template <
@@ -225,7 +313,7 @@ public:
         return base_uint(data, VoidHelper());
     }
 
-    int
+    constexpr int
     signum() const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -380,37 +468,18 @@ public:
         @param sv A null-terminated string of hexadecimal characters
         @return true if the input was parsed properly; false otherwise.
      */
-    [[nodiscard]] bool
+    [[nodiscard]] constexpr bool
     parseHex(std::string_view sv)
     {
-        if (sv == "0")
-        {
-            zero();
-            return true;
-        }
-
-        if (sv.size() != bytes * 2)
+        auto const result = parseFromStringView(sv);
+        if (result.first != ParseResult::okay)
             return false;
 
-        auto out = data();
-
-        auto in = sv.begin();
-
-        while (in != sv.end())
-        {
-            auto const hi = charUnHex(*in++);
-            auto const lo = charUnHex(*in++);
-
-            if (hi == -1 || lo == -1)
-                return false;
-
-            *out++ = static_cast<std::uint8_t>((hi << 4) + lo);
-        }
-
+        data_ = result.second;
         return true;
     }
 
-    [[nodiscard]] bool
+    [[nodiscard]] constexpr bool
     parseHex(const char* str)
     {
         return parseHex(std::string_view{str});

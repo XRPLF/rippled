@@ -116,7 +116,6 @@ class AccountCurrencies_test : public beast::unit_test::suite
                 result[fld].size() == expected.size();
             for (size_t i = 0; stat && i < expected.size(); ++i)
             {
-                Currency foo;
                 stat &=
                     (to_string(expected[i].value().currency) ==
                      result[fld][i].asString());
