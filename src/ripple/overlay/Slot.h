@@ -20,8 +20,8 @@
 #ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
 #define RIPPLE_OVERLAY_SLOT_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/overlay/Peer.h>

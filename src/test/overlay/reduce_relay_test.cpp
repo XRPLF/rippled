@@ -1415,7 +1415,8 @@ vp_squelched=1
 
             auto run = [&](int npeers) {
                 handler.maxDuration_ = 0;
-                reduce_relay::Slots<ManualClock> slots(env_.app().logs(), handler);
+                reduce_relay::Slots<ManualClock> slots(
+                    env_.app().logs(), handler);
                 // 1st message from a new peer switches the slot
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
