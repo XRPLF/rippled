@@ -32,6 +32,7 @@ ripple.net > ripple.resource
 ripple.nodestore > ripple.basics
 ripple.nodestore > ripple.beast
 ripple.nodestore > ripple.core
+ripple.nodestore > ripple.json
 ripple.nodestore > ripple.protocol
 ripple.nodestore > ripple.unity
 ripple.overlay > ripple.basics
