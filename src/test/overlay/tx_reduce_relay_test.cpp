@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+#include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerImp.h>
@@ -157,7 +158,7 @@ public:
 private:
     void
     addPeer(
-        Env& env,
+        jtx::Env& env,
         std::vector<std::shared_ptr<PeerTest>>& peers,
         std::uint16_t& nDisabled)
     {
@@ -207,7 +208,7 @@ private:
         std::set<Peer::id_t> const& toSkip = {})
     {
         testcase(test);
-        Env env(*this);
+        jtx::Env env(*this);
         std::vector<std::shared_ptr<PeerTest>> peers;
         env.app().config().TX_REDUCE_RELAY_ENABLE = txRREnabled;
         env.app().config().TX_REDUCE_RELAY_MIN_PEERS = minPeers;

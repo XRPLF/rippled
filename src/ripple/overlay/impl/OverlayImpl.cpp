@@ -1305,43 +1305,41 @@ OverlayImpl::relay(
     std::set<Peer::id_t> const& toSkip)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
-    std::size_t active = 0;
+    std::size_t total = 0;
     std::size_t disabled = 0;
     std::size_t enabledInSkip = 0;
 
-    // active peers excluding peers in toSkip
-    auto peers = getActivePeers(toSkip, active, disabled, enabledInSkip);
+    // total peers excluding peers in toSkip
+    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+    auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
 
-    if (!app_.config().TX_REDUCE_RELAY_ENABLE ||
-        active < app_.config().TX_REDUCE_RELAY_MIN_PEERS)
+    if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
     {
         for (auto const& p : peers)
             p->send(sm);
         if (app_.config().TX_REDUCE_RELAY_ENABLE ||
             app_.config().TX_REDUCE_RELAY_METRICS)
-            txMetrics_.addMetrics(active, toSkip.size(), 0);
+            txMetrics_.addMetrics(total, toSkip.size(), 0);
         return;
     }
 
-    // relay to min peers plus a fraction of active peers above min
-    // and disabled peers. exclude disabled peers because they
-    // are always relayed to.
-    auto exclude = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
-    auto toRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
-        (active - std::min(active, exclude)) *
-            app_.config().TX_RELAY_PERCENTAGE / 100;
+    // We have more peers than the minimum (disabled + minimum enabled),
+    // relay to all disabled and some randomly selected enabled that
+    // do not have the transaction.
+    auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+        (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
 
-    txMetrics_.addMetrics(toRelay, toSkip.size(), disabled);
+    txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 
-    if (active > exclude)
+    if (enabledTarget > enabledInSkip)
         std::shuffle(peers.begin(), peers.end(), default_prng());
 
-    JLOG(journal_.trace()) << "relaying tx, active peers " << peers.size()
-                           << " selected " << toRelay << " skip "
-                           << toSkip.size() << " not enabled " << disabled;
+    JLOG(journal_.trace()) << "relaying tx, total peers " << peers.size()
+                           << " selected " << enabledTarget << " skip "
+                           << toSkip.size() << " disabled " << disabled;
 
     // count skipped peers with the enabled feature towards the quota
-    std::uint16_t relayed = enabledInSkip;
+    std::uint16_t enabledAndRelayed = enabledInSkip;
     for (auto const& p : peers)
     {
         // always relay to a peer with the disabled feature
@@ -1349,9 +1347,9 @@ OverlayImpl::relay(
         {
             p->send(sm);
         }
-        else if (relayed < toRelay)
+        else if (enabledAndRelayed < enabledTarget)
         {
-            relayed++;
+            enabledAndRelayed++;
             p->send(sm);
         }
         else
