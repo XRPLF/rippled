@@ -26,9 +26,9 @@ namespace test {
 
 int port_base = 8000;
 void
-incPorts()
+incPorts(int times)
 {
-    port_base += 3;
+    port_base += (4 * times);
 }
 
 std::atomic<bool> envUseIPv4{false};
