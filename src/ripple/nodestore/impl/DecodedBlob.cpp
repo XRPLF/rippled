@@ -21,7 +21,6 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 
 namespace ripple {
 namespace NodeStore {

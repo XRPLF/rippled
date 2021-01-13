@@ -21,7 +21,6 @@
 #include <ripple/nodestore/impl/ManagerImp.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <memory>
 
 namespace ripple {
 

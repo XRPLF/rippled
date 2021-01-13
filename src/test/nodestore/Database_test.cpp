@@ -27,8 +27,6 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <memory>
-
 namespace ripple {
 
 namespace NodeStore {

@@ -20,7 +20,6 @@
 #ifndef RIPPLED_GRPCTESTCLIENTBASE_H
 #define RIPPLED_GRPCTESTCLIENTBASE_H
 
-#include <grpcpp/grpcpp.h>
 #include <org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <test/jtx/envconfig.h>
 
