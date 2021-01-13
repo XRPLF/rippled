@@ -1510,8 +1510,6 @@ loadByHashPostgres(uint256 const& ledgerHash, Application& app)
 static uint256
 getHashByIndexPostgres(std::uint32_t ledgerIndex, Application& app)
 {
-    uint256 ret;
-
     auto infos = loadLedgerInfosPostgres(ledgerIndex, app);
     assert(infos.size() <= 1);
     if (infos.size())
