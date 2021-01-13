@@ -1913,6 +1913,8 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
         if (auto sig = mo.getSignature())
             jvObj[jss::signature] = strHex(*sig);
         jvObj[jss::master_signature] = strHex(mo.getMasterSignature());
+        if (!mo.domain.empty())
+            jvObj[jss::domain] = mo.domain;
 
         for (auto i = mStreamMaps[sManifests].begin();
              i != mStreamMaps[sManifests].end();)
