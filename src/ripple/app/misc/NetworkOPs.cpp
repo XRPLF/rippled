@@ -1915,6 +1915,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
         jvObj[jss::master_signature] = strHex(mo.getMasterSignature());
         if (!mo.domain.empty())
             jvObj[jss::domain] = mo.domain;
+        jvObj[jss::manifest] = strHex(mo.serialized);
 
         for (auto i = mStreamMaps[sManifests].begin();
              i != mStreamMaps[sManifests].end();)
