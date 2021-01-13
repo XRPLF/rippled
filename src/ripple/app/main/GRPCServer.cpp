@@ -464,6 +464,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                 std::string ip;
                 while (std::getline(ss, ip, ','))
                 {
+                    boost::algorithm::trim(ip);
                     auto const addr = boost::asio::ip::make_address(ip);
 
                     if (addr.is_unspecified())
