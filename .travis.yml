@@ -400,6 +400,7 @@ matrix:
       name: windows, visual studio, debug
       script:
         - mkdir -p build.ms && cd build.ms
+        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -DCMAKE_GENERATOR_TOOLSET=host=x64"
         - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
         - export DESTDIR=${PWD}/_installed_
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose --config ${BLD_CONFIG} --target install

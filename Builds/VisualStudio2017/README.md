@@ -214,7 +214,7 @@ execute the following commands within your `rippled` cloned repository:
 ```
 mkdir build\cmake
 cd build\cmake
-cmake ..\.. -G"Visual Studio 15 2017 Win64" -DBOOST_ROOT="C:\lib\boost_1_70_0" -DOPENSSL_ROOT="C:\lib\OpenSSL-Win64"
+cmake ..\.. -G"Visual Studio 15 2017 Win64" -DBOOST_ROOT="C:\lib\boost_1_70_0" -DOPENSSL_ROOT="C:\lib\OpenSSL-Win64" -DCMAKE_GENERATOR_TOOLSET=host=x64
 ```
 Now launch Visual Studio 2017 and select **File | Open | Project/Solution**.
 Navigate to the `build\cmake` folder created above and select the `rippled.sln`
