@@ -22,7 +22,6 @@
 
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/TaggedCache.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
@@ -49,23 +48,19 @@ namespace NodeStore {
 
     @see NodeObject
 */
-class Database : public Stoppable
+class Database
 {
 public:
     Database() = delete;
 
     /** Construct the node store.
 
-        @param name The Stoppable name for this Database.
-        @param parent The parent Stoppable.
         @param scheduler The scheduler to use for performing asynchronous tasks.
         @param readThreads The number of asynchronous read threads to create.
         @param config The configuration settings
         @param journal Destination for logging output.
     */
     Database(
-        std::string name,
-        Stoppable& parent,
         Scheduler& scheduler,
         int readThreads,
         Section const& config,
@@ -225,8 +220,11 @@ public:
         return fdRequired_;
     }
 
-    void
-    onStop() override;
+    virtual void
+    stop();
+
+    bool
+    isStopping() const;
 
     /** @return The earliest ledger sequence allowed
      */
@@ -243,9 +241,6 @@ protected:
 
     std::atomic<std::uint32_t> fetchHitCount_{0};
     std::atomic<std::uint32_t> fetchSz_{0};
-
-    void
-    stopReadThreads();
 
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
@@ -282,7 +277,7 @@ private:
     std::atomic<std::uint64_t> fetchDurationUs_{0};
     std::atomic<std::uint64_t> storeDurationUs_{0};
 
-    std::mutex readLock_;
+    mutable std::mutex readLock_;
     std::condition_variable readCondVar_;
 
     // reads to do

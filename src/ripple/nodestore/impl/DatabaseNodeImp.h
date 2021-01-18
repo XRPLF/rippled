@@ -35,15 +35,12 @@ public:
     operator=(DatabaseNodeImp const&) = delete;
 
     DatabaseNodeImp(
-        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
-        Stoppable& parent,
         std::shared_ptr<Backend> backend,
         Section const& config,
         beast::Journal j)
-        : Database(name, parent, scheduler, readThreads, config, j)
-        , cache_(nullptr)
+        : Database(scheduler, readThreads, config, j)
         , backend_(std::move(backend))
     {
         std::optional<int> cacheSize, cacheAge;
@@ -79,12 +76,6 @@ public:
                 j);
         }
         assert(backend_);
-    }
-
-    ~DatabaseNodeImp() override
-    {
-        // Stop read threads in base before data members are destroyed
-        stopReadThreads();
     }
 
     std::string

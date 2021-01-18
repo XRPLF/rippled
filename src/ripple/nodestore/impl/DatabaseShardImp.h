@@ -42,8 +42,6 @@ public:
 
     DatabaseShardImp(
         Application& app,
-        Stoppable& parent,
-        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
         beast::Journal j);
@@ -124,7 +122,7 @@ public:
     }
 
     void
-    onStop() override;
+    stop() override;
 
     /** Import the application local node store
 

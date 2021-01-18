@@ -30,14 +30,11 @@ namespace ripple {
 namespace NodeStore {
 
 Database::Database(
-    std::string name,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
-    : Stoppable(name, parent)
-    , j_(journal)
+    : j_(journal)
     , scheduler_(scheduler)
     , earliestLedgerSeq_(
           get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
@@ -57,20 +54,21 @@ Database::~Database()
     // crash during shutdown when its members are accessed by one of
     // these threads after the derived class is destroyed but before
     // this base class is destroyed.
-    stopReadThreads();
+    stop();
+}
+
+bool
+Database::isStopping() const
+{
+    std::lock_guard lock(readLock_);
+    return readShut_;
 }
 
 void
-Database::onStop()
+Database::stop()
 {
     // After stop time we can no longer use the JobQueue for background
     // reads.  Join the background read threads.
-    stopReadThreads();
-}
-
-void
-Database::stopReadThreads()
-{
     {
         std::lock_guard lock(readLock_);
         if (readShut_)  // Only stop threads once.

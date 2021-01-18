@@ -61,11 +61,9 @@ public:
 
     std::unique_ptr<Database>
     make_Database(
-        std::string const& name,
         std::size_t burstSize,
         Scheduler& scheduler,
         int readThreads,
-        Stoppable& parent,
         Section const& config,
         beast::Journal journal) override;
 };

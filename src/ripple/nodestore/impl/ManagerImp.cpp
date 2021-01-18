@@ -70,24 +70,16 @@ ManagerImp::make_Backend(
 
 std::unique_ptr<Database>
 ManagerImp::make_Database(
-    std::string const& name,
     std::size_t burstSize,
     Scheduler& scheduler,
     int readThreads,
-    Stoppable& parent,
     Section const& config,
     beast::Journal journal)
 {
     auto backend{make_Backend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
-        name,
-        scheduler,
-        readThreads,
-        parent,
-        std::move(backend),
-        config,
-        journal);
+        scheduler, readThreads, std::move(backend), config, journal);
 }
 
 void

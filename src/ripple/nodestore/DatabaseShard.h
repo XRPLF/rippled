@@ -39,21 +39,17 @@ class DatabaseShard : public Database
 public:
     /** Construct a shard store
 
-        @param name The Stoppable name for this Database
-        @param parent The parent Stoppable
         @param scheduler The scheduler to use for performing asynchronous tasks
         @param readThreads The number of asynchronous read threads to create
         @param config The shard configuration section for the database
         @param journal Destination for logging output
     */
     DatabaseShard(
-        std::string const& name,
-        Stoppable& parent,
         Scheduler& scheduler,
         int readThreads,
         Section const& config,
         beast::Journal journal)
-        : Database(name, parent, scheduler, readThreads, config, journal)
+        : Database(scheduler, readThreads, config, journal)
     {
     }
 
@@ -190,7 +186,6 @@ seqToShardIndex(
 extern std::unique_ptr<DatabaseShard>
 make_ShardStore(
     Application& app,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     beast::Journal j);

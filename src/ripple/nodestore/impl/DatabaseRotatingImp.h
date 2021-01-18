@@ -34,20 +34,12 @@ public:
     operator=(DatabaseRotatingImp const&) = delete;
 
     DatabaseRotatingImp(
-        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
-        Stoppable& parent,
         std::shared_ptr<Backend> writableBackend,
         std::shared_ptr<Backend> archiveBackend,
         Section const& config,
         beast::Journal j);
-
-    ~DatabaseRotatingImp() override
-    {
-        // Stop read threads in base before data members are destroyed
-        stopReadThreads();
-    }
 
     void
     rotateWithLock(

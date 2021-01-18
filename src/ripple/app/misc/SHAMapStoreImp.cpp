@@ -233,7 +233,7 @@ SHAMapStoreImp::SHAMapStoreImp(
 }
 
 std::unique_ptr<NodeStore::Database>
-SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
+SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
 {
     // Anything which calls addJob must be a descendant of the JobQueue.
     // Therefore Database objects use the JobQueue as Stoppable parent.
@@ -258,10 +258,8 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
 
         // Create NodeStore with two backends to allow online deletion of data
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
-            name,
             scheduler_,
             readThreads,
-            app_.getJobQueue(),
             std::move(writableBackend),
             std::move(archiveBackend),
             app_.config().section(ConfigSection::nodeDatabase()),
@@ -273,12 +271,10 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
     else
     {
         db = NodeStore::Manager::instance().make_Database(
-            name,
             megabytes(
                 app_.config().getValueFor(SizedItem::burstSize, boost::none)),
             scheduler_,
             readThreads,
-            app_.getJobQueue(),
             app_.config().section(ConfigSection::nodeDatabase()),
             app_.logs().journal(nodeStoreName_));
         fdRequired_ += db->fdRequired();

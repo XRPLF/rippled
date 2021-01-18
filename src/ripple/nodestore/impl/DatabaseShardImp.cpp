@@ -41,14 +41,10 @@ namespace NodeStore {
 
 DatabaseShardImp::DatabaseShardImp(
     Application& app,
-    Stoppable& parent,
-    std::string const& name,
     Scheduler& scheduler,
     int readThreads,
     beast::Journal j)
     : DatabaseShard(
-          name,
-          parent,
           scheduler,
           readThreads,
           app.config().section(ConfigSection::shardDatabase()),
@@ -693,10 +689,10 @@ DatabaseShardImp::getCompleteShards()
 }
 
 void
-DatabaseShardImp::onStop()
+DatabaseShardImp::stop()
 {
     // Stop read threads in base before data members are destroyed
-    stopReadThreads();
+    Database::stop();
     {
         std::lock_guard lock(mutex_);
         for (auto const& [_, shard] : shards_)
@@ -1889,7 +1885,6 @@ DatabaseShardImp::checkHistoricalPaths() const
 std::unique_ptr<DatabaseShard>
 make_ShardStore(
     Application& app,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     beast::Journal j)
@@ -1900,8 +1895,7 @@ make_ShardStore(
     if (section.empty())
         return nullptr;
 
-    return std::make_unique<DatabaseShardImp>(
-        app, parent, "ShardStore", scheduler, readThreads, j);
+    return std::make_unique<DatabaseShardImp>(app, scheduler, readThreads, j);
 }
 
 }  // namespace NodeStore

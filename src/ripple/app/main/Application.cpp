@@ -324,14 +324,13 @@ public:
               m_collectorManager->collector(),
               logs_->journal("Resource")))
 
-        , m_nodeStore(m_shaMapStore->makeNodeStore("NodeStore.main", 4))
+        , m_nodeStore(m_shaMapStore->makeNodeStore(4))
 
         , nodeFamily_(*this, *m_collectorManager)
 
         // The shard store is optional and make_ShardStore can return null.
         , shardStore_(make_ShardStore(
               *this,
-              *m_jobQueue,
               m_nodeStoreScheduler,
               4,
               logs_->journal("ShardStore")))
@@ -975,15 +974,12 @@ public:
         {
             auto j = logs_->journal("NodeObject");
             NodeStore::DummyScheduler dummyScheduler;
-            RootStoppable dummyRoot{"DummyRoot"};
             std::unique_ptr<NodeStore::Database> source =
                 NodeStore::Manager::instance().make_Database(
-                    "NodeStore.import",
                     megabytes(config_->getValueFor(
                         SizedItem::burstSize, boost::none)),
                     dummyScheduler,
                     0,
-                    dummyRoot,
                     config_->section(ConfigSection::importNodeDatabase()),
                     j);
 
@@ -1712,6 +1708,9 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    m_nodeStore->stop();
+    if (shardStore_)
+        shardStore_->stop();
     if (config_->reporting())
     {
 #ifdef RIPPLED_REPORTING

@@ -532,10 +532,9 @@ class DatabaseShard_test : public TestBase
         beast::temp_dir shardDir;
         Env env{*this, testConfig(shardDir.path())};
         DummyScheduler scheduler;
-        RootStoppable parent("TestRootStoppable");
 
         std::unique_ptr<DatabaseShard> db =
-            make_ShardStore(env.app(), parent, scheduler, 2, journal_);
+            make_ShardStore(env.app(), scheduler, 2, journal_);
 
         BEAST_EXPECT(db);
         BEAST_EXPECT(db->ledgersPerShard() == db->ledgersPerShardDefault);
