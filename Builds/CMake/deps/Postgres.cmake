@@ -23,6 +23,7 @@ if(reporting)
                 BUILD_IN_SOURCE 1
                 INSTALL_COMMAND ""
                 BUILD_BYPRODUCTS <BINARY_DIR>/src/interfaces/libpq/${ep_lib_prefix}pq.so
+                LOG_BUILD /dev/null
                 )
 
 

@@ -14,6 +14,7 @@ if(reporting)
                 GIT_TAG master
                 INSTALL_COMMAND ""
                 BUILD_BYPRODUCTS <BINARY_DIR>/${ep_lib_prefix}z.a
+                LOG_BUILD /dev/null
                 )
 
 
@@ -50,6 +51,7 @@ if(reporting)
                 BUILD_COMMAND make
                 INSTALL_COMMAND ""
                 BUILD_BYPRODUCTS <SOURCE_DIR>/lib/${ep_lib_prefix}krb5.a
+                LOG_BUILD /dev/null
                 )
 
             ExternalProject_Get_Property (krb5_src SOURCE_DIR)
@@ -80,6 +82,7 @@ if(reporting)
                 GIT_TAG v1.x
                 INSTALL_COMMAND ""
                 BUILD_BYPRODUCTS <BINARY_DIR>/${ep_lib_prefix}uv_a.a
+                LOG_BUILD /dev/null
                 )
 
             ExternalProject_Get_Property (libuv_src SOURCE_DIR)
@@ -109,6 +112,7 @@ if(reporting)
             -DCASS_BUILD_STATIC=ON
             INSTALL_COMMAND ""
             BUILD_BYPRODUCTS <BINARY_DIR>/${ep_lib_prefix}cassandra_static.a
+            LOG_BUILD /dev/null
             )
 
         ExternalProject_Get_Property (cassandra_src SOURCE_DIR)
