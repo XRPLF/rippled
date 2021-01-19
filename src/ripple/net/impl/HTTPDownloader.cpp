@@ -281,7 +281,7 @@ HTTPDownloader::do_session(
 }
 
 void
-HTTPDownloader::onStop()
+HTTPDownloader::stop()
 {
     stop_ = true;
 

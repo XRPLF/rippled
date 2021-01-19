@@ -195,7 +195,7 @@ ShardArchiveHandler::stop()
 
         if (downloader_)
         {
-            downloader_->onStop();
+            downloader_->stop();
             downloader_.reset();
         }
 

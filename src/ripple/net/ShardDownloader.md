@@ -97,7 +97,7 @@ ShardArchiveHandler::stop()
 
     if (downloader_)
     {
-        downloader_->onStop();
+        downloader_->stop();
         downloader_.reset();
     }
 
@@ -105,13 +105,13 @@ ShardArchiveHandler::stop()
 }
 ```
 
-Inside of `HTTPDownloader::onStop()`, if a download is currently in progress,
+Inside of `HTTPDownloader::stop()`, if a download is currently in progress,
 the `stop_` member variable is set and the thread waits for the
 download to stop:
 
 ```c++
 void
-HTTPDownloader::onStop()
+HTTPDownloader::stop()
 {
     std::unique_lock lock(m_);
 
