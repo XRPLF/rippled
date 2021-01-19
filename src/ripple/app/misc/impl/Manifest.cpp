@@ -304,9 +304,11 @@ boost::optional<std::string>
 ManifestCache::getDomain(PublicKey const& pk) const
 {
     std::lock_guard lock{read_mutex_};
+
     auto const iter = map_.find(pk);
 
-    if (iter != map_.end() && !iter->second.revoked())
+    if (iter != map_.end() && !iter->second.revoked() &&
+        !iter->second.domain.empty())
         return iter->second.domain;
 
     return boost::none;

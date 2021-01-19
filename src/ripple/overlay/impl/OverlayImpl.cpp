@@ -710,8 +710,14 @@ OverlayImpl::onManifests(
     }
 
     if (!relay.list().empty())
-        for_each([m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS)](
-                     std::shared_ptr<PeerImp>&& p) { p->send(m2); });
+    {
+        auto const m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS);
+
+        for_each([&m2, sender = from->id()](std::shared_ptr<PeerImp>&& p) {
+            if (p->id() != sender)
+                p->send(m2);
+        });
+    }
 }
 
 void
