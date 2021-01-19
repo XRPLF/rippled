@@ -106,7 +106,6 @@ public:
             BEAST_EXPECT(info[jss::result][jss::manifest] == manifest);
             BEAST_EXPECT(
                 info[jss::result][jss::ephemeral_key] == ephemeral_key);
-            BEAST_EXPECT(info[jss::result][jss::domain] == "");
         }
     }
 
