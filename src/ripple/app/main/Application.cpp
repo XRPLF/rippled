@@ -663,8 +663,8 @@ public:
                 return nullptr;
             }
 
-            auto handler = RPC::ShardArchiveHandler::tryMakeRecoveryHandler(
-                *this, *m_jobQueue);
+            auto handler =
+                RPC::ShardArchiveHandler::tryMakeRecoveryHandler(*this);
 
             if (!initAndSet(std::move(handler)))
                 return nullptr;
@@ -673,8 +673,8 @@ public:
         // Construct the ShardArchiveHandler
         if (shardArchiveHandler_ == nullptr)
         {
-            auto handler = RPC::ShardArchiveHandler::makeShardArchiveHandler(
-                *this, *m_jobQueue);
+            auto handler =
+                RPC::ShardArchiveHandler::makeShardArchiveHandler(*this);
 
             if (!initAndSet(std::move(handler)))
                 return nullptr;
@@ -1706,6 +1706,8 @@ ApplicationImp::run()
     // Re-ordering them risks undefined behavior.
     m_shaMapStore->stop();
     stop(m_journal);
+    if (shardArchiveHandler_)
+        shardArchiveHandler_->stop();
     m_nodeStore->stop();
     if (shardStore_)
         shardStore_->stop();

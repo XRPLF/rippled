@@ -86,12 +86,12 @@ std::atomic<bool>           stop_;
 
 ##### Thread 1:
 
-A graceful shutdown begins when the `onStop()` method of the
+A graceful shutdown begins when the `stop()` method of the
 `ShardArchiveHandler` is invoked:
 
 ```c++
 void
-ShardArchiveHandler::onStop()
+ShardArchiveHandler::stop()
 {
     std::lock_guard<std::mutex> lock(m_);
 
