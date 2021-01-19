@@ -28,7 +28,6 @@
 namespace ripple {
 
 class TransactionMaster;
-class Stoppable;
 
 /**
  * class to create database, launch online delete thread, and
@@ -48,6 +47,9 @@ public:
 
     virtual void
     rendezvous() const = 0;
+
+    virtual void
+    stop() = 0;
 
     virtual std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const = 0;
@@ -102,7 +104,6 @@ public:
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore(
     Application& app,
-    Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal);
 }  // namespace ripple

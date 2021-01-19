@@ -176,7 +176,6 @@ public:
     AccountIDCache accountIDCache_;
     boost::optional<OpenLedger> openLedger_;
 
-    // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
     std::pair<PublicKey, SecretKey> nodeIdentity_;
@@ -184,7 +183,6 @@ public:
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
 
-    // These are Stoppable-related
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
     std::unique_ptr<NodeStore::DatabaseShard> shardStore_;
@@ -303,7 +301,6 @@ public:
         , m_nodeStoreScheduler(*m_jobQueue)
 
         , m_shaMapStore(make_SHAMapStore(
-              *this,
               *this,
               m_nodeStoreScheduler,
               logs_->journal("SHAMapStore")))
@@ -1704,9 +1701,10 @@ ApplicationImp::run()
         cv_.wait(lk, [this] { return isTimeToStop; });
     }
 
-    // Stop the server. When this returns, all
-    // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
+    // The order of these stop calls is delicate.
+    // Re-ordering them risks undefined behavior.
+    m_shaMapStore->stop();
     stop(m_journal);
     m_nodeStore->stop();
     if (shardStore_)

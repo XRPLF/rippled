@@ -148,11 +148,9 @@ SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 
 SHAMapStoreImp::SHAMapStoreImp(
     Application& app,
-    Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal)
-    : Stoppable("SHAMapStore", parent)
-    , app_(app)
+    : app_(app)
     , scheduler_(scheduler)
     , journal_(journal)
     , working_(true)
@@ -235,8 +233,6 @@ SHAMapStoreImp::SHAMapStoreImp(
 std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
 {
-    // Anything which calls addJob must be a descendant of the JobQueue.
-    // Therefore Database objects use the JobQueue as Stoppable parent.
     std::unique_ptr<NodeStore::Database> db;
     if (deleteInterval_)
     {
@@ -748,7 +744,7 @@ SHAMapStoreImp::health()
 }
 
 void
-SHAMapStoreImp::onStop()
+SHAMapStoreImp::stop()
 {
     if (thread_.joinable())
     {
@@ -776,11 +772,10 @@ SHAMapStoreImp::minimumOnline() const
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore(
     Application& app,
-    Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal)
 {
-    return std::make_unique<SHAMapStoreImp>(app, parent, scheduler, journal);
+    return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }
 
 }  // namespace ripple
