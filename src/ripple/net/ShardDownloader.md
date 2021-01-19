@@ -58,7 +58,7 @@ Much of the shard downloading process concerns the following classes:
    file, or simply return if there are no more downloads to process. When
    `complete` is invoked with no remaining files to be downloaded, the handler
    and downloader are not destroyed automatically, but persist for the duration
-   of the application to assist with graceful shutdowns by `Stoppable`.
+   of the application to assist with graceful shutdowns.
 
 - `DatabaseBody`
 

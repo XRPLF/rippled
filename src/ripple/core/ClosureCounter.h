@@ -85,8 +85,8 @@ private:
     }
 
     // A private template class that helps count the number of closures
-    // in flight.  This allows Stoppables to hold off declaring stopped()
-    // until all their postponed closures are dispatched.
+    // in flight. This allows callers to block until all their postponed
+    // closures are dispatched.
     template <typename Closure>
     class Substitute
     {

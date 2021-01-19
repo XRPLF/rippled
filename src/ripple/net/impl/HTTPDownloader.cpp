@@ -123,8 +123,9 @@ HTTPDownloader::do_session(
 
     // When the downloader is being stopped
     // because the server is shutting down,
-    // this method notifies a 'Stoppable'
-    // object that the session has ended.
+    // this method notifies a caller of `onStop`
+    // (`RPC::ShardArchiveHandler` to be specific)
+    // that the session has ended.
     auto exit = [this, &dstPath, complete] {
         if (!stop_)
             complete(std::move(dstPath));
