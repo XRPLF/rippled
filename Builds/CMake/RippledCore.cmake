@@ -455,7 +455,6 @@ target_sources (rippled PRIVATE
   src/ripple/core/impl/LoadMonitor.cpp
   src/ripple/core/impl/SNTPClock.cpp
   src/ripple/core/impl/SociDB.cpp
-  src/ripple/core/impl/Stoppable.cpp
   src/ripple/core/impl/TimeKeeper.cpp
   src/ripple/core/impl/Workers.cpp
   src/ripple/core/Pg.cpp
@@ -761,7 +760,6 @@ target_sources (rippled PRIVATE
   src/test/core/CryptoPRNG_test.cpp
   src/test/core/JobQueue_test.cpp
   src/test/core/SociDB_test.cpp
-  src/test/core/Stoppable_test.cpp
   src/test/core/Workers_test.cpp
   #[===============================[
      test sources:

@@ -53,7 +53,6 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/Pg.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -85,7 +84,7 @@
 namespace ripple {
 
 // VFALCO TODO Move the function definitions into the class declaration
-class ApplicationImp : public Application, public RootStoppable, public BasicApp
+class ApplicationImp : public Application, public BasicApp
 {
 private:
     class io_latency_sampler
@@ -217,12 +216,11 @@ public:
     std::unique_ptr<DatabaseCon> mLedgerDB;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<OverlayImpl> overlay_;
-    std::vector<std::unique_ptr<Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
 
     std::condition_variable cv_;
-    std::mutex mut_;
+    mutable std::mutex mut_;
     bool isTimeToStop = false;
 
     std::atomic<bool> checkSigs_;
@@ -260,8 +258,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs,
         std::unique_ptr<TimeKeeper> timeKeeper)
-        : RootStoppable("Application")
-        , BasicApp(numberOfThreads(*config))
+        : BasicApp(numberOfThreads(*config))
         , config_(std::move(config))
         , logs_(std::move(logs))
         , timeKeeper_(std::move(timeKeeper))
@@ -288,9 +285,6 @@ public:
               config_->section(SECTION_INSIGHT),
               logs_->journal("Collector")))
 
-        // The JobQueue has to come pretty early since
-        // almost everything is a Stoppable child of the JobQueue.
-        //
         , m_jobQueue(std::make_unique<JobQueue>(
               m_collectorManager->group("jobq"),
               logs_->journal("JobQueue"),
@@ -1007,7 +1001,7 @@ public:
 
     // Called to indicate shutdown.
     void
-    onStop() override
+    stop()
     {
         JLOG(m_journal.debug()) << "Application stopping";
 
@@ -1069,6 +1063,31 @@ public:
             [this](PublicKey const& pubKey) {
                 return validators().trustedPublisher(pubKey);
             });
+
+        // The order of these stop calls is delicate.
+        // Re-ordering them risks undefined behavior.
+        m_shaMapStore->stop();
+        m_jobQueue->stop();
+        if (shardArchiveHandler_)
+            shardArchiveHandler_->stop();
+        m_nodeStore->stop();
+        if (shardStore_)
+            shardStore_->stop();
+        if (config_->reporting())
+        {
+#ifdef RIPPLED_REPORTING
+            pgPool_->stop();
+#endif
+            reportingETL_->stop();
+        }
+        m_inboundLedgers->stop();
+        m_inboundTransactions->stop();
+        overlay_->stop();
+        perfLog_->stop();
+        grpcServer_->stop();
+        m_networkOPs->stop();
+        m_ledgerMaster->stop();
+        m_loadManager->stop();
     }
 
     //--------------------------------------------------------------------------
@@ -1701,31 +1720,7 @@ ApplicationImp::run()
     }
 
     JLOG(m_journal.info()) << "Received shutdown request";
-    // The order of these stop calls is delicate.
-    // Re-ordering them risks undefined behavior.
-    m_shaMapStore->stop();
-    stop(m_journal);
-    m_jobQueue->stop();
-    if (shardArchiveHandler_)
-        shardArchiveHandler_->stop();
-    m_nodeStore->stop();
-    if (shardStore_)
-        shardStore_->stop();
-    if (config_->reporting())
-    {
-#ifdef RIPPLED_REPORTING
-        pgPool_->stop();
-#endif
-        reportingETL_->stop();
-    }
-    m_inboundLedgers->stop();
-    m_inboundTransactions->stop();
-    overlay_->stop();
-    perfLog_->stop();
-    grpcServer_->stop();
-    m_networkOPs->stop();
-    m_ledgerMaster->stop();
-    m_loadManager->stop();
+    stop();
     JLOG(m_journal.info()) << "Done.";
 }
 
@@ -1758,7 +1753,8 @@ ApplicationImp::checkSigs(bool check)
 bool
 ApplicationImp::isStopping() const
 {
-    return Stoppable::isStopping();
+    std::lock_guard lk{mut_};
+    return isTimeToStop;
 }
 
 int
