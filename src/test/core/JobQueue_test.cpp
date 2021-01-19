@@ -51,7 +51,7 @@ class JobQueue_test : public beast::unit_test::suite
             // longer be able to add Jobs (and calling addJob() should
             // return false).
             using namespace std::chrono_literals;
-            jQueue.onStop();
+            jQueue.stop();
 
             // The Job should never run, so having the Job access this
             // unprotected variable on the stack should be completely safe.
@@ -134,7 +134,7 @@ class JobQueue_test : public beast::unit_test::suite
             // longer be able to add a Coro (and calling postCoro() should
             // return false).
             using namespace std::chrono_literals;
-            jQueue.onStop();
+            jQueue.stop();
 
             // The Coro should never run, so having the Coro access this
             // unprotected variable on the stack should be completely safe.

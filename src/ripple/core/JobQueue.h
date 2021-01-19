@@ -24,7 +24,6 @@
 #include <ripple/core/ClosureCounter.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/JobTypes.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/core/impl/Workers.h>
 #include <ripple/json/json_value.h>
 #include <boost/coroutine/all.hpp>
@@ -53,7 +52,7 @@ struct Coro_create_t
     When the JobQueue stops, it waits for all jobs
     and coroutines to finish.
 */
-class JobQueue : public Stoppable, private Workers::Callback
+class JobQueue : private Workers::Callback
 {
 public:
     /** Coroutines must run to completion. */
@@ -143,7 +142,6 @@ public:
 
     JobQueue(
         beast::insight::Collector::ptr const& collector,
-        Stoppable& parent,
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
@@ -230,7 +228,13 @@ public:
     rendezvous();
 
     void
-    onStop() override;
+    stop();
+
+    bool
+    isStopping() const
+    {
+        return stopping_;
+    }
 
     // We may be able to move away from this, but we can keep it during the
     // transition.
@@ -247,6 +251,7 @@ private:
     std::uint64_t m_lastJob;
     std::set<Job> m_jobSet;
     JobCounter jobCounter_;
+    std::atomic_bool stopping_{false};
     std::atomic_bool stopped_{false};
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;

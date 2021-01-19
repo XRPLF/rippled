@@ -293,7 +293,6 @@ public:
         //
         , m_jobQueue(std::make_unique<JobQueue>(
               m_collectorManager->group("jobq"),
-              *this,
               logs_->journal("JobQueue"),
               *logs_,
               *perfLog_))
@@ -1706,6 +1705,7 @@ ApplicationImp::run()
     // Re-ordering them risks undefined behavior.
     m_shaMapStore->stop();
     stop(m_journal);
+    m_jobQueue->stop();
     if (shardArchiveHandler_)
         shardArchiveHandler_->stop();
     m_nodeStore->stop();
