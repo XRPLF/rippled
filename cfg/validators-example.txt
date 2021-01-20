@@ -1,12 +1,11 @@
 #
 # Default validators.txt
 #
-# A list of domains to bootstrap a nodes UNLs or for clients to indirectly
-# locate IPs to contact the Ripple network.
+# This file is located in the same folder as your rippled.cfg file
+# and defines which validators your server trusts not to collude.
 #
-# This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
+# This file is UTF-8 with DOS, UNIX, or Mac style line endings.
 # Blank lines and lines starting with a '#' are ignored.
-# All other lines should be hankos or domain names.
 #
 #
 #
@@ -25,11 +24,9 @@
 #
 #   List of URIs serving lists of recommended validators.
 #
-#   The latest list of recommended validator sites can be
-#   obtained from https://ripple.com/ripple.txt
-#
 #   Examples:
 #    https://vl.ripple.com
+#    https://vl.coil.com
 #    http://127.0.0.1:8000
 #    file:///etc/opt/ripple/vl.txt
 #
@@ -41,13 +38,9 @@
 #   publisher key.
 #   Validator list keys should be hex-encoded.
 #
-#   The latest list of recommended validator keys can be
-#   obtained from https://ripple.com/ripple.txt
-#
 #   Examples:
-#    ed499d732bded01504a7407c224412ef550cc1ade638a4de4eb88af7c36cb8b282
-#    0202d3f36a801349f3be534e3f64cfa77dede6e1b6310a0b48f40f20f955cec945
-#    02dd8b7075f64d77d9d2bdb88da364f29fcd975f9ea6f21894abcc7564efda8054
+#    ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
+#    ED307A760EE34F2D0CAA103377B1969117C38B8AA0AA1E2A24DAC1F32FC97087ED
 #
 
 # The default validator list publishers that the rippled instance
@@ -65,7 +58,7 @@ https://vl.ripple.com
 [validator_list_keys]
 ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
 
-# To use the XRP test network (see https://ripple.com/build/xrp-test-net/),
+# To use the test network (see https://xrpl.org/connect-your-rippled-to-the-xrp-test-net.html),
 # use the following configuration instead:
 #
 # [validator_list_sites]
