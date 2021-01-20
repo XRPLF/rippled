@@ -45,6 +45,16 @@ message RawLedgerObject
 
     // Key of the ledger object
     bytes key = 2;
+
+    enum ModificationType
+    {
+        UNSPECIFIED = 0;
+        CREATED = 1;
+        MODIFIED = 2;
+        DELETED = 3;
+    }
+
+    ModificationType mod_type = 3;
 }
 
 message RawLedgerObjects

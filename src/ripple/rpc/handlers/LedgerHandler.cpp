@@ -205,6 +205,13 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 assert(inDesired->size() > 0);
                 obj->set_data(inDesired->data(), inDesired->size());
             }
+            if (inBase && inDesired)
+                obj->set_mod_type(
+                    org::xrpl::rpc::v1::RawLedgerObject::MODIFIED);
+            else if (inBase && !inDesired)
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::DELETED);
+            else
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
         }
         response.set_skiplist_included(true);
     }
