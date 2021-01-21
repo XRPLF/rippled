@@ -136,6 +136,8 @@ Collaboration diagram for ripple::Transaction:</div>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1Transaction_1_1CurrentLedgerState.html">CurrentLedgerState</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1Transaction_1_1Locator.html">Locator</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1Transaction_1_1SubmitResult.html">SubmitResult</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -216,6 +218,8 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:a0e007f454719831e6885ef33158dc0f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d9dd8c919e755ebf57e2586f3f86a1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843">TransStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ab9d9dd8c919e755ebf57e2586f3f86a1">sqlTransactionStatus</a> (boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;status)</td></tr>
 <tr class="separator:ab9d9dd8c919e755ebf57e2586f3f86a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7944543d97b9e8eead4718a88c6c1c7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structripple_1_1Transaction_1_1Locator.html">Locator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ab7944543d97b9e8eead4718a88c6c1c7">locate</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
+<tr class="separator:ab7944543d97b9e8eead4718a88c6c1c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ac314a4b698a354aeca6e01b11727df"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a7ac314a4b698a354aeca6e01b11727df">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
 <tr class="separator:a7ac314a4b698a354aeca6e01b11727df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef98143f190976c94bc64767c632f71a"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#aef98143f190976c94bc64767c632f71a">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
@@ -329,7 +333,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00035">35</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00037">37</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -380,7 +384,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00089">89</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00091">91</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +412,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00066">66</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00068">68</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -572,7 +576,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00059">59</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00061">61</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -908,7 +912,45 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00213">213</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00291">291</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab7944543d97b9e8eead4718a88c6c1c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7944543d97b9e8eead4718a88c6c1c7">&#9670;&nbsp;</a></span>locate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1Transaction_1_1Locator.html">Transaction::Locator</a> ripple::Transaction::locate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00133">133</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -952,7 +994,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00111">111</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00113">113</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -1002,7 +1044,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00119">119</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00121">121</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -1052,7 +1094,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00133">133</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00211">211</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -1101,7 +1143,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00330">330</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00382">382</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1125,7 +1167,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00332">332</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00384">384</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1149,7 +1191,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00333">333</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00385">385</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1173,7 +1215,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00334">334</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00386">386</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1197,7 +1239,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00335">335</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00387">387</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1265,7 @@ Private Attributes</h2></td></tr>
 
 <p>different ways for transaction to be accepted </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00338">338</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00390">390</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1247,7 +1289,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00340">340</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00392">392</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1271,7 +1313,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00342">342</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00394">394</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1295,7 +1337,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00343">343</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00395">395</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1319,7 +1361,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00344">344</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00396">396</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>

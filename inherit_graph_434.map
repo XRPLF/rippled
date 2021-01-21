@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1PeerReservationTable.html" title=" " alt="" coords="5,5,212,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1PeerFinder_1_1Source.html" title="A static or dynamic source of peer addresses." alt="" coords="5,5,140,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1SourceStrings.html" title="Provides addresses from a static set of strings." alt="" coords="188,5,323,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1PeerFinder_1_1SourceStringsImp.html" title=" " alt="" coords="371,5,515,47"/>
 </map>

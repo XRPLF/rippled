@@ -190,116 +190,136 @@ $(function() {
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;{</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="comment">// These lambdas are used to compute the values lazily</span></div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> getFix1623Enabled = [&amp;context]() -&gt; <span class="keywordtype">bool</span> {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> view = context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a002e22abe4c34d378ff9ece1ab46c7ea">openLedger</a>().<a class="code" href="classripple_1_1OpenLedger.html#abb724d61223be6a608b28947bd2e2236">current</a>();</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        <span class="keywordflow">if</span> (!view)</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">return</span> view-&gt;rules().enabled(<a class="code" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    };</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPC.html#a7629f5798a689bb1847923cb490c8b74">canHaveDeliveredAmountHelp</a>(</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        getFix1623Enabled, serializedTx, transactionMeta);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;}</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">  133</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">insertDeliveredAmount</a>(</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; meta,</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; ledger,</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta)</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;{</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> info = ledger.<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>();</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> getFix1623Enabled = [&amp;ledger] {</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <span class="keywordflow">return</span> ledger.<a class="code" href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">rules</a>().<a class="code" href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">enabled</a>(<a class="code" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>);</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    };</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160; </div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a7629f5798a689bb1847923cb490c8b74">canHaveDeliveredAmountHelp</a>(</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            getFix1623Enabled, serializedTx, transactionMeta))</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    {</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> getLedgerIndex = [&amp;info] { <span class="keywordflow">return</span> info.seq; };</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> getCloseTime = [&amp;info] { <span class="keywordflow">return</span> info.closeTime; };</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="keyword">auto</span> amt = <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">if</span> (amt)</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        {</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            meta[jss::delivered_amount] =</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                amt-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        }</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        {</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            <span class="comment">// report &quot;unavailable&quot; which cannot be parsed into a sensible</span></div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            <span class="comment">// amount.</span></div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            meta[jss::delivered_amount] = <a class="code" href="classJson_1_1Value.html">Json::Value</a>(<span class="stringliteral">&quot;unavailable&quot;</span>);</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        }</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    }</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;}</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> GetLedgerIndex&gt;</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STAmount&gt;</a></div>
-<div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ae1cced91cf173d142832e4b8a035a0b0">  168</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> <span class="keyword">const</span>&amp; context,</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta,</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    GetLedgerIndex <span class="keyword">const</span>&amp; getLedgerIndex)</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;{</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a18a4e6b6cfc28aedcb6788f4a66e3093">canHaveDeliveredAmount</a>(context, serializedTx, transactionMeta))</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    {</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> getCloseTime =</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;            [&amp;context,</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;             &amp;getLedgerIndex]() -&gt; boost::optional&lt;NetClock::time_point&gt; {</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            <span class="keywordflow">return</span> context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#aff01e5be205edd638601cc993bd4d140">getCloseTimeBySeq</a>(getLedgerIndex());</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        };</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    }</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160; </div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;}</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STAmount&gt;</a></div>
-<div class="line"><a name="l00189"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">  189</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> <span class="keyword">const</span>&amp; context,</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta,</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> <span class="keyword">const</span>&amp; ledgerIndex)</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;{</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        context, serializedTx, transactionMeta, [&amp;ledgerIndex]() {</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            <span class="keywordflow">return</span> ledgerIndex;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        });</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;}</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00202"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#afbdb96d85459c86ea0d79cd413792764">  202</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">insertDeliveredAmount</a>(</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; meta,</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> <span class="keyword">const</span>&amp; context,</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a> <span class="keyword">const</span>&amp; transaction,</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta)</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;{</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> serializedTx = transaction-&gt;getSTransaction();</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a18a4e6b6cfc28aedcb6788f4a66e3093">canHaveDeliveredAmount</a>(context, serializedTx, transactionMeta))</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    {</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keyword">auto</span> amt = <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            context, serializedTx, transactionMeta, [&amp;transaction]() {</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                <span class="keywordflow">return</span> transaction-&gt;getLedger();</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            });</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <span class="keywordflow">if</span> (amt)</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        {</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            meta[jss::delivered_amount] =</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                amt-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        }</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        {</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            <span class="comment">// report &quot;unavailable&quot; which cannot be parsed into a sensible</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            <span class="comment">// amount.</span></div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            meta[jss::delivered_amount] = <a class="code" href="classJson_1_1Value.html">Json::Value</a>(<span class="stringliteral">&quot;unavailable&quot;</span>);</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        }</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    }</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;}</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;}  <span class="comment">// namespace RPC</span></div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        {</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> view = context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#a50acc6cfefb3886a65affa2e213f089d">getValidatedLedger</a>();</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keywordflow">if</span> (!view)</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="keywordflow">return</span> view-&gt;rules().enabled(<a class="code" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        }</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        {</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> view = context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a002e22abe4c34d378ff9ece1ab46c7ea">openLedger</a>().<a class="code" href="classripple_1_1OpenLedger.html#abb724d61223be6a608b28947bd2e2236">current</a>();</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            <span class="keywordflow">if</span> (!view)</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            <span class="keywordflow">return</span> view-&gt;rules().enabled(<a class="code" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        }</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    };</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPC.html#a7629f5798a689bb1847923cb490c8b74">canHaveDeliveredAmountHelp</a>(</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        getFix1623Enabled, serializedTx, transactionMeta);</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;}</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">  143</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">insertDeliveredAmount</a>(</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; meta,</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; ledger,</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta)</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;{</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> info = ledger.<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>();</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> getFix1623Enabled = [&amp;ledger] {</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keywordflow">return</span> ledger.<a class="code" href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">rules</a>().<a class="code" href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">enabled</a>(<a class="code" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    };</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a7629f5798a689bb1847923cb490c8b74">canHaveDeliveredAmountHelp</a>(</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            getFix1623Enabled, serializedTx, transactionMeta))</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    {</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> getLedgerIndex = [&amp;info] { <span class="keywordflow">return</span> info.seq; };</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> getCloseTime = [&amp;info] { <span class="keywordflow">return</span> info.closeTime; };</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <span class="keyword">auto</span> amt = <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <span class="keywordflow">if</span> (amt)</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        {</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            meta[jss::delivered_amount] =</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                amt-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        }</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        {</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            <span class="comment">// report &quot;unavailable&quot; which cannot be parsed into a sensible</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            <span class="comment">// amount.</span></div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;            meta[jss::delivered_amount] = <a class="code" href="classJson_1_1Value.html">Json::Value</a>(<span class="stringliteral">&quot;unavailable&quot;</span>);</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        }</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    }</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> GetLedgerIndex&gt;</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STAmount&gt;</a></div>
+<div class="line"><a name="l00178"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ae1cced91cf173d142832e4b8a035a0b0">  178</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> <span class="keyword">const</span>&amp; context,</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta,</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    GetLedgerIndex <span class="keyword">const</span>&amp; getLedgerIndex)</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;{</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a18a4e6b6cfc28aedcb6788f4a66e3093">canHaveDeliveredAmount</a>(context, serializedTx, transactionMeta))</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    {</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> getCloseTime =</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            [&amp;context,</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;             &amp;getLedgerIndex]() -&gt; boost::optional&lt;NetClock::time_point&gt; {</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            <span class="keywordflow">return</span> context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#aff01e5be205edd638601cc993bd4d140">getCloseTimeBySeq</a>(getLedgerIndex());</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        };</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    }</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;}</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STAmount&gt;</a></div>
+<div class="line"><a name="l00199"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">  199</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> <span class="keyword">const</span>&amp; context,</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta,</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> <span class="keyword">const</span>&amp; ledgerIndex)</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;{</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        context, serializedTx, transactionMeta, [&amp;ledgerIndex]() {</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            <span class="keywordflow">return</span> ledgerIndex;</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        });</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;}</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00212"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#afbdb96d85459c86ea0d79cd413792764">  212</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">insertDeliveredAmount</a>(</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; meta,</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> <span class="keyword">const</span>&amp; context,</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a> <span class="keyword">const</span>&amp; transaction,</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta)</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;{</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">insertDeliveredAmount</a>(</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        meta, context, transaction-&gt;getSTransaction(), transactionMeta);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;}</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00223"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a4e4269e3d476eca12efe8663ac3c9b08">  223</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">insertDeliveredAmount</a>(</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; meta,</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> <span class="keyword">const</span>&amp; context,</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; transaction,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="code" href="classripple_1_1TxMeta.html">TxMeta</a> <span class="keyword">const</span>&amp; transactionMeta)</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;{</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a18a4e6b6cfc28aedcb6788f4a66e3093">canHaveDeliveredAmount</a>(context, transaction, transactionMeta))</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    {</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        <span class="keyword">auto</span> amt = <a class="code" href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">getDeliveredAmount</a>(</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            context, transaction, transactionMeta, [&amp;transactionMeta]() {</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                <span class="keywordflow">return</span> transactionMeta.<a class="code" href="classripple_1_1TxMeta.html#a835cdd996c2ada5f9cb9215491a7e4ee">getLgrSeq</a>();</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            });</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="keywordflow">if</span> (amt)</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        {</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            meta[jss::delivered_amount] =</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                amt-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        }</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        {</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <span class="comment">// report &quot;unavailable&quot; which cannot be parsed into a sensible</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="comment">// amount.</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            meta[jss::delivered_amount] = <a class="code" href="classJson_1_1Value.html">Json::Value</a>(<span class="stringliteral">&quot;unavailable&quot;</span>);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        }</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    }</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;}</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;}  <span class="comment">// namespace RPC</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1ReadView_html_a9263b10d706a447166b229ad8e3b574c"><div class="ttname"><a href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">ripple::ReadView::info</a></div><div class="ttdeci">virtual LedgerInfo const  &amp; info() const =0</div><div class="ttdoc">Returns information about the ledger.</div></div>
 <div class="ttc" id="anamespaceripple_html_a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903"><div class="ttname"><a href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">ripple::JsonOptions::include_date</a></div><div class="ttdeci">@ include_date</div></div>
@@ -307,26 +327,30 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264aed9a372250602ac95e4428846335fcf6"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264aed9a372250602ac95e4428846335fcf6">ripple::ttACCOUNT_DELETE</a></div><div class="ttdeci">@ ttACCOUNT_DELETE</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00057">TxFormats.h:57</a></div></div>
 <div class="ttc" id="aclassripple_1_1OpenLedger_html_abb724d61223be6a608b28947bd2e2236"><div class="ttname"><a href="classripple_1_1OpenLedger.html#abb724d61223be6a608b28947bd2e2236">ripple::OpenLedger::current</a></div><div class="ttdeci">std::shared_ptr&lt; OpenView const  &gt; current() const</div><div class="ttdoc">Returns a view to the current open ledger.</div><div class="ttdef"><b>Definition:</b> <a href="OpenLedger_8cpp_source.html#l00050">OpenLedger.cpp:50</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a7be9b8fa56565507dd8342f8b0dece47"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">ripple::RPC::getDeliveredAmount</a></div><div class="ttdeci">std::optional&lt; STAmount &gt; getDeliveredAmount(RPC::Context const &amp;context, std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;transactionMeta, LedgerIndex const &amp;ledgerIndex)</div><div class="ttdef"><b>Definition:</b> <a href="DeliveredAmount_8cpp_source.html#l00189">DeliveredAmount.cpp:189</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a7be9b8fa56565507dd8342f8b0dece47"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a7be9b8fa56565507dd8342f8b0dece47">ripple::RPC::getDeliveredAmount</a></div><div class="ttdeci">std::optional&lt; STAmount &gt; getDeliveredAmount(RPC::Context const &amp;context, std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;transactionMeta, LedgerIndex const &amp;ledgerIndex)</div><div class="ttdef"><b>Definition:</b> <a href="DeliveredAmount_8cpp_source.html#l00199">DeliveredAmount.cpp:199</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a29758397ce451beaa436c3a9dfc83030"><div class="ttname"><a href="namespaceripple.html#a29758397ce451beaa436c3a9dfc83030">ripple::sfAmount</a></div><div class="ttdeci">const SF_AMOUNT sfAmount</div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a92c98828663b6b80d3eb15850ec6897a"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ripple::RPC::Context::ledgerMaster</a></div><div class="ttdeci">LedgerMaster &amp; ledgerMaster</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00045">Context.h:45</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a002e22abe4c34d378ff9ece1ab46c7ea"><div class="ttname"><a href="classripple_1_1Application.html#a002e22abe4c34d378ff9ece1ab46c7ea">ripple::Application::openLedger</a></div><div class="ttdeci">virtual OpenLedger &amp; openLedger()=0</div></div>
 <div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21">ripple::ttPAYMENT</a></div><div class="ttdeci">@ ttPAYMENT</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00036">TxFormats.h:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxMeta_html"><div class="ttname"><a href="classripple_1_1TxMeta.html">ripple::TxMeta</a></div><div class="ttdef"><b>Definition:</b> <a href="TxMeta_8h_source.html#l00032">TxMeta.h:32</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxMeta_html_aa5fff1a8fd590ce06ae81e8cd92f092f"><div class="ttname"><a href="classripple_1_1TxMeta.html#aa5fff1a8fd590ce06ae81e8cd92f092f">ripple::TxMeta::getResultTER</a></div><div class="ttdeci">TER getResultTER() const</div><div class="ttdef"><b>Definition:</b> <a href="TxMeta_8h_source.html#l00068">TxMeta.h:68</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a8fdf3fd3b2112759b3a0a7fa4d8afa05"><div class="ttname"><a href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config::reporting</a></div><div class="ttdeci">bool reporting() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00267">Config.h:267</a></div></div>
+<div class="ttc" id="aclassripple_1_1Application_html_aca56b7c63030174e59720ab51d739422"><div class="ttname"><a href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">ripple::Application::config</a></div><div class="ttdeci">virtual Config &amp; config()=0</div></div>
 <div class="ttc" id="anamespaceripple_html_af2c25b95b708d565d681958fbd20d2b6"><div class="ttname"><a href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">ripple::fix1623</a></div><div class="ttdeci">const uint256 fix1623</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00173">Feature.cpp:173</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a7878751d68ed7fd43c385913c5e6ff04"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">ripple::RPC::Context::app</a></div><div class="ttdeci">Application &amp; app</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00042">Context.h:42</a></div></div>
 <div class="ttc" id="atime_point_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point.html">std::chrono::time_point</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d">ripple::ttCHECK_CASH</a></div><div class="ttdeci">@ ttCHECK_CASH</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00053">TxFormats.h:53</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="aclassripple_1_1Rules_html_a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"><div class="ttname"><a href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">ripple::Rules::enabled</a></div><div class="ttdeci">bool enabled(uint256 const &amp;id) const</div><div class="ttdoc">Returns true if a feature is enabled.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8cpp_source.html#l00103">ReadView.cpp:103</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxMeta_html_a835cdd996c2ada5f9cb9215491a7e4ee"><div class="ttname"><a href="classripple_1_1TxMeta.html#a835cdd996c2ada5f9cb9215491a7e4ee">ripple::TxMeta::getLgrSeq</a></div><div class="ttdeci">std::uint32_t getLgrSeq() const</div><div class="ttdef"><b>Definition:</b> <a href="TxMeta_8h_source.html#l00058">TxMeta.h:58</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264">ripple::TxType</a></div><div class="ttdeci">TxType</div><div class="ttdoc">Transaction type identifiers.</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00033">TxFormats.h:33</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html"><div class="ttname"><a href="classripple_1_1ReadView.html">ripple::ReadView</a></div><div class="ttdoc">A view into a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00192">ReadView.h:192</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html_aaf2fa03be723bb78d8bdf41614a75a30"><div class="ttname"><a href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">ripple::ReadView::rules</a></div><div class="ttdeci">virtual Rules const  &amp; rules() const =0</div><div class="ttdoc">Returns the tx processing rules.</div></div>
-<div class="ttc" id="aclassripple_1_1LedgerMaster_html_aff01e5be205edd638601cc993bd4d140"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#aff01e5be205edd638601cc993bd4d140">ripple::LedgerMaster::getCloseTimeBySeq</a></div><div class="ttdeci">boost::optional&lt; NetClock::time_point &gt; getCloseTimeBySeq(LedgerIndex ledgerIndex)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01563">LedgerMaster.cpp:1563</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerMaster_html_aff01e5be205edd638601cc993bd4d140"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#aff01e5be205edd638601cc993bd4d140">ripple::LedgerMaster::getCloseTimeBySeq</a></div><div class="ttdeci">boost::optional&lt; NetClock::time_point &gt; getCloseTimeBySeq(LedgerIndex ledgerIndex)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01635">LedgerMaster.cpp:1635</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxMeta_html_a39b5ebfff79eb58bed921464b1e4dd20"><div class="ttname"><a href="classripple_1_1TxMeta.html#a39b5ebfff79eb58bed921464b1e4dd20">ripple::TxMeta::hasDeliveredAmount</a></div><div class="ttdeci">bool hasDeliveredAmount() const</div><div class="ttdef"><b>Definition:</b> <a href="TxMeta_8h_source.html#l00119">TxMeta.h:119</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_aaa57921f6c51e3495cb6bf14b94a4d90"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">ripple::RPC::insertDeliveredAmount</a></div><div class="ttdeci">void insertDeliveredAmount(Json::Value &amp;meta, ReadView const &amp;, std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;)</div><div class="ttdoc">Add a delivered_amount field to the meta input/output parameter.</div><div class="ttdef"><b>Definition:</b> <a href="DeliveredAmount_8cpp_source.html#l00133">DeliveredAmount.cpp:133</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_aaa57921f6c51e3495cb6bf14b94a4d90"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">ripple::RPC::insertDeliveredAmount</a></div><div class="ttdeci">void insertDeliveredAmount(Json::Value &amp;meta, ReadView const &amp;, std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;)</div><div class="ttdoc">Add a delivered_amount field to the meta input/output parameter.</div><div class="ttdef"><b>Definition:</b> <a href="DeliveredAmount_8cpp_source.html#l00143">DeliveredAmount.cpp:143</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerMaster_html_a50acc6cfefb3886a65affa2e213f089d"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#a50acc6cfefb3886a65affa2e213f089d">ripple::LedgerMaster::getValidatedLedger</a></div><div class="ttdeci">std::shared_ptr&lt; Ledger const  &gt; getValidatedLedger()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01581">LedgerMaster.cpp:1581</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a18a4e6b6cfc28aedcb6788f4a66e3093"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a18a4e6b6cfc28aedcb6788f4a66e3093">ripple::RPC::canHaveDeliveredAmount</a></div><div class="ttdeci">bool canHaveDeliveredAmount(RPC::Context const &amp;context, std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;transactionMeta)</div><div class="ttdef"><b>Definition:</b> <a href="DeliveredAmount_8cpp_source.html#l00115">DeliveredAmount.cpp:115</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxMeta_html_a3d4d9a258d507a7bfd9e9c7f941c32ac"><div class="ttname"><a href="classripple_1_1TxMeta.html#a3d4d9a258d507a7bfd9e9c7f941c32ac">ripple::TxMeta::getDeliveredAmount</a></div><div class="ttdeci">STAmount getDeliveredAmount() const</div><div class="ttdef"><b>Definition:</b> <a href="TxMeta_8h_source.html#l00112">TxMeta.h:112</a></div></div>

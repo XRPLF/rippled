@@ -149,6 +149,9 @@ $(function() {
 , <a class="el" href="classripple_1_1OpenView.html#ab230a32cbeedf37d8b30bbec8a91961d">ripple::OpenView</a>
 , <a class="el" href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">ripple::TxsRawView</a>
 </li>
+<li>rawTxInsertWithHash()
+: <a class="el" href="classripple_1_1Ledger.html#aa7a5631ff08a7cf45c966d70fd9d3f01">ripple::Ledger</a>
+</li>
 <li>rawView()
 : <a class="el" href="classripple_1_1ApplyContext.html#a77dc079164717b62995593c7633a5160">ripple::ApplyContext</a>
 </li>
@@ -254,6 +257,9 @@ $(function() {
 </li>
 <li>recent_t()
 : <a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a3c7d8089093e513b3f426f8059826901">ripple::PeerFinder::SlotImp::recent_t</a>
+</li>
+<li>reconnect()
+: <a class="el" href="classripple_1_1ETLSource.html#aa96a2d2ce4143bb7b03c4745faa2f5df">ripple::ETLSource</a>
 </li>
 <li>recoverFromError()
 : <a class="el" href="classJson_1_1Reader.html#a8d4ed03a43082c5ace81ba5b81425eaf">Json::Reader</a>
@@ -418,6 +424,9 @@ $(function() {
 , <a class="el" href="classripple_1_1SHAMapStore.html#a96ae0b236ea08f5178309d80d27a7c5f">ripple::SHAMapStore</a>
 , <a class="el" href="classripple_1_1SHAMapStoreImp.html#a11f592da3dd908e4b8e0e586517377cf">ripple::SHAMapStoreImp</a>
 </li>
+<li>reOpen()
+: <a class="el" href="classripple_1_1Door.html#ac678c9478fd18ddecbbd0fd423c05592">ripple::Door&lt; Handler &gt;</a>
+</li>
 <li>replace()
 : <a class="el" href="classripple_1_1detail_1_1ApplyStateTable.html#ad8170222c018b2a9953559d5ca412ee6">ripple::detail::ApplyStateTable</a>
 , <a class="el" href="classripple_1_1detail_1_1RawStateTable.html#aceacd182f53f7e211d4bf7d3d6f3c06f">ripple::detail::RawStateTable</a>
@@ -446,8 +455,20 @@ $(function() {
 <li>reportFull()
 : <a class="el" href="classripple_1_1PathRequests.html#ac1387b099a6d869399597b1eb7c97f99">ripple::PathRequests</a>
 </li>
+<li>reporting()
+: <a class="el" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config</a>
+</li>
 <li>Reporting()
 : <a class="el" href="structripple_1_1PeerFinder_1_1Reporting.html#ab4f33ac82fe37b474a3a4050fa11dc75">ripple::PeerFinder::Reporting</a>
+</li>
+<li>ReportingETL()
+: <a class="el" href="classripple_1_1ReportingETL.html#a693c97e6ee15d2fc86da6719beaa8a30">ripple::ReportingETL</a>
+</li>
+<li>reportingReadOnly()
+: <a class="el" href="classripple_1_1Config.html#ad05fa018b47b496a64653fb36a0fbd5b">ripple::Config</a>
+</li>
+<li>ReportingShouldProxy()
+: <a class="el" href="classripple_1_1ReportingShouldProxy.html#ac8612697f2e5eeefd36e4baaa2b76784">ripple::ReportingShouldProxy</a>
 </li>
 <li>reportTraffic()
 : <a class="el" href="classripple_1_1OverlayImpl.html#a24fdba9c67abfceb410797749c99443f">ripple::OverlayImpl</a>
@@ -662,7 +683,7 @@ $(function() {
 : <a class="el" href="structripple_1_1RPCCallImp.html#a32512463f0b70d4fcc36aec0536ab066">ripple::RPCCallImp</a>
 </li>
 <li>RPCCallTestData()
-: <a class="el" href="structripple_1_1test_1_1RPCCallTestData.html#ab37aaf643e887b4270baae9421d8c861">ripple::test::RPCCallTestData</a>
+: <a class="el" href="structripple_1_1test_1_1RPCCallTestData.html#a37b89bf14fecb506b1b6de81b17613e7">ripple::test::RPCCallTestData</a>
 </li>
 <li>rpcEnd()
 : <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a09db64fc2f2fda2ce5baed6593246e3a">ripple::perf::PerfLogImp</a>
@@ -699,7 +720,7 @@ $(function() {
 , <a class="el" href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">ripple::ReadView</a>
 </li>
 <li>Rules()
-: <a class="el" href="classripple_1_1Rules.html#a01a609c0047b4c2b95bc18b7d5f67e26">ripple::Rules</a>
+: <a class="el" href="classripple_1_1Rules.html#a375ab968a4a8bf1e04e1041809170232">ripple::Rules</a>
 </li>
 <li>run()
 : <a class="el" href="classbeast_1_1abstract__clock__test.html#a4c17ccb7d4bcee9d3212fcb36e9f6f2d">beast::abstract_clock_test</a>
@@ -792,6 +813,7 @@ $(function() {
 , <a class="el" href="classripple_1_1PublicKey__test.html#a4fbf630aa60117e8e1ee3524bac0f9f1">ripple::PublicKey_test</a>
 , <a class="el" href="classripple_1_1Quality__test.html#a42808ac2f44646fcb76a3fcda8d18065">ripple::Quality_test</a>
 , <a class="el" href="classripple_1_1RangeSet__test.html#aff5e0fd59f41390de2df61a72e831c39">ripple::RangeSet_test</a>
+, <a class="el" href="classripple_1_1ReportingETL.html#a879124699698c06409025db64c35fbdf">ripple::ReportingETL</a>
 , <a class="el" href="classripple_1_1Resource_1_1ManagerImp.html#aa7347699a72054f278d014e3be4ad85e">ripple::Resource::ManagerImp</a>
 , <a class="el" href="classripple_1_1Resource_1_1ResourceManager__test.html#a6c2efb0e08cf367fdfc7cac0a3d7d69d">ripple::Resource::ResourceManager_test</a>
 , <a class="el" href="classripple_1_1RPC_1_1codeString__test.html#a3ca676e2f794455c0077dc02975461e3">ripple::RPC::codeString_test</a>
@@ -902,6 +924,7 @@ $(function() {
 , <a class="el" href="classripple_1_1test_1_1reduce__relay__simulate__test.html#a6683bbc6449f26ae56eda7a69b453922">ripple::test::reduce_relay_simulate_test</a>
 , <a class="el" href="classripple_1_1test_1_1reduce__relay__test.html#aa931848d11704df02f37f9fafcfb755f">ripple::test::reduce_relay_test</a>
 , <a class="el" href="structripple_1_1test_1_1Regression__test.html#a2553ac2fe5964d63dfd6ffe1383fb2ee">ripple::test::Regression_test</a>
+, <a class="el" href="classripple_1_1test_1_1ReportingETL__test.html#a0652d7daddfc497ba131c8522ac8a4dc">ripple::test::ReportingETL_test</a>
 , <a class="el" href="classripple_1_1test_1_1RobustTransaction__test.html#a67cba106dbf1cb5ccbf1c96d764aee1f">ripple::test::RobustTransaction_test</a>
 , <a class="el" href="classripple_1_1test_1_1Roles__test.html#a78d66beeb487a173e1ab4bffb69bbfaf">ripple::test::Roles_test</a>
 , <a class="el" href="classripple_1_1test_1_1RPCCall__test.html#ae26c4d58ba16afad2cec8012507894a4">ripple::test::RPCCall_test</a>
@@ -962,6 +985,9 @@ $(function() {
 </li>
 <li>runData()
 : <a class="el" href="classripple_1_1InboundLedger.html#a0fcb919dd1a3c7f0e37525aee124ee7d">ripple::InboundLedger</a>
+</li>
+<li>runETLPipeline()
+: <a class="el" href="classripple_1_1ReportingETL.html#a2ca1423e114e2ffe04197c9f0fa48e57">ripple::ReportingETL</a>
 </li>
 <li>runnable()
 : <a class="el" href="classripple_1_1JobQueue_1_1Coro.html#a7b420fe0e3eacc79ee483debccbff40a">ripple::JobQueue::Coro</a>

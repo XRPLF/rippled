@@ -319,6 +319,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a8da073628362c9cf1db481fb48c09d10"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a8da073628362c9cf1db481fb48c09d10">addGrpcConfig</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;)</td></tr>
 <tr class="memdesc:a8da073628362c9cf1db481fb48c09d10"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a grpc address and port to config  <a href="namespaceripple_1_1test_1_1jtx.html#a8da073628362c9cf1db481fb48c09d10">More...</a><br /></td></tr>
 <tr class="separator:a8da073628362c9cf1db481fb48c09d10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebc7e483be9178d00e0d809cf0a1a867"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#aebc7e483be9178d00e0d809cf0a1a867">addGrpcConfigWithSecureGateway</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;secureGateway)</td></tr>
+<tr class="memdesc:aebc7e483be9178d00e0d809cf0a1a867"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a grpc address, port and secure_gateway to config  <a href="namespaceripple_1_1test_1_1jtx.html#aebc7e483be9178d00e0d809cf0a1a867">More...</a><br /></td></tr>
+<tr class="separator:aebc7e483be9178d00e0d809cf0a1a867"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50cacef3867fc01273aa9c29231f9a7c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> on, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> off=0)</td></tr>
 <tr class="memdesc:a50cacef3867fc01273aa9c29231f9a7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add and/or remove flag.  <a href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">More...</a><br /></td></tr>
 <tr class="separator:a50cacef3867fc01273aa9c29231f9a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1116,6 +1119,45 @@ template&lt;class F , class... Args&gt; </div>
 </dl>
 
 <p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00113">113</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aebc7e483be9178d00e0d809cf0a1a867"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebc7e483be9178d00e0d809cf0a1a867">&#9670;&nbsp;</a></span>addGrpcConfigWithSecureGateway()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt; ripple::test::jtx::addGrpcConfigWithSecureGateway </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td>
+          <td class="paramname"><em>cfg</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>secureGateway</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>add a grpc address, port and secure_gateway to config </p>
+<p>This is intended for use with envconfig, for tests that require a grpc server. If this function is not called, grpc server will not start</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">cfg</td><td>config instance to be modified </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00122">122</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
 
 </div>
 </div>

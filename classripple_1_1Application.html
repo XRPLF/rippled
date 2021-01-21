@@ -222,6 +222,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae8c3bf5a8d7de3a98166670fde4056f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3edfe212c0488890f076bf712780fe7a"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a3edfe212c0488890f076bf712780fe7a">getIOLatency</a> ()=0</td></tr>
 <tr class="separator:a3edfe212c0488890f076bf712780fe7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23763451e0244c296014374bd41619da"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1ReportingETL.html">ReportingETL</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a23763451e0244c296014374bd41619da">getReportingETL</a> ()=0</td></tr>
+<tr class="separator:a23763451e0244c296014374bd41619da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0005228a2b40d12b6985ac48bd768940"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a0005228a2b40d12b6985ac48bd768940">serverOkay</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;reason)=0</td></tr>
 <tr class="separator:a0005228a2b40d12b6985ac48bd768940"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2897c28a5b5040e80e66f676d201d03f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a2897c28a5b5040e80e66f676d201d03f">journal</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">name</a>)=0</td></tr>
@@ -296,7 +298,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00097">97</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00101">101</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="af49bed1dd2fb49345992a96347c50f76"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af49bed1dd2fb49345992a96347c50f76">&#9670;&nbsp;</a></span>MutexType</h2>
@@ -310,7 +312,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00111">111</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00115">115</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
 
 </div>
 </div>
@@ -330,7 +332,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02188">2188</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02278">2278</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1818,6 +1820,33 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#adf79e70f8546df6db68c8488627802f7">ripple::ApplicationImp</a>.</p>
+
+</div>
+</div>
+<a id="a23763451e0244c296014374bd41619da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23763451e0244c296014374bd41619da">&#9670;&nbsp;</a></span>getReportingETL()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classripple_1_1ReportingETL.html">ReportingETL</a>&amp; ripple::Application::getReportingETL </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#ae9c53718932eea0b32be2113839b0405">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>

@@ -66,6 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classripple_1_1NodeStore_1_1Backend-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -87,6 +88,11 @@ Inheritance diagram for ripple::NodeStore::Backend:</div>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a7be1490e873f0a4956e4dd9effc9061b"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7be1490e873f0a4956e4dd9effc9061b">~Backend</a> ()=default</td></tr>
@@ -107,12 +113,20 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7d3224e43e89dc098962b986d70e9833"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">fetch</a> (void const *key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; *pObject)=0</td></tr>
 <tr class="memdesc:a7d3224e43e89dc098962b986d70e9833"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a single object.  <a href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">More...</a><br /></td></tr>
 <tr class="separator:a7d3224e43e89dc098962b986d70e9833"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26ec003b54dcceb03af5de57ddb5e545"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">canFetchBatch</a> ()=0</td></tr>
+<tr class="memdesc:a26ec003b54dcceb03af5de57ddb5e545"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return <code>true</code> if batch fetches are optimized.  <a href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">More...</a><br /></td></tr>
+<tr class="separator:a26ec003b54dcceb03af5de57ddb5e545"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa772cdcdfaae28944eac29473bc3931a"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; &gt;, <a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#aa772cdcdfaae28944eac29473bc3931a">fetchBatch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const * &gt; const &amp;hashes)=0</td></tr>
+<tr class="memdesc:aa772cdcdfaae28944eac29473bc3931a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a batch synchronously.  <a href="classripple_1_1NodeStore_1_1Backend.html#aa772cdcdfaae28944eac29473bc3931a">More...</a><br /></td></tr>
+<tr class="separator:aa772cdcdfaae28944eac29473bc3931a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8862f8d96713c985c3169e57cbb260c2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">store</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;object)=0</td></tr>
 <tr class="memdesc:a8862f8d96713c985c3169e57cbb260c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a single object.  <a href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">More...</a><br /></td></tr>
 <tr class="separator:a8862f8d96713c985c3169e57cbb260c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb1f22b4101841e695477646c95376a7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">storeBatch</a> (<a class="el" href="namespaceripple_1_1NodeStore.html#ae0e4b79f8eb3ffa0bf8fcaf848643202">Batch</a> const &amp;batch)=0</td></tr>
 <tr class="memdesc:acb1f22b4101841e695477646c95376a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a group of objects.  <a href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">More...</a><br /></td></tr>
 <tr class="separator:acb1f22b4101841e695477646c95376a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0756bdfe06dcb0382b47e23b39813394"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a0756bdfe06dcb0382b47e23b39813394">sync</a> ()=0</td></tr>
+<tr class="separator:a0756bdfe06dcb0382b47e23b39813394"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70721d2adc758a808d2536eee864df52"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">for_each</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt;)&gt; f)=0</td></tr>
 <tr class="memdesc:a70721d2adc758a808d2536eee864df52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit every object in the database This is usually called during import.  <a href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">More...</a><br /></td></tr>
 <tr class="separator:a70721d2adc758a808d2536eee864df52"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -128,6 +142,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a915130d326c2e63209accb8af09cf8b4"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">fdRequired</a> () const =0</td></tr>
 <tr class="memdesc:a915130d326c2e63209accb8af09cf8b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of file descriptors the backend expects to need.  <a href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">More...</a><br /></td></tr>
 <tr class="separator:a915130d326c2e63209accb8af09cf8b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41f97b0e74956987f2954caa609d2af4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a41f97b0e74956987f2954caa609d2af4">counters</a> () const =0</td></tr>
+<tr class="separator:a41f97b0e74956987f2954caa609d2af4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">backed</a> () const</td></tr>
 <tr class="memdesc:ab07382d1cbb7d39fe7aacdbc17654861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the backend uses permanent storage.  <a href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">More...</a><br /></td></tr>
 <tr class="separator:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,7 +153,7 @@ Public Member Functions</h2></td></tr>
 <p>The <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> uses a swappable backend so that other database systems can be tried. Different databases may offer various features such as improved performance, fault tolerant or distributed storage, or all in-memory operation.</p>
 <p>A given instance of a backend is fixed to a particular key size. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00037">37</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00039">39</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a7be1490e873f0a4956e4dd9effc9061b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7be1490e873f0a4956e4dd9effc9061b">&#9670;&nbsp;</a></span>~Backend()</h2>
@@ -342,6 +358,65 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a26ec003b54dcceb03af5de57ddb5e545"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26ec003b54dcceb03af5de57ddb5e545">&#9670;&nbsp;</a></span>canFetchBatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::Backend::canFetchBatch </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return <code>true</code> if batch fetches are optimized. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a727c895f6364eeaa8e524c1eb456f5df">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a99df01b9966c50d586f55f841d7226b6">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a131e97c3f271a6433b8c70802b1d134b">ripple::NodeStore::NullBackend</a>.</p>
+
+</div>
+</div>
+<a id="aa772cdcdfaae28944eac29473bc3931a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa772cdcdfaae28944eac29473bc3931a">&#9670;&nbsp;</a></span>fetchBatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1NodeObject.html">NodeObject</a>&gt; &gt;, <a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&gt; ripple::NodeStore::Backend::fetchBatch </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const * &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>hashes</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Fetch a batch synchronously. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#ad1dea770406fa29aa16f14df58e8d568">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#aebb40decbb0e49b7a24e5b4845dddfd1">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a86ab86fa510d9ea92b79ba2738a2acf2">ripple::NodeStore::NullBackend</a>.</p>
+
+</div>
+</div>
 <a id="a8862f8d96713c985c3169e57cbb260c2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8862f8d96713c985c3169e57cbb260c2">&#9670;&nbsp;</a></span>store()</h2>
 
@@ -407,6 +482,33 @@ Public Member Functions</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd>This function will not be called concurrently with itself or <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">store</a>. </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a4e9abc2a44a3501131709dcd6d5c509a">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ab677b7560cd27c159ad78e1412513d5f">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#ac3d735a9706df0a50c08a2a737ebeb3d">ripple::NodeStore::NullBackend</a>.</p>
+
+</div>
+</div>
+<a id="a0756bdfe06dcb0382b47e23b39813394"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0756bdfe06dcb0382b47e23b39813394">&#9670;&nbsp;</a></span>sync()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::NodeStore::Backend::sync </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a7d886e5eee636e58798208a5e46e71f6">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a7a01b5df53b3ca0487785188f98b4320">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a48f53c890d50d72621ebaa72cba3214f">ripple::NodeStore::NullBackend</a>.</p>
 
 </div>
 </div>
@@ -558,6 +660,33 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a41f97b0e74956987f2954caa609d2af4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41f97b0e74956987f2954caa609d2af4">&#9670;&nbsp;</a></span>counters()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> const&amp; ripple::NodeStore::Backend::counters </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a5899feda61fad789d8ffdd8b197bcc9c">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a29de6c7f3703abe3948cdb2106b9619b">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a463b152ce5782369efb7492be48882d1">ripple::NodeStore::NullBackend</a>.</p>
+
+</div>
+</div>
 <a id="ab07382d1cbb7d39fe7aacdbc17654861"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab07382d1cbb7d39fe7aacdbc17654861">&#9670;&nbsp;</a></span>backed()</h2>
 
@@ -575,7 +704,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00126">126</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00151">151</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

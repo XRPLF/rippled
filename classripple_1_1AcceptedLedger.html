@@ -119,8 +119,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae68f795c17045969e41207b4592eaf2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac651631a0fbae4e549bbbed93b793403"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1AcceptedLedgerTx.html#ad36697ab650cba915f16e2331bdf5b98">AcceptedLedgerTx::pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#ac651631a0fbae4e549bbbed93b793403">getTxn</a> (int) const</td></tr>
 <tr class="separator:ac651631a0fbae4e549bbbed93b793403"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa467f4f830fbd8c9ce73d854ec9ab269"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#aa467f4f830fbd8c9ce73d854ec9ab269">AcceptedLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;ledger, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;accountCache, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs)</td></tr>
-<tr class="separator:aa467f4f830fbd8c9ce73d854ec9ab269"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a837de50e96c45d3e0e5f248e0630e253"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">AcceptedLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;ledger, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
+<tr class="separator:a837de50e96c45d3e0e5f248e0630e253"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -222,8 +222,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aa467f4f830fbd8c9ce73d854ec9ab269"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa467f4f830fbd8c9ce73d854ec9ab269">&#9670;&nbsp;</a></span>AcceptedLedger()</h2>
+<a id="a837de50e96c45d3e0e5f248e0630e253"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a837de50e96c45d3e0e5f248e0630e253">&#9670;&nbsp;</a></span>AcceptedLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,14 +237,8 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
-          <td class="paramname"><em>accountCache</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;&#160;</td>
-          <td class="paramname"><em>logs</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -254,7 +248,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00026">26</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00027">27</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -332,7 +326,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00047">47</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00058">58</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +354,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00040">40</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00051">51</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -385,7 +379,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00083">83</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00082">82</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +403,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00084">84</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00083">83</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>

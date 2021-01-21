@@ -112,12 +112,20 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1dc8a4f932bb50366f9f967e5c35cb3a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a1dc8a4f932bb50366f9f967e5c35cb3a">fetch</a> (void const *, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; *) override</td></tr>
 <tr class="memdesc:a1dc8a4f932bb50366f9f967e5c35cb3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a single object.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#a1dc8a4f932bb50366f9f967e5c35cb3a">More...</a><br /></td></tr>
 <tr class="separator:a1dc8a4f932bb50366f9f967e5c35cb3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a131e97c3f271a6433b8c70802b1d134b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a131e97c3f271a6433b8c70802b1d134b">canFetchBatch</a> () override</td></tr>
+<tr class="memdesc:a131e97c3f271a6433b8c70802b1d134b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return <code>true</code> if batch fetches are optimized.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#a131e97c3f271a6433b8c70802b1d134b">More...</a><br /></td></tr>
+<tr class="separator:a131e97c3f271a6433b8c70802b1d134b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86ab86fa510d9ea92b79ba2738a2acf2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; &gt;, <a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a86ab86fa510d9ea92b79ba2738a2acf2">fetchBatch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const * &gt; const &amp;hashes) override</td></tr>
+<tr class="memdesc:a86ab86fa510d9ea92b79ba2738a2acf2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a batch synchronously.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#a86ab86fa510d9ea92b79ba2738a2acf2">More...</a><br /></td></tr>
+<tr class="separator:a86ab86fa510d9ea92b79ba2738a2acf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3d41ab83222e39efd5aaebf39160df8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#ad3d41ab83222e39efd5aaebf39160df8">store</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;object) override</td></tr>
 <tr class="memdesc:ad3d41ab83222e39efd5aaebf39160df8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a single object.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#ad3d41ab83222e39efd5aaebf39160df8">More...</a><br /></td></tr>
 <tr class="separator:ad3d41ab83222e39efd5aaebf39160df8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3d735a9706df0a50c08a2a737ebeb3d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#ac3d735a9706df0a50c08a2a737ebeb3d">storeBatch</a> (<a class="el" href="namespaceripple_1_1NodeStore.html#ae0e4b79f8eb3ffa0bf8fcaf848643202">Batch</a> const &amp;batch) override</td></tr>
 <tr class="memdesc:ac3d735a9706df0a50c08a2a737ebeb3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a group of objects.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#ac3d735a9706df0a50c08a2a737ebeb3d">More...</a><br /></td></tr>
 <tr class="separator:ac3d735a9706df0a50c08a2a737ebeb3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48f53c890d50d72621ebaa72cba3214f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a48f53c890d50d72621ebaa72cba3214f">sync</a> () override</td></tr>
+<tr class="separator:a48f53c890d50d72621ebaa72cba3214f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c5e9d556473e233e8db639f2b9f550a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a7c5e9d556473e233e8db639f2b9f550a">for_each</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt;)&gt; f) override</td></tr>
 <tr class="memdesc:a7c5e9d556473e233e8db639f2b9f550a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit every object in the database This is usually called during import.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#a7c5e9d556473e233e8db639f2b9f550a">More...</a><br /></td></tr>
 <tr class="separator:a7c5e9d556473e233e8db639f2b9f550a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,6 +141,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a13cce6549b2f525223a86a053d257e50"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a13cce6549b2f525223a86a053d257e50">fdRequired</a> () const override</td></tr>
 <tr class="memdesc:a13cce6549b2f525223a86a053d257e50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of file descriptors the backend expects to need.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#a13cce6549b2f525223a86a053d257e50">More...</a><br /></td></tr>
 <tr class="separator:a13cce6549b2f525223a86a053d257e50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a463b152ce5782369efb7492be48882d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a463b152ce5782369efb7492be48882d1">counters</a> () const override</td></tr>
+<tr class="separator:a463b152ce5782369efb7492be48882d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">backed</a> () const</td></tr>
 <tr class="memdesc:ab07382d1cbb7d39fe7aacdbc17654861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the backend uses permanent storage.  <a href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">More...</a><br /></td></tr>
 <tr class="separator:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -376,6 +386,69 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a131e97c3f271a6433b8c70802b1d134b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a131e97c3f271a6433b8c70802b1d134b">&#9670;&nbsp;</a></span>canFetchBatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::NodeStore::NullBackend::canFetchBatch </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return <code>true</code> if batch fetches are optimized. </p>
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">ripple::NodeStore::Backend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00064">64</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a86ab86fa510d9ea92b79ba2738a2acf2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86ab86fa510d9ea92b79ba2738a2acf2">&#9670;&nbsp;</a></span>fetchBatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1NodeObject.html">NodeObject</a>&gt; &gt;, <a class="el" href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">Status</a>&gt; ripple::NodeStore::NullBackend::fetchBatch </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const * &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>hashes</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Fetch a batch synchronously. </p>
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#aa772cdcdfaae28944eac29473bc3931a">ripple::NodeStore::Backend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00070">70</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+
+</div>
+</div>
 <a id="ad3d41ab83222e39efd5aaebf39160df8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad3d41ab83222e39efd5aaebf39160df8">&#9670;&nbsp;</a></span>store()</h2>
 
@@ -411,7 +484,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00064">64</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00076">76</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -444,7 +517,36 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00069">69</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00081">81</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a48f53c890d50d72621ebaa72cba3214f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48f53c890d50d72621ebaa72cba3214f">&#9670;&nbsp;</a></span>sync()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::NodeStore::NullBackend::sync </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a0756bdfe06dcb0382b47e23b39813394">ripple::NodeStore::Backend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00086">86</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -478,7 +580,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00074">74</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00091">91</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -509,7 +611,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ac4d7008b7a616ce05568da3e96a204ec">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00079">79</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00096">96</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -540,7 +642,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a898be5251e9216eb21938e3083c2d1ef">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00085">85</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00102">102</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -571,7 +673,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ad2c3057545b73aee8e671f127b0ae084">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00090">90</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00107">107</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -602,7 +704,36 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00096">96</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00113">113</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a463b152ce5782369efb7492be48882d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a463b152ce5782369efb7492be48882d1">&#9670;&nbsp;</a></span>counters()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> const&amp; ripple::NodeStore::NullBackend::counters </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a41f97b0e74956987f2954caa609d2af4">ripple::NodeStore::Backend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00119">119</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -631,7 +762,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00126">126</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00151">151</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>
