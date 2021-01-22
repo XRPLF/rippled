@@ -72,7 +72,7 @@ public:
             if (!cacheAge || *cacheAge == 0)
                 cacheAge = 5;
             cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
-                name,
+                "DatabaseNodeImp",
                 cacheSize.value(),
                 std::chrono::minutes{cacheAge.value()},
                 stopwatch(),

@@ -825,9 +825,8 @@ ReportingETL::doWork()
     });
 }
 
-ReportingETL::ReportingETL(Application& app, Stoppable& parent)
-    : Stoppable("ReportingETL", parent)
-    , app_(app)
+ReportingETL::ReportingETL(Application& app)
+    : app_(app)
     , journal_(app.journal("ReportingETL"))
     , publishStrand_(app_.getIOService())
     , loadBalancer_(*this)

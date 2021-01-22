@@ -450,7 +450,7 @@ public:
               std::chrono::milliseconds(100),
               get_io_service())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
-        , reportingETL_(std::make_unique<ReportingETL>(*this, *this))
+        , reportingETL_(std::make_unique<ReportingETL>(*this))
     {
         add(m_resourceManager.get());
 
@@ -1663,7 +1663,7 @@ ApplicationImp::setup()
 
     if (config_->reporting())
     {
-        reportingETL_->run();
+        reportingETL_->start();
     }
 
     return true;
@@ -1713,6 +1713,8 @@ ApplicationImp::run()
     // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
+    if (config_->reporting())
+        reportingETL_->stop();
     m_inboundLedgers->stop();
     m_inboundTransactions->stop();
     overlay_->stop();
