@@ -282,7 +282,6 @@ public:
         , pgPool_(
               config_->reporting() ? make_PgPool(
                                          config_->section("ledger_tx_tables"),
-                                         *this,
                                          logs_->journal("PgPool"))
                                    : nullptr)
 #endif
@@ -1714,7 +1713,12 @@ ApplicationImp::run()
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
     if (config_->reporting())
+    {
+#ifdef RIPPLED_REPORTING
+        pgPool_->stop();
+#endif
         reportingETL_->stop();
+    }
     m_inboundLedgers->stop();
     m_inboundTransactions->stop();
     overlay_->stop();
