@@ -1075,10 +1075,10 @@ public:
             shardStore_->stop();
         if (config_->reporting())
         {
+            reportingETL_->stop();
 #ifdef RIPPLED_REPORTING
             pgPool_->stop();
 #endif
-            reportingETL_->stop();
         }
         m_inboundLedgers->stop();
         m_inboundTransactions->stop();

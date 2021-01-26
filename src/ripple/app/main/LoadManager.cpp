@@ -110,7 +110,7 @@ LoadManager::run()
     {
         {
             t += 1s;
-            std::unique_lock<std::mutex> sl(mutex_);
+            std::unique_lock sl(mutex_);
             if (cv_.wait_until(sl, t, [this] { return stop_; }))
             {
                 break;

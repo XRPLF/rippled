@@ -33,11 +33,12 @@ namespace detail {
 class LedgerCleaner : public beast::PropertyStream::Source
 {
 protected:
-    LedgerCleaner();
+    LedgerCleaner() : beast::PropertyStream::Source("ledgercleaner")
+    {
+    }
 
 public:
-    /** Destroy the object. */
-    virtual ~LedgerCleaner() = 0;
+    virtual ~LedgerCleaner() = default;
 
     virtual void
     start() = 0;

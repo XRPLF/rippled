@@ -452,14 +452,6 @@ private:
     }
 };
 
-//------------------------------------------------------------------------------
-
-LedgerCleaner::LedgerCleaner() : beast::PropertyStream::Source("ledgercleaner")
-{
-}
-
-LedgerCleaner::~LedgerCleaner() = default;
-
 std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner(Application& app, beast::Journal journal)
 {
