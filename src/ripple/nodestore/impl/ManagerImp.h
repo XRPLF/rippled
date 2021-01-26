@@ -23,6 +23,7 @@
 #include <ripple/nodestore/Manager.h>
 
 namespace ripple {
+
 namespace NodeStore {
 
 class ManagerImp : public Manager

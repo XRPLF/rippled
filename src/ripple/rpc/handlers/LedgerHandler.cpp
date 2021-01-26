@@ -24,8 +24,10 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/handlers/LedgerHandler.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -40,7 +42,8 @@ LedgerHandler::check()
 {
     auto const& params = context_.params;
     bool needsLedger = params.isMember(jss::ledger) ||
-        params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index);
+        params.isMember(jss::ledger_hash) ||
+        params.isMember(jss::ledger_index) || context_.app.config().reporting();
     if (!needsLedger)
         return Status::OK;
 
@@ -98,4 +101,108 @@ LedgerHandler::check()
 }
 
 }  // namespace RPC
+
+std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
+doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
+{
+    org::xrpl::rpc::v1::GetLedgerRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerResponse response;
+    grpc::Status status = grpc::Status::OK;
+
+    std::shared_ptr<ReadView const> ledger;
+    if (RPC::ledgerFromRequest(ledger, context))
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        return {response, errorStatus};
+    }
+
+    Serializer s;
+    addRaw(ledger->info(), s, true);
+
+    response.set_ledger_header(s.peekData().data(), s.getLength());
+
+    if (request.transactions())
+    {
+        for (auto& i : ledger->txs)
+        {
+            assert(i.first);
+            if (request.expand())
+            {
+                auto txn =
+                    response.mutable_transactions_list()->add_transactions();
+                Serializer sTxn = i.first->getSerializer();
+                txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
+                if (i.second)
+                {
+                    Serializer sMeta = i.second->getSerializer();
+                    txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
+                }
+            }
+            else
+            {
+                auto const& hash = i.first->getTransactionID();
+                response.mutable_hashes_list()->add_hashes(
+                    hash.data(), hash.size());
+            }
+        }
+    }
+
+    if (request.get_objects())
+    {
+        std::shared_ptr<ReadView const> parent =
+            context.app.getLedgerMaster().getLedgerBySeq(ledger->seq() - 1);
+
+        std::shared_ptr<Ledger const> base =
+            std::dynamic_pointer_cast<Ledger const>(parent);
+        if (!base)
+        {
+            grpc::Status errorStatus{
+                grpc::StatusCode::NOT_FOUND, "parent ledger not validated"};
+            return {response, errorStatus};
+        }
+
+        std::shared_ptr<Ledger const> desired =
+            std::dynamic_pointer_cast<Ledger const>(ledger);
+        if (!desired)
+        {
+            grpc::Status errorStatus{
+                grpc::StatusCode::NOT_FOUND, "ledger not validated"};
+            return {response, errorStatus};
+        }
+        SHAMap::Delta differences;
+
+        int maxDifferences = std::numeric_limits<int>::max();
+
+        bool res = base->stateMap().compare(
+            desired->stateMap(), differences, maxDifferences);
+        if (!res)
+        {
+            grpc::Status errorStatus{
+                grpc::StatusCode::RESOURCE_EXHAUSTED,
+                "too many differences between specified ledgers"};
+            return {response, errorStatus};
+        }
+
+        for (auto& [k, v] : differences)
+        {
+            auto obj = response.mutable_ledger_objects()->add_objects();
+            auto inBase = v.first;
+            auto inDesired = v.second;
+
+            obj->set_key(k.data(), k.size());
+            if (inDesired)
+            {
+                assert(inDesired->size() > 0);
+                obj->set_data(inDesired->data(), inDesired->size());
+            }
+        }
+        response.set_skiplist_included(true);
+    }
+
+    response.set_validated(
+        RPC::isValidated(context.ledgerMaster, *ledger, context.app));
+
+    return {response, status};
+}
 }  // namespace ripple

@@ -161,7 +161,6 @@ checkPayment(
     AccountID const& srcAddressID,
     Role const role,
     Application& app,
-    std::shared_ptr<ReadView const> const& ledger,
     bool doPath)
 {
     // Only path find for Payments.
@@ -220,7 +219,8 @@ checkPayment(
                 return rpcError(rpcTOO_BUSY);
 
             STPathSet result;
-            if (ledger)
+
+            if (auto ledger = app.openLedger().current())
             {
                 Pathfinder pf(
                     std::make_shared<RippleLineCache>(ledger),
@@ -363,8 +363,7 @@ transactionPreProcessImpl(
     Role role,
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
-    Application& app,
-    std::shared_ptr<OpenView const> const& ledger)
+    Application& app)
 {
     auto j = app.journal("RPCHandler");
 
@@ -400,8 +399,9 @@ transactionPreProcessImpl(
     if (!verify && !tx_json.isMember(jss::Sequence))
         return RPC::missing_field_error("tx_json.Sequence");
 
-    std::shared_ptr<SLE const> sle =
-        ledger->read(keylet::account(srcAddressID));
+    std::shared_ptr<SLE const> sle;
+    if (verify)
+        sle = app.openLedger().current()->read(keylet::account(srcAddressID));
 
     if (verify && !sle)
     {
@@ -420,7 +420,7 @@ transactionPreProcessImpl(
             app.config(),
             app.getFeeTrack(),
             app.getTxQ(),
-            ledger);
+            app);
 
         if (RPC::contains_error(err))
             return err;
@@ -431,7 +431,6 @@ transactionPreProcessImpl(
             srcAddressID,
             role,
             app,
-            ledger,
             verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
@@ -667,7 +666,7 @@ checkFee(
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
-    std::shared_ptr<OpenView const> const& ledger)
+    Application const& app)
 {
     Json::Value& tx(request[jss::tx_json]);
     if (tx.isMember(jss::Fee))
@@ -720,6 +719,7 @@ checkFee(
     // Default fee in fee units.
     FeeUnit32 const feeDefault = config.TRANSACTION_FEE_BASE;
 
+    auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
     XRPAmount const loadFee =
         scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
@@ -769,18 +769,22 @@ transactionSign(
 {
     using namespace detail;
 
-    auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
+        jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
+    std::shared_ptr<const ReadView> ledger;
+    if (app.config().reporting())
+        ledger = app.getLedgerMaster().getValidatedLedger();
+    else
+        ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
@@ -810,7 +814,7 @@ transactionSubmit(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
+        jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -979,7 +983,7 @@ transactionSignFor(
         *signerAccountID, multiSignPubKey, multiSignature);
 
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
+        jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1085,13 +1089,12 @@ transactionSubmitMultiSigned(
             app.config(),
             app.getFeeTrack(),
             app.getTxQ(),
-            ledger);
+            app);
 
         if (RPC::contains_error(err))
             return err;
 
-        err = checkPayment(
-            jvRequest, tx_json, srcAddressID, role, app, ledger, false);
+        err = checkPayment(jvRequest, tx_json, srcAddressID, role, app, false);
 
         if (RPC::contains_error(err))
             return err;

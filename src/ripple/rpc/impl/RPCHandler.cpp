@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/contract.h>
@@ -190,9 +191,20 @@ callMethod(
         auto v =
             context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
 
+        auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);
+        auto end = std::chrono::system_clock::now();
+
+        JLOG(context.j.debug())
+            << "RPC call " << name << " completed in "
+            << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
         return ret;
+    }
+    catch (ReportingShouldProxy&)
+    {
+        result = forwardToP2p(context);
+        return rpcSUCCESS;
     }
     catch (std::exception& e)
     {
@@ -209,9 +221,36 @@ callMethod(
 
 }  // namespace
 
+void
+injectReportingWarning(RPC::JsonContext& context, Json::Value& result)
+{
+    if (context.app.config().reporting())
+    {
+        Json::Value warnings{Json::arrayValue};
+        Json::Value& w = warnings.append(Json::objectValue);
+        w[jss::id] = warnRPC_REPORTING;
+        w[jss::message] =
+            "This is a reporting server. "
+            " The default behavior of a reporting server is to only"
+            " return validated data. If you are looking for not yet"
+            " validated data, include \"ledger_index : current\""
+            " in your request, which will cause this server to forward"
+            " the request to a p2p node. If the forward is successful"
+            " the response will include \"forwarded\" : \"true\"";
+        result[jss::warnings] = std::move(warnings);
+    }
+}
+
 Status
 doCommand(RPC::JsonContext& context, Json::Value& result)
 {
+    if (shouldForwardToP2p(context))
+    {
+        result = forwardToP2p(context);
+        injectReportingWarning(context, result);
+        // this return value is ignored
+        return rpcSUCCESS;
+    }
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
@@ -240,7 +279,9 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
         }
         else
         {
-            return callMethod(context, method, handler->name_, result);
+            auto ret = callMethod(context, method, handler->name_, result);
+            injectReportingWarning(context, result);
+            return ret;
         }
     }
 

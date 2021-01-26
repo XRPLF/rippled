@@ -106,8 +106,8 @@ DatabaseRotatingImp::store(
         std::lock_guard lock(mutex_);
         return writableBackend_;
     }();
-    backend->store(nObj);
 
+    backend->store(nObj);
     storeStats(1, nObj->getData().size());
 }
 

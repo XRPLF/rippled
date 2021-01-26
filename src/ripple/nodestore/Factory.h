@@ -26,6 +26,7 @@
 #include <nudb/store.hpp>
 
 namespace ripple {
+
 namespace NodeStore {
 
 /** Base class for backend factories. */

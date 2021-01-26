@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/core/Pg.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -27,9 +29,117 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Role.h>
+#include <ripple/rpc/Status.h>
 #include <boost/format.hpp>
 
 namespace ripple {
+
+Json::Value
+doTxHistoryReporting(RPC::JsonContext& context)
+{
+    Json::Value ret;
+#ifdef RIPPLED_REPORTING
+    if (!context.app.config().reporting())
+    {
+        assert(false);
+        Throw<std::runtime_error>(
+            "called doTxHistoryReporting but not in reporting mode");
+    }
+    context.loadType = Resource::feeMediumBurdenRPC;
+
+    if (!context.params.isMember(jss::start))
+        return rpcError(rpcINVALID_PARAMS);
+
+    unsigned int startIndex = context.params[jss::start].asUInt();
+
+    if ((startIndex > 10000) && (!isUnlimited(context.role)))
+        return rpcError(rpcNO_PERMISSION);
+
+    std::string sql = boost::str(
+        boost::format("SELECT nodestore_hash, ledger_seq "
+                      "  FROM transactions"
+                      " ORDER BY ledger_seq DESC LIMIT 20 "
+                      "OFFSET %u;") %
+        startIndex);
+
+    auto res = PgQuery(context.app.getPgPool())(sql.data());
+
+    if (!res)
+    {
+        JLOG(context.j.error())
+            << __func__ << " : Postgres response is null - sql = " << sql;
+        assert(false);
+        return {};
+    }
+    else if (res.status() != PGRES_TUPLES_OK)
+    {
+        JLOG(context.j.error())
+            << __func__
+            << " : Postgres response should have been "
+               "PGRES_TUPLES_OK but instead was "
+            << res.status() << " - msg  = " << res.msg() << " - sql = " << sql;
+        assert(false);
+        return {};
+    }
+
+    JLOG(context.j.trace())
+        << __func__ << " Postgres result msg  : " << res.msg();
+
+    if (res.isNull() || res.ntuples() == 0)
+    {
+        JLOG(context.j.debug()) << __func__ << " : Empty postgres response";
+        assert(false);
+        return {};
+    }
+    else if (res.ntuples() > 0)
+    {
+        if (res.nfields() != 2)
+        {
+            JLOG(context.j.error()) << __func__
+                                    << " : Wrong number of fields in Postgres "
+                                       "response. Expected 1, but got "
+                                    << res.nfields() << " . sql = " << sql;
+            assert(false);
+            return {};
+        }
+    }
+
+    JLOG(context.j.trace())
+        << __func__ << " : Postgres result = " << res.c_str();
+
+    Json::Value txs;
+
+    std::vector<uint256> nodestoreHashes;
+    std::vector<uint32_t> ledgerSequences;
+    for (size_t i = 0; i < res.ntuples(); ++i)
+    {
+        uint256 hash;
+        if (!hash.parseHex(res.c_str(i, 0) + 2))
+            assert(false);
+        nodestoreHashes.push_back(hash);
+        ledgerSequences.push_back(res.asBigInt(i, 1));
+    }
+
+    auto txns = flatFetchTransactions(context.app, nodestoreHashes);
+    for (size_t i = 0; i < txns.size(); ++i)
+    {
+        auto const& [sttx, meta] = txns[i];
+        assert(sttx);
+
+        std::string reason;
+        auto txn = std::make_shared<Transaction>(sttx, reason, context.app);
+        txn->setLedger(ledgerSequences[i]);
+        txn->setStatus(COMMITTED);
+        txs.append(txn->getJson(JsonOptions::none));
+    }
+
+    ret[jss::index] = startIndex;
+    ret[jss::txs] = txs;
+    ret["used_postgres"] = true;
+
+#endif
+    return ret;
+}
 
 // {
 //   start: <index>
@@ -37,6 +147,11 @@ namespace ripple {
 Json::Value
 doTxHistory(RPC::JsonContext& context)
 {
+    if (!context.app.config().useTxTables())
+        return rpcError(rpcNOT_ENABLED);
+
+    if (context.app.config().reporting())
+        return doTxHistoryReporting(context);
     context.loadType = Resource::feeMediumBurdenRPC;
 
     if (!context.params.isMember(jss::start))

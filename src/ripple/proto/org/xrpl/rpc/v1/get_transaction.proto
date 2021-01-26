@@ -29,6 +29,8 @@ message GetTransactionRequest {
     // "txn not found. searched_all = [true,false]"
     // If the transaction was found, this parameter is ignored.
     LedgerRange ledger_range = 3;
+
+    string client_ip = 4;
 }
 
 // Next field: 9

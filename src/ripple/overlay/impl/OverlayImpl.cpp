@@ -658,12 +658,10 @@ OverlayImpl::onManifests(
     std::shared_ptr<protocol::TMManifests> const& m,
     std::shared_ptr<PeerImp> const& from)
 {
-    auto& hashRouter = app_.getHashRouter();
     auto const n = m->list_size();
     auto const& journal = from->pjournal();
 
-    JLOG(journal.debug()) << "TMManifest, " << n
-                          << (n == 1 ? " item" : " items");
+    protocol::TMManifests relay;
 
     for (std::size_t i = 0; i < n; ++i)
     {
@@ -671,20 +669,6 @@ OverlayImpl::onManifests(
 
         if (auto mo = deserializeManifest(s))
         {
-            uint256 const hash = mo->hash();
-            if (!hashRouter.addSuppressionPeer(hash, from->id()))
-            {
-                JLOG(journal.info()) << "Duplicate manifest #" << i + 1;
-                continue;
-            }
-
-            if (!app_.validators().listed(mo->masterKey))
-            {
-                JLOG(journal.info()) << "Untrusted manifest #" << i + 1;
-                app_.getOPs().pubManifest(*mo);
-                continue;
-            }
-
             auto const serialized = mo->serialized;
 
             auto const result =
@@ -692,43 +676,42 @@ OverlayImpl::onManifests(
 
             if (result == ManifestDisposition::accepted)
             {
-                app_.getOPs().pubManifest(*deserializeManifest(serialized));
-            }
+                relay.add_list()->set_stobject(s);
 
-            if (result == ManifestDisposition::accepted)
-            {
-                auto db = app_.getWalletDB().checkoutDb();
+                // N.B.: this is important; the applyManifest call above moves
+                //       the loaded Manifest out of the optional so we need to
+                //       reload it here.
+                mo = deserializeManifest(serialized);
+                assert(mo);
 
-                soci::transaction tr(*db);
-                static const char* const sql =
-                    "INSERT INTO ValidatorManifests (RawData) VALUES "
-                    "(:rawData);";
-                soci::blob rawData(*db);
-                convert(serialized, rawData);
-                *db << sql, soci::use(rawData);
-                tr.commit();
+                app_.getOPs().pubManifest(*mo);
 
-                protocol::TMManifests o;
-                o.add_list()->set_stobject(s);
+                if (app_.validators().listed(mo->masterKey))
+                {
+                    auto db = app_.getWalletDB().checkoutDb();
 
-                auto const toSkip = hashRouter.shouldRelay(hash);
-                if (toSkip)
-                    foreach(send_if_not(
-                        std::make_shared<Message>(o, protocol::mtMANIFESTS),
-                        peer_in_set(*toSkip)));
-            }
-            else
-            {
-                JLOG(journal.info())
-                    << "Bad manifest #" << i + 1 << ": " << to_string(result);
+                    soci::transaction tr(*db);
+                    static const char* const sql =
+                        "INSERT INTO ValidatorManifests (RawData) VALUES "
+                        "(:rawData);";
+                    soci::blob rawData(*db);
+                    convert(serialized, rawData);
+                    *db << sql, soci::use(rawData);
+                    tr.commit();
+                }
             }
         }
         else
         {
-            JLOG(journal.warn()) << "Malformed manifest #" << i + 1;
+            JLOG(journal.debug())
+                << "Malformed manifest #" << i + 1 << ": " << strHex(s);
             continue;
         }
     }
+
+    if (!relay.list().empty())
+        for_each([m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS)](
+                     std::shared_ptr<PeerImp>&& p) { p->send(m2); });
 }
 
 void

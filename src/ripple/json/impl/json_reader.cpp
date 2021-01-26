@@ -21,6 +21,7 @@
 #include <ripple/json/json_reader.h>
 #include <algorithm>
 #include <cctype>
+#include <istream>
 #include <string>
 
 namespace Json {

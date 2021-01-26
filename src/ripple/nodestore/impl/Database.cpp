@@ -20,8 +20,11 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/json/json_value.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/jss.h>
+#include <chrono>
 
 namespace ripple {
 namespace NodeStore {
@@ -310,6 +313,24 @@ Database::threadEntry()
                     fetchNodeObject(lastHash, req.first, FetchType::async));
         }
     }
+}
+
+void
+Database::getCountsJson(Json::Value& obj)
+{
+    assert(obj.isObject());
+    obj[jss::node_writes] = std::to_string(storeCount_);
+    obj[jss::node_reads_total] = std::to_string(fetchTotalCount_);
+    obj[jss::node_reads_hit] = std::to_string(fetchHitCount_);
+    obj[jss::node_written_bytes] = std::to_string(storeSz_);
+    obj[jss::node_read_bytes] = std::to_string(fetchSz_);
+    obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
+    auto const& c = getBackend().counters();
+    obj[jss::node_read_errors] = std::to_string(c.readErrors);
+    obj[jss::node_read_retries] = std::to_string(c.readRetries);
+    obj[jss::node_write_retries] = std::to_string(c.writeRetries);
+    obj[jss::node_writes_delayed] = std::to_string(c.writesDelayed);
+    obj[jss::node_writes_duration_us] = std::to_string(c.writeDurationUs);
 }
 
 }  // namespace NodeStore

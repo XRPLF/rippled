@@ -152,11 +152,17 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq) override;
 
+    void
+    sync() override{};
+
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
     void
     sweep() override;
+
+    Backend&
+    getBackend() override;
 
 private:
     enum class PathDesignation : uint8_t {

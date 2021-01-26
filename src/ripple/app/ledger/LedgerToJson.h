@@ -26,6 +26,7 @@
 #include <ripple/json/Object.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/Context.h>
 
 namespace ripple {
 
@@ -33,10 +34,11 @@ struct LedgerFill
 {
     LedgerFill(
         ReadView const& l,
+        RPC::Context* ctx,
         int o = 0,
         std::vector<TxQ::TxDetails> q = {},
         LedgerEntryType t = ltINVALID)
-        : ledger(l), options(o), txQueue(std::move(q)), type(t)
+        : ledger(l), options(o), txQueue(std::move(q)), type(t), context(ctx)
     {
     }
 
@@ -54,6 +56,7 @@ struct LedgerFill
     int options;
     std::vector<TxQ::TxDetails> txQueue;
     LedgerEntryType type;
+    RPC::Context* context;
 };
 
 /** Given a Ledger and options, fill a Json::Object or Json::Value with a
