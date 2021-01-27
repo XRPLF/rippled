@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1NodeStore_1_1LessThan.html" title="Binary function that satisfies the strict&#45;weak&#45;ordering requirement." alt="" coords="5,5,148,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1Factory.html" title="Base class for backend factories." alt="" coords="5,71,148,112"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryFactory.html" title=" " alt="" coords="196,5,339,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBFactory.html" title=" " alt="" coords="196,71,339,112"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullFactory.html" title=" " alt="" coords="196,136,339,177"/>
 </map>

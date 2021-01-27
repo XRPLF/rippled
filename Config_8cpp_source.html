@@ -600,304 +600,307 @@ $(function() {
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_COMPRESSION, strTemp, j_))</div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        COMPRESSION = beast::lexicalCastThrow&lt;bool&gt;(strTemp);</div>
 <div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160; </div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;    <span class="keywordflow">if</span> (exists(SECTION_REDUCE_RELAY))</div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;    {</div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;        <span class="keyword">auto</span> sec = section(SECTION_REDUCE_RELAY);</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;        VP_REDUCE_RELAY_ENABLE = sec.value_or(<span class="stringliteral">&quot;vp_enable&quot;</span>, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;        VP_REDUCE_RELAY_SQUELCH = sec.value_or(<span class="stringliteral">&quot;vp_squelch&quot;</span>, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;    }</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160; </div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))</div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;    {</div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;        MAX_TRANSACTIONS = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/clamp.html">std::clamp</a>(</div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;            beast::lexicalCastThrow&lt;int&gt;(strTemp),</div>
-<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;            MIN_JOB_QUEUE_TX,</div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;            MAX_JOB_QUEUE_TX);</div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    }</div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160; </div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))</div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;    {</div>
-<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">isProperlyFormedTomlDomain</a>(strTemp))</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        {</div>
-<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;                <span class="stringliteral">&quot;Invalid &quot;</span> SECTION_SERVER_DOMAIN</div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;                <span class="stringliteral">&quot;: the domain name does not appear to meet the requirements.&quot;</span>);</div>
-<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;        }</div>
-<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160; </div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        SERVER_DOMAIN = strTemp;</div>
-<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;    }</div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_LEDGER_REPLAY, strTemp, j_))</div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        LEDGER_REPLAY = beast::lexicalCastThrow&lt;bool&gt;(strTemp);</div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160; </div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;    <span class="keywordflow">if</span> (exists(SECTION_REDUCE_RELAY))</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;    {</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;        <span class="keyword">auto</span> sec = section(SECTION_REDUCE_RELAY);</div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;        VP_REDUCE_RELAY_ENABLE = sec.value_or(<span class="stringliteral">&quot;vp_enable&quot;</span>, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        VP_REDUCE_RELAY_SQUELCH = sec.value_or(<span class="stringliteral">&quot;vp_squelch&quot;</span>, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;    }</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160; </div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    {</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        MAX_TRANSACTIONS = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/clamp.html">std::clamp</a>(</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;            beast::lexicalCastThrow&lt;int&gt;(strTemp),</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;            MIN_JOB_QUEUE_TX,</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;            MAX_JOB_QUEUE_TX);</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;    }</div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160; </div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))</div>
+<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;    {</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">isProperlyFormedTomlDomain</a>(strTemp))</div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;        {</div>
+<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;                <span class="stringliteral">&quot;Invalid &quot;</span> SECTION_SERVER_DOMAIN</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;                <span class="stringliteral">&quot;: the domain name does not appear to meet the requirements.&quot;</span>);</div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        }</div>
 <div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160; </div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;    <span class="keywordflow">if</span> (exists(SECTION_OVERLAY))</div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;    {</div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sec = section(SECTION_OVERLAY);</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160; </div>
-<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;        <span class="keyword">using namespace </span><a class="codeRef" href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a>;</div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160; </div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        {</div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> val = sec.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;(<span class="stringliteral">&quot;max_unknown_time&quot;</span>))</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;                MAX_UNKNOWN_TIME =</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{beast::lexicalCastThrow&lt;std::uint32_t&gt;(*val)};</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;        }</div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;        <span class="keywordflow">catch</span> (...)</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;        {</div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_unknown_time&#39; in &quot;</span> SECTION_OVERLAY</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;                <span class="stringliteral">&quot;: must be of the form &#39;&lt;number&gt;&#39; representing seconds.&quot;</span>);</div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;        }</div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160; </div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;        <span class="keywordflow">if</span> (MAX_UNKNOWN_TIME &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{300} || MAX_UNKNOWN_TIME &gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{1800})</div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_unknown_time&#39; in &quot;</span> SECTION_OVERLAY</div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;                <span class="stringliteral">&quot;: the time must be between 300 and 1800 seconds, inclusive.&quot;</span>);</div>
-<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160; </div>
-<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;        {</div>
-<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> val = sec.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;(<span class="stringliteral">&quot;max_diverged_time&quot;</span>))</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;                MAX_DIVERGED_TIME =</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{beast::lexicalCastThrow&lt;std::uint32_t&gt;(*val)};</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        }</div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;        <span class="keywordflow">catch</span> (...)</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;        {</div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_diverged_time&#39; in &quot;</span> SECTION_OVERLAY</div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;                <span class="stringliteral">&quot;: must be of the form &#39;&lt;number&gt;&#39; representing seconds.&quot;</span>);</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;        }</div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160; </div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;        <span class="keywordflow">if</span> (MAX_DIVERGED_TIME &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{60} || MAX_DIVERGED_TIME &gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{900})</div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;        {</div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_diverged_time&#39; in &quot;</span> SECTION_OVERLAY</div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;                <span class="stringliteral">&quot;: the time must be between 60 and 900 seconds, inclusive.&quot;</span>);</div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        }</div>
-<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;    }</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160; </div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(</div>
-<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;            secConfig, SECTION_AMENDMENT_MAJORITY_TIME, strTemp, j_))</div>
-<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;    {</div>
-<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;        <span class="keyword">using namespace </span><a class="codeRef" href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a>;</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;        boost::regex <span class="keyword">const</span> re(</div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;            <span class="stringliteral">&quot;^\\s*(\\d+)\\s*(minutes|hours|days|weeks)\\s*(\\s+.*)?$&quot;</span>);</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        boost::smatch match;</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;        <span class="keywordflow">if</span> (!boost::regex_match(strTemp, match, re))</div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;                <span class="stringliteral">&quot;Invalid &quot;</span> SECTION_AMENDMENT_MAJORITY_TIME</div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;                <span class="stringliteral">&quot;, must be: [0-9]+ [minutes|hours|days|weeks]&quot;</span>);</div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160; </div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a> =</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            beast::lexicalCastThrow&lt;std::uint32_t&gt;(match[1].str());</div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;        SERVER_DOMAIN = strTemp;</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;    }</div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160; </div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    <span class="keywordflow">if</span> (exists(SECTION_OVERLAY))</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;    {</div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sec = section(SECTION_OVERLAY);</div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160; </div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        <span class="keyword">using namespace </span><a class="codeRef" href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a>;</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160; </div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;        {</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> val = sec.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;(<span class="stringliteral">&quot;max_unknown_time&quot;</span>))</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;                MAX_UNKNOWN_TIME =</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{beast::lexicalCastThrow&lt;std::uint32_t&gt;(*val)};</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;        }</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;        <span class="keywordflow">catch</span> (...)</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;        {</div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_unknown_time&#39; in &quot;</span> SECTION_OVERLAY</div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;                <span class="stringliteral">&quot;: must be of the form &#39;&lt;number&gt;&#39; representing seconds.&quot;</span>);</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;        }</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160; </div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;        <span class="keywordflow">if</span> (MAX_UNKNOWN_TIME &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{300} || MAX_UNKNOWN_TIME &gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{1800})</div>
+<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_unknown_time&#39; in &quot;</span> SECTION_OVERLAY</div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;                <span class="stringliteral">&quot;: the time must be between 300 and 1800 seconds, inclusive.&quot;</span>);</div>
+<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160; </div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;        {</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> val = sec.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;(<span class="stringliteral">&quot;max_diverged_time&quot;</span>))</div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;                MAX_DIVERGED_TIME =</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{beast::lexicalCastThrow&lt;std::uint32_t&gt;(*val)};</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;        }</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        <span class="keywordflow">catch</span> (...)</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        {</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_diverged_time&#39; in &quot;</span> SECTION_OVERLAY</div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;                <span class="stringliteral">&quot;: must be of the form &#39;&lt;number&gt;&#39; representing seconds.&quot;</span>);</div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;        }</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160; </div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;        <span class="keywordflow">if</span> (MAX_DIVERGED_TIME &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{60} || MAX_DIVERGED_TIME &gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">seconds</a>{900})</div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        {</div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;                <span class="stringliteral">&quot;Invalid value &#39;max_diverged_time&#39; in &quot;</span> SECTION_OVERLAY</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;                <span class="stringliteral">&quot;: the time must be between 60 and 900 seconds, inclusive.&quot;</span>);</div>
+<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;        }</div>
+<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;    }</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160; </div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;            secConfig, SECTION_AMENDMENT_MAJORITY_TIME, strTemp, j_))</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;    {</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        <span class="keyword">using namespace </span><a class="codeRef" href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a>;</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;        boost::regex <span class="keyword">const</span> re(</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;            <span class="stringliteral">&quot;^\\s*(\\d+)\\s*(minutes|hours|days|weeks)\\s*(\\s+.*)?$&quot;</span>);</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;        boost::smatch match;</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;        <span class="keywordflow">if</span> (!boost::regex_match(strTemp, match, re))</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;                <span class="stringliteral">&quot;Invalid &quot;</span> SECTION_AMENDMENT_MAJORITY_TIME</div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;                <span class="stringliteral">&quot;, must be: [0-9]+ [minutes|hours|days|weeks]&quot;</span>);</div>
 <div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160; </div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;        <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;minutes&quot;</span>))</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">minutes</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;hours&quot;</span>))</div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">hours</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;days&quot;</span>))</div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">days</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;weeks&quot;</span>))</div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">weeks</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160; </div>
-<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        <span class="keywordflow">if</span> (AMENDMENT_MAJORITY_TIME &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">minutes</a>(15))</div>
-<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;                <span class="stringliteral">&quot;Invalid &quot;</span> SECTION_AMENDMENT_MAJORITY_TIME</div>
-<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;                <span class="stringliteral">&quot;, the minimum amount of time an amendment must hold a &quot;</span></div>
-<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;                <span class="stringliteral">&quot;majority is 15 minutes&quot;</span>);</div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;    }</div>
-<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160; </div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;    <span class="comment">// Do not load trusted validator configuration for standalone mode</span></div>
-<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;    <span class="keywordflow">if</span> (!RUN_STANDALONE)</div>
-<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;    {</div>
-<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;        <span class="comment">// If a file was explicitly specified, then throw if the</span></div>
-<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;        <span class="comment">// path is malformed or if the file does not exist or is</span></div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;        <span class="comment">// not a file.</span></div>
-<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;        <span class="comment">// If the specified file is not an absolute path, then look</span></div>
-<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;        <span class="comment">// for it in the same directory as the config file.</span></div>
-<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;        <span class="comment">// If no path was specified, then look for validators.txt</span></div>
-<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;        <span class="comment">// in the same directory as the config file, but don&#39;t complain</span></div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;        <span class="comment">// if we can&#39;t find it.</span></div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;        boost::filesystem::path validatorsFile;</div>
-<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160; </div>
-<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))</div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;        {</div>
-<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;            validatorsFile = strTemp;</div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160; </div>
-<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;            <span class="keywordflow">if</span> (validatorsFile.empty())</div>
-<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;                    <span class="stringliteral">&quot;Invalid path specified in [&quot;</span> SECTION_VALIDATORS_FILE <span class="stringliteral">&quot;]&quot;</span>);</div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160; </div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            <span class="keywordflow">if</span> (!validatorsFile.is_absolute() &amp;&amp; !CONFIG_DIR.empty())</div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;                validatorsFile = CONFIG_DIR / validatorsFile;</div>
+<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a> =</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;            beast::lexicalCastThrow&lt;std::uint32_t&gt;(match[1].str());</div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160; </div>
+<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;minutes&quot;</span>))</div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">minutes</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;hours&quot;</span>))</div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">hours</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;days&quot;</span>))</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">days</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::iequals(match[2], <span class="stringliteral">&quot;weeks&quot;</span>))</div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;            AMENDMENT_MAJORITY_TIME = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">weeks</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">duration</a>);</div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160; </div>
+<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;        <span class="keywordflow">if</span> (AMENDMENT_MAJORITY_TIME &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">minutes</a>(15))</div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;                <span class="stringliteral">&quot;Invalid &quot;</span> SECTION_AMENDMENT_MAJORITY_TIME</div>
+<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                <span class="stringliteral">&quot;, the minimum amount of time an amendment must hold a &quot;</span></div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                <span class="stringliteral">&quot;majority is 15 minutes&quot;</span>);</div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;    }</div>
+<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160; </div>
+<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;    <span class="comment">// Do not load trusted validator configuration for standalone mode</span></div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;    <span class="keywordflow">if</span> (!RUN_STANDALONE)</div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;    {</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;        <span class="comment">// If a file was explicitly specified, then throw if the</span></div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;        <span class="comment">// path is malformed or if the file does not exist or is</span></div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;        <span class="comment">// not a file.</span></div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;        <span class="comment">// If the specified file is not an absolute path, then look</span></div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;        <span class="comment">// for it in the same directory as the config file.</span></div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;        <span class="comment">// If no path was specified, then look for validators.txt</span></div>
+<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;        <span class="comment">// in the same directory as the config file, but don&#39;t complain</span></div>
+<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;        <span class="comment">// if we can&#39;t find it.</span></div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;        boost::filesystem::path validatorsFile;</div>
+<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160; </div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a05f64c994be0ceeaa62818bdcf1e7bcb">getSingleSection</a>(secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))</div>
+<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;        {</div>
+<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;            validatorsFile = strTemp;</div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160; </div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;            <span class="keywordflow">if</span> (validatorsFile.empty())</div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;                    <span class="stringliteral">&quot;Invalid path specified in [&quot;</span> SECTION_VALIDATORS_FILE <span class="stringliteral">&quot;]&quot;</span>);</div>
 <div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160; </div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;            <span class="keywordflow">if</span> (!boost::filesystem::exists(validatorsFile))</div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;                    <span class="stringliteral">&quot;The file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;                    <span class="stringliteral">&quot;] &quot;</span></div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;                    <span class="stringliteral">&quot;does not exist: &quot;</span> +</div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;                    validatorsFile.string());</div>
-<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160; </div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
-<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;                !boost::filesystem::is_regular_file(validatorsFile) &amp;&amp;</div>
-<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;                !boost::filesystem::is_symlink(validatorsFile))</div>
-<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;                    <span class="stringliteral">&quot;Invalid file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
-<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;                    <span class="stringliteral">&quot;]: &quot;</span> +</div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;                    validatorsFile.string());</div>
-<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;        }</div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!CONFIG_DIR.empty())</div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;        {</div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;            validatorsFile = CONFIG_DIR / validatorsFileName;</div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160; </div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            <span class="keywordflow">if</span> (!validatorsFile.empty())</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            {</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;                <span class="keywordflow">if</span> (!boost::filesystem::exists(validatorsFile))</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;                    validatorsFile.clear();</div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                    !boost::filesystem::is_regular_file(validatorsFile) &amp;&amp;</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                    !boost::filesystem::is_symlink(validatorsFile))</div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                    validatorsFile.clear();</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;            }</div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;        }</div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160; </div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;        <span class="keywordflow">if</span> (!validatorsFile.empty() &amp;&amp;</div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;            boost::filesystem::exists(validatorsFile) &amp;&amp;</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;            (boost::filesystem::is_regular_file(validatorsFile) ||</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;             boost::filesystem::is_symlink(validatorsFile)))</div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;        {</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            boost::system::error_code ec;</div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> data = <a class="code" href="namespaceripple.html#ab2a02635f3d304617a7b59a60d13cc3b">getFileContents</a>(ec, validatorsFile);</div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;            {</div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;                    <span class="stringliteral">&quot;Failed to read &#39;&quot;</span> + validatorsFile.string() + <span class="stringliteral">&quot;&#39;.&quot;</span> +</div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(ec.value()) + <span class="stringliteral">&quot;: &quot;</span> + ec.message());</div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;            }</div>
-<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160; </div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;            <span class="keyword">auto</span> iniFile = <a class="code" href="namespaceripple.html#ac16c784f889217c1c11e06e0c7dd9b21">parseIniFile</a>(data, <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160; </div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;            <span class="keyword">auto</span> entries = <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATORS);</div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160; </div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;            <span class="keywordflow">if</span> (entries)</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;                section(SECTION_VALIDATORS).append(*entries);</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;            <span class="keywordflow">if</span> (!validatorsFile.is_absolute() &amp;&amp; !CONFIG_DIR.empty())</div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;                validatorsFile = CONFIG_DIR / validatorsFile;</div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160; </div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;            <span class="keywordflow">if</span> (!boost::filesystem::exists(validatorsFile))</div>
+<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;                    <span class="stringliteral">&quot;The file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
+<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;                    <span class="stringliteral">&quot;] &quot;</span></div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;                    <span class="stringliteral">&quot;does not exist: &quot;</span> +</div>
+<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;                    validatorsFile.string());</div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160; </div>
+<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;                !boost::filesystem::is_regular_file(validatorsFile) &amp;&amp;</div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;                !boost::filesystem::is_symlink(validatorsFile))</div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;                    <span class="stringliteral">&quot;Invalid file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;                    <span class="stringliteral">&quot;]: &quot;</span> +</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;                    validatorsFile.string());</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;        }</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!CONFIG_DIR.empty())</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;        {</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            validatorsFile = CONFIG_DIR / validatorsFileName;</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160; </div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;            <span class="keywordflow">if</span> (!validatorsFile.empty())</div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;            {</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                <span class="keywordflow">if</span> (!boost::filesystem::exists(validatorsFile))</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                    validatorsFile.clear();</div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;                    !boost::filesystem::is_regular_file(validatorsFile) &amp;&amp;</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;                    !boost::filesystem::is_symlink(validatorsFile))</div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;                    validatorsFile.clear();</div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;            }</div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;        }</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160; </div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;        <span class="keywordflow">if</span> (!validatorsFile.empty() &amp;&amp;</div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;            boost::filesystem::exists(validatorsFile) &amp;&amp;</div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            (boost::filesystem::is_regular_file(validatorsFile) ||</div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;             boost::filesystem::is_symlink(validatorsFile)))</div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;        {</div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;            boost::system::error_code ec;</div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> data = <a class="code" href="namespaceripple.html#ab2a02635f3d304617a7b59a60d13cc3b">getFileContents</a>(ec, validatorsFile);</div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            {</div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;                    <span class="stringliteral">&quot;Failed to read &#39;&quot;</span> + validatorsFile.string() + <span class="stringliteral">&quot;&#39;.&quot;</span> +</div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(ec.value()) + <span class="stringliteral">&quot;: &quot;</span> + ec.message());</div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;            }</div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160; </div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            <span class="keyword">auto</span> iniFile = <a class="code" href="namespaceripple.html#ac16c784f889217c1c11e06e0c7dd9b21">parseIniFile</a>(data, <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160; </div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;            <span class="keyword">auto</span> entries = <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATORS);</div>
 <div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160; </div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            <span class="keyword">auto</span> valKeyEntries =</div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;                <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_KEYS);</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            <span class="keywordflow">if</span> (entries)</div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;                section(SECTION_VALIDATORS).append(*entries);</div>
 <div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160; </div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;            <span class="keywordflow">if</span> (valKeyEntries)</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;                section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);</div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;            <span class="keyword">auto</span> valKeyEntries =</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;                <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_KEYS);</div>
 <div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160; </div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;            <span class="keyword">auto</span> valSiteEntries =</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;                <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_LIST_SITES);</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;            <span class="keywordflow">if</span> (valKeyEntries)</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;                section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);</div>
 <div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160; </div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;            <span class="keywordflow">if</span> (valSiteEntries)</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;                section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;            <span class="keyword">auto</span> valSiteEntries =</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;                <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_LIST_SITES);</div>
 <div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;            <span class="keyword">auto</span> valListKeys =</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;                <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_LIST_KEYS);</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;            <span class="keywordflow">if</span> (valSiteEntries)</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;                section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);</div>
 <div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160; </div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;            <span class="keywordflow">if</span> (valListKeys)</div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;                section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;            <span class="keyword">auto</span> valListKeys =</div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;                <a class="code" href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_LIST_KEYS);</div>
 <div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160; </div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;            <span class="keywordflow">if</span> (!entries &amp;&amp; !valKeyEntries &amp;&amp; !valListKeys)</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;                    <span class="stringliteral">&quot;The file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;                    <span class="stringliteral">&quot;] &quot;</span></div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                    <span class="stringliteral">&quot;does not contain a [&quot;</span> SECTION_VALIDATORS</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                    <span class="stringliteral">&quot;], &quot;</span></div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_KEYS</div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;                    <span class="stringliteral">&quot;] or &quot;</span></div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_LIST_KEYS</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                    <span class="stringliteral">&quot;]&quot;</span></div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                    <span class="stringliteral">&quot; section: &quot;</span> +</div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                    validatorsFile.string());</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;        }</div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160; </div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;        <span class="comment">// Consolidate [validator_keys] and [validators]</span></div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        section(SECTION_VALIDATORS)</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;            .append(section(SECTION_VALIDATOR_KEYS).lines());</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160; </div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        <span class="keywordflow">if</span> (!section(SECTION_VALIDATOR_LIST_SITES).lines().empty() &amp;&amp;</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;            section(SECTION_VALIDATOR_LIST_KEYS).lines().empty())</div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        {</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;                <span class="stringliteral">&quot;[&quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(SECTION_VALIDATOR_LIST_KEYS) +</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;                <span class="stringliteral">&quot;] config section is missing&quot;</span>);</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;        }</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;    }</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160; </div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;    {</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> part = section(<span class="stringliteral">&quot;features&quot;</span>);</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; s : part.values())</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;        {</div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> f = <a class="code" href="namespaceripple.html#a861d92d077665813aa32ad566b4b21fa">getRegisteredFeature</a>(s))</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;                features.insert(*f);</div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;                    <span class="stringliteral">&quot;Unknown feature: &quot;</span> + s + <span class="stringliteral">&quot;  in config file.&quot;</span>);</div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;        }</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;    }</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160; </div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;    <span class="comment">// This doesn&#39;t properly belong here, but check to make sure that the</span></div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;    <span class="comment">// value specified for network_quorum is achievable:</span></div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;    {</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;        <span class="keyword">auto</span> pm = PEERS_MAX;</div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160; </div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;        <span class="comment">// FIXME this apparently magic value is actually defined as a constant</span></div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;        <span class="comment">//       elsewhere (see defaultMaxPeers) but we handle this check here.</span></div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;        <span class="keywordflow">if</span> (pm == 0)</div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;            pm = 21;</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160; </div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;        <span class="keywordflow">if</span> (NETWORK_QUORUM &gt; pm)</div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;        {</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;                <span class="stringliteral">&quot;The minimum number of required peers (network_quorum) exceeds &quot;</span></div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;                <span class="stringliteral">&quot;the maximum number of allowed peers (peers_max)&quot;</span>);</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;        }</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;    }</div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;}</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160; </div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;boost::filesystem::path</div>
-<div class="line"><a name="l00787"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">  787</a></span>&#160;Config::getDebugLogFile()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;    <span class="keyword">auto</span> log_file = DEBUG_LOGFILE;</div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160; </div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;    <span class="keywordflow">if</span> (!log_file.empty() &amp;&amp; !log_file.is_absolute())</div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;    {</div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;        <span class="comment">// Unless an absolute path for the log file is specified, the</span></div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;        <span class="comment">// path is relative to the config file directory.</span></div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;        log_file = boost::filesystem::absolute(log_file, CONFIG_DIR);</div>
-<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;    }</div>
-<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160; </div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;    <span class="keywordflow">if</span> (!log_file.empty())</div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;    {</div>
-<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;        <span class="keyword">auto</span> log_dir = log_file.parent_path();</div>
-<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160; </div>
-<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;        <span class="keywordflow">if</span> (!boost::filesystem::is_directory(log_dir))</div>
-<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;        {</div>
-<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;            boost::system::error_code ec;</div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;            boost::filesystem::create_directories(log_dir, ec);</div>
-<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160; </div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;            <span class="comment">// If we fail, we warn but continue so that the calling code can</span></div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;            <span class="comment">// decide how to handle this situation.</span></div>
-<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;            {</div>
-<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Unable to create log file path &quot;</span> &lt;&lt; log_dir</div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;            }</div>
-<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;        }</div>
-<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;    }</div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160; </div>
-<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;    <span class="keywordflow">return</span> log_file;</div>
-<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;}</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;            <span class="keywordflow">if</span> (valListKeys)</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160; </div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;            <span class="keywordflow">if</span> (!entries &amp;&amp; !valKeyEntries &amp;&amp; !valListKeys)</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                    <span class="stringliteral">&quot;The file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                    <span class="stringliteral">&quot;] &quot;</span></div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;                    <span class="stringliteral">&quot;does not contain a [&quot;</span> SECTION_VALIDATORS</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                    <span class="stringliteral">&quot;], &quot;</span></div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_KEYS</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                    <span class="stringliteral">&quot;] or &quot;</span></div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_LIST_KEYS</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                    <span class="stringliteral">&quot;]&quot;</span></div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;                    <span class="stringliteral">&quot; section: &quot;</span> +</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;                    validatorsFile.string());</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        }</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160; </div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;        <span class="comment">// Consolidate [validator_keys] and [validators]</span></div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        section(SECTION_VALIDATORS)</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;            .append(section(SECTION_VALIDATOR_KEYS).lines());</div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160; </div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;        <span class="keywordflow">if</span> (!section(SECTION_VALIDATOR_LIST_SITES).lines().empty() &amp;&amp;</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;            section(SECTION_VALIDATOR_LIST_KEYS).lines().empty())</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;        {</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;                <span class="stringliteral">&quot;[&quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(SECTION_VALIDATOR_LIST_KEYS) +</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;                <span class="stringliteral">&quot;] config section is missing&quot;</span>);</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;        }</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;    }</div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160; </div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;    {</div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> part = section(<span class="stringliteral">&quot;features&quot;</span>);</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; s : part.values())</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;        {</div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> f = <a class="code" href="namespaceripple.html#a861d92d077665813aa32ad566b4b21fa">getRegisteredFeature</a>(s))</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;                features.insert(*f);</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;                    <span class="stringliteral">&quot;Unknown feature: &quot;</span> + s + <span class="stringliteral">&quot;  in config file.&quot;</span>);</div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;        }</div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;    }</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160; </div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;    <span class="comment">// This doesn&#39;t properly belong here, but check to make sure that the</span></div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;    <span class="comment">// value specified for network_quorum is achievable:</span></div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;    {</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;        <span class="keyword">auto</span> pm = PEERS_MAX;</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160; </div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;        <span class="comment">// FIXME this apparently magic value is actually defined as a constant</span></div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;        <span class="comment">//       elsewhere (see defaultMaxPeers) but we handle this check here.</span></div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;        <span class="keywordflow">if</span> (pm == 0)</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;            pm = 21;</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160; </div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;        <span class="keywordflow">if</span> (NETWORK_QUORUM &gt; pm)</div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;        {</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;                <span class="stringliteral">&quot;The minimum number of required peers (network_quorum) exceeds &quot;</span></div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;                <span class="stringliteral">&quot;the maximum number of allowed peers (peers_max)&quot;</span>);</div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;        }</div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;    }</div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;}</div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160; </div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;boost::filesystem::path</div>
+<div class="line"><a name="l00790"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">  790</a></span>&#160;Config::getDebugLogFile()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;    <span class="keyword">auto</span> log_file = DEBUG_LOGFILE;</div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160; </div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;    <span class="keywordflow">if</span> (!log_file.empty() &amp;&amp; !log_file.is_absolute())</div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;    {</div>
+<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;        <span class="comment">// Unless an absolute path for the log file is specified, the</span></div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;        <span class="comment">// path is relative to the config file directory.</span></div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;        log_file = boost::filesystem::absolute(log_file, CONFIG_DIR);</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;    }</div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160; </div>
+<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;    <span class="keywordflow">if</span> (!log_file.empty())</div>
+<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;    {</div>
+<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;        <span class="keyword">auto</span> log_dir = log_file.parent_path();</div>
+<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160; </div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;        <span class="keywordflow">if</span> (!boost::filesystem::is_directory(log_dir))</div>
+<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;        {</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;            boost::system::error_code ec;</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;            boost::filesystem::create_directories(log_dir, ec);</div>
+<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160; </div>
+<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;            <span class="comment">// If we fail, we warn but continue so that the calling code can</span></div>
+<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;            <span class="comment">// decide how to handle this situation.</span></div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;            <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;            {</div>
+<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Unable to create log file path &quot;</span> &lt;&lt; log_dir</div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;            }</div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;        }</div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;    }</div>
 <div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160; </div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;<span class="keywordtype">int</span></div>
-<div class="line"><a name="l00821"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#aaa6a41c4bde1f4a893ec927ecadea014">  821</a></span>&#160;Config::getValueFor(<a class="code" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a> item, boost::optional&lt;std::size_t&gt; node)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> index = <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;SizedItem&gt;</a><span class="keyword">&gt;</span>(item);</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;    assert(index &lt; <a class="code" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a>.size());</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    assert(!node || *node &lt;= 4);</div>
-<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a>.at(index).second.at(node.value_or(NODE_SIZE));</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;}</div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160; </div>
-<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    <span class="keywordflow">return</span> log_file;</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;}</div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160; </div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;<span class="keywordtype">int</span></div>
+<div class="line"><a name="l00824"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#aaa6a41c4bde1f4a893ec927ecadea014">  824</a></span>&#160;Config::getValueFor(<a class="code" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a> item, boost::optional&lt;std::size_t&gt; node)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> index = <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;SizedItem&gt;</a><span class="keyword">&gt;</span>(item);</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;    assert(index &lt; <a class="code" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a>.size());</div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;    assert(!node || *node &lt;= 4);</div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a>.at(index).second.at(node.value_or(NODE_SIZE));</div>
+<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;}</div>
+<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160; </div>
+<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a1b38e742ac7fe4c3a80a397e06b83dcba1f6a5079a4330adbc050540a9e9b5bdf"><div class="ttname"><a href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba1f6a5079a4330adbc050540a9e9b5bdf">ripple::SizedItem::openFinalLimit</a></div><div class="ttdeci">@ openFinalLimit</div></div>
 <div class="ttc" id="aclassripple_1_1Section_html"><div class="ttname"><a href="classripple_1_1Section.html">ripple::Section</a></div><div class="ttdoc">Holds a collection of configuration values.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00043">BasicConfig.h:43</a></div></div>
@@ -947,7 +950,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_aff7c8cef22d2cfb5f7f1a5ffa2f25e90"><div class="ttname"><a href="namespaceripple.html#aff7c8cef22d2cfb5f7f1a5ffa2f25e90">ripple::getIniFileSection</a></div><div class="ttdeci">IniFileSections::mapped_type * getIniFileSection(IniFileSections &amp;secSource, std::string const &amp;strSection)</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00136">Config.cpp:136</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1b38e742ac7fe4c3a80a397e06b83dcbaf7624c41fe90d862b7797d38a7f0eb49"><div class="ttname"><a href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaf7624c41fe90d862b7797d38a7f0eb49">ripple::SizedItem::ledgerAge</a></div><div class="ttdeci">@ ledgerAge</div></div>
 <div class="ttc" id="anamespaceripple_html_a055e8fa202b98cbf0b9abb812e093b4e"><div class="ttname"><a href="namespaceripple.html#a055e8fa202b98cbf0b9abb812e093b4e">ripple::IniFileSections</a></div><div class="ttdeci">std::map&lt; std::string, std::vector&lt; std::string &gt; &gt; IniFileSections</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00036">BasicConfig.h:36</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a861d92d077665813aa32ad566b4b21fa"><div class="ttname"><a href="namespaceripple.html#a861d92d077665813aa32ad566b4b21fa">ripple::getRegisteredFeature</a></div><div class="ttdeci">boost::optional&lt; uint256 &gt; getRegisteredFeature(std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00143">Feature.cpp:143</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a861d92d077665813aa32ad566b4b21fa"><div class="ttname"><a href="namespaceripple.html#a861d92d077665813aa32ad566b4b21fa">ripple::getRegisteredFeature</a></div><div class="ttdeci">boost::optional&lt; uint256 &gt; getRegisteredFeature(std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00145">Feature.cpp:145</a></div></div>
 <div class="ttc" id="anamespacestd_1_1chrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

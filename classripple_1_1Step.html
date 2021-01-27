@@ -108,6 +108,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a092c3b7efb3668303c4ee7adf4113a69"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; boost::optional&lt; Quality &gt;, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a092c3b7efb3668303c4ee7adf4113a69">qualityUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;v, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> prevStepDir) const =0</td></tr>
 <tr class="memdesc:a092c3b7efb3668303c4ee7adf4113a69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an upper bound of quality for the step.  <a href="classripple_1_1Step.html#a092c3b7efb3668303c4ee7adf4113a69">More...</a><br /></td></tr>
 <tr class="separator:a092c3b7efb3668303c4ee7adf4113a69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c0b0fb5f0e476dfee59b2a085f34a93"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a8c0b0fb5f0e476dfee59b2a085f34a93">offersUsed</a> () const</td></tr>
+<tr class="memdesc:a8c0b0fb5f0e476dfee59b2a085f34a93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the number of offers consumed or partially consumed the last time the step ran, including expired and unfunded offers.  <a href="classripple_1_1Step.html#a8c0b0fb5f0e476dfee59b2a085f34a93">More...</a><br /></td></tr>
+<tr class="separator:a8c0b0fb5f0e476dfee59b2a085f34a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e2523f5403b4e921c6338c02bdfac70"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="classripple_1_1Book.html">Book</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a0e2523f5403b4e921c6338c02bdfac70">bookStepBook</a> () const</td></tr>
 <tr class="memdesc:a0e2523f5403b4e921c6338c02bdfac70"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is a <a class="el" href="classripple_1_1BookStep.html">BookStep</a>, return the book.  <a href="classripple_1_1Step.html#a0e2523f5403b4e921c6338c02bdfac70">More...</a><br /></td></tr>
 <tr class="separator:a0e2523f5403b4e921c6338c02bdfac70"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -535,6 +538,36 @@ Friends</h2></td></tr>
 
 </div>
 </div>
+<a id="a8c0b0fb5f0e476dfee59b2a085f34a93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c0b0fb5f0e476dfee59b2a085f34a93">&#9670;&nbsp;</a></span>offersUsed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::Step::offersUsed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return the number of offers consumed or partially consumed the last time the step ran, including expired and unfunded offers. </p>
+<p>N.B. This this not the total number offers consumed by this step for the entire payment, it is only the number the last time it ran. Offers may be partially consumed multiple times during a payment. </p>
+
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00199">199</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+
+</div>
+</div>
 <a id="a0e2523f5403b4e921c6338c02bdfac70"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0e2523f5403b4e921c6338c02bdfac70">&#9670;&nbsp;</a></span>bookStepBook()</h2>
 
@@ -560,7 +593,7 @@ Friends</h2></td></tr>
 
 <p>If this step is a <a class="el" href="classripple_1_1BookStep.html">BookStep</a>, return the book. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00195">195</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00208">208</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -618,7 +651,7 @@ Friends</h2></td></tr>
 <p>Return true if the step should be considered inactive. </p>
 <p>A strand that has additional liquidity may be marked inactive if a step has consumed too many offers. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00212">212</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00225">225</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -847,7 +880,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if lhs == rhs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00249">249</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00262">262</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -895,7 +928,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if lhs != rhs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00261">261</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00274">274</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -935,7 +968,7 @@ Friends</h2></td></tr>
 
 <p>Streaming operator for a <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00268">268</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00281">281</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>

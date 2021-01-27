@@ -213,10 +213,22 @@ $(function() {
 <div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                                         : TrafficCount::category::get_hash;</div>
 <div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    }</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">return</span> TrafficCount::category::unknown;</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;}</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">if</span> (type == protocol::mtPROOF_PATH_REQ)</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="keywordflow">return</span> TrafficCount::category::proof_path_request;</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordflow">if</span> (type == protocol::mtPROOF_PATH_RESPONSE)</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="keywordflow">return</span> TrafficCount::category::proof_path_response;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">if</span> (type == protocol::mtREPLAY_DELTA_REQ)</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">return</span> TrafficCount::category::replay_delta_request;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="keywordflow">if</span> (type == protocol::mtREPLAY_DELTA_RESPONSE)</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        <span class="keywordflow">return</span> TrafficCount::category::replay_delta_response;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordflow">return</span> TrafficCount::category::unknown;</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;}</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1TrafficCount_html_a767cf7049eb44fdcb32a5634031ae09f"><div class="ttname"><a href="classripple_1_1TrafficCount.html#a767cf7049eb44fdcb32a5634031ae09f">ripple::TrafficCount::categorize</a></div><div class="ttdeci">static category categorize(::google::protobuf::Message const &amp;message, int type, bool inbound)</div><div class="ttdoc">Given a protocol message, determine which traffic category it belongs to.</div><div class="ttdef"><b>Definition:</b> <a href="TrafficCount_8cpp_source.html#l00025">TrafficCount.cpp:25</a></div></div>
 <div class="ttc" id="aclassripple_1_1TrafficCount_html_adbaee77c7a063c9aac783e54594aeda7"><div class="ttname"><a href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">ripple::TrafficCount::category</a></div><div class="ttdeci">category</div><div class="ttdef"><b>Definition:</b> <a href="TrafficCount_8h_source.html#l00067">TrafficCount.h:67</a></div></div>

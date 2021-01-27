@@ -1,6 +1,6 @@
 <map id="ripple::InboundLedger" name="ripple::InboundLedger">
 <area shape="rect" id="node1" title=" " alt="" coords="271,64,433,91"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="55,5,173,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="28,5,200,32"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,223,98"/>
 <area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="33,122,195,163"/>
 </map>

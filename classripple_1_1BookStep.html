@@ -92,18 +92,18 @@ Collaboration diagram for ripple::BookStep&lt; TIn, TOut, TDerived &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1BookStep__coll__graph.png" border="0" usemap="#ripple_1_1BookStep_3_01TIn_00_01TOut_00_01TDerived_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1BookStep_3_01TIn_00_01TOut_00_01TDerived_01_4_coll__map" id="ripple_1_1BookStep_3_01TIn_00_01TOut_00_01TDerived_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="1355,129,1523,170"/>
-<area shape="rect" title=" " alt="" coords="1071,5,1237,61"/>
-<area shape="rect" href="classripple_1_1Step.html" title="A step in a payment path." alt="" coords="1106,85,1202,112"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1099,136,1209,163"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="803,127,949,153"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="487,227,693,269"/>
-<area shape="rect" href="classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="825,187,927,213"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,134,389,175"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="491,150,689,191"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,141,108,168"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,253,349,280"/>
-<area shape="rect" href="classripple_1_1Book.html" title="Specifies an order book." alt="" coords="1104,187,1204,213"/>
+<area shape="rect" title=" " alt="" coords="1375,151,1543,193"/>
+<area shape="rect" title=" " alt="" coords="1091,5,1257,61"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,163,108,189"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,233,389,274"/>
+<area shape="rect" href="classripple_1_1Step.html" title="A step in a payment path." alt="" coords="1126,136,1222,163"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1119,187,1229,213"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="823,177,969,204"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="487,273,693,314"/>
+<area shape="rect" href="classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="845,237,947,264"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="491,201,689,242"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,159,349,185"/>
+<area shape="rect" href="classripple_1_1Book.html" title="Specifies an order book." alt="" coords="1124,237,1224,264"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -128,6 +128,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7f88b34828b85be65b43763eb30e5aeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c85b65cf273a40c1bec886fa1487e4d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; boost::optional&lt; Quality &gt;, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#a6c85b65cf273a40c1bec886fa1487e4d">qualityUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;v, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> prevStepDir) const override</td></tr>
 <tr class="separator:a6c85b65cf273a40c1bec886fa1487e4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2361abd05389001f3c40e19fa667b289"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#a2361abd05389001f3c40e19fa667b289">offersUsed</a> () const override</td></tr>
+<tr class="separator:a2361abd05389001f3c40e19fa667b289"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2b69d5c94b1303c7554eadcb0a4b759"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; TIn, TOut &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#aa2b69d5c94b1303c7554eadcb0a4b759">revImp</a> (<a class="el" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> &amp;sb, <a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;afView, boost::container::flat_set&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; &amp;ofrsToRm, TOut const &amp;out)</td></tr>
 <tr class="separator:aa2b69d5c94b1303c7554eadcb0a4b759"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac360725d48ffbe2a589ae0f4ca23c569"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; TIn, TOut &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#ac360725d48ffbe2a589ae0f4ca23c569">fwdImp</a> (<a class="el" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> &amp;sb, <a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;afView, boost::container::flat_set&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; &amp;ofrsToRm, TIn const &amp;in)</td></tr>
@@ -165,6 +167,9 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:ac6de326d2b18de2d293079abc85d53f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae94d993f7db69ca6aaa4517b02292ec0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#ae94d993f7db69ca6aaa4517b02292ec0">inactive_</a> = false</td></tr>
 <tr class="separator:ae94d993f7db69ca6aaa4517b02292ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a299b70f6c07de70b1bea38dda9200882"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#a299b70f6c07de70b1bea38dda9200882">offersUsed_</a> = 0</td></tr>
+<tr class="memdesc:a299b70f6c07de70b1bea38dda9200882"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of offers consumed or partially consumed the last time the step ran, including expired and unfunded offers.  <a href="classripple_1_1BookStep.html#a299b70f6c07de70b1bea38dda9200882">More...</a><br /></td></tr>
+<tr class="separator:a299b70f6c07de70b1bea38dda9200882"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a185d95a05e0e860f20ab1320288f163d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#a185d95a05e0e860f20ab1320288f163d">j_</a></td></tr>
 <tr class="separator:a185d95a05e0e860f20ab1320288f163d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c5609aa3c9590f4c559ec93a3808a0f"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="structripple_1_1BookStep_1_1Cache.html">Cache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookStep.html#a8c5609aa3c9590f4c559ec93a3808a0f">cache_</a></td></tr>
@@ -228,7 +233,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00078">78</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00086">86</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -259,7 +264,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00070">70</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00078">78</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -280,7 +285,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00090">90</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00098">98</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -309,7 +314,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00096">96</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00104">104</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -338,7 +343,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00104">104</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00112">112</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -378,7 +383,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00112">112</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00120">120</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -407,7 +412,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00119">119</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00127">127</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -447,7 +452,33 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00466">466</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00477">477</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a2361abd05389001f3c40e19fa667b289"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2361abd05389001f3c40e19fa667b289">&#9670;&nbsp;</a></span>offersUsed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TIn , class TOut , class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1BookStep.html">ripple::BookStep</a>&lt; TIn, TOut, TDerived &gt;::offersUsed</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00496">496</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -491,7 +522,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00703">703</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00721">721</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -535,7 +566,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00823">823</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00842">842</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -581,7 +612,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00992">992</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l01012">1012</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -603,7 +634,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l01030">1030</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l01050">1050</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -632,7 +663,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00151">151</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00162">162</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -662,7 +693,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00158">158</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00169">169</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -692,7 +723,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00457">457</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00468">468</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -746,7 +777,7 @@ template&lt;class Callback &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00533">533</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00551">551</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -804,7 +835,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00655">655</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00673">673</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -845,7 +876,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00171">171</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00182">182</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -885,7 +916,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00177">177</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00188">188</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -1072,6 +1103,35 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 
 </div>
 </div>
+<a id="a299b70f6c07de70b1bea38dda9200882"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a299b70f6c07de70b1bea38dda9200882">&#9670;&nbsp;</a></span>offersUsed_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TIn , class TOut , class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1BookStep.html">ripple::BookStep</a>&lt; TIn, TOut, TDerived &gt;::offersUsed_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Number of offers consumed or partially consumed the last time the step ran, including expired and unfunded offers. </p>
+<p>N.B. This this not the total number offers consumed by this step for the entire payment, it is only the number the last time it ran. Offers may be partially consumed multiple times during a payment. </p>
+
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00062">62</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a185d95a05e0e860f20ab1320288f163d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a185d95a05e0e860f20ab1320288f163d">&#9670;&nbsp;</a></span>j_</h2>
 
@@ -1094,7 +1154,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00055">55</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00063">63</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>
@@ -1120,7 +1180,7 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00067">67</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BookStep_8cpp_source.html#l00075">75</a> of file <a class="el" href="BookStep_8cpp_source.html">BookStep.cpp</a>.</p>
 
 </div>
 </div>

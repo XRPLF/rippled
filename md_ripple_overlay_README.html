@@ -65,19 +65,19 @@ $(function() {
 <div class="title">Overlay </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md208"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md219"></a>
 Introduction</h1>
 <p>The <em>XRP Ledger network</em> consists of a collection of <em>peers</em> running **<code>rippled</code>** or other compatible software. Each peer maintains multiple outgoing connections and optional incoming connections to other peers. These connections are made over both the public Internet and private local area networks. This network defines a connected directed graph of nodes where vertices are instances of <code>rippled</code> and edges are persistent TCP/IP connections. Peers send and receive messages to other connected peers. This peer to peer network, layered on top of the public and private Internet, forms an <a href="http://en.wikipedia.org/wiki/Overlay_network"><em>overlay network</em></a>. The contents of the messages and the behavior of peers in response to the messages, plus the information exchanged during the handshaking phase of connection establishment, defines the <em>XRP Ledger peer protocol</em> (or <em>protocol</em> in this context).</p>
-<h1><a class="anchor" id="autotoc_md209"></a>
+<h1><a class="anchor" id="autotoc_md220"></a>
 Overview</h1>
 <p>Each connection is represented by a <em>Peer</em> object. The Overlay manager establishes, receives, and maintains connections to peers. Protocol messages are exchanged between peers and serialized using <a href="https://developers.google.com/protocol-buffers/"><em>Google Protocol Buffers</em></a>.</p>
-<h2><a class="anchor" id="autotoc_md210"></a>
+<h2><a class="anchor" id="autotoc_md221"></a>
 Structure</h2>
 <p>Each connection between peers is identified by its connection type, which affects the behavior of message routing. At present, only a single connection type is supported: <b>Peer</b>.</p>
-<h1><a class="anchor" id="autotoc_md211"></a>
+<h1><a class="anchor" id="autotoc_md222"></a>
 Handshake</h1>
 <p>To establish a protocol connection, a peer makes an outgoing TLS encrypted connection to a remote peer, then sends an HTTP request with no message body.</p>
-<h2><a class="anchor" id="autotoc_md212"></a>
+<h2><a class="anchor" id="autotoc_md223"></a>
 HTTP</h2>
 <p>The HTTP <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html">request</a> must:</p>
 <ul>
@@ -87,7 +87,7 @@ HTTP</h2>
 </ul>
 <p>HTTP requests which do not conform to this requirements must generate an appropriate HTTP error and result in the connection being closed.</p>
 <p>Upon receipt of a well-formed HTTP upgrade request, and validation of the protocol specific parameters, a peer will either send back a HTTP 101 response and switch to the requested protocol, or a message indicating that the request failed (e.g. by sending HTTP 400 "Bad Request" or HTTP 503 "Service Unavailable").</p>
-<h4><a class="anchor" id="autotoc_md213"></a>
+<h4><a class="anchor" id="autotoc_md224"></a>
 Example HTTP Upgrade Request</h4>
 <div class="fragment"><div class="line">GET / HTTP/1.1</div>
 <div class="line">User-Agent: rippled-1.4.0-b1+DEBUG</div>
@@ -102,7 +102,7 @@ Example HTTP Upgrade Request</h4>
 <div class="line">Remote-IP: 192.0.2.79</div>
 <div class="line">Closed-Ledger: llRZSKqvNieGpPqbFGnm358pmF1aW96SDIUQcnMh6HI=</div>
 <div class="line">Previous-Ledger: q4aKbP7sd5wv+EXArwCmQiWZhq9AwBl2p/hCtpGJNsc=</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md214"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md225"></a>
 Example HTTP Upgrade Response (Success)</h4>
 <div class="fragment"><div class="line">HTTP/1.1 101 Switching Protocols</div>
 <div class="line">Connection: Upgrade</div>
@@ -115,7 +115,7 @@ Example HTTP Upgrade Response (Success)</h4>
 <div class="line">Network-Time: 619234797</div>
 <div class="line">Closed-Ledger: h7HL85W9ywkex+G7p42USVeV5kE04CWK+4DVI19Of8I=</div>
 <div class="line">Previous-Ledger: EPvIpAD2iavGFyyZYi8REexAXyKGXsi1jMF7OIBY6/Y=</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md215"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md226"></a>
 Example HTTP Upgrade Response (Failure: no slots available)</h4>
 <div class="fragment"><div class="line">HTTP/1.1 503 Service Unavailable</div>
 <div class="line">Server: rippled-0.27.0</div>
@@ -125,7 +125,7 @@ Example HTTP Upgrade Response (Failure: no slots available)</h4>
 <div class="line">{&quot;peer-ips&quot;:[&quot;54.68.219.39:51235&quot;,&quot;54.187.191.179:51235&quot;,</div>
 <div class="line">&quot;107.150.55.21:6561&quot;,&quot;54.186.230.77:51235&quot;,&quot;54.187.110.243:51235&quot;,</div>
 <div class="line">&quot;85.127.34.221:51235&quot;,&quot;50.43.33.236:51235&quot;,&quot;54.187.138.75:51235&quot;]}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md216"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md227"></a>
 Standard Fields</h3>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -162,7 +162,7 @@ Standard Fields</h3>
 <p>For responses, it should a consist of <em>single element</em> matching one of the elements provided in the corresponding request. If the server does not understand any of the available protocol versions, the upgrade request should fail with an appropriate HTTP error code (e.g. by sending an HTTP 400 "Bad Request" response).</p>
 <p>Protocol versions are string of the form <code>XRPL/</code> followed by a dotted major and minor protocol version number, where the major number is greater than or equal to 2 and the minor is greater than or equal to 0. The legacy version <code>RTXP/1.2</code> is also supported at this time and is an alias for <code>XRPL/2.0</code>.</p>
 <p>See <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.42">RFC 2616 &sect;14.42</a></p>
-<h3><a class="anchor" id="autotoc_md217"></a>
+<h3><a class="anchor" id="autotoc_md228"></a>
 Custom Fields</h3>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -265,11 +265,11 @@ Custom Fields</h3>
 </table>
 <p>If present, identifies the hash of the parent ledger that the sending server considers to be closed.</p>
 <p>The value is presently encoded using <b>Base64</b> encoding, but implementations should support both <b>Base64</b> and <b>HEX</b> encoding for this value.</p>
-<h3><a class="anchor" id="autotoc_md218"></a>
+<h3><a class="anchor" id="autotoc_md229"></a>
 Additional Headers</h3>
 <p>An implementation or operator may specify additional, optional fields and values in both requests and responses.</p>
 <p>Implementations should not reject requests because of the presence of fields that they do not understand.</p>
-<h2><a class="anchor" id="autotoc_md219"></a>
+<h2><a class="anchor" id="autotoc_md230"></a>
 Session Signature</h2>
 <p>Even for SSL/TLS encrypted connections, it is possible for an attacker to mount relatively inexpensive MITM attacks that can be extremely hard to detect and may afford the attacker the ability to intelligently tamper with messages exchanged between the two endpoints.</p>
 <p>This risk can be mitigated if at least one side has a certificate from a certificate authority trusted by the other endpoint, but having a certificate is not always possible (or even desirable) in a decentralized and permissionless network.</p>
@@ -280,11 +280,11 @@ Session Signature</h2>
 <p>Each side of the link will verify that the provided signature is from the claimed public key against the session's unique fingerprint. If this signature check fails then the link <b>MUST</b> be dropped.</p>
 <p>If an attacker, Eve, establishes two separate SSL sessions with Alice and Bob, the fingerprints of the two sessions will be different, and Eve will not be able to sign the fingerprint of her session with Bob with Alice's private key, or the fingerprint of her session with Alice with Bob's private key, and so both A and B will know that an active MITM attack is in progress and will close their connections.</p>
 <p>If Eve simply proxies the raw bytes, she will be unable to decrypt the data being transferred between A and B and will not be able to intelligently tamper with the message stream between Alice and Bob, although she may be still be able to inject delays or terminate the link.</p>
-<h1><a class="anchor" id="autotoc_md220"></a>
+<h1><a class="anchor" id="autotoc_md231"></a>
 Ripple Clustering</h1>
 <p>A cluster consists of more than one Ripple server under common administration that share load information, distribute cryptography operations, and provide greater response consistency.</p>
 <p>Cluster nodes are identified by their public node keys. Cluster nodes exchange information about endpoints that are imposing load upon them. Cluster nodes share information about their internal load status. Cluster nodes do not have to verify the cryptographic signatures on messages received from other cluster nodes.</p>
-<h2><a class="anchor" id="autotoc_md221"></a>
+<h2><a class="anchor" id="autotoc_md232"></a>
 Configuration</h2>
 <p>A server's public key can be determined from the output of the <code>server_info</code> command. The key is in the <code>pubkey_node</code> value, and is a text string beginning with the letter <code>n</code>. The key is maintained across runs in a database.</p>
 <p>Cluster members are configured in the <code>rippled.cfg</code> file under <code>[cluster_nodes]</code>. Each member should be configured on a line beginning with the node public key, followed optionally by a space and a friendly name.</p>
@@ -297,20 +297,20 @@ Configuration</h2>
 <li>Restart each hub, one by one</li>
 <li>Restart the spoke</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md222"></a>
+<h2><a class="anchor" id="autotoc_md233"></a>
 Transaction Behavior</h2>
 <p>When a transaction is received from a cluster member, several normal checks are bypassed:</p>
 <p>Signature checking is bypassed because we trust that a cluster member would not relay a transaction with an incorrect signature. Validators may wish to disable this feature, preferring the additional load to get the additional security of having validators check each transaction.</p>
 <p>Local checks for transaction checking are also bypassed. For example, a server will not reject a transaction from a cluster peer because the fee does not meet its current relay fee. It is preferable to keep the cluster in agreement and permit confirmation from one cluster member to more reliably indicate the transaction's acceptance by the cluster.</p>
-<h2><a class="anchor" id="autotoc_md223"></a>
+<h2><a class="anchor" id="autotoc_md234"></a>
 Server Load Information</h2>
 <p>Cluster members exchange information on their server's load level. The load level is essentially the amount by which the normal fee levels are multiplied to get the server's fee for relaying transactions.</p>
 <p>A server's effective load level, and the one it uses to determine its relay fee, is the highest of its local load level, the network load level, and the cluster load level. The cluster load level is the median load level reported by a cluster member.</p>
-<h2><a class="anchor" id="autotoc_md224"></a>
+<h2><a class="anchor" id="autotoc_md235"></a>
 Gossip</h2>
 <p>Gossip is the mechanism by which cluster members share information about endpoints (typically IPv4 addresses) that are imposing unusually high load on them. The endpoint load manager takes into account gossip to reduce the amount of load the endpoint is permitted to impose on the local server before it is warned, disconnected, or banned.</p>
 <p>Suppose, for example, that an attacker controls a large number of IP addresses, and with these, he can send sufficient requests to overload a server. Without gossip, he could use these same addresses to overload all the servers in a cluster. With gossip, if he chooses to use the same IP address to impose load on more than one server, he will find that the amount of load he can impose before getting disconnected is much lower.</p>
-<h2><a class="anchor" id="autotoc_md225"></a>
+<h2><a class="anchor" id="autotoc_md236"></a>
 Monitoring</h2>
 <p>The <code>peers</code> command will report on the status of the cluster. The <code>cluster</code> object will contain one entry for each member of the cluster (either configured or introduced by another cluster member). The <code>age</code> field is the number of seconds since the server was last heard from. If the server is reporting an elevated cluster fee, that will be reported as well.</p>
 <p>In the <code>peers</code> object, cluster members will contain a <code>cluster</code> field set to <code>true</code>.</p>

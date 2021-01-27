@@ -116,6 +116,9 @@ $(function() {
 <li>ledgerConfig()
 : <a class="el" href="classripple_1_1LedgerLoad__test.html#a660bd983c4cc95eb0c0730dc7be839d3">ripple::LedgerLoad_test</a>
 </li>
+<li>LedgerDeltaAcquire()
+: <a class="el" href="classripple_1_1LedgerDeltaAcquire.html#a57428be2f7b7812d389d4e269e896c3c">ripple::LedgerDeltaAcquire</a>
+</li>
 <li>ledgerEntryOffer()
 : <a class="el" href="classripple_1_1test_1_1Offer__test.html#a2da3f4f3102477b7989247eb9d1f0965">ripple::test::Offer_test</a>
 </li>
@@ -158,9 +161,25 @@ $(function() {
 : <a class="el" href="classripple_1_1Peer.html#ac03dabc3ec86db62e3d1ea827ab0d0fa">ripple::Peer</a>
 , <a class="el" href="classripple_1_1PeerImp.html#afad1d4fd948d26f3880b5b392bc6be5e">ripple::PeerImp</a>
 , <a class="el" href="classripple_1_1test_1_1PeerPartial.html#afba38799251b2945e32e89988061cd24">ripple::test::PeerPartial</a>
+, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a638f128c9c0f62f23d22bd41e2f97eaa">ripple::test::TestPeer</a>
 </li>
 <li>LedgerReplay()
 : <a class="el" href="classripple_1_1LedgerReplay.html#ae1c7550b33a497d145d5c618c7a70b70">ripple::LedgerReplay</a>
+</li>
+<li>LedgerReplayClient()
+: <a class="el" href="classripple_1_1test_1_1LedgerReplayClient.html#aadb938dc9624da72d3cdabc7cf8c998e">ripple::test::LedgerReplayClient</a>
+</li>
+<li>LedgerReplayer()
+: <a class="el" href="classripple_1_1LedgerReplayer.html#a7f95a59bb26eb9aaf2f64265fbeec494">ripple::LedgerReplayer</a>
+</li>
+<li>LedgerReplayMsgHandler()
+: <a class="el" href="classripple_1_1LedgerReplayMsgHandler.html#af8042ba0549420417c7d10f313e544d0">ripple::LedgerReplayMsgHandler</a>
+</li>
+<li>LedgerReplayTask()
+: <a class="el" href="classripple_1_1LedgerReplayTask.html#ad7446e027554e2d6c08eb231c5472a9e">ripple::LedgerReplayTask</a>
+</li>
+<li>LedgerServer()
+: <a class="el" href="structripple_1_1test_1_1LedgerServer.html#abff2f2828e099d0f90dfc681651da211">ripple::test::LedgerServer</a>
 </li>
 <li>ledgersPerShard()
 : <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a41cdfc11611d60733f42c72cfa684bed">ripple::NodeStore::DatabaseShard</a>
@@ -265,7 +284,7 @@ $(function() {
 : <a class="el" href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">ripple::Cluster</a>
 , <a class="el" href="classripple_1_1Config.html#a8b89f0ab7460379ca1b8c849553eeba5">ripple::Config</a>
 , <a class="el" href="structripple_1_1JobTypeData.html#aaa507d7f1316a7fd7c5c06f606cd2ed5">ripple::JobTypeData</a>
-, <a class="el" href="classripple_1_1ManifestCache.html#ac42643e71e254d658a38a61a070864c6">ripple::ManifestCache</a>
+, <a class="el" href="classripple_1_1ManifestCache.html#aba96a3ca5f51243e21c858537ef16722">ripple::ManifestCache</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#af7e0a05dc4f863b6eea7124b8bdf548f">ripple::PeerFinder::Bootcache</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Logic.html#a44f12287839953f538e2461daa795966">ripple::PeerFinder::Logic&lt; Checker &gt;</a>
 , <a class="el" href="structripple_1_1PeerFinder_1_1PeerFinder__test_1_1TestStore.html#abc1cd4e1acc2137e736f52a4832337cb">ripple::PeerFinder::PeerFinder_test::TestStore</a>
@@ -307,7 +326,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ValidatorList.html#a12f49b76ef58d9c64310aa4a7ce0115a">ripple::ValidatorList</a>
 </li>
 <li>LoadManager()
-: <a class="el" href="classripple_1_1LoadManager.html#a6a41e3fc9c98f990718d5891694f39c0">ripple::LoadManager</a>
+: <a class="el" href="classripple_1_1LoadManager.html#a792f737967e5d05d0926ae357e511f12">ripple::LoadManager</a>
 </li>
 <li>LoadMonitor()
 : <a class="el" href="classripple_1_1LoadMonitor.html#a332eab65a9fc011fd29d9a97acf9eee7">ripple::LoadMonitor</a>
@@ -318,7 +337,7 @@ $(function() {
 <li>local_endpoint()
 : <a class="el" href="classAutoSocket.html#a64d482c1b9a89cc8e336e6b849276682">AutoSocket</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html#aeb3f0b5bb8ec46bf984cff3eee908680">ripple::PeerFinder::Slot</a>
-, <a class="el" href="classripple_1_1PeerFinder_1_1SlotImp.html#a5a9f54ba86fb0f3cd1e1d1854405e603">ripple::PeerFinder::SlotImp</a>
+, <a class="el" href="classripple_1_1PeerFinder_1_1SlotImp.html#a2447cfcf638cf3b11372f282dbd0d2e2">ripple::PeerFinder::SlotImp</a>
 , <a class="el" href="classripple_1_1test_1_1TrustedPublisherServer.html#ac04a28bdcd7ab1cc9f43ed424e2424ea">ripple::test::TrustedPublisherServer</a>
 </li>
 <li>localPublicKey()
@@ -344,14 +363,17 @@ $(function() {
 , <a class="el" href="structripple_1_1test_1_1csf_1_1Peer_1_1ValAdaptor_1_1Mutex.html#ae3598e9245f0a5fd19509ad0c1c76c5b">ripple::test::csf::Peer::ValAdaptor::Mutex</a>
 , <a class="el" href="structripple_1_1test_1_1csf_1_1Validations__test_1_1Adaptor_1_1Mutex.html#a505bb1bbc71965255a2d0da782e2c58e">ripple::test::csf::Validations_test::Adaptor::Mutex</a>
 </li>
+<li>Locked()
+: <a class="el" href="structripple_1_1perf_1_1Locked.html#a5c9d563f4051e0cb01e38f505257c0ec">ripple::perf::Locked&lt; T &gt;</a>
+</li>
 <li>LockedSociSession()
-: <a class="el" href="classripple_1_1LockedSociSession.html#a5fdf27b562410f31ba6fb96614ec6504">ripple::LockedSociSession</a>
+: <a class="el" href="classripple_1_1LockedSociSession.html#a4fe34e529facb4e9e15e0a4fa50c2a0e">ripple::LockedSociSession</a>
 </li>
 <li>LockFreeStack()
-: <a class="el" href="classbeast_1_1LockFreeStack.html#a883b67af0ed5272cf0fb0ed5a979f7e4">beast::LockFreeStack&lt; Element, Tag &gt;</a>
+: <a class="el" href="classbeast_1_1LockFreeStack.html#a77913f72115155984e9341190bfc7310">beast::LockFreeStack&lt; Element, Tag &gt;</a>
 </li>
 <li>LockFreeStackIterator()
-: <a class="el" href="classbeast_1_1LockFreeStackIterator.html#a7138d8c32be5aec3a58424781729899a">beast::LockFreeStackIterator&lt; Container, IsConst &gt;</a>
+: <a class="el" href="classbeast_1_1LockFreeStackIterator.html#a86e9d1a3e8009b5cdf60ad13c76b71b1">beast::LockFreeStackIterator&lt; Container, IsConst &gt;</a>
 </li>
 <li>log()
 : <a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#abb4f0b283f8b3f1935fb17dd6db62304">beast::insight::detail::StatsDCollectorImp</a>
@@ -362,6 +384,7 @@ $(function() {
 <li>logFailure()
 : <a class="el" href="classripple_1_1InboundLedgers.html#a5c5d7da0b302fc02ed81082c32fcd48d">ripple::InboundLedgers</a>
 , <a class="el" href="classripple_1_1InboundLedgersImp.html#a6bf9e1542579f52723b136fa43dbe1e7">ripple::InboundLedgersImp</a>
+, <a class="el" href="classripple_1_1test_1_1MagicInboundLedgers.html#a8b5dec1e1d8d856f4406c59b63c6174c">ripple::test::MagicInboundLedgers</a>
 </li>
 <li>Logic()
 : <a class="el" href="classripple_1_1PeerFinder_1_1Logic.html#aa7b6739a3b091d9396f6bb946a25fbed">ripple::PeerFinder::Logic&lt; Checker &gt;</a>
@@ -372,7 +395,7 @@ $(function() {
 , <a class="el" href="classripple_1_1ApplicationImp.html#a481f47813b09af10be4e59140a062bce">ripple::ApplicationImp</a>
 </li>
 <li>Logs()
-: <a class="el" href="classripple_1_1Logs.html#a32fa6b47d686d44887b50d5fd1996de9">ripple::Logs</a>
+: <a class="el" href="classripple_1_1Logs.html#aed438405db16be053ffd4ffc1b48b8d0">ripple::Logs</a>
 </li>
 <li>logStrand()
 : <a class="el" href="classripple_1_1test_1_1TheoreticalQuality__test.html#adf0992b260f14d0a5cf4cf8773634350">ripple::test::TheoreticalQuality_test</a>
@@ -396,10 +419,10 @@ $(function() {
 </li>
 <li>lookup()
 : <a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a81db7c0cefb4b14d453a025813058ade">ripple::test::csf::LedgerOracle</a>
-, <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ac1a551e3dcdb027c8830afeebc9fcc80">ripple::test::jtx::Env</a>
+, <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a062c22ba14d38fefd731f59c718b7c74">ripple::test::jtx::Env</a>
 </li>
 <li>lower_bound()
-: <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#a990b7d69b4f807b069fdb60b2e4453e8">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
+: <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#a735f1e1dd4002ddc9d858f6ddfa3bf6e">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
 </li>
 <li>lowerLocalFee()
 : <a class="el" href="classripple_1_1LoadFeeTrack.html#a79fc4e5d274dcd9308348f3e49145bc6">ripple::LoadFeeTrack</a>

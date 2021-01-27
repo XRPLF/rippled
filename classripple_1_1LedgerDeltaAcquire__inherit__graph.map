@@ -1,0 +1,6 @@
+<map id="ripple::LedgerDeltaAcquire" name="ripple::LedgerDeltaAcquire">
+<area shape="rect" id="node1" title="Manage the retrieval of a ledger delta (header and transactions) from the network." alt="" coords="303,64,497,91"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="44,5,216,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,255,98"/>
+<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,122,220,163"/>
+</map>

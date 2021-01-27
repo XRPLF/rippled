@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1SHAMapNodeID-members.html">List of all members</a>  </div>
@@ -133,6 +134,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab11a987c332754680546d404f048bae4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a776763973ff5fc4c43b29f6ee8d6261a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapNodeID.html#a776763973ff5fc4c43b29f6ee8d6261a">operator!=</a> (<a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const &amp;n) const</td></tr>
 <tr class="separator:a776763973ff5fc4c43b29f6ee8d6261a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a9ff9dfe2cb92d0b3d5a52ad6e3541416"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapNodeID.html#a9ff9dfe2cb92d0b3d5a52ad6e3541416">createID</a> (int depth, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
+<tr class="memdesc:a9ff9dfe2cb92d0b3d5a52ad6e3541416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classripple_1_1SHAMapNodeID.html" title="Identifies a node inside a SHAMap.">SHAMapNodeID</a> of a node with the depth of the node and the key of a leaf.  <a href="classripple_1_1SHAMapNodeID.html#a9ff9dfe2cb92d0b3d5a52ad6e3541416">More...</a><br /></td></tr>
+<tr class="separator:a9ff9dfe2cb92d0b3d5a52ad6e3541416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -355,6 +362,54 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a9ff9dfe2cb92d0b3d5a52ad6e3541416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ff9dfe2cb92d0b3d5a52ad6e3541416">&#9670;&nbsp;</a></span>createID()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> ripple::SHAMapNodeID::createID </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>depth</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>key</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a <a class="el" href="classripple_1_1SHAMapNodeID.html" title="Identifies a node inside a SHAMap.">SHAMapNodeID</a> of a node with the depth of the node and the key of a leaf. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">depth</td><td>the depth of the node </td></tr>
+    <tr><td class="paramname">key</td><td>the key of a leaf </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1SHAMapNodeID.html" title="Identifies a node inside a SHAMap.">SHAMapNodeID</a> of the node </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8cpp_source.html#l00136">136</a> of file <a class="el" href="SHAMapNodeID_8cpp_source.html">SHAMapNodeID.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a0ce8791791ff9fcb83d1e8e6ce0c0c27"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0ce8791791ff9fcb83d1e8e6ce0c0c27">&#9670;&nbsp;</a></span>operator&lt;()</h2>
 
@@ -373,7 +428,7 @@ Private Attributes</h2></td></tr>
 
 <p>Comparison operators. </p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00075">75</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00086">86</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
 
 </div>
 </div>
@@ -393,7 +448,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00081">81</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00092">92</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
 
 </div>
 </div>
@@ -413,7 +468,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00087">87</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00098">98</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
 
 </div>
 </div>
@@ -433,7 +488,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00093">93</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00104">104</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
 
 </div>
 </div>
@@ -453,7 +508,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00099">99</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00110">110</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
 
 </div>
 </div>
@@ -473,7 +528,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00105">105</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapNodeID_8h_source.html#l00116">116</a> of file <a class="el" href="SHAMapNodeID_8h_source.html">SHAMapNodeID.h</a>.</p>
 
 </div>
 </div>

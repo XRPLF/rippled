@@ -1,0 +1,6 @@
+<map id="ripple::SkipListAcquire" name="ripple::SkipListAcquire">
+<area shape="rect" id="node1" title="Manage the retrieval of a skip list in a ledger from the network." alt="" coords="275,64,441,91"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="30,5,202,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,227,98"/>
+<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="35,122,197,163"/>
+</map>

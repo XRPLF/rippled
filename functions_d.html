@@ -103,6 +103,7 @@ $(function() {
 : <a class="el" href="classripple_1_1base__uint.html#aefd5d1e621c3be3029e54d53144c9982">ripple::base_uint&lt; Bits, Tag &gt;</a>
 , <a class="el" href="classripple_1_1RCLCxPeerPos.html#a7a4759ad21916118adc5a498a13dcef0">ripple::RCLCxPeerPos</a>
 , <a class="el" href="classripple_1_1SHAMapItem.html#aed1d4d303ebd9a98e9d06dd6f3d0423c">ripple::SHAMapItem</a>
+, <a class="el" href="classripple_1_1SkipListAcquire.html#a852f3487183f6836ef5e1f667dd68d65">ripple::SkipListAcquire</a>
 , <a class="el" href="classripple_1_1Slice.html#a350ba5f9052ff273a428c3ce07b21e07">ripple::Slice</a>
 , <a class="el" href="classripple_1_1test_1_1jtx_1_1memo.html#a87f464dfa5602c82e87e577305714dc0">ripple::test::jtx::memo</a>
 , <a class="el" href="classripple_1_1test_1_1jtx_1_1memonformat.html#aaf31c4d022f452577fd9753df3d0740d">ripple::test::jtx::memonformat</a>
@@ -156,6 +157,10 @@ $(function() {
 </li>
 <li>dataPath_
 : <a class="el" href="classripple_1_1ValidatorList.html#a53a444cf253f5a11a1b800c23e691e31">ripple::ValidatorList</a>
+</li>
+<li>dataReadyCallbacks_
+: <a class="el" href="classripple_1_1LedgerDeltaAcquire.html#aa8b3fe0bac937fac0005f231caa324b6">ripple::LedgerDeltaAcquire</a>
+, <a class="el" href="classripple_1_1SkipListAcquire.html#abcbd0aca7554bb3220e6cda24735bbcf">ripple::SkipListAcquire</a>
 </li>
 <li>dataSizeMax
 : <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard__test.html#a18cae7f8da4e0521e984663e728e455c">ripple::NodeStore::DatabaseShard_test</a>
@@ -404,8 +409,18 @@ $(function() {
 <li>DeltaItem
 : <a class="el" href="classripple_1_1SHAMap.html#a804ed1a6f14de6b43122b661e101f0fc">ripple::SHAMap</a>
 </li>
+<li>deltaReady()
+: <a class="el" href="classripple_1_1LedgerReplayTask.html#a499d9491a864490e44a9b790205c8a14">ripple::LedgerReplayTask</a>
+</li>
 <li>DeltaRef
 : <a class="el" href="classripple_1_1SHAMap.html#af97eaa11f0ba83945729dc0f5af2b193">ripple::SHAMap</a>
+</li>
+<li>deltas_
+: <a class="el" href="classripple_1_1LedgerReplayer.html#ad379e998b9ed9b7639191b52a04cee9f">ripple::LedgerReplayer</a>
+, <a class="el" href="classripple_1_1LedgerReplayTask.html#a3c43b11c0b8976dd970c9546713c111e">ripple::LedgerReplayTask</a>
+</li>
+<li>deltaToBuild_
+: <a class="el" href="classripple_1_1LedgerReplayTask.html#ae0f2061d29ecdba37ad5c3b94c3c399a">ripple::LedgerReplayTask</a>
 </li>
 <li>demon
 : <a class="el" href="classripple_1_1test_1_1MultiSign__test.html#a72508d259b6521489afdddcf55f686d9">ripple::test::MultiSign_test</a>
@@ -586,7 +601,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ApplyView.html#ac157168b6d8afa47ec1956546dd268cb">ripple::ApplyView</a>
 </li>
 <li>dirRemove()
-: <a class="el" href="classripple_1_1ApplyView.html#add05adf228213dde2bc48821c0f7cc75">ripple::ApplyView</a>
+: <a class="el" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ripple::ApplyView</a>
 </li>
 <li>dirtyUp()
 : <a class="el" href="classripple_1_1SHAMap.html#a36ba184d7125776bff17e081e9e1d7ed">ripple::SHAMap</a>
@@ -911,14 +926,14 @@ $(function() {
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">ripple::FeeVoteImpl</a>
 </li>
 <li>doVoting()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ab69ef448949faf9d80e80760d6574381">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#ae4402ab8248766bc7556bdbb93225943">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a4eac7bf3be538741f7fa066c18b04fae">ripple::AmendmentTableImpl</a>
 , <a class="el" href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">ripple::FeeVote</a>
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#ad264dda6949150323ec3360ef094ecc5">ripple::FeeVoteImpl</a>
 , <a class="el" href="classripple_1_1NegativeUNLVote.html#ac58c464cefde1519ac23d1b51aa28833">ripple::NegativeUNLVote</a>
 </li>
 <li>downcast()
-: <a class="el" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">ripple::STBase</a>
+: <a class="el" href="classripple_1_1STBase.html#a61b521e7125b47bab19a29c5ac5c836d">ripple::STBase</a>
 </li>
 <li>download()
 : <a class="el" href="classripple_1_1HTTPDownloader.html#a0438f2d57582abab6b9ef9b942af9b6f">ripple::HTTPDownloader</a>
@@ -956,7 +971,7 @@ $(function() {
 , <a class="el" href="classripple_1_1XRPNotCreated.html#a5666e79cabd15392100c936835f3a263">ripple::XRPNotCreated</a>
 </li>
 <li>dropsAs()
-: <a class="el" href="classripple_1_1XRPAmount.html#a5b66cfca6453b8dba59712100a037f61">ripple::XRPAmount</a>
+: <a class="el" href="classripple_1_1XRPAmount.html#a1e60d4b8852f52588dbf3173b715d9fe">ripple::XRPAmount</a>
 </li>
 <li>dropsDestroyed()
 : <a class="el" href="classripple_1_1detail_1_1ApplyStateTable.html#a2a8fe3fbf07c6803b1058191b84dba58">ripple::detail::ApplyStateTable</a>
@@ -986,6 +1001,12 @@ $(function() {
 </li>
 <li>dtag()
 : <a class="el" href="structripple_1_1test_1_1jtx_1_1dtag.html#aabf7b6927c2edc5c97543ed627da12fa">ripple::test::jtx::dtag</a>
+</li>
+<li>dummyPeer
+: <a class="el" href="structripple_1_1test_1_1TestPeerSet.html#af8c75a40184be023eec9d78417a8c7df">ripple::test::TestPeerSet</a>
+</li>
+<li>DummyPeerSet()
+: <a class="el" href="classripple_1_1DummyPeerSet.html#a58e78af0afaf2c6c8d9c7260f094aff6">ripple::DummyPeerSet</a>
 </li>
 <li>DummyScheduler()
 : <a class="el" href="classripple_1_1NodeStore_1_1DummyScheduler.html#acb1c5bda3e26baa9592d78e26bf50ffe">ripple::NodeStore::DummyScheduler</a>
@@ -1042,7 +1063,7 @@ $(function() {
 , <a class="el" href="classbeast_1_1io__latency__probe.html#a686c16ebff88519c5a04a9be08b86b04">beast::io_latency_probe&lt; Clock &gt;</a>
 , <a class="el" href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">ripple::NetClock</a>
 , <a class="el" href="structripple_1_1path_1_1detail_1_1FlowDebugInfo.html#a6cb12cf826d4c9f1709bc5d103c67ad0">ripple::path::detail::FlowDebugInfo</a>
-, <a class="el" href="structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Rpc_1_1Sync.html#a5fe4afb9b218a95774d672e2fcf38a5b">ripple::perf::PerfLogImp::Counters::Rpc::Sync</a>
+, <a class="el" href="structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Rpc.html#a4f48de56859fa9b36b537cd467d05f17">ripple::perf::PerfLogImp::Counters::Rpc</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1BasicNetwork.html#a00b57d19a5cf0b314a29faa7840a6587">ripple::test::csf::BasicNetwork&lt; Peer &gt;</a>
 , <a class="el" href="structripple_1_1test_1_1csf_1_1Rate.html#a810fa2dd9c2ce5bb7bf7533978b57cac">ripple::test::csf::Rate</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler.html#a62468eb0a77923ba1f037452e0df84c2">ripple::test::csf::Scheduler</a>

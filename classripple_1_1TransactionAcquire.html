@@ -85,7 +85,7 @@ Inheritance diagram for ripple::TransactionAcquire:</div>
 <div class="center"><img src="classripple_1_1TransactionAcquire__inherit__graph.png" border="0" usemap="#ripple_1_1TransactionAcquire_inherit__map" alt="Inheritance graph"/></div>
 <map name="ripple_1_1TransactionAcquire_inherit__map" id="ripple_1_1TransactionAcquire_inherit__map">
 <area shape="rect" title=" " alt="" coords="297,64,488,91"/>
-<area shape="rect" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="69,5,186,32"/>
+<area shape="rect" href="classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="41,5,213,32"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,249,98"/>
 <area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="40,122,215,163"/>
 </map>
@@ -95,34 +95,37 @@ Collaboration diagram for ripple::TransactionAcquire:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1TransactionAcquire__coll__graph.png" border="0" usemap="#ripple_1_1TransactionAcquire_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1TransactionAcquire_coll__map" id="ripple_1_1TransactionAcquire_coll__map">
-<area shape="rect" title=" " alt="" coords="2403,352,2593,379"/>
-<area shape="rect" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="1644,260,1761,287"/>
-<area shape="rect" href="classripple_1_1Application.html" title=" " alt="" coords="1302,225,1442,252"/>
-<area shape="rect" href="classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="996,158,1164,199"/>
-<area shape="rect" href="classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1288,157,1456,198"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="712,83,871,109"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="748,216,835,243"/>
-<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="699,150,884,191"/>
-<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="287,132,469,188"/>
-<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,139,173,181"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="334,263,422,289"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="721,269,862,310"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="721,398,862,439"/>
-<area shape="rect" title=" " alt="" coords="1007,224,1153,251"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1280,327,1464,353"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="294,399,462,441"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="38,443,141,469"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="493,51,675,77"/>
-<area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="1873,449,1995,476"/>
-<area shape="rect" href="classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="1281,465,1463,492"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1317,377,1427,404"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="1007,364,1153,391"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="2065,311,2309,353"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="2100,377,2275,418"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="2102,442,2273,483"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1617,465,1788,506"/>
-<area shape="rect" href="classripple_1_1SHAMapHash.html" title=" " alt="" coords="1003,415,1157,441"/>
-<area shape="rect" href="classripple_1_1Family.html" title=" " alt="" coords="1647,351,1758,377"/>
+<area shape="rect" title=" " alt="" coords="2299,415,2489,442"/>
+<area shape="rect" href="classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="1489,289,1661,315"/>
+<area shape="rect" href="classripple_1_1Application.html" title=" " alt="" coords="1182,178,1322,205"/>
+<area shape="rect" href="classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="874,121,1042,163"/>
+<area shape="rect" href="classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1168,111,1336,152"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="588,225,747,251"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="624,86,711,113"/>
+<area shape="rect" href="structripple_1_1TimeoutCounter_1_1QueueJobParameter.html" title=" " alt="" coords="872,17,1044,59"/>
+<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="575,148,760,189"/>
+<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="287,141,469,197"/>
+<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,148,173,189"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="334,287,422,314"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="597,281,738,323"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="597,429,738,471"/>
+<area shape="rect" title=" " alt="" coords="885,187,1031,214"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1160,339,1344,366"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="598,5,737,47"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="294,431,462,472"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="38,497,141,523"/>
+<area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="1747,482,1868,509"/>
+<area shape="rect" href="classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="1161,482,1343,509"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1197,391,1307,418"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="885,391,1031,418"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1939,343,2183,384"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1973,408,2148,449"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1975,473,2146,515"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1490,475,1661,516"/>
+<area shape="rect" href="classripple_1_1SHAMapHash.html" title=" " alt="" coords="881,443,1035,470"/>
+<area shape="rect" href="classripple_1_1Family.html" title=" " alt="" coords="1520,541,1631,567"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="1975,539,2146,580"/>
+<area shape="rect" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="1749,546,1866,573"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -133,8 +136,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac3ec1bb6bd7ab4c0081fd614fcc52baf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ac3ec1bb6bd7ab4c0081fd614fcc52baf">TransactionAcquire</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash)</td></tr>
-<tr class="separator:ac3ec1bb6bd7ab4c0081fd614fcc52baf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66024e1acf01cdfb2abbb18fcb676184"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a66024e1acf01cdfb2abbb18fcb676184">TransactionAcquire</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSet.html">PeerSet</a> &gt; peerSet)</td></tr>
+<tr class="separator:a66024e1acf01cdfb2abbb18fcb676184"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06a996f9c8f481e4c81fc6a86a254e91"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a06a996f9c8f481e4c81fc6a86a254e91">~TransactionAcquire</a> ()=default</td></tr>
 <tr class="separator:a06a996f9c8f481e4c81fc6a86a254e91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d0001518ae50ed99f26b905ca6a0197"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a2d0001518ae50ed99f26b905ca6a0197">takeNodes</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)</td></tr>
@@ -143,6 +146,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6bb370b7cd8b82c130d0e58acda42064"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19169b2acca6d5bcc30b7babf13cb7e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a19169b2acca6d5bcc30b7babf13cb7e3">stillNeed</a> ()</td></tr>
 <tr class="separator:a19169b2acca6d5bcc30b7babf13cb7e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9f8538b7f73ebcda116c33d5541d16d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#ac9f8538b7f73ebcda116c33d5541d16d">cancel</a> ()</td></tr>
+<tr class="memdesc:ac9f8538b7f73ebcda116c33d5541d16d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel the task by marking it as failed if the task is not done.  <a href="classripple_1_1TimeoutCounter.html#ac9f8538b7f73ebcda116c33d5541d16d">More...</a><br /></td></tr>
+<tr class="separator:ac9f8538b7f73ebcda116c33d5541d16d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
@@ -150,70 +156,63 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
-<tr class="memitem:a90a3672f3016e5d1c6128061879ec41e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
-<tr class="separator:a90a3672f3016e5d1c6128061879ec41e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc58d4a18742a417a8b290df4b58072d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
+<tr class="separator:acc58d4a18742a417a8b290df4b58072d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a4557b201391f7d1b5e11af49560ff3ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a4557b201391f7d1b5e11af49560ff3ee">addPeers</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> limit, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)&gt; score)</td></tr>
-<tr class="memdesc:a4557b201391f7d1b5e11af49560ff3ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add at most <code>limit</code> peers to this set from the overlay.  <a href="classripple_1_1PeerSet.html#a4557b201391f7d1b5e11af49560ff3ee">More...</a><br /></td></tr>
-<tr class="separator:a4557b201391f7d1b5e11af49560ff3ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92cd86e610ddc3c75bfa4a613dd42285"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a92cd86e610ddc3c75bfa4a613dd42285">isDone</a> () const</td></tr>
-<tr class="separator:a92cd86e610ddc3c75bfa4a613dd42285"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af519e54b016eff0b244aceba65944e55"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#af519e54b016eff0b244aceba65944e55">invokeOnTimer</a> ()</td></tr>
-<tr class="memdesc:af519e54b016eff0b244aceba65944e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls <a class="el" href="classripple_1_1PeerSet.html#ac0416d2dcd2e5eb8801f55b03f4875e1" title="Hook called from invokeOnTimer().">onTimer()</a> if in the right state.  <a href="classripple_1_1PeerSet.html#af519e54b016eff0b244aceba65944e55">More...</a><br /></td></tr>
-<tr class="separator:af519e54b016eff0b244aceba65944e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb0ae391c3b73fdb47a4bca7069b97f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#abb0ae391c3b73fdb47a4bca7069b97f4">sendRequest</a> (const protocol::TMGetLedger &amp;message, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;peer)</td></tr>
-<tr class="memdesc:abb0ae391c3b73fdb47a4bca7069b97f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a GetLedger message to one or all peers.  <a href="classripple_1_1PeerSet.html#abb0ae391c3b73fdb47a4bca7069b97f4">More...</a><br /></td></tr>
-<tr class="separator:abb0ae391c3b73fdb47a4bca7069b97f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:addc5e94d9df5ad4a25e9afb735984cf3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#addc5e94d9df5ad4a25e9afb735984cf3">setTimer</a> ()</td></tr>
-<tr class="memdesc:addc5e94d9df5ad4a25e9afb735984cf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Schedule a call to <a class="el" href="classripple_1_1PeerSet.html#a46bc82ece5fd76d43a6206fa7714d13b" title="Queue a job to call invokeOnTimer().">queueJob()</a> after mTimerInterval.  <a href="classripple_1_1PeerSet.html#addc5e94d9df5ad4a25e9afb735984cf3">More...</a><br /></td></tr>
-<tr class="separator:addc5e94d9df5ad4a25e9afb735984cf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a01b0664f4479588f93e805ee9aaced"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a3a01b0664f4479588f93e805ee9aaced">setTimer</a> (<a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> &amp;)</td></tr>
+<tr class="memdesc:a3a01b0664f4479588f93e805ee9aaced"><td class="mdescLeft">&#160;</td><td class="mdescRight">Schedule a call to <a class="el" href="classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553" title="Queue a job to call invokeOnTimer().">queueJob()</a> after mTimerInterval.  <a href="classripple_1_1TimeoutCounter.html#a3a01b0664f4479588f93e805ee9aaced">More...</a><br /></td></tr>
+<tr class="separator:a3a01b0664f4479588f93e805ee9aaced"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0679c129f5ffcdcf46b6b2ce6f31a553"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553">queueJob</a> (<a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> &amp;)</td></tr>
+<tr class="memdesc:a0679c129f5ffcdcf46b6b2ce6f31a553"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue a job to call <a class="el" href="classripple_1_1TimeoutCounter.html#a3e417a539a334133b056df64d06ddda0" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>.  <a href="classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553">More...</a><br /></td></tr>
+<tr class="separator:a0679c129f5ffcdcf46b6b2ce6f31a553"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28e1660d3e1964810a10e298cd2f5c94"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a28e1660d3e1964810a10e298cd2f5c94">isDone</a> () const</td></tr>
+<tr class="separator:a28e1660d3e1964810a10e298cd2f5c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a706a011ba681781598055237f2d7fdaf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a706a011ba681781598055237f2d7fdaf">app_</a></td></tr>
-<tr class="separator:a706a011ba681781598055237f2d7fdaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63e0e407163a2e3f9fcd9135f519b5d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a63e0e407163a2e3f9fcd9135f519b5d1">m_journal</a></td></tr>
-<tr class="separator:a63e0e407163a2e3f9fcd9135f519b5d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4fa0ea92f95d96e69d2149e23d02ea4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ab4fa0ea92f95d96e69d2149e23d02ea4">mLock</a></td></tr>
-<tr class="separator:ab4fa0ea92f95d96e69d2149e23d02ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a79a33d6012ccbc0f7e21e561d8f113"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a0a79a33d6012ccbc0f7e21e561d8f113">mHash</a></td></tr>
-<tr class="memdesc:a0a79a33d6012ccbc0f7e21e561d8f113"><td class="mdescLeft">&#160;</td><td class="mdescRight">The hash of the object (in practice, always a ledger) we are trying to fetch.  <a href="classripple_1_1PeerSet.html#a0a79a33d6012ccbc0f7e21e561d8f113">More...</a><br /></td></tr>
-<tr class="separator:a0a79a33d6012ccbc0f7e21e561d8f113"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9b6f50ad29c4a6838652f98d5cca7e3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ae9b6f50ad29c4a6838652f98d5cca7e3">mTimeouts</a></td></tr>
-<tr class="separator:ae9b6f50ad29c4a6838652f98d5cca7e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e8e26a4201b05c805959c7fc909ec84"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a5e8e26a4201b05c805959c7fc909ec84">mComplete</a></td></tr>
-<tr class="separator:a5e8e26a4201b05c805959c7fc909ec84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a7d358bfb4c9ca39cbe143a270d6123"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a9a7d358bfb4c9ca39cbe143a270d6123">mFailed</a></td></tr>
-<tr class="separator:a9a7d358bfb4c9ca39cbe143a270d6123"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab291c226238498bf28b4ffad090b47e1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ab291c226238498bf28b4ffad090b47e1">mProgress</a></td></tr>
-<tr class="memdesc:ab291c226238498bf28b4ffad090b47e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether forward progress has been made.  <a href="classripple_1_1PeerSet.html#ab291c226238498bf28b4ffad090b47e1">More...</a><br /></td></tr>
-<tr class="separator:ab291c226238498bf28b4ffad090b47e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0652998669e63104bf8da3c0eafbe270"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a0652998669e63104bf8da3c0eafbe270">mPeers</a></td></tr>
-<tr class="memdesc:a0652998669e63104bf8da3c0eafbe270"><td class="mdescLeft">&#160;</td><td class="mdescRight">The identifiers of the peers we are tracking.  <a href="classripple_1_1PeerSet.html#a0652998669e63104bf8da3c0eafbe270">More...</a><br /></td></tr>
-<tr class="separator:a0652998669e63104bf8da3c0eafbe270"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9edbc193ee8a2d70897613e9debfdb7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#ad9edbc193ee8a2d70897613e9debfdb7">app_</a></td></tr>
+<tr class="separator:ad9edbc193ee8a2d70897613e9debfdb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85b050512eadcc42934c1a03cba6ce79"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a85b050512eadcc42934c1a03cba6ce79">journal_</a></td></tr>
+<tr class="separator:a85b050512eadcc42934c1a03cba6ce79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad13bccc1f788cec83fd1d81cb2e80743"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#ad13bccc1f788cec83fd1d81cb2e80743">mtx_</a></td></tr>
+<tr class="separator:ad13bccc1f788cec83fd1d81cb2e80743"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e485e95b38537ba063095df175719e1"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a1e485e95b38537ba063095df175719e1">hash_</a></td></tr>
+<tr class="memdesc:a1e485e95b38537ba063095df175719e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The hash of the object (in practice, always a ledger) we are trying to fetch.  <a href="classripple_1_1TimeoutCounter.html#a1e485e95b38537ba063095df175719e1">More...</a><br /></td></tr>
+<tr class="separator:a1e485e95b38537ba063095df175719e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6b3661800dfea540e8c6d4121b502bc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#ab6b3661800dfea540e8c6d4121b502bc">timeouts_</a></td></tr>
+<tr class="separator:ab6b3661800dfea540e8c6d4121b502bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7136bc55557a72b6fe16984b9afd0ace"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a7136bc55557a72b6fe16984b9afd0ace">complete_</a></td></tr>
+<tr class="separator:a7136bc55557a72b6fe16984b9afd0ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8d27d1e5f6f3d5a6cb59545b2ee7433"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#ae8d27d1e5f6f3d5a6cb59545b2ee7433">failed_</a></td></tr>
+<tr class="separator:ae8d27d1e5f6f3d5a6cb59545b2ee7433"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e38caa16d926bbc77c92f67a69facfb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a2e38caa16d926bbc77c92f67a69facfb">progress_</a></td></tr>
+<tr class="memdesc:a2e38caa16d926bbc77c92f67a69facfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether forward progress has been made.  <a href="classripple_1_1TimeoutCounter.html#a2e38caa16d926bbc77c92f67a69facfb">More...</a><br /></td></tr>
+<tr class="separator:a2e38caa16d926bbc77c92f67a69facfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cd3ab8d59bc971262ec26d715f8538a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a4cd3ab8d59bc971262ec26d715f8538a">timerInterval_</a></td></tr>
+<tr class="memdesc:a4cd3ab8d59bc971262ec26d715f8538a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum time to wait between calls to execute().  <a href="classripple_1_1TimeoutCounter.html#a4cd3ab8d59bc971262ec26d715f8538a">More...</a><br /></td></tr>
+<tr class="separator:a4cd3ab8d59bc971262ec26d715f8538a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57a50217ec6ad8fb6ff2af4496fe5ea8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1TimeoutCounter_1_1QueueJobParameter.html">QueueJobParameter</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a57a50217ec6ad8fb6ff2af4496fe5ea8">queueJobParameter_</a></td></tr>
+<tr class="separator:a57a50217ec6ad8fb6ff2af4496fe5ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a47afa8da1fb2bfd6540573a303ce0657"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a47afa8da1fb2bfd6540573a303ce0657">queueJob</a> () override</td></tr>
-<tr class="memdesc:a47afa8da1fb2bfd6540573a303ce0657"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue a job to call <a class="el" href="classripple_1_1PeerSet.html#af519e54b016eff0b244aceba65944e55" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>.  <a href="classripple_1_1TransactionAcquire.html#a47afa8da1fb2bfd6540573a303ce0657">More...</a><br /></td></tr>
-<tr class="separator:a47afa8da1fb2bfd6540573a303ce0657"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c478137ad5621d4290f242c6de834ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba">onTimer</a> (bool progress, <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
-<tr class="memdesc:a3c478137ad5621d4290f242c6de834ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hook called from <a class="el" href="classripple_1_1PeerSet.html#af519e54b016eff0b244aceba65944e55" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>.  <a href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba">More...</a><br /></td></tr>
+<tr class="memitem:a3c478137ad5621d4290f242c6de834ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba">onTimer</a> (bool progress, <a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
+<tr class="memdesc:a3c478137ad5621d4290f242c6de834ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hook called from <a class="el" href="classripple_1_1TimeoutCounter.html#a3e417a539a334133b056df64d06ddda0" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>.  <a href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba">More...</a><br /></td></tr>
 <tr class="separator:a3c478137ad5621d4290f242c6de834ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aebb867d525e6ea79a7a856c23b724734"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#aebb867d525e6ea79a7a856c23b724734">onPeerAdded</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;peer) override</td></tr>
-<tr class="memdesc:aebb867d525e6ea79a7a856c23b724734"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hook called from <a class="el" href="classripple_1_1TransactionAcquire.html#aa34fd83fe24bc7be350acd91959234f4">addPeers()</a>.  <a href="classripple_1_1TransactionAcquire.html#aebb867d525e6ea79a7a856c23b724734">More...</a><br /></td></tr>
-<tr class="separator:aebb867d525e6ea79a7a856c23b724734"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4797477cdc277af74dc698f8d2b9105"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ae4797477cdc277af74dc698f8d2b9105">done</a> ()</td></tr>
 <tr class="separator:ae4797477cdc277af74dc698f8d2b9105"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa34fd83fe24bc7be350acd91959234f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#aa34fd83fe24bc7be350acd91959234f4">addPeers</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> limit)</td></tr>
 <tr class="separator:aa34fd83fe24bc7be350acd91959234f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a401a6c3e234eecb77ffa4eef5966fb0e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a401a6c3e234eecb77ffa4eef5966fb0e">trigger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)</td></tr>
 <tr class="separator:a401a6c3e234eecb77ffa4eef5966fb0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac30842a6e54deecb72f2b60aa412f6d6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSet.html">PeerSet</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ac30842a6e54deecb72f2b60aa412f6d6">pmDowncast</a> () override</td></tr>
-<tr class="memdesc:ac30842a6e54deecb72f2b60aa412f6d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a weak pointer to this.  <a href="classripple_1_1TransactionAcquire.html#ac30842a6e54deecb72f2b60aa412f6d6">More...</a><br /></td></tr>
-<tr class="separator:ac30842a6e54deecb72f2b60aa412f6d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80ddba2237192e0e2f502b96de6f6fa7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1TimeoutCounter.html">TimeoutCounter</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a80ddba2237192e0e2f502b96de6f6fa7">pmDowncast</a> () override</td></tr>
+<tr class="memdesc:a80ddba2237192e0e2f502b96de6f6fa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a weak pointer to this.  <a href="classripple_1_1TransactionAcquire.html#a80ddba2237192e0e2f502b96de6f6fa7">More...</a><br /></td></tr>
+<tr class="separator:a80ddba2237192e0e2f502b96de6f6fa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e417a539a334133b056df64d06ddda0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a3e417a539a334133b056df64d06ddda0">invokeOnTimer</a> ()</td></tr>
+<tr class="memdesc:a3e417a539a334133b056df64d06ddda0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls <a class="el" href="classripple_1_1TimeoutCounter.html#a17c93d4a677d83e11650fbf5812379c8" title="Hook called from invokeOnTimer().">onTimer()</a> if in the right state.  <a href="classripple_1_1TimeoutCounter.html#a3e417a539a334133b056df64d06ddda0">More...</a><br /></td></tr>
+<tr class="separator:a3e417a539a334133b056df64d06ddda0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -226,11 +225,10 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a7881c09811a2f6776d56e534e1406154"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac08d68ec10f8f01c3b91ed8e240a1adc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ac08d68ec10f8f01c3b91ed8e240a1adc">mHaveRoot</a></td></tr>
 <tr class="separator:ac08d68ec10f8f01c3b91ed8e240a1adc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c83fd1c266d3fa99adb07d0075f201c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a6c83fd1c266d3fa99adb07d0075f201c">mTimerInterval</a></td></tr>
-<tr class="memdesc:a6c83fd1c266d3fa99adb07d0075f201c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum time to wait between calls to execute().  <a href="classripple_1_1PeerSet.html#a6c83fd1c266d3fa99adb07d0075f201c">More...</a><br /></td></tr>
-<tr class="separator:a6c83fd1c266d3fa99adb07d0075f201c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afab2c5b6dc398605d06502c282f11b56"><td class="memItemLeft" align="right" valign="top">boost::asio::basic_waitable_timer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#afab2c5b6dc398605d06502c282f11b56">mTimer</a></td></tr>
-<tr class="separator:afab2c5b6dc398605d06502c282f11b56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd2af1773605384cd28b8be476c2932d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSet.html">PeerSet</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#acd2af1773605384cd28b8be476c2932d">mPeerSet</a></td></tr>
+<tr class="separator:acd2af1773605384cd28b8be476c2932d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c57abb1684ecfa13a3c567b0406d416"><td class="memItemLeft" align="right" valign="top">boost::asio::basic_waitable_timer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeoutCounter.html#a9c57abb1684ecfa13a3c567b0406d416">timer_</a></td></tr>
+<tr class="separator:a9c57abb1684ecfa13a3c567b0406d416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -252,8 +250,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a90a3672f3016e5d1c6128061879ec41e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90a3672f3016e5d1c6128061879ec41e">&#9670;&nbsp;</a></span>ScopedLockType</h2>
+<a id="acc58d4a18742a417a8b290df4b58072d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc58d4a18742a417a8b290df4b58072d">&#9670;&nbsp;</a></span>ScopedLockType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -262,7 +260,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ripple::PeerSet::ScopedLockType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ripple::TimeoutCounter::ScopedLockType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -272,13 +270,13 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00051">51</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00081">81</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ac3ec1bb6bd7ab4c0081fd614fcc52baf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac3ec1bb6bd7ab4c0081fd614fcc52baf">&#9670;&nbsp;</a></span>TransactionAcquire()</h2>
+<a id="a66024e1acf01cdfb2abbb18fcb676184"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66024e1acf01cdfb2abbb18fcb676184">&#9670;&nbsp;</a></span>TransactionAcquire()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -293,7 +291,13 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em>&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSet.html">PeerSet</a> &gt;&#160;</td>
+          <td class="paramname"><em>peerSet</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -303,7 +307,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00042">42</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00043">43</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -365,7 +369,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00177">177</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00178">178</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -385,7 +389,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00253">253</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00256">256</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -404,38 +408,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00263">263</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a47afa8da1fb2bfd6540573a303ce0657"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47afa8da1fb2bfd6540573a303ce0657">&#9670;&nbsp;</a></span>queueJob()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::TransactionAcquire::queueJob </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Queue a job to call <a class="el" href="classripple_1_1PeerSet.html#af519e54b016eff0b244aceba65944e55" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>. </p>
-
-<p>Implements <a class="el" href="classripple_1_1PeerSet.html#a46bc82ece5fd76d43a6206fa7714d13b">ripple::PeerSet</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00052">52</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00266">266</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -457,7 +430,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> &amp;&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -473,43 +446,11 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Hook called from <a class="el" href="classripple_1_1PeerSet.html#af519e54b016eff0b244aceba65944e55" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>. </p>
+<p>Hook called from <a class="el" href="classripple_1_1TimeoutCounter.html#a3e417a539a334133b056df64d06ddda0" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>. </p>
 
-<p>Implements <a class="el" href="classripple_1_1PeerSet.html#ac0416d2dcd2e5eb8801f55b03f4875e1">ripple::PeerSet</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1TimeoutCounter.html#a17c93d4a677d83e11650fbf5812379c8">ripple::TimeoutCounter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00090">90</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aebb867d525e6ea79a7a856c23b724734"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebb867d525e6ea79a7a856c23b724734">&#9670;&nbsp;</a></span>onPeerAdded()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::TransactionAcquire::onPeerAdded </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Hook called from <a class="el" href="classripple_1_1TransactionAcquire.html#aa34fd83fe24bc7be350acd91959234f4">addPeers()</a>. </p>
-
-<p>Implements <a class="el" href="classripple_1_1PeerSet.html#a9ce55399eb28bc79e4397b7455af8aec">ripple::PeerSet</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00065">65</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00091">91</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -536,12 +477,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00061">61</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00062">62</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
 <a id="aa34fd83fe24bc7be350acd91959234f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa34fd83fe24bc7be350acd91959234f4">&#9670;&nbsp;</a></span>addPeers() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa34fd83fe24bc7be350acd91959234f4">&#9670;&nbsp;</a></span>addPeers()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -564,7 +505,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00246">246</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00247">247</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -592,12 +533,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00112">112</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00113">113</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ac30842a6e54deecb72f2b60aa412f6d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac30842a6e54deecb72f2b60aa412f6d6">&#9670;&nbsp;</a></span>pmDowncast()</h2>
+<a id="a80ddba2237192e0e2f502b96de6f6fa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80ddba2237192e0e2f502b96de6f6fa7">&#9670;&nbsp;</a></span>pmDowncast()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -606,7 +547,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSet.html">PeerSet</a> &gt; ripple::TransactionAcquire::pmDowncast </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1TimeoutCounter.html">TimeoutCounter</a> &gt; ripple::TransactionAcquire::pmDowncast </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -621,14 +562,14 @@ Private Attributes</h2></td></tr>
 
 <p>Return a weak pointer to this. </p>
 
-<p>Implements <a class="el" href="classripple_1_1PeerSet.html#af1c64f5cd21f67f9e232c42195aed820">ripple::PeerSet</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1TimeoutCounter.html#a8c7b93cba3bd5ea468ffe6da2594032a">ripple::TimeoutCounter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00106">106</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00107">107</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a4557b201391f7d1b5e11af49560ff3ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4557b201391f7d1b5e11af49560ff3ee">&#9670;&nbsp;</a></span>addPeers() <span class="overload">[2/2]</span></h2>
+<a id="ac9f8538b7f73ebcda116c33d5541d16d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9f8538b7f73ebcda116c33d5541d16d">&#9670;&nbsp;</a></span>cancel()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -637,21 +578,41 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::PeerSet::addPeers </td>
+          <td class="memname">void ripple::TimeoutCounter::cancel </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>limit</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)&gt;&#160;</td>
-          <td class="paramname"><em>score</em>&#160;</td>
         </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Cancel the task by marking it as failed if the task is not done. </p>
+<dl class="section note"><dt>Note</dt><dd>this function does not attempt to cancel the scheduled timer or to remove the queued job if any. When the timer expires or the queued job starts, however, the code will see that the task is done and returns immediately, if it can lock the weak pointer of the task. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8cpp_source.html#l00118">118</a> of file <a class="el" href="TimeoutCounter_8cpp_source.html">TimeoutCounter.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a3a01b0664f4479588f93e805ee9aaced"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a01b0664f4479588f93e805ee9aaced">&#9670;&nbsp;</a></span>setTimer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
         <tr>
+          <td class="memname">void ripple::TimeoutCounter::setTimer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> &amp;&#160;</td>
+          <td class="paramname"><em>sl</em></td><td>)</td>
           <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -661,14 +622,14 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Add at most <code>limit</code> peers to this set from the overlay. </p>
+<p>Schedule a call to <a class="el" href="classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553" title="Queue a job to call invokeOnTimer().">queueJob()</a> after mTimerInterval. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00050">50</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8cpp_source.html#l00050">50</a> of file <a class="el" href="TimeoutCounter_8cpp_source.html">TimeoutCounter.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a92cd86e610ddc3c75bfa4a613dd42285"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92cd86e610ddc3c75bfa4a613dd42285">&#9670;&nbsp;</a></span>isDone()</h2>
+<a id="a0679c129f5ffcdcf46b6b2ce6f31a553"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0679c129f5ffcdcf46b6b2ce6f31a553">&#9670;&nbsp;</a></span>queueJob()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -677,7 +638,37 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::PeerSet::isDone </td>
+          <td class="memname">void ripple::TimeoutCounter::queueJob </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TimeoutCounter.html#acc58d4a18742a417a8b290df4b58072d">ScopedLockType</a> &amp;&#160;</td>
+          <td class="paramname"><em>sl</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Queue a job to call <a class="el" href="classripple_1_1TimeoutCounter.html#a3e417a539a334133b056df64d06ddda0" title="Calls onTimer() if in the right state.">invokeOnTimer()</a>. </p>
+
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8cpp_source.html#l00069">69</a> of file <a class="el" href="TimeoutCounter_8cpp_source.html">TimeoutCounter.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a28e1660d3e1964810a10e298cd2f5c94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28e1660d3e1964810a10e298cd2f5c94">&#9670;&nbsp;</a></span>isDone()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::TimeoutCounter::isDone </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -690,12 +681,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00084">84</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00116">116</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="af519e54b016eff0b244aceba65944e55"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af519e54b016eff0b244aceba65944e55">&#9670;&nbsp;</a></span>invokeOnTimer()</h2>
+<a id="a3e417a539a334133b056df64d06ddda0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e417a539a334133b056df64d06ddda0">&#9670;&nbsp;</a></span>invokeOnTimer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -704,7 +695,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::PeerSet::invokeOnTimer </td>
+          <td class="memname">void ripple::TimeoutCounter::invokeOnTimer </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -712,83 +703,15 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 <p>Calls <a class="el" href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba" title="Hook called from invokeOnTimer().">onTimer()</a> if in the right state. </p>
+<p>Only called by <a class="el" href="classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553" title="Queue a job to call invokeOnTimer().">queueJob()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00101">101</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
-
-</div>
-</div>
-<a id="abb0ae391c3b73fdb47a4bca7069b97f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb0ae391c3b73fdb47a4bca7069b97f4">&#9670;&nbsp;</a></span>sendRequest()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::PeerSet::sendRequest </td>
-          <td>(</td>
-          <td class="paramtype">const protocol::TMGetLedger &amp;&#160;</td>
-          <td class="paramname"><em>message</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>peer</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Send a GetLedger message to one or all peers. </p>
-
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00127">127</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
-
-</div>
-</div>
-<a id="addc5e94d9df5ad4a25e9afb735984cf3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#addc5e94d9df5ad4a25e9afb735984cf3">&#9670;&nbsp;</a></span>setTimer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::PeerSet::setTimer </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Schedule a call to <a class="el" href="classripple_1_1TransactionAcquire.html#a47afa8da1fb2bfd6540573a303ce0657" title="Queue a job to call invokeOnTimer().">queueJob()</a> after mTimerInterval. </p>
-
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00087">87</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8cpp_source.html#l00093">93</a> of file <a class="el" href="TimeoutCounter_8cpp_source.html">TimeoutCounter.cpp</a>.</p>
 
 </div>
 </div>
@@ -837,7 +760,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00055">55</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00058">58</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -861,12 +784,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00056">56</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00059">59</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
-<a id="a706a011ba681781598055237f2d7fdaf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a706a011ba681781598055237f2d7fdaf">&#9670;&nbsp;</a></span>app_</h2>
+<a id="acd2af1773605384cd28b8be476c2932d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd2af1773605384cd28b8be476c2932d">&#9670;&nbsp;</a></span>mPeerSet</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -875,7 +798,31 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Application.html">Application</a>&amp; ripple::PeerSet::app_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1PeerSet.html">PeerSet</a>&gt; ripple::TransactionAcquire::mPeerSet</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00060">60</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+
+</div>
+</div>
+<a id="ad9edbc193ee8a2d70897613e9debfdb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9edbc193ee8a2d70897613e9debfdb7">&#9670;&nbsp;</a></span>app_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Application.html">Application</a>&amp; ripple::TimeoutCounter::app_</td>
         </tr>
       </table>
   </td>
@@ -885,12 +832,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00105">105</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00123">123</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="a63e0e407163a2e3f9fcd9135f519b5d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a63e0e407163a2e3f9fcd9135f519b5d1">&#9670;&nbsp;</a></span>m_journal</h2>
+<a id="a85b050512eadcc42934c1a03cba6ce79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85b050512eadcc42934c1a03cba6ce79">&#9670;&nbsp;</a></span>journal_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -899,7 +846,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> ripple::PeerSet::m_journal</td>
+          <td class="memname"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> ripple::TimeoutCounter::journal_</td>
         </tr>
       </table>
   </td>
@@ -909,12 +856,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00106">106</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00124">124</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="ab4fa0ea92f95d96e69d2149e23d02ea4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4fa0ea92f95d96e69d2149e23d02ea4">&#9670;&nbsp;</a></span>mLock</h2>
+<a id="ad13bccc1f788cec83fd1d81cb2e80743"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad13bccc1f788cec83fd1d81cb2e80743">&#9670;&nbsp;</a></span>mtx_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -923,22 +870,22 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> ripple::PeerSet::mLock</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> ripple::TimeoutCounter::mtx_</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00108">108</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00125">125</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="a0a79a33d6012ccbc0f7e21e561d8f113"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a79a33d6012ccbc0f7e21e561d8f113">&#9670;&nbsp;</a></span>mHash</h2>
+<a id="a1e485e95b38537ba063095df175719e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e485e95b38537ba063095df175719e1">&#9670;&nbsp;</a></span>hash_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -947,7 +894,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::PeerSet::mHash</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::TimeoutCounter::hash_</td>
         </tr>
       </table>
   </td>
@@ -959,12 +906,12 @@ Private Attributes</h2></td></tr>
 
 <p>The hash of the object (in practice, always a ledger) we are trying to fetch. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00112">112</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00129">129</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="ae9b6f50ad29c4a6838652f98d5cca7e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9b6f50ad29c4a6838652f98d5cca7e3">&#9670;&nbsp;</a></span>mTimeouts</h2>
+<a id="ab6b3661800dfea540e8c6d4121b502bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6b3661800dfea540e8c6d4121b502bc">&#9670;&nbsp;</a></span>timeouts_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -973,7 +920,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int ripple::PeerSet::mTimeouts</td>
+          <td class="memname">int ripple::TimeoutCounter::timeouts_</td>
         </tr>
       </table>
   </td>
@@ -983,12 +930,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00113">113</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00130">130</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="a5e8e26a4201b05c805959c7fc909ec84"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e8e26a4201b05c805959c7fc909ec84">&#9670;&nbsp;</a></span>mComplete</h2>
+<a id="a7136bc55557a72b6fe16984b9afd0ace"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7136bc55557a72b6fe16984b9afd0ace">&#9670;&nbsp;</a></span>complete_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -997,7 +944,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::PeerSet::mComplete</td>
+          <td class="memname">bool ripple::TimeoutCounter::complete_</td>
         </tr>
       </table>
   </td>
@@ -1007,12 +954,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00114">114</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00131">131</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="a9a7d358bfb4c9ca39cbe143a270d6123"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a7d358bfb4c9ca39cbe143a270d6123">&#9670;&nbsp;</a></span>mFailed</h2>
+<a id="ae8d27d1e5f6f3d5a6cb59545b2ee7433"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8d27d1e5f6f3d5a6cb59545b2ee7433">&#9670;&nbsp;</a></span>failed_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1021,7 +968,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::PeerSet::mFailed</td>
+          <td class="memname">bool ripple::TimeoutCounter::failed_</td>
         </tr>
       </table>
   </td>
@@ -1031,12 +978,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00115">115</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00132">132</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="ab291c226238498bf28b4ffad090b47e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab291c226238498bf28b4ffad090b47e1">&#9670;&nbsp;</a></span>mProgress</h2>
+<a id="a2e38caa16d926bbc77c92f67a69facfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e38caa16d926bbc77c92f67a69facfb">&#9670;&nbsp;</a></span>progress_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1045,7 +992,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::PeerSet::mProgress</td>
+          <td class="memname">bool ripple::TimeoutCounter::progress_</td>
         </tr>
       </table>
   </td>
@@ -1057,12 +1004,12 @@ Private Attributes</h2></td></tr>
 
 <p>Whether forward progress has been made. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00117">117</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00134">134</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="a0652998669e63104bf8da3c0eafbe270"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0652998669e63104bf8da3c0eafbe270">&#9670;&nbsp;</a></span>mPeers</h2>
+<a id="a4cd3ab8d59bc971262ec26d715f8538a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cd3ab8d59bc971262ec26d715f8538a">&#9670;&nbsp;</a></span>timerInterval_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1071,7 +1018,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt;<a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a>&gt; ripple::PeerSet::mPeers</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::TimeoutCounter::timerInterval_</td>
         </tr>
       </table>
   </td>
@@ -1081,40 +1028,14 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>The identifiers of the peers we are tracking. </p>
-
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00120">120</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
-
-</div>
-</div>
-<a id="a6c83fd1c266d3fa99adb07d0075f201c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c83fd1c266d3fa99adb07d0075f201c">&#9670;&nbsp;</a></span>mTimerInterval</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::PeerSet::mTimerInterval</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
 <p>The minimum time to wait between calls to execute(). </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00124">124</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00136">136</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
-<a id="afab2c5b6dc398605d06502c282f11b56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afab2c5b6dc398605d06502c282f11b56">&#9670;&nbsp;</a></span>mTimer</h2>
+<a id="a57a50217ec6ad8fb6ff2af4496fe5ea8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57a50217ec6ad8fb6ff2af4496fe5ea8">&#9670;&nbsp;</a></span>queueJobParameter_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1123,7 +1044,31 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::basic_waitable_timer&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt; ripple::PeerSet::mTimer</td>
+          <td class="memname"><a class="el" href="structripple_1_1TimeoutCounter_1_1QueueJobParameter.html">QueueJobParameter</a> ripple::TimeoutCounter::queueJobParameter_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00138">138</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
+
+</div>
+</div>
+<a id="a9c57abb1684ecfa13a3c567b0406d416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c57abb1684ecfa13a3c567b0406d416">&#9670;&nbsp;</a></span>timer_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::asio::basic_waitable_timer&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt; ripple::TimeoutCounter::timer_</td>
         </tr>
       </table>
   </td>
@@ -1133,7 +1078,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00126">126</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeoutCounter_8h_source.html#l00147">147</a> of file <a class="el" href="TimeoutCounter_8h_source.html">TimeoutCounter.h</a>.</p>
 
 </div>
 </div>
