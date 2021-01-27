@@ -359,8 +359,7 @@ public:
         , m_ledgerReplayer(std::make_unique<LedgerReplayer>(
               *this,
               *m_inboundLedgers,
-              make_PeerSetBuilder(*this),
-              *m_jobQueue))
+              make_PeerSetBuilder(*this)))
 
         , m_acceptedLedgerCache(
               "AcceptedLedger",
@@ -1097,6 +1096,7 @@ public:
         }
         m_inboundLedgers->stop();
         m_inboundTransactions->stop();
+        m_ledgerReplayer->stop();
         overlay_->stop();
         perfLog_->stop();
         grpcServer_->stop();

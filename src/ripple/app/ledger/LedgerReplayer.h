@@ -24,7 +24,6 @@
 #include <ripple/app/ledger/LedgerReplayTask.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Stoppable.h>
 
 #include <memory>
 #include <mutex>
@@ -70,14 +69,13 @@ std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
 /**
  * Manages the lifetime of ledger replay tasks.
  */
-class LedgerReplayer final : public Stoppable
+class LedgerReplayer final
 {
 public:
     LedgerReplayer(
         Application& app,
         InboundLedgers& inboundLedgers,
-        std::unique_ptr<PeerSetBuilder> peerSetBuilder,
-        Stoppable& parent);
+        std::unique_ptr<PeerSetBuilder> peerSetBuilder);
 
     ~LedgerReplayer();
 
@@ -125,7 +123,7 @@ public:
     sweep();
 
     void
-    onStop() override;
+    stop();
 
 private:
     mutable std::mutex mtx_;
