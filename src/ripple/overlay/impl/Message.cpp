@@ -85,6 +85,7 @@ Message::compress()
             case protocol::mtGET_OBJECTS:
             case protocol::mtVALIDATORLIST:
             case protocol::mtVALIDATORLISTCOLLECTION:
+            case protocol::mtREPLAY_DELTA_RESPONSE:
                 return true;
             case protocol::mtPING:
             case protocol::mtCLUSTER:
@@ -96,6 +97,9 @@ Message::compress()
             case protocol::mtSHARD_INFO:
             case protocol::mtGET_PEER_SHARD_INFO:
             case protocol::mtPEER_SHARD_INFO:
+            case protocol::mtPROOF_PATH_REQ:
+            case protocol::mtPROOF_PATH_RESPONSE:
+            case protocol::mtREPLAY_DELTA_REQ:
                 break;
         }
         return false;

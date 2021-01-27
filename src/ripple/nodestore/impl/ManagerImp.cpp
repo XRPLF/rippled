@@ -122,18 +122,5 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-//------------------------------------------------------------------------------
-
-std::unique_ptr<Backend>
-make_Backend(
-    Section const& config,
-    std::size_t burstSize,
-    Scheduler& scheduler,
-    beast::Journal journal)
-{
-    return Manager::instance().make_Backend(
-        config, burstSize, scheduler, journal);
-}
-
 }  // namespace NodeStore
 }  // namespace ripple

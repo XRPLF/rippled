@@ -1304,6 +1304,65 @@ public:
     }
 
     void
+    receive_max()
+    {
+        testcase("Receive max");
+        using namespace jtx;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+        {
+            // XRP -> IOU receive max
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob, charlie, gw);
+            env.close();
+            env.trust(USD(100), alice, bob, charlie);
+            env.close();
+            env(pay(gw, charlie, USD(10)));
+            env.close();
+            env(offer(charlie, XRP(10), USD(10)));
+            env.close();
+            auto [st, sa, da] =
+                find_paths(env, alice, bob, USD(-1), XRP(100).value());
+            BEAST_EXPECT(sa == XRP(10));
+            BEAST_EXPECT(equal(da, USD(10)));
+            if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
+            {
+                auto const& pathElem = st[0][0];
+                BEAST_EXPECT(
+                    pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
+                    pathElem.getCurrency() == USD.currency);
+            }
+        }
+        {
+            // IOU -> XRP receive max
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob, charlie, gw);
+            env.close();
+            env.trust(USD(100), alice, bob, charlie);
+            env.close();
+            env(pay(gw, alice, USD(10)));
+            env.close();
+            env(offer(charlie, USD(10), XRP(10)));
+            env.close();
+            auto [st, sa, da] =
+                find_paths(env, alice, bob, drops(-1), USD(100).value());
+            BEAST_EXPECT(sa == USD(10));
+            BEAST_EXPECT(equal(da, XRP(10)));
+            if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
+            {
+                auto const& pathElem = st[0][0];
+                BEAST_EXPECT(
+                    pathElem.isOffer() &&
+                    pathElem.getIssuerID() == xrpAccount() &&
+                    pathElem.getCurrency() == xrpCurrency());
+            }
+        }
+    }
+
+    void
     run() override
     {
         source_currencies_limit();
@@ -1325,6 +1384,7 @@ public:
         trust_auto_clear_trust_normal_clear();
         trust_auto_clear_trust_auto_clear();
         xrp_to_xrp();
+        receive_max();
 
         // The following path_find_NN tests are data driven tests
         // that were originally implemented in js/coffee and migrated

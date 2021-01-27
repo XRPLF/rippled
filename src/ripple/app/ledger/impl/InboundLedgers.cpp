@@ -49,13 +49,15 @@ public:
     InboundLedgersImp(
         Application& app,
         clock_type& clock,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::ptr const& collector,
+        std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
         , fetchRate_(clock.now())
         , j_(app.journal("InboundLedger"))
         , m_clock(clock)
         , mRecentFailures(clock)
         , mCounter(collector->make_counter("ledger_fetches"))
+        , mPeerSetBuilder(std::move(peerSetBuilder))
     {
     }
 
@@ -88,7 +90,12 @@ public:
             else
             {
                 inbound = std::make_shared<InboundLedger>(
-                    app_, hash, seq, reason, std::ref(m_clock));
+                    app_,
+                    hash,
+                    seq,
+                    reason,
+                    std::ref(m_clock),
+                    mPeerSetBuilder->build());
                 mLedgers.emplace(hash, inbound);
                 inbound->init(sl);
                 ++mCounter;
@@ -403,6 +410,8 @@ private:
     beast::aged_map<uint256, std::uint32_t> mRecentFailures;
 
     beast::insight::Counter mCounter;
+
+    std::unique_ptr<PeerSetBuilder> mPeerSetBuilder;
 };
 
 //------------------------------------------------------------------------------
@@ -413,7 +422,8 @@ make_InboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp>(app, clock, collector);
+    return std::make_unique<InboundLedgersImp>(
+        app, clock, collector, make_PeerSetBuilder(app));
 }
 
 }  // namespace ripple

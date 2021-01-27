@@ -338,7 +338,7 @@ public:
         }
         {
             // Examine current PerfLog::counterJson() values.
-            Json::Value const countersJson{perfLog->countersJson()["rpc"]};
+            Json::Value const countersJson{perfLog->countersJson()[jss::rpc]};
             BEAST_EXPECT(countersJson.size() == labels.size() + 1);
             for (auto& label : labels)
             {

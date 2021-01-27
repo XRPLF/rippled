@@ -185,6 +185,9 @@ public:
     // Compression
     bool COMPRESSION = false;
 
+    // Enable the experimental Ledger Replay functionality
+    bool LEDGER_REPLAY = false;
+
     // Work queue limits
     int MAX_TRANSACTIONS = 250;
     static constexpr int MAX_JOB_QUEUE_TX = 1000;

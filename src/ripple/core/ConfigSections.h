@@ -96,6 +96,7 @@ struct ConfigSection
 #define SECTION_VALIDATOR_TOKEN "validator_token"
 #define SECTION_VETO_AMENDMENTS "veto_amendments"
 #define SECTION_WORKERS "workers"
+#define SECTION_LEDGER_REPLAY "ledger_replay"
 
 }  // namespace ripple
 

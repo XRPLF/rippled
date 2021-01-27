@@ -290,6 +290,8 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
     assert(pfresult);
+    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
+
     if (pfresult->rules != view.rules() || pfresult->flags != flags)
     {
         JLOG(j.debug()) << "Queued transaction " << txID
@@ -728,6 +730,8 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
+
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))

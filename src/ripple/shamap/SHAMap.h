@@ -264,6 +264,28 @@ public:
         bool fatLeaves,
         std::uint32_t depth) const;
 
+    /**
+     * Get the proof path of the key. The proof path is every node on the path
+     * from leaf to root. Sibling hashes are stored in the parent nodes.
+     * @param key  key of the leaf
+     * @return the proof path if found
+     */
+    std::optional<std::vector<Blob>>
+    getProofPath(uint256 const& key) const;
+
+    /**
+     * Verify the proof path
+     * @param rootHash  root hash of the map
+     * @param key  key of the leaf
+     * @param path  the proof path
+     * @return true if verified successfully
+     */
+    static bool
+    verifyProofPath(
+        uint256 const& rootHash,
+        uint256 const& key,
+        std::vector<Blob> const& path);
+
     /** Serializes the root in a format appropriate for sending over the wire */
     void
     serializeRoot(Serializer& s) const;

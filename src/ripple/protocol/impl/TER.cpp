@@ -105,7 +105,7 @@ transResults()
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
         MAKE_ERROR(telBAD_PATH_COUNT,         "Malformed: Too many paths."),
-        MAKE_ERROR(telBAD_PUBLIC_KEY,         "Public key too long."),
+        MAKE_ERROR(telBAD_PUBLIC_KEY,         "Public key is not valid."),
         MAKE_ERROR(telFAILED_PROCESSING,      "Failed to correctly process transaction."),
         MAKE_ERROR(telINSUF_FEE_P,            "Fee insufficient."),
         MAKE_ERROR(telNO_DST_PARTIAL,         "Partial payment to create account not allowed."),

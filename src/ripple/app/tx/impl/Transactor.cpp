@@ -746,6 +746,8 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
+    STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
+
 #ifdef DEBUG
     {
         Serializer ser;

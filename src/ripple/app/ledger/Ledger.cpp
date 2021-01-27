@@ -61,7 +61,7 @@ namespace ripple {
 
 create_genesis_t const create_genesis{};
 
-static uint256
+uint256
 calculateLedgerHash(LedgerInfo const& info)
 {
     // VFALCO This has to match addRaw in View.h.

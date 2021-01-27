@@ -32,10 +32,29 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <ripple.pb.h>
 #include <type_traits>
 #include <vector>
 
 namespace ripple {
+
+inline protocol::MessageType
+protocolMessageType(protocol::TMGetLedger const&)
+{
+    return protocol::mtGET_LEDGER;
+}
+
+inline protocol::MessageType
+protocolMessageType(protocol::TMReplayDeltaRequest const&)
+{
+    return protocol::mtREPLAY_DELTA_REQ;
+}
+
+inline protocol::MessageType
+protocolMessageType(protocol::TMProofPathRequest const&)
+{
+    return protocol::mtPROOF_PATH_REQ;
+}
 
 /** Returns the name of a protocol message given its type. */
 template <class = void>
@@ -82,6 +101,14 @@ protocolMessageName(int type)
             return "get_objects";
         case protocol::mtSQUELCH:
             return "squelch";
+        case protocol::mtPROOF_PATH_REQ:
+            return "proof_path_request";
+        case protocol::mtPROOF_PATH_RESPONSE:
+            return "proof_path_response";
+        case protocol::mtREPLAY_DELTA_REQ:
+            return "replay_delta_request";
+        case protocol::mtREPLAY_DELTA_RESPONSE:
+            return "replay_delta_response";
         default:
             break;
     }
@@ -437,6 +464,22 @@ invokeProtocolMessage(
         case protocol::mtSQUELCH:
             success =
                 detail::invoke<protocol::TMSquelch>(*header, buffers, handler);
+            break;
+        case protocol::mtPROOF_PATH_REQ:
+            success = detail::invoke<protocol::TMProofPathRequest>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtPROOF_PATH_RESPONSE:
+            success = detail::invoke<protocol::TMProofPathResponse>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtREPLAY_DELTA_REQ:
+            success = detail::invoke<protocol::TMReplayDeltaRequest>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtREPLAY_DELTA_RESPONSE:
+            success = detail::invoke<protocol::TMReplayDeltaResponse>(
+                *header, buffers, handler);
             break;
         default:
             handler.onMessageUnknown(header->message_type);

@@ -188,6 +188,19 @@ public:
     virtual std::pair<boost::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const = 0;
 
+    /** Return the number of offers consumed or partially consumed the last time
+        the step ran, including expired and unfunded offers.
+
+        N.B. This this not the total number offers consumed by this step for the
+        entire payment, it is only the number the last time it ran. Offers may
+        be partially consumed multiple times during a payment.
+     */
+    virtual std::uint32_t
+    offersUsed() const
+    {
+        return 0;
+    }
+
     /**
        If this step is a BookStep, return the book.
     */
@@ -281,6 +294,18 @@ private:
 
 /// @cond INTERNAL
 using Strand = std::vector<std::unique_ptr<Step>>;
+
+inline std::uint32_t
+offersUsed(Strand const& strand)
+{
+    std::uint32_t r = 0;
+    for (auto const& step : strand)
+    {
+        if (step)
+            r += step->offersUsed();
+    }
+    return r;
+}
 /// @endcond
 
 /// @cond INTERNAL
