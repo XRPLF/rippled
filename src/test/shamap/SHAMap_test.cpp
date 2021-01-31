@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <ripple/basics/Blob.h>
-#include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/Buffer.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/shamap/SHAMap.h>
+#include <algorithm>
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -109,14 +110,11 @@ operator!=(SHAMapItem const& a, uint256 const& b)
 class SHAMap_test : public beast::unit_test::suite
 {
 public:
-    static Blob
+    static Buffer
     IntToVUC(int v)
     {
-        Blob vuc;
-
-        for (int i = 0; i < 32; ++i)
-            vuc.push_back(static_cast<unsigned char>(v));
-
+        Buffer vuc(32);
+        std::fill_n(vuc.data(), vuc.size(), static_cast<std::uint8_t>(v));
         return vuc;
     }
 
@@ -371,8 +369,9 @@ class SHAMapPathProof_test : public beast::unit_test::suite
         for (unsigned char c = 1; c < 100; ++c)
         {
             uint256 k(c);
-            Blob b(32, c);
-            map.addItem(SHAMapNodeType::tnACCOUNT_STATE, SHAMapItem{k, b});
+            map.addItem(
+                SHAMapNodeType::tnACCOUNT_STATE,
+                SHAMapItem{k, Slice{k.data(), k.size()}});
             map.invariants();
 
             auto root = map.getHash().as_uint256();

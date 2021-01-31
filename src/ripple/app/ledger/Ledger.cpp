@@ -371,7 +371,8 @@ Ledger::setAccepted(
 bool
 Ledger::addSLE(SLE const& sle)
 {
-    SHAMapItem item(sle.key(), sle.getSerializer());
+    auto const s = sle.getSerializer();
+    SHAMapItem item(sle.key(), s.slice());
     return stateMap_->addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(item));
 }
 
@@ -438,8 +439,7 @@ Ledger::read(Keylet const& k) const
     auto const& item = stateMap_->peekItem(k.key);
     if (!item)
         return nullptr;
-    auto sle = std::make_shared<SLE>(
-        SerialIter{item->data(), item->size()}, item->key());
+    auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key());
     if (!k.check(*sle))
         return nullptr;
     return sle;
@@ -533,7 +533,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_->addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), std::move(ss))))
+            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
         LogicError("Ledger::rawInsert: key already exists");
 }
 
@@ -544,7 +544,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_->updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), std::move(ss))))
+            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
         LogicError("Ledger::rawReplace: key not found");
 }
 
@@ -562,7 +562,7 @@ Ledger::rawTxInsert(
     s.addVL(metaData->peekData());
     if (!txMap().addGiveItem(
             SHAMapNodeType::tnTRANSACTION_MD,
-            std::make_shared<SHAMapItem const>(key, std::move(s))))
+            std::make_shared<SHAMapItem const>(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
 }
 
@@ -578,9 +578,8 @@ Ledger::rawTxInsertWithHash(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    auto item = std::make_shared<SHAMapItem const>(key, std::move(s));
-    auto hash = sha512Half(
-        HashPrefix::txNode, makeSlice(item->peekData()), item->key());
+    auto item = std::make_shared<SHAMapItem const>(key, s.slice());
+    auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
     if (!txMap().addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
         LogicError("duplicate_tx: " + to_string(key));
 
@@ -647,8 +646,7 @@ Ledger::peek(Keylet const& k) const
     auto const& value = stateMap_->peekItem(k.key);
     if (!value)
         return nullptr;
-    auto sle = std::make_shared<SLE>(
-        SerialIter{value->data(), value->size()}, value->key());
+    auto sle = std::make_shared<SLE>(SerialIter{value->slice()}, value->key());
     if (!k.check(*sle))
         return nullptr;
     return sle;

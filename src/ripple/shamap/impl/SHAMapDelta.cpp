@@ -78,7 +78,7 @@ SHAMap::walkBranch(
                 if (--maxCount <= 0)
                     return false;
             }
-            else if (item->peekData() != otherMapItem->peekData())
+            else if (item->slice() != otherMapItem->slice())
             {
                 // non-matching items with same tag
                 if (isFirstMap)
@@ -156,8 +156,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
             auto other = static_cast<SHAMapLeafNode*>(otherNode);
             if (ours->peekItem()->key() == other->peekItem()->key())
             {
-                if (ours->peekItem()->peekData() !=
-                    other->peekItem()->peekData())
+                if (ours->peekItem()->slice() != other->peekItem()->slice())
                 {
                     differences.insert(std::make_pair(
                         ours->peekItem()->key(),

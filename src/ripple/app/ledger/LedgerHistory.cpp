@@ -411,7 +411,7 @@ LedgerHistory::handleMismatch(
         }
         else
         {
-            if ((*b)->peekData() != (*v)->peekData())
+            if ((*b)->slice() != (*v)->slice())
             {
                 // Same transaction with different metadata
                 log_metadata_difference(

@@ -91,7 +91,7 @@ public:
         Serializer s;
         for (int d = 0; d < 3; ++d)
             s.add32(ripple::rand_int<std::uint32_t>(r));
-        return std::make_shared<Item>(s.getSHA512Half(), s.peekData());
+        return std::make_shared<Item>(s.getSHA512Half(), s.slice());
     }
 
     void
