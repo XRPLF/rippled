@@ -141,7 +141,7 @@ ServerHandlerImp::stop()
 {
     m_server->close();
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock lock(mutex_);
         condition_.wait(lock, [&] { return stopped_; });
     }
 }
@@ -370,7 +370,7 @@ ServerHandlerImp::onClose(Session& session, boost::system::error_code const&)
 void
 ServerHandlerImp::onStopped(Server&)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
 }
