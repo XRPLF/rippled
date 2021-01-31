@@ -89,7 +89,7 @@ private:
         stop() override;
 
         void
-        start();
+        async_wait();
 
         void
         on_timer(error_code ec);

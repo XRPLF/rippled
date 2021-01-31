@@ -79,7 +79,7 @@ OverlayImpl::Timer::stop()
 }
 
 void
-OverlayImpl::Timer::start()
+OverlayImpl::Timer::async_wait()
 {
     timer_.expires_after(std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
@@ -105,7 +105,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
     if ((overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
-    start();
+    async_wait();
 }
 
 //------------------------------------------------------------------------------
@@ -541,7 +541,7 @@ OverlayImpl::start()
     std::lock_guard lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
-    timer->start();
+    timer->async_wait();
 }
 
 void
