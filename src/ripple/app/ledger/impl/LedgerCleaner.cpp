@@ -377,7 +377,7 @@ private:
     void
     doLedgerCleaner()
     {
-        auto shouldExit = [&] {
+        auto shouldExit = [this] {
             std::lock_guard lock(mutex_);
             return shouldExit_;
         };

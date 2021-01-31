@@ -142,7 +142,7 @@ ServerHandlerImp::stop()
     m_server->close();
     {
         std::unique_lock lock(mutex_);
-        condition_.wait(lock, [&] { return stopped_; });
+        condition_.wait(lock, [this] { return stopped_; });
     }
 }
 
