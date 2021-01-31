@@ -1528,8 +1528,8 @@ setup_Overlay(BasicConfig const& config)
     return setup;
 }
 
-std::unique_ptr<OverlayImpl>
-make_OverlayImpl(
+std::unique_ptr<Overlay>
+make_Overlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,

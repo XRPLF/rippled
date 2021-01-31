@@ -154,10 +154,10 @@ public:
     operator=(OverlayImpl const&) = delete;
 
     void
-    start();
+    start() override;
 
     void
-    stop();
+    stop() override;
 
     PeerFinder::Manager&
     peerFinder()

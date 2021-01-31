@@ -218,7 +218,7 @@ public:
     std::unique_ptr<DatabaseCon> mTxnDB;
     std::unique_ptr<DatabaseCon> mLedgerDB;
     std::unique_ptr<DatabaseCon> mWalletDB;
-    std::unique_ptr<OverlayImpl> overlay_;
+    std::unique_ptr<Overlay> overlay_;
 
     boost::asio::signal_set m_signals;
 
@@ -1520,7 +1520,7 @@ ApplicationImp::setup()
     //             if (!config_.standalone())
     if (!config_->reporting())
     {
-        overlay_ = make_OverlayImpl(
+        overlay_ = make_Overlay(
             *this,
             setup_Overlay(*config_),
             *serverHandler_,
