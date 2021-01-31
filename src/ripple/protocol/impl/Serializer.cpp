@@ -105,6 +105,14 @@ Serializer::addRaw(Blob const& vector)
 }
 
 int
+Serializer::addRaw(Slice slice)
+{
+    int ret = mData.size();
+    mData.insert(mData.end(), slice.begin(), slice.end());
+    return ret;
+}
+
+int
 Serializer::addRaw(const Serializer& s)
 {
     int ret = mData.size();

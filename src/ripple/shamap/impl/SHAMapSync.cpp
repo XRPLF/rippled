@@ -697,7 +697,7 @@ SHAMap::deepCompare(SHAMap& other) const
                 static_cast<SHAMapLeafNode*>(otherNode)->peekItem();
             if (nodePeek->key() != otherNodePeek->key())
                 return false;
-            if (nodePeek->peekData() != otherNodePeek->peekData())
+            if (nodePeek->slice() != otherNodePeek->slice())
                 return false;
         }
         else if (node->isInner())

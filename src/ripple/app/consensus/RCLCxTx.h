@@ -91,8 +91,7 @@ public:
         insert(Tx const& t)
         {
             return map_->addItem(
-                SHAMapNodeType::tnTRANSACTION_NM,
-                SHAMapItem{t.id(), t.tx_.peekData()});
+                SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{t.tx_});
         }
 
         /** Remove a transaction from the set.

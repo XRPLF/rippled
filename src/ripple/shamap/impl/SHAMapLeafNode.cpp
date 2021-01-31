@@ -28,7 +28,7 @@ SHAMapLeafNode::SHAMapLeafNode(
     std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
-    assert(item_->peekData().size() >= 12);
+    assert(item_->size() >= 12);
 }
 
 SHAMapLeafNode::SHAMapLeafNode(
@@ -37,7 +37,7 @@ SHAMapLeafNode::SHAMapLeafNode(
     SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
-    assert(item_->peekData().size() >= 12);
+    assert(item_->size() >= 12);
 }
 
 std::shared_ptr<SHAMapItem const> const&

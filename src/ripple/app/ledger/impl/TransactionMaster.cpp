@@ -123,7 +123,7 @@ TransactionMaster::fetch(
         }
         else if (type == SHAMapNodeType::tnTRANSACTION_MD)
         {
-            auto blob = SerialIter{item->data(), item->size()}.getVL();
+            auto blob = SerialIter{item->slice()}.getVL();
             txn = std::make_shared<STTx const>(
                 SerialIter{blob.data(), blob.size()});
         }
