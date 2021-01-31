@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/impl/PerfLogImp.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
@@ -97,12 +97,12 @@ class PerfLog_test : public beast::unit_test::suite
             return std::chrono::milliseconds{10};
         }
 
-        std::unique_ptr<perf::PerfLogImp>
+        std::unique_ptr<perf::PerfLog>
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
                 withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLogImp(
+            return perf::make_PerfLog(
                 setup, j_, [this]() { return signalStop(); });
         }
 

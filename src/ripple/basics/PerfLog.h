@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_PERFLOG_H
 #define RIPPLE_BASICS_PERFLOG_H
 
+#include <ripple/core/Config.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_value.h>
 #include <boost/filesystem.hpp>
@@ -65,6 +66,16 @@ public:
     };
 
     virtual ~PerfLog() = default;
+
+    virtual void
+    start()
+    {
+    }
+
+    virtual void
+    stop()
+    {
+    }
 
     /**
      * Log start of RPC call.
@@ -156,6 +167,15 @@ public:
     virtual void
     rotate() = 0;
 };
+
+PerfLog::Setup
+setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
+
+std::unique_ptr<PerfLog>
+make_PerfLog(
+    PerfLog::Setup const& setup,
+    beast::Journal journal,
+    std::function<void()>&& signalStop);
 
 }  // namespace perf
 }  // namespace ripple

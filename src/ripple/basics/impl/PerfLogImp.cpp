@@ -488,8 +488,8 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
     return setup;
 }
 
-std::unique_ptr<PerfLogImp>
-make_PerfLogImp(
+std::unique_ptr<PerfLog>
+make_PerfLog(
     PerfLog::Setup const& setup,
     beast::Journal journal,
     std::function<void()>&& signalStop)

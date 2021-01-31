@@ -199,20 +199,11 @@ public:
     rotate() override;
 
     void
-    start();
+    start() override;
 
     void
-    stop();
+    stop() override;
 };
-
-PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
-
-std::unique_ptr<PerfLogImp>
-make_PerfLogImp(
-    PerfLog::Setup const& setup,
-    beast::Journal journal,
-    std::function<void()>&& signalStop);
 
 }  // namespace perf
 }  // namespace ripple
