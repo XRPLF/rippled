@@ -133,7 +133,7 @@ public:
         @note This function is not thread-safe.
     */
     void
-    pauseAllThreadsAndWait();
+    stop();
 
     /** Add a task to be performed.
 

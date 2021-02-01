@@ -31,7 +31,7 @@ TaskQueue::TaskQueue() : workers_(*this, nullptr, "Shard store taskQueue", 1)
 void
 TaskQueue::stop()
 {
-    workers_.pauseAllThreadsAndWait();
+    workers_.stop();
 }
 
 void
