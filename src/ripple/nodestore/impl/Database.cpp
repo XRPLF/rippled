@@ -61,7 +61,7 @@ bool
 Database::isStopping() const
 {
     std::lock_guard lock(readLock_);
-    return readShut_;
+    return readStopping_;
 }
 
 void
@@ -71,10 +71,10 @@ Database::stop()
     // reads.  Join the background read threads.
     {
         std::lock_guard lock(readLock_);
-        if (readShut_)  // Only stop threads once.
+        if (readStopping_)  // Only stop threads once.
             return;
 
-        readShut_ = true;
+        readStopping_ = true;
         readCondVar_.notify_all();
     }
 
@@ -272,12 +272,9 @@ Database::threadEntry()
 
         {
             std::unique_lock<std::mutex> lock(readLock_);
-            while (!readShut_ && read_.empty())
-            {
-                // All work is done
-                readCondVar_.wait(lock);
-            }
-            if (readShut_)
+            readCondVar_.wait(
+                lock, [this] { return readStopping_ || !read_.empty(); });
+            if (readStopping_)
                 break;
 
             // Read in key order to make the back end more efficient

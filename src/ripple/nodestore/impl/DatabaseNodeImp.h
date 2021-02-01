@@ -78,6 +78,11 @@ public:
         assert(backend_);
     }
 
+    ~DatabaseNodeImp()
+    {
+        stop();
+    }
+
     std::string
     getName() const override
     {

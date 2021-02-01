@@ -41,6 +41,11 @@ public:
         Section const& config,
         beast::Journal j);
 
+    ~DatabaseRotatingImp()
+    {
+        stop();
+    }
+
     void
     rotateWithLock(
         std::function<std::unique_ptr<NodeStore::Backend>(

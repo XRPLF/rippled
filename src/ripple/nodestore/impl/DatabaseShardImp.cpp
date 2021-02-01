@@ -693,32 +693,25 @@ DatabaseShardImp::stop()
 {
     // Stop read threads in base before data members are destroyed
     Database::stop();
-    {
-        std::lock_guard lock(mutex_);
-        for (auto const& [_, shard] : shards_)
-            shard->stop();
-    }
-    taskQueue_.stop();
-
     std::vector<std::weak_ptr<Shard>> shards;
     {
         std::lock_guard lock(mutex_);
-
         shards.reserve(shards_.size());
-        for (auto const& e : shards_)
-            shards.push_back(e.second);
+        for (auto const& [_, shard] : shards_)
+        {
+            shards.push_back(shard);
+            shard->stop();
+        }
         shards_.clear();
     }
+    taskQueue_.stop();
 
     // All shards should be expired at this point
-    for (auto const& e : shards)
+    for (auto const& wptr : shards)
     {
-        if (!e.expired())
+        if (auto const shard{wptr.lock()})
         {
-            std::string shardIndex;
-            if (auto const shard{e.lock()}; shard)
-                shardIndex = std::to_string(shard->index());
-
+            std::string shardIndex = std::to_string(shard->index());
             JLOG(j_.warn()) << " shard " << shardIndex << " unexpired";
         }
     }

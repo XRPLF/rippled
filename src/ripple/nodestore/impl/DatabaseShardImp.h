@@ -46,6 +46,11 @@ public:
         int readThreads,
         beast::Journal j);
 
+    ~DatabaseShardImp()
+    {
+        stop();
+    }
+
     [[nodiscard]] bool
     init() override;
 
