@@ -1097,7 +1097,8 @@ public:
         m_inboundLedgers->stop();
         m_inboundTransactions->stop();
         m_ledgerReplayer->stop();
-        overlay_->stop();
+        if (overlay_)
+            overlay_->stop();
         perfLog_->stop();
         grpcServer_->stop();
         m_networkOPs->stop();
@@ -1712,7 +1713,8 @@ ApplicationImp::start(bool withTimers)
     m_resolver->start();
     m_loadManager->start();
     m_shaMapStore->start();
-    overlay_->start();
+    if (overlay_)
+        overlay_->start();
     grpcServer_->start();
     m_ledgerMaster->start();
     perfLog_->start();
