@@ -49,7 +49,7 @@ Database::Database(
 Database::~Database()
 {
     // NOTE!
-    // Any derived class should call the stopReadThreads() method in its
+    // Any derived class should call the stop() method in its
     // destructor.  Otherwise, occasionally, the derived class may
     // crash during shutdown when its members are accessed by one of
     // these threads after the derived class is destroyed but before
