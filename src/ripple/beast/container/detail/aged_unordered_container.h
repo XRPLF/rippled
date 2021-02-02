@@ -551,7 +551,7 @@ private:
             m_vec.resize(count);
         }
 
-        // Resize the buckets to accomodate at least n items.
+        // Resize the buckets to accommodate at least n items.
         template <class Container>
         void
         resize(size_type n, Container& c)
