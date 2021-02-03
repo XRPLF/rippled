@@ -16,10 +16,14 @@ reflect these rules. Whenever possible, developers should refactor any
 levelization violations they find (by moving files or individual
 classes). At the very least, don't make things worse.
 
-The table below summarizes the _desired_ division of modules. The levels
-are numbered from the bottom up with the lower level, lower numbered,
-more independent modules listed first, and the higher level, higher
-numbered modules with more dependencies listed later.
+The table below summarizes the _desired_ division of modules, based on the
+state of the rippled code when it was created. The levels are numbered from
+the bottom up with the lower level, lower numbered, more independent
+modules listed first, and the higher level, higher numbered modules with
+more dependencies listed later.
+
+**tl;dr:** The modules listed first are more independent than the modules
+listed later.
 
 | Level / Tier | Module(s)                                     |
 |--------------|-----------------------------------------------|
