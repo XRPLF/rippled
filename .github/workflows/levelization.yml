@@ -12,7 +12,34 @@ jobs:
     - name: Check levelization
       run: Builds/levelization/levelization.sh
     - name: Check for differences
-      run: git diff --exit-code
-      # If this workflow fails, and you have improved levelization, run
-      # Builds/levelization/levelization.sh, and commit the changes to
-      # loops.txt.
+      shell: bash
+      run: |
+        set -o pipefail
+        echo "If you are reading this, you are probably looking at a failed"
+        echo "Github Actions job. That means you changed the dependency"
+        echo "relationships between the modules in rippled. That may be an"
+        echo "improvement or a regression. This check doesn't judge."
+        echo
+        echo "A rule of thumb, though, is that if you removed something from"
+        echo "loops.txt, that's probably an improvement. If you added"
+        echo "something, it's probably a regression."
+        echo
+        echo "To fix it, you can do one of two things:"
+        echo "1. (The hard way): Download and apply the patch generated as an"
+        echo "   artifact of this job to your repo, commit, and push."
+        echo "2. (The easy way): Run './Builds/levelization/levelization.sh'"
+        echo "   in your repo, commit, and push."
+        echo
+        echo "See Builds/levelization/README.md for more info."
+        git diff --exit-code | tee "${{ github.sha }}.patch"
+        # If this workflow fails, and you have improved levelization, run
+        # Builds/levelization/levelization.sh, and commit the changes to
+        # loops.txt.
+    - name: Publish patch
+      if: failure()
+      uses: actions/upload-artifact@v2
+      continue-on-error: true
+      with:
+        name: ${{ github.sha }}.patch
+        if-no-files-found: ignore
+        path: ${{ github.sha }}.patch
