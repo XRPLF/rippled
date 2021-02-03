@@ -1101,6 +1101,7 @@ public:
             overlay_->stop();
         perfLog_->stop();
         grpcServer_->stop();
+        serverHandler_->stop();
         m_networkOPs->stop();
         m_ledgerMaster->stop();
         m_loadManager->stop();
