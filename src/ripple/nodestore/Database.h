@@ -314,10 +314,15 @@ private:
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
     /** Retrieve backend read and write stats.
-        The return pointer is treated like an std::optional.
+
+        @note The Counters struct is specific to and only used
+              by CassandraBackend.
     */
-    virtual Backend::Counters const*
-    getCounters() const = 0;
+    virtual std::optional<Backend::Counters<std::uint64_t>>
+    getCounters() const
+    {
+        return std::nullopt;
+    }
 
     void
     threadEntry();

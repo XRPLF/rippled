@@ -212,12 +212,5 @@ DatabaseRotatingImp::for_each(
     archive->for_each(f);
 }
 
-Backend::Counters const*
-DatabaseRotatingImp::getCounters() const
-{
-    std::lock_guard lock(mutex_);
-    return &(writableBackend_->counters());
-}
-
 }  // namespace NodeStore
 }  // namespace ripple

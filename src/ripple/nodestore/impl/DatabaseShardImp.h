@@ -327,9 +327,6 @@ private:
 
     bool
     checkHistoricalPaths() const;
-
-    Backend::Counters const*
-    getCounters() const override;
 };
 
 }  // namespace NodeStore

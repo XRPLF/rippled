@@ -153,10 +153,10 @@ private:
         backend_->for_each(f);
     }
 
-    Backend::Counters const*
+    std::optional<Backend::Counters<std::uint64_t>>
     getCounters() const override
     {
-        return &(backend_->counters());
+        return backend_->counters();
     }
 };
 

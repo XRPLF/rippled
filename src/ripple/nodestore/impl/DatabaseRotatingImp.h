@@ -101,9 +101,6 @@ private:
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
-
-    Backend::Counters const*
-    getCounters() const override;
 };
 
 }  // namespace NodeStore

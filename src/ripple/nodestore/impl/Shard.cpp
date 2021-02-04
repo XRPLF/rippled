@@ -550,15 +550,6 @@ Shard::getWriteLoad()
     return backend_->getWriteLoad();
 }
 
-Backend::Counters const*
-Shard::getCounters()
-{
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return nullptr;
-    return &(backend_->counters());
-}
-
 bool
 Shard::isLegacy() const
 {
