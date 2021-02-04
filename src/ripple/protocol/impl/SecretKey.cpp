@@ -84,7 +84,7 @@ deriveDeterministicRootKey(Seed const& seed)
     // more iterations loop a few times.
     for (std::uint32_t seq = 0; seq != 128; ++seq)
     {
-        copy_uint32(buf.begin() + 16, seq);
+        copy_uint32(buf.data() + 16, seq);
 
         auto const ret = sha512Half(buf);
 
@@ -137,13 +137,13 @@ private:
 
         std::array<std::uint8_t, 41> buf;
         std::copy(generator_.begin(), generator_.end(), buf.begin());
-        copy_uint32(buf.begin() + 33, seq);
+        copy_uint32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are neglible
         // but we impose a maximum limit just in case.
         for (std::uint32_t subseq = 0; subseq != 128; ++subseq)
         {
-            copy_uint32(buf.begin() + 37, subseq);
+            copy_uint32(buf.data() + 37, subseq);
 
             auto const ret = sha512Half_s(buf);
 

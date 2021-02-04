@@ -34,9 +34,6 @@ Loop: ripple.basics ripple.rpc
 Loop: ripple.core ripple.net
   ripple.net > ripple.core
 
-Loop: ripple.crypto ripple.protocol
-  ripple.protocol > ripple.crypto
-
 Loop: ripple.net ripple.rpc
   ripple.rpc > ripple.net
 
