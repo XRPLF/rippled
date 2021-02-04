@@ -19,6 +19,7 @@ endif ()
     TODO: review these sources for removal or replacement
 #]===============================]
 target_sources (xrpl_core PRIVATE
+  src/ripple/beast/clock/basic_seconds_clock.cpp
   src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
   src/ripple/beast/hash/impl/xxhash.cpp

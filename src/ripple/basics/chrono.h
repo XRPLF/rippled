@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_CHRONO_H_INCLUDED
 #define RIPPLE_BASICS_CHRONO_H_INCLUDED
 
+#include <date/date.h>
+
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/clock/manual_clock.h>
@@ -85,9 +87,9 @@ using TestStopwatch = beast::manual_clock<std::chrono::steady_clock>;
 inline Stopwatch&
 stopwatch()
 {
-    return beast::get_abstract_clock<
-        std::chrono::steady_clock,
-        beast::basic_seconds_clock<std::chrono::steady_clock>>();
+    using Clock = beast::basic_seconds_clock;
+    using Facade = Clock::Clock;
+    return beast::get_abstract_clock<Facade, Clock>();
 }
 
 }  // namespace ripple
