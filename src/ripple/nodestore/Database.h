@@ -92,11 +92,6 @@ public:
     virtual std::int32_t
     getWriteLoad() const = 0;
 
-    /** Retrieve backend read and write stats. The return pointer may be null.
-    */
-    virtual Backend::Counters const*
-    getCounters() const = 0;
-
     /** Store the object.
 
         The caller's Blob parameter is overwritten.
@@ -258,10 +253,6 @@ protected:
         storeSz_ += sz;
     }
 
-    // Called by the public asyncFetch function
-    void
-    asyncFetch(uint256 const& hash, std::uint32_t ledgerSeq);
-
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
@@ -321,6 +312,12 @@ private:
     */
     virtual void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
+
+    /** Retrieve backend read and write stats.
+        The return pointer is treated like an std::optional.
+    */
+    virtual Backend::Counters const*
+    getCounters() const = 0;
 
     void
     threadEntry();

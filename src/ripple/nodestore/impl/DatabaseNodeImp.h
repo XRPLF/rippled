@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/nodestore/Database.h>
 
 namespace ripple {
@@ -101,12 +101,6 @@ public:
         return backend_->getWriteLoad();
     }
 
-    Backend::Counters const*
-    getCounters() const override
-    {
-        return &(backend_->counters());
-    }
-
     void
     import(Database& source) override
     {
@@ -157,6 +151,12 @@ private:
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
         backend_->for_each(f);
+    }
+
+    Backend::Counters const*
+    getCounters() const override
+    {
+        return &(backend_->counters());
     }
 };
 

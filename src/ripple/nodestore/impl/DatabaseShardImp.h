@@ -139,9 +139,6 @@ public:
     std::int32_t
     getWriteLoad() const override;
 
-    Backend::Counters const*
-    getCounters() const override;
-
     bool
     isSameDB(std::uint32_t s1, std::uint32_t s2) override
     {
@@ -330,6 +327,9 @@ private:
 
     bool
     checkHistoricalPaths() const;
+
+    Backend::Counters const*
+    getCounters() const override;
 };
 
 }  // namespace NodeStore

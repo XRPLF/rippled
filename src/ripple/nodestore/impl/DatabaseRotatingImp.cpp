@@ -71,13 +71,6 @@ DatabaseRotatingImp::getWriteLoad() const
     return writableBackend_->getWriteLoad();
 }
 
-Backend::Counters const*
-DatabaseRotatingImp::getCounters() const
-{
-    std::lock_guard lock(mutex_);
-    return &(writableBackend_->counters());
-}
-
 void
 DatabaseRotatingImp::import(Database& source)
 {
@@ -217,6 +210,13 @@ DatabaseRotatingImp::for_each(
 
     // Iterate the archive backend
     archive->for_each(f);
+}
+
+Backend::Counters const*
+DatabaseRotatingImp::getCounters() const
+{
+    std::lock_guard lock(mutex_);
+    return &(writableBackend_->counters());
 }
 
 }  // namespace NodeStore

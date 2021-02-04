@@ -60,9 +60,6 @@ public:
     std::int32_t
     getWriteLoad() const override;
 
-    Backend::Counters const*
-    getCounters() const override;
-
     void
     import(Database& source) override;
 
@@ -104,6 +101,9 @@ private:
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
+
+    Backend::Counters const*
+    getCounters() const override;
 };
 
 }  // namespace NodeStore
