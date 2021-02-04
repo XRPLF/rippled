@@ -71,6 +71,13 @@ DatabaseRotatingImp::getWriteLoad() const
     return writableBackend_->getWriteLoad();
 }
 
+Backend::Counters const*
+DatabaseRotatingImp::getCounters() const
+{
+    std::lock_guard lock(mutex_);
+    return &(writableBackend_->counters());
+}
+
 void
 DatabaseRotatingImp::import(Database& source)
 {
@@ -91,6 +98,13 @@ DatabaseRotatingImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
     }();
 
     return Database::storeLedger(*srcLedger, backend);
+}
+
+void
+DatabaseRotatingImp::sync()
+{
+    std::lock_guard lock(mutex_);
+    writableBackend_->sync();
 }
 
 void

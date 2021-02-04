@@ -171,6 +171,9 @@ public:
     [[nodiscard]] std::int32_t
     getWriteLoad();
 
+    Backend::Counters const*
+    getCounters();
+
     /** Returns `true` if shard is older, without final key data
      */
     [[nodiscard]] bool

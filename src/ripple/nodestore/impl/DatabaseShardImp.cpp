@@ -540,12 +540,6 @@ DatabaseShardImp::importShard(
     return true;
 }
 
-Backend&
-DatabaseShardImp::getBackend()
-{
-    return app_.getNodeStore().getBackend();
-}
-
 std::shared_ptr<Ledger>
 DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t ledgerSeq)
 {
@@ -988,6 +982,23 @@ DatabaseShardImp::getWriteLoad() const
     }
 
     return shard->getWriteLoad();
+}
+
+Backend::Counters const*
+DatabaseShardImp::getCounters() const
+{
+    std::shared_ptr<Shard> shard;
+    {
+        std::lock_guard lock(mutex_);
+        assert(init_);
+
+        auto const it{shards_.find(acquireIndex_)};
+        if (it == shards_.end())
+            return nullptr;
+        shard = it->second;
+    }
+
+    return shard->getCounters();
 }
 
 void

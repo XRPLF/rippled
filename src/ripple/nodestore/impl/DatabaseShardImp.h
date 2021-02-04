@@ -139,6 +139,9 @@ public:
     std::int32_t
     getWriteLoad() const override;
 
+    Backend::Counters const*
+    getCounters() const override;
+
     bool
     isSameDB(std::uint32_t s1, std::uint32_t s2) override
     {
@@ -160,9 +163,6 @@ public:
 
     void
     sweep() override;
-
-    Backend&
-    getBackend() override;
 
 private:
     enum class PathDesignation : uint8_t {

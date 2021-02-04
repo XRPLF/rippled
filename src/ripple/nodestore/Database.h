@@ -20,8 +20,6 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
-#include <ripple/basics/KeyCache.h>
-#include <ripple/basics/TaggedCache.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -93,6 +91,11 @@ public:
     */
     virtual std::int32_t
     getWriteLoad() const = 0;
+
+    /** Retrieve backend read and write stats. The return pointer may be null.
+    */
+    virtual Backend::Counters const*
+    getCounters() const = 0;
 
     /** Store the object.
 
@@ -177,9 +180,6 @@ public:
     /** Remove expired entries from the positive and negative caches. */
     virtual void
     sweep() = 0;
-
-    virtual Backend&
-    getBackend() = 0;
 
     /** Gather statistics pertaining to read and write activities.
      *

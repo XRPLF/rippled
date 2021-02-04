@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/TaggedCache.h>
 #include <ripple/nodestore/Database.h>
 
 namespace ripple {
@@ -100,6 +101,12 @@ public:
         return backend_->getWriteLoad();
     }
 
+    Backend::Counters const*
+    getCounters() const override
+    {
+        return &(backend_->counters());
+    }
+
     void
     import(Database& source) override
     {
@@ -132,12 +139,6 @@ public:
 
     void
     sweep() override;
-
-    Backend&
-    getBackend() override
-    {
-        return *backend_;
-    };
 
 private:
     // Cache for database objects. This cache is not always initialized. Check
