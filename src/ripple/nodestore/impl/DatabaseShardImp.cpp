@@ -540,12 +540,6 @@ DatabaseShardImp::importShard(
     return true;
 }
 
-Backend&
-DatabaseShardImp::getBackend()
-{
-    return app_.getNodeStore().getBackend();
-}
-
 std::shared_ptr<Ledger>
 DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t ledgerSeq)
 {

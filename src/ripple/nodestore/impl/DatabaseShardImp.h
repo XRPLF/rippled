@@ -161,9 +161,6 @@ public:
     void
     sweep() override;
 
-    Backend&
-    getBackend() override;
-
 private:
     enum class PathDesignation : uint8_t {
         none,       // No path specified

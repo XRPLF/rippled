@@ -826,7 +826,7 @@ public:
         return 0;
     }
 
-    Counters const&
+    std::optional<Counters<std::uint64_t>>
     counters() const override
     {
         return counters_;

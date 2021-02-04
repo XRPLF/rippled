@@ -436,13 +436,6 @@ public:
     {
         return fdRequired_;
     }
-
-    Counters const&
-    counters() const override
-    {
-        static Counters counters;
-        return counters;
-    }
 };
 
 //------------------------------------------------------------------------------

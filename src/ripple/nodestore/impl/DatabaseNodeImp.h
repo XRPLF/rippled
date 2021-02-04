@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 
+#include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/nodestore/Database.h>
 
@@ -133,12 +134,6 @@ public:
     void
     sweep() override;
 
-    Backend&
-    getBackend() override
-    {
-        return *backend_;
-    };
-
 private:
     // Cache for database objects. This cache is not always initialized. Check
     // for null before using.
@@ -156,6 +151,12 @@ private:
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
         backend_->for_each(f);
+    }
+
+    std::optional<Backend::Counters<std::uint64_t>>
+    getCounters() const override
+    {
+        return backend_->counters();
     }
 };
 

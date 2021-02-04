@@ -325,12 +325,15 @@ Database::getCountsJson(Json::Value& obj)
     obj[jss::node_written_bytes] = std::to_string(storeSz_);
     obj[jss::node_read_bytes] = std::to_string(fetchSz_);
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
-    auto const& c = getBackend().counters();
-    obj[jss::node_read_errors] = std::to_string(c.readErrors);
-    obj[jss::node_read_retries] = std::to_string(c.readRetries);
-    obj[jss::node_write_retries] = std::to_string(c.writeRetries);
-    obj[jss::node_writes_delayed] = std::to_string(c.writesDelayed);
-    obj[jss::node_writes_duration_us] = std::to_string(c.writeDurationUs);
+
+    if (auto c = getCounters())
+    {
+        obj[jss::node_read_errors] = std::to_string(c->readErrors);
+        obj[jss::node_read_retries] = std::to_string(c->readRetries);
+        obj[jss::node_write_retries] = std::to_string(c->writeRetries);
+        obj[jss::node_writes_delayed] = std::to_string(c->writesDelayed);
+        obj[jss::node_writes_duration_us] = std::to_string(c->writeDurationUs);
+    }
 }
 
 }  // namespace NodeStore
