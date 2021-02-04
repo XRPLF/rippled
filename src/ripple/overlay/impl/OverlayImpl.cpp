@@ -99,7 +99,9 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.m_peerFinder->once_per_second();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
-    overlay_.deleteIdlePeers();
+
+    if ((overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
+        overlay_.deleteIdlePeers();
 
     timer_.expires_from_now(std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
@@ -136,6 +138,7 @@ OverlayImpl::OverlayImpl(
           collector))
     , m_resolver(resolver)
     , next_id_(1)
+    , timer_count_(0)
     , slots_(app, *this)
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),

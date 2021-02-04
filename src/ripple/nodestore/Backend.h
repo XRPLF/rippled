@@ -131,6 +131,12 @@ public:
     virtual void
     setDeletePath() = 0;
 
+    /** Perform consistency checks on database. */
+    virtual void
+    verify()
+    {
+    }
+
     /** Returns the number of file descriptors the backend expects to need. */
     virtual int
     fdRequired() const = 0;

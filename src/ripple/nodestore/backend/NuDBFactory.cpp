@@ -298,6 +298,25 @@ public:
         deletePath_ = true;
     }
 
+    void
+    verify() override
+    {
+        auto const dp = db_.dat_path();
+        auto const kp = db_.key_path();
+        auto const lp = db_.log_path();
+        nudb::error_code ec;
+        db_.close(ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
+        nudb::verify_info vi;
+        nudb::verify<nudb::xxhasher>(vi, dp, kp, 0, nudb::no_progress{}, ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
+        db_.open(dp, kp, lp, ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
+    }
+
     int
     fdRequired() const override
     {

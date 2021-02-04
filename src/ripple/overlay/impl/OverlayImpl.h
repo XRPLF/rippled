@@ -112,6 +112,7 @@ private:
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& m_resolver;
     std::atomic<Peer::id_t> next_id_;
+    int timer_count_;
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
