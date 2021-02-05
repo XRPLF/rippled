@@ -141,8 +141,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a13cce6549b2f525223a86a053d257e50"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a13cce6549b2f525223a86a053d257e50">fdRequired</a> () const override</td></tr>
 <tr class="memdesc:a13cce6549b2f525223a86a053d257e50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of file descriptors the backend expects to need.  <a href="classripple_1_1NodeStore_1_1NullBackend.html#a13cce6549b2f525223a86a053d257e50">More...</a><br /></td></tr>
 <tr class="separator:a13cce6549b2f525223a86a053d257e50"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a463b152ce5782369efb7492be48882d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a463b152ce5782369efb7492be48882d1">counters</a> () const override</td></tr>
-<tr class="separator:a463b152ce5782369efb7492be48882d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd4e55baccdaf56f34ae3c77191932a6"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#afd4e55baccdaf56f34ae3c77191932a6">counters</a> () const</td></tr>
+<tr class="memdesc:afd4e55baccdaf56f34ae3c77191932a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns read and write stats.  <a href="classripple_1_1NodeStore_1_1Backend.html#afd4e55baccdaf56f34ae3c77191932a6">More...</a><br /></td></tr>
+<tr class="separator:afd4e55baccdaf56f34ae3c77191932a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">backed</a> () const</td></tr>
 <tr class="memdesc:ab07382d1cbb7d39fe7aacdbc17654861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the backend uses permanent storage.  <a href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">More...</a><br /></td></tr>
 <tr class="separator:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -708,8 +709,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a463b152ce5782369efb7492be48882d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a463b152ce5782369efb7492be48882d1">&#9670;&nbsp;</a></span>counters()</h2>
+<a id="afd4e55baccdaf56f34ae3c77191932a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd4e55baccdaf56f34ae3c77191932a6">&#9670;&nbsp;</a></span>counters()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -718,7 +719,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> const&amp; ripple::NodeStore::NullBackend::counters </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; &gt; ripple::NodeStore::Backend::counters </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -726,14 +727,15 @@ Public Member Functions</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a41f97b0e74956987f2954caa609d2af4">ripple::NodeStore::Backend</a>.</p>
+<p>Returns read and write stats. </p>
+<dl class="section note"><dt>Note</dt><dd>The Counters struct is specific to and only used by CassandraBackend. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00119">119</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00166">166</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>
@@ -762,7 +764,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00151">151</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00173">173</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

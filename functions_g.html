@@ -296,15 +296,6 @@ $(function() {
 <li>getAverageLatency()
 : <a class="el" href="classripple_1_1JobTypeInfo.html#ab069a9e331346bf78ba761d9490be806">ripple::JobTypeInfo</a>
 </li>
-<li>getBackend()
-: <a class="el" href="classripple_1_1NodeStore_1_1Database.html#aa8e423147b177bf6dfcb9af41ea69d8c">ripple::NodeStore::Database</a>
-, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#abe49cb88259e52183337f919200c4325">ripple::NodeStore::DatabaseNodeImp</a>
-, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a6a03b74e583dd6d15538fce0e75b76b0">ripple::NodeStore::DatabaseRotatingImp</a>
-, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a1f9d3833ae31fde453b4e37ae340c3e6">ripple::NodeStore::DatabaseShardImp</a>
-</li>
-<li>getBackends()
-: <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ae393c2bdac121a9e9d2c801a6817624d">ripple::NodeStore::DatabaseRotatingImp</a>
-</li>
 <li>getBalance()
 : <a class="el" href="classripple_1_1RippleState.html#adc8cad712d9f91efc19deead75a9086c">ripple::RippleState</a>
 </li>
@@ -464,6 +455,10 @@ $(function() {
 </li>
 <li>getCounterData()
 : <a class="el" href="classripple_1_1NetworkOPsImp_1_1StateAccounting.html#a3a1d363a6023033197b3e2c02bd43ee5">ripple::NetworkOPsImp::StateAccounting</a>
+</li>
+<li>getCounters()
+: <a class="el" href="classripple_1_1NodeStore_1_1Database.html#aba0e02eea82d047dde49d56f362347bf">ripple::NodeStore::Database</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a9c7d1bd4925bf9b0a4501dd9872fdaf8">ripple::NodeStore::DatabaseNodeImp</a>
 </li>
 <li>getCounts()
 : <a class="el" href="classripple_1_1CountedObjects.html#a8f9e97d7ecc290702f3c39240c622f4e">ripple::CountedObjects</a>
@@ -1248,7 +1243,7 @@ $(function() {
 </li>
 <li>getPreferred()
 : <a class="el" href="classripple_1_1LedgerTrie.html#af6283053a1ed0b7eacd3fe0dcb3cc77d">ripple::LedgerTrie&lt; Ledger &gt;</a>
-, <a class="el" href="classripple_1_1Validations.html#ad8cbed0563344b297789575879aae482">ripple::Validations&lt; Adaptor &gt;</a>
+, <a class="el" href="classripple_1_1Validations.html#a49e72adb9b1df906dc15cc1fa073aefb">ripple::Validations&lt; Adaptor &gt;</a>
 </li>
 <li>getPreferredLCL()
 : <a class="el" href="classripple_1_1Validations.html#abe6526fada634c34ab78897b910840de">ripple::Validations&lt; Adaptor &gt;</a>
@@ -1584,7 +1579,7 @@ $(function() {
 : <a class="el" href="classripple_1_1Validations.html#a86ce52398a951c7df913b254eb8e9a2c">ripple::Validations&lt; Adaptor &gt;</a>
 </li>
 <li>getTrustedKey()
-: <a class="el" href="classripple_1_1ValidatorList.html#aece94fa28e349ef2951de33b592d7e03">ripple::ValidatorList</a>
+: <a class="el" href="classripple_1_1ValidatorList.html#afbace9fbd7040b37e7a2086bc61d3bbd">ripple::ValidatorList</a>
 </li>
 <li>getTrustedMasterKeys()
 : <a class="el" href="classripple_1_1ValidatorList.html#a22bb356f3dff23879344acd8121abbe3">ripple::ValidatorList</a>
@@ -1836,10 +1831,12 @@ $(function() {
 </li>
 <li>Graph
 : <a class="el" href="classripple_1_1test_1_1csf_1_1Digraph.html#a43610322b471a0f96e94ab9e66c18e9c">ripple::test::csf::Digraph&lt; Vertex, EdgeData &gt;</a>
-, <a class="el" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a6d0bed131c660889ce5db2c2f3049abb">ripple::test::csf::TrustGraph&lt; Peer &gt;</a>
 </li>
 <li>graph()
 : <a class="el" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a572638b4bfe5902f794939510f6ddb5f">ripple::test::csf::TrustGraph&lt; Peer &gt;</a>
+</li>
+<li>Graph
+: <a class="el" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a6d0bed131c660889ce5db2c2f3049abb">ripple::test::csf::TrustGraph&lt; Peer &gt;</a>
 </li>
 <li>graph_
 : <a class="el" href="classripple_1_1test_1_1csf_1_1Digraph.html#ac84817f1eb60ab10927633dc5fde2514">ripple::test::csf::Digraph&lt; Vertex, EdgeData &gt;</a>
@@ -1891,13 +1888,13 @@ $(function() {
 : <a class="el" href="classripple_1_1ETLSource.html#af7b53b6e2f95a1fe500fe0fc487a76e6">ripple::ETLSource</a>
 </li>
 <li>GRPCServer()
-: <a class="el" href="classripple_1_1GRPCServer.html#a758772b98f0abdfacd6d37d870754f8f">ripple::GRPCServer</a>
+: <a class="el" href="classripple_1_1GRPCServer.html#a76994cdfdbe22921f101d1739fb46007">ripple::GRPCServer</a>
 </li>
 <li>grpcServer_
 : <a class="el" href="classripple_1_1ApplicationImp.html#aaa5a296639a06900edc4fef16665a77d">ripple::ApplicationImp</a>
 </li>
 <li>GRPCServerImpl()
-: <a class="el" href="classripple_1_1GRPCServerImpl.html#a6a4a99f22eb3e56d5b136a4274c285b9">ripple::GRPCServerImpl</a>
+: <a class="el" href="classripple_1_1GRPCServerImpl.html#ac3c0b9eec602f93dd4e26e005becdcf4">ripple::GRPCServerImpl</a>
 </li>
 <li>GRPCTestClientBase()
 : <a class="el" href="structripple_1_1test_1_1GRPCTestClientBase.html#afed8c60c51a9ac107cb75415c4f8b15b">ripple::test::GRPCTestClientBase</a>

@@ -171,7 +171,7 @@ $(function() {
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    overlay_.sendEndpoints();</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    overlay_.autoConnect();</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordflow">if</span> ((overlay_.timer_count_ % <a class="code" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a253dac09e40a5b8076dc4ea672e6aba7">Tuning::checkIdlePeers</a>) == 0)</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordflow">if</span> ((++overlay_.timer_count_ % <a class="code" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a253dac09e40a5b8076dc4ea672e6aba7">Tuning::checkIdlePeers</a>) == 0)</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        overlay_.deleteIdlePeers();</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="code" href="classripple_1_1OverlayImpl.html#a6ae36a0619d8d8763fd06379fbd7ddf3">timer_</a>.expires_from_now(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>(1));</div>

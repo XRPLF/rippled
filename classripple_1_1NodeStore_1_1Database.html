@@ -167,8 +167,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a40a0e5a30857e9ba3c7561748af31e29"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a40a0e5a30857e9ba3c7561748af31e29">sweep</a> ()=0</td></tr>
 <tr class="memdesc:a40a0e5a30857e9ba3c7561748af31e29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove expired entries from the positive and negative caches.  <a href="classripple_1_1NodeStore_1_1Database.html#a40a0e5a30857e9ba3c7561748af31e29">More...</a><br /></td></tr>
 <tr class="separator:a40a0e5a30857e9ba3c7561748af31e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8e423147b177bf6dfcb9af41ea69d8c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#aa8e423147b177bf6dfcb9af41ea69d8c">getBackend</a> ()=0</td></tr>
-<tr class="separator:aa8e423147b177bf6dfcb9af41ea69d8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ccd565f5a4a5296c049a2a0886f363f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a4ccd565f5a4a5296c049a2a0886f363f">getStoreCount</a> () const</td></tr>
 <tr class="memdesc:a4ccd565f5a4a5296c049a2a0886f363f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather statistics pertaining to read and write activities.  <a href="classripple_1_1NodeStore_1_1Database.html#a4ccd565f5a4a5296c049a2a0886f363f">More...</a><br /></td></tr>
 <tr class="separator:a4ccd565f5a4a5296c049a2a0886f363f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -219,8 +217,6 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:adb9c1d15c7638e1448be9f5a98563f6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a090e39b8c6733b0dc4553f9e8e705605"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a090e39b8c6733b0dc4553f9e8e705605">storeStats</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> count, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> sz)</td></tr>
 <tr class="separator:a090e39b8c6733b0dc4553f9e8e705605"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7974d49e283384c9ba01a5048c80c11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#ab7974d49e283384c9ba01a5048c80c11">asyncFetch</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq)</td></tr>
-<tr class="separator:ab7974d49e283384c9ba01a5048c80c11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af885d9fe877259a258481f0df20697cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#af885d9fe877259a258481f0df20697cd">importInternal</a> (<a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &amp;dstBackend, <a class="el" href="classripple_1_1NodeStore_1_1Database.html">Database</a> &amp;srcDB)</td></tr>
 <tr class="separator:af885d9fe877259a258481f0df20697cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a410587cb70ec38bb10cfab3218f54d16"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a410587cb70ec38bb10cfab3218f54d16">storeLedger</a> (<a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &amp;srcLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt; dstBackend)</td></tr>
@@ -256,6 +252,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a2b5174a0ffb315030b96815d6ac86eaf"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a2b5174a0ffb315030b96815d6ac86eaf">for_each</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt;)&gt; f)=0</td></tr>
 <tr class="memdesc:a2b5174a0ffb315030b96815d6ac86eaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit every object in the database This is usually called during import.  <a href="classripple_1_1NodeStore_1_1Database.html#a2b5174a0ffb315030b96815d6ac86eaf">More...</a><br /></td></tr>
 <tr class="separator:a2b5174a0ffb315030b96815d6ac86eaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba0e02eea82d047dde49d56f362347bf"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Backend::Counters</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#aba0e02eea82d047dde49d56f362347bf">getCounters</a> () const</td></tr>
+<tr class="memdesc:aba0e02eea82d047dde49d56f362347bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve backend read and write stats.  <a href="classripple_1_1NodeStore_1_1Database.html#aba0e02eea82d047dde49d56f362347bf">More...</a><br /></td></tr>
+<tr class="separator:aba0e02eea82d047dde49d56f362347bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c4180512ff87a967de8091a019dc9f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a7c4180512ff87a967de8091a019dc9f9">threadEntry</a> ()</td></tr>
 <tr class="separator:a7c4180512ff87a967de8091a019dc9f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">onPrepare</a> ()</td></tr>
@@ -326,7 +325,7 @@ Private Attributes</h2></td></tr>
 <p>All ledger data is stored as node objects and as such, needs to be persisted between launches. Furthermore, since the set of node objects will in general be larger than the amount of available memory, purged node objects which are later accessed must be retrieved from the node store.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1NodeObject.html" title="A simple object that the Ledger uses to store entries.">NodeObject</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00052">52</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00050">50</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a43594a8835ccb53d7b80983694d26cad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a43594a8835ccb53d7b80983694d26cad">&#9670;&nbsp;</a></span>Children</h2>
@@ -744,7 +743,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a0d21a918d521d82947868d21e1aafadb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d21a918d521d82947868d21e1aafadb">&#9670;&nbsp;</a></span>asyncFetch() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d21a918d521d82947868d21e1aafadb">&#9670;&nbsp;</a></span>asyncFetch()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -857,33 +856,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aa8e423147b177bf6dfcb9af41ea69d8c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8e423147b177bf6dfcb9af41ea69d8c">&#9670;&nbsp;</a></span>getBackend()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a>&amp; ripple::NodeStore::Database::getBackend </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a1f9d3833ae31fde453b4e37ae340c3e6">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#abe49cb88259e52183337f919200c4325">ripple::NodeStore::DatabaseNodeImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a6a03b74e583dd6d15538fce0e75b76b0">ripple::NodeStore::DatabaseRotatingImp</a>.</p>
-
-</div>
-</div>
 <a id="a4ccd565f5a4a5296c049a2a0886f363f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ccd565f5a4a5296c049a2a0886f363f">&#9670;&nbsp;</a></span>getStoreCount()</h2>
 
@@ -907,7 +879,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00189">189</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00184">184</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -926,7 +898,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00195">195</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00190">190</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -945,7 +917,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00201">201</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00196">196</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -964,7 +936,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00207">207</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00202">202</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -983,7 +955,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00213">213</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00208">208</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1024,7 +996,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns the number of file descriptors the database expects to need. </p>
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00223">223</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00218">218</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1118,7 +1090,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>The earliest ledger sequence allowed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00237">237</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00232">232</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1183,43 +1155,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00254">254</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
-
-</div>
-</div>
-<a id="ab7974d49e283384c9ba01a5048c80c11"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7974d49e283384c9ba01a5048c80c11">&#9670;&nbsp;</a></span>asyncFetch() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::NodeStore::Database::asyncFetch </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>ledgerSeq</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00249">249</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1339,7 +1275,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00274">274</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00265">265</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1416,6 +1352,38 @@ Private Attributes</h2></td></tr>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1NodeStore_1_1Database.html#ac1946e6706aecab34d6ea2207a33f6bc" title="Import objects from another database.">import</a> </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a5b2de32b1cd5b588d023af75caf670e5">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a6692b0758fc43e2d78520ff5e699e8b1">ripple::NodeStore::DatabaseNodeImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#aee99c67c55042890a37368f5d17620d4">ripple::NodeStore::DatabaseRotatingImp</a>.</p>
+
+</div>
+</div>
+<a id="aba0e02eea82d047dde49d56f362347bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba0e02eea82d047dde49d56f362347bf">&#9670;&nbsp;</a></span>getCounters()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Backend::Counters</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; &gt; ripple::NodeStore::Database::getCounters </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Retrieve backend read and write stats. </p>
+<dl class="section note"><dt>Note</dt><dd>The Counters struct is specific to and only used by CassandraBackend. </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a9c7d1bd4925bf9b0a4501dd9872fdaf8">ripple::NodeStore::DatabaseNodeImp</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00322">322</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1872,7 +1840,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00243">243</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00238">238</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1896,7 +1864,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00244">244</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00239">239</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1920,7 +1888,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00245">245</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00240">240</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1944,7 +1912,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00247">247</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00242">242</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1968,7 +1936,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00248">248</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00243">243</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -1992,7 +1960,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00282">282</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00273">273</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2016,7 +1984,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00283">283</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00274">274</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2040,7 +2008,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00284">284</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00275">275</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2064,7 +2032,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00285">285</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00276">276</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2088,7 +2056,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00286">286</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00277">277</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2112,7 +2080,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00288">288</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00279">279</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2136,7 +2104,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00289">289</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00280">280</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2160,7 +2128,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00297">297</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00288">288</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2184,7 +2152,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00300">300</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00291">291</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2208,7 +2176,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00302">302</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00293">293</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2232,7 +2200,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00303">303</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00294">294</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>
@@ -2256,7 +2224,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00307">307</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Database_8h_source.html#l00298">298</a> of file <a class="el" href="Database_8h_source.html">Database.h</a>.</p>
 
 </div>
 </div>

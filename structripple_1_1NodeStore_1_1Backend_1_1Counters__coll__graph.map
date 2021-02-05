@@ -1,5 +1,4 @@
-<map id="ripple::NodeStore::Backend::Counters" name="ripple::NodeStore::Backend::Counters">
-<area shape="rect" id="node1" title=" " alt="" coords="37,243,181,284"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="5,95,212,121"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="57,5,160,32"/>
+<map id="ripple::NodeStore::Backend::Counters&lt; T &gt;" name="ripple::NodeStore::Backend::Counters&lt; T &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="5,153,188,195"/>
+<area shape="rect" id="node2" title=" " alt="" coords="77,5,116,32"/>
 </map>
