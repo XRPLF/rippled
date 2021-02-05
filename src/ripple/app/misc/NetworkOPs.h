@@ -241,9 +241,6 @@ public:
         boost::optional<std::chrono::milliseconds> consensusDelay =
             boost::none) = 0;
 
-    virtual uint256
-    getConsensusLCL() = 0;
-
     virtual void
     reportFeeChange() = 0;
 

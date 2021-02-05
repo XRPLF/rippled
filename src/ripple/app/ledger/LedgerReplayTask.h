@@ -129,12 +129,6 @@ public:
     bool
     finished() const;
 
-    static char const*
-    getCountedObjectName()
-    {
-        return "LedgerReplayTask";
-    }
-
 private:
     void
     onTimer(bool progress, ScopedLockType& sl) override;

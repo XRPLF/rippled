@@ -447,9 +447,6 @@ private:
     std::string
     domain() const;
 
-    std::optional<std::uint32_t>
-    networkID() const;
-
     //
     // protocol message loop
     //

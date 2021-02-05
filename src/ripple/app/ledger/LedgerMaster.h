@@ -72,10 +72,6 @@ public:
 class LedgerMaster : public Stoppable, public AbstractFetchPackContainer
 {
 public:
-    // Age for last validated ledger if the process has yet to validate.
-    static constexpr std::chrono::seconds NO_VALIDATED_LEDGER_AGE =
-        std::chrono::hours{24 * 14};
-
     explicit LedgerMaster(
         Application& app,
         Stopwatch& stopwatch,
@@ -243,8 +239,6 @@ public:
         uint256 const& consensusHash,
         Json::Value consensus);
 
-    LedgerIndex
-    getBuildingLedger();
     void
     setBuildingLedger(LedgerIndex index);
 

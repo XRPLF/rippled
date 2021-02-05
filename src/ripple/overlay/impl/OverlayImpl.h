@@ -167,12 +167,6 @@ public:
         return m_resourceManager;
     }
 
-    ServerHandler&
-    serverHandler()
-    {
-        return serverHandler_;
-    }
-
     Setup const&
     setup() const
     {
