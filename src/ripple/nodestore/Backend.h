@@ -131,7 +131,12 @@ public:
     virtual void
     setDeletePath() = 0;
 
-    /** Perform consistency checks on database. */
+    /** Perform consistency checks on database.
+     *
+     * This method is implemented only by NuDBBackend. It is not yet called
+     * anywhere, but it might be a good idea to one day call it at startup to
+     * avert a crash.
+     */
     virtual void
     verify()
     {
