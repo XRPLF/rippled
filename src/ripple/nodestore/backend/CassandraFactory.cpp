@@ -128,7 +128,7 @@ private:
     std::mutex syncMutex_;
     std::condition_variable syncCv_;
 
-    Counters counters_;
+    Counters<std::atomic<std::uint64_t>> counters_;
 
 public:
     CassandraBackend(
