@@ -74,22 +74,13 @@ public:
         override;
 
     void
-    sync() override
-    {
-        writableBackend_->sync();
-    }
+    sync() override;
 
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
     void
     sweep() override;
-
-    Backend&
-    getBackend() override
-    {
-        return *writableBackend_;
-    }
 
 private:
     std::shared_ptr<Backend> writableBackend_;

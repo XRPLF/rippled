@@ -39,13 +39,27 @@ namespace NodeStore {
 class Backend
 {
 public:
+    template <typename T>
     struct Counters
     {
-        std::atomic<std::uint64_t> writeDurationUs{0};
-        std::atomic<std::uint64_t> writeRetries{0};
-        std::atomic<std::uint64_t> writesDelayed{0};
-        std::atomic<std::uint64_t> readRetries{0};
-        std::atomic<std::uint64_t> readErrors{0};
+        Counters() = default;
+        Counters(Counters const&) = default;
+
+        template <typename U>
+        Counters(Counters<U> const& other)
+            : writeDurationUs(other.writeDurationUs)
+            , writeRetries(other.writeRetries)
+            , writesDelayed(other.writesDelayed)
+            , readRetries(other.readRetries)
+            , readErrors(other.readErrors)
+        {
+        }
+
+        T writeDurationUs = {};
+        T writeRetries = {};
+        T writesDelayed = {};
+        T readRetries = {};
+        T readErrors = {};
     };
 
     /** Destroy the backend.
@@ -146,8 +160,16 @@ public:
     virtual int
     fdRequired() const = 0;
 
-    virtual Counters const&
-    counters() const = 0;
+    /** Returns read and write stats.
+
+        @note The Counters struct is specific to and only used
+              by CassandraBackend.
+    */
+    virtual std::optional<Counters<std::uint64_t>>
+    counters() const
+    {
+        return std::nullopt;
+    }
 };
 
 }  // namespace NodeStore

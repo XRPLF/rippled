@@ -322,13 +322,6 @@ public:
     {
         return 3;
     }
-
-    Counters const&
-    counters() const override
-    {
-        static Counters counters;
-        return counters;
-    }
 };
 
 //------------------------------------------------------------------------------

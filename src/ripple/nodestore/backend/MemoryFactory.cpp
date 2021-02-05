@@ -208,13 +208,6 @@ public:
     {
         return 0;
     }
-
-    Counters const&
-    counters() const override
-    {
-        static Counters counters;
-        return counters;
-    }
 };
 
 //------------------------------------------------------------------------------

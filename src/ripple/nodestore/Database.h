@@ -20,8 +20,6 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
-#include <ripple/basics/KeyCache.h>
-#include <ripple/basics/TaggedCache.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -178,9 +176,6 @@ public:
     virtual void
     sweep() = 0;
 
-    virtual Backend&
-    getBackend() = 0;
-
     /** Gather statistics pertaining to read and write activities.
      *
      * @param obj Json object reference into which to place counters.
@@ -258,10 +253,6 @@ protected:
         storeSz_ += sz;
     }
 
-    // Called by the public asyncFetch function
-    void
-    asyncFetch(uint256 const& hash, std::uint32_t ledgerSeq);
-
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
@@ -321,6 +312,17 @@ private:
     */
     virtual void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
+
+    /** Retrieve backend read and write stats.
+
+        @note The Counters struct is specific to and only used
+              by CassandraBackend.
+    */
+    virtual std::optional<Backend::Counters<std::uint64_t>>
+    getCounters() const
+    {
+        return std::nullopt;
+    }
 
     void
     threadEntry();
