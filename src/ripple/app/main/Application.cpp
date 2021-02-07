@@ -1080,13 +1080,22 @@ public:
 
         // The order of these stop calls is delicate.
         // Re-ordering them risks undefined behavior.
+        m_loadManager->stop();
         m_shaMapStore->stop();
         m_jobQueue->stop();
         if (shardArchiveHandler_)
             shardArchiveHandler_->stop();
-        m_nodeStore->stop();
+        if (overlay_)
+            overlay_->stop();
         if (shardStore_)
             shardStore_->stop();
+        grpcServer_->stop();
+        m_networkOPs->stop();
+        serverHandler_->stop();
+        m_ledgerReplayer->stop();
+        m_inboundTransactions->stop();
+        m_inboundLedgers->stop();
+        m_ledgerMaster->stop();
         if (config_->reporting())
         {
             reportingETL_->stop();
@@ -1094,17 +1103,8 @@ public:
             pgPool_->stop();
 #endif
         }
-        m_inboundLedgers->stop();
-        m_inboundTransactions->stop();
-        m_ledgerReplayer->stop();
-        if (overlay_)
-            overlay_->stop();
+        m_nodeStore->stop();
         perfLog_->stop();
-        grpcServer_->stop();
-        serverHandler_->stop();
-        m_networkOPs->stop();
-        m_ledgerMaster->stop();
-        m_loadManager->stop();
     }
 
     //--------------------------------------------------------------------------
