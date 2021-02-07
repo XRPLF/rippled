@@ -91,6 +91,13 @@ DatabaseRotatingImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
 }
 
 void
+DatabaseRotatingImp::sync()
+{
+    std::lock_guard lock(mutex_);
+    writableBackend_->sync();
+}
+
+void
 DatabaseRotatingImp::store(
     NodeObjectType type,
     Blob&& data,

@@ -102,7 +102,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.sendEndpoints();
     overlay_.autoConnect();
 
-    if ((overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
+    if ((++overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     async_wait();
