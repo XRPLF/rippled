@@ -163,7 +163,7 @@ ServerHandlerImp::onAccept(
     if (port.limit && c >= port.limit)
     {
         JLOG(m_journal.trace())
-            << session.port().name << " is full; dropping " << endpoint;
+            << port.name << " is full; dropping " << endpoint;
         return false;
     }
 

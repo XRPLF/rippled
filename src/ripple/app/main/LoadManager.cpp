@@ -82,7 +82,7 @@ void
 LoadManager::stop()
 {
     {
-        std::lock_guard<std::mutex> sl(mutex_);
+        std::lock_guard lock(mutex_);
         stop_ = true;
         // There is at most one thread waiting on this condition.
         cv_.notify_all();

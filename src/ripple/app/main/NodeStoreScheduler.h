@@ -40,7 +40,7 @@ public:
     onBatchWrite(NodeStore::BatchWriteReport const& report) override;
 
 private:
-    JobQueue* m_jobQueue;
+    JobQueue& jobQueue_;
 };
 
 }  // namespace ripple

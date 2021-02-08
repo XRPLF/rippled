@@ -705,8 +705,7 @@ DatabaseShardImp::stop()
     {
         if (auto const shard{wptr.lock()})
         {
-            std::string shardIndex = std::to_string(shard->index());
-            JLOG(j_.warn()) << " shard " << shardIndex << " unexpired";
+            JLOG(j_.warn()) << " shard " << shard->index() << " unexpired";
         }
     }
 }

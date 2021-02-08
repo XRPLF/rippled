@@ -22,15 +22,14 @@
 
 namespace ripple {
 
-NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue)
-    : m_jobQueue(&jobQueue)
+NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue) : jobQueue_(jobQueue)
 {
 }
 
 void
 NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 {
-    if (!m_jobQueue->addJob(jtWRITE, "NodeObject::store", [&task](Job&) {
+    if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task](Job&) {
             task.performScheduledTask();
         }))
     {
@@ -43,7 +42,7 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 void
 NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
-    m_jobQueue->addLoadEvents(
+    jobQueue_.addLoadEvents(
         report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
                                                         : jtNS_SYNC_READ,
         1,
@@ -53,7 +52,7 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 void
 NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
 {
-    m_jobQueue->addLoadEvents(jtNS_WRITE, report.writeCount, report.elapsed);
+    jobQueue_.addLoadEvents(jtNS_WRITE, report.writeCount, report.elapsed);
 }
 
 }  // namespace ripple

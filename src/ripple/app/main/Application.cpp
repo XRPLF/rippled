@@ -284,7 +284,7 @@ public:
                                    : nullptr)
 #endif
 
-        , m_collectorManager(CollectorManager::New(
+        , m_collectorManager(make_CollectorManager(
               config_->section(SECTION_INSIGHT),
               logs_->journal("Collector")))
 

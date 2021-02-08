@@ -68,10 +68,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-CollectorManager::~CollectorManager() = default;
-
 std::unique_ptr<CollectorManager>
-CollectorManager::New(Section const& params, beast::Journal journal)
+make_CollectorManager(Section const& params, beast::Journal journal)
 {
     return std::make_unique<CollectorManagerImp>(params, journal);
 }
