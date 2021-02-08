@@ -187,8 +187,6 @@ LedgerMaster::LedgerMaster(
     : app_(app)
     , m_journal(journal)
     , mLedgerHistory(collector, app)
-    , mLedgerCleaner(
-          detail::make_LedgerCleaner(app, app_.journal("LedgerCleaner")))
     , standalone_(app_.config().standalone())
     , fetch_depth_(
           app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
@@ -202,12 +200,6 @@ LedgerMaster::LedgerMaster(
           app_.journal("TaggedCache"))
     , m_stats(std::bind(&LedgerMaster::collect_metrics, this), collector)
 {
-}
-
-void
-LedgerMaster::stop()
-{
-    mLedgerCleaner->stop();
 }
 
 LedgerIndex
@@ -1831,18 +1823,6 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 }
 
 void
-LedgerMaster::start()
-{
-    mLedgerCleaner->start();
-}
-
-void
-LedgerMaster::doLedgerCleaner(Json::Value const& parameters)
-{
-    mLedgerCleaner->doClean(parameters);
-}
-
-void
 LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 {
     std::lock_guard sl(mCompleteLock);
@@ -1866,12 +1846,6 @@ float
 LedgerMaster::getCacheHitRate()
 {
     return mLedgerHistory.getCacheHitRate();
-}
-
-beast::PropertyStream::Source&
-LedgerMaster::getPropertySource()
-{
-    return *mLedgerCleaner;
 }
 
 void

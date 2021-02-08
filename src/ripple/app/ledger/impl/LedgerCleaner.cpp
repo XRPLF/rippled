@@ -25,7 +25,6 @@
 #include <ripple/protocol/jss.h>
 
 namespace ripple {
-namespace detail {
 
 /*
 
@@ -133,7 +132,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    doClean(Json::Value const& params) override
+    clean(Json::Value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
@@ -458,5 +457,4 @@ make_LedgerCleaner(Application& app, beast::Journal journal)
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }
 
-}  // namespace detail
 }  // namespace ripple

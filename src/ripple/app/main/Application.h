@@ -64,6 +64,7 @@ class InboundTransactions;
 class AcceptedLedger;
 class Ledger;
 class LedgerMaster;
+class LedgerCleaner;
 class LedgerReplayer;
 class LoadManager;
 class ManifestCache;
@@ -205,6 +206,8 @@ public:
 
     virtual LedgerMaster&
     getLedgerMaster() = 0;
+    virtual LedgerCleaner&
+    getLedgerCleaner() = 0;
     virtual LedgerReplayer&
     getLedgerReplayer() = 0;
     virtual NetworkOPs&

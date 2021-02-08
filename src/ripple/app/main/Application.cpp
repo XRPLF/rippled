@@ -20,6 +20,7 @@
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/LedgerToJson.h>
@@ -193,6 +194,7 @@ public:
     OrderBookDB m_orderBookDB;
     std::unique_ptr<PathRequests> m_pathRequests;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
+    std::unique_ptr<LedgerCleaner> ledgerCleaner_;
     std::unique_ptr<InboundLedgers> m_inboundLedgers;
     std::unique_ptr<InboundTransactions> m_inboundTransactions;
     std::unique_ptr<LedgerReplayer> m_ledgerReplayer;
@@ -341,6 +343,9 @@ public:
               m_collectorManager->collector(),
               logs_->journal("LedgerMaster")))
 
+        , ledgerCleaner_(
+              make_LedgerCleaner(*this, logs_->journal("LedgerCleaner")))
+
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
@@ -465,7 +470,7 @@ public:
         //  started in this constructor.
         //
 
-        add(m_ledgerMaster->getPropertySource());
+        add(ledgerCleaner_.get());
     }
 
     //--------------------------------------------------------------------------
@@ -567,6 +572,12 @@ public:
     getLedgerMaster() override
     {
         return *m_ledgerMaster;
+    }
+
+    LedgerCleaner&
+    getLedgerCleaner() override
+    {
+        return *ledgerCleaner_;
     }
 
     LedgerReplayer&
@@ -1095,7 +1106,7 @@ public:
         m_ledgerReplayer->stop();
         m_inboundTransactions->stop();
         m_inboundLedgers->stop();
-        m_ledgerMaster->stop();
+        ledgerCleaner_->stop();
         if (config_->reporting())
         {
             reportingETL_->stop();
@@ -1717,7 +1728,7 @@ ApplicationImp::start(bool withTimers)
     if (overlay_)
         overlay_->start();
     grpcServer_->start();
-    m_ledgerMaster->start();
+    ledgerCleaner_->start();
     perfLog_->start();
 }
 

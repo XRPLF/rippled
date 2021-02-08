@@ -27,7 +27,6 @@
 #include <memory>
 
 namespace ripple {
-namespace detail {
 
 /** Check the ledger/transaction databases to make sure they have continuity */
 class LedgerCleaner : public beast::PropertyStream::Source
@@ -57,13 +56,12 @@ public:
         @param parameters A Json object with configurable parameters.
     */
     virtual void
-    doClean(Json::Value const& parameters) = 0;
+    clean(Json::Value const& parameters) = 0;
 };
 
 std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner(Application& app, beast::Journal journal);
 
-}  // namespace detail
 }  // namespace ripple
 
 #endif

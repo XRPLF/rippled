@@ -23,7 +23,6 @@
 #include <ripple/app/ledger/AbstractFetchPackContainer.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/app/ledger/LedgerReplay.h>
@@ -34,7 +33,6 @@
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/insight/Collector.h>
-#include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
@@ -83,9 +81,6 @@ public:
         beast::Journal journal);
 
     virtual ~LedgerMaster() = default;
-
-    void
-    stop();
 
     LedgerIndex
     getCurrentLedgerIndex();
@@ -263,15 +258,6 @@ public:
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
     void
-    start();
-
-    void
-    doLedgerCleaner(Json::Value const& parameters);
-
-    beast::PropertyStream::Source&
-    getPropertySource();
-
-    void
     clearPriorLedgers(LedgerIndex seq);
 
     void
@@ -390,8 +376,6 @@ private:
 
     std::recursive_mutex mCompleteLock;
     RangeSet<std::uint32_t> mCompleteLedgers;
-
-    std::unique_ptr<detail::LedgerCleaner> mLedgerCleaner;
 
     // Publish thread is running.
     bool mAdvanceThread{false};
