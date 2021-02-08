@@ -23,31 +23,38 @@ jobs:
     - name: Format src/test
       run: find src/test -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.ipp' \) -print0 | xargs -0 clang-format-${CLANG_VERSION} -i
     - name: Check for differences
-      shell: bash
+      id: assert
       run: |
         set -o pipefail
-        echo "If you are reading this, you are probably looking at a failed"
-        echo "Github Actions job. That means you pushed a file that did not"
-        echo "conform to the formatting specified in .clang-format. That may"
-        echo "be because you neglected to run 'git clang-format' or "
-        echo "'clang-format' before committing, or that your version of"
-        echo "clang-format has an incompatibility with the one on this"
-        echo "machine, which is:"
-        clang-format-${CLANG_VERSION} --version
-        echo
-        echo "To fix it, you can do one of two things:"
-        echo "1. (The hard way): Download and apply the patch generated as an"
-        echo "   artifact of this job to your repo, commit, and push."
-        echo "2. (The easy way): Run "
-        echo "   'git-clang-format --extensions c,cpp,h,cxx,ipp develop'"
-        echo "   in your repo, commit, and push."
-        git diff --exit-code | tee "${{ github.sha }}.patch"
-    - name: Publish patch
-      if: failure()
+        git diff --exit-code | tee "clang-format.patch"
+    - name: Upload patch
+      if: failure() && steps.assert.outcome == 'failure'
       uses: actions/upload-artifact@v2
       continue-on-error: true
       with:
-        name: ${{ github.sha }}.patch
+        name: clang-format.patch
         if-no-files-found: ignore
-        path: ${{ github.sha }}.patch
+        path: clang-format.patch
+    - name: What happened?
+      if: failure() && steps.assert.outcome == 'failure'
+      env:
+        PREAMBLE: |
+          If you are reading this, you are looking at a failed Github Actions
+          job.  That means you pushed one or more files that did not conform
+          to the formatting specified in .clang-format. That may be because
+          you neglected to run 'git clang-format' or 'clang-format' before
+          committing, or that your version of clang-format has an
+          incompatibility with the one on this
+          machine, which is:
+        SUGGESTION: |
 
+          To fix it, you can do one of two things:
+          1. Download and apply the patch generated as an artifact of this
+             job to your repo, commit, and push.
+          2. Run 'git-clang-format --extensions c,cpp,h,cxx,ipp develop'
+             in your repo, commit, and push.
+      run: |
+        echo "${PREAMBLE}"
+        clang-format-${CLANG_VERSION} --version
+        echo "${SUGGESTION}"
+        exit 1
