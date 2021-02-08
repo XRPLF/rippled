@@ -5,10 +5,6 @@ ripple.app > ripple.consensus
 ripple.app > ripple.crypto
 ripple.app > ripple.json
 ripple.app > ripple.protocol
-ripple.app > ripple.resource
-ripple.app > test.unit_test
-ripple.basics > ripple.beast
-ripple.conditions > ripple.basics
 ripple.conditions > ripple.protocol
 ripple.consensus > ripple.basics
 ripple.consensus > ripple.beast
@@ -16,6 +12,7 @@ ripple.consensus > ripple.json
 ripple.consensus > ripple.protocol
 ripple.core > ripple.beast
 ripple.core > ripple.json
+This line shouldn't be here
 ripple.core > ripple.protocol
 ripple.crypto > ripple.basics
 ripple.json > ripple.beast

@@ -118,69 +118,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
 void
 printHelp(const po::options_description& desc)
-{
-    std::cerr
-        << systemName() << "d [options] <command> <params>\n"
-        << desc << std::endl
-        << "Commands: \n"
-           "     account_currencies <account> [<ledger>] [strict]\n"
-           "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] "
-           "[strict]\n"
-           "     account_lines <account> <account>|\"\" [<ledger>]\n"
-           "     account_channels <account> <account>|\"\" [<ledger>]\n"
-           "     account_objects <account> [<ledger>] [strict]\n"
-           "     account_offers <account>|<account_public_key> [<ledger>] "
-           "[strict]\n"
-           "     account_tx accountID [ledger_min [ledger_max [limit "
-           "[offset]]]] [binary] [count] [descending]\n"
-           "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
-           "[<limit> [<proof> [<marker>]]]]]\n"
-           "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
-           "     channel_authorize <private_key> <channel_id> <drops>\n"
-           "     channel_verify <public_key> <channel_id> <drops> <signature>\n"
-           "     connect <ip> [<port>]\n"
-           "     consensus_info\n"
-           "     deposit_authorized <source_account> <destination_account> "
-           "[<ledger>]\n"
-           "     download_shard [[<index> <url>]]\n"
-           "     feature [<feature> [accept|reject]]\n"
-           "     fetch_info [clear]\n"
-           "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "
-           "<hotwallet> ]]\n"
-           "     get_counts\n"
-           "     json <method> <json>\n"
-           "     ledger [<id>|current|closed|validated] [full]\n"
-           "     ledger_accept\n"
-           "     ledger_cleaner\n"
-           "     ledger_closed\n"
-           "     ledger_current\n"
-           "     ledger_request <ledger>\n"
-           "     log_level [[<partition>] <severity>]\n"
-           "     logrotate \n"
-           "     peers\n"
-           "     ping\n"
-           "     random\n"
-           "     peer_reservations_add <public_key> [<description>]\n"
-           "     peer_reservations_del <public_key>\n"
-           "     peer_reservations_list\n"
-           "     ripple ...\n"
-           "     ripple_path_find <json> [<ledger>]\n"
-           "     server_info [counters]\n"
-           "     server_state [counters]\n"
-           "     sign <private_key> <tx_json> [offline]\n"
-           "     sign_for <signer_address> <signer_private_key> <tx_json> "
-           "[offline]\n"
-           "     stop\n"
-           "     submit <tx_blob>|[<private_key> <tx_json>]\n"
-           "     submit_multisigned <tx_json>\n"
-           "     tx <id>\n"
-           "     validation_create [<seed>|<pass_phrase>|<key>]\n"
-           "     validators\n"
-           "     validator_list_sites\n"
-           "     version\n"
-           "     wallet_propose [<passphrase>]\n";
-}
-
+{ std::cerr << systemName() << "d [options] <command> <params>\n" << desc << std::endl << "Commands: \n" "     account_currencies <account> [<ledger>] [strict]\n" "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] " "[strict]\n" "     account_lines <account> <account>|\"\" [<ledger>]\n" "     account_channels <account> <account>|\"\" [<ledger>]\n" "     account_objects <account> [<ledger>] [strict]\n" "     account_offers <account>|<account_public_key> [<ledger>] " "[strict]\n" "     account_tx accountID [ledger_min [ledger_max [limit " "[offset]]]] [binary] [count] [descending]\n" "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> " "[<limit> [<proof> [<marker>]]]]]\n" "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n" "     channel_authorize <private_key> <channel_id> <drops>\n" "     channel_verify <public_key> <channel_id> <drops> <signature>\n" "     connect <ip> [<port>]\n" "     consensus_info\n" "     deposit_authorized <source_account> <destination_account> " "[<ledger>]\n" "     download_shard [[<index> <url>]]\n" "     feature [<feature> [accept|reject]]\n" "     fetch_info [clear]\n" "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ " "<hotwallet> ]]\n" "     get_counts\n" "     json <method> <json>\n" "     ledger [<id>|current|closed|validated] [full]\n" "     ledger_accept\n" "     ledger_cleaner\n" "     ledger_closed\n" "     ledger_current\n" "     ledger_request <ledger>\n" "     log_level [[<partition>] <severity>]\n" "     logrotate \n" "     peers\n" "     ping\n" "     random\n" "     peer_reservations_add <public_key> [<description>]\n" "     peer_reservations_del <public_key>\n" "     peer_reservations_list\n" "     ripple ...\n" "     ripple_path_find <json> [<ledger>]\n" "     server_info [counters]\n" "     server_state [counters]\n" "     sign <private_key> <tx_json> [offline]\n" "     sign_for <signer_address> <signer_private_key> <tx_json> " "[offline]\n" "     stop\n" "     submit <tx_blob>|[<private_key> <tx_json>]\n" "     submit_multisigned <tx_json>\n" "     tx <id>\n" "     validation_create [<seed>|<pass_phrase>|<key>]\n" "     validators\n" "     validator_list_sites\n" "     version\n" "     wallet_propose [<passphrase>]\n"; }
 //------------------------------------------------------------------------------
 
 /* simple unit test selector that allows a comma separated list
