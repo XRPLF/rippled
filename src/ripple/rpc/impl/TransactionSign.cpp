@@ -441,7 +441,9 @@ transactionPreProcessImpl(
     {
         if (!tx_json.isMember(jss::Sequence))
         {
-            if (!sle)
+            bool const hasTicketSeq =
+                tx_json.isMember(sfTicketSequence.jsonName);
+            if (!hasTicketSeq && !sle)
             {
                 JLOG(j.debug())
                     << "transactionSign: Failed to find source account "
@@ -449,7 +451,8 @@ transactionPreProcessImpl(
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] = app.getTxQ().nextQueuableSeq(sle).value();
+            tx_json[jss::Sequence] =
+                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
 
         if (!tx_json.isMember(jss::Flags))
