@@ -152,6 +152,7 @@ transResults()
         MAKE_ERROR(temINVALID_ACCOUNT_ID,     "Malformed: A field contains an invalid account ID."),
         MAKE_ERROR(temCANNOT_PREAUTH_SELF,    "Malformed: An account may not preauthorize itself."),
         MAKE_ERROR(temINVALID_COUNT,          "Malformed: Count field outside valid range."),
+        MAKE_ERROR(temSEQ_AND_TICKET,         "Transaction contains a TicketSequence and a non-zero Sequence."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

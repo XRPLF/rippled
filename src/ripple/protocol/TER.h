@@ -115,9 +115,10 @@ enum TEMcodes : TERUnderlyingType {
     temCANNOT_PREAUTH_SELF,
     temINVALID_COUNT,
 
-    // An intermediate result used internally, should never be returned.
-    temUNCERTAIN,
-    temUNKNOWN,
+    temUNCERTAIN,  // An internal intermediate result; should never be returned.
+    temUNKNOWN,    // An internal intermediate result; should never be returned.
+
+    temSEQ_AND_TICKET,
 };
 
 //------------------------------------------------------------------------------

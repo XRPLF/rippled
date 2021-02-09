@@ -390,6 +390,10 @@ class Ticket_test : public beast::unit_test::suite
         env.require(owners(env.master, 0), tickets(env.master, 0));
 
         env(noop(env.master), ticket::use(1), ter(temMALFORMED));
+        env(noop(env.master),
+            ticket::use(1),
+            seq(env.seq(env.master)),
+            ter(temMALFORMED));
 
         // Close enough ledgers that the previous transactions are no
         // longer retried.
@@ -826,6 +830,159 @@ class Ticket_test : public beast::unit_test::suite
         checkTxFromDB(txHash_8, 5, 0, 7, ttACCOUNT_SET);
     }
 
+    void
+    testSignWithTicketSequence()
+    {
+        // The sign and the submit RPC commands automatically fill in the
+        // Sequence field of a transaction if none is provided.  If a
+        // TicketSequence is provided in the transaction, then the
+        // auto-filled Sequence should be zero.
+        testcase("Sign with TicketSequence");
+
+        using namespace test::jtx;
+        Env env{*this};
+        Account alice{"alice"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Successfully create tickets (using a sequence)
+        std::uint32_t const ticketSeq = env.seq(alice) + 1;
+        env(ticket::create(alice, 2));
+        checkTicketCreateMeta(env);
+        env.close();
+        env.require(owners(alice, 2), tickets(alice, 2));
+        BEAST_EXPECT(ticketSeq + 2 == env.seq(alice));
+
+        {
+            // Test that the "sign" RPC command fills in a "Sequence": 0 field
+            // if none is provided.
+
+            // Create a noop transaction using a TicketSequence but don't fill
+            // in the Sequence field.
+            Json::Value tx = Json::objectValue;
+            tx[jss::tx_json] = noop(alice);
+            tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq;
+            tx[jss::secret] = toBase58(generateSeed("alice"));
+
+            // Verify that there is no "Sequence" field.
+            BEAST_EXPECT(!tx[jss::tx_json].isMember(sfSequence.jsonName));
+
+            // Call the "sign" RPC command and see the "Sequence": 0 field
+            // filled in.
+            Json::Value jr = env.rpc("json", "sign", to_string(tx));
+
+            // Verify that "sign" inserted a "Sequence": 0 field.
+            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
+                    sfSequence.jsonName)))
+            {
+                BEAST_EXPECT(
+                    jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+            }
+
+            // "sign" should not have consumed any of alice's tickets.
+            env.close();
+            env.require(owners(alice, 2), tickets(alice, 2));
+
+            // "submit" the signed blob and see one of alice's tickets consumed.
+            env.rpc("submit", jr[jss::result][jss::tx_blob].asString());
+            env.close();
+            env.require(owners(alice, 1), tickets(alice, 1));
+        }
+        {
+            // Test that the "submit" RPC command fills in a "Sequence": 0
+            // field if none is provided.
+
+            // Create a noop transaction using a TicketSequence but don't fill
+            // in the Sequence field.
+            Json::Value tx = Json::objectValue;
+            tx[jss::tx_json] = noop(alice);
+            tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq + 1;
+            tx[jss::secret] = toBase58(generateSeed("alice"));
+
+            // Verify that there is no "Sequence" field.
+            BEAST_EXPECT(!tx[jss::tx_json].isMember(sfSequence.jsonName));
+
+            // Call the "submit" RPC command and see the "Sequence": 0 field
+            // filled in.
+            Json::Value jr = env.rpc("json", "submit", to_string(tx));
+
+            // Verify that "submit" inserted a "Sequence": 0 field.
+            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
+                    sfSequence.jsonName)))
+            {
+                BEAST_EXPECT(
+                    jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+            }
+
+            // "submit" should have consumed the last of alice's tickets.
+            env.close();
+            env.require(owners(alice, 0), tickets(alice, 0));
+        }
+    }
+
+    void
+    testFixBothSeqAndTicket()
+    {
+        // It is an error if a transaction contains a non-zero Sequence field
+        // and a TicketSequence field.  Verify that the error is detected.
+        testcase("Fix both Seq and Ticket");
+
+        // Try the test without featureTicketBatch enabled.
+        using namespace test::jtx;
+        {
+            Env env{*this, supported_amendments() - featureTicketBatch};
+            Account alice{"alice"};
+
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            // Fail to create a ticket.
+            std::uint32_t const ticketSeq = env.seq(alice) + 1;
+            env(ticket::create(alice, 1), ter(temDISABLED));
+            env.close();
+            env.require(owners(alice, 0), tickets(alice, 0));
+            BEAST_EXPECT(ticketSeq == env.seq(alice) + 1);
+
+            // Create a transaction that includes both a ticket and a non-zero
+            // sequence number.  Since a ticket is used and tickets are not yet
+            // enabled the transaction should be malformed.
+            env(noop(alice),
+                ticket::use(ticketSeq),
+                seq(env.seq(alice)),
+                ter(temMALFORMED));
+            env.close();
+        }
+        // Try the test with featureTicketBatch enabled.
+        {
+            Env env{*this, supported_amendments()};
+            Account alice{"alice"};
+
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            // Create a ticket.
+            std::uint32_t const ticketSeq = env.seq(alice) + 1;
+            env(ticket::create(alice, 1));
+            env.close();
+            env.require(owners(alice, 1), tickets(alice, 1));
+            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
+
+            // Create a transaction that includes both a ticket and a non-zero
+            // sequence number.  The transaction fails with temSEQ_AND_TICKET.
+            env(noop(alice),
+                ticket::use(ticketSeq),
+                seq(env.seq(alice)),
+                ter(temSEQ_AND_TICKET));
+            env.close();
+
+            // Verify that the transaction failed by looking at alice's
+            // sequence number and tickets.
+            env.require(owners(alice, 1), tickets(alice, 1));
+            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
+        }
+    }
+
 public:
     void
     run() override
@@ -836,6 +993,8 @@ public:
         testTicketInsufficientReserve();
         testUsingTickets();
         testTransactionDatabaseWithTickets();
+        testSignWithTicketSequence();
+        testFixBothSeqAndTicket();
     }
 };
 
