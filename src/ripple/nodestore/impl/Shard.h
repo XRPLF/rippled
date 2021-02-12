@@ -215,29 +215,29 @@ public:
         return to_string(acquireInfo_->storedSeqs);
     }
 
-    /**
-     * @brief callForLedgerSQL Checks out ledger database for the shard and
-     *        calls given callback function passing shard index and session
-     *        with the database to it.
-     * @param callback Callback function to call.
-     * @return Value returned by callback function.
-     */
-    bool
-    callForLedgerSQL(
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
-            callback);
+    /** Invoke a callback on the ledger SQLite db
 
-    /**
-     * @brief callForTransactionSQL Checks out transaction database for the
-     *        shard and calls given callback function passing shard index and
-     *        session with the database to it.
-     * @param callback Callback function to call.
-     * @return Value returned by callback function.
-     */
+        @param callback Callback function to call.
+        @return Value returned by callback function.
+    */
+    template <typename... Args>
     bool
-    callForTransactionSQL(
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
-            callback);
+    callForLedgerSQL(std::function<bool(Args... args)> const& callback)
+    {
+        return callForSQL(callback, lgrSQLiteDB_->checkoutDb());
+    }
+
+    /** Invoke a callback on the transaction SQLite db
+
+        @param callback Callback function to call.
+        @return Value returned by callback function.
+    */
+    template <typename... Args>
+    bool
+    callForTransactionSQL(std::function<bool(Args... args)> const& callback)
+    {
+        return callForSQL(callback, txSQLiteDB_->checkoutDb());
+    }
 
     // Current shard version
     static constexpr std::uint32_t version{2};
@@ -389,6 +389,35 @@ private:
     // Open databases if they are closed
     [[nodiscard]] Shard::Count
     makeBackendCount();
+
+    // Invoke a callback on the supplied session parameter
+    template <typename... Args>
+    bool
+    callForSQL(
+        std::function<bool(Args... args)> const& callback,
+        LockedSociSession&& db)
+    {
+        auto const scopedCount{makeBackendCount()};
+        if (!scopedCount)
+            return false;
+
+        return doCallForSQL(callback, std::move(db));
+    }
+
+    // Invoke a callback that accepts a SQLite session parameter
+    bool
+    doCallForSQL(
+        std::function<bool(soci::session& session)> const& callback,
+        LockedSociSession&& db);
+
+    // Invoke a callback that accepts a SQLite session and the
+    // shard index as parameters
+    bool
+    doCallForSQL(
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback,
+        LockedSociSession&& db);
 };
 
 }  // namespace NodeStore

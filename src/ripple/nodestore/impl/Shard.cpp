@@ -1238,28 +1238,19 @@ Shard::makeBackendCount()
 }
 
 bool
-Shard::callForLedgerSQL(
-    std::function<bool(soci::session& session, std::uint32_t index)> const&
-        callback)
+Shard::doCallForSQL(
+    std::function<bool(soci::session& session)> const& callback,
+    LockedSociSession&& db)
 {
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return false;
-
-    auto db = lgrSQLiteDB_->checkoutDb();
-    return callback(*db, index_);
+    return callback(*db);
 }
 
 bool
-Shard::callForTransactionSQL(
-    std::function<bool(soci::session& session, std::uint32_t index)> const&
-        callback)
+Shard::doCallForSQL(
+    std::function<bool(soci::session& session, std::uint32_t shardIndex)> const&
+        callback,
+    LockedSociSession&& db)
 {
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return false;
-
-    auto db = txSQLiteDB_->checkoutDb();
     return callback(*db, index_);
 }
 

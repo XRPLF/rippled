@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/hash/hash_append.h>
@@ -1729,6 +1730,101 @@ class DatabaseShard_test : public TestBase
         BEAST_EXPECT(msg.peerchain_size() == 0);
     }
 
+    void
+    testRelationalDBInterfaceSqlite(std::uint64_t const seedValue)
+    {
+        testcase("Relational DB Interface SQLite");
+
+        using namespace test::jtx;
+
+        beast::temp_dir shardDir;
+        Env env{*this, testConfig(shardDir.path())};
+
+        auto shardStore{env.app().getShardStore()};
+        BEAST_EXPECT(shardStore);
+
+        auto const shardCount = 3;
+        TestData data(seedValue, 3, shardCount);
+        if (!BEAST_EXPECT(data.makeLedgers(env)))
+            return;
+
+        BEAST_EXPECT(shardStore->getShardInfo()->finalized().empty());
+        BEAST_EXPECT(shardStore->getShardInfo()->incompleteToString().empty());
+
+        auto rdb = dynamic_cast<RelationalDBInterfaceSqlite*>(
+            &env.app().getRelationalDBInterface());
+
+        BEAST_EXPECT(rdb);
+
+        for (std::uint32_t i = 0; i < shardCount; ++i)
+        {
+            // Populate the shard store
+
+            auto n = createShard(data, *shardStore, shardCount);
+            if (!BEAST_EXPECT(n && *n >= 1 && *n <= shardCount))
+                return;
+        }
+
+        // Close these databases to force the RelationalDBInterfaceSqlite
+        // to use the shard databases and lookup tables.
+        rdb->closeLedgerDB();
+        rdb->closeTransactionDB();
+
+        // Lambda for comparing Ledger objects
+        auto infoCmp = [](auto const& a, auto const& b) {
+            return a.hash == b.hash && a.txHash == b.txHash &&
+                a.accountHash == b.accountHash &&
+                a.parentHash == b.parentHash && a.drops == b.drops &&
+                a.accepted == b.accepted && a.closeFlags == b.closeFlags &&
+                a.closeTimeResolution == b.closeTimeResolution &&
+                a.closeTime == b.closeTime;
+        };
+
+        for (auto const ledger : data.ledgers_)
+        {
+            // Compare each test ledger to the data retrieved
+            // from the RelationalDBInterfaceSqlite class
+
+            if (shardStore->seqToShardIndex(ledger->seq()) <
+                    shardStore->earliestShardIndex() ||
+                ledger->info().seq < shardStore->earliestLedgerSeq())
+                continue;
+
+            auto info = rdb->getLedgerInfoByHash(ledger->info().hash);
+
+            BEAST_EXPECT(info);
+            BEAST_EXPECT(infoCmp(*info, ledger->info()));
+
+            for (auto const& transaction : ledger->txs)
+            {
+                // Compare each test transaction to the data
+                // retrieved from the RelationalDBInterfaceSqlite
+                // class
+
+                error_code_i error{rpcSUCCESS};
+
+                auto reference = rdb->getTransaction(
+                    transaction.first->getTransactionID(), {}, error);
+
+                BEAST_EXPECT(error == rpcSUCCESS);
+                if (!BEAST_EXPECT(reference.index() == 0))
+                    continue;
+
+                auto txn = std::get<0>(reference).first->getSTransaction();
+
+                BEAST_EXPECT(
+                    transaction.first->getFullText() == txn->getFullText());
+            }
+        }
+
+        // Create additional ledgers to test a pathway in
+        // 'ripple::saveLedgerMeta' wherein fetching the
+        // accepted ledger fails
+        data = TestData(seedValue * 2, 4, 1);
+        if (!BEAST_EXPECT(data.makeLedgers(env, shardCount)))
+            return;
+    }
+
 public:
     DatabaseShard_test() : journal_("DatabaseShard_test", *this)
     {
@@ -1758,6 +1854,7 @@ public:
         testPrepareWithHistoricalPaths(seedValue());
         testOpenShardManagement(seedValue());
         testShardInfo(seedValue());
+        testRelationalDBInterfaceSqlite(seedValue());
     }
 };
 

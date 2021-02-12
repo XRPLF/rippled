@@ -28,9 +28,8 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
-
 #include <optional>
+#include <variant>
 
 namespace ripple {
 

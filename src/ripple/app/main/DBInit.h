@@ -114,6 +114,54 @@ inline constexpr std::array<char const*, 8> TxDBInit{
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// The Ledger Meta database maps ledger hashes to shard indexes
+inline constexpr auto LgrMetaDBName{"ledger_meta.db"};
+
+inline constexpr std::array LgrMetaDBPragma
+{
+    "PRAGMA page_size=4096;", "PRAGMA journal_size_limit=1582080;",
+        "PRAGMA max_page_count=2147483646;",
+#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
+        "PRAGMA mmap_size=17179869184;"
+#endif
+};
+
+inline constexpr std::array<char const*, 3> LgrMetaDBInit{
+    {"BEGIN TRANSACTION;",
+
+     "CREATE TABLE IF NOT EXISTS LedgerMeta (        \
+        LedgerHash  CHARACTER(64) PRIMARY KEY,       \
+        ShardIndex  INTEGER                          \
+    );",
+
+     "END TRANSACTION;"}};
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Transaction Meta database maps transaction IDs to shard indexes
+inline constexpr auto TxMetaDBName{"transaction_meta.db"};
+
+inline constexpr std::array TxMetaDBPragma
+{
+    "PRAGMA page_size=4096;", "PRAGMA journal_size_limit=1582080;",
+        "PRAGMA max_page_count=2147483646;",
+#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
+        "PRAGMA mmap_size=17179869184;"
+#endif
+};
+
+inline constexpr std::array<char const*, 3> TxMetaDBInit{
+    {"BEGIN TRANSACTION;",
+
+     "CREATE TABLE IF NOT EXISTS TransactionMeta (      \
+        TransID     CHARACTER(64) PRIMARY KEY,          \
+        ShardIndex  INTEGER                             \
+    );",
+
+     "END TRANSACTION;"}};
+
+////////////////////////////////////////////////////////////////////////////////
+
 // Temporary database used with an incomplete shard that is being acquired
 inline constexpr auto AcquireShardDBName{"acquire.db"};
 
