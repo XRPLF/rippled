@@ -41,11 +41,14 @@ shouldCloseLedger(
         (timeSincePrevClose > 10min))
     {
         // These are unexpected cases, we just close the ledger
-        JLOG(j.warn()) << "shouldCloseLedger Trans="
-                       << (anyTransactions ? "yes" : "no")
-                       << " Prop: " << prevProposers << "/" << proposersClosed
-                       << " Secs: " << timeSincePrevClose.count()
-                       << " (last: " << prevRoundTime.count() << ")";
+        JLOGV(
+            j.warn(),
+            "shouldCloseLedger",
+            jv("trans", (anyTransactions ? "yes" : "no")),
+            jv("prevProposers", prevProposers),
+            jv("proposersClosed", proposersClosed),
+            jv("secs", timeSincePrevClose.count()),
+            jv("last", prevRoundTime.count()));
         return true;
     }
 
@@ -116,11 +119,15 @@ checkConsensus(
     bool proposing,
     beast::Journal j)
 {
-    JLOG(j.trace()) << "checkConsensus: prop=" << currentProposers << "/"
-                    << prevProposers << " agree=" << currentAgree
-                    << " validated=" << currentFinished
-                    << " time=" << currentAgreeTime.count() << "/"
-                    << previousAgreeTime.count();
+    JLOGV(
+        j.trace(),
+        "checkConsensus",
+        jv("currentPorposers", currentProposers),
+        jv("prevProposers", prevProposers),
+        jv("agree", currentAgree),
+        jv("validated", currentFinished),
+        jv("currentAgreeTime", currentAgreeTime.count()),
+        jv("previousAgreeTime", previousAgreeTime.count()));
 
     if (currentAgreeTime <= parms.ledgerMIN_CONSENSUS)
         return ConsensusState::No;

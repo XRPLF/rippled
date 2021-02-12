@@ -54,8 +54,11 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
-        JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
-                        << " missing recent ancestor hashes";
+        JLOGV(
+            j_.warn(),
+            "Ledger missing recent ancestor hashes",
+            jv("seq", ledgerSeq_),
+            jv("id", ledgerID_));
 }
 
 auto
@@ -86,9 +89,12 @@ RCLValidatedLedger::operator[](Seq const& s) const -> ID
         return ancestors_[ancestors_.size() - diff];
     }
 
-    JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s
-                    << " from ledger hash=" << ledgerID_
-                    << " seq=" << ledgerSeq_;
+    JLOGV(
+        j_.warn(),
+        "Unable to determine hash of ancestor",
+        jv("ancestorSeq", s),
+        jv("fromLedgerHash", ledgerID_),
+        jv("fromLedgerSeq", ledgerSeq_));
     // Default ID that is less than all others
     return ID{0};
 }
@@ -129,8 +135,10 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
     auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
     if (!ledger)
     {
-        JLOG(j_.debug())
-            << "Need validated ledger for preferred ledger analysis " << hash;
+        JLOGV(
+            j_.debug(),
+            "Need validated ledger for preferred ledger analysis",
+            jv("hash", hash));
 
         Application* pApp = &app_;
 
@@ -213,9 +221,12 @@ handleNewValidation(
     }
     else
     {
-        JLOG(j.debug()) << "Val for " << hash << " from "
-                        << toBase58(TokenType::NodePublic, signingKey)
-                        << " not added UNlisted";
+        JLOGV(
+            j.debug(),
+            "Val for 'hash' from 'signingKeyPublic' not added UNlisted",
+            jv("hash", hash),
+            jv("signingKeyPublic",
+               toBase58(TokenType::NodePublic, signingKey)));
     }
 }
 

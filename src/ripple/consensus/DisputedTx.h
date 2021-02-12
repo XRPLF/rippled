@@ -152,19 +152,31 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     {
         if (votesYes)
         {
-            JLOG(j_.debug()) << "Peer " << peer << " votes YES on " << tx_.id();
+            JLOGV(
+                j_.debug(),
+                "Peer 'peer' votes YES on 'txId;",
+                jv("peer", peer),
+                jv("txId", tx_.id()));
             ++yays_;
         }
         else
         {
-            JLOG(j_.debug()) << "Peer " << peer << " votes NO on " << tx_.id();
+            JLOGV(
+                j_.debug(),
+                "Peer 'peer' votes NO on 'txId;",
+                jv("peer", peer),
+                jv("txId", tx_.id()));
             ++nays_;
         }
     }
     // changes vote to yes
     else if (votesYes && !it->second)
     {
-        JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
+        JLOGV(
+            j_.debug(),
+            "Peer 'peer' votes now votes YES on 'txId;",
+            jv("peer", peer),
+            jv("txId", tx_.id()));
         --nays_;
         ++yays_;
         it->second = true;
@@ -172,7 +184,11 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     // changes vote to no
     else if (!votesYes && it->second)
     {
-        JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
+        JLOGV(
+            j_.debug(),
+            "Peer 'peer' votes now votes NO on 'txId;",
+            jv("peer", peer),
+            jv("txId", tx_.id()));
         ++nays_;
         --yays_;
         it->second = false;
@@ -238,17 +254,23 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 
     if (newPosition == ourVote_)
     {
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO")
-                        << ") : weight " << weight << ", percent "
-                        << percentTime;
-        JLOG(j_.debug()) << Json::Compact{getJson()};
+        JLOGV(
+            j_.info(),
+            "No change",
+            jv("ourVote", (ourVote_ ? "YES" : "NO")),
+            jv("weight", weight),
+            jv("percentTime", percentTime));
+        JLOGV(j_.debug(), "No change", jv("this", Json::Compact{getJson()}));
         return false;
     }
 
     ourVote_ = newPosition;
-    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
-                     << tx_.id();
-    JLOG(j_.debug()) << Json::Compact{getJson()};
+    JLOGV(
+        j_.debug(),
+        "We now vote 'ourVote' on 'txId'",
+        jv("ourVote", (ourVote_ ? "YES" : "NO")),
+        jv("txId", tx_.id()),
+        jv("this", Json::Compact{getJson()}));
     return true;
 }
 
