@@ -75,8 +75,11 @@ PathRequests::updateAll(
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
-    JLOG(mJournal.trace()) << "updateAll seq=" << cache->getLedger()->seq()
-                           << ", " << requests.size() << " requests";
+    JLOGV(
+        mJournal.trace(),
+        "updateAll",
+        jv("seq", cache->getLedger()->seq()),
+        jv("numRequests", requests.size()));
 
     int processed = 0, removed = 0;
 
@@ -176,8 +179,11 @@ PathRequests::updateAll(
         }
     } while (!shouldCancel());
 
-    JLOG(mJournal.debug()) << "updateAll complete: " << processed
-                           << " processed and " << removed << " removed";
+    JLOGV(
+        mJournal.debug(),
+        "updateAll complete",
+        jv("numProcessed", processed),
+        jv("numRemoved", removed));
 }
 
 void

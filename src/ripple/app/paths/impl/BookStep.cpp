@@ -820,8 +820,10 @@ BookStep<TIn, TOut, TDerived>::revImp(
     {
         case -1: {
             // something went very wrong
-            JLOG(j_.error())
-                << "BookStep remainingOut < 0 " << to_string(remainingOut);
+            JLOGV(
+                j_.error(),
+                "BookStep remainingOut < 0",
+                jv("remainingOut", to_string(remainingOut)));
             assert(0);
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
@@ -990,8 +992,10 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     {
         case -1: {
             // something went very wrong
-            JLOG(j_.error())
-                << "BookStep remainingIn < 0 " << to_string(remainingIn);
+            JLOGV(
+                j_.error(),
+                "BookStep remainingIn < 0",
+                jv("remainingIn", to_string(remainingIn)));
             assert(0);
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
@@ -1035,11 +1039,14 @@ BookStep<TIn, TOut, TDerived>::validFwd(
     if (!(checkNear(savCache.in, cache_->in) &&
           checkNear(savCache.out, cache_->out)))
     {
-        JLOG(j_.warn()) << "Strand re-execute check failed."
-                        << " ExpectedIn: " << to_string(savCache.in)
-                        << " CachedIn: " << to_string(cache_->in)
-                        << " ExpectedOut: " << to_string(savCache.out)
-                        << " CachedOut: " << to_string(cache_->out);
+        JLOGV(
+            j_.warn(),
+            "Strand re-execute check failed",
+            jv("type", "BookStep"),
+            jv("expectedIn", to_string(savCache.in)),
+            jv("cachedIn", to_string(cache_->in)),
+            jv("expectedOut", to_string(savCache.out)),
+            jv("cachedOut", to_string(cache_->out)));
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
@@ -1051,14 +1058,18 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 {
     if (book_.in == book_.out)
     {
-        JLOG(j_.debug()) << "BookStep: Book with same in and out issuer "
-                         << *this;
+        JLOGV(
+            j_.debug(),
+            "BookStep: Book with same in and out issuer",
+            jv("step", *this));
         return temBAD_PATH;
     }
     if (!isConsistent(book_.in) || !isConsistent(book_.out))
     {
-        JLOG(j_.debug()) << "Book: currency is inconsistent with issuer."
-                         << *this;
+        JLOGV(
+            j_.debug(),
+            "Book: currency is inconsistent with issuer",
+            jv("step", *this));
         return temBAD_PATH;
     }
 
@@ -1067,13 +1078,13 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     if (!ctx.seenBookOuts.insert(book_.out).second ||
         ctx.seenDirectIssues[0].count(book_.out))
     {
-        JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
+        JLOGV(j_.debug(), "BookStep: loop detected", jv("step", *this));
         return temBAD_PATH_LOOP;
     }
 
     if (ctx.seenDirectIssues[1].count(book_.out))
     {
-        JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
+        JLOGV(j_.debug(), "BookStep: loop detected", jv("step", *this));
         return temBAD_PATH_LOOP;
     }
 
@@ -1083,7 +1094,8 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
     if (!issuerExists(ctx.view, book_.in) || !issuerExists(ctx.view, book_.out))
     {
-        JLOG(j_.debug()) << "BookStep: deleted issuer detected: " << *this;
+        JLOGV(
+            j_.debug(), "BookStep: deleted issuer detected", jv("step", *this));
         return tecNO_ISSUER;
     }
 

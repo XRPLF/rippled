@@ -165,10 +165,11 @@ flow(
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
-                        JLOG(j.fatal())
-                            << "Re-executed limiting step failed. r.first: "
-                            << to_string(get<TInAmt>(r.first))
-                            << " maxIn: " << to_string(*maxIn);
+                        JLOGV(
+                            j.fatal(),
+                            "Re-executed limiting step failed",
+                            jv("r.first", to_string(get<TInAmt>(r.first))),
+                            jv("maxIn", to_string(*maxIn)));
                         assert(0);
                         return Result{strand, std::move(ofrsToRm)};
                     }
@@ -199,9 +200,11 @@ flow(
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
 #ifndef NDEBUG
-                        JLOG(j.fatal())
-                            << "Re-executed limiting step failed. r.second: "
-                            << r.second << " stepOut: " << stepOut;
+                        JLOGV(
+                            j.fatal(),
+                            "Re-executed limiting step failed",
+                            jv("r.second", r.second),
+                            jv("stepOut", stepOut));
 #else
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
@@ -233,9 +236,11 @@ flow(
                     // strand forward from the limiting step should not find a
                     // new limit
 #ifndef NDEBUG
-                    JLOG(j.fatal())
-                        << "Re-executed forward pass failed. r.first: "
-                        << r.first << " stepIn: " << stepIn;
+                    JLOGV(
+                        j.fatal(),
+                        "Re-executed forward pass failed",
+                        jv("r.first", r.first),
+                        jv("stepIn", stepIn));
 #else
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
@@ -263,8 +268,10 @@ flow(
                     strand[i]->validFwd(checkSB, checkAfView, stepIn);
                 if (!valid)
                 {
-                    JLOG(j.warn())
-                        << "Strand re-execute check failed. Step: " << i;
+                    JLOGV(
+                        j.warn(),
+                        "Strand re-execute check failed",
+                        jv("step", i));
                     break;
                 }
             }
@@ -631,15 +638,20 @@ flow(
 
             Quality const q(f.out, f.in);
 
-            JLOG(j.trace())
-                << "New flow iter (iter, in, out): " << curTry - 1 << " "
-                << to_string(f.in) << " " << to_string(f.out);
+            JLOGV(
+                j.trace(),
+                "New flow iter",
+                jv("iter", curTry - 1),
+                jv("in", to_string(f.in)),
+                jv("out)", to_string(f.out)));
 
             if (limitQuality && q < *limitQuality)
             {
-                JLOG(j.trace())
-                    << "Path rejected by limitQuality"
-                    << " limit: " << *limitQuality << " path q: " << q;
+                JLOGV(
+                    j.trace(),
+                    "Path rejected by limitQuality",
+                    jv(" limit: ", *limitQuality),
+                    jv(" path q: ", q));
                 continue;
             }
 
@@ -703,9 +715,12 @@ flow(
                     EitherAmount(best->out),
                     activeStrands.size());
 
-            JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
-                            << " out: " << to_string(best->out)
-                            << " remainingOut: " << to_string(remainingOut);
+            JLOGV(
+                j.trace(),
+                "Best path",
+                jv("in", to_string(best->in)),
+                jv("out", to_string(best->out)),
+                jv("remainingOut", to_string(remainingOut)));
 
             best->sb.apply(sb);
         }
@@ -733,8 +748,11 @@ flow(
     auto const actualOut = sum(savedOuts);
     auto const actualIn = sum(savedIns);
 
-    JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn)
-                    << " out: " << to_string(actualOut);
+    JLOGV(
+        j.trace(),
+        "Total flow",
+        jv("in", to_string(actualIn)),
+        jv("out", to_string(actualOut)));
 
     if (actualOut != outReq)
     {

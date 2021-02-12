@@ -399,7 +399,7 @@ toStrand(
             result.emplace_back(std::move(s.second));
         else
         {
-            JLOG(j.debug()) << "toStep failed: " << s.first;
+            JLOGV(j.debug(), "toStep failed", jv("error", s.first));
             return {s.first, Strand{}};
         }
     }
@@ -549,8 +549,11 @@ toStrands(
         if (ter != tesSUCCESS)
         {
             lastFailTer = ter;
-            JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::none);
+            JLOGV(
+                j.trace(),
+                "failed to add path",
+                jv("error", ter),
+                jv("path", p.getJson(JsonOptions::none)));
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }

@@ -226,12 +226,14 @@ Pathfinder::findPaths(int searchLevel)
     mSource = STPathElement(account, mSrcCurrency, issuer);
     auto issuerString =
         mSrcIssuer ? to_string(*mSrcIssuer) : std::string("none");
-    JLOG(j_.trace()) << "findPaths>"
-                     << " mSrcAccount=" << mSrcAccount
-                     << " mDstAccount=" << mDstAccount
-                     << " mDstAmount=" << mDstAmount.getFullText()
-                     << " mSrcCurrency=" << mSrcCurrency
-                     << " mSrcIssuer=" << issuerString;
+    JLOGV(
+        j_.trace(),
+        "findPaths>",
+        jv("mSrcAccount", mSrcAccount),
+        jv("mDstAccount", mDstAccount),
+        jv("mDstAmount", mDstAmount.getFullText()),
+        jv("mSrcCurrency", mSrcCurrency),
+        jv("mSrcIssuer", issuerString));
 
     if (!mLedger)
     {
@@ -269,9 +271,11 @@ Pathfinder::findPaths(int searchLevel)
         auto const reserve = STAmount(mLedger->fees().accountReserve(0));
         if (mDstAmount < reserve)
         {
-            JLOG(j_.debug())
-                << "New account not getting enough funding: " << mDstAmount
-                << " < " << reserve;
+            JLOGV(
+                j_.debug(),
+                "New account not getting enough funding. dstAmount < reserve",
+                jv("mDstAmount", mDstAmount),
+                jv("reserve", reserve));
             return false;
         }
     }
@@ -325,7 +329,10 @@ Pathfinder::findPaths(int searchLevel)
         }
     }
 
-    JLOG(j_.debug()) << mCompletePaths.size() << " complete paths found";
+    JLOGV(
+        j_.debug(),
+        "num complete paths found",
+        jv("size", mCompletePaths.size()));
 
     // Even if we find no paths, default paths may work, and we don't check them
     // currently.
@@ -393,8 +400,11 @@ Pathfinder::getPathLiquidity(
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.info()) << "checkpath: exception (" << e.what() << ") "
-                        << path.getJson(JsonOptions::none);
+        JLOGV(
+            j_.info(),
+            "checkpath: exception",
+            jv("what", e.what()),
+            jv("path", path.getJson(JsonOptions::none)));
         return tefEXCEPTION;
     }
 }
@@ -423,14 +433,18 @@ Pathfinder::computePathRanks(int maxPaths)
 
         if (rc.result() == tesSUCCESS)
         {
-            JLOG(j_.debug())
-                << "Default path contributes: " << rc.actualAmountIn;
+            JLOGV(
+                j_.debug(),
+                "Default path contributes",
+                jv("amount", rc.actualAmountIn));
             mRemainingAmount -= rc.actualAmountOut;
         }
         else
         {
-            JLOG(j_.debug())
-                << "Default path fails: " << transToken(rc.result());
+            JLOGV(
+                j_.debug(),
+                "Default path fails",
+                jv("error", transToken(rc.result())));
         }
     }
     catch (std::exception const&)
@@ -508,14 +522,19 @@ Pathfinder::rankPaths(
                 currentPath, saMinDstAmount, liquidity, uQuality);
             if (resultCode != tesSUCCESS)
             {
-                JLOG(j_.debug())
-                    << "findPaths: dropping : " << transToken(resultCode)
-                    << ": " << currentPath.getJson(JsonOptions::none);
+                JLOGV(
+                    j_.debug(),
+                    "findPaths: dropping",
+                    jv("error", transToken(resultCode)),
+                    jv("currentPath", currentPath.getJson(JsonOptions::none)));
             }
             else
             {
-                JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
-                                 << currentPath.getJson(JsonOptions::none);
+                JLOGV(
+                    j_.debug(),
+                    "findPaths: quality",
+                    jv("quality", uQuality),
+                    jv("currentPath", currentPath.getJson(JsonOptions::none)));
 
                 rankedPaths.push_back(
                     {uQuality, currentPath.size(), liquidity, i});
@@ -556,8 +575,11 @@ Pathfinder::getBestPaths(
     STPathSet const& extraPaths,
     AccountID const& srcIssuer)
 {
-    JLOG(j_.debug()) << "findPaths: " << mCompletePaths.size() << " paths and "
-                     << extraPaths.size() << " extras";
+    JLOGV(
+        j_.debug(),
+        "findPaths: path sizes",
+        jv("numCompletePaths", mCompletePaths.size()),
+        jv("numExtraPaths", extraPaths.size()));
 
     if (mCompletePaths.empty() && extraPaths.empty())
         return mCompletePaths;
@@ -652,26 +674,35 @@ Pathfinder::getBestPaths(
         {
             // We found an extra path that can move the whole amount.
             fullLiquidityPath = (startsWithIssuer ? removeIssuer(path) : path);
-            JLOG(j_.debug()) << "Found extra full path: "
-                             << fullLiquidityPath.getJson(JsonOptions::none);
+            JLOGV(
+                j_.debug(),
+                "Found extra full path",
+                jv("path", fullLiquidityPath.getJson(JsonOptions::none)));
         }
         else
         {
-            JLOG(j_.debug()) << "Skipping a non-filling path: "
-                             << path.getJson(JsonOptions::none);
+            JLOGV(
+                j_.debug(),
+                "Skipping a non-filling path",
+                jv("path", path.getJson(JsonOptions::none)));
         }
     }
 
     if (remaining > beast::zero)
     {
         assert(fullLiquidityPath.empty());
-        JLOG(j_.info()) << "Paths could not send " << remaining << " of "
-                        << mDstAmount;
+        JLOGV(
+            j_.info(),
+            "Paths could not send requested amount",
+            jv("remaining", remaining),
+            jv("requested", mDstAmount));
     }
     else
     {
-        JLOG(j_.debug()) << "findPaths: RESULTS: "
-                         << bestPaths.getJson(JsonOptions::none);
+        JLOGV(
+            j_.debug(),
+            "findPaths: RESULTS",
+            jv("paths", bestPaths.getJson(JsonOptions::none)));
     }
     return bestPaths;
 }
@@ -760,8 +791,11 @@ Pathfinder::addLinks(
     STPathSet& incompletePaths,     // The set of partial paths we add to
     int addFlags)
 {
-    JLOG(j_.debug()) << "addLink< on " << currentPaths.size()
-                     << " source(s), flags=" << addFlags;
+    JLOGV(
+        j_.debug(),
+        "addLink< on",
+        jv("numCurrentPaths", currentPaths.size()),
+        jv("flags", addFlags));
     for (auto const& path : currentPaths)
         addLink(path, incompletePaths, addFlags);
 }
@@ -786,9 +820,11 @@ Pathfinder::addPathsForType(PathType const& pathType)
     STPathSet const& parentPaths = addPathsForType(parentPathType);
     STPathSet& pathsOut = mPaths[pathType];
 
-    JLOG(j_.debug()) << "getPaths< adding onto '"
-                     << pathTypeToString(parentPathType) << "' to get '"
-                     << pathTypeToString(pathType) << "'";
+    JLOGV(
+        j_.debug(),
+        "getPaths< adding onto 'parentPathType' to get 'pathType'",
+        jv("parentPathType", pathTypeToString(parentPathType)),
+        jv("pathType", pathTypeToString(pathType)));
 
     int initialSize = mCompletePaths.size();
 
@@ -828,12 +864,16 @@ Pathfinder::addPathsForType(PathType const& pathType)
 
     if (mCompletePaths.size() != initialSize)
     {
-        JLOG(j_.debug()) << (mCompletePaths.size() - initialSize)
-                         << " complete paths added";
+        JLOGV(
+            j_.debug(),
+            "num complete paths added",
+            jv("numAdded", (mCompletePaths.size() - initialSize)));
     }
 
-    JLOG(j_.debug()) << "getPaths> " << pathsOut.size()
-                     << " partial paths found";
+    JLOGV(
+        j_.debug(),
+        "getPaths>  partial paths found",
+        jv("numFound", pathsOut.size()));
     return pathsOut;
 }
 
@@ -906,8 +946,12 @@ Pathfinder::addLink(
     // rather than the ultimate destination?
     bool const hasEffectiveDestination = mEffectiveDst != mDstAccount;
 
-    JLOG(j_.trace()) << "addLink< flags=" << addFlags << " onXRP=" << bOnXRP;
-    JLOG(j_.trace()) << currentPath.getJson(JsonOptions::none);
+    JLOGV(
+        j_.trace(),
+        "addLink<",
+        jv("flags", addFlags),
+        jv("onXRP", bOnXRP),
+        jv("currentPath", currentPath.getJson(JsonOptions::none)));
 
     if (addFlags & afADD_ACCOUNTS)
     {
@@ -916,8 +960,10 @@ Pathfinder::addLink(
         {
             if (mDstAmount.native() && !currentPath.empty())
             {  // non-default path to XRP destination
-                JLOG(j_.trace()) << "complete path found ax: "
-                                 << currentPath.getJson(JsonOptions::none);
+                JLOGV(
+                    j_.trace(),
+                    "complete path found ax",
+                    jv("currentPath", currentPath.getJson(JsonOptions::none)));
                 addUniquePath(mCompletePaths, currentPath);
             }
         }
@@ -986,10 +1032,12 @@ Pathfinder::addLink(
                                 // this is a complete path
                                 if (!currentPath.empty())
                                 {
-                                    JLOG(j_.trace())
-                                        << "complete path found ae: "
-                                        << currentPath.getJson(
-                                               JsonOptions::none);
+                                    JLOGV(
+                                        j_.trace(),
+                                        "complete path found ae",
+                                        jv("currentPath",
+                                           currentPath.getJson(
+                                               JsonOptions::none)));
                                     addUniquePath(mCompletePaths, currentPath);
                                 }
                             }
@@ -1078,8 +1126,10 @@ Pathfinder::addLink(
             bool bDestOnly = (addFlags & afOB_LAST) != 0;
             auto books = app_.getOrderBookDB().getBooksByTakerPays(
                 {uEndCurrency, uEndIssuer});
-            JLOG(j_.trace())
-                << books.size() << " books found from this currency/issuer";
+            JLOGV(
+                j_.trace(),
+                "num books found from this currency/issuer",
+                jv("numBooks", books.size()));
 
             for (auto const& book : books)
             {
@@ -1107,9 +1157,11 @@ Pathfinder::addLink(
                         {
                             // destination is XRP, add account and path is
                             // complete
-                            JLOG(j_.trace())
-                                << "complete path found bx: "
-                                << currentPath.getJson(JsonOptions::none);
+                            JLOGV(
+                                j_.trace(),
+                                "complete path found bx",
+                                jv("currentPath",
+                                   currentPath.getJson(JsonOptions::none)));
                             addUniquePath(mCompletePaths, newPath);
                         }
                         else
@@ -1156,9 +1208,11 @@ Pathfinder::addLink(
                             book->getCurrencyOut() == mDstAmount.getCurrency())
                         {  // with the destination account, this path is
                            // complete
-                            JLOG(j_.trace())
-                                << "complete path found ba: "
-                                << currentPath.getJson(JsonOptions::none);
+                            JLOGV(
+                                j_.trace(),
+                                "complete path found ba",
+                                jv("currentPath",
+                                   currentPath.getJson(JsonOptions::none)));
                             addUniquePath(mCompletePaths, newPath);
                         }
                         else

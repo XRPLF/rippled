@@ -412,7 +412,7 @@ DirectIPaymentStep::check(
         auto const sleLine = ctx.view.read(keylet::line(src_, dst_, currency_));
         if (!sleLine)
         {
-            JLOG(j_.trace()) << "DirectStepI: No credit line. " << *this;
+            JLOGV(j_.trace(), "DirectStepI: No credit line", jv("step", *this));
             return terNO_LINE;
         }
 
@@ -422,9 +422,10 @@ DirectIPaymentStep::check(
             !((*sleLine)[sfFlags] & authField) &&
             (*sleLine)[sfBalance] == beast::zero)
         {
-            JLOG(j_.warn())
-                << "DirectStepI: can't receive IOUs from issuer without auth."
-                << " src: " << src_;
+            JLOGV(
+                j_.warn(),
+                "DirectStepI: can't receive IOUs from issuer without auth",
+                jv("src", src_));
             return terNO_AUTH;
         }
 
@@ -448,8 +449,11 @@ DirectIPaymentStep::check(
             auto const limit = creditLimit(ctx.view, dst_, src_, currency_);
             if (-owed >= limit)
             {
-                JLOG(j_.debug()) << "DirectStepI: dry: owed: " << owed
-                                 << " limit: " << limit;
+                JLOGV(
+                    j_.debug(),
+                    "DirectStepI: dry",
+                    jv("owed", owed),
+                    jv("limit", limit));
                 return tecPATH_DRY;
             }
         }
@@ -519,11 +523,14 @@ DirectStepI<TDerived>::revImp(
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
-    JLOG(j_.trace()) << "DirectStepI::rev"
-                     << " srcRedeems: " << redeems(srcDebtDir)
-                     << " outReq: " << to_string(out)
-                     << " maxSrcToDst: " << to_string(maxSrcToDst)
-                     << " srcQOut: " << srcQOut << " dstQIn: " << dstQIn;
+    JLOGV(
+        j_.trace(),
+        "DirectStepI::rev",
+        jv("srcRedeems", redeems(srcDebtDir)),
+        jv("outReq", to_string(out)),
+        jv("maxSrcToDst", to_string(maxSrcToDst)),
+        jv("srcQOut", srcQOut),
+        jv("dstQIn", dstQIn));
 
     if (maxSrcToDst.signum() <= 0)
     {
@@ -551,11 +558,13 @@ DirectStepI<TDerived>::revImp(
             toSTAmount(srcToDst, srcToDstIss),
             /*checkIssuer*/ true,
             j_);
-        JLOG(j_.trace()) << "DirectStepI::rev: Non-limiting"
-                         << " srcRedeems: " << redeems(srcDebtDir)
-                         << " in: " << to_string(in)
-                         << " srcToDst: " << to_string(srcToDst)
-                         << " out: " << to_string(out);
+        JLOGV(
+            j_.trace(),
+            "DirectStepI::rev: Non-limiting",
+            jv("srcRedeems", redeems(srcDebtDir)),
+            jv("in", to_string(in)),
+            jv("srcToDst", to_string(srcToDst)),
+            jv("out", to_string(out)));
         return {in, out};
     }
 
@@ -572,11 +581,13 @@ DirectStepI<TDerived>::revImp(
         toSTAmount(maxSrcToDst, srcToDstIss),
         /*checkIssuer*/ true,
         j_);
-    JLOG(j_.trace()) << "DirectStepI::rev: Limiting"
-                     << " srcRedeems: " << redeems(srcDebtDir)
-                     << " in: " << to_string(in)
-                     << " srcToDst: " << to_string(maxSrcToDst)
-                     << " out: " << to_string(out);
+    JLOGV(
+        j_.trace(),
+        "DirectStepI::rev: Limiting",
+        jv("srcRedeems", redeems(srcDebtDir)),
+        jv("in", to_string(in)),
+        jv("srcToDst", to_string(maxSrcToDst)),
+        jv("out", to_string(out)));
     return {in, actualOut};
 }
 
@@ -605,14 +616,15 @@ DirectStepI<TDerived>::setCacheLimiting(
             {
                 // Detect large diffs on forward pass so they may be
                 // investigated
-                JLOG(j_.warn())
-                    << "DirectStepI::fwd: setCacheLimiting"
-                    << " fwdIn: " << to_string(fwdIn)
-                    << " cacheIn: " << to_string(cache_->in)
-                    << " fwdSrcToDst: " << to_string(fwdSrcToDst)
-                    << " cacheSrcToDst: " << to_string(cache_->srcToDst)
-                    << " fwdOut: " << to_string(fwdOut)
-                    << " cacheOut: " << to_string(cache_->out);
+                JLOGV(
+                    j_.warn(),
+                    "DirectStepI::fwd: setCacheLimiting",
+                    jv("fwdIn", to_string(fwdIn)),
+                    jv("cacheIn", to_string(cache_->in)),
+                    jv("fwdSrcToDst", to_string(fwdSrcToDst)),
+                    jv("cacheSrcToDst", to_string(cache_->srcToDst)),
+                    jv("fwdOut", to_string(fwdOut)),
+                    jv("cacheOut", to_string(cache_->out)));
                 cache_.emplace(fwdIn, fwdSrcToDst, fwdOut, srcDebtDir);
                 return;
             }
@@ -644,11 +656,14 @@ DirectStepI<TDerived>::fwdImp(
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
-    JLOG(j_.trace()) << "DirectStepI::fwd"
-                     << " srcRedeems: " << redeems(srcDebtDir)
-                     << " inReq: " << to_string(in)
-                     << " maxSrcToDst: " << to_string(maxSrcToDst)
-                     << " srcQOut: " << srcQOut << " dstQIn: " << dstQIn;
+    JLOGV(
+        j_.trace(),
+        "DirectStepI::fwd",
+        jv("srcRedeems", redeems(srcDebtDir)),
+        jv("inReq", to_string(in)),
+        jv("maxSrcToDst", to_string(maxSrcToDst)),
+        jv("srcQOut", srcQOut),
+        jv("dstQIn", dstQIn));
 
     if (maxSrcToDst.signum() <= 0)
     {
@@ -676,11 +691,13 @@ DirectStepI<TDerived>::fwdImp(
             toSTAmount(cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true,
             j_);
-        JLOG(j_.trace()) << "DirectStepI::fwd: Non-limiting"
-                         << " srcRedeems: " << redeems(srcDebtDir)
-                         << " in: " << to_string(in)
-                         << " srcToDst: " << to_string(srcToDst)
-                         << " out: " << to_string(out);
+        JLOGV(
+            j_.trace(),
+            "DirectStepI::fwd: Non-limiting",
+            jv("srcRedeems", redeems(srcDebtDir)),
+            jv("in", to_string(in)),
+            jv("srcToDst", to_string(srcToDst)),
+            jv("out", to_string(out)));
     }
     else
     {
@@ -697,11 +714,13 @@ DirectStepI<TDerived>::fwdImp(
             toSTAmount(cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true,
             j_);
-        JLOG(j_.trace()) << "DirectStepI::rev: Limiting"
-                         << " srcRedeems: " << redeems(srcDebtDir)
-                         << " in: " << to_string(actualIn)
-                         << " srcToDst: " << to_string(srcToDst)
-                         << " out: " << to_string(out);
+        JLOGV(
+            j_.trace(),
+            "DirectStepI::rev: Limiting",
+            jv("srcRedeems", redeems(srcDebtDir)),
+            jv("in", to_string(actualIn)),
+            jv("srcToDst", to_string(srcToDst)),
+            jv("out", to_string(out)));
     }
     return {cache_->in, cache_->out};
 }
@@ -739,21 +758,25 @@ DirectStepI<TDerived>::validFwd(
 
     if (maxSrcToDst < cache_->srcToDst)
     {
-        JLOG(j_.warn()) << "DirectStepI: Strand re-execute check failed."
-                        << " Exceeded max src->dst limit"
-                        << " max src->dst: " << to_string(maxSrcToDst)
-                        << " actual src->dst: " << to_string(cache_->srcToDst);
+        JLOGV(
+            j_.warn(),
+            "DirectStepI: Strand re-execute check failed. Exceeded max "
+            "src->dst limit",
+            jv("max src->dst", to_string(maxSrcToDst)),
+            jv("actual src->dst", to_string(cache_->srcToDst)));
         return {false, EitherAmount(cache_->out)};
     }
 
     if (!(checkNear(savCache.in, cache_->in) &&
           checkNear(savCache.out, cache_->out)))
     {
-        JLOG(j_.warn()) << "DirectStepI: Strand re-execute check failed."
-                        << " ExpectedIn: " << to_string(savCache.in)
-                        << " CachedIn: " << to_string(cache_->in)
-                        << " ExpectedOut: " << to_string(savCache.out)
-                        << " CachedOut: " << to_string(cache_->out);
+        JLOGV(
+            j_.warn(),
+            "DirectStepI: Strand re-execute check failed.",
+            jv("ExpectedIn", to_string(savCache.in)),
+            jv("CachedIn", to_string(cache_->in)),
+            jv("ExpectedOut", to_string(savCache.out)),
+            jv("CachedOut", to_string(cache_->out)));
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
@@ -891,9 +914,10 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     auto const sleSrc = ctx.view.read(keylet::account(src_));
     if (!sleSrc)
     {
-        JLOG(j_.warn())
-            << "DirectStepI: can't receive IOUs from non-existent issuer: "
-            << src_;
+        JLOGV(
+            j_.warn(),
+            "DirectStepI: can't receive IOUs from non-existent issuer",
+            jv("account", src_));
         return terNO_ACCOUNT;
     }
 
@@ -941,9 +965,11 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         if (!ctx.seenDirectIssues[0].insert(srcIssue).second ||
             !ctx.seenDirectIssues[1].insert(dstIssue).second)
         {
-            JLOG(j_.debug())
-                << "DirectStepI: loop detected: Index: " << ctx.strandSize
-                << ' ' << *this;
+            JLOGV(
+                j_.debug(),
+                "DirectStepI: loop detected",
+                jv("index", ctx.strandSize),
+                jv("step", *this));
             return temBAD_PATH_LOOP;
         }
     }

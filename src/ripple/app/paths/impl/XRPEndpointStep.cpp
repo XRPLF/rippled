@@ -317,17 +317,22 @@ XRPEndpointStep<TDerived>::validFwd(
 
     if (!isLast_ && balance < xrpIn)
     {
-        JLOG(j_.warn()) << "XRPEndpointStep: Strand re-execute check failed."
-                        << " Insufficient balance: " << to_string(balance)
-                        << " Requested: " << to_string(xrpIn);
+        JLOGV(
+            j_.warn(),
+            "XRPEndpointStep: Strand re-execute check failed. Insufficient "
+            "balance",
+            jv("balance", balance.drops()),
+            jv("requested", xrpIn.drops()));
         return {false, EitherAmount(balance)};
     }
 
     if (xrpIn != *cache_)
     {
-        JLOG(j_.warn()) << "XRPEndpointStep: Strand re-execute check failed."
-                        << " ExpectedIn: " << to_string(*cache_)
-                        << " CachedIn: " << to_string(xrpIn);
+        JLOGV(
+            j_.warn(),
+            "XRPEndpointStep: Strand re-execute check failed.",
+            jv("expectedIn", xrpIn.drops()),
+            jv("cachedIn", cache_->drops()));
     }
     return {true, in};
 }
@@ -345,9 +350,11 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     auto sleAcc = ctx.view.read(keylet::account(acc_));
     if (!sleAcc)
     {
-        JLOG(j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "
-                           "non-existent account: "
-                        << acc_;
+        JLOGV(
+            j_.warn(),
+            "XRPEndpointStep: can't send or receive XRP from non-existent "
+            "account",
+            jv("account", acc_));
         return terNO_ACCOUNT;
     }
 
@@ -367,9 +374,11 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         auto const issuesIndex = isLast_ ? 0 : 1;
         if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
         {
-            JLOG(j_.debug())
-                << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize
-                << ' ' << *this;
+            JLOGV(
+                j_.debug(),
+                "XRPEndpointStep: loop detected",
+                jv("index", ctx.strandSize),
+                jv("step", *this));
             return temBAD_PATH_LOOP;
         }
     }

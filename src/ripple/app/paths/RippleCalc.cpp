@@ -115,7 +115,7 @@ RippleCalc::rippleCalculate(
         }
         catch (std::exception& e)
         {
-            JLOG(j.error()) << "Exception from flow: " << e.what();
+            JLOGV(j.error(), "Exception from flow", jv("what", e.what()));
 
             // return a tec so the tx is stored
             path::RippleCalc::Output exceptResult;
@@ -124,12 +124,14 @@ RippleCalc::rippleCalculate(
         }
     }
 
-    j.debug() << "RippleCalc Result> "
-              << " actualIn: " << flowOut.actualAmountIn
-              << ", actualOut: " << flowOut.actualAmountOut
-              << ", result: " << flowOut.result()
-              << ", dstAmtReq: " << saDstAmountReq
-              << ", sendMax: " << saMaxAmountReq;
+    JLOGV(
+        j.debug(),
+        "RippleCalc Result>",
+        jv("actualIn", flowOut.actualAmountIn),
+        jv("actualOut", flowOut.actualAmountOut),
+        jv("result", flowOut.result()),
+        jv("dstAmtReq", saDstAmountReq),
+        jv("sendMax", saMaxAmountReq));
 
     flowSB.apply(view);
     return flowOut;
