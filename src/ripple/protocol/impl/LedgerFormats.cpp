@@ -283,6 +283,49 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
+    add(jss::Bridge,
+        ltBRIDGE,
+        {
+            {sfAccount,                  soeREQUIRED},
+            {sfSignatureReward,          soeREQUIRED},
+            {sfMinAccountCreateAmount,   soeOPTIONAL},
+            {sfXChainBridge,             soeREQUIRED},
+            {sfXChainClaimID,            soeREQUIRED},
+            {sfXChainAccountCreateCount, soeREQUIRED},
+            {sfXChainAccountClaimCount,  soeREQUIRED},
+            {sfOwnerNode,                soeREQUIRED},
+            {sfPreviousTxnID,            soeREQUIRED},
+            {sfPreviousTxnLgrSeq,        soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::XChainOwnedClaimID,
+        ltXCHAIN_OWNED_CLAIM_ID,
+        {
+            {sfAccount,                 soeREQUIRED},
+            {sfXChainBridge,            soeREQUIRED},
+            {sfXChainClaimID,           soeREQUIRED},
+            {sfOtherChainSource,        soeREQUIRED},
+            {sfXChainClaimAttestations, soeREQUIRED},
+            {sfSignatureReward,         soeREQUIRED},
+            {sfOwnerNode,               soeREQUIRED},
+            {sfPreviousTxnID,           soeREQUIRED},
+            {sfPreviousTxnLgrSeq,       soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::XChainOwnedCreateAccountClaimID,
+        ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
+        {
+            {sfAccount,                         soeREQUIRED},
+            {sfXChainBridge,                    soeREQUIRED},
+            {sfXChainAccountCreateCount,        soeREQUIRED},
+            {sfXChainCreateAccountAttestations, soeREQUIRED},
+            {sfOwnerNode,                       soeREQUIRED},
+            {sfPreviousTxnID,                   soeREQUIRED},
+            {sfPreviousTxnLgrSeq,               soeREQUIRED}
+        },
+        commonFields);
     // clang-format on
 }
 

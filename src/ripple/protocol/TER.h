@@ -125,6 +125,13 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_NFTOKEN_TRANSFER_FEE,
 
     temBAD_AMM_TOKENS,
+
+    temXCHAIN_EQUAL_DOOR_ACCOUNTS,
+    temXCHAIN_BAD_PROOF,
+    temXCHAIN_BRIDGE_BAD_ISSUES,
+    temXCHAIN_BRIDGE_NONDOOR_OWNER,
+    temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,
+    temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT,
 };
 
 //------------------------------------------------------------------------------
@@ -303,7 +310,24 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_EMPTY = 166,
     tecAMM_NOT_EMPTY = 167,
     tecAMM_ACCOUNT = 168,
-    tecINCOMPLETE = 169
+    tecINCOMPLETE = 169,
+    tecXCHAIN_BAD_TRANSFER_ISSUE = 170,
+    tecXCHAIN_NO_CLAIM_ID = 171,
+    tecXCHAIN_BAD_CLAIM_ID = 172,
+    tecXCHAIN_CLAIM_NO_QUORUM = 173,
+    tecXCHAIN_PROOF_UNKNOWN_KEY = 174,
+    tecXCHAIN_CREATE_ACCOUNT_NONXRP_ISSUE = 175,
+    tecXCHAIN_WRONG_CHAIN = 176,
+    tecXCHAIN_REWARD_MISMATCH = 177,
+    tecXCHAIN_NO_SIGNERS_LIST = 178,
+    tecXCHAIN_SENDING_ACCOUNT_MISMATCH = 179,
+    tecXCHAIN_INSUFF_CREATE_AMOUNT = 180,
+    tecXCHAIN_ACCOUNT_CREATE_PAST = 181,
+    tecXCHAIN_ACCOUNT_CREATE_TOO_MANY = 182,
+    tecXCHAIN_PAYMENT_FAILED = 183,
+    tecXCHAIN_SELF_COMMIT = 184,
+    tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
+    tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
 };
 
 //------------------------------------------------------------------------------
