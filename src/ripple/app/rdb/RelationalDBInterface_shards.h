@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/core/Config.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <boost/filesystem.hpp>
 
 namespace ripple {
@@ -34,6 +35,60 @@ struct DatabasePair
 };
 
 /* Shard DB */
+
+/**
+ * @brief makeMetaDBs Opens ledger and transaction 'meta' databases which
+ *        map ledger hashes and transaction IDs to the index of the shard
+ *        that holds the ledger or transaction.
+ * @param config Config object.
+ * @param setup Path to database and opening parameters.
+ * @param checkpointerSetup Database checkpointer setup.
+ * @return Struct DatabasePair which contains unique pointers to the ledger
+ *         and transaction databases.
+ */
+DatabasePair
+makeMetaDBs(
+    Config const& config,
+    DatabaseCon::Setup const& setup,
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup);
+
+/**
+ * @brief saveLedgerMeta Stores (transaction ID -> shard index) and
+ *        (ledger hash -> shard index) mappings in the meta databases.
+ * @param ledger The ledger.
+ * @param app Application object.
+ * @param lgrMetaSession Session to ledger meta database.
+ * @param txnMetaSession Session to transaction meta database.
+ * @param shardIndex The index of the shard that contains this ledger.
+ * @return True on success.
+ */
+bool
+saveLedgerMeta(
+    std::shared_ptr<Ledger const> const& ledger,
+    Application& app,
+    soci::session& lgrMetaSession,
+    soci::session& txnMetaSession,
+    std::uint32_t shardIndex);
+
+/**
+ * @brief getShardIndexforLedger Queries the ledger meta database to
+ *        retrieve the index of the shard that contains this ledger.
+ * @param session Session to the database.
+ * @param hash Hash of the ledger.
+ * @return The index of the shard on success, otherwise an unseated value.
+ */
+std::optional<std::uint32_t>
+getShardIndexforLedger(soci::session& session, LedgerHash const& hash);
+
+/**
+ * @brief getShardIndexforTransaction Queries the transaction meta database to
+ *        retrieve the index of the shard that contains this transaction.
+ * @param session Session to the database.
+ * @param id ID of the transaction.
+ * @return The index of the shard on success, otherwise an unseated value.
+ */
+std::optional<std::uint32_t>
+getShardIndexforTransaction(soci::session& session, TxID const& id);
 
 /**
  * @brief makeShardCompleteLedgerDBs Opens shard databases for already
