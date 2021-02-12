@@ -1699,8 +1699,10 @@ NetworkOPsImp::switchLastClosedLedger(
     std::shared_ptr<Ledger const> const& newLCL)
 {
     // set the newLCL as our last closed ledger -- this is abnormal code
-    JLOG(m_journal.error())
-        << "JUMP last closed ledger to " << newLCL->info().hash;
+    JLOGV(
+        m_journal.error(),
+        "JUMP last closed ledger to ",
+        jv("hash", newLCL->info().hash));
 
     clearNeedNetworkLedger();
 

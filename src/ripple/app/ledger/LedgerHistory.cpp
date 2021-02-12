@@ -157,14 +157,20 @@ log_one(
 
     if (metaData != nullptr)
     {
-        JLOG(j.debug()) << "MISMATCH on TX " << tx << ": " << msg
-                        << " is missing this transaction:\n"
-                        << metaData->getJson(JsonOptions::none);
+        JLOGV(
+            j.debug(),
+            "MISMATCH on TX",
+            jv("which_is_missing_tx", msg),
+            jv("tx", tx),
+            jv("metadata", metaData->getJson(JsonOptions::none)));
     }
     else
     {
-        JLOG(j.debug()) << "MISMATCH on TX " << tx << ": " << msg
-                        << " is missing this transaction.";
+        JLOGV(
+            j.debug(),
+            "MISMATCH on TX",
+            jv("which_is_missing_tx", msg),
+            jv("tx", tx));
     }
 }
 
@@ -211,95 +217,94 @@ log_metadata_difference(
         {
             if (result_diff && index_diff)
             {
-                JLOG(j.debug()) << "MISMATCH on TX " << tx
-                                << ": Different result and index!";
-                JLOG(j.debug()) << " Built:"
-                                << " Result: " << builtMetaData->getResult()
-                                << " Index: " << builtMetaData->getIndex();
-                JLOG(j.debug()) << " Valid:"
-                                << " Result: " << validMetaData->getResult()
-                                << " Index: " << validMetaData->getIndex();
+                // TODO support `jvGroup` construct and put "built" and "valid"
+                // into different groups
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different result and index!",
+                    jv("tx", tx),
+                    jv("builtResult", builtMetaData->getResult()),
+                    jv("builtIndex", builtMetaData->getIndex()),
+                    jv("validResult", validMetaData->getResult()),
+                    jv("validIndex", validMetaData->getIndex()));
             }
             else if (result_diff)
             {
-                JLOG(j.debug())
-                    << "MISMATCH on TX " << tx << ": Different result!";
-                JLOG(j.debug()) << " Built:"
-                                << " Result: " << builtMetaData->getResult();
-                JLOG(j.debug()) << " Valid:"
-                                << " Result: " << validMetaData->getResult();
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different result!",
+                    jv("tx", tx),
+                    jv("builtResult", builtMetaData->getResult()),
+                    jv("validResult", validMetaData->getResult()));
             }
             else if (index_diff)
             {
-                JLOG(j.debug())
-                    << "MISMATCH on TX " << tx << ": Different index!";
-                JLOG(j.debug()) << " Built:"
-                                << " Index: " << builtMetaData->getIndex();
-                JLOG(j.debug()) << " Valid:"
-                                << " Index: " << validMetaData->getIndex();
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different index!",
+                    jv("tx", tx),
+                    jv("builtIndex", builtMetaData->getIndex()),
+                    jv("validIndex", validMetaData->getIndex()));
             }
         }
         else
         {
             if (result_diff && index_diff)
             {
-                JLOG(j.debug()) << "MISMATCH on TX " << tx
-                                << ": Different result, index and nodes!";
-                JLOG(j.debug()) << " Built:\n"
-                                << builtMetaData->getJson(JsonOptions::none);
-                JLOG(j.debug()) << " Valid:\n"
-                                << validMetaData->getJson(JsonOptions::none);
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different result, index and nodes!",
+                    jv("tx", tx),
+                    jv("built", builtMetaData->getJson(JsonOptions::none)),
+                    jv("valid", validMetaData->getJson(JsonOptions::none)));
             }
             else if (result_diff)
             {
-                JLOG(j.debug()) << "MISMATCH on TX " << tx
-                                << ": Different result and nodes!";
-                JLOG(j.debug())
-                    << " Built:"
-                    << " Result: " << builtMetaData->getResult() << " Nodes:\n"
-                    << builtNodes.getJson(JsonOptions::none);
-                JLOG(j.debug())
-                    << " Valid:"
-                    << " Result: " << validMetaData->getResult() << " Nodes:\n"
-                    << validNodes.getJson(JsonOptions::none);
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different result and nodes!",
+                    jv("tx", tx),
+                    jv("builtResult", builtMetaData->getResult()),
+                    jv("builtNodes", builtNodes.getJson(JsonOptions::none)),
+                    jv("validResult", validMetaData->getResult()),
+                    jv("validNodes", validNodes.getJson(JsonOptions::none)));
             }
             else if (index_diff)
             {
-                JLOG(j.debug()) << "MISMATCH on TX " << tx
-                                << ": Different index and nodes!";
-                JLOG(j.debug())
-                    << " Built:"
-                    << " Index: " << builtMetaData->getIndex() << " Nodes:\n"
-                    << builtNodes.getJson(JsonOptions::none);
-                JLOG(j.debug())
-                    << " Valid:"
-                    << " Index: " << validMetaData->getIndex() << " Nodes:\n"
-                    << validNodes.getJson(JsonOptions::none);
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different index and nodes!",
+                    jv("tx", tx),
+                    jv("builtIndex", builtMetaData->getIndex()),
+                    jv("builtNodes", builtNodes.getJson(JsonOptions::none)),
+                    jv("validIndex", validMetaData->getIndex()),
+                    jv("validNodes", validNodes.getJson(JsonOptions::none)));
             }
             else  // nodes_diff
             {
-                JLOG(j.debug())
-                    << "MISMATCH on TX " << tx << ": Different nodes!";
-                JLOG(j.debug()) << " Built:"
-                                << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::none);
-                JLOG(j.debug()) << " Valid:"
-                                << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::none);
+                JLOGV(
+                    j.debug(),
+                    "MISMATCH on TX : Different nodes!",
+                    jv("tx", tx),
+                    jv("builtNodes", builtNodes.getJson(JsonOptions::none)),
+                    jv("validNodes", validNodes.getJson(JsonOptions::none)));
             }
         }
     }
     else if (validMetaData != nullptr)
     {
-        JLOG(j.error()) << "MISMATCH on TX " << tx
-                        << ": Metadata Difference (built has none)\n"
-                        << validMetaData->getJson(JsonOptions::none);
+        JLOGV(
+            j.error(),
+            "MISMATCH on TX : Metadata Difference (built has none)",
+            jv("tx", tx),
+            jv("validMetaData", validMetaData->getJson(JsonOptions::none)));
     }
     else  // builtMetaData != nullptr
     {
-        JLOG(j.error()) << "MISMATCH on TX " << tx
-                        << ": Metadata Difference (valid has none)\n"
-                        << builtMetaData->getJson(JsonOptions::none);
+        JLOGV(
+            j.error(),
+            "MISMATCH on TX : Metadata Difference (valid has none)",
+            jv("builtMetaData", builtMetaData->getJson(JsonOptions::none)));
     }
 }
 
@@ -335,10 +340,13 @@ LedgerHistory::handleMismatch(
 
     if (!builtLedger || !validLedger)
     {
-        JLOG(j_.error()) << "MISMATCH cannot be analyzed:"
-                         << " builtLedger: " << to_string(built) << " -> "
-                         << builtLedger << " validLedger: " << to_string(valid)
-                         << " -> " << validLedger;
+        JLOGV(
+            j_.error(),
+            "MISMATCH cannot be analyzed",
+            jv("builtLedgerHash", to_string(built)),
+            jv("builtLedger", builtLedger),
+            jv("validLedgerHash", to_string(valid)),
+            jv("validLedger", validLedger));
         return;
     }
 
@@ -346,9 +354,12 @@ LedgerHistory::handleMismatch(
 
     if (auto stream = j_.debug())
     {
-        stream << "Built: " << getJson({*builtLedger, {}});
-        stream << "Valid: " << getJson({*validLedger, {}});
-        stream << "Consensus: " << consensus;
+        JLOGV(
+            stream,
+            "LedgerHistory::handleMismatch",
+            jv("built", getJson({*builtLedger, {}})),
+            jv("valid", getJson({*validLedger, {}})),
+            jv("consensus", consensus));
     }
 
     // Determine the mismatch reason, distinguishing Byzantine
@@ -371,13 +382,16 @@ LedgerHistory::handleMismatch(
     if (builtConsensusHash && validatedConsensusHash)
     {
         if (builtConsensusHash != validatedConsensusHash)
-            JLOG(j_.error())
-                << "MISMATCH on consensus transaction set "
-                << " built: " << to_string(*builtConsensusHash)
-                << " validated: " << to_string(*validatedConsensusHash);
+            JLOGV(
+                j_.error(),
+                "MISMATCH on consensus transaction set",
+                jv("built", to_string(*builtConsensusHash)),
+                jv("validated", to_string(*validatedConsensusHash)));
         else
-            JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
-                             << to_string(*builtConsensusHash);
+            JLOGV(
+                j_.error(),
+                "MISMATCH with same consensus transaction set",
+                jv("buildConsensusHash", to_string(*builtConsensusHash)));
     }
 
     // Find differences between built and valid ledgers
@@ -385,14 +399,18 @@ LedgerHistory::handleMismatch(
     auto const validTx = leaves(validLedger->txMap());
 
     if (builtTx == validTx)
-        JLOG(j_.error()) << "MISMATCH with same " << builtTx.size()
-                         << " transactions";
+        JLOGV(
+            j_.error(),
+            "MISMATCH with same transactions",
+            jv("size", builtTx.size()));
     else
-        JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and "
-                         << validTx.size() << " valid transactions.";
-
-    JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
-    JLOG(j_.error()) << "valid\n" << getJson({*validLedger, {}});
+        JLOGV(
+            j_.error(),
+            "MISMATCH with different transactions",
+            jv("buildSize", builtTx.size()),
+            jv("validSize", validTx.size()),
+            jv("built", getJson({*builtLedger, {}})),
+            jv("valid", getJson({*validLedger, {}})));
 
     // Log all differences between built and valid ledgers
     auto b = builtTx.begin();
@@ -446,9 +464,13 @@ LedgerHistory::builtLedger(
     {
         if (entry->validated.get() != hash)
         {
-            JLOG(j_.error())
-                << "MISMATCH: seq=" << index
-                << " validated:" << entry->validated.get() << " then:" << hash;
+            JLOGV(
+                j_.error(),
+                "MISMATCH",
+                jv("seq", index),
+                jv("validated", entry->validated.get()),
+                jv("hash", hash));
+
             handleMismatch(
                 hash,
                 entry->validated.get(),
@@ -459,7 +481,7 @@ LedgerHistory::builtLedger(
         else
         {
             // We validated a ledger and then built it locally
-            JLOG(j_.debug()) << "MATCH: seq=" << index << " late";
+            JLOGV(j_.debug(), "MATCH late", jv("seq", index));
         }
     }
 
@@ -486,9 +508,13 @@ LedgerHistory::validatedLedger(
     {
         if (entry->built.get() != hash)
         {
-            JLOG(j_.error())
-                << "MISMATCH: seq=" << index << " built:" << entry->built.get()
-                << " then:" << hash;
+            JLOGV(
+                j_.error(),
+                "MISMATCH",
+                jv("seq", index),
+                jv("built", entry->built.get()),
+                jv("hash", hash));
+
             handleMismatch(
                 entry->built.get(),
                 hash,
@@ -499,7 +525,7 @@ LedgerHistory::validatedLedger(
         else
         {
             // We built a ledger locally and then validated it
-            JLOG(j_.debug()) << "MATCH: seq=" << index;
+            JLOGV(j_.debug(), "MATCH", jv("seq", index));
         }
     }
 

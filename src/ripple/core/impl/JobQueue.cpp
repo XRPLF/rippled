@@ -86,8 +86,11 @@ JobQueue::addRefCountedJob(
     if (iter == m_jobData.end())
         return false;
 
-    JLOG(m_journal.debug())
-        << __func__ << " : Adding job : " << name << " : " << type;
+    JLOGV(
+        m_journal.debug(),
+        "addRefCountedJob Adding job",
+        jv("name", name),
+        jv("type", type));
     JobTypeData& data(iter->second);
 
     // FIXME: Workaround incorrect client shutdown ordering
@@ -167,13 +170,17 @@ JobQueue::setThreadCount(int c, bool const standaloneMode)
     {
         c = static_cast<int>(std::thread::hardware_concurrency());
         c = 2 + std::min(c, 4);  // I/O will bottleneck
-        JLOG(m_journal.info()) << "Auto-tuning to " << c
-                               << " validation/transaction/proposal threads.";
+        JLOGV(
+            m_journal.info(),
+            "Auto-tuning validation/transaction/proposal threads",
+            jv("numThreads", c));
     }
     else
     {
-        JLOG(m_journal.info()) << "Configured " << c
-                               << " validation/transaction/proposal threads.";
+        JLOGV(
+            m_journal.info(),
+            "Configured validation/transaction/proposal threads",
+            jv("numThreads", c));
     }
 
     m_workers.setNumberOfThreads(c);
@@ -413,7 +420,7 @@ JobQueue::processTask(int instance)
             }
             type = job.getType();
             JobTypeData& data(getJobTypeData(type));
-            JLOG(m_journal.trace()) << "Doing " << data.name() << "job";
+            JLOGV(m_journal.trace(), "doing job", jv("name", data.name()));
 
             // The amount of time that the job was in the queue
             auto const q_time =

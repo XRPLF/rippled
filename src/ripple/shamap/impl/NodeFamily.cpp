@@ -66,7 +66,7 @@ NodeFamily::reset()
 void
 NodeFamily::missingNode(std::uint32_t seq)
 {
-    JLOG(j_.error()) << "Missing node in " << seq;
+    JLOGV(j_.error(), "Missing node", jv("seq", seq));
 
     std::unique_lock<std::mutex> lock(maxSeqMutex_);
     if (maxSeq_ == 0)
@@ -98,7 +98,7 @@ NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
 {
     if (hash.isNonZero())
     {
-        JLOG(j_.error()) << "Missing node in " << to_string(hash);
+        JLOGV(j_.error(), "Missing node", jv("hash", to_string(hash)));
 
         app_.getInboundLedgers().acquire(
             hash, seq, InboundLedger::Reason::GENERIC);

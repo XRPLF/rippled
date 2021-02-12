@@ -60,7 +60,7 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
                 return;
         }
 
-        JLOG(j_.debug()) << "Advancing from " << mSeq << " to " << seq;
+        JLOGV(j_.debug(), "Advancing", jv("from", mSeq), jv("to", seq));
 
         mSeq = seq;
     }
@@ -135,13 +135,13 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(j_.info()) << "OrderBookDB::update: " << mn.what();
+        JLOGV(j_.info(), "OrderBookDB::update", jv("what", mn.what()));
         std::lock_guard sl(mLock);
         mSeq = 0;
         return;
     }
 
-    JLOG(j_.debug()) << "OrderBookDB::update< " << books << " books found";
+    JLOGV(j_.debug(), "OrderBookDB::update< books found", jv("count", books));
     {
         std::lock_guard sl(mLock);
 

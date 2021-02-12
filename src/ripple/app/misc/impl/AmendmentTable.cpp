@@ -353,7 +353,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     {
         if (auto s = add(a.first, sl))
         {
-            JLOG(j_.debug()) << "Amendment " << a.first << " is supported.";
+            JLOGV(j_.debug(), "Amendment is supported", jv("hash", a.first));
 
             if (!a.second.empty())
                 s->name = a.second;
@@ -397,10 +397,12 @@ AmendmentTableImpl::AmendmentTableImpl(
             }
             else
             {
-                JLOG(j_.warn())
-                    << "[veto_amendments] section in config has amendment "
-                    << '(' << a.first << ", " << a.second
-                    << ") both [veto_amendments] and [amendments].";
+                JLOGV(
+                    j_.warn(),
+                    "[veto_amendments] section in config has amendment in both "
+                    "[veto_amendments] and [amendments]",
+                    jv("hash", a.first),
+                    jv("name", a.second));
             }
         }
     }
@@ -432,8 +434,11 @@ AmendmentTableImpl::AmendmentTableImpl(
             // Unknown amendments are effectively vetoed already
             if (auto s = get(amend_hash, sl))
             {
-                JLOG(j_.info()) << "Amendment {" << *amendment_name << ", "
-                                << amend_hash << "} is vetoed.";
+                JLOGV(
+                    j_.info(),
+                    "Amendment is vetoed",
+                    jv("name", *amendment_name),
+                    jv("hash", amend_hash));
                 if (!amendment_name->empty())
                     s->name = *amendment_name;
                 s->vetoed = true;
@@ -443,8 +448,11 @@ AmendmentTableImpl::AmendmentTableImpl(
         {
             if (auto s = add(amend_hash, sl))
             {
-                JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", "
-                                 << amend_hash << "} is un-vetoed.";
+                JLOGV(
+                    j_.debug(),
+                    "Amendment is un-vetoed",
+                    jv("name", *amendment_name),
+                    jv("hash", amend_hash));
                 if (!amendment_name->empty())
                     s->name = *amendment_name;
                 s->vetoed = false;
@@ -557,8 +565,10 @@ AmendmentTableImpl::enable(uint256 const& amendment)
 
     if (!s->supported)
     {
-        JLOG(j_.error()) << "Unsupported amendment " << amendment
-                         << " activated.";
+        JLOGV(
+            j_.error(),
+            "Unsupported amendment activated",
+            jv("hash", amendment));
         unsupportedEnabled_ = true;
     }
 
@@ -636,15 +646,21 @@ AmendmentTableImpl::doVoting(
     majorityAmendments_t const& majorityAmendments,
     std::vector<std::shared_ptr<STValidation>> const& valSet)
 {
-    JLOG(j_.trace()) << "voting at " << closeTime.time_since_epoch().count()
-                     << ": " << enabledAmendments.size() << ", "
-                     << majorityAmendments.size() << ", " << valSet.size();
+    JLOGV(
+        j_.trace(),
+        "voting info",
+        jv("closeTime", closeTime.time_since_epoch().count()),
+        jv("numEnabled", enabledAmendments.size()),
+        jv("numMajority", majorityAmendments.size()),
+        jv("numValSet", valSet.size()));
 
     auto vote = std::make_unique<AmendmentSet>(rules, valSet);
 
-    JLOG(j_.debug()) << "Received " << vote->trustedValidations()
-                     << " trusted validations, threshold is: "
-                     << vote->threshold();
+    JLOGV(
+        j_.debug(),
+        "voting info",
+        jv("numTrustedValidations", vote->trustedValidations()),
+        jv("threshold", vote->threshold()));
 
     // Map of amendments to the action to be taken for each one. The action is
     // the value of the flags in the pseudo-transaction
@@ -667,20 +683,25 @@ AmendmentTableImpl::doVoting(
 
         if (enabledAmendments.count(entry.first) != 0)
         {
-            JLOG(j_.debug()) << entry.first << ": amendment already enabled";
+            JLOGV(
+                j_.debug(),
+                "amendment already enabled",
+                jv("hash", entry.first));
         }
         else if (
             hasValMajority && (majorityTime == NetClock::time_point{}) &&
             !entry.second.vetoed)
         {
             // Ledger says no majority, validators say yes
-            JLOG(j_.debug()) << entry.first << ": amendment got majority";
+            JLOGV(
+                j_.debug(), "amendment got majority", jv("hash", entry.first));
             actions[entry.first] = tfGotMajority;
         }
         else if (!hasValMajority && (majorityTime != NetClock::time_point{}))
         {
             // Ledger says majority, validators say no
-            JLOG(j_.debug()) << entry.first << ": amendment lost majority";
+            JLOGV(
+                j_.debug(), "amendment lost majority", jv("hash", entry.first));
             actions[entry.first] = tfLostMajority;
         }
         else if (
@@ -689,7 +710,8 @@ AmendmentTableImpl::doVoting(
             !entry.second.vetoed)
         {
             // Ledger says majority held
-            JLOG(j_.debug()) << entry.first << ": amendment majority held";
+            JLOGV(
+                j_.debug(), "amendment held majority", jv("hash", entry.first));
             actions[entry.first] = 0;
         }
     }
@@ -737,8 +759,11 @@ AmendmentTableImpl::doValidatedLedger(
 
         if (!s->supported)
         {
-            JLOG(j_.info()) << "Unsupported amendment " << hash
-                            << " reached majority at " << to_string(time);
+            JLOGV(
+                j_.info(),
+                "Unsupported amendment reached majority",
+                jv("hash", hash),
+                jv("time", to_string(time)));
             if (!firstUnsupportedExpected_ || firstUnsupportedExpected_ > time)
                 firstUnsupportedExpected_ = time;
         }

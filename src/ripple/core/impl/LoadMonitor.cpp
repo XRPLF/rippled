@@ -111,11 +111,13 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
-        JLOG(mj) << "Job: " << s.name()
-                 << " run: " << date::round<milliseconds>(s.runTime()).count()
-                 << "ms"
-                 << " wait: " << date::round<milliseconds>(s.waitTime()).count()
-                 << "ms";
+
+        JLOGV(
+            mj,
+            "Job latency",
+            jv("job", s.name()),
+            jv("run(ms)", date::round<milliseconds>(s.runTime()).count()),
+            jv("wait(ms)", date::round<milliseconds>(s.waitTime()).count()));
     }
 
     addSamples(1, latency);

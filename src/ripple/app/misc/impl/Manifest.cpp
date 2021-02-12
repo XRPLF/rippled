@@ -143,9 +143,12 @@ logMftAct(
     PublicKey const& pk,
     std::uint32_t seq)
 {
-    s << "Manifest: " << action
-      << ";Pk: " << toBase58(TokenType::NodePublic, pk) << ";Seq: " << seq
-      << ";";
+    JLOGV(
+        s,
+        "Manifest",
+        jv("action", action),
+        jv("pk", toBase58(TokenType::NodePublic, pk)),
+        jv("seq", seq));
     return s;
 }
 
@@ -158,9 +161,13 @@ logMftAct(
     std::uint32_t seq,
     std::uint32_t oldSeq)
 {
-    s << "Manifest: " << action
-      << ";Pk: " << toBase58(TokenType::NodePublic, pk) << ";Seq: " << seq
-      << ";OldSeq: " << oldSeq << ";";
+    JLOGV(
+        s,
+        "Manifest",
+        jv("action", action),
+        jv("pk", toBase58(TokenType::NodePublic, pk)),
+        jv("seq", seq),
+        jv("oldSeq", oldSeq));
     return s;
 }
 

@@ -130,8 +130,10 @@ private:
                 m_event.notify(lastSample);
             if (lastSample >= 500ms)
             {
-                JLOG(m_journal.warn())
-                    << "io_service latency = " << lastSample.count();
+                JLOGV(
+                    m_journal.warn(),
+                    "io_service latency",
+                    jv("count", lastSample.count()));
             }
         }
 
@@ -986,8 +988,10 @@ public:
         }
         catch (std::exception const& e)
         {
-            JLOG(m_journal.fatal())
-                << "Failed to initialize SQL databases: " << e.what();
+            JLOGV(
+                m_journal.fatal(),
+                "Failed to initialize SQL databases",
+                jv("what", e.what()));
             return false;
         }
 
@@ -1013,8 +1017,11 @@ public:
                     config_->section(ConfigSection::importNodeDatabase()),
                     j);
 
-            JLOG(j.warn()) << "Starting node import from '" << source->getName()
-                           << "' to '" << m_nodeStore->getName() << "'.";
+            JLOGV(
+                j.warn(),
+                "Starting node import from 'source' to 'dst'",
+                jv("source", source->getName()),
+                jv("dst", m_nodeStore->getName()));
 
             using namespace std::chrono;
             auto const start = steady_clock::now();
@@ -1023,8 +1030,11 @@ public:
 
             auto const elapsed =
                 duration_cast<seconds>(steady_clock::now() - start);
-            JLOG(j.warn()) << "Node import from '" << source->getName()
-                           << "' took " << elapsed.count() << " seconds.";
+            JLOGV(
+                j.warn(),
+                "Node import timing",
+                jv("source", source->getName()),
+                jv("seconds", elapsed.count()));
         }
 
         // tune caches
@@ -1045,8 +1055,10 @@ public:
     void
     onStart() override
     {
-        JLOG(m_journal.info()) << "Application starting. Version is "
-                               << BuildInfo::getVersionString();
+        JLOGV(
+            m_journal.info(),
+            "Application starting",
+            jv("version", BuildInfo::getVersionString()));
 
         using namespace std::chrono_literals;
         if (startTimers_)
@@ -1088,17 +1100,20 @@ public:
             sweepTimer_.cancel(ec);
             if (ec)
             {
-                JLOG(m_journal.error())
-                    << "Application: sweepTimer cancel error: " << ec.message();
+                JLOGV(
+                    m_journal.error(),
+                    "Application: sweepTimer cancel error",
+                    jv("error", ec.message()));
             }
 
             ec.clear();
             entropyTimer_.cancel(ec);
             if (ec)
             {
-                JLOG(m_journal.error())
-                    << "Application: entropyTimer cancel error: "
-                    << ec.message();
+                JLOGV(
+                    m_journal.error(),
+                    "Application: entropyTimer cancel error",
+                    jv("error", ec.message()));
             }
         }
         // Make sure that any waitHandlers pending in our timers are done
@@ -1157,9 +1172,10 @@ public:
                         e.value() != boost::asio::error::operation_aborted)
                     {
                         // Try again later and hope for the best.
-                        JLOG(m_journal.error())
-                            << "Sweep timer got error '" << e.message()
-                            << "'.  Restarting timer.";
+                        JLOGV(
+                            m_journal.error(),
+                            "Sweep timer got error. Restarting timer.",
+                            jv("error", e.message()));
                         setSweepTimer();
                     }
                 }))
@@ -1187,9 +1203,10 @@ public:
                         e.value() != boost::asio::error::operation_aborted)
                     {
                         // Try again later and hope for the best.
-                        JLOG(m_journal.error())
-                            << "Entropy timer got error '" << e.message()
-                            << "'.  Restarting timer.";
+                        JLOGV(
+                            m_journal.error(),
+                            "Entropy timer got error. Restarting timer",
+                            jv("error", e.message()));
                         setEntropyTimer();
                     }
                 }))
@@ -1224,9 +1241,10 @@ public:
                     boost::filesystem::file_size(dbPath, ec);
                 if (ec)
                 {
-                    JLOG(m_journal.error())
-                        << "Error checking transaction db file size: "
-                        << ec.message();
+                    JLOGV(
+                        m_journal.error(),
+                        "Error checking transaction db file size",
+                        jv("error", ec.message()));
                     dbSize.reset();
                 }
 
@@ -1246,15 +1264,17 @@ public:
                 std::uint32_t freePages = maxPages - pageCount;
                 std::uint64_t freeSpace =
                     safe_cast<std::uint64_t>(freePages) * pageSize;
-                JLOG(m_journal.info())
-                    << "Transaction DB pathname: " << dbPath.string()
-                    << "; file size: " << dbSize.value_or(-1) << " bytes"
-                    << "; SQLite page size: " << pageSize << " bytes"
-                    << "; Free pages: " << freePages
-                    << "; Free space: " << freeSpace << " bytes; "
-                    << "Note that this does not take into account available "
-                       "disk "
-                       "space.";
+                JLOGV(
+                    m_journal.info(),
+                    "transaction db info",
+                    jv("pathname", dbPath.string()),
+                    jv("fileSize", dbSize.value_or(-1)),
+                    jv("sqlitePageSizeBytes", pageSize),
+                    jv("freePages: ", freePages),
+                    jv("freeSpace: ", freeSpace),
+                    jv("note",
+                       "Note that this does not take into account available "
+                       "disk space."));
 
                 if (freeSpace < megabytes(512))
                 {
@@ -1350,7 +1370,7 @@ ApplicationImp::setup()
             if (ec == boost::asio::error::operation_aborted)
                 return;
 
-            JLOG(m_journal.info()) << "Received signal " << signum;
+            JLOGV(m_journal.info(), "Received signal", jv("signum", signum));
 
             if (signum == SIGTERM || signum == SIGINT)
                 signalStop();
@@ -1372,8 +1392,10 @@ ApplicationImp::setup()
         if (logs_->threshold() > kDebug)
             logs_->threshold(kDebug);
     }
-    JLOG(m_journal.info()) << "process starting: "
-                           << BuildInfo::getFullVersionString();
+    JLOGV(
+        m_journal.info(),
+        "process starting",
+        jv("version", BuildInfo::getFullVersionString()));
 
     if (numberOfThreads(*config_) < 2)
     {
@@ -1674,7 +1696,8 @@ ApplicationImp::setup()
 
         if (!config_->quiet())
         {
-            JLOG(m_journal.fatal()) << "Result: " << jvResult << std::endl;
+            JLOG(m_journal.fatal())
+                << "Startup command result " << jvResult << std::endl;
         }
     }
 
@@ -1694,10 +1717,11 @@ ApplicationImp::setup()
         }
         catch (std::exception const& e)
         {
-            JLOG(m_journal.fatal())
-                << "Exception when starting ShardArchiveHandler from "
-                   "state database: "
-                << e.what();
+            JLOGV(
+                m_journal.fatal(),
+                "Exception when starting ShardArchiveHandler from state "
+                "database",
+                jv("what", e.what()));
 
             return false;
         }
@@ -1851,7 +1875,7 @@ ApplicationImp::getLastFullLedger()
 
         if (ledger->info().hash == hash)
         {
-            JLOG(j.trace()) << "Loaded ledger: " << hash;
+            JLOGV(j.trace(), "Loaded ledger", jv("hash", hash));
             return ledger;
         }
 
@@ -1867,7 +1891,7 @@ ApplicationImp::getLastFullLedger()
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(j.warn()) << "Ledger in database: " << mn.what();
+        JLOGV(j.warn(), "Ledger in database", jv("what", mn.what()));
         return {};
     }
 }
@@ -1881,7 +1905,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
         if (!ledgerFile)
         {
-            JLOG(m_journal.fatal()) << "Unable to open file '" << name << "'";
+            JLOGV(m_journal.fatal(), "Unable to open file", jv("name", name));
             return nullptr;
         }
 
@@ -1987,8 +2011,10 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             if (!loadLedger->addSLE(sle))
             {
-                JLOG(m_journal.fatal())
-                    << "Couldn't add serialized ledger: " << uIndex;
+                JLOGV(
+                    m_journal.fatal(),
+                    "Couldn't add serialized ledger",
+                    jv("index", uIndex));
                 return nullptr;
             }
         }
@@ -2002,7 +2028,10 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
     }
     catch (std::exception const& x)
     {
-        JLOG(m_journal.fatal()) << "Ledger contains invalid data: " << x.what();
+        JLOGV(
+            m_journal.fatal(),
+            "Ledger contains invalid data",
+            jv("what", x.what()));
         return nullptr;
     }
 }
@@ -2114,8 +2143,11 @@ ApplicationImp::loadOldLedger(
                    "get the older rules.\n*** CONTINUING ***\n";
         }
 
-        JLOG(m_journal.info()) << "Loading ledger " << loadLedger->info().hash
-                               << " seq:" << loadLedger->info().seq;
+        JLOGV(
+            m_journal.info(),
+            "Loading ledger",
+            jv("hash", loadLedger->info().hash),
+            jv("seq", loadLedger->info().seq));
 
         if (loadLedger->info().accountHash.isZero())
         {
@@ -2176,14 +2208,18 @@ ApplicationImp::loadOldLedger(
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(m_journal.fatal())
-            << "While loading specified ledger: " << mn.what();
+        JLOGV(
+            m_journal.fatal(),
+            "While loading specified ledger",
+            jv("what", mn.what()));
         return false;
     }
     catch (boost::bad_lexical_cast&)
     {
-        JLOG(m_journal.fatal())
-            << "Ledger specified '" << ledgerID << "' is not valid";
+        JLOGV(
+            m_journal.fatal(),
+            "Ledger specified is not valid",
+            jv("ledgerID", ledgerID));
         return false;
     }
 
@@ -2287,8 +2323,10 @@ ApplicationImp::setMaxDisallowedLedger()
             maxDisallowedLedger_ = *seq;
     }
 
-    JLOG(m_journal.trace())
-        << "Max persisted ledger is " << maxDisallowedLedger_;
+    JLOGV(
+        m_journal.trace(),
+        "Max persisted ledger",
+        jv("seq", maxDisallowedLedger_));
 }
 
 //------------------------------------------------------------------------------

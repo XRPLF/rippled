@@ -106,7 +106,11 @@ public:
             m_cache.rehash(static_cast<std::size_t>(
                 (s + (s >> 2)) / m_cache.max_load_factor() + 1));
 
-        JLOG(m_journal.debug()) << m_name << " target size set to " << s;
+        JLOGV(
+            m_journal.debug(),
+            "cache target size is set",
+            jv("cacheName", m_name),
+            jv("size", s));
     }
 
     clock_type::duration
@@ -121,8 +125,11 @@ public:
     {
         std::lock_guard lock(m_mutex);
         m_target_age = s;
-        JLOG(m_journal.debug())
-            << m_name << " target age set to " << m_target_age.count();
+        JLOGV(
+            m_journal.debug(),
+            "cache target age is set",
+            jv("cacheName", m_name),
+            jv("age", m_target_age.count()));
     }
 
     int
@@ -197,11 +204,14 @@ public:
                 if (when_expire > (now - minimumAge))
                     when_expire = now - minimumAge;
 
-                JLOG(m_journal.trace())
-                    << m_name << " is growing fast " << m_cache.size() << " of "
-                    << m_target_size << " aging at "
-                    << (now - when_expire).count() << " of "
-                    << m_target_age.count();
+                JLOGV(
+                    m_journal.trace(),
+                    "cache is growing fast",
+                    jv("cacheName", m_name),
+                    jv("cacheSize", m_cache.size()),
+                    jv("targetSize", m_target_size),
+                    jv("agingAt", (now - when_expire).count()),
+                    jv("targetAge", m_target_age.count()));
             }
 
             stuffToSweep.reserve(m_cache.size());
@@ -252,9 +262,13 @@ public:
 
         if (mapRemovals || cacheRemovals)
         {
-            JLOG(m_journal.trace())
-                << m_name << ": cache = " << m_cache.size() << "-"
-                << cacheRemovals << ", map-=" << mapRemovals;
+            JLOGV(
+                m_journal.trace(),
+                "cache and map removals",
+                jv("cacheName", m_name),
+                jv("cacheSize", m_cache.size()),
+                jv("cacheRemovals", cacheRemovals),
+                jv("mapRemovals", mapRemovals));
         }
 
         // At this point stuffToSweep will go out of scope outside the lock

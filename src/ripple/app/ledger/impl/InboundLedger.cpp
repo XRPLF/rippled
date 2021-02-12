@@ -601,7 +601,10 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 tmBH.set_ledgerhash(hash_.begin(), hash_.size());
                 for (auto const& p : need)
                 {
-                    JLOG(journal_.warn()) << "Want: " << p.second;
+                    JLOGV(
+                        journal_.warn(),
+                        "InboundLedger::trigger want",
+                        jv("hash", p.second));
 
                     if (!typeSet)
                     {
