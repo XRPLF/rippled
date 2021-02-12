@@ -621,11 +621,7 @@ public:
             {
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
-                        megabytes(4),
-                        scheduler,
-                        2,
-                        nodeParams,
-                        journal_);
+                        megabytes(4), scheduler, 2, nodeParams, journal_);
                 BEAST_EXPECT(
                     db->ledgersPerShard() == DEFAULT_LEDGERS_PER_SHARD);
             }
@@ -636,11 +632,7 @@ public:
                 nodeParams.set("ledgers_per_shard", "100");
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
-                        megabytes(4),
-                        scheduler,
-                        2,
-                        nodeParams,
-                        journal_);
+                        megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {
@@ -651,11 +643,7 @@ public:
             // Set a valid ledgers per shard
             nodeParams.set("ledgers_per_shard", "256");
             std::unique_ptr<Database> db = Manager::instance().make_Database(
-                megabytes(4),
-                scheduler,
-                2,
-                nodeParams,
-                journal_);
+                megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Verify database uses the ledgers per shard
             BEAST_EXPECT(db->ledgersPerShard() == 256);

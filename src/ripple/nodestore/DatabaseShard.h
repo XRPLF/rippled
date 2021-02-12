@@ -128,36 +128,48 @@ public:
     virtual void
     setStored(std::shared_ptr<Ledger const> const& ledger) = 0;
 
-    /**
-     * @brief callForLedgerSQL Checkouts ledger database for shard
-     *        containing given ledger and calls given callback function passing
-     *        shard index and session with the database to it.
-     * @param ledgerSeq Ledger sequence.
-     * @param callback Callback function to call.
-     * @return Value returned by callback function.
-     */
+    /** Invoke a callback on the SQLite db holding the
+        corresponding ledger
+
+       @return Value returned by callback function.
+    */
     virtual bool
-    callForLedgerSQL(
+    callForLedgerSQLByLedgerSeq(
         LedgerIndex ledgerSeq,
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
-            callback) = 0;
+        std::function<bool(soci::session& session)> const& callback) = 0;
+
+    /** Invoke a callback on the ledger SQLite db for the
+        corresponding shard
+
+       @return Value returned by callback function.
+    */
+    virtual bool
+    callForLedgerSQLByShardIndex(
+        std::uint32_t shardIndex,
+        std::function<bool(soci::session& session)> const& callback) = 0;
+
+    /** Invoke a callback on the transaction SQLite db
+        for the corresponding ledger
+
+       @return Value returned by callback function.
+    */
+    virtual bool
+    callForTransactionSQLByLedgerSeq(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session)> const& callback) = 0;
+
+    /** Invoke a callback on the transaction SQLite db
+        for the corresponding shard
+
+       @return Value returned by callback function.
+    */
+    virtual bool
+    callForTransactionSQLByShardIndex(
+        std::uint32_t shardIndex,
+        std::function<bool(soci::session& session)> const& callback) = 0;
 
     /**
-     * @brief callForTransactionSQL Checkouts transaction database for shard
-     *        containing given ledger and calls given callback function passing
-     *        shard index and session with the database to it.
-     * @param ledgerSeq Ledger sequence.
-     * @param callback Callback function to call.
-     * @return Value returned by callback function.
-     */
-    virtual bool
-    callForTransactionSQL(
-        LedgerIndex ledgerSeq,
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
-            callback) = 0;
-
-    /**
-     * @brief iterateLedgerSQLsForward Checkouts ledger databases for all
+     * @brief iterateLedgerSQLsForward Checks out ledger databases for all
      *        shards in ascending order starting from given shard index until
      *        shard with the largest index visited or callback returned false.
      *        For each visited shard calls given callback function passing
@@ -170,11 +182,12 @@ public:
     virtual bool
     iterateLedgerSQLsForward(
         std::optional<std::uint32_t> minShardIndex,
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
             callback) = 0;
 
     /**
-     * @brief iterateTransactionSQLsForward Checkouts transaction databases for
+     * @brief iterateTransactionSQLsForward Checks out transaction databases for
      *        all shards in ascending order starting from given shard index
      *        until shard with the largest index visited or callback returned
      *        false. For each visited shard calls given callback function
@@ -187,11 +200,12 @@ public:
     virtual bool
     iterateTransactionSQLsForward(
         std::optional<std::uint32_t> minShardIndex,
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
             callback) = 0;
 
     /**
-     * @brief iterateLedgerSQLsBack Checkouts ledger databases for
+     * @brief iterateLedgerSQLsBack Checks out ledger databases for
      *        all shards in descending order starting from given shard index
      *        until shard with the smallest index visited or callback returned
      *        false. For each visited shard calls given callback function
@@ -204,11 +218,12 @@ public:
     virtual bool
     iterateLedgerSQLsBack(
         std::optional<std::uint32_t> maxShardIndex,
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
             callback) = 0;
 
     /**
-     * @brief iterateTransactionSQLsBack Checkouts transaction databases for
+     * @brief iterateTransactionSQLsBack Checks out transaction databases for
      *        all shards in descending order starting from given shard index
      *        until shard with the smallest index visited or callback returned
      *        false. For each visited shard calls given callback function
@@ -221,7 +236,8 @@ public:
     virtual bool
     iterateTransactionSQLsBack(
         std::optional<std::uint32_t> maxShardIndex,
-        std::function<bool(soci::session& session, std::uint32_t index)> const&
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
             callback) = 0;
 
     /** Query information about shards held

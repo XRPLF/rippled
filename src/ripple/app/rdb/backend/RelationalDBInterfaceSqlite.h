@@ -283,6 +283,18 @@ public:
      */
     virtual int
     getKBUsedTransaction() = 0;
+
+    /**
+     * @brief Closes the ledger database
+     */
+    virtual void
+    closeLedgerDB() = 0;
+
+    /**
+     * @brief Closes the transaction database
+     */
+    virtual void
+    closeTransactionDB() = 0;
 };
 
 }  // namespace ripple
