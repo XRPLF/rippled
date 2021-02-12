@@ -342,6 +342,13 @@ public:
     }
 };
 
+[[nodiscard]] inline std::string
+string_for_log(Json::Value const& v)
+{
+    FastWriter w;
+    return w.write(v);
+}
+
 }  // namespace Json
 
 #endif  // JSON_WRITER_H_INCLUDED
