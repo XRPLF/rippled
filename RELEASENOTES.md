@@ -7,6 +7,10 @@ This document contains the release notes for `rippled`, the reference server imp
  
 Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/ripple/rippled/issues/new/choose)
 
+# Change log
+
+- API version 2 will now return `signer_lists` in the root of the `account_info` response, no longer nested under `account_data`.
+
 # Releases
 
 ## Version 1.7.2
