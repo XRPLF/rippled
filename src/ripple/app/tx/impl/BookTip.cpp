@@ -53,9 +53,9 @@ BookTip::step(beast::Journal j)
             return false;
 
         unsigned int di = 0;
-        std::shared_ptr<SLE> dir;
+        std::shared_ptr<SLE const> dir;
 
-        if (dirFirst(view_, *first_page, dir, di, m_index, j))
+        if (cdirFirst(view_, *first_page, dir, di, m_index))
         {
             m_dir = dir->key();
             m_entry = view_.peek(keylet::offer(m_index));

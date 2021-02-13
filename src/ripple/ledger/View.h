@@ -135,8 +135,7 @@ cdirFirst(
     uint256 const& uRootIndex,            // --> Root of directory.
     std::shared_ptr<SLE const>& sleNode,  // <-> current node
     unsigned int& uDirEntry,              // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
+    uint256& uEntryIndex);  // <-- The entry, if available. Otherwise, zero.
 
 // Return the current entry and advance uDirEntry.
 // <-- true, if had a next entry.
@@ -147,8 +146,7 @@ cdirNext(
     uint256 const& uRootIndex,            // --> Root of directory
     std::shared_ptr<SLE const>& sleNode,  // <-> current node
     unsigned int& uDirEntry,              // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
+    uint256& uEntryIndex);  // <-- The entry, if available. Otherwise, zero.
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
@@ -223,42 +221,8 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j);
 
-// Return the first entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
-bool
-dirFirst(
-    ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory.
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
-
-// Return the current entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
-bool
-dirNext(
-    ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
-
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
-
-// deprecated
-boost::optional<std::uint64_t>
-dirAdd(
-    ApplyView& view,
-    Keylet const& uRootIndex,
-    uint256 const& uLedgerIndex,
-    bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
-    beast::Journal j);
 
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.

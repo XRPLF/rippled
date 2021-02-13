@@ -125,13 +125,10 @@ CreateTicket::doApply()
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
         view().insert(sleTicket);
 
-        auto const page = dirAdd(
-            view(),
+        auto const page = view().dirInsert(
             keylet::ownerDir(account_),
             sleTicket->key(),
-            false,
-            describeOwnerDir(account_),
-            viewJ);
+            describeOwnerDir(account_));
 
         JLOG(j_.trace()) << "Creating ticket " << to_string(sleTicket->key())
                          << ": " << (page ? "success" : "failure");

@@ -3774,8 +3774,7 @@ NetworkOPsImp::getBookPage(
                     uTipIndex,
                     sleOfferDir,
                     uBookEntry,
-                    offerIndex,
-                    viewJ);
+                    offerIndex);
 
                 JLOG(m_journal.trace())
                     << "getBookPage:   uTipIndex=" << uTipIndex;
@@ -3900,8 +3899,7 @@ NetworkOPsImp::getBookPage(
                     uTipIndex,
                     sleOfferDir,
                     uBookEntry,
-                    offerIndex,
-                    viewJ))
+                    offerIndex))
             {
                 bDirectAdvance = true;
             }

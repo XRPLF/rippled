@@ -264,13 +264,10 @@ PayChanCreate::doApply()
 
     // Add PayChan to owner directory
     {
-        auto const page = dirAdd(
-            ctx_.view(),
+        auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account),
             slep->key(),
-            false,
-            describeOwnerDir(account),
-            ctx_.app.journal("View"));
+            describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -279,13 +276,10 @@ PayChanCreate::doApply()
     // Add PayChan to the recipient's owner directory
     if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
-        auto const page = dirAdd(
-            ctx_.view(),
+        auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(dst),
             slep->key(),
-            false,
-            describeOwnerDir(dst),
-            ctx_.app.journal("View"));
+            describeOwnerDir(dst));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfDestinationNode] = *page;

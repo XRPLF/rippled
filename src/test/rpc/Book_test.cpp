@@ -45,8 +45,7 @@ class Book_test : public beast::unit_test::suite
                 sleOfferDir->key(),
                 sleOfferDir,
                 bookEntry,
-                offerIndex,
-                env.journal);
+                offerIndex);
             auto sleOffer = view->read(keylet::offer(offerIndex));
             dir = to_string(sleOffer->getFieldH256(sfBookDirectory));
         }

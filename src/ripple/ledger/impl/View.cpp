@@ -21,24 +21,15 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
-#include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
-#include <boost/algorithm/string.hpp>
 #include <cassert>
 
 namespace ripple {
-
-//------------------------------------------------------------------------------
-//
-// Observers
-//
-//------------------------------------------------------------------------------
-
 void
 addRaw(LedgerInfo const& info, Serializer& s, bool includeHash)
 {
@@ -128,9 +119,6 @@ accountHolds(
         }
         amount.setIssuer(issuer);
     }
-    JLOG(j.trace()) << "accountHolds:"
-                    << " account=" << to_string(account)
-                    << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
 }
@@ -146,28 +134,15 @@ accountFunds(
     STAmount saFunds;
 
     if (!saDefault.native() && saDefault.getIssuer() == id)
-    {
-        saFunds = saDefault;
-        JLOG(j.trace()) << "accountFunds:"
-                        << " account=" << to_string(id)
-                        << " saDefault=" << saDefault.getFullText()
-                        << " SELF-FUNDED";
-    }
-    else
-    {
-        saFunds = accountHolds(
-            view,
-            id,
-            saDefault.getCurrency(),
-            saDefault.getIssuer(),
-            freezeHandling,
-            j);
-        JLOG(j.trace()) << "accountFunds:"
-                        << " account=" << to_string(id)
-                        << " saDefault=" << saDefault.getFullText()
-                        << " saFunds=" << saFunds.getFullText();
-    }
-    return saFunds;
+        return saDefault;
+
+    return accountHolds(
+        view,
+        id,
+        saDefault.getCurrency(),
+        saDefault.getIssuer(),
+        freezeHandling,
+        j);
 }
 
 // Prevent ownerCount from wrapping under error conditions.
@@ -485,13 +460,12 @@ cdirFirst(
     uint256 const& uRootIndex,            // --> Root of directory.
     std::shared_ptr<SLE const>& sleNode,  // <-> current node
     unsigned int& uDirEntry,              // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
+    uint256& uEntryIndex)  // <-- The entry, if available. Otherwise, zero.)
 {
     sleNode = view.read(keylet::page(uRootIndex));
     uDirEntry = 0;
     assert(sleNode);  // Never probe for directories.
-    return cdirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
+    return cdirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
 bool
@@ -500,8 +474,7 @@ cdirNext(
     uint256 const& uRootIndex,            // --> Root of directory
     std::shared_ptr<SLE const>& sleNode,  // <-> current node
     unsigned int& uDirEntry,              // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
+    uint256& uEntryIndex)  // <-- The entry, if available. Otherwise, zero.)
 {
     auto const& svIndexes = sleNode->getFieldV256(sfIndexes);
     assert(uDirEntry <= svIndexes.size());
@@ -516,19 +489,11 @@ cdirNext(
         auto const sleNext = view.read(keylet::page(uRootIndex, uNodeNext));
         uDirEntry = 0;
         if (!sleNext)
-        {
-            // This should never happen
-            JLOG(j.fatal()) << "Corrupt directory: index:" << uRootIndex
-                            << " next:" << uNodeNext;
-            return false;
-        }
+            return false; // This should never happen
         sleNode = sleNext;
-        return cdirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
+        return cdirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
     }
     uEntryIndex = svIndexes[uDirEntry++];
-    JLOG(j.trace()) << "dirNext:"
-                    << " uDirEntry=" << uDirEntry
-                    << " uEntryIndex=" << uEntryIndex;
     return true;
 }
 
@@ -659,80 +624,12 @@ adjustOwnerCount(
     view.update(sle);
 }
 
-bool
-dirFirst(
-    ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory.
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
-{
-    sleNode = view.peek(keylet::page(uRootIndex));
-    uDirEntry = 0;
-    assert(sleNode);  // Never probe for directories.
-    return dirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
-}
-
-bool
-dirNext(
-    ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
-{
-    auto const& svIndexes = sleNode->getFieldV256(sfIndexes);
-    assert(uDirEntry <= svIndexes.size());
-    if (uDirEntry >= svIndexes.size())
-    {
-        auto const uNodeNext = sleNode->getFieldU64(sfIndexNext);
-        if (!uNodeNext)
-        {
-            uEntryIndex.zero();
-            return false;
-        }
-        auto const sleNext = view.peek(keylet::page(uRootIndex, uNodeNext));
-        uDirEntry = 0;
-        if (!sleNext)
-        {
-            // This should never happen
-            JLOG(j.fatal()) << "Corrupt directory: index:" << uRootIndex
-                            << " next:" << uNodeNext;
-            return false;
-        }
-        sleNode = sleNext;
-        return dirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
-    }
-    uEntryIndex = svIndexes[uDirEntry++];
-    JLOG(j.trace()) << "dirNext:"
-                    << " uDirEntry=" << uDirEntry
-                    << " uEntryIndex=" << uEntryIndex;
-    return true;
-}
-
 std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account)
 {
     return [&account](std::shared_ptr<SLE> const& sle) {
         (*sle)[sfOwner] = account;
     };
-}
-
-boost::optional<std::uint64_t>
-dirAdd(
-    ApplyView& view,
-    Keylet const& dir,
-    uint256 const& uLedgerIndex,
-    bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
-    beast::Journal j)
-{
-    if (strictOrder)
-        return view.dirAppend(dir, uLedgerIndex, fDescriber);
-
-    return view.dirInsert(dir, uLedgerIndex, fDescriber);
 }
 
 TER
@@ -764,24 +661,18 @@ trustCreate(
     auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
     view.insert(sleRippleState);
 
-    auto lowNode = dirAdd(
-        view,
+    auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID),
         sleRippleState->key(),
-        false,
-        describeOwnerDir(uLowAccountID),
-        j);
+        describeOwnerDir(uLowAccountID));
 
     if (!lowNode)
         return tecDIR_FULL;
 
-    auto highNode = dirAdd(
-        view,
+    auto highNode = view.dirInsert(
         keylet::ownerDir(uHighAccountID),
         sleRippleState->key(),
-        false,
-        describeOwnerDir(uHighAccountID),
-        j);
+        describeOwnerDir(uHighAccountID));
 
     if (!highNode)
         return tecDIR_FULL;

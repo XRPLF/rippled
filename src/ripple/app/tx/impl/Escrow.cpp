@@ -246,13 +246,10 @@ EscrowCreate::doApply()
 
     // Add escrow to sender's owner directory
     {
-        auto page = dirAdd(
-            ctx_.view(),
+        auto page = ctx_.view().dirInsert(
             keylet::ownerDir(account),
             slep->key(),
-            false,
-            describeOwnerDir(account),
-            ctx_.app.journal("View"));
+            describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -261,13 +258,10 @@ EscrowCreate::doApply()
     // If it's not a self-send, add escrow to recipient's owner directory.
     if (auto const dest = ctx_.tx[sfDestination]; dest != ctx_.tx[sfAccount])
     {
-        auto page = dirAdd(
-            ctx_.view(),
+        auto page = ctx_.view().dirInsert(
             keylet::ownerDir(dest),
             slep->key(),
-            false,
-            describeOwnerDir(dest),
-            ctx_.app.journal("View"));
+            describeOwnerDir(dest));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfDestinationNode] = *page;

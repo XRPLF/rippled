@@ -202,8 +202,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             ownerDirKeylet.key,
             sleDirNode,
             uDirEntry,
-            dirEntry,
-            ctx.j))
+            dirEntry))
         // Account has no directory at all.  Looks good.
         return tesSUCCESS;
 
@@ -236,7 +235,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             return tefTOO_BIG;
 
     } while (cdirNext(
-        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, ctx.j));
+        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
     return tesSUCCESS;
 }
@@ -255,13 +254,13 @@ DeleteAccount::doApply()
 
     // Delete all of the entries in the account directory.
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
-    std::shared_ptr<SLE> sleDirNode{};
+    std::shared_ptr<SLE const> sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::zero};
 
     if (view().exists(ownerDirKeylet) &&
-        dirFirst(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_))
+        cdirFirst(
+            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
     {
         do
         {
@@ -322,8 +321,8 @@ DeleteAccount::doApply()
             }
             uDirEntry = 0;
 
-        } while (dirNext(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_));
+        } while (cdirNext(
+            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
     }
 
     // Transfer any XRP remaining after the fee is paid to the destination:
