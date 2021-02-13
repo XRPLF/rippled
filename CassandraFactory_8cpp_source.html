@@ -199,7 +199,7 @@ $(function() {
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> syncMutex_;</div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a> syncCv_;</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    Counters counters_;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    Counters&lt;std::atomic&lt;std::uint64_t&gt;&gt; counters_;</div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    CassandraBackend(</div>
