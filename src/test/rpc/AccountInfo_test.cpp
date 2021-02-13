@@ -188,6 +188,119 @@ public:
         }
     }
 
+    // Test the "signer_lists" argument in account_info, with api_version 2.
+    void
+    testSignerListsApiVersion2()
+    {
+        using namespace jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+                    c->loadFromString("\n[beta_rpc_api]\n1\n");
+                    return c;
+                })};
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+
+        auto const withoutSigners = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\"}";
+
+        auto const withSigners = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": true }";
+
+        // Alice has no SignerList yet.
+        {
+            // account_info without the "signer_lists" argument.
+            auto const info = env.rpc("json", "account_info", withoutSigners);
+            BEAST_EXPECT(info.isMember(jss::result));
+            BEAST_EXPECT(!info[jss::result].isMember(jss::signer_lists));
+        }
+        {
+            // account_info with the "signer_lists" argument.
+            auto const info = env.rpc("json", "account_info", withSigners);
+            BEAST_EXPECT(info.isMember(jss::result));
+            auto const& data = info[jss::result];
+            BEAST_EXPECT(data.isMember(jss::signer_lists));
+            auto const& signerLists = data[jss::signer_lists];
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 0);
+        }
+
+        // Give alice a SignerList.
+        Account const bogie{"bogie"};
+
+        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        env(smallSigners);
+        {
+            // account_info without the "signer_lists" argument.
+            auto const info = env.rpc("json", "account_info", withoutSigners);
+            BEAST_EXPECT(info.isMember(jss::result));
+            BEAST_EXPECT(!info[jss::result].isMember(jss::signer_lists));
+        }
+        {
+            // account_info with the "signer_lists" argument.
+            auto const info = env.rpc("json", "account_info", withSigners);
+            BEAST_EXPECT(info.isMember(jss::result));
+            auto const& data = info[jss::result];
+            BEAST_EXPECT(data.isMember(jss::signer_lists));
+            auto const& signerLists = data[jss::signer_lists];
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 1);
+            auto const& signers = signerLists[0u];
+            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 2);
+            auto const& signerEntries = signers[sfSignerEntries.jsonName];
+            BEAST_EXPECT(signerEntries.size() == 1);
+            auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
+            BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
+        }
+
+        // Give alice a big signer list
+        Account const demon{"demon"};
+        Account const ghost{"ghost"};
+        Account const haunt{"haunt"};
+        Account const jinni{"jinni"};
+        Account const phase{"phase"};
+        Account const shade{"shade"};
+        Account const spook{"spook"};
+
+        Json::Value const bigSigners = signers(
+            alice,
+            4,
+            {
+                {bogie, 1},
+                {demon, 1},
+                {ghost, 1},
+                {haunt, 1},
+                {jinni, 1},
+                {phase, 1},
+                {shade, 1},
+                {spook, 1},
+            });
+        env(bigSigners);
+        {
+            // account_info with the "signer_lists" argument.
+            auto const info = env.rpc("json", "account_info", withSigners);
+            BEAST_EXPECT(info.isMember(jss::result));
+            auto const& data = info[jss::result];
+            BEAST_EXPECT(data.isMember(jss::signer_lists));
+            auto const& signerLists = data[jss::signer_lists];
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 1);
+            auto const& signers = signerLists[0u];
+            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 4);
+            auto const& signerEntries = signers[sfSignerEntries.jsonName];
+            BEAST_EXPECT(signerEntries.size() == 8);
+            for (unsigned i = 0u; i < 8; ++i)
+            {
+                auto const& entry = signerEntries[i][sfSignerEntry.jsonName];
+                BEAST_EXPECT(entry.size() == 2);
+                BEAST_EXPECT(entry.isMember(sfAccount.jsonName));
+                BEAST_EXPECT(entry[sfSignerWeight.jsonName] == 1);
+            }
+        }
+    }
+
     // Test the "signer_lists" argument in account_info, version 2 API.
     void
     testSignerListsV2()
@@ -604,6 +717,7 @@ public:
     {
         testErrors();
         testSignerLists();
+        testSignerListsApiVersion2();
         testSignerListsV2();
         testSimpleGrpc();
         testErrorsGrpc();

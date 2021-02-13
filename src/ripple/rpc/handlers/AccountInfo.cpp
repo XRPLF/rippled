@@ -109,8 +109,19 @@ doAccountInfo(RPC::JsonContext& context)
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 
-            result[jss::account_data][jss::signer_lists] =
-                std::move(jvSignerList);
+            // Documentation states this is returned as part of the account_info
+            // response, but previously the code put it under account_data. We
+            // can move this to the documentated location from apiVersion 2
+            // onwards.
+            if (context.apiVersion == 1)
+            {
+                result[jss::account_data][jss::signer_lists] =
+                    std::move(jvSignerList);
+            }
+            else
+            {
+                result[jss::signer_lists] = std::move(jvSignerList);
+            }
         }
         // Return queue info if that is requested
         if (queue)
