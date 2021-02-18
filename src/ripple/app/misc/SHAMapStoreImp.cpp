@@ -343,7 +343,8 @@ SHAMapStoreImp::run()
     ledgerMaster_ = &app_.getLedgerMaster();
     fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache(0));
     treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache(0));
-    transactionDb_ = &app_.getTxnDB();
+    if (app_.config().useTxTables())
+        transactionDb_ = &app_.getTxnDB();
     ledgerDb_ = &app_.getLedgerDB();
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
@@ -693,6 +694,9 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "SELECT MIN(LedgerSeq) FROM Ledgers;",
         "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
     if (health())
+        return;
+
+    if (!app_.config().useTxTables())
         return;
 
     clearSql(
