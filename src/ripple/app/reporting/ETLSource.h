@@ -238,7 +238,7 @@ public:
         auto last = getLastMsgTime();
         if (last.time_since_epoch().count() != 0)
             result["last_message_arrival_time"] =
-                to_string(date::floor<std::chrono::microseconds>(last));
+                to_string(floor<std::chrono::microseconds>(last));
         return result;
     }
 

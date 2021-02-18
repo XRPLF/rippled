@@ -277,7 +277,7 @@ verifyHandshake(
 
         auto const offset = calculateOffset(netTime, ourTime);
 
-        if (date::abs(offset) > tolerance)
+        if (abs(offset) > tolerance)
             throw std::runtime_error("Peer clock is too far off");
     }
 

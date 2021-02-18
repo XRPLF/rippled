@@ -76,6 +76,8 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp>
 
+#include <date/date.h>
+
 #include <condition_variable>
 #include <cstring>
 #include <iostream>
@@ -123,7 +125,7 @@ private:
         operator()(Duration const& elapsed)
         {
             using namespace std::chrono;
-            auto const lastSample = date::ceil<milliseconds>(elapsed);
+            auto const lastSample = ceil<milliseconds>(elapsed);
 
             lastSample_ = lastSample;
 
