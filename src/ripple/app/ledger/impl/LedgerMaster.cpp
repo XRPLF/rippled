@@ -2344,8 +2344,14 @@ LedgerMaster::getFetchPackCacheSize() const
 boost::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
+    if (!app_.config().reporting())
+    {
+        boost::optional<LedgerIndex> seq;
+        auto db = app_.getLedgerDB().checkoutDb();
+        *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
+        return seq;
+    }
 #ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
     {
         auto seq = PgQuery(app_.getPgPool())("SELECT min_ledger()");
         if (!seq)
@@ -2359,10 +2365,7 @@ LedgerMaster::minSqlSeq()
         return seq.asInt();
     }
 #endif
-    boost::optional<LedgerIndex> seq;
-    auto db = app_.getLedgerDB().checkoutDb();
-    *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
-    return seq;
+    return {};
 }
 
 }  // namespace ripple
