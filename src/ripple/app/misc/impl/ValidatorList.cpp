@@ -32,8 +32,6 @@
 #include <ripple/protocol/messages.h>
 #include <boost/regex.hpp>
 
-#include <date/date.h>
-
 #include <cmath>
 #include <mutex>
 #include <numeric>

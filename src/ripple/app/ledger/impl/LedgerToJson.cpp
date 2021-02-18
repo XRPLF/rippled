@@ -25,8 +25,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 
-#include <date/date.h>
-
 namespace ripple {
 
 namespace {
