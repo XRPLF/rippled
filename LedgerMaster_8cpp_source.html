@@ -2322,28 +2322,31 @@ $(function() {
 <div class="line"><a name="l02344"></a><span class="lineno"> 2344</span>&#160;boost::optional&lt;LedgerIndex&gt;</div>
 <div class="line"><a name="l02345"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerMaster.html#a7129c7408cc225ac56bc105d30289da4"> 2345</a></span>&#160;<a class="code" href="classripple_1_1LedgerMaster.html#a7129c7408cc225ac56bc105d30289da4">LedgerMaster::minSqlSeq</a>()</div>
 <div class="line"><a name="l02346"></a><span class="lineno"> 2346</span>&#160;{</div>
-<div class="line"><a name="l02347"></a><span class="lineno"> 2347</span>&#160;<span class="preprocessor">#ifdef RIPPLED_REPORTING</span></div>
-<div class="line"><a name="l02348"></a><span class="lineno"> 2348</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1LedgerMaster.html#a262ba48a2919950db79ae9434018b450">app_</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
-<div class="line"><a name="l02349"></a><span class="lineno"> 2349</span>&#160;    {</div>
-<div class="line"><a name="l02350"></a><span class="lineno"> 2350</span>&#160;        <span class="keyword">auto</span> seq = PgQuery(<a class="code" href="classripple_1_1LedgerMaster.html#a262ba48a2919950db79ae9434018b450">app_</a>.getPgPool())(<span class="stringliteral">&quot;SELECT min_ledger()&quot;</span>);</div>
-<div class="line"><a name="l02351"></a><span class="lineno"> 2351</span>&#160;        <span class="keywordflow">if</span> (!seq)</div>
-<div class="line"><a name="l02352"></a><span class="lineno"> 2352</span>&#160;        {</div>
-<div class="line"><a name="l02353"></a><span class="lineno"> 2353</span>&#160;            JLOG(<a class="code" href="classripple_1_1LedgerMaster.html#a7621d03781287445cfabcb91046f141d">m_journal</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>())</div>
-<div class="line"><a name="l02354"></a><span class="lineno"> 2354</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Error querying minimum ledger sequence.&quot;</span>;</div>
-<div class="line"><a name="l02355"></a><span class="lineno"> 2355</span>&#160;            <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l02356"></a><span class="lineno"> 2356</span>&#160;        }</div>
-<div class="line"><a name="l02357"></a><span class="lineno"> 2357</span>&#160;        <span class="keywordflow">if</span> (seq.isNull())</div>
-<div class="line"><a name="l02358"></a><span class="lineno"> 2358</span>&#160;            <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l02359"></a><span class="lineno"> 2359</span>&#160;        <span class="keywordflow">return</span> seq.asInt();</div>
-<div class="line"><a name="l02360"></a><span class="lineno"> 2360</span>&#160;    }</div>
-<div class="line"><a name="l02361"></a><span class="lineno"> 2361</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l02362"></a><span class="lineno"> 2362</span>&#160;    boost::optional&lt;LedgerIndex&gt; seq;</div>
-<div class="line"><a name="l02363"></a><span class="lineno"> 2363</span>&#160;    <span class="keyword">auto</span> db = <a class="code" href="classripple_1_1LedgerMaster.html#a262ba48a2919950db79ae9434018b450">app_</a>.<a class="code" href="classripple_1_1Application.html#ae8c3bf5a8d7de3a98166670fde4056f7">getLedgerDB</a>().<a class="code" href="classripple_1_1DatabaseCon.html#a16c6f729c6462f6200b724543f5c67bc">checkoutDb</a>();</div>
-<div class="line"><a name="l02364"></a><span class="lineno"> 2364</span>&#160;    *db &lt;&lt; <span class="stringliteral">&quot;SELECT MIN(LedgerSeq) FROM Ledgers&quot;</span>, soci::into(seq);</div>
-<div class="line"><a name="l02365"></a><span class="lineno"> 2365</span>&#160;    <span class="keywordflow">return</span> seq;</div>
-<div class="line"><a name="l02366"></a><span class="lineno"> 2366</span>&#160;}</div>
-<div class="line"><a name="l02367"></a><span class="lineno"> 2367</span>&#160; </div>
-<div class="line"><a name="l02368"></a><span class="lineno"> 2368</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l02347"></a><span class="lineno"> 2347</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="classripple_1_1LedgerMaster.html#a262ba48a2919950db79ae9434018b450">app_</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l02348"></a><span class="lineno"> 2348</span>&#160;    {</div>
+<div class="line"><a name="l02349"></a><span class="lineno"> 2349</span>&#160;        boost::optional&lt;LedgerIndex&gt; seq;</div>
+<div class="line"><a name="l02350"></a><span class="lineno"> 2350</span>&#160;        <span class="keyword">auto</span> db = <a class="code" href="classripple_1_1LedgerMaster.html#a262ba48a2919950db79ae9434018b450">app_</a>.<a class="code" href="classripple_1_1Application.html#ae8c3bf5a8d7de3a98166670fde4056f7">getLedgerDB</a>().<a class="code" href="classripple_1_1DatabaseCon.html#a16c6f729c6462f6200b724543f5c67bc">checkoutDb</a>();</div>
+<div class="line"><a name="l02351"></a><span class="lineno"> 2351</span>&#160;        *db &lt;&lt; <span class="stringliteral">&quot;SELECT MIN(LedgerSeq) FROM Ledgers&quot;</span>, soci::into(seq);</div>
+<div class="line"><a name="l02352"></a><span class="lineno"> 2352</span>&#160;        <span class="keywordflow">return</span> seq;</div>
+<div class="line"><a name="l02353"></a><span class="lineno"> 2353</span>&#160;    }</div>
+<div class="line"><a name="l02354"></a><span class="lineno"> 2354</span>&#160;<span class="preprocessor">#ifdef RIPPLED_REPORTING</span></div>
+<div class="line"><a name="l02355"></a><span class="lineno"> 2355</span>&#160;    {</div>
+<div class="line"><a name="l02356"></a><span class="lineno"> 2356</span>&#160;        <span class="keyword">auto</span> seq = PgQuery(<a class="code" href="classripple_1_1LedgerMaster.html#a262ba48a2919950db79ae9434018b450">app_</a>.getPgPool())(<span class="stringliteral">&quot;SELECT min_ledger()&quot;</span>);</div>
+<div class="line"><a name="l02357"></a><span class="lineno"> 2357</span>&#160;        <span class="keywordflow">if</span> (!seq)</div>
+<div class="line"><a name="l02358"></a><span class="lineno"> 2358</span>&#160;        {</div>
+<div class="line"><a name="l02359"></a><span class="lineno"> 2359</span>&#160;            JLOG(<a class="code" href="classripple_1_1LedgerMaster.html#a7621d03781287445cfabcb91046f141d">m_journal</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>())</div>
+<div class="line"><a name="l02360"></a><span class="lineno"> 2360</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Error querying minimum ledger sequence.&quot;</span>;</div>
+<div class="line"><a name="l02361"></a><span class="lineno"> 2361</span>&#160;            <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l02362"></a><span class="lineno"> 2362</span>&#160;        }</div>
+<div class="line"><a name="l02363"></a><span class="lineno"> 2363</span>&#160;        <span class="keywordflow">if</span> (seq.isNull())</div>
+<div class="line"><a name="l02364"></a><span class="lineno"> 2364</span>&#160;            <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l02365"></a><span class="lineno"> 2365</span>&#160;        <span class="keywordflow">return</span> seq.asInt();</div>
+<div class="line"><a name="l02366"></a><span class="lineno"> 2366</span>&#160;    }</div>
+<div class="line"><a name="l02367"></a><span class="lineno"> 2367</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l02368"></a><span class="lineno"> 2368</span>&#160;    <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l02369"></a><span class="lineno"> 2369</span>&#160;}</div>
+<div class="line"><a name="l02370"></a><span class="lineno"> 2370</span>&#160; </div>
+<div class="line"><a name="l02371"></a><span class="lineno"> 2371</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_afdcc25285fc9cb83eab4ed36d95be527"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#afdcc25285fc9cb83eab4ed36d95be527">ripple::NetworkOPs::pubLedger</a></div><div class="ttdeci">virtual void pubLedger(std::shared_ptr&lt; ReadView const &gt; const &amp;lpAccepted)=0</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>
