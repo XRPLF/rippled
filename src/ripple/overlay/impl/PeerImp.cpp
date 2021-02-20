@@ -2240,17 +2240,17 @@ PeerImp::onMessage(
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
-    auto const closeTime = app_.timeKeeper().closeTime();
-
-    if (m->validation().size() < 50)
-    {
-        JLOG(p_journal_.warn()) << "Validation: Too small";
-        fee_ = Resource::feeInvalidRequest;
-        return;
-    }
-
     try
     {
+        auto const closeTime = app_.timeKeeper().closeTime();
+
+        if (m->validation().size() < 50)
+        {
+            JLOG(p_journal_.warn()) << "Validation: Too small";
+            fee_ = Resource::feeInvalidRequest;
+            return;
+        }
+
         std::shared_ptr<STValidation> val;
         {
             SerialIter sit(makeSlice(m->validation()));
@@ -2683,16 +2683,16 @@ PeerImp::checkValidation(
     std::shared_ptr<STValidation> const& val,
     std::shared_ptr<protocol::TMValidation> const& packet)
 {
+    if (!cluster() && !val->isValid())
+    {
+        JLOG(p_journal_.debug()) << "Validation forwarded by peer is invalid";
+        charge(Resource::feeInvalidRequest);
+        return;
+    }
+
+    // FIXME it should be safe to remove this try/catch. Investigate codepaths.
     try
     {
-        // VFALCO Which functions throw?
-        if (!cluster() && !val->isValid())
-        {
-            JLOG(p_journal_.warn()) << "Validation is invalid";
-            charge(Resource::feeInvalidRequest);
-            return;
-        }
-
         if (app_.getOPs().recvValidation(val, std::to_string(id())) ||
             cluster())
         {

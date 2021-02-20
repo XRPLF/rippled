@@ -121,6 +121,10 @@ struct Manifest
     getMasterSignature() const;
 };
 
+/** Format the specified manifest to a string for debugging purposes. */
+std::string
+to_string(Manifest const& m);
+
 /** Constructs Manifest from serialized string
 
     @param s Serialized manifest string
@@ -183,6 +187,12 @@ enum class ManifestDisposition {
     /// Sequence is too old
     stale,
 
+    /// The master key is not acceptable to us
+    badMasterKey,
+
+    /// The ephemeral key is not acceptable to us
+    badEphemeralKey,
+
     /// Timely, but invalid signature
     invalid
 };
@@ -196,6 +206,10 @@ to_string(ManifestDisposition m)
             return "accepted";
         case ManifestDisposition::stale:
             return "stale";
+        case ManifestDisposition::badMasterKey:
+            return "badMasterKey";
+        case ManifestDisposition::badEphemeralKey:
+            return "badEphemeralKey";
         case ManifestDisposition::invalid:
             return "invalid";
         default:

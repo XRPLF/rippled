@@ -68,7 +68,6 @@ RCLConsensus::RCLConsensus(
           journal)
     , consensus_(clock, adaptor_, journal)
     , j_(journal)
-
 {
 }
 
@@ -86,19 +85,34 @@ RCLConsensus::Adaptor::Adaptor(
     , localTxs_(localTxs)
     , inboundTransactions_{inboundTransactions}
     , j_(journal)
-    , nodeID_{validatorKeys.nodeID}
-    , valPublic_{validatorKeys.publicKey}
-    , valSecret_{validatorKeys.secretKey}
+    , validatorKeys_(validatorKeys)
     , valCookie_{rand_int<std::uint64_t>(
           1,
           std::numeric_limits<std::uint64_t>::max())}
-    , nUnlVote_(nodeID_, j_)
+    , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     assert(valCookie_ != 0);
 
-    JLOG(j_.info()) << "Consensus engine started"
-                    << " (Node: " << to_string(nodeID_)
-                    << ", Cookie: " << valCookie_ << ")";
+    JLOG(j_.info()) << "Consensus engine started (cookie: " +
+            std::to_string(valCookie_) + ")";
+
+    if (validatorKeys_.nodeID != beast::zero)
+    {
+        std::stringstream ss;
+
+        JLOG(j_.info()) << "Validator identity: "
+                        << toBase58(
+                               TokenType::NodePublic,
+                               validatorKeys_.masterPublicKey);
+
+        if (validatorKeys_.masterPublicKey != validatorKeys_.publicKey)
+        {
+            JLOG(j_.debug())
+                << "Validator ephemeral signing key: "
+                << toBase58(TokenType::NodePublic, validatorKeys_.publicKey)
+                << " (seq: " << std::to_string(validatorKeys_.sequence) << ")";
+        }
+    }
 }
 
 boost::optional<RCLCxLedger>
@@ -184,10 +198,9 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
-    JLOG(j_.trace()) << "We propose: "
-                     << (proposal.isBowOut()
-                             ? std::string("bowOut")
-                             : ripple::to_string(proposal.position()));
+    JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
+                     << ripple::to_string(proposal.prevLedger()) << " -> "
+                     << ripple::to_string(proposal.position());
 
     protocol::TMProposeSet prop;
 
@@ -197,8 +210,8 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger().begin(), proposal.prevLedger().size());
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-
-    prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
+    prop.set_nodepubkey(
+        validatorKeys_.publicKey.data(), validatorKeys_.publicKey.size());
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,
@@ -207,7 +220,8 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger(),
         proposal.position());
 
-    auto sig = signDigest(valPublic_, valSecret_, signingHash);
+    auto sig = signDigest(
+        validatorKeys_.publicKey, validatorKeys_.secretKey, signingHash);
 
     prop.set_signature(sig.data(), sig.size());
 
@@ -216,7 +230,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger(),
         proposal.proposeSeq(),
         proposal.closeTime(),
-        valPublic_,
+        validatorKeys_.publicKey,
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
@@ -378,7 +392,7 @@ RCLConsensus::Adaptor::onClose(
             setHash,
             closeTime,
             app_.timeKeeper().closeTime(),
-            nodeID_}};
+            validatorKeys_.nodeID}};
 }
 
 void
@@ -789,9 +803,9 @@ RCLConsensus::Adaptor::validate(
 
     auto v = std::make_shared<STValidation>(
         lastValidationTime_,
-        valPublic_,
-        valSecret_,
-        nodeID_,
+        validatorKeys_.publicKey,
+        validatorKeys_.secretKey,
+        validatorKeys_.nodeID,
         [&](STValidation& v) {
             v.setFieldH256(sfLedgerHash, ledger.id());
             v.setFieldH256(sfConsensusHash, txns.id());
@@ -844,16 +858,16 @@ RCLConsensus::Adaptor::validate(
             }
         });
 
+    auto const serialized = v->getSerialized();
+
     // suppress it if we receive it
-    app_.getHashRouter().addSuppression(
-        sha512Half(makeSlice(v->getSerialized())));
+    app_.getHashRouter().addSuppression(sha512Half(makeSlice(serialized)));
 
     handleNewValidation(app_, v, "local");
 
     // Broadcast to all our peers:
-    Blob validation = v->getSerialized();
     protocol::TMValidation val;
-    val.set_validation(&validation[0], validation.size());
+    val.set_validation(serialized.data(), serialized.size());
     app_.overlay().broadcast(val);
 
     // Publish to all our subscribers:
@@ -947,7 +961,7 @@ RCLConsensus::Adaptor::preStartRound(
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
-    validating_ = valPublic_.size() != 0 &&
+    validating_ = validatorKeys_.publicKey.size() != 0 &&
         prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
         !app_.getOPs().isBlocked();
 
@@ -1020,7 +1034,7 @@ RCLConsensus::Adaptor::laggards(
 bool
 RCLConsensus::Adaptor::validator() const
 {
-    return !valPublic_.empty();
+    return !validatorKeys_.publicKey.empty();
 }
 
 void

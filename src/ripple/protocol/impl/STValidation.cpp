@@ -31,24 +31,26 @@ STValidation::validationFormat()
     // We can't have this be a magic static at namespace scope because
     // it relies on the SField's below being initialized, and we can't
     // guarantee the initialization order.
+    // clang-format off
     static SOTemplate const format{
-        {sfFlags, soeREQUIRED},
-        {sfLedgerHash, soeREQUIRED},
-        {sfLedgerSequence, soeREQUIRED},
-        {sfCloseTime, soeOPTIONAL},
-        {sfLoadFee, soeOPTIONAL},
-        {sfAmendments, soeOPTIONAL},
-        {sfBaseFee, soeOPTIONAL},
-        {sfReserveBase, soeOPTIONAL},
-        {sfReserveIncrement, soeOPTIONAL},
-        {sfSigningTime, soeREQUIRED},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfSignature, soeREQUIRED},
-        {sfConsensusHash, soeOPTIONAL},
-        {sfCookie, soeDEFAULT},
-        {sfValidatedHash, soeOPTIONAL},
-        {sfServerVersion, soeOPTIONAL},
+        {sfFlags,               soeREQUIRED},
+        {sfLedgerHash,          soeREQUIRED},
+        {sfLedgerSequence,      soeREQUIRED},
+        {sfCloseTime,           soeOPTIONAL},
+        {sfLoadFee,             soeOPTIONAL},
+        {sfAmendments,          soeOPTIONAL},
+        {sfBaseFee,             soeOPTIONAL},
+        {sfReserveBase,         soeOPTIONAL},
+        {sfReserveIncrement,    soeOPTIONAL},
+        {sfSigningTime,         soeREQUIRED},
+        {sfSigningPubKey,       soeREQUIRED},
+        {sfSignature,           soeREQUIRED},
+        {sfConsensusHash,       soeOPTIONAL},
+        {sfCookie,              soeDEFAULT},
+        {sfValidatedHash,       soeOPTIONAL},
+        {sfServerVersion,       soeOPTIONAL},
     };
+    // clang-format on
 
     return format;
 };
@@ -78,40 +80,30 @@ STValidation::getSignTime() const
 }
 
 NetClock::time_point
-STValidation::getSeenTime() const
+STValidation::getSeenTime() const noexcept
 {
     return seenTime_;
 }
 
 bool
-STValidation::isValid() const
+STValidation::isValid() const noexcept
 {
-    try
+    if (!valid_)
     {
-        if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
-            return false;
+        assert(publicKeyType(getSignerPublic()) == KeyType::secp256k1);
 
-        return verifyDigest(
+        valid_ = verifyDigest(
             getSignerPublic(),
             getSigningHash(),
             makeSlice(getFieldVL(sfSignature)),
             getFlags() & vfFullyCanonicalSig);
     }
-    catch (std::exception const&)
-    {
-        JLOG(debugLog().error()) << "Exception validating validation";
-        return false;
-    }
-}
 
-PublicKey
-STValidation::getSignerPublic() const
-{
-    return PublicKey(makeSlice(getFieldVL(sfSigningPubKey)));
+    return valid_.value();
 }
 
 bool
-STValidation::isFull() const
+STValidation::isFull() const noexcept
 {
     return (getFlags() & vfFullValidation) != 0;
 }

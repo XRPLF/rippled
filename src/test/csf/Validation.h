@@ -107,13 +107,13 @@ public:
         return seenTime_;
     }
 
-    PeerKey
+    PeerKey const&
     key() const
     {
         return key_;
     }
 
-    PeerID
+    PeerID const&
     nodeID() const
     {
         return nodeID_;

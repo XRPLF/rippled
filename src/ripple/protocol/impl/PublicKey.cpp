@@ -219,7 +219,7 @@ verifyDigest(
     PublicKey const& publicKey,
     uint256 const& digest,
     Slice const& sig,
-    bool mustBeFullyCanonical)
+    bool mustBeFullyCanonical) noexcept
 {
     if (publicKeyType(publicKey) != KeyType::secp256k1)
         LogicError("sign: secp256k1 required for digest signing");
@@ -269,7 +269,7 @@ verify(
     PublicKey const& publicKey,
     Slice const& m,
     Slice const& sig,
-    bool mustBeFullyCanonical)
+    bool mustBeFullyCanonical) noexcept
 {
     if (auto const type = publicKeyType(publicKey))
     {
