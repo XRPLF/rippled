@@ -34,6 +34,18 @@
 
 namespace ripple {
 
+std::string
+to_string(Manifest const& m)
+{
+    auto const mk = toBase58(TokenType::NodePublic, m.masterKey);
+
+    if (m.revoked())
+        return "Revocation Manifest " + mk;
+
+    return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
+        toBase58(TokenType::NodePublic, m.signingKey) + ")";
+}
+
 boost::optional<Manifest>
 deserializeManifest(Slice s)
 {
@@ -125,6 +137,10 @@ deserializeManifest(Slice s)
                 return boost::none;
 
             m.signingKey = PublicKey(makeSlice(spk));
+
+            // The signing and master keys can't be the same
+            if (m.signingKey == m.masterKey)
+                return boost::none;
         }
 
         return m;
@@ -280,9 +296,9 @@ PublicKey
 ManifestCache::getMasterKey(PublicKey const& pk) const
 {
     std::lock_guard lock{read_mutex_};
-    auto const iter = signingToMasterKeys_.find(pk);
 
-    if (iter != signingToMasterKeys_.end())
+    if (auto const iter = signingToMasterKeys_.find(pk);
+        iter != signingToMasterKeys_.end())
         return iter->second;
 
     return pk;
@@ -341,20 +357,16 @@ ManifestCache::applyManifest(Manifest m)
 {
     std::lock_guard applyLock{apply_mutex_};
 
-    /*
-        before we spend time checking the signature, make sure the
-        sequence number is newer than any we have.
-    */
+    // Before we spend time checking the signature, make sure the
+    // sequence number is newer than any we have.
     auto const iter = map_.find(m.masterKey);
 
     if (iter != map_.end() && m.sequence <= iter->second.sequence)
     {
-        /*
-            A manifest was received for a validator we're tracking, but
-            its sequence number is not higher than the one already stored.
-            This will happen normally when a peer without the latest gossip
-            connects.
-        */
+        // We received a manifest whose sequence number is not strictly greater
+        // than the one we already know about. This can happen in several cases
+        // including when we receive manifests from a peer who doesn't have the
+        // latest data.
         if (auto stream = j_.debug())
             logMftAct(
                 stream,
@@ -362,44 +374,71 @@ ManifestCache::applyManifest(Manifest m)
                 m.masterKey,
                 m.sequence,
                 iter->second.sequence);
-        return ManifestDisposition::stale;  // not a newer manifest, ignore
+        return ManifestDisposition::stale;
     }
 
+    // Now check the signature
     if (!m.verify())
     {
-        /*
-          A manifest's signature is invalid.
-          This shouldn't happen normally.
-        */
         if (auto stream = j_.warn())
             logMftAct(stream, "Invalid", m.masterKey, m.sequence);
         return ManifestDisposition::invalid;
     }
 
-    std::lock_guard readLock{read_mutex_};
-
+    // If the master key associated with a manifest is or might be compromised
+    // and is, therefore, no longer trustworthy.
+    //
+    // A manifest revocation essentially marks a manifest as compromised. By
+    // setting the sequence number to the highest value possible, the manifest
+    // is effectively neutered and cannot be superseded by a forged one.
     bool const revoked = m.revoked();
 
-    if (revoked)
+    if (auto stream = j_.warn(); stream && revoked)
+        logMftAct(stream, "Revoked", m.masterKey, m.sequence);
+
+    std::lock_guard readLock{read_mutex_};
+
+    // Sanity check: the master key of this manifest should not be used as
+    // the ephemeral key of another manifest:
+    if (auto const x = signingToMasterKeys_.find(m.masterKey);
+        x != signingToMasterKeys_.end())
     {
-        /*
-            A validator master key has been compromised, so its manifests
-            are now untrustworthy.  In order to prevent us from accepting
-            a forged manifest signed by the compromised master key, store
-            this manifest, which has the highest possible sequence number
-            and therefore can't be superseded by a forged one.
-        */
-        if (auto stream = j_.warn())
-            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
+        JLOG(j_.warn()) << to_string(m)
+                        << ": Master key already used as ephemeral key for "
+                        << toBase58(TokenType::NodePublic, x->second);
+
+        return ManifestDisposition::badMasterKey;
     }
 
+    if (!revoked)
+    {
+        // Sanity check: the ephemeral key of this manifest should not be used
+        // as the master or ephemeral key of another manifest:
+        if (auto const x = signingToMasterKeys_.find(m.signingKey);
+            x != signingToMasterKeys_.end())
+        {
+            JLOG(j_.warn())
+                << to_string(m)
+                << ": Ephemeral key already used as ephemeral key for "
+                << toBase58(TokenType::NodePublic, x->second);
+
+            return ManifestDisposition::badEphemeralKey;
+        }
+
+        if (auto const x = map_.find(m.signingKey); x != map_.end())
+        {
+            JLOG(j_.warn())
+                << to_string(m) << ": Ephemeral key used as master key for "
+                << to_string(x->second);
+
+            return ManifestDisposition::badEphemeralKey;
+        }
+    }
+
+    // This is the first manifest we are seeing for a master key. This should
+    // only ever happen once per validator run.
     if (iter == map_.end())
     {
-        /*
-            This is the first received manifest for a trusted master key
-            (possibly our own).  This only happens once per validator per
-            run.
-        */
         if (auto stream = j_.info())
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
@@ -408,28 +447,25 @@ ManifestCache::applyManifest(Manifest m)
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
+        return ManifestDisposition::accepted;
     }
-    else
-    {
-        /*
-            An ephemeral key was revoked and superseded by a new key.
-            This is expected, but should happen infrequently.
-        */
-        if (auto stream = j_.info())
-            logMftAct(
-                stream,
-                "AcceptedUpdate",
-                m.masterKey,
-                m.sequence,
-                iter->second.sequence);
 
-        signingToMasterKeys_.erase(iter->second.signingKey);
+    // An ephemeral key was revoked and superseded by a new key. This is
+    // expected, but should happen infrequently.
+    if (auto stream = j_.info())
+        logMftAct(
+            stream,
+            "AcceptedUpdate",
+            m.masterKey,
+            m.sequence,
+            iter->second.sequence);
 
-        if (!revoked)
-            signingToMasterKeys_[m.signingKey] = m.masterKey;
+    signingToMasterKeys_.erase(iter->second.signingKey);
 
-        iter->second = std::move(m);
-    }
+    if (!revoked)
+        signingToMasterKeys_[m.signingKey] = m.masterKey;
+
+    iter->second = std::move(m);
 
     // Something has changed. Keep track of it.
     seq_++;

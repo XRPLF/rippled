@@ -228,10 +228,10 @@ ecdsaCanonicality(Slice const& sig);
             represent a known type.
 */
 /** @{ */
-boost::optional<KeyType>
+[[nodiscard]] boost::optional<KeyType>
 publicKeyType(Slice const& slice);
 
-inline boost::optional<KeyType>
+[[nodiscard]] inline boost::optional<KeyType>
 publicKeyType(PublicKey const& publicKey)
 {
     return publicKeyType(publicKey.slice());
@@ -239,23 +239,23 @@ publicKeyType(PublicKey const& publicKey)
 /** @} */
 
 /** Verify a secp256k1 signature on the digest of a message. */
-bool
+[[nodiscard]] bool
 verifyDigest(
     PublicKey const& publicKey,
     uint256 const& digest,
     Slice const& sig,
-    bool mustBeFullyCanonical = true);
+    bool mustBeFullyCanonical = true) noexcept;
 
 /** Verify a signature on a message.
     With secp256k1 signatures, the data is first hashed with
     SHA512-Half, and the resulting digest is signed.
 */
-bool
+[[nodiscard]] bool
 verify(
     PublicKey const& publicKey,
     Slice const& m,
     Slice const& sig,
-    bool mustBeFullyCanonical = true);
+    bool mustBeFullyCanonical = true) noexcept;
 
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID

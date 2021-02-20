@@ -304,9 +304,10 @@ class Validations_test : public beast::unit_test::suite
 
             // Cannot re-do the same full validation sequence
             BEAST_EXPECT(
-                ValStatus::badSeq == harness.add(n.validate(ledgerAB)));
+                ValStatus::conflicting == harness.add(n.validate(ledgerAB)));
             // Cannot send the same partial validation sequence
-            BEAST_EXPECT(ValStatus::badSeq == harness.add(n.partial(ledgerAB)));
+            BEAST_EXPECT(
+                ValStatus::conflicting == harness.add(n.partial(ledgerAB)));
 
             // Now trusts the newest ledger too
             harness.clock().advance(1s);

@@ -699,7 +699,7 @@ Consensus<Adaptor>::peerProposal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
-    NodeID_t const& peerID = newPeerPos.proposal().nodeID();
+    auto const& peerID = newPeerPos.proposal().nodeID();
 
     // Always need to store recent positions
     {
@@ -725,9 +725,7 @@ Consensus<Adaptor>::peerProposalInternal(
 
     now_ = now;
 
-    Proposal_t const& newPeerProp = newPeerPos.proposal();
-
-    NodeID_t const& peerID = newPeerProp.nodeID();
+    auto const& newPeerProp = newPeerPos.proposal();
 
     if (newPeerProp.prevLedger() != prevLedgerID_)
     {
@@ -735,6 +733,8 @@ Consensus<Adaptor>::peerProposalInternal(
                          << " but we are on " << prevLedgerID_;
         return false;
     }
+
+    auto const& peerID = newPeerProp.nodeID();
 
     if (deadNodes_.find(peerID) != deadNodes_.end())
     {

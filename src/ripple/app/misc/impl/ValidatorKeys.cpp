@@ -58,7 +58,9 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
             {
                 secretKey = token->validationSecret;
                 publicKey = pk;
+                masterPublicKey = m->masterKey;
                 nodeID = calcNodeID(m->masterKey);
+                sequence = m->sequence;
                 manifest = std::move(token->manifest);
             }
         }
@@ -83,7 +85,9 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         {
             secretKey = generateSecretKey(KeyType::secp256k1, *seed);
             publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
+            masterPublicKey = publicKey;
             nodeID = calcNodeID(publicKey);
+            sequence = 0;
         }
     }
 }

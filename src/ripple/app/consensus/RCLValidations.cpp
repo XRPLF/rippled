@@ -154,11 +154,13 @@ handleNewValidation(
     std::shared_ptr<STValidation> const& val,
     std::string const& source)
 {
-    PublicKey const& signingKey = val->getSignerPublic();
-    uint256 const& hash = val->getLedgerHash();
+    auto const& signingKey = val->getSignerPublic();
+    auto const& hash = val->getLedgerHash();
+    auto const seq = val->getFieldU32(sfLedgerSequence);
 
     // Ensure validation is marked as trusted if signer currently trusted
     auto masterKey = app.validators().getTrustedKey(signingKey);
+
     if (!val->isTrusted() && masterKey)
         val->setTrusted();
 
@@ -166,56 +168,52 @@ handleNewValidation(
     if (!masterKey)
         masterKey = app.validators().getListedKey(signingKey);
 
-    RCLValidations& validations = app.getValidations();
-    beast::Journal const j = validations.adaptor().journal();
-
-    auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
-        std::string id = toBase58(TokenType::NodePublic, signingKey);
-
-        if (masterKey)
-            id += ":" + toBase58(TokenType::NodePublic, *masterKey);
-
-        s << (val->isTrusted() ? "trusted" : "untrusted") << " "
-          << (val->isFull() ? "full" : "partial") << " validation: " << hash
-          << " from " << id << " via " << source << ": " << msg << "\n"
-          << " [" << val->getSerializer().slice() << "]";
-    };
+    auto& validations = app.getValidations();
 
     // masterKey is seated only if validator is trusted or listed
-    if (masterKey)
+    auto const outcome =
+        validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
+
+    if (outcome == ValStatus::current)
     {
-        ValStatus const outcome = validations.add(calcNodeID(*masterKey), val);
-        auto const seq = val->getFieldU32(sfLedgerSequence);
-
-        if (j.debug())
-            dmp(j.debug(), to_string(outcome));
-
-        // One might think that we would not wish to relay validations that
-        // fail these checks. Somewhat counterintuitively, we actually want
-        // to do it for validations that we receive but deem suspicious, so
-        // that our peers will also observe them and realize they're bad.
-        if (outcome == ValStatus::conflicting && j.warn())
-        {
-            dmp(j.warn(),
-                "conflicting validations issued for " + to_string(seq) +
-                    " (likely from a Byzantine validator)");
-        }
-
-        if (outcome == ValStatus::multiple && j.warn())
-        {
-            dmp(j.warn(),
-                "multiple validations issued for " + to_string(seq) +
-                    " (multiple validators operating with the same key?)");
-        }
-
-        if (val->isTrusted() && outcome == ValStatus::current)
+        if (val->isTrusted())
             app.getLedgerMaster().checkAccept(hash, seq);
+        return;
     }
-    else
+
+    // Ensure that problematic validations from validators we trust are
+    // logged at the highest possible level.
+    //
+    // One might think that we should more than just log: we ought to also
+    // not relay validations that fail these checks. Alas, and somewhat
+    // counterintuitively, we *especially* want to forward such validations,
+    // so that our peers will also observe them and take independent notice of
+    // such validators, informing their operators.
+    if (auto const ls = val->isTrusted()
+            ? validations.adaptor().journal().fatal()
+            : validations.adaptor().journal().warn();
+        ls.active())
     {
-        JLOG(j.debug()) << "Val for " << hash << " from "
-                        << toBase58(TokenType::NodePublic, signingKey)
-                        << " not added UNlisted";
+        auto const id = [&masterKey, &signingKey]() {
+            auto ret = toBase58(TokenType::NodePublic, signingKey);
+
+            if (masterKey && masterKey != signingKey)
+                ret += ":" + toBase58(TokenType::NodePublic, *masterKey);
+
+            return ret;
+        }();
+
+        if (outcome == ValStatus::conflicting)
+            ls << "Byzantine Behavior Detector: "
+               << (val->isTrusted() ? "trusted " : "untrusted ") << id
+               << ": Conflicting validation for " << seq << "!\n["
+               << val->getSerializer().slice() << "]";
+
+        if (outcome == ValStatus::multiple)
+            ls << "Byzantine Behavior Detector: "
+               << (val->isTrusted() ? "trusted " : "untrusted ") << id
+               << ": Multiple validations for " << seq << "/" << hash << "!\n["
+               << val->getSerializer().slice() << "]";
     }
 }
 

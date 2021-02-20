@@ -130,6 +130,7 @@ public:
         return seq_;
     }
 };
+
 /** Whether a validation is still current
 
     Determines whether a validation can still be considered the current
@@ -159,8 +160,7 @@ isCurrent(
          (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
 
-/** Status of newly received validation
- */
+/** Status of validation we received */
 enum class ValStatus {
     /// This was a new validation and was added
     current,
@@ -168,9 +168,9 @@ enum class ValStatus {
     stale,
     /// A validation violates the increasing seq requirement
     badSeq,
-    /// Multiple validations for the same ledger from multiple validators
+    /// Multiple validations by a validator for the same ledger
     multiple,
-    /// Multiple validations for different ledgers by a single validator
+    /// Multiple validations by a validator for different ledgers
     conflicting
 };
 
@@ -641,7 +641,7 @@ public:
             }
 
             // Enforce monotonically increasing sequences for validations
-            // by a given node:
+            // by a given node, and run the active Byzantine detector:
             if (auto& enf = seqEnforcers_[nodeID]; !enf(now, val.seq(), parms_))
             {
                 // If the validation is for the same sequence as one we are
@@ -652,6 +652,13 @@ public:
                     // ledgers. This could be the result of misconfiguration
                     // but it can also mean a Byzantine validator.
                     if (seqit->second.ledgerID() != val.ledgerID())
+                        return ValStatus::conflicting;
+
+                    // Two validations for the same sequence and for the same
+                    // ledger with different sign times. This could be the
+                    // result of a misconfiguration but it can also mean a
+                    // Byzantine validator.
+                    if (seqit->second.signTime() != val.signTime())
                         return ValStatus::conflicting;
 
                     // Two validations for the same sequence but with different
