@@ -450,8 +450,8 @@ public:
     {
         if (!strand_.running_in_this_thread())
             return post(
-                    strand_,
-                    std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+                strand_,
+                std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
 
         txMetrics_.addMetrics(args...);
     }

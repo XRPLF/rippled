@@ -385,7 +385,10 @@ makeRequest(
     m.insert(
         "X-Protocol-Ctl",
         makeFeaturesRequestHeader(
-            comprEnabled, ledgerReplayEnabled, txReduceRelayEnabled, vpReduceRelayEnabled));
+            comprEnabled,
+            ledgerReplayEnabled,
+            txReduceRelayEnabled,
+            vpReduceRelayEnabled));
     return m;
 }
 

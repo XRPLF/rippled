@@ -1077,7 +1077,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("handshake test");
         auto handshake = [&](bool client, bool server, bool expecting) -> bool {
-            auto request = ripple::makeRequest(true, false, client, false, false);
+            auto request =
+                ripple::makeRequest(true, false, client, false, false);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();
