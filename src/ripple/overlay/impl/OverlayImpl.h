@@ -446,7 +446,15 @@ public:
     /** Add tx reduce-relay metrics. */
     template <typename... Args>
     void
-    addTxMetrics(Args... args);
+    addTxMetrics(Args... args)
+    {
+        if (!strand_.running_in_this_thread())
+            return post(
+                    strand_,
+                    std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+
+        txMetrics_.addMetrics(args...);
+    }
 
 private:
     void

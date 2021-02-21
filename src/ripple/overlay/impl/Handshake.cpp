@@ -370,8 +370,8 @@ makeRequest(
     bool crawlPublic,
     bool comprEnabled,
     bool ledgerReplayEnabled,
-    bool vpReduceRelayEnabled,
-    bool txReduceRelayEnabled) -> request_type
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);

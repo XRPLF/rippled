@@ -1634,18 +1634,6 @@ setup_Overlay(BasicConfig const& config)
     return setup;
 }
 
-template <typename... Args>
-void
-OverlayImpl::addTxMetrics(Args... args)
-{
-    if (!strand_.running_in_this_thread())
-        return post(
-            strand_,
-            std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
-
-    txMetrics_.addMetrics(args...);
-}
-
 std::unique_ptr<Overlay>
 make_Overlay(
     Application& app,

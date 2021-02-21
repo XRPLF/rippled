@@ -230,7 +230,7 @@ makeFeaturesRequestHeader(
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
-    bool vpReduceRelayEnabled)
+    bool vpReduceRelayEnabled);
 
 /** Make response header X-Protocol-Ctl value with supported features.
     If the request has a feature that we support enabled

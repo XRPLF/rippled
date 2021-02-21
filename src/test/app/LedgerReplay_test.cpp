@@ -289,6 +289,23 @@ public:
     {
         return false;
     }
+    void
+    sendTxQueue() override
+    {
+    }
+    void
+    addTxQueue(const uint256&) override
+    {
+    }
+    void
+    removeTxQueue(const uint256&) override
+    {
+    }
+    bool
+    txReduceRelayEnabled() const override
+    {
+        return false;
+    }
 
     bool ledgerReplayEnabled_;
 };
@@ -1060,7 +1077,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("handshake test");
         auto handshake = [&](bool client, bool server, bool expecting) -> bool {
-            auto request = ripple::makeRequest(true, false, false, client);
+            auto request = ripple::makeRequest(true, false, client, false, false);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();
