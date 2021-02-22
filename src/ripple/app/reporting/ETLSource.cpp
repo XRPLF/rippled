@@ -63,14 +63,28 @@ ETLSource::ETLSource(
     , app_(etl_.getApplication())
     , timer_(ioc_)
 {
+    std::string connectionString;
+    try
+    {
+        connectionString =
+            beast::IP::Endpoint(
+                boost::asio::ip::make_address(ip_), std::stoi(grpcPort_))
+                .to_string();
+
+        JLOG(journal_.info())
+            << "Using IP to connect to ETL source: " << connectionString;
+    }
+    catch (std::exception const& e)
+    {
+        connectionString = "dns:" + ip_ + ":" + grpcPort_;
+        JLOG(journal_.info())
+            << "Using DNS to connect to ETL source: " << connectionString;
+    }
     try
     {
         stub_ = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(
-                beast::IP::Endpoint(
-                    boost::asio::ip::make_address(ip_), std::stoi(grpcPort_))
-                    .to_string(),
-                grpc::InsecureChannelCredentials()));
+                connectionString, grpc::InsecureChannelCredentials()));
         JLOG(journal_.info()) << "Made stub for remote = " << toString();
     }
     catch (std::exception const& e)
