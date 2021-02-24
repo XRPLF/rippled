@@ -113,7 +113,7 @@ rpm_sign:
   dependencies:
     - rpm_build
   image:
-    name: centos:7
+    name: artifactory.ops.ripple.com/centos:7
   <<: *only_primary
   before_script:
   - |
@@ -142,7 +142,7 @@ dpkg_sign:
   dependencies:
     - dpkg_build
   image:
-    name: ubuntu:18.04
+    name: artifactory.ops.ripple.com/ubuntu:18.04
   <<: *only_primary
   before_script:
   - |
@@ -181,7 +181,7 @@ centos_7_smoketest:
     - rpm_build
     - rpm_sign
   image:
-    name: centos:7
+    name: artifactory.ops.ripple.com/centos:7
   <<: *run_local_smoketest
 
 fedora_29_smoketest:
@@ -190,7 +190,7 @@ fedora_29_smoketest:
     - rpm_build
     - rpm_sign
   image:
-    name: fedora:29
+    name: artifactory.ops.ripple.com/fedora:29
   <<: *run_local_smoketest
 
 fedora_28_smoketest:
@@ -199,7 +199,7 @@ fedora_28_smoketest:
     - rpm_build
     - rpm_sign
   image:
-    name: fedora:28
+    name: artifactory.ops.ripple.com/fedora:28
   <<: *run_local_smoketest
 
 fedora_27_smoketest:
@@ -208,7 +208,7 @@ fedora_27_smoketest:
     - rpm_build
     - rpm_sign
   image:
-    name: fedora:27
+    name: artifactory.ops.ripple.com/fedora:27
   <<: *run_local_smoketest
 
 ## this one is not LTS, but we
@@ -220,7 +220,7 @@ ubuntu_20_smoketest:
     - dpkg_build
     - dpkg_sign
   image:
-    name: ubuntu:20.04
+    name: artifactory.ops.ripple.com/ubuntu:20.04
   <<: *run_local_smoketest
 
 ubuntu_18_smoketest:
@@ -229,7 +229,7 @@ ubuntu_18_smoketest:
     - dpkg_build
     - dpkg_sign
   image:
-    name: ubuntu:18.04
+    name: artifactory.ops.ripple.com/ubuntu:18.04
   <<: *run_local_smoketest
 
 ubuntu_16_smoketest:
@@ -238,7 +238,7 @@ ubuntu_16_smoketest:
     - dpkg_build
     - dpkg_sign
   image:
-    name: ubuntu:16.04
+    name: artifactory.ops.ripple.com/ubuntu:16.04
   <<: *run_local_smoketest
 
 debian_9_smoketest:
@@ -247,7 +247,7 @@ debian_9_smoketest:
     - dpkg_build
     - dpkg_sign
   image:
-    name: debian:9
+    name: artifactory.ops.ripple.com/debian:9
   <<: *run_local_smoketest
 
 #########################################################################
@@ -265,7 +265,7 @@ debian_9_smoketest:
 verify_head_signed:
   stage: verify_sig
   image:
-    name: ubuntu:latest
+    name: artifactory.ops.ripple.com/ubuntu:latest
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/verify_head_commit.sh
@@ -315,7 +315,7 @@ push_test:
     DEB_REPO: "rippled-deb-test-mirror"
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: alpine:latest
+    name: artifactory.ops.ripple.com/alpine:latest
   artifacts:
     paths:
       - files.info
@@ -340,7 +340,7 @@ centos_7_verify_repo_test:
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: centos:7
+    name: artifactory.ops.ripple.com/centos:7
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -351,7 +351,7 @@ fedora_29_verify_repo_test:
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: fedora:29
+    name: artifactory.ops.ripple.com/fedora:29
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -362,7 +362,7 @@ fedora_28_verify_repo_test:
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: fedora:28
+    name: artifactory.ops.ripple.com/fedora:28
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -373,7 +373,7 @@ fedora_27_verify_repo_test:
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: fedora:27
+    name: artifactory.ops.ripple.com/fedora:27
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -385,7 +385,7 @@ ubuntu_20_verify_repo_test:
     DISTRO: "focal"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: ubuntu:20.04
+    name: artifactory.ops.ripple.com/ubuntu:20.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -397,7 +397,7 @@ ubuntu_18_verify_repo_test:
     DISTRO: "bionic"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: ubuntu:18.04
+    name: artifactory.ops.ripple.com/ubuntu:18.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -409,7 +409,7 @@ ubuntu_16_verify_repo_test:
     DISTRO: "xenial"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: ubuntu:16.04
+    name: artifactory.ops.ripple.com/ubuntu:16.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -421,7 +421,7 @@ debian_9_verify_repo_test:
     DISTRO: "stretch"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: debian:9
+    name: artifactory.ops.ripple.com/debian:9
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -439,7 +439,7 @@ debian_9_verify_repo_test:
 wait_before_push_prod:
   stage: wait_approval_prod
   image:
-    name: alpine:latest
+    name: artifactory.ops.ripple.com/alpine:latest
   <<: *only_primary
   script:
     - echo "proceeding to next stage"
@@ -460,7 +460,7 @@ push_prod:
     DEB_REPO: "rippled-deb"
     RPM_REPO: "rippled-rpm"
   image:
-    name: alpine:latest
+    name: artifactory.ops.ripple.com/alpine:latest
   stage: push_to_prod
   artifacts:
     paths:
@@ -486,7 +486,7 @@ centos_7_verify_repo_prod:
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: centos:7
+    name: artifactory.ops.ripple.com/centos:7
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -497,7 +497,7 @@ fedora_29_verify_repo_prod:
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: fedora:29
+    name: artifactory.ops.ripple.com/fedora:29
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -508,7 +508,7 @@ fedora_28_verify_repo_prod:
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: fedora:28
+    name: artifactory.ops.ripple.com/fedora:28
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -519,7 +519,7 @@ fedora_27_verify_repo_prod:
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: fedora:27
+    name: artifactory.ops.ripple.com/fedora:27
   dependencies:
     - rpm_sign
   <<: *only_primary
@@ -531,7 +531,7 @@ ubuntu_20_verify_repo_prod:
     DISTRO: "focal"
     DEB_REPO: "rippled-deb"
   image:
-    name: ubuntu:20.04
+    name: artifactory.ops.ripple.com/ubuntu:20.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -543,7 +543,7 @@ ubuntu_18_verify_repo_prod:
     DISTRO: "bionic"
     DEB_REPO: "rippled-deb"
   image:
-    name: ubuntu:18.04
+    name: artifactory.ops.ripple.com/ubuntu:18.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -555,7 +555,7 @@ ubuntu_16_verify_repo_prod:
     DISTRO: "xenial"
     DEB_REPO: "rippled-deb"
   image:
-    name: ubuntu:16.04
+    name: artifactory.ops.ripple.com/ubuntu:16.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -567,7 +567,7 @@ debian_9_verify_repo_prod:
     DISTRO: "stretch"
     DEB_REPO: "rippled-deb"
   image:
-    name: debian:9
+    name: artifactory.ops.ripple.com/debian:9
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -587,7 +587,7 @@ get_prod_hashes:
     DEB_REPO: "rippled-deb"
     RPM_REPO: "rippled-rpm"
   image:
-    name: alpine:latest
+    name: artifactory.ops.ripple.com/alpine:latest
   stage: get_final_hashes
   artifacts:
     paths:
