@@ -475,11 +475,10 @@ public:
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
 
-        // getSigningKey and getMasterKey should return the same keys if
-        // a new manifest is applied with the same signing key but a higher
-        // sequence
+        // getSigningKey and getMasterKey should fail if a new manifest is
+        // applied with the same signing key but a higher sequence
         BEAST_EXPECT(
-            ManifestDisposition::accepted ==
+            ManifestDisposition::badEphemeralKey ==
             cache.applyManifest(makeManifest(
                 sk, KeyType::ed25519, kp1.second, KeyType::secp256k1, 2)));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
@@ -736,15 +735,15 @@ public:
                     {
                         // valid manifest with invalid signature
                         auto badSigSt = st;
-                        badSigSt[sfPublicKey] = badSigSt[sfSigningPubKey];
+                        badSigSt[sfSequence] = sequence + 1;
 
                         auto const m = toString(badSigSt);
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
-                        BEAST_EXPECT(manifest->masterKey == spk);
+                        BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
-                        BEAST_EXPECT(manifest->sequence == sequence);
+                        BEAST_EXPECT(manifest->sequence == sequence + 1);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(!manifest->verify());
@@ -802,6 +801,24 @@ public:
                         auto badSt = st;
                         BEAST_EXPECT(badSt.delField(sfSignature));
                         BEAST_EXPECT(!deserializeManifest(toString(badSt)));
+                    }
+                    {
+                        // reject matching master & ephemeral keys
+                        STObject st(sfGeneric);
+                        st[sfSequence] = 314159;
+                        st[sfPublicKey] = pk;
+                        st[sfSigningPubKey] = pk;
+
+                        sign(
+                            st,
+                            HashPrefix::manifest,
+                            keyType,
+                            sk,
+                            sfMasterSignature);
+
+                        sign(st, HashPrefix::manifest, sKeyType, sk);
+
+                        BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                 }
 
@@ -957,27 +974,33 @@ public:
 
             auto const sk_a = randomSecretKey();
             auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
-            auto const kp_a = randomKeyPair(KeyType::secp256k1);
+            auto const kp_a0 = randomKeyPair(KeyType::secp256k1);
+            auto const kp_a1 = randomKeyPair(KeyType::secp256k1);
             auto const s_a0 = makeManifest(
-                sk_a, KeyType::ed25519, kp_a.second, KeyType::secp256k1, 0);
+                sk_a, KeyType::ed25519, kp_a0.second, KeyType::secp256k1, 0);
             auto const s_a1 = makeManifest(
-                sk_a, KeyType::ed25519, kp_a.second, KeyType::secp256k1, 1);
+                sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 1);
+            auto const s_a2 = makeManifest(
+                sk_a, KeyType::ed25519, kp_a1.second, KeyType::secp256k1, 2);
             auto const s_aMax = makeRevocation(sk_a, KeyType::ed25519);
 
             auto const sk_b = randomSecretKey();
-            auto const kp_b = randomKeyPair(KeyType::secp256k1);
+            auto const kp_b0 = randomKeyPair(KeyType::secp256k1);
+            auto const kp_b1 = randomKeyPair(KeyType::secp256k1);
+            auto const kp_b2 = randomKeyPair(KeyType::secp256k1);
             auto const s_b0 = makeManifest(
-                sk_b, KeyType::ed25519, kp_b.second, KeyType::secp256k1, 0);
+                sk_b, KeyType::ed25519, kp_b0.second, KeyType::secp256k1, 0);
             auto const s_b1 = makeManifest(
-                sk_b, KeyType::ed25519, kp_b.second, KeyType::secp256k1, 1);
-            auto const s_b2 = makeManifest(
                 sk_b,
                 KeyType::ed25519,
-                kp_b.second,
+                kp_b1.second,
                 KeyType::secp256k1,
-                2,
+                1,
                 true);  // invalidSig
-            auto const fake = s_b1.serialized + '\0';
+            auto const s_b2 = makeManifest(
+                sk_b, KeyType::ed25519, kp_b2.second, KeyType::ed25519, 2);
+
+            auto const fake = s_b2.serialized + '\0';
 
             // applyManifest should accept new manifests with
             // higher sequence numbers
@@ -994,6 +1017,10 @@ public:
                 cache.applyManifest(clone(s_a1)) == ManifestDisposition::stale);
             BEAST_EXPECT(
                 cache.applyManifest(clone(s_a0)) == ManifestDisposition::stale);
+
+            BEAST_EXPECT(
+                cache.applyManifest(clone(s_a2)) ==
+                ManifestDisposition::badEphemeralKey);
 
             // applyManifest should accept manifests with max sequence numbers
             // that revoke the master public key
@@ -1017,12 +1044,25 @@ public:
                 ManifestDisposition::accepted);
             BEAST_EXPECT(
                 cache.applyManifest(clone(s_b0)) == ManifestDisposition::stale);
-
             BEAST_EXPECT(!deserializeManifest(fake));
             BEAST_EXPECT(
-                cache.applyManifest(clone(s_b2)) ==
+                cache.applyManifest(clone(s_b1)) ==
                 ManifestDisposition::invalid);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(s_b2)) ==
+                ManifestDisposition::accepted);
+
+            auto const s_c0 = makeManifest(
+                kp_b2.second,
+                KeyType::ed25519,
+                randomSecretKey(),
+                KeyType::ed25519,
+                47);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(s_c0)) ==
+                ManifestDisposition::badMasterKey);
         }
+
         testLoadStore(cache);
         testGetSignature();
         testGetKeys();

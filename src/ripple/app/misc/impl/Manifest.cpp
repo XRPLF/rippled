@@ -137,6 +137,10 @@ deserializeManifest(Slice s)
                 return boost::none;
 
             m.signingKey = PublicKey(makeSlice(spk));
+
+            // The signing and master keys can't be the same
+            if (m.signingKey == m.masterKey)
+                return boost::none;
         }
 
         return m;

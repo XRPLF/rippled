@@ -2240,16 +2240,16 @@ PeerImp::onMessage(
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
+    if (m->validation().size() < 50)
+    {
+        JLOG(p_journal_.warn()) << "Validation: Too small";
+        fee_ = Resource::feeInvalidRequest;
+        return;
+    }
+
     try
     {
         auto const closeTime = app_.timeKeeper().closeTime();
-
-        if (m->validation().size() < 50)
-        {
-            JLOG(p_journal_.warn()) << "Validation: Too small";
-            fee_ = Resource::feeInvalidRequest;
-            return;
-        }
 
         std::shared_ptr<STValidation> val;
         {
