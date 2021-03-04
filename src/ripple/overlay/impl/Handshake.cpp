@@ -81,11 +81,11 @@ makeFeaturesRequestHeader(
     if (comprEnabled)
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
     if (ledgerReplayEnabled)
-        str << FEATURE_LEDGER_REPLAY << "=1";
+        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
     if (txReduceRelayEnabled)
-        str << FEATURE_TXRR << "=1";
+        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
     if (vpReduceRelayEnabled)
-        str << FEATURE_VPRR << "=1";
+        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
     return str.str();
 }
 
@@ -101,11 +101,11 @@ makeFeaturesResponseHeader(
     if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
     if (ledgerReplayEnabled && featureEnabled(headers, FEATURE_LEDGER_REPLAY))
-        str << FEATURE_LEDGER_REPLAY << "=1";
+        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
     if (txReduceRelayEnabled && featureEnabled(headers, FEATURE_TXRR))
-        str << FEATURE_TXRR << "=1";
+        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
     if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
-        str << FEATURE_VPRR << "=1";
+        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
     return str.str();
 }
 
