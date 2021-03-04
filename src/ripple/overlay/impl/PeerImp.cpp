@@ -123,13 +123,13 @@ PeerImp::PeerImp(
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    JLOG(journal_.debug()) << "compression enabled "
-                           << (compressionEnabled_ == Compressed::On)
-                           << " vp reduce-relay enabled "
-                           << vpReduceRelayEnabled_
-                           << " tx reduce-relay enabled "
-                           << txReduceRelayEnabled_ << " on " << remote_address_
-                           << " " << id_;
+    JLOG(journal_.info()) << "compression enabled "
+                          << (compressionEnabled_ == Compressed::On)
+                          << " vp reduce-relay enabled "
+                          << vpReduceRelayEnabled_
+                          << " tx reduce-relay enabled "
+                          << txReduceRelayEnabled_ << " on " << remote_address_
+                          << " " << id_;
 }
 
 PeerImp::~PeerImp()

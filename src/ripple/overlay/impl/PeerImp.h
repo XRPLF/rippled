@@ -696,13 +696,13 @@ PeerImp::PeerImp(
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.debug()) << "compression enabled "
-                           << (compressionEnabled_ == Compressed::On)
-                           << " vp reduce-relay enabled "
-                           << vpReduceRelayEnabled_
-                           << " tx reduce-relay enabled "
-                           << txReduceRelayEnabled_ << " on " << remote_address_
-                           << " " << id_;
+    JLOG(journal_.info()) << "compression enabled "
+                          << (compressionEnabled_ == Compressed::On)
+                          << " vp reduce-relay enabled "
+                          << vpReduceRelayEnabled_
+                          << " tx reduce-relay enabled "
+                          << txReduceRelayEnabled_ << " on " << remote_address_
+                          << " " << id_;
 }
 
 template <class FwdIt, class>
