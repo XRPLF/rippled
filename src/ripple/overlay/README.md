@@ -152,8 +152,7 @@ appropriate HTTP error code (e.g. by sending an HTTP 400 "Bad Request" response)
 
 Protocol versions are string of the form `XRPL/` followed by a dotted major
 and minor protocol version number, where the major number is greater than or
-equal to 2 and the minor is greater than or equal to 0. The legacy version
-`RTXP/1.2` is also supported at this time and is an alias for `XRPL/2.0`.
+equal to 2 and the minor is greater than or equal to 0.
 
 See [RFC 2616 &sect;14.42](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.42)
 
