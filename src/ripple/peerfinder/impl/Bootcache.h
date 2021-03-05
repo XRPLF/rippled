@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
 
+#include <ripple/basics/comparators.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
@@ -81,8 +82,11 @@ private:
         int m_valence;
     };
 
-    using left_t = boost::bimaps::unordered_set_of<beast::IP::Endpoint>;
-    using right_t = boost::bimaps::multiset_of<Entry>;
+    using left_t = boost::bimaps::unordered_set_of<
+        beast::IP::Endpoint,
+        boost::hash<beast::IP::Endpoint>,
+        ripple::equal_to<beast::IP::Endpoint>>;
+    using right_t = boost::bimaps::multiset_of<Entry, ripple::less<Entry>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
