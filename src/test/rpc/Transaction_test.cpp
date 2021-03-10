@@ -49,18 +49,23 @@ class Transaction_test : public beast::unit_test::suite
         env.close();
 
         std::vector<std::shared_ptr<STTx const>> txns;
+        std::vector<std::shared_ptr<STObject const>> metas;
         auto const startLegSeq = env.current()->info().seq;
         for (int i = 0; i < 750; ++i)
         {
             env(noop(alice));
             txns.emplace_back(env.tx());
             env.close();
+            metas.emplace_back(
+                env.closed()->txRead(env.tx()->getTransactionID()).second);
         }
         auto const endLegSeq = env.closed()->info().seq;
 
         // Find the existing transactions
-        for (auto&& tx : txns)
+        for (size_t i = 0; i < txns.size(); ++i)
         {
+            auto const& tx = txns[i];
+            auto const& meta = metas[i];
             auto const result = env.rpc(
                 COMMAND,
                 to_string(tx->getTransactionID()),
@@ -69,6 +74,12 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(endLegSeq));
 
             BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
+            BEAST_EXPECT(
+                result[jss::result][jss::tx] ==
+                strHex(tx->getSerializer().getData()));
+            BEAST_EXPECT(
+                result[jss::result][jss::meta] ==
+                strHex(meta->getSerializer().getData()));
         }
 
         auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
