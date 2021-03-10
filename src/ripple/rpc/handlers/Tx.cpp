@@ -236,7 +236,14 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
 
     if (ledger && meta)
     {
-        result.meta = meta;
+        if (args.binary)
+        {
+            result.meta = meta->getAsObject().getSerializer().getData();
+        }
+        else
+        {
+            result.meta = meta;
+        }
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
     }
