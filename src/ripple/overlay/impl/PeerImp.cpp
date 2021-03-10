@@ -2489,6 +2489,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
     }
     PublicKey key(slice);
 
+    // Ignore non-validator squelch
+    if (!app_.validators().listed(key))
+    {
+        charge(Resource::feeBadData);
+        JLOG(p_journal_.debug())
+            << "onMessage: TMSquelch discarding non-validator squelch "
+            << slice;
+        return;
+    }
+
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
     {
