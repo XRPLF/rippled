@@ -254,7 +254,7 @@ public:
         return *bundle_.timeKeeper;
     }
 
-    /** Returns the current Ripple Network Time
+    /** Returns the current network time
 
         @note This is manually advanced when ledgers
               close or by callers.

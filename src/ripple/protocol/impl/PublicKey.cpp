@@ -106,7 +106,7 @@ sliceToHex(Slice const& slice)
     @param strict_param whether to enforce strictly canonical semantics
 
     @note For more details please see:
-    https://ripple.com/wiki/Transaction_Malleability
+    https://xrpl.org/transaction-malleability.html#transaction-malleability
     https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
     https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
 */

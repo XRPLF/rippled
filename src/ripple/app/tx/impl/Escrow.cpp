@@ -58,22 +58,22 @@ namespace ripple {
     expiration time, the XRP can only be returned to the sender.
 
     For more details on escrow, including examples, diagrams and more please
-    visit https://ripple.com/build/escrow/#escrow
+    visit https://xrpl.org/escrow.html#escrow
 
     For details on specific transactions, including fields and validation rules
     please see:
 
     `EscrowCreate`
     --------------
-        See: https://ripple.com/build/transactions/#escrowcreate
+        See: https://xrpl.org/escrowcreate.html
 
     `EscrowFinish`
     --------------
-        See: https://ripple.com/build/transactions/#escrowfinish
+        See: https://xrpl.org/escrowfinish.html
 
     `EscrowCancel`
     --------------
-        See: https://ripple.com/build/transactions/#escrowcancel
+        See: https://xrpl.org/escrowcancel.html
 */
 
 //------------------------------------------------------------------------------
