@@ -173,9 +173,9 @@ Functions</h2></td></tr>
 <tr class="separator:a7629f5798a689bb1847923cb490c8b74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18a4e6b6cfc28aedcb6788f4a66e3093"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a18a4e6b6cfc28aedcb6788f4a66e3093">canHaveDeliveredAmount</a> (<a class="el" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> const &amp;context, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;serializedTx, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta)</td></tr>
 <tr class="separator:a18a4e6b6cfc28aedcb6788f4a66e3093"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1cced91cf173d142832e4b8a035a0b0"><td class="memTemplParams" colspan="2">template&lt;class GetLedgerIndex &gt; </td></tr>
-<tr class="memitem:ae1cced91cf173d142832e4b8a035a0b0"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ae1cced91cf173d142832e4b8a035a0b0">getDeliveredAmount</a> (<a class="el" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> const &amp;context, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;serializedTx, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta, GetLedgerIndex const &amp;getLedgerIndex)</td></tr>
-<tr class="separator:ae1cced91cf173d142832e4b8a035a0b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f9558315e0fd1096bb6561c26258728"><td class="memTemplParams" colspan="2">template&lt;class GetLedgerIndex &gt; </td></tr>
+<tr class="memitem:a8f9558315e0fd1096bb6561c26258728"><td class="memTemplItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a8f9558315e0fd1096bb6561c26258728">getDeliveredAmount</a> (<a class="el" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> const &amp;context, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;serializedTx, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta, GetLedgerIndex const &amp;getLedgerIndex)</td></tr>
+<tr class="separator:a8f9558315e0fd1096bb6561c26258728"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac71659f05ddd8fed6473fe0606fef695"><td class="memTemplParams" colspan="2">template&lt;class T , class L &gt; </td></tr>
 <tr class="memitem:ac71659f05ddd8fed6473fe0606fef695"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ac71659f05ddd8fed6473fe0606fef695">populateProtoPrimitive</a> (L const &amp;getProto, <a class="el" href="classripple_1_1STObject.html">STObject</a> const &amp;from, <a class="el" href="structripple_1_1TypedField.html">TypedField</a>&lt; T &gt; const &amp;field)</td></tr>
 <tr class="separator:ac71659f05ddd8fed6473fe0606fef695"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -585,17 +585,17 @@ Functions</h2></td></tr>
 <tr class="separator:a84827a1d9b56ad8201671ff77c2ddf2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad29cb759c5b76c1ac2664cf416509f5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ad29cb759c5b76c1ac2664cf416509f5a">roleRequired</a> (unsigned int version, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;method)</td></tr>
 <tr class="separator:ad29cb759c5b76c1ac2664cf416509f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6720da4154f7ddb7fda480cefea55025"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a6720da4154f7ddb7fda480cefea55025">accountFromStringStrict</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;)</td></tr>
-<tr class="memdesc:a6720da4154f7ddb7fda480cefea55025"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an AccountID from an account ID or public key.  <a href="namespaceripple_1_1RPC.html#a6720da4154f7ddb7fda480cefea55025">More...</a><br /></td></tr>
-<tr class="separator:a6720da4154f7ddb7fda480cefea55025"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab296c114ef59099643a10df577e71a30"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab296c114ef59099643a10df577e71a30">accountFromStringStrict</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;)</td></tr>
+<tr class="memdesc:ab296c114ef59099643a10df577e71a30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an AccountID from an account ID or public key.  <a href="namespaceripple_1_1RPC.html#ab296c114ef59099643a10df577e71a30">More...</a><br /></td></tr>
+<tr class="separator:ab296c114ef59099643a10df577e71a30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19a7026fa315242cf5175e50408f90f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a19a7026fa315242cf5175e50408f90f7">accountFromStringWithCode</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &amp;result, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;strIdent, bool bStrict=false)</td></tr>
 <tr class="memdesc:a19a7026fa315242cf5175e50408f90f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode account ID from string.  <a href="namespaceripple_1_1RPC.html#a19a7026fa315242cf5175e50408f90f7">More...</a><br /></td></tr>
 <tr class="separator:a19a7026fa315242cf5175e50408f90f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dc259937a004b30e88f41a95756bee0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a9dc259937a004b30e88f41a95756bee0">accountFromString</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &amp;result, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strIdent, bool bStrict)</td></tr>
 <tr class="separator:a9dc259937a004b30e88f41a95756bee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab215cc3ba43cf3bc9c005735fc42ecd8">getAccountObjects</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;ledger, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&gt; const  &amp;typeFilter, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> dirIndex, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;entryIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const limit, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)</td></tr>
-<tr class="memdesc:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gathers all objects for an account in a ledger.  <a href="namespaceripple_1_1RPC.html#ab215cc3ba43cf3bc9c005735fc42ecd8">More...</a><br /></td></tr>
-<tr class="separator:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96110b75fd888cdb7fc0d7b316ce7118"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a96110b75fd888cdb7fc0d7b316ce7118">getAccountObjects</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;ledger, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&gt; const  &amp;typeFilter, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> dirIndex, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;entryIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const limit, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)</td></tr>
+<tr class="memdesc:a96110b75fd888cdb7fc0d7b316ce7118"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gathers all objects for an account in a ledger.  <a href="namespaceripple_1_1RPC.html#a96110b75fd888cdb7fc0d7b316ce7118">More...</a><br /></td></tr>
+<tr class="separator:a96110b75fd888cdb7fc0d7b316ce7118"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a104dbc5195143f3a17ab8b9af1ada0fc"><td class="memTemplParams" colspan="2">template&lt;class T , class R &gt; </td></tr>
 <tr class="memitem:a104dbc5195143f3a17ab8b9af1ada0fc"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a104dbc5195143f3a17ab8b9af1ada0fc">ledgerFromRequest</a> (T &amp;ledger, <a class="el" href="structripple_1_1RPC_1_1GRPCContext.html">GRPCContext</a>&lt; R &gt; &amp;context)</td></tr>
 <tr class="separator:a104dbc5195143f3a17ab8b9af1ada0fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -641,13 +641,13 @@ Functions</h2></td></tr>
 <tr class="memitem:a4ea6d08c0d50d738a6a55130a09ec238"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">injectSLE</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jv, <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &amp;sle)</td></tr>
 <tr class="memdesc:a4ea6d08c0d50d738a6a55130a09ec238"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inject JSON describing ledger entry.  <a href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">More...</a><br /></td></tr>
 <tr class="separator:a4ea6d08c0d50d738a6a55130a09ec238"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27e623ad02256afbb85460f58652852c"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a27e623ad02256afbb85460f58652852c">readLimitField</a> (unsigned int &amp;limit, <a class="el" href="structripple_1_1RPC_1_1Tuning_1_1LimitRange.html">Tuning::LimitRange</a> const  &amp;, <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> const  &amp;)</td></tr>
-<tr class="memdesc:a27e623ad02256afbb85460f58652852c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the limit value from a <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a>, or set a default - then restrict the limit by max and min if not an ADMIN request.  <a href="namespaceripple_1_1RPC.html#a27e623ad02256afbb85460f58652852c">More...</a><br /></td></tr>
-<tr class="separator:a27e623ad02256afbb85460f58652852c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04d58cbc11cc34bea1ad0b12a0729c9a"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a04d58cbc11cc34bea1ad0b12a0729c9a">parseRippleLibSeed</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;value)</td></tr>
-<tr class="separator:a04d58cbc11cc34bea1ad0b12a0729c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31ba0250a52d40d2079806200a1a7393"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a31ba0250a52d40d2079806200a1a7393">getSeedFromRPC</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;error)</td></tr>
-<tr class="separator:a31ba0250a52d40d2079806200a1a7393"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ee18e94aa5290134fbc7f373ded485e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a8ee18e94aa5290134fbc7f373ded485e">readLimitField</a> (unsigned int &amp;limit, <a class="el" href="structripple_1_1RPC_1_1Tuning_1_1LimitRange.html">Tuning::LimitRange</a> const  &amp;, <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> const  &amp;)</td></tr>
+<tr class="memdesc:a8ee18e94aa5290134fbc7f373ded485e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the limit value from a <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a>, or set a default - then restrict the limit by max and min if not an ADMIN request.  <a href="namespaceripple_1_1RPC.html#a8ee18e94aa5290134fbc7f373ded485e">More...</a><br /></td></tr>
+<tr class="separator:a8ee18e94aa5290134fbc7f373ded485e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8384f050c0cc9f8be2fae281035f85f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#af8384f050c0cc9f8be2fae281035f85f">parseRippleLibSeed</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;value)</td></tr>
+<tr class="separator:af8384f050c0cc9f8be2fae281035f85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21a7a8635c70c3b03697d3be9ef7e168"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a21a7a8635c70c3b03697d3be9ef7e168">getSeedFromRPC</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;error)</td></tr>
+<tr class="separator:a21a7a8635c70c3b03697d3be9ef7e168"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bccc1b478a5bda71c12c100373780f4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>, <a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a9bccc1b478a5bda71c12c100373780f4">keypairForSignature</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;error)</td></tr>
 <tr class="separator:a9bccc1b478a5bda71c12c100373780f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75647cbae9e0bae5c52d8b8288d78028"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a>, <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a75647cbae9e0bae5c52d8b8288d78028">chooseLedgerEntryType</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params)</td></tr>
@@ -1649,16 +1649,19 @@ template&lt;class GetFix1623Enabled &gt; </div>
 
 </div>
 </div>
-<a id="ae1cced91cf173d142832e4b8a035a0b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1cced91cf173d142832e4b8a035a0b0">&#9670;&nbsp;</a></span>getDeliveredAmount() <span class="overload">[3/3]</span></h2>
+<a id="a8f9558315e0fd1096bb6561c26258728"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f9558315e0fd1096bb6561c26258728">&#9670;&nbsp;</a></span>getDeliveredAmount() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class GetLedgerIndex &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1STAmount.html">STAmount</a>&gt; ripple::RPC::getDeliveredAmount </td>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1STAmount.html">STAmount</a>&gt; ripple::RPC::getDeliveredAmount </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a> const &amp;&#160;</td>
           <td class="paramname"><em>context</em>, </td>
@@ -1687,6 +1690,11 @@ template&lt;class GetLedgerIndex &gt; </div>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="DeliveredAmount_8cpp_source.html#l00178">178</a> of file <a class="el" href="DeliveredAmount_8cpp_source.html">DeliveredAmount.cpp</a>.</p>
@@ -6488,14 +6496,14 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a6720da4154f7ddb7fda480cefea55025"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6720da4154f7ddb7fda480cefea55025">&#9670;&nbsp;</a></span>accountFromStringStrict()</h2>
+<a id="ab296c114ef59099643a10df577e71a30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab296c114ef59099643a10df577e71a30">&#9670;&nbsp;</a></span>accountFromStringStrict()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; ripple::RPC::accountFromStringStrict </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; ripple::RPC::accountFromStringStrict </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>account</em></td><td>)</td>
@@ -6593,8 +6601,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="ab215cc3ba43cf3bc9c005735fc42ecd8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab215cc3ba43cf3bc9c005735fc42ecd8">&#9670;&nbsp;</a></span>getAccountObjects()</h2>
+<a id="a96110b75fd888cdb7fc0d7b316ce7118"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96110b75fd888cdb7fc0d7b316ce7118">&#9670;&nbsp;</a></span>getAccountObjects()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6614,7 +6622,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&gt; const &amp;&#160;</td>
           <td class="paramname"><em>typeFilter</em>, </td>
         </tr>
         <tr>
@@ -7234,14 +7242,14 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a27e623ad02256afbb85460f58652852c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27e623ad02256afbb85460f58652852c">&#9670;&nbsp;</a></span>readLimitField()</h2>
+<a id="a8ee18e94aa5290134fbc7f373ded485e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ee18e94aa5290134fbc7f373ded485e">&#9670;&nbsp;</a></span>readLimitField()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt; ripple::RPC::readLimitField </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt; ripple::RPC::readLimitField </td>
           <td>(</td>
           <td class="paramtype">unsigned int &amp;&#160;</td>
           <td class="paramname"><em>limit</em>, </td>
@@ -7273,14 +7281,14 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a04d58cbc11cc34bea1ad0b12a0729c9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04d58cbc11cc34bea1ad0b12a0729c9a">&#9670;&nbsp;</a></span>parseRippleLibSeed()</h2>
+<a id="af8384f050c0cc9f8be2fae281035f85f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8384f050c0cc9f8be2fae281035f85f">&#9670;&nbsp;</a></span>parseRippleLibSeed()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt; ripple::RPC::parseRippleLibSeed </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt; ripple::RPC::parseRippleLibSeed </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
@@ -7293,14 +7301,14 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a31ba0250a52d40d2079806200a1a7393"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31ba0250a52d40d2079806200a1a7393">&#9670;&nbsp;</a></span>getSeedFromRPC()</h2>
+<a id="a21a7a8635c70c3b03697d3be9ef7e168"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21a7a8635c70c3b03697d3be9ef7e168">&#9670;&nbsp;</a></span>getSeedFromRPC()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt; ripple::RPC::getSeedFromRPC </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Seed.html">Seed</a> &gt; ripple::RPC::getSeedFromRPC </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
           <td class="paramname"><em>params</em>, </td>

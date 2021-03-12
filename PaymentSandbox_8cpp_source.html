@@ -94,398 +94,397 @@ $(function() {
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Feature.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SField.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAccount.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a>&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">namespace </span>detail {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">auto</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">   35</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">DeferredCredits::makeKey</a>(</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; a1,</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; a2,</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; c) -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">Key</a></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">if</span> (a1 &lt; a2)</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(a1, a2, c);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(a2, a1, c);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">   47</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">DeferredCredits::credit</a>(</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; sender,</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; receiver,</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; preCreditSenderBalance)</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;{</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    assert(sender != receiver);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    assert(!amount.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>());</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> k = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">makeKey</a>(sender, receiver, amount.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>());</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">auto</span> i = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>.find(k);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">if</span> (i == <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>.end())</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html">Value</a> v;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">if</span> (sender &lt; receiver)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        {</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">highAcctCredits</a> = amount;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#ae04ac7b9857b9fcee01601d3afaad965">lowAcctCredits</a> = amount.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a5bc03d401b63989f81de875d1e0482a8">lowAcctOrigBalance</a> = preCreditSenderBalance;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        {</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">highAcctCredits</a> = amount.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#ae04ac7b9857b9fcee01601d3afaad965">lowAcctCredits</a> = amount;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a5bc03d401b63989f81de875d1e0482a8">lowAcctOrigBalance</a> = -preCreditSenderBalance;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        }</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>[k] = v;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    {</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment">// only record the balance the first time, do not record it here</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">auto</span>&amp; v = i-&gt;second;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">if</span> (sender &lt; receiver)</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">highAcctCredits</a> += amount;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            v.lowAcctCredits += amount;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    }</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">   89</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">DeferredCredits::ownerCount</a>(</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; <span class="keywordtype">id</span>,</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> cur,</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> next)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;{</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> v = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(cur, next);</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">auto</span> r = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.emplace(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<span class="keywordtype">id</span>, v));</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordflow">if</span> (!r.second)</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    {</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keyword">auto</span>&amp; mapVal = r.first-&gt;second;</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        mapVal = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(v, mapVal);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    }</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;}</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;boost::optional&lt;std::uint32_t&gt;</div>
-<div class="line"><a name="l00104"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#ae39e55b8f3c48f60e099614bb630fc06">  104</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">DeferredCredits::ownerCount</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; <span class="keywordtype">id</span>)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">auto</span> i = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.find(<span class="keywordtype">id</span>);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordflow">if</span> (i != <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.end())</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">return</span> i-&gt;second;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordflow">return</span> boost::none;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;}</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="comment">// Get the adjustments for the balance between main and other.</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="keyword">auto</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a008844cf1b2399cb2e46b67d84071437">  114</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a008844cf1b2399cb2e46b67d84071437">DeferredCredits::adjustments</a>(</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; main,</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; other,</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; currency) <span class="keyword">const</span> -&gt; boost::optional&lt;Adjustment&gt;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;{</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    boost::optional&lt;Adjustment&gt; result;</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">Key</a> <span class="keyword">const</span> k = makeKey(main, other, currency);</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keyword">auto</span> i = credits_.find(k);</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keywordflow">if</span> (i == credits_.end())</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; v = i-&gt;second;</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">if</span> (main &lt; other)</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    {</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        result.emplace(</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    }</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    {</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        result.emplace(</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;}</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">  143</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">DeferredCredits::apply</a>(<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html">DeferredCredits</a>&amp; to)</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;{</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    {</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keyword">auto</span> r = to.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>.emplace(i);</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <span class="keywordflow">if</span> (!r.second)</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        {</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            <span class="keyword">auto</span>&amp; toVal = r.first-&gt;second;</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; fromVal = i.second;</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            toVal.lowAcctCredits += fromVal.lowAcctCredits;</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            toVal.highAcctCredits += fromVal.highAcctCredits;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            <span class="comment">// Do not update the orig balance, it&#39;s already correct</span></div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        }</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    }</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160; </div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>)</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    {</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <span class="keyword">auto</span> r = to.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.emplace(i);</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <span class="keywordflow">if</span> (!r.second)</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        {</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="keyword">auto</span>&amp; toVal = r.first-&gt;second;</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; fromVal = i.second;</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            toVal = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(toVal, fromVal);</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        }</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    }</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;}</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;}  <span class="comment">// namespace detail</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;<a class="code" href="classripple_1_1STAmount.html">STAmount</a></div>
-<div class="line"><a name="l00173"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">  173</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">PaymentSandbox::balanceHook</a>(</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; issuer,</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="comment">/*</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;<span class="comment">    There are two algorithms here. The pre-switchover algorithm takes the</span></div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<span class="comment">    current amount and subtracts the recorded credits. The post-switchover</span></div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="comment">    algorithm remembers the original balance, and subtracts the debits. The</span></div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="comment">    post-switchover algorithm should be more numerically stable. Consider a</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="comment">    large credit with a small initial balance. The pre-switchover algorithm</span></div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="comment">    computes (B+C)-C (where B+C will the the amount passed in). The</span></div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;<span class="comment">    post-switchover algorithm returns B. When B and C differ by large</span></div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;<span class="comment">    magnitudes, (B+C)-C may not equal B.</span></div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;<span class="comment">    */</span></div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> currency = amount.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>();</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="keyword">auto</span> delta = amount.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <span class="keyword">auto</span> lastBal = amount;</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keyword">auto</span> minBal = amount;</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> curSB = <span class="keyword">this</span>; curSB; curSB = curSB-&gt;ps_)</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    {</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> adj = curSB-&gt;tab_.adjustments(account, issuer, currency))</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        {</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            delta += adj-&gt;debits;</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            lastBal = adj-&gt;origBalance;</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            <span class="keywordflow">if</span> (lastBal &lt; minBal)</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;                minBal = lastBal;</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        }</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    }</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="comment">// The adjusted amount should never be larger than the balance. In</span></div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="comment">// some circumstances, it is possible for the deferred credits table</span></div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="comment">// to compute usable balance just slightly above what the ledger</span></div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="comment">// calculates (but always less than the actual balance).</span></div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keyword">auto</span> adjustedAmt = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>({amount, lastBal - delta, minBal});</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    adjustedAmt.setIssuer(amount.<a class="code" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a>());</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issuer) &amp;&amp; adjustedAmt &lt; beast::zero)</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="comment">// A calculated negative XRP balance is not an error case. Consider a</span></div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <span class="comment">// payment snippet that credits a large XRP amount and then debits the</span></div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <span class="comment">// same amount. The credit can&#39;t be used but we subtract the debit and</span></div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <span class="comment">// calculate a negative value. It&#39;s not an error case.</span></div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        adjustedAmt.clear();</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160; </div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <span class="keywordflow">return</span> adjustedAmt;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;}</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div>
-<div class="line"><a name="l00223"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">  223</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">PaymentSandbox::ownerCountHook</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count)<span class="keyword"></span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="keyword">    const</span></div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> result = count;</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> curSB = <span class="keyword">this</span>; curSB; curSB = curSB-&gt;ps_)</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    {</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> adj = curSB-&gt;tab_.ownerCount(account))</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            result = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(result, *adj);</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    }</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;}</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">  236</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">PaymentSandbox::creditHook</a>(</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; from,</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; to,</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; preCreditBalance)</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;{</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">credit</a>(from, to, amount, preCreditBalance);</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;}</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00246"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">  246</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">PaymentSandbox::adjustOwnerCountHook</a>(</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> cur,</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> next)</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;{</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">ownerCount</a>(account, cur, next);</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;}</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00255"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">  255</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">PaymentSandbox::apply</a>(<a class="code" href="classripple_1_1RawView.html">RawView</a>&amp; to)</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;{</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    assert(!<a class="code" href="classripple_1_1PaymentSandbox.html#ae78206dbf89c2dd73869fe9658daa1bc">ps_</a>);</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#ac71c446d6cd8570add6765c71d5f8e8d">apply</a>(to);</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;}</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00262"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#af1c648a3819485197a5945668beed1c0">  262</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">PaymentSandbox::apply</a>(<a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a>&amp; to)</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;{</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    assert(<a class="code" href="classripple_1_1PaymentSandbox.html#ae78206dbf89c2dd73869fe9658daa1bc">ps_</a> == &amp;to);</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#ac71c446d6cd8570add6765c71d5f8e8d">apply</a>(to);</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">apply</a>(to.<a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;}</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160; </div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;std::tuple&lt;AccountID, AccountID, Currency&gt;</a>, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>&gt;</div>
-<div class="line"><a name="l00270"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a25e9ad9e98efcc16451f8f04db41560e">  270</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a25e9ad9e98efcc16451f8f04db41560e">PaymentSandbox::balanceChanges</a>(<a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; view)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">using</span> key_t = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple&lt;AccountID, AccountID, Currency&gt;</a>;</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="comment">// Map of delta trust lines. As a special case, when both ends of the trust</span></div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="comment">// line are the same currency, then it&#39;s delta currency for that issuer. To</span></div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="comment">// get the change in XRP balance, Account == root, issuer == root, currency</span></div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="comment">// == XRP</span></div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;key_t, STAmount&gt;</a> result;</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="comment">// populate a dictionary with low/high/currency/delta. This can be</span></div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <span class="comment">// compared with the other versions payment code.</span></div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="keyword">auto</span> each = [&amp;result](</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                    <span class="keywordtype">bool</span> isDelete,</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp; before,</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>) {</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <a class="code" href="classripple_1_1STAmount.html">STAmount</a> oldBalance;</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        <a class="code" href="classripple_1_1STAmount.html">STAmount</a> newBalance;</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> lowID;</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> highID;</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <span class="comment">// before is read from prev view</span></div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <span class="keywordflow">if</span> (isDelete)</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        {</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            <span class="keywordflow">if</span> (!before)</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> bt = before-&gt;getType();</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <span class="keywordflow">switch</span> (bt)</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            {</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                    lowID = <a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                    highID = (*before)[<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>];</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                    newBalance = oldBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                    lowID = (*before)[<a class="code" href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">sfLowLimit</a>].getIssuer();</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                    highID = (*before)[<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>].getIssuer();</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                    newBalance = oldBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                    <span class="comment">// TBD</span></div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            }</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        }</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!before)</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        {</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            <span class="comment">// insert</span></div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> at = <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>-&gt;getType();</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <span class="keywordflow">switch</span> (at)</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            {</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                    lowID = <a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>];</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                    oldBalance = newBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                    lowID = (*after)[<a class="code" href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">sfLowLimit</a>].getIssuer();</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>].getIssuer();</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                    oldBalance = newBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                    <span class="comment">// TBD</span></div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            }</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        }</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        {</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="comment">// modify</span></div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> at = <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>-&gt;getType();</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            assert(at == before-&gt;getType());</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            <span class="keywordflow">switch</span> (at)</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            {</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                    lowID = <a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>];</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                    lowID = (*after)[<a class="code" href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">sfLowLimit</a>].getIssuer();</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>].getIssuer();</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;                    <span class="comment">// TBD</span></div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            }</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        }</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        <span class="comment">// The following are now set, put them in the map</span></div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        <span class="keyword">auto</span> delta = newBalance - oldBalance;</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> cur = newBalance.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>();</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        result[<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(lowID, highID, cur)] = delta;</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="keyword">auto</span> r = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/emplace.html">emplace</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(lowID, lowID, cur), delta);</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="keywordflow">if</span> (r.second)</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        {</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;            r.first-&gt;second += delta;</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        }</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        delta.negate();</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        r = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/emplace.html">emplace</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(highID, highID, cur), delta);</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <span class="keywordflow">if</span> (r.second)</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        {</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            r.first-&gt;second += delta;</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        }</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    };</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#a5ec327d07ac54d993660381dbc68d6a2">visit</a>(view, each);</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;}</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160; </div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;<a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a></div>
-<div class="line"><a name="l00392"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a09c1937ae05634dd939c0e0b674119fd">  392</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a09c1937ae05634dd939c0e0b674119fd">PaymentSandbox::xrpDestroyed</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#a2a8fe3fbf07c6803b1058191b84dba58">dropsDestroyed</a>();</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;}</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160; </div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a>&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span>detail {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">   34</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">DeferredCredits::makeKey</a>(</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; a1,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; a2,</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; c) -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">Key</a></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">if</span> (a1 &lt; a2)</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(a1, a2, c);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(a2, a1, c);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;}</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">   46</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">DeferredCredits::credit</a>(</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; sender,</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; receiver,</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount,</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; preCreditSenderBalance)</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    assert(sender != receiver);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    assert(!amount.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>());</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> k = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">makeKey</a>(sender, receiver, amount.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>());</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">auto</span> i = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>.find(k);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">if</span> (i == <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>.end())</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html">Value</a> v;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">if</span> (sender &lt; receiver)</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        {</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">highAcctCredits</a> = amount;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#ae04ac7b9857b9fcee01601d3afaad965">lowAcctCredits</a> = amount.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a5bc03d401b63989f81de875d1e0482a8">lowAcctOrigBalance</a> = preCreditSenderBalance;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        {</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">highAcctCredits</a> = amount.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#ae04ac7b9857b9fcee01601d3afaad965">lowAcctCredits</a> = amount;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a5bc03d401b63989f81de875d1e0482a8">lowAcctOrigBalance</a> = -preCreditSenderBalance;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>[k] = v;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    }</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// only record the balance the first time, do not record it here</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">auto</span>&amp; v = i-&gt;second;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">if</span> (sender &lt; receiver)</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            v.<a class="code" href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">highAcctCredits</a> += amount;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            v.lowAcctCredits += amount;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    }</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">   88</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">DeferredCredits::ownerCount</a>(</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; <span class="keywordtype">id</span>,</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> cur,</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> next)</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;{</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> v = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(cur, next);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keyword">auto</span> r = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.emplace(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<span class="keywordtype">id</span>, v));</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">if</span> (!r.second)</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    {</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keyword">auto</span>&amp; mapVal = r.first-&gt;second;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        mapVal = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(v, mapVal);</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    }</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a></div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a8407c8faa462cc42c1a2baf70dcf592e">  103</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">DeferredCredits::ownerCount</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; <span class="keywordtype">id</span>)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">auto</span> i = <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.find(<span class="keywordtype">id</span>);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">if</span> (i != <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.end())</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keywordflow">return</span> i-&gt;second;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;}</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="comment">// Get the adjustments for the balance between main and other.</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a008844cf1b2399cb2e46b67d84071437">  113</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a008844cf1b2399cb2e46b67d84071437">DeferredCredits::adjustments</a>(</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; main,</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; other,</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; currency) <span class="keyword">const</span> -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Adjustment&gt;</a></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;{</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Adjustment&gt;</a> result;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">Key</a> <span class="keyword">const</span> k = makeKey(main, other, currency);</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">auto</span> i = credits_.find(k);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">if</span> (i == credits_.end())</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; v = i-&gt;second;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keywordflow">if</span> (main &lt; other)</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    {</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    }</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    {</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    }</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;}</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00142"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">  142</a></span>&#160;<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">DeferredCredits::apply</a>(<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html">DeferredCredits</a>&amp; to)</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;{</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>)</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    {</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="keyword">auto</span> r = to.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">credits_</a>.emplace(i);</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keywordflow">if</span> (!r.second)</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        {</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            <span class="keyword">auto</span>&amp; toVal = r.first-&gt;second;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; fromVal = i.second;</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            toVal.lowAcctCredits += fromVal.lowAcctCredits;</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            toVal.highAcctCredits += fromVal.highAcctCredits;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            <span class="comment">// Do not update the orig balance, it&#39;s already correct</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        }</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    }</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : <a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>)</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    {</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keyword">auto</span> r = to.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ownerCounts_</a>.emplace(i);</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <span class="keywordflow">if</span> (!r.second)</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        {</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <span class="keyword">auto</span>&amp; toVal = r.first-&gt;second;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; fromVal = i.second;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            toVal = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(toVal, fromVal);</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        }</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    }</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;}</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;<a class="code" href="classripple_1_1STAmount.html">STAmount</a></div>
+<div class="line"><a name="l00172"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">  172</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">PaymentSandbox::balanceHook</a>(</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; issuer,</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <span class="comment">/*</span></div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;<span class="comment">    There are two algorithms here. The pre-switchover algorithm takes the</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;<span class="comment">    current amount and subtracts the recorded credits. The post-switchover</span></div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<span class="comment">    algorithm remembers the original balance, and subtracts the debits. The</span></div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="comment">    post-switchover algorithm should be more numerically stable. Consider a</span></div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="comment">    large credit with a small initial balance. The pre-switchover algorithm</span></div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="comment">    computes (B+C)-C (where B+C will the the amount passed in). The</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="comment">    post-switchover algorithm returns B. When B and C differ by large</span></div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;<span class="comment">    magnitudes, (B+C)-C may not equal B.</span></div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;<span class="comment">    */</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> currency = amount.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>();</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keyword">auto</span> delta = amount.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="keyword">auto</span> lastBal = amount;</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <span class="keyword">auto</span> minBal = amount;</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> curSB = <span class="keyword">this</span>; curSB; curSB = curSB-&gt;ps_)</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    {</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> adj = curSB-&gt;tab_.adjustments(account, issuer, currency))</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        {</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            delta += adj-&gt;debits;</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            lastBal = adj-&gt;origBalance;</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            <span class="keywordflow">if</span> (lastBal &lt; minBal)</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                minBal = lastBal;</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        }</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    }</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="comment">// The adjusted amount should never be larger than the balance. In</span></div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="comment">// some circumstances, it is possible for the deferred credits table</span></div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="comment">// to compute usable balance just slightly above what the ledger</span></div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="comment">// calculates (but always less than the actual balance).</span></div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keyword">auto</span> adjustedAmt = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>({amount, lastBal - delta, minBal});</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    adjustedAmt.setIssuer(amount.<a class="code" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a>());</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issuer) &amp;&amp; adjustedAmt &lt; beast::zero)</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="comment">// A calculated negative XRP balance is not an error case. Consider a</span></div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="comment">// payment snippet that credits a large XRP amount and then debits the</span></div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <span class="comment">// same amount. The credit can&#39;t be used but we subtract the debit and</span></div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <span class="comment">// calculate a negative value. It&#39;s not an error case.</span></div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        adjustedAmt.clear();</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keywordflow">return</span> adjustedAmt;</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;}</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div>
+<div class="line"><a name="l00222"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">  222</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">PaymentSandbox::ownerCountHook</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count)<span class="keyword"></span></div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;<span class="keyword">    const</span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> result = count;</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> curSB = <span class="keyword">this</span>; curSB; curSB = curSB-&gt;ps_)</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    {</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> adj = curSB-&gt;tab_.ownerCount(account))</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            result = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(result, *adj);</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    }</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;}</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">  235</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">PaymentSandbox::creditHook</a>(</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; from,</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; to,</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount,</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; preCreditBalance)</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;{</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">credit</a>(from, to, amount, preCreditBalance);</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;}</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">  245</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">PaymentSandbox::adjustOwnerCountHook</a>(</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> cur,</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> next)</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;{</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">ownerCount</a>(account, cur, next);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;}</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00254"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">  254</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">PaymentSandbox::apply</a>(<a class="code" href="classripple_1_1RawView.html">RawView</a>&amp; to)</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;{</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    assert(!<a class="code" href="classripple_1_1PaymentSandbox.html#ae78206dbf89c2dd73869fe9658daa1bc">ps_</a>);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#ac71c446d6cd8570add6765c71d5f8e8d">apply</a>(to);</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;}</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#af1c648a3819485197a5945668beed1c0">  261</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">PaymentSandbox::apply</a>(<a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a>&amp; to)</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;{</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    assert(<a class="code" href="classripple_1_1PaymentSandbox.html#ae78206dbf89c2dd73869fe9658daa1bc">ps_</a> == &amp;to);</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#ac71c446d6cd8570add6765c71d5f8e8d">apply</a>(to);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>.<a class="code" href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">apply</a>(to.<a class="code" href="classripple_1_1PaymentSandbox.html#a7d6e88cbd8903d7f96cf9ff8a0e143b7">tab_</a>);</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;}</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;std::tuple&lt;AccountID, AccountID, Currency&gt;</a>, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>&gt;</div>
+<div class="line"><a name="l00269"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a25e9ad9e98efcc16451f8f04db41560e">  269</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a25e9ad9e98efcc16451f8f04db41560e">PaymentSandbox::balanceChanges</a>(<a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; view)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keyword">using</span> key_t = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple&lt;AccountID, AccountID, Currency&gt;</a>;</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="comment">// Map of delta trust lines. As a special case, when both ends of the trust</span></div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="comment">// line are the same currency, then it&#39;s delta currency for that issuer. To</span></div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="comment">// get the change in XRP balance, Account == root, issuer == root, currency</span></div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="comment">// == XRP</span></div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;key_t, STAmount&gt;</a> result;</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="comment">// populate a dictionary with low/high/currency/delta. This can be</span></div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="comment">// compared with the other versions payment code.</span></div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <span class="keyword">auto</span> each = [&amp;result](</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                    <span class="keywordtype">bool</span> isDelete,</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp; before,</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>) {</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <a class="code" href="classripple_1_1STAmount.html">STAmount</a> oldBalance;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <a class="code" href="classripple_1_1STAmount.html">STAmount</a> newBalance;</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> lowID;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> highID;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        <span class="comment">// before is read from prev view</span></div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <span class="keywordflow">if</span> (isDelete)</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        {</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="keywordflow">if</span> (!before)</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> bt = before-&gt;getType();</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            <span class="keywordflow">switch</span> (bt)</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            {</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                    lowID = <a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                    highID = (*before)[<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>];</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                    newBalance = oldBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                    lowID = (*before)[<a class="code" href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">sfLowLimit</a>].getIssuer();</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                    highID = (*before)[<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>].getIssuer();</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                    newBalance = oldBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                    <span class="comment">// TBD</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            }</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!before)</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        {</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            <span class="comment">// insert</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> at = <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>-&gt;getType();</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            <span class="keywordflow">switch</span> (at)</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            {</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                    lowID = <a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>];</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                    oldBalance = newBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                    lowID = (*after)[<a class="code" href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">sfLowLimit</a>].getIssuer();</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>].getIssuer();</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    oldBalance = newBalance.<a class="code" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a>();</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                    <span class="comment">// TBD</span></div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            }</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        }</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        {</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <span class="comment">// modify</span></div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> at = <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>-&gt;getType();</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            assert(at == before-&gt;getType());</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <span class="keywordflow">switch</span> (at)</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            {</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                    lowID = <a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>];</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                    lowID = (*after)[<a class="code" href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">sfLowLimit</a>].getIssuer();</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                    highID = (*after)[<a class="code" href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">sfHighLimit</a>].getIssuer();</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                    oldBalance = (*before)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                    newBalance = (*after)[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>];</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                    <span class="comment">// TBD</span></div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            }</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        }</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        <span class="comment">// The following are now set, put them in the map</span></div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        <span class="keyword">auto</span> delta = newBalance - oldBalance;</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> cur = newBalance.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>();</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        result[<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(lowID, highID, cur)] = delta;</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        <span class="keyword">auto</span> r = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/emplace.html">emplace</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(lowID, lowID, cur), delta);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="keywordflow">if</span> (r.second)</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        {</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            r.first-&gt;second += delta;</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        }</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        delta.negate();</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        r = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/emplace.html">emplace</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(highID, highID, cur), delta);</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <span class="keywordflow">if</span> (r.second)</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        {</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            r.first-&gt;second += delta;</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        }</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    };</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#a5ec327d07ac54d993660381dbc68d6a2">visit</a>(view, each);</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;}</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160; </div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;<a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a></div>
+<div class="line"><a name="l00391"></a><span class="lineno"><a class="line" href="classripple_1_1PaymentSandbox.html#a09c1937ae05634dd939c0e0b674119fd">  391</a></span>&#160;<a class="code" href="classripple_1_1PaymentSandbox.html#a09c1937ae05634dd939c0e0b674119fd">PaymentSandbox::xrpDestroyed</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">items_</a>.<a class="code" href="classripple_1_1detail_1_1ApplyStateTable.html#a2a8fe3fbf07c6803b1058191b84dba58">dropsDestroyed</a>();</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;}</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160; </div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a09c1937ae05634dd939c0e0b674119fd"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a09c1937ae05634dd939c0e0b674119fd">ripple::PaymentSandbox::xrpDestroyed</a></div><div class="ttdeci">XRPAmount xrpDestroyed() const</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00392">PaymentSandbox.cpp:392</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a09c1937ae05634dd939c0e0b674119fd"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a09c1937ae05634dd939c0e0b674119fd">ripple::PaymentSandbox::xrpDestroyed</a></div><div class="ttdeci">XRPAmount xrpDestroyed() const</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00391">PaymentSandbox.cpp:391</a></div></div>
 <div class="ttc" id="amake_tuple_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a></div><div class="ttdeci">T make_tuple(T... args)</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1PaymentSandbox_html"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html">ripple::PaymentSandbox</a></div><div class="ttdoc">A wrapper which makes credits unavailable to balances.</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00112">PaymentSandbox.h:112</a></div></div>
-<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a008844cf1b2399cb2e46b67d84071437"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a008844cf1b2399cb2e46b67d84071437">ripple::detail::DeferredCredits::adjustments</a></div><div class="ttdeci">boost::optional&lt; Adjustment &gt; adjustments(AccountID const &amp;main, AccountID const &amp;other, Currency const &amp;currency) const</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00114">PaymentSandbox.cpp:114</a></div></div>
+<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a008844cf1b2399cb2e46b67d84071437"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a008844cf1b2399cb2e46b67d84071437">ripple::detail::DeferredCredits::adjustments</a></div><div class="ttdeci">std::optional&lt; Adjustment &gt; adjustments(AccountID const &amp;main, AccountID const &amp;other, Currency const &amp;currency) const</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00113">PaymentSandbox.cpp:113</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1ApplyStateTable_html_a5ec327d07ac54d993660381dbc68d6a2"><div class="ttname"><a href="classripple_1_1detail_1_1ApplyStateTable.html#a5ec327d07ac54d993660381dbc68d6a2">ripple::detail::ApplyStateTable::visit</a></div><div class="ttdeci">void visit(ReadView const &amp;base, std::function&lt; void(uint256 const &amp;key, bool isDelete, std::shared_ptr&lt; SLE const &gt; const &amp;before, std::shared_ptr&lt; SLE const &gt; const &amp;after)&gt; const &amp;func) const</div><div class="ttdef"><b>Definition:</b> <a href="ApplyStateTable_8cpp_source.html#l00074">ApplyStateTable.cpp:74</a></div></div>
-<div class="ttc" id="aemplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map/emplace.html">std::map::emplace</a></div><div class="ttdeci">T emplace(T... args)</div></div>
+<div class="ttc" id="aemplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">std::optional::emplace</a></div><div class="ttdeci">T emplace(T... args)</div></div>
 <div class="ttc" id="atuple_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_af8fda98bf85bb681409a8d601a3f08dc"><div class="ttname"><a href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">ripple::STAmount::zeroed</a></div><div class="ttdeci">STAmount zeroed() const</div><div class="ttdoc">Returns a zero value with the same issuer and currency.</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00223">STAmount.h:223</a></div></div>
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_abab734ed913c11e2dbca4b1d33634535"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">ripple::PaymentSandbox::adjustOwnerCountHook</a></div><div class="ttdeci">void adjustOwnerCountHook(AccountID const &amp;account, std::uint32_t cur, std::uint32_t next) override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00246">PaymentSandbox.cpp:246</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_abab734ed913c11e2dbca4b1d33634535"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">ripple::PaymentSandbox::adjustOwnerCountHook</a></div><div class="ttdeci">void adjustOwnerCountHook(AccountID const &amp;account, std::uint32_t cur, std::uint32_t next) override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00245">PaymentSandbox.cpp:245</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1DeferredCredits_1_1Value_html"><div class="ttname"><a href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html">ripple::detail::DeferredCredits::Value</a></div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00080">PaymentSandbox.h:80</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1ApplyViewBase_html_a70888ae5727e45067b092a465e8b4552"><div class="ttname"><a href="classripple_1_1detail_1_1ApplyViewBase.html#a70888ae5727e45067b092a465e8b4552">ripple::detail::ApplyViewBase::items_</a></div><div class="ttdeci">detail::ApplyStateTable items_</div><div class="ttdef"><b>Definition:</b> <a href="ApplyViewBase_8h_source.html#l00133">ApplyViewBase.h:133</a></div></div>
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a25e9ad9e98efcc16451f8f04db41560e"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a25e9ad9e98efcc16451f8f04db41560e">ripple::PaymentSandbox::balanceChanges</a></div><div class="ttdeci">std::map&lt; std::tuple&lt; AccountID, AccountID, Currency &gt;, STAmount &gt; balanceChanges(ReadView const &amp;view) const</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00270">PaymentSandbox.cpp:270</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a25e9ad9e98efcc16451f8f04db41560e"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a25e9ad9e98efcc16451f8f04db41560e">ripple::PaymentSandbox::balanceChanges</a></div><div class="ttdeci">std::map&lt; std::tuple&lt; AccountID, AccountID, Currency &gt;, STAmount &gt; balanceChanges(ReadView const &amp;view) const</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00269">PaymentSandbox.cpp:269</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1ApplyStateTable_html_a2a8fe3fbf07c6803b1058191b84dba58"><div class="ttname"><a href="classripple_1_1detail_1_1ApplyStateTable.html#a2a8fe3fbf07c6803b1058191b84dba58">ripple::detail::ApplyStateTable::dropsDestroyed</a></div><div class="ttdeci">XRPAmount const  &amp; dropsDestroyed() const</div><div class="ttdef"><b>Definition:</b> <a href="ApplyStateTable_8h_source.html#l00122">ApplyStateTable.h:122</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a79e2fe0650e76cf3c71d6c6e1e5ae31c"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a79e2fe0650e76cf3c71d6c6e1e5ae31c">ripple::detail::DeferredCredits::credits_</a></div><div class="ttdeci">std::map&lt; Key, Value &gt; credits_</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00092">PaymentSandbox.h:92</a></div></div>
-<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a0a107d152ac39c43626efed1fd11036c"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">ripple::detail::DeferredCredits::credit</a></div><div class="ttdeci">void credit(AccountID const &amp;sender, AccountID const &amp;receiver, STAmount const &amp;amount, STAmount const &amp;preCreditSenderBalance)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00047">PaymentSandbox.cpp:47</a></div></div>
+<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a0a107d152ac39c43626efed1fd11036c"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a0a107d152ac39c43626efed1fd11036c">ripple::detail::DeferredCredits::credit</a></div><div class="ttdeci">void credit(AccountID const &amp;sender, AccountID const &amp;receiver, STAmount const &amp;amount, STAmount const &amp;preCreditSenderBalance)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00046">PaymentSandbox.cpp:46</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a823af8711d62eb5661ccab5af1dde03a"><div class="ttname"><a href="namespaceripple.html#a823af8711d62eb5661ccab5af1dde03a">ripple::sfLowLimit</a></div><div class="ttdeci">const SF_AMOUNT sfLowLimit</div></div>
-<div class="ttc" id="aclassripple_1_1RawView_html"><div class="ttname"><a href="classripple_1_1RawView.html">ripple::RawView</a></div><div class="ttdoc">Interface for ledger entry changes.</div><div class="ttdef"><b>Definition:</b> <a href="RawView_8h_source.html#l00037">RawView.h:37</a></div></div>
+<div class="ttc" id="aclassripple_1_1RawView_html"><div class="ttname"><a href="classripple_1_1RawView.html">ripple::RawView</a></div><div class="ttdoc">Interface for ledger entry changes.</div><div class="ttdef"><b>Definition:</b> <a href="RawView_8h_source.html#l00036">RawView.h:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1ApplyStateTable_html_ac71c446d6cd8570add6765c71d5f8e8d"><div class="ttname"><a href="classripple_1_1detail_1_1ApplyStateTable.html#ac71c446d6cd8570add6765c71d5f8e8d">ripple::detail::ApplyStateTable::apply</a></div><div class="ttdeci">void apply(RawView &amp;to) const</div><div class="ttdef"><b>Definition:</b> <a href="ApplyStateTable_8cpp_source.html#l00031">ApplyStateTable.cpp:31</a></div></div>
 <div class="ttc" id="aclassripple_1_1PaymentSandbox_html_ae78206dbf89c2dd73869fe9658daa1bc"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#ae78206dbf89c2dd73869fe9658daa1bc">ripple::PaymentSandbox::ps_</a></div><div class="ttdeci">PaymentSandbox const  * ps_</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00207">PaymentSandbox.h:207</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1DeferredCredits_1_1Value_html_a0da27b4df95bca65a210693b70914cb5"><div class="ttname"><a href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a0da27b4df95bca65a210693b70914cb5">ripple::detail::DeferredCredits::Value::highAcctCredits</a></div><div class="ttdeci">STAmount highAcctCredits</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00085">PaymentSandbox.h:85</a></div></div>
@@ -494,7 +493,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a20d30277b9c78756b3d14493055a307c"><div class="ttname"><a href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">ripple::isXRP</a></div><div class="ttdeci">bool isXRP(AccountID const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00089">AccountID.h:89</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a78b8a880e6176b96eea2351ce8b9db77"><div class="ttname"><a href="namespaceripple.html#a78b8a880e6176b96eea2351ce8b9db77">ripple::sfHighLimit</a></div><div class="ttdeci">const SF_AMOUNT sfHighLimit</div></div>
-<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a39a6fe93bcff2c0449cdcc9dd7cad846"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">ripple::detail::DeferredCredits::apply</a></div><div class="ttdeci">void apply(DeferredCredits &amp;to)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00143">PaymentSandbox.cpp:143</a></div></div>
+<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a39a6fe93bcff2c0449cdcc9dd7cad846"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a39a6fe93bcff2c0449cdcc9dd7cad846">ripple::detail::DeferredCredits::apply</a></div><div class="ttdeci">void apply(DeferredCredits &amp;to)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00142">PaymentSandbox.cpp:142</a></div></div>
 <div class="ttc" id="amap_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a2563a8f586a001bfbbc88630701deaf1"><div class="ttname"><a href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">ripple::STAmount::getCurrency</a></div><div class="ttdeci">Currency const  &amp; getCurrency() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00205">STAmount.h:205</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a32dbb5cdbd2b0d593047909d9294c861"><div class="ttname"><a href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">ripple::STAmount::getIssuer</a></div><div class="ttdeci">AccountID const  &amp; getIssuer() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00210">STAmount.h:210</a></div></div>
@@ -503,24 +502,25 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1ReadView_html"><div class="ttname"><a href="classripple_1_1ReadView.html">ripple::ReadView</a></div><div class="ttdoc">A view into a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00192">ReadView.h:192</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ripple::ltRIPPLE_STATE</a></div><div class="ttdeci">@ ltRIPPLE_STATE</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00066">LedgerFormats.h:66</a></div></div>
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a69d4b79f512abb2d67e3b3fefa76008b"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">ripple::PaymentSandbox::apply</a></div><div class="ttdeci">void apply(RawView &amp;to)</div><div class="ttdoc">Apply changes to base view.</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00255">PaymentSandbox.cpp:255</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a69d4b79f512abb2d67e3b3fefa76008b"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a69d4b79f512abb2d67e3b3fefa76008b">ripple::PaymentSandbox::apply</a></div><div class="ttdeci">void apply(RawView &amp;to)</div><div class="ttdoc">Apply changes to base view.</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00254">PaymentSandbox.cpp:254</a></div></div>
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_aa830654962840253139aa891659f7551"><div class="ttname"><a href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">ripple::STAmount::negative</a></div><div class="ttdeci">bool negative() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00188">STAmount.h:188</a></div></div>
-<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a4bd5dda44034352f09c578bdea51726d"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">ripple::detail::DeferredCredits::ownerCount</a></div><div class="ttdeci">void ownerCount(AccountID const &amp;id, std::uint32_t cur, std::uint32_t next)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00089">PaymentSandbox.cpp:89</a></div></div>
+<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a4bd5dda44034352f09c578bdea51726d"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a4bd5dda44034352f09c578bdea51726d">ripple::detail::DeferredCredits::ownerCount</a></div><div class="ttdeci">void ownerCount(AccountID const &amp;id, std::uint32_t cur, std::uint32_t next)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00088">PaymentSandbox.cpp:88</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab8a9c54401e8209fca7396c6b9c610f4"><div class="ttname"><a href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">ripple::sfBalance</a></div><div class="ttdeci">const SF_AMOUNT sfBalance</div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1DeferredCredits_1_1Value_html_ae04ac7b9857b9fcee01601d3afaad965"><div class="ttname"><a href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#ae04ac7b9857b9fcee01601d3afaad965">ripple::detail::DeferredCredits::Value::lowAcctCredits</a></div><div class="ttdeci">STAmount lowAcctCredits</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00084">PaymentSandbox.h:84</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt; std::uint32_t &gt;</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aebcc26ebe20ddcd3bcbfd5402e0acb89"><div class="ttname"><a href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">ripple::after</a></div><div class="ttdeci">static bool after(NetClock::time_point now, std::uint32_t mark)</div><div class="ttdoc">Has the specified time passed?</div><div class="ttdef"><b>Definition:</b> <a href="Escrow_8cpp_source.html#l00088">Escrow.cpp:88</a></div></div>
 <div class="ttc" id="amake_pair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a></div><div class="ttdeci">T make_pair(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a5bab99595719d22579e10d21cf048eb0"><div class="ttname"><a href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">ripple::sfAccount</a></div><div class="ttdeci">const SF_ACCOUNT sfAccount</div></div>
 <div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ripple::ltOFFER</a></div><div class="ttdeci">@ ltOFFER</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00072">LedgerFormats.h:72</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1DeferredCredits_1_1Value_html_a5bc03d401b63989f81de875d1e0482a8"><div class="ttname"><a href="structripple_1_1detail_1_1DeferredCredits_1_1Value.html#a5bc03d401b63989f81de875d1e0482a8">ripple::detail::DeferredCredits::Value::lowAcctOrigBalance</a></div><div class="ttdeci">STAmount lowAcctOrigBalance</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00086">PaymentSandbox.h:86</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a></div><div class="ttdeci">T max(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a91901f7b4ab89470f7735e1e7029a9b9"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">ripple::detail::DeferredCredits::makeKey</a></div><div class="ttdeci">static Key makeKey(AccountID const &amp;a1, AccountID const &amp;a2, Currency const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00035">PaymentSandbox.cpp:35</a></div></div>
+<div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a91901f7b4ab89470f7735e1e7029a9b9"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a91901f7b4ab89470f7735e1e7029a9b9">ripple::detail::DeferredCredits::makeKey</a></div><div class="ttdeci">static Key makeKey(AccountID const &amp;a1, AccountID const &amp;a2, Currency const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00034">PaymentSandbox.cpp:34</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ripple::ltACCOUNT_ROOT</a></div><div class="ttdeci">@ ltACCOUNT_ROOT</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00053">LedgerFormats.h:53</a></div></div>
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a0e77b6bdc540075e1c8e5a6f447c4b13"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">ripple::PaymentSandbox::ownerCountHook</a></div><div class="ttdeci">std::uint32_t ownerCountHook(AccountID const &amp;account, std::uint32_t count) const override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00223">PaymentSandbox.cpp:223</a></div></div>
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a651f7b9013b9de728969272c3b1e8712"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">ripple::PaymentSandbox::creditHook</a></div><div class="ttdeci">void creditHook(AccountID const &amp;from, AccountID const &amp;to, STAmount const &amp;amount, STAmount const &amp;preCreditBalance) override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00236">PaymentSandbox.cpp:236</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a0e77b6bdc540075e1c8e5a6f447c4b13"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">ripple::PaymentSandbox::ownerCountHook</a></div><div class="ttdeci">std::uint32_t ownerCountHook(AccountID const &amp;account, std::uint32_t count) const override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00222">PaymentSandbox.cpp:222</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a651f7b9013b9de728969272c3b1e8712"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">ripple::PaymentSandbox::creditHook</a></div><div class="ttdeci">void creditHook(AccountID const &amp;from, AccountID const &amp;to, STAmount const &amp;amount, STAmount const &amp;preCreditBalance) override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00235">PaymentSandbox.cpp:235</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html_a3b06a50d03f96e8c0bf2625d26773204"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html#a3b06a50d03f96e8c0bf2625d26773204">ripple::detail::DeferredCredits::ownerCounts_</a></div><div class="ttdeci">std::map&lt; AccountID, std::uint32_t &gt; ownerCounts_</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00093">PaymentSandbox.h:93</a></div></div>
-<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a96457b37722d895c585bcd260dd08a0f"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">ripple::PaymentSandbox::balanceHook</a></div><div class="ttdeci">STAmount balanceHook(AccountID const &amp;account, AccountID const &amp;issuer, STAmount const &amp;amount) const override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00173">PaymentSandbox.cpp:173</a></div></div>
+<div class="ttc" id="aclassripple_1_1PaymentSandbox_html_a96457b37722d895c585bcd260dd08a0f"><div class="ttname"><a href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">ripple::PaymentSandbox::balanceHook</a></div><div class="ttdeci">STAmount balanceHook(AccountID const &amp;account, AccountID const &amp;issuer, STAmount const &amp;amount) const override</div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8cpp_source.html#l00172">PaymentSandbox.cpp:172</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1DeferredCredits_html"><div class="ttname"><a href="classripple_1_1detail_1_1DeferredCredits.html">ripple::detail::DeferredCredits</a></div><div class="ttdef"><b>Definition:</b> <a href="PaymentSandbox_8h_source.html#l00036">PaymentSandbox.h:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1XRPAmount_html"><div class="ttname"><a href="classripple_1_1XRPAmount.html">ripple::XRPAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="XRPAmount_8h_source.html#l00046">XRPAmount.h:46</a></div></div>
 <!-- start footer part -->

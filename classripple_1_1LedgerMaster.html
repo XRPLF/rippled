@@ -205,22 +205,22 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4f59228c74d5491f68333ef250431cdb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a4f59228c74d5491f68333ef250431cdb">getHashBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</td></tr>
 <tr class="memdesc:a4f59228c74d5491f68333ef250431cdb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a ledger's hash by sequence number using the cache.  <a href="classripple_1_1LedgerMaster.html#a4f59228c74d5491f68333ef250431cdb">More...</a><br /></td></tr>
 <tr class="separator:a4f59228c74d5491f68333ef250431cdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aafea042d43c45f6ea02be2489c019f62"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#aafea042d43c45f6ea02be2489c019f62">walkHashBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
-<tr class="memdesc:aafea042d43c45f6ea02be2489c019f62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Walk to a ledger's hash using the skip list.  <a href="classripple_1_1LedgerMaster.html#aafea042d43c45f6ea02be2489c019f62">More...</a><br /></td></tr>
-<tr class="separator:aafea042d43c45f6ea02be2489c019f62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fa0c52acb74a5d0545bfacb76d0cbc9"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a1fa0c52acb74a5d0545bfacb76d0cbc9">walkHashBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;referenceLedger, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
-<tr class="memdesc:a1fa0c52acb74a5d0545bfacb76d0cbc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Walk the chain of ledger hashes to determine the hash of the ledger with the specified index.  <a href="classripple_1_1LedgerMaster.html#a1fa0c52acb74a5d0545bfacb76d0cbc9">More...</a><br /></td></tr>
-<tr class="separator:a1fa0c52acb74a5d0545bfacb76d0cbc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c6df242c0ea3409a06e44436495235f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a4c6df242c0ea3409a06e44436495235f">walkHashBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
+<tr class="memdesc:a4c6df242c0ea3409a06e44436495235f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Walk to a ledger's hash using the skip list.  <a href="classripple_1_1LedgerMaster.html#a4c6df242c0ea3409a06e44436495235f">More...</a><br /></td></tr>
+<tr class="separator:a4c6df242c0ea3409a06e44436495235f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4c4ab8cc796ea3db025305e47f7bdc9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#af4c4ab8cc796ea3db025305e47f7bdc9">walkHashBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;referenceLedger, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
+<tr class="memdesc:af4c4ab8cc796ea3db025305e47f7bdc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Walk the chain of ledger hashes to determine the hash of the ledger with the specified index.  <a href="classripple_1_1LedgerMaster.html#af4c4ab8cc796ea3db025305e47f7bdc9">More...</a><br /></td></tr>
+<tr class="separator:af4c4ab8cc796ea3db025305e47f7bdc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb95579405e9ad8d61239ffa23b1fb22"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#adb95579405e9ad8d61239ffa23b1fb22">getLedgerBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</td></tr>
 <tr class="separator:adb95579405e9ad8d61239ffa23b1fb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f99fb5737062937149e4e33a95ffd06"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a5f99fb5737062937149e4e33a95ffd06">getLedgerByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash)</td></tr>
 <tr class="separator:a5f99fb5737062937149e4e33a95ffd06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2204e39a00d7a57401d99b520c2721fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a2204e39a00d7a57401d99b520c2721fd">setLedgerRangePresent</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> minV, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> maxV)</td></tr>
 <tr class="separator:a2204e39a00d7a57401d99b520c2721fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff01e5be205edd638601cc993bd4d140"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#aff01e5be205edd638601cc993bd4d140">getCloseTimeBySeq</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex)</td></tr>
-<tr class="separator:aff01e5be205edd638601cc993bd4d140"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8abe80490a5e5c43defe19e323f24918"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a8abe80490a5e5c43defe19e323f24918">getCloseTimeByHash</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;ledgerHash, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex)</td></tr>
-<tr class="separator:a8abe80490a5e5c43defe19e323f24918"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a330510efd66b4b08e57f5c0b896560ef"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a330510efd66b4b08e57f5c0b896560ef">getCloseTimeBySeq</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex)</td></tr>
+<tr class="separator:a330510efd66b4b08e57f5c0b896560ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17c4b88b151507f01b3b4b510b9b3818"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a17c4b88b151507f01b3b4b510b9b3818">getCloseTimeByHash</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;ledgerHash, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex)</td></tr>
+<tr class="separator:a17c4b88b151507f01b3b4b510b9b3818"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15cca36844eb44d3a6e131a3f7e89c26"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a15cca36844eb44d3a6e131a3f7e89c26">addHeldTransaction</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; const &amp;trans)</td></tr>
 <tr class="separator:a15cca36844eb44d3a6e131a3f7e89c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35ccb12350f1b7764b9ff2218491d0b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a35ccb12350f1b7764b9ff2218491d0b5">fixMismatch</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;ledger)</td></tr>
@@ -276,9 +276,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaa32ab558f1d6f813a5bb8ed2e4829a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5898dfd3da0b6b11998976b6a31dab9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#ac5898dfd3da0b6b11998976b6a31dab9">addFetchPack</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; data)</td></tr>
 <tr class="separator:ac5898dfd3da0b6b11998976b6a31dab9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc48bba6c28fe01038e50364d4552308"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#afc48bba6c28fe01038e50364d4552308">getFetchPack</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash) override</td></tr>
-<tr class="memdesc:afc48bba6c28fe01038e50364d4552308"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves partial ledger data of the coresponding hash from peers.  <a href="classripple_1_1LedgerMaster.html#afc48bba6c28fe01038e50364d4552308">More...</a><br /></td></tr>
-<tr class="separator:afc48bba6c28fe01038e50364d4552308"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa65154f38461c13e79695d7d6c7fa4c9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#aa65154f38461c13e79695d7d6c7fa4c9">getFetchPack</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash) override</td></tr>
+<tr class="memdesc:aa65154f38461c13e79695d7d6c7fa4c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves partial ledger data of the coresponding hash from peers.  <a href="classripple_1_1LedgerMaster.html#aa65154f38461c13e79695d7d6c7fa4c9">More...</a><br /></td></tr>
+<tr class="separator:aa65154f38461c13e79695d7d6c7fa4c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ad6b9137291f79a7bd50039c538289e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a3ad6b9137291f79a7bd50039c538289e">makeFetchPack</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;wPeer, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMGetObjectByHash &gt; const &amp;request, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> haveLedgerHash, <a class="el" href="classripple_1_1UptimeClock.html#aa38022139969f4d6a0f68932d5349f48">UptimeClock::time_point</a> uptime)</td></tr>
 <tr class="separator:a3ad6b9137291f79a7bd50039c538289e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa14798637526012a9725f62488e86e58"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#aa14798637526012a9725f62488e86e58">getFetchPackCacheSize</a> () const</td></tr>
@@ -286,8 +286,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1f75b908e89910ac3852dd92a4c79ec5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a1f75b908e89910ac3852dd92a4c79ec5">haveValidated</a> ()</td></tr>
 <tr class="memdesc:a1f75b908e89910ac3852dd92a4c79ec5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether we have ever fully validated a ledger.  <a href="classripple_1_1LedgerMaster.html#a1f75b908e89910ac3852dd92a4c79ec5">More...</a><br /></td></tr>
 <tr class="separator:a1f75b908e89910ac3852dd92a4c79ec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7129c7408cc225ac56bc105d30289da4"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a7129c7408cc225ac56bc105d30289da4">minSqlSeq</a> ()</td></tr>
-<tr class="separator:a7129c7408cc225ac56bc105d30289da4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85ab10f185f8e05e7dbd76f6a8df25f5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a85ab10f185f8e05e7dbd76f6a8df25f5">minSqlSeq</a> ()</td></tr>
+<tr class="separator:a85ab10f185f8e05e7dbd76f6a8df25f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
 <tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
@@ -335,8 +335,8 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:aa41670f9104bcbc6302b1e2100bc53eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#aa41670f9104bcbc6302b1e2100bc53eb">getFetchPack</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> missing, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
 <tr class="memdesc:aa41670f9104bcbc6302b1e2100bc53eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request a fetch pack to get to the specified ledger.  <a href="classripple_1_1LedgerMaster.html#aa41670f9104bcbc6302b1e2100bc53eb">More...</a><br /></td></tr>
 <tr class="separator:aa41670f9104bcbc6302b1e2100bc53eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e0c3bff6e53baa326075a7be3d3a36f"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a1e0c3bff6e53baa326075a7be3d3a36f">getLedgerHashForHistory</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> index, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
-<tr class="separator:a1e0c3bff6e53baa326075a7be3d3a36f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7af221b6b993c60afbc18b872f68cfb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#ab7af221b6b993c60afbc18b872f68cfb">getLedgerHashForHistory</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> index, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
+<tr class="separator:ab7af221b6b993c60afbc18b872f68cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1dd0f5cbae7e22dcd6832624f0a16e79"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a1dd0f5cbae7e22dcd6832624f0a16e79">getNeededValidations</a> ()</td></tr>
 <tr class="memdesc:a1dd0f5cbae7e22dcd6832624f0a16e79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines how many validations are needed to fully validate a ledger.  <a href="classripple_1_1LedgerMaster.html#a1dd0f5cbae7e22dcd6832624f0a16e79">More...</a><br /></td></tr>
 <tr class="separator:a1dd0f5cbae7e22dcd6832624f0a16e79"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1061,14 +1061,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aafea042d43c45f6ea02be2489c019f62"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aafea042d43c45f6ea02be2489c019f62">&#9670;&nbsp;</a></span>walkHashBySeq() <span class="overload">[1/2]</span></h2>
+<a id="a4c6df242c0ea3409a06e44436495235f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c6df242c0ea3409a06e44436495235f">&#9670;&nbsp;</a></span>walkHashBySeq() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt; ripple::LedgerMaster::walkHashBySeq </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt; ripple::LedgerMaster::walkHashBySeq </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>index</em>, </td>
@@ -1093,14 +1093,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a1fa0c52acb74a5d0545bfacb76d0cbc9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1fa0c52acb74a5d0545bfacb76d0cbc9">&#9670;&nbsp;</a></span>walkHashBySeq() <span class="overload">[2/2]</span></h2>
+<a id="af4c4ab8cc796ea3db025305e47f7bdc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4c4ab8cc796ea3db025305e47f7bdc9">&#9670;&nbsp;</a></span>walkHashBySeq() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt; ripple::LedgerMaster::walkHashBySeq </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt; ripple::LedgerMaster::walkHashBySeq </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>index</em>, </td>
@@ -1202,14 +1202,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aff01e5be205edd638601cc993bd4d140"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff01e5be205edd638601cc993bd4d140">&#9670;&nbsp;</a></span>getCloseTimeBySeq()</h2>
+<a id="a330510efd66b4b08e57f5c0b896560ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a330510efd66b4b08e57f5c0b896560ef">&#9670;&nbsp;</a></span>getCloseTimeBySeq()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt; ripple::LedgerMaster::getCloseTimeBySeq </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt; ripple::LedgerMaster::getCloseTimeBySeq </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
           <td class="paramname"><em>ledgerIndex</em></td><td>)</td>
@@ -1222,14 +1222,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8abe80490a5e5c43defe19e323f24918"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8abe80490a5e5c43defe19e323f24918">&#9670;&nbsp;</a></span>getCloseTimeByHash()</h2>
+<a id="a17c4b88b151507f01b3b4b510b9b3818"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17c4b88b151507f01b3b4b510b9b3818">&#9670;&nbsp;</a></span>getCloseTimeByHash()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt; ripple::LedgerMaster::getCloseTimeByHash </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt; ripple::LedgerMaster::getCloseTimeByHash </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;&#160;</td>
           <td class="paramname"><em>ledgerHash</em>, </td>
@@ -1871,8 +1871,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="afc48bba6c28fe01038e50364d4552308"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc48bba6c28fe01038e50364d4552308">&#9670;&nbsp;</a></span>getFetchPack() <span class="overload">[1/2]</span></h2>
+<a id="aa65154f38461c13e79695d7d6c7fa4c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa65154f38461c13e79695d7d6c7fa4c9">&#9670;&nbsp;</a></span>getFetchPack() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1881,7 +1881,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; ripple::LedgerMaster::getFetchPack </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; ripple::LedgerMaster::getFetchPack </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>nodeHash</em></td><td>)</td>
@@ -1903,9 +1903,9 @@ Private Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd><code>boost::none</code> if the hash isn't cached, otherwise, the hash associated data. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd><code>std::nullopt</code> if the hash isn't cached, otherwise, the hash associated data. </dd></dl>
 
-<p>Implements <a class="el" href="classripple_1_1AbstractFetchPackContainer.html#a842e498bd4e29dd315a100536456f7af">ripple::AbstractFetchPackContainer</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1AbstractFetchPackContainer.html#a20b49247b790371ff50608f29dfe555d">ripple::AbstractFetchPackContainer</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02125">2125</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
@@ -1993,14 +1993,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a7129c7408cc225ac56bc105d30289da4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7129c7408cc225ac56bc105d30289da4">&#9670;&nbsp;</a></span>minSqlSeq()</h2>
+<a id="a85ab10f185f8e05e7dbd76f6a8df25f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85ab10f185f8e05e7dbd76f6a8df25f5">&#9670;&nbsp;</a></span>minSqlSeq()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt; ripple::LedgerMaster::minSqlSeq </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt; ripple::LedgerMaster::minSqlSeq </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -2146,8 +2146,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a1e0c3bff6e53baa326075a7be3d3a36f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e0c3bff6e53baa326075a7be3d3a36f">&#9670;&nbsp;</a></span>getLedgerHashForHistory()</h2>
+<a id="ab7af221b6b993c60afbc18b872f68cfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7af221b6b993c60afbc18b872f68cfb">&#9670;&nbsp;</a></span>getLedgerHashForHistory()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2156,7 +2156,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt; ripple::LedgerMaster::getLedgerHashForHistory </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> &gt; ripple::LedgerMaster::getLedgerHashForHistory </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
           <td class="paramname"><em>index</em>, </td>

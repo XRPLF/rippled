@@ -71,15 +71,15 @@ $(function() {
 @2x.png "XRP"</div></div>
    <p>This document contains the release notes for <code>rippled</code>, the reference server implementation of the Ripple protocol. To learn more about how to build, run or update a <code>rippled</code> server, visit <a href="https://xrpl.org/install-rippled.html">https://xrpl.org/install-rippled.html</a></p>
 <p>Have new ideas? Need help with setting up your node? Come visit us <a href="https://github.com/ripple/rippled/issues/new/choose">here</a></p>
-<h1><a class="anchor" id="autotoc_md322"></a>
+<h1><a class="anchor" id="autotoc_md327"></a>
 Releases</h1>
-<h2><a class="anchor" id="autotoc_md323"></a>
+<h2><a class="anchor" id="autotoc_md328"></a>
 Version 1.7.0</h2>
 <p>Ripple has released version 1.7.0 of <code>rippled</code>, the reference server implementation of the XRP Ledger protocol. This release <a href="https://blog.ripplex.io/how-ripples-c-team-cut-rippleds-memory-footprint-down-to-size/">significantly improves memory usage</a>, introduces a protocol amendment to allow out-of-order transaction execution with Tickets, and brings several other features and improvements.</p>
-<h2><a class="anchor" id="autotoc_md324"></a>
+<h2><a class="anchor" id="autotoc_md329"></a>
 Upgrading (SPECIAL ACTION REQUIRED)</h2>
 <p>If you use the precompiled binaries of rippled that Ripple publishes for supported platforms, please note that Ripple has renewed the GPG key used to sign these packages. If you are upgrading from a previous install, you must download and trust the renewed key. Automatic upgrades will not work until you have re-trusted the key. </p>
-<h3><a class="anchor" id="autotoc_md325"></a>
+<h3><a class="anchor" id="autotoc_md330"></a>
 Red Hat Enterprise Linux / CentOS</h3>
 <p>Perform a <a href="https://xrpl.org/update-rippled-manually-on-centos-rhel.html">manual upgrade</a>. When prompted, confirm that the key's fingerprint matches the following example, then press <code>y</code> to accept the updated key:</p>
 <div class="fragment"><div class="line">$ sudo yum install rippled</div>
@@ -96,14 +96,14 @@ Red Hat Enterprise Linux / CentOS</h3>
 <div class="line">Fingerprint: c001 0ec2 05b3 5a33 10dc 90de 395f 97ff ccaf d9a2</div>
 <div class="line">From       : https://repos.ripple.com/repos/rippled-rpm/nightly/repodata/repomd.xml.key</div>
 <div class="line">Is this ok [y/N]: y</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md326"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md331"></a>
 Ubuntu / Debian</h3>
 <p>Download and trust the updated public key, then perform a <a href="https://xrpl.org/update-rippled-manually-on-ubuntu.html">manual upgrade</a> as follows:</p>
 <div class="fragment"><div class="line">wget -q -O - &quot;https://repos.ripple.com/repos/api/gpg/key/public&quot; | \</div>
 <div class="line">    sudo apt-key add -</div>
 <div class="line">sudo apt -y update</div>
 <div class="line">sudo apt -y install rippled</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md327"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md332"></a>
 New and Improved Features</h3>
 <ul>
 <li><b>Rework deferred node logic and async fetch behavior:</b> This change significantly improves ledger sync and fetch times while reducing memory consumption. (<a href="https://blog.ripplex.io/how-ripples-c-team-cut-rippleds-memory-footprint-down-to-size/">https://blog.ripplex.io/how-ripples-c-team-cut-rippleds-memory-footprint-down-to-size/</a>)</li>
@@ -122,7 +122,7 @@ New and Improved Features</h3>
 <li><b>Improvements to shard downloading:</b> Previously the download_shard command could only load shards over HTTPS. Compressed shards can now also be downloaded over plain HTTP. The server fully checks the data for integrity and consistency, so the encryption is not strictly necessary. When initiating multiple shard downloads, the server now returns an error if there is not enough space to store all the shards currently being downloaded.</li>
 <li><b>The manifest command is now public:</b> The manifest API method returns public information about a given validator. The required permissions have been changed so it is now part of the public API.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md328"></a>
+<h3><a class="anchor" id="autotoc_md333"></a>
 Bug Fixes</h3>
 <ul>
 <li><b>Implement sticky DNS resolution for validator list retrieval:</b> When attempting to load a validator list from a configured site, attempt to reuse the last IP that was successfully used if that IP is still present in the DNS response. (<a href="https://github.com/ripple/rippled/issues/3494">https://github.com/ripple/rippled/issues/3494</a>).</li>
@@ -139,10 +139,10 @@ Bug Fixes</h3>
 <li><b>Fixed a potential thread deadlock with history sharding.</b> ( <a href="https://github.com/ripple/rippled/pull/3683">https://github.com/ripple/rippled/pull/3683</a> )</li>
 <li><b>Various fixes to typos and comments, refactoring, and build system improvements</b></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md329"></a>
+<h2><a class="anchor" id="autotoc_md334"></a>
 Version 1.6.0</h2>
 <p>This release introduces several new features including changes to the XRP Ledger's consensus mechanism to make it even more robust in adverse conditions, as well as numerous bug fixes and optimizations.</p>
-<h3><a class="anchor" id="autotoc_md330"></a>
+<h3><a class="anchor" id="autotoc_md335"></a>
 New and Improved Features</h3>
 <ul>
 <li>Initial implementation of Negative UNL functionality: This change can improve the liveness of the network during periods of network instability, by allowing servers to track which validators are temporarily offline and to adjust quorum calculations to match. This change requires an amendment, but the amendment is not in the <b>1.6.0</b> release. Ripple expects to run extensive public testing for Negative UNL functionality on the Devnet in the coming weeks. If public testing satisfies all requirements across security, reliability, stability, and performance, then the amendment could be included in a version 2.0 release. [<a href="https://github.com/ripple/rippled/pull/3380">#3380</a>]</li>
@@ -158,7 +158,7 @@ New and Improved Features</h3>
 <li>Various Build and CI Improvements including updates to RocksDB 6.7.3 [<a href="https://github.com/ripple/rippled/pull/3356">#3356</a>], NuDB 2.0.3 [<a href="https://github.com/ripple/rippled/pull/3437">#3437</a>], adjusting CMake settings so that rippled can be built as a submodule [<a href="https://github.com/ripple/rippled/pull/3449">#3449</a>], and adding Travis CI settings for Ubuntu Bionic Beaver [<a href="https://github.com/ripple/rippled/pull/3319">#3319</a>].</li>
 <li>Better documentation in the config file for online deletion and database tuning. [<a href="https://github.com/ripple/rippled/pull/3429">#3429</a>]</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md331"></a>
+<h3><a class="anchor" id="autotoc_md336"></a>
 Bug Fixes</h3>
 <ul>
 <li>Fix the 14 day timer to enable amendment to start at the correct quorum size [<a href="https://github.com/ripple/rippled/pull/3396">#3396</a>]</li>
@@ -173,7 +173,7 @@ Bug Fixes</h3>
 <li>Add the <code>ledger_cleaner</code> command to rippled command line help [<a href="https://github.com/ripple/rippled/pull/3305">#3305</a>]</li>
 <li>Various typo and comments fixes.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md332"></a>
+<h2><a class="anchor" id="autotoc_md337"></a>
 Version 1.5.0</h2>
 <p>The <code>rippled</code> 1.5.0 release introduces several improvements and new features, including support for gRPC API, API versioning, UNL propagation via the peer network, new RPC methods <code>validator_info</code> and <code>manifest</code>, augmented <code>submit</code> method, improved <code>tx</code> method response, improved command line parsing, improved handshake protocol, improved package building and various other minor bug fixes and improvements.</p>
 <p>This release also introduces two new amendments: <code>fixQualityUpperBound</code> and <code>RequireFullyCanonicalSig</code>.</p>
@@ -198,7 +198,7 @@ Version 1.5.0</h2>
 <li>Remove unused <code>Beast</code> code. <a href="https://github.com/ripple/rippled/commit/172ead822159a3c1f9b73217da4316df48851ab6"><code>172ead822</code></a></li>
 <li>Lag ratchet code fix to use proper ephemeral public keys instead of the long-term master public keys.<a href="https://github.com/ripple/rippled/commit/6529d3e6f7333fc5226e5aa9ae65f834cb93dfe5"><code>6529d3e6f</code></a></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md333"></a>
+<h2><a class="anchor" id="autotoc_md338"></a>
 Version 1.4.0</h2>
 <p>The <code>rippled</code> 1.4.0 release introduces several improvements and new features, including support for deleting accounts, improved peer slot management, improved CI integration and package building and support for <a href="https://en.wikipedia.org/wiki/C%2B%2B17">C++17</a> and <a href="https://www.boost.org/users/history/version_1_71_0.html">Boost 1.71</a>. Finally, this release removes the code for the <code>SHAMapV2</code> amendment which failed to gain majority support and has been obsoleted by other improvements.</p>
 <p><b>New and Updated Features</b></p><ul>
@@ -216,7 +216,7 @@ Version 1.4.0</h2>
 <li>Properly update the <code>server_state</code> when a server detects a disagreement between itself and the network.</li>
 <li>Allow Ed25519 keys to be used with the <code>channel_authorize</code> command.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md334"></a>
+<h2><a class="anchor" id="autotoc_md339"></a>
 Version 1.3.1</h2>
 <p>The <code>rippled</code> 1.3.1 release improves the built-in deadlock detection code, improves logging during process startup, changes the package build pipeline and improves the build documentation.</p>
 <p><b>New and Updated Features</b></p>
@@ -225,7 +225,7 @@ Version 1.3.1</h2>
 <li>Add a LogicError when a deadlock is detected (355a7b04)</li>
 <li>Improve logging during process startup (7c24f7b1)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md335"></a>
+<h2><a class="anchor" id="autotoc_md340"></a>
 Version 1.3.0</h2>
 <p>The <code>rippled</code> 1.3.0 release introduces several new features and overall improvements to the codebase, including the <code>fixMasterKeyAsRegularKey</code> amendment, code to adjust the timing of the consensus process and support for decentralized validator domain verification. The release also includes miscellaneous improvements including in the transaction censorship detection code, transaction validation code, manifest parsing code, configuration file parsing code, log file rotation code, and in the build, continuous integration, testing and package building pipelines.</p>
 <p><b>New and Updated Features</b></p><ul>
@@ -237,7 +237,7 @@ Version 1.3.0</h2>
 <li>Improve ledger trie ancestry tracking to reduce unnecessary error messages.</li>
 <li>More efficient detection of dry paths in the payment engine. Although not a transaction-breaking change, this should reduce spurious error messages in the log files.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md336"></a>
+<h2><a class="anchor" id="autotoc_md341"></a>
 Version 1.2.4</h2>
 <p>The <code>rippled</code> 1.2.4 release improves the way that shard crawl requests are routed and the robustness of configured validator list retrieval by imposing a 20 second timeout.</p>
 <p><b>New and Updated Features</b></p>
@@ -247,7 +247,7 @@ Version 1.2.4</h2>
 <li>Use public keys when routing shard crawl requests</li>
 <li>Enforce a 20s timeout when making validator list requests (RIPD-1737)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md337"></a>
+<h2><a class="anchor" id="autotoc_md342"></a>
 Version 1.2.3</h2>
 <p>The <code>rippled</code> 1.2.3 release corrects a technical flaw which in some circumstances can cause a null pointer dereference that can crash the server.</p>
 <p><b>New and Updated Features</b></p>
@@ -256,7 +256,7 @@ Version 1.2.3</h2>
 <ul>
 <li>Fix a technical flaw which in some circumstances can cause a null pointer dereference that can crash the server.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md338"></a>
+<h2><a class="anchor" id="autotoc_md343"></a>
 Version 1.2.2</h2>
 <p>The <code>rippled</code> 1.2.2 release corrects a technical flaw in the fee escalation engine which could cause some fee metrics to be calculated incorrectly. In some circumstances this can potentially cause the server to crash.</p>
 <p><b>New and Updated Features</b></p>
@@ -265,7 +265,7 @@ Version 1.2.2</h2>
 <ul>
 <li>Fix a technical flaw in the fee escalation engine which could cause some fee metrics to be calculated incorrectly (4c06b3f86)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md339"></a>
+<h2><a class="anchor" id="autotoc_md344"></a>
 Version 1.2.1</h2>
 <p>The <code>rippled</code> 1.2.1 release introduces several fixes including a change in the information reported via the enhanced crawl functionality introduced in the 1.2.0 release, a fix for a potential race condition when processing a status change message for a peer, and for a technical flaw that could cause a server to not properly detect that it had lost all its peers.</p>
 <p>The release also adds the <code>delivered_amount</code> field to more responses to simplify the handling of payment or check cashing transactions.</p>
@@ -278,7 +278,7 @@ Version 1.2.1</h2>
 <li>Display validator status only in response to admin requests (2d6a518a)</li>
 <li>Add the <code>delivered_amount</code> to more RPC commands (f2756914)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md340"></a>
+<h2><a class="anchor" id="autotoc_md345"></a>
 Version 1.2.0</h2>
 <p>The <code>rippled</code> 1.2.0 release introduces the MultisignReserve Amendment, which reduces the reserve requirement associated with signer lists. This release also includes incremental improvements to the code that handles offers. Furthermore, <code>rippled</code> now also has the ability to automatically detect transaction censorship attempts and issue warnings of increasing severity for transactions that should have been included in a closed ledger after several rounds of consensus.</p>
 <p><b>New and Updated Features</b></p>
@@ -306,7 +306,7 @@ Version 1.2.0</h2>
 <li>Eliminate potential undefined behavior (c71eb45)</li>
 <li>Add safe_cast to sure no overflow in casts between enums and integral types (a7e4541)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md341"></a>
+<h2><a class="anchor" id="autotoc_md346"></a>
 Version 1.1.2</h2>
 <p>The <code>rippled</code> 1.1.2 release introduces a fix for an issue that could have prevented cluster peers from successfully bypassing connection limits when connecting to other servers on the same cluster. Additionally, it improves logic used to determine what the preferred ledger is during suboptimal network conditions.</p>
 <p><b>New and Updated Features</b></p>
@@ -316,7 +316,7 @@ Version 1.1.2</h2>
 <li>Properly bypass connection limits for cluster peers (#2795, #2796)</li>
 <li>Improve preferred ledger calculation (#2784)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md342"></a>
+<h2><a class="anchor" id="autotoc_md347"></a>
 Version 1.1.1</h2>
 <p>The <code>rippled</code> 1.1.1 release adds support for redirections when retrieving validator lists and changes the way that validators with an expired list behave. Additionally, informational commands return more useful information to allow server operators to determine the state of their server</p>
 <p><b>New and Updated Features</b></p>
@@ -328,7 +328,7 @@ Version 1.1.1</h2>
 <ul>
 <li>Properly handle expired validator lists when validating (#2734)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md343"></a>
+<h2><a class="anchor" id="autotoc_md348"></a>
 Version 1.1.0</h2>
 <p>The <code>rippled</code> 1.1.0 release release includes the <code>DepositPreAuth</code> amendment, which combined with the previously released <code>DepositAuth</code> amendment, allows users to pre-authorize incoming transactions to accounts, by whitelisting sender addresses. The 1.1.0 release also includes incremental improvements to several previously released features (<code>fix1515</code> amendment), deprecates support for the <code>sign</code> and <code>sign_for</code> commands from the rippled API and improves invariant checking for enhanced security.</p>
 <p>Ripple recommends that all server operators upgrade to XRP Ledger version 1.1.0 by Thursday, 2018-09-27, to ensure service continuity.</p>
@@ -364,7 +364,7 @@ Version 1.1.0</h2>
 <li>Improve JSON exception handling (#2605)</li>
 <li>Add missing virtual destructors (#2532)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md344"></a>
+<h2><a class="anchor" id="autotoc_md349"></a>
 Version 1.0.0.</h2>
 <p>The <code>rippled</code> 1.0.0 release includes incremental improvements to several previously released features.</p>
 <p><b>New and Updated Features</b></p>
@@ -378,7 +378,7 @@ Version 1.0.0.</h2>
 <li>Add <code>check</code>, <code>escrow</code>, and <code>pay_chan</code> to <code>ledger_entry</code> (RIPD-1600)</li>
 <li>Clarify Escrow semantics (RIPD-1571)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md345"></a>
+<h2><a class="anchor" id="autotoc_md350"></a>
 Version 0.90.1</h2>
 <p>The <code>rippled</code> 0.90.1 release includes fixes for issues reported by external security researchers. These issues, when exploited, could cause a rippled instance to restart or, in some circumstances, stop executing. While these issues can result in a denial of service attack, none affect the integrity of the XRP Ledger and no user funds, including XRP, are at risk.</p>
 <p><b>New and Updated Features</b></p>
@@ -394,7 +394,7 @@ Version 0.90.1</h2>
 </li>
 <li>Use lock when creating a peer shard rangeset</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md346"></a>
+<h2><a class="anchor" id="autotoc_md351"></a>
 Version 0.90.0</h2>
 <p>The <code>rippled</code> 0.90.0 release introduces several features and enhancements that improve the reliability, scalability and security of the XRP Ledger.</p>
 <p>Highlights of this release include:</p>
@@ -437,7 +437,7 @@ Version 0.90.0</h2>
 <li>Avoid AppVeyor stack overflow (<a href="https://github.com/ripple/rippled/issues/2344">#2344</a>)</li>
 <li>Reduce noise in log (<a href="https://github.com/ripple/rippled/issues/2352">#2352</a>)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md347"></a>
+<h2><a class="anchor" id="autotoc_md352"></a>
 Version 0.81.0</h2>
 <p>The <code>rippled</code> 0.81.0 release introduces changes that improve the scalability of the XRP Ledger and transitions the recommended validator configuration to a new hosted site, as described in Ripple's <a href="https://ripple.com/dev-blog/decentralization-strategy-update/">Decentralization Strategy Update</a> post.</p>
 <p><b>New and Updated Features</b></p>
@@ -448,7 +448,7 @@ Version 0.81.0</h2>
 <ul>
 <li>Optimize queries for account_tx to work around SQLite query planner (<a href="https://github.com/ripple/rippled/issues/2312">#2312</a>)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md348"></a>
+<h2><a class="anchor" id="autotoc_md353"></a>
 Version 0.80.2</h2>
 <p>The <code>rippled</code> 0.80.2 release introduces changes that improve the scalability of the XRP Ledger.</p>
 <p><b>New and Updated Features</b></p>
@@ -459,7 +459,7 @@ Version 0.80.2</h2>
 <li>Increase the number of transaction handlers that can be in flight in the job queue and decrease the relative cost for peers to share transaction and ledger data.</li>
 <li>Make better use of resources by adjusting the number of threads we initialize, by reverting commit <a href="https://github.com/ripple/rippled/commit/68b8ffdb638d07937f841f7217edeb25efdb3b5d">#68b8ffd</a>.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md349"></a>
+<h2><a class="anchor" id="autotoc_md354"></a>
 Version 0.80.1</h2>
 <p>The <code>rippled</code> 0.80.1 release provides several enhancements in support of published validator lists and corrects several bugs.</p>
 <p><b>New and Updated Features</b></p>
@@ -476,7 +476,7 @@ Version 0.80.1</h2>
 <li>Explictly use <a class="elRef" href="http://en.cppreference.com/w/cpp/container/deque.html" title="STL class.">std::deque</a> for missing node handler in SHAMap code (<a href="https://github.com/ripple/rippled/issues/2252">#2252</a>)</li>
 <li>Verify validator token manifest matches private key (<a href="https://github.com/ripple/rippled/issues/2268">#2268</a>)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md350"></a>
+<h2><a class="anchor" id="autotoc_md355"></a>
 Version 0.80.0</h2>
 <p>The <code>rippled</code> 0.80.0 release introduces several enhancements that improve the reliability, scalability and security of the XRP Ledger.</p>
 <p>Highlights of this release include:</p>
@@ -504,7 +504,7 @@ Version 0.80.0</h2>
 <li>Fix an issue where <code>setAmendmentBlocked</code> is only called when processing the <code>EnableAmendment</code> transaction for the amendment (<a href="https://github.com/ripple/rippled/issues/2137">#2137</a>)</li>
 <li>Track escrow in recipient's owner directory (<a href="https://github.com/ripple/rippled/issues/2212">#2212</a>)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md351"></a>
+<h2><a class="anchor" id="autotoc_md356"></a>
 Version 0.70.2</h2>
 <p>The <code>rippled</code> 0.70.2 release corrects an emergent behavior which causes large numbers of transactions to get stuck in different nodes' open ledgers without being passed on to validators, resulting in a spike in the open ledger fee on those nodes.</p>
 <p><b>New and Updated Features</b></p>
@@ -513,7 +513,7 @@ Version 0.70.2</h2>
 <ul>
 <li>Recent fee rises and TxQ issues (<a href="https://github.com/ripple/rippled/issues/2215">#2215</a>)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md352"></a>
+<h2><a class="anchor" id="autotoc_md357"></a>
 Version 0.70.1</h2>
 <p>The <code>rippled</code> 0.70.1 release corrects a technical flaw in the newly refactored consensus code that could cause a node to get stuck in consensus due to stale votes from a peer, and allows compiling <code>rippled</code> under the 1.1.x releases of OpenSSL.</p>
 <p><b>New and Updated Features</b></p>
@@ -524,7 +524,7 @@ Version 0.70.1</h2>
 <li>Log invariant check messages at "fatal" level (<a href="https://github.com/ripple/rippled/pull/2154">2154</a>)</li>
 <li>Fix the consensus code to update all disputed transactions after a node changes a position (<a href="https://github.com/ripple/rippled/pull/2156">2156</a>)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md353"></a>
+<h2><a class="anchor" id="autotoc_md358"></a>
 Version 0.70.0</h2>
 <p>The <code>rippled</code> 0.70.0 release introduces several enhancements that improve the reliability, scalability and security of the network.</p>
 <p>Highlights of this release include:</p>
@@ -560,28 +560,28 @@ Version 0.70.0</h2>
 <li>JobQueue occasionally crashes on shutdown (#2025)</li>
 <li>Improve pseudo-transaction handling (#2104)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md354"></a>
+<h2><a class="anchor" id="autotoc_md359"></a>
 Version 0.60.3</h2>
 <p>The <code>rippled</code> 0.60.3 release helps to increase the stability of the network under heavy load.</p>
 <p><b>New and Updated Features</b></p>
 <p>This release has no new features.</p>
 <p><b>Bug Fixes</b></p>
 <p>Server overlay improvements (<a href="https://github.com/ripple/rippled/pull/2011">#2110</a>)</p>
-<h2><a class="anchor" id="autotoc_md355"></a>
+<h2><a class="anchor" id="autotoc_md360"></a>
 Version 0.60.2</h2>
 <p>The <code>rippled</code> 0.60.2 release further strengthens handling of cases associated with a previously patched exploit, in which NoRipple flags were being bypassed by using offers.</p>
 <p><b>New and Updated Features</b></p>
 <p>This release has no new features.</p>
 <p><b>Bug Fixes</b></p>
 <p>Prevent the ability to bypass the <code>NoRipple</code> flag using offers (<a href="https://github.com/ripple/rippled/commit/4ff40d4954dfaa237c8b708c2126cb39566776da">#7cd4d78</a>)</p>
-<h2><a class="anchor" id="autotoc_md356"></a>
+<h2><a class="anchor" id="autotoc_md361"></a>
 Version 0.60.1</h2>
 <p>The <code>rippled</code> 0.60.1 release corrects a technical flaw that resulted from using 32-bit space identifiers instead of the protocol-defined 16-bit values for Escrow and Payment Channel ledger entries. rippled version 0.60.1 also fixes a problem where the WebSocket timeout timer would not be cancelled when certain errors occurred during subscription streams. Ripple requires upgrading to rippled version 0.60.1 immediately.</p>
 <p><b>New and Updated Feature</b></p>
 <p>This release has no new features.</p>
 <p><b>Bug Fixes</b></p>
 <p>Correct calculation of Escrow and Payment Channel indices. Fix WebSocket timeout timer issues.</p>
-<h2><a class="anchor" id="autotoc_md357"></a>
+<h2><a class="anchor" id="autotoc_md362"></a>
 Version 0.60.0</h2>
 <p>The <code>rippled</code> 0.60.0 release introduces several enhancements that improve the reliability and scalability of the Ripple Consensus Ledger (RCL), including features that add ledger interoperability by improving Interledger Protocol compatibility. Ripple recommends that all server operators upgrade to version 0.60.0 by Thursday, 2017-03-30, for service continuity.</p>
 <p>Highlights of this release include:</p>
@@ -623,21 +623,21 @@ Version 0.60.0</h2>
 <li>Check for malformed public key on payment channel (#2027)</li>
 <li>Send a websocket ping before timing out in server (#2035)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md358"></a>
+<h2><a class="anchor" id="autotoc_md363"></a>
 Version 0.50.3</h2>
 <p>The <code>rippled</code> 0.50.3 release corrects a reported exploit that would allow a combination of trust lines and order books in a payment path to bypass the blocking effect of the <a href="https://ripple.com/build/understanding-the-noripple-flag/"><code>NoRipple</code></a> flag. Ripple recommends that all server operators immediately upgrade to version 0.50.3.</p>
 <p><b>New and Updated Features</b></p>
 <p>This release has no new features.</p>
 <p><b>Bug Fixes</b></p>
 <p>Correct a reported exploit that would allow a combination of trust lines and order books in a payment path to bypass the blocking effect of the “NoRipple” flag.</p>
-<h2><a class="anchor" id="autotoc_md359"></a>
+<h2><a class="anchor" id="autotoc_md364"></a>
 Version 0.50.2</h2>
 <p>The <code>rippled</code> 0.50.2 release adjusts the default TLS cipher list and corrects a flaw that would not allow an SSL handshake to properly complete if the port was configured using the <code>wss</code> keyword. Ripple recommends upgrading to 0.50.2 only if server operators are running rippled servers that accept client connections over TLS.</p>
 <p><b>New and Updated Features</b></p>
 <p>This release has no new features.</p>
 <p><b>Bug Fixes</b></p>
 <p>Adjust the default cipher list and correct a flaw that would not allow an SSL handshake to properly complete if the port was configured using the <code>wss</code> keyword (#1985)</p>
-<h2><a class="anchor" id="autotoc_md360"></a>
+<h2><a class="anchor" id="autotoc_md365"></a>
 Version 0.50.0</h2>
 <p>The <code>rippled</code> 0.50.0 release includes TickSize, which allows gateways to set a "tick size" for assets they issue to help promote faster price discovery and deeper liquidity, as well as reduce transaction spam and ledger churn on RCL. Ripple expects TickSize to be enabled via an Amendment called TickSize on Tuesday, 2017-02-21.</p>
 <p>You can <a href="https://ripple.com/build/rippled-setup/#updating-rippled">update to the new version</a> on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please <a href="https://wiki.ripple.com/Rippled_build_instructions">compile the new version from source</a>.</p>
@@ -690,7 +690,7 @@ Version 0.50.0</h2>
 <p>We expect the previously announced Suspended Payments feature, which introduces new transaction types to the Ripple protocol that will permit users to cryptographically escrow XRP on RCL, to be enabled via the <a href="https://ripple.com/build/amendments/#suspay">SusPay</a> Amendment on Tuesday, 2017-02-21.</p>
 <p>Also, we expect support for crypto-conditions, which are signature-like structures that can be used with suspended payments to support ILP integration, to be included in the next rippled release scheduled for March.</p>
 <p>Lastly, we do not have an update on the previously announced changes to the hash tree structure that rippled uses to represent a ledger, called <a href="https://ripple.com/build/amendments/#shamapv2">SHAMapV2</a>. At the time of activation, this amendment will require brief scheduled allowable unavailability while the changes to the hash tree structure are computed by the network. We will keep the community updated as we progress towards this date (TBA).</p>
-<h2><a class="anchor" id="autotoc_md361"></a>
+<h2><a class="anchor" id="autotoc_md366"></a>
 Version 0.40.1</h2>
 <p>The <code>rippled</code> 0.40.1 release increases SQLite database limits in all rippled servers. Ripple recommends upgrading to 0.40.1 only if server operators are running rippled servers with full-history of the ledger. There are no new or updated features in the 0.40.1 release.</p>
 <p>You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please compile the new version from source.</p>
@@ -698,7 +698,7 @@ Version 0.40.1</h2>
 <p>This release has no new features.</p>
 <p><b>Bug Fixes</b></p>
 <p>Increase SQLite database limits to prevent full-history servers from crashing when restarting. (#1961)</p>
-<h2><a class="anchor" id="autotoc_md362"></a>
+<h2><a class="anchor" id="autotoc_md367"></a>
 Version 0.40.0</h2>
 <p>The <code>rippled</code> 0.40.0 release includes Suspended Payments, a new transaction type on the Ripple network that functions similar to an escrow service, which permits users cryptographically escrow XRP on RCL with an expiration date. Ripple expects Suspended Payments to be enabled via an Amendment named <a href="https://ripple.com/build/amendments/#suspay">SusPay</a> on Tuesday, 2017-01-17.</p>
 <p>You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please compile the new version from source.</p>
@@ -713,7 +713,7 @@ Version 0.40.0</h2>
 <p>Correct an issue in payment flow code that did not remove an unfunded offer (#1860)</p>
 <p>Sign validator manifests with both ephemeral and master keys (#1865)</p>
 <p>Correctly parse multi-buffer JSON messages (#1862)</p>
-<h2><a class="anchor" id="autotoc_md363"></a>
+<h2><a class="anchor" id="autotoc_md368"></a>
 Version 0.33.0</h2>
 <p>The <code>rippled</code> 0.33.0 release includes an improved version of the payment code, which we expect to be activated via Amendment on Wednesday, 2016-10-20 with the name <a href="https://ripple.com/build/amendments/#flow">Flow</a>. We are also introducing XRP Payment Channels, a new structure in the ledger designed to support <a href="https://interledger.org/">Interledger Protocol</a> trust lines as balances get substantial, which we expect to be activated via Amendment on a future date (TBA) with the name <a href="https://ripple.com/build/amendments/#paychan">PayChan</a>. Lastly, we will be introducing changes to the hash tree structure that rippled uses to represent a ledger, which we expect to be available via Amendment on a future date (TBA) with the name <a href="https://ripple.com/build/amendments/#shamapv2">SHAMapV2</a>.</p>
 <p>You can <a href="https://ripple.com/build/rippled-setup/#updating-rippled">update to the new version</a> on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please <a href="https://wiki.ripple.com/Rippled_build_instructions">compile the new version from source</a>.</p>
@@ -738,7 +738,7 @@ Version 0.33.0</h2>
 <p><code>PaymentSandbox::balanceHook</code> can return the wrong issuer, which could cause the transfer fee to be incorrectly by-passed in rare circumstances. [RIPD-1274, #1827]</p>
 <p>Prevent concurrent write operations in websockets [#1806]</p>
 <p>Add HTTP status page for new websocket implementation [#1855]</p>
-<h2><a class="anchor" id="autotoc_md364"></a>
+<h2><a class="anchor" id="autotoc_md369"></a>
 Version 0.32.1</h2>
 <p>The <code>rippled</code> 0.32.1 release includes an improved version of the payment code, which we expect to be available via Amendment on Wednesday, 2016-08-24 with the name FlowV2, and a completely new implementation of the WebSocket protocol for serving clients.</p>
 <p>You can <a href="https://ripple.com/build/rippled-setup/#updating-rippled">update to the new version</a> on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please <a href="https://wiki.ripple.com/Rippled_build_instructions">compile the new version from source</a>.</p>
@@ -757,7 +757,7 @@ protocol = wss2
 <p>Fix bug that could cause a previously fee queued transaction to not be relayed after being in the open ledger for an extended time without being included in a validated ledger. Fix bug that would allow an account to have more than the allowed limit of transactions in the fee queue. Fix bug that could crash debug builds in rare cases when replacing a dropped transaction. (RIPD-1200)</p>
 <p>Remove incompatible OS X switches in Test.py (RIPD-1250)</p>
 <p>Autofilling a transaction fee (sign / submit) with the experimental <code>x-queue-okay</code> parameter will use the user’s maximum fee if the open ledger fee is higher, improving queue position, and giving the tx more chance to succeed. (RIPD-1194)</p>
-<h2><a class="anchor" id="autotoc_md365"></a>
+<h2><a class="anchor" id="autotoc_md370"></a>
 Version 0.32.0</h2>
 <p>The <code>rippled</code> 0.32.0 release improves transaction queue which now supports batching and can hold up to 10 transactions per account, allowing users to queue multiple transactions for processing when the network load is high. Additionally, the <code>server_info</code> and <code>server_state</code> commands now include information on transaction cost multipliers and the fee command is available to unprivileged users. We advise rippled operators to upgrade immediately.</p>
 <p>You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please compile the new version from source.</p>
@@ -803,7 +803,7 @@ Version 0.32.0</h2>
 <li>Remove obsolete sendGetPeers support (RIPD-164)</li>
 <li>Remove obsolete internal command (RIPD-888)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md366"></a>
+<h2><a class="anchor" id="autotoc_md371"></a>
 Version 0.31.2</h2>
 <p>The <code>rippled</code> 0.31.2 release corrects issues with the fee escalation algorithm. We advise <code>rippled</code> operators to upgrade immediately.</p>
 <p>You can <a href="https://ripple.com/build/rippled-setup/#updating-rippled">update to the new version</a> on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please <a href="https://wiki.ripple.com/Rippled_build_instructions">compile the new version from source</a>.</p>
@@ -814,7 +814,7 @@ Version 0.31.2</h2>
 <li>A defect in the fee escalation algorithm that caused network fees to escalate more rapidly than intended has been corrected. (RIPD-1177)</li>
 <li>The minimum local fee advertised by validators will no longer be adjusted upwards.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md367"></a>
+<h2><a class="anchor" id="autotoc_md372"></a>
 Version 0.31.1</h2>
 <p>The <code>rippled</code> 0.31.1 release contains one important bug fix. We advise <code>rippled</code> operators to upgrade immediately.</p>
 <p>You can <a href="https://ripple.com/build/rippled-setup/#updating-rippled">update to the new version</a> on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please <a href="https://wiki.ripple.com/Rippled_build_instructions">compile the new version from source</a>.</p>
@@ -825,7 +825,7 @@ Version 0.31.1</h2>
 <ul>
 <li>Correctly handle ledger validations with no <code>LedgerSequence</code> field. Previous versions of <code>rippled</code> incorrectly assumed that the optional validation field would always be included. Current versions of the software always include the field, and gracefully handle its absence.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md368"></a>
+<h2><a class="anchor" id="autotoc_md373"></a>
 Version 0.31.0</h2>
 <p><code>rippled</code> 0.31.0 has been released.</p>
 <p>You can <a href="https://ripple.com/build/rippled-setup/#updating-rippled">update to the new version</a> on Red Hat Enterprise Linux 7 or CentOS 7 using yum.</p>
@@ -867,7 +867,7 @@ Version 0.31.0</h2>
 <li>Improve error message when signing fails (RIPD-1066)</li>
 <li>Fix websocket deadlock</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md369"></a>
+<h2><a class="anchor" id="autotoc_md374"></a>
 Version 0.30.1</h2>
 <p>rippled 0.30.1 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.30.1">https://github.com/ripple/rippled/tree/0.30.1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit c717006c44126aa0edb3a36ca29ee30e7a72c1d3
@@ -926,7 +926,7 @@ Version 0.30.1</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md371"></a>
+<h2><a class="anchor" id="autotoc_md376"></a>
 Version 0.30.0</h2>
 <p>rippled 0.30.0 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.30.0">https://github.com/ripple/rippled/tree/0.30.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit a8859b495b552fe1eb140771f0f2cb32d11d2ac2
@@ -975,7 +975,7 @@ Version 0.30.0</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md373"></a>
+<h2><a class="anchor" id="autotoc_md378"></a>
 Version 0.29.0</h2>
 <p>rippled 0.29.0 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/commits/0.29.0">https://github.com/ripple/rippled/commits/0.29.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 5964710f736e258c7892e8b848c48952a4c7856c
@@ -1025,7 +1025,7 @@ Version 0.29.0</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md375"></a>
+<h2><a class="anchor" id="autotoc_md380"></a>
 Version 0.28.2</h2>
 <p>rippled 0.28.2 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/commits/release">https://github.com/ripple/rippled/commits/release</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 6374aad9bc94595e051a04e23580617bc1aaf300
@@ -1072,7 +1072,7 @@ Version 0.28.2</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md377"></a>
+<h2><a class="anchor" id="autotoc_md382"></a>
 Version 0.28.1</h2>
 <p>rippled 0.28.1 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.28.1">https://github.com/ripple/rippled/tree/0.28.1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 399c43cae6e90a428e9ce6a988123972b0f03c99
@@ -1122,7 +1122,7 @@ Version 0.28.1</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md379"></a>
+<h2><a class="anchor" id="autotoc_md384"></a>
 Version 0.28.0</h2>
 <p>rippled 0.28.0 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.28.0">https://github.com/ripple/rippled/tree/0.28.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 7efd0ab0d6ef017331a0e214a3053893c88f38a9
@@ -1214,7 +1214,7 @@ Version 0.28.0</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md381"></a>
+<h2><a class="anchor" id="autotoc_md386"></a>
 Version 0.27.4</h2>
 <p>rippled 0.27.4 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.4">https://github.com/ripple/rippled/tree/0.27.4</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 92812fe7239ffa3ba91649b2ece1e892b866ec2a
@@ -1240,7 +1240,7 @@ Version 0.27.4</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md383"></a>
+<h2><a class="anchor" id="autotoc_md388"></a>
 Version 0.27.3-sp2</h2>
 <p>rippled 0.27.3-sp2 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.3-sp2">https://github.com/ripple/rippled/tree/0.27.3-sp2</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit f999839e599e131ed624330ad0ce85bb995f02d3
@@ -1266,7 +1266,7 @@ Version 0.27.3-sp2</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md385"></a>
+<h2><a class="anchor" id="autotoc_md390"></a>
 Version 0.27.3-sp1</h2>
 <p>rippled 0.27.3-sp1 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.3-sp1">https://github.com/ripple/rippled/tree/0.27.3-sp1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 232693419a2c9a8276a0fae991f688f6f01a3add
@@ -1292,7 +1292,7 @@ Version 0.27.3-sp1</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md387"></a>
+<h2><a class="anchor" id="autotoc_md392"></a>
 Version 0.27.3</h2>
 <p>rippled 0.27.3 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.3">https://github.com/ripple/rippled/tree/0.27.3</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 70c2854f7c8a28801a7ebc81dd62bf0d068188f0
@@ -1318,7 +1318,7 @@ Version 0.27.3</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md389"></a>
+<h2><a class="anchor" id="autotoc_md394"></a>
 Version 0.27.2</h2>
 <p>rippled 0.27.2 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.2">https://github.com/ripple/rippled/tree/0.27.2</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 9cc8eec773e8afc9c12a6aab4982deda80495cf1
@@ -1358,7 +1358,7 @@ Version 0.27.2</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md391"></a>
+<h2><a class="anchor" id="autotoc_md396"></a>
 Version 0.27.1</h2>
 <p>rippled 0.27.1 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.1">https://github.com/ripple/rippled/tree/0.27.1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 95973ba3e8b0bd28eeaa034da8b806faaf498d8a
@@ -1401,7 +1401,7 @@ Version 0.27.1</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md393"></a>
+<h2><a class="anchor" id="autotoc_md398"></a>
 Version 0.27.0</h2>
 <p>rippled 0.27.0 has been released. The commit can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.27.0">https://github.com/ripple/rippled/tree/0.27.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit c6c8e5d70c6fbde02cd946135a061aa77744396f
@@ -1526,7 +1526,7 @@ Version 0.27.0</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md395"></a>
+<h2><a class="anchor" id="autotoc_md400"></a>
 Version 0.26.4</h2>
 <p>rippled 0.26.4 has been released. The repository tag is <em>0.26.4</em> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/commits/0.26.4">https://github.com/ripple/rippled/commits/0.26.4</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 05a04aa80192452475888479c84ff4b9b54e6ae7
@@ -1598,7 +1598,7 @@ Version 0.26.4</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md397"></a>
+<h2><a class="anchor" id="autotoc_md402"></a>
 Version 0.26.3-sp1</h2>
 <p>rippled 0.26.3-sp1 has been released. The repository tag is <em>0.26.3-sp1</em> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.26.3-sp1">https://github.com/ripple/rippled/tree/0.26.3-sp1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 2ad6f0a65e248b4f614d38d199a9d5d02f5aaed8
@@ -1657,7 +1657,7 @@ Version 0.26.3-sp1</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md399"></a>
+<h2><a class="anchor" id="autotoc_md404"></a>
 Version 0.26.2</h2>
 <p>rippled 0.26.2 has been released. The repository tag is <em>0.26.2</em> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.26.2">https://github.com/ripple/rippled/tree/0.26.2</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit b9454e0f0ca8dbc23844a0520d49394e10d445b1
@@ -1693,7 +1693,7 @@ Version 0.26.2</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md401"></a>
+<h2><a class="anchor" id="autotoc_md406"></a>
 Version 0.26.1</h2>
 <p>rippled v0.26.1 has been released. The repository tag is <b>0.26.1</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.26.1">https://github.com/ripple/rippled/tree/0.26.1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 9a0e806f78300374e20070e2573755fbafdbfd03
@@ -1718,7 +1718,7 @@ Version 0.26.1</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md403"></a>
+<h2><a class="anchor" id="autotoc_md408"></a>
 Version 0.26.0</h2>
 <p>rippled v0.26.0 has been released. The repository tag is <b>0.26.0</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.26.0">https://github.com/ripple/rippled/tree/0.26.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 9fa5e3987260e39dba322f218d39ac228a5b361b
@@ -1759,7 +1759,7 @@ Version 0.26.0</h2>
 <li><a href="https://webchat.freenode.net/?channels=#ripple">IRC</a></li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md405"></a>
+<h2><a class="anchor" id="autotoc_md410"></a>
 Version 0.25.2</h2>
 <p>rippled v0.25.2 has been released. The repository tag is <b>0.25.2</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.25.2">https://github.com/ripple/rippled/tree/0.25.2</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit ddf68d464d74e1c76a0cfd100a08bc8e65b91fec
@@ -1785,7 +1785,7 @@ Version 0.25.2</h2>
 <li>Transactions with unreasonably long path lengths are rejected. The maximum is now eight (8) hops.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md407"></a>
+<h2><a class="anchor" id="autotoc_md412"></a>
 Version 0.25.1</h2>
 <p><code>rippled</code> v0.25.1 has been released. The repository tag is <code>0.25.1</code> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.25.1">https://github.com/ripple/rippled/tree/0.25.1</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <code>git log</code> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit b677cacb8ce0d4ef21f8c60112af1db51dce5bb4
@@ -1821,7 +1821,7 @@ Version 0.25.1</h2>
 <li>Reduced number of asynchronous fetches.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md409"></a>
+<h2><a class="anchor" id="autotoc_md414"></a>
 Version 0.25.0</h2>
 <p>rippled version 0.25.0 has been released. The repository tag is <b>0.25.0</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.25.0">https://github.com/ripple/rippled/tree/0.25.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 29d1d5f06261a93c5e94b4011c7675ff42443b7f
@@ -1855,7 +1855,7 @@ Version 0.25.0</h2>
 <li>Reduced number of asynchronous fetches.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md411"></a>
+<h2><a class="anchor" id="autotoc_md416"></a>
 Version 0.24.0</h2>
 <p>rippled version 0.24.0 has been released. The repository tag is <b>0.24.0</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.24.0">https://github.com/ripple/rippled/tree/0.24.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 3eb1c7bd6f93e5d874192197f76571184338f702
@@ -1884,7 +1884,7 @@ Version 0.24.0</h2>
 <li>Build process enforces minimum versions of OpenSSL and BOOST for operation.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md413"></a>
+<h2><a class="anchor" id="autotoc_md418"></a>
 Version 0.23.0</h2>
 <p>rippled version 0.23.0 has been released. The repository tag is <b>0.23.0</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.23.0">https://github.com/ripple/rippled/tree/0.23.0</a></p>
 <p>Prior to building, please confirm you have the correct source tree with the <b>git log</b> command. The first log entry should be the change setting the version: </p><pre class="fragment"> commit 29a4f61551236f70865d46d6653da2e62de1c701
@@ -1924,7 +1924,7 @@ Version 0.23.0</h2>
 <li>Fix typos in transaction engine error code identifiers</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md415"></a>
+<h2><a class="anchor" id="autotoc_md420"></a>
 Version 0.22.0</h2>
 <p>rippled version 0.22.0 has been released. This release is currently the tip of the <b>develop/</b> branch and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/develop">https://github.com/ripple/rippled/tree/develop</a> The tag is <b>0.22.0</b> and can be found on GitHub at: <a href="https://github.com/ripple/rippled/tree/0.22.0">https://github.com/ripple/rippled/tree/0.22.0</a></p>
 <p><b>This is a critical release affecting transaction processing. All partners should update immediately.</b></p>
@@ -1981,7 +1981,7 @@ Version 0.22.0</h2>
 <li>Optimized transaction node lookup circumstances in the node store.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md417"></a>
+<h2><a class="anchor" id="autotoc_md422"></a>
 Version 0.21.0</h2>
 <p>rippled version 0.21.0 has been released. This release is currently the tip of the <b>develop/</b> branch and can be found on GitHub at <a href="https://github.com/ripple/rippled/tree/develop">1</a>. The tag is <b>0.21.0-rc2</b> and can be found on GitHub at <a href="https://github.com/ripple/rippled/tree/0.21.0-rc2">2</a>.</p>
 <p><b>This is a critical release. All partners should update immediately.</b></p>
@@ -2068,7 +2068,7 @@ Date:   Fri Jan 24 11:17:16 2014 -0800
 <li><b>Note</b>: HyperLevelDB and RocksDB are not available on Windows platform.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md419"></a>
+<h2><a class="anchor" id="autotoc_md424"></a>
 Version 0.20.1</h2>
 <p>rippled version 0.20.1 has been released. This release is currently the tip of the <a href="https://github.com/ripple/rippled/tree/develop">develop</a> branch and the tag is <a href="https://github.com/ripple/rippled/tree/0.20.1">0.20.1</a>.</p>
 <p><b>This is a critical release. All partners should update immediately.</b></p>
@@ -2172,7 +2172,7 @@ file_size_mult=2
 <li><b>Note</b>: HyperLevelDB and RocksDB are not available on Windows platform.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md421"></a>
+<h2><a class="anchor" id="autotoc_md426"></a>
 Version 0.19</h2>
 <p>rippled version 0.19 has now been released. This release is currently the tip of the <a href="https://github.com/ripple/rippled/tree/release">release</a> branch and the tag is <a href="https://github.com/ripple/rippled/tree/0.19.0">0.19.0</a>.</p>
 <p>Prior to building, please confirm you have the correct source tree with the <code>git log</code> command. The first log entry should be the change setting the version: </p><pre class="fragment">commit 26783607157a8b96e6e754f71565f4eb0134efc1
@@ -2225,7 +2225,7 @@ file_size_mult=2
 <li><b>Note:</b> HyperLevelDB and RocksDB are not available on Windows platform.</li>
 </ul>
 <hr  />
-<h2><a class="anchor" id="autotoc_md423"></a>
+<h2><a class="anchor" id="autotoc_md428"></a>
 Version 0.16</h2>
 <p>rippled version 0.16 has now been released. This release is currently the tip of the <a href="https://github.com/ripple/rippled/tree/master">master</a> branch and the tag is <a href="https://github.com/ripple/rippled/tree/v0.16.0">v0.16.0</a>.</p>
 <p>Prior to building, please confirm you have the correct source tree with the <code>git log</code> command. The first log entry should be the change setting the version: </p><pre class="fragment">commit 15ef43505473225af21bb7b575fb0b628d5e7f73
@@ -2273,7 +2273,7 @@ path=db/hashnode
 <p><b>Issues</b></p>
 <p>None known</p>
 <hr  />
-<h2><a class="anchor" id="autotoc_md425"></a>
+<h2><a class="anchor" id="autotoc_md430"></a>
 Version 0.14</h2>
 <p>rippled version 0.14 has now been released. This release is currently the tip of the <a href="https://github.com/ripple/rippled/tree/master">master</a> branch and the tag is <a href="https://github.com/ripple/rippled/tree/v0.14.0">v0.12.0</a>.</p>
 <p>Prior to building, please confirm you have the correct source tree with the <code>git log</code> command. The first log entry should be the change setting the version: </p><pre class="fragment">commit b6d11c08d0245ee9bafbb97143f5d685dd2979fc
@@ -2321,7 +2321,7 @@ path=db/hashnode
 <p><b>Issues</b></p>
 <p>None known</p>
 <hr  />
-<h2><a class="anchor" id="autotoc_md427"></a>
+<h2><a class="anchor" id="autotoc_md432"></a>
 Version 0.12</h2>
 <p>rippled version 0.12 has now been released. This release is currently the tip of the <a href="https://github.com/ripple/rippled/tree/master">master branch</a> and can be found on GitHub. The tag is <a href="https://github.com/ripple/rippled/tree/v0.12.0">v0.12.0</a>.</p>
 <p>Prior to building, please confirm you have the correct source tree with the <code>git log</code> command. The first log entry should be the change setting the version: </p><pre class="fragment">commit d0a9da6f16f4083993e4b6c5728777ffebf80f3a

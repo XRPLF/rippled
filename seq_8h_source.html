@@ -91,56 +91,58 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_TEST_JTX_SEQ_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_TEST_JTX_SEQ_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/jtx/tags.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>test {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>jtx {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html">   32</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">   35</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">manual_</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#afe71ec60d3d961d0d930014f06326eff">   36</a></span>&#160;    boost::optional&lt;std::uint32_t&gt; <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#afe71ec60d3d961d0d930014f06326eff">num_</a>;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a24f882c3c91938bb57b850d9883ff35f">   39</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a24f882c3c91938bb57b850d9883ff35f">seq</a>(<a class="code" href="structripple_1_1test_1_1jtx_1_1autofill__t.html">autofill_t</a>) : <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">manual_</a>(false)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#abed9d1f5cc4d264c4eb1fb9d28a682be">   43</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#abed9d1f5cc4d264c4eb1fb9d28a682be">seq</a>(<a class="code" href="structripple_1_1test_1_1jtx_1_1none__t.html">none_t</a>)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a48eca3de8a19f44dafe8e2fae1458723">   47</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a48eca3de8a19f44dafe8e2fae1458723">seq</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> num) : <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#afe71ec60d3d961d0d930014f06326eff">num_</a>(num)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    {</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#aa3f6aaee27c4ac374e51201fb5c491c5">operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jt) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}  <span class="comment">// namespace jtx</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/tags.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>test {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span>jtx {</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html">   33</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">   36</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">manual_</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a927d6514d5cd75307da9a27f239757a1">   37</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a927d6514d5cd75307da9a27f239757a1">num_</a>;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a24f882c3c91938bb57b850d9883ff35f">   40</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a24f882c3c91938bb57b850d9883ff35f">seq</a>(<a class="code" href="structripple_1_1test_1_1jtx_1_1autofill__t.html">autofill_t</a>) : <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">manual_</a>(false)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    {</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#abed9d1f5cc4d264c4eb1fb9d28a682be">   44</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#abed9d1f5cc4d264c4eb1fb9d28a682be">seq</a>(<a class="code" href="structripple_1_1test_1_1jtx_1_1none__t.html">none_t</a>)</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1jtx_1_1seq.html#a48eca3de8a19f44dafe8e2fae1458723">   48</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a48eca3de8a19f44dafe8e2fae1458723">seq</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> num) : <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#a927d6514d5cd75307da9a27f239757a1">num_</a>(num)</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    {</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html#aa3f6aaee27c4ac374e51201fb5c491c5">operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jt) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;};</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1autofill__t_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1autofill__t.html">ripple::test::jtx::autofill_t</a></div><div class="ttdef"><b>Definition:</b> <a href="tags_8h_source.html#l00036">tags.h:36</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_aa3f6aaee27c4ac374e51201fb5c491c5"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#aa3f6aaee27c4ac374e51201fb5c491c5">ripple::test::jtx::seq::operator()</a></div><div class="ttdeci">void operator()(Env &amp;, JTx &amp;jt) const</div><div class="ttdef"><b>Definition:</b> <a href="seq_8cpp_source.html#l00028">seq.cpp:28</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1none__t_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1none__t.html">ripple::test::jtx::none_t</a></div><div class="ttdef"><b>Definition:</b> <a href="tags_8h_source.html#l00028">tags.h:28</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00041">JTx.h:41</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a48eca3de8a19f44dafe8e2fae1458723"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a48eca3de8a19f44dafe8e2fae1458723">ripple::test::jtx::seq::seq</a></div><div class="ttdeci">seq(std::uint32_t num)</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00047">seq.h:47</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00042">JTx.h:42</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a48eca3de8a19f44dafe8e2fae1458723"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a48eca3de8a19f44dafe8e2fae1458723">ripple::test::jtx::seq::seq</a></div><div class="ttdeci">seq(std::uint32_t num)</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00048">seq.h:48</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a1124ea727c53e8b2be904124c14035d3"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">ripple::test::jtx::seq::manual_</a></div><div class="ttdeci">bool manual_</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00035">seq.h:35</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00032">seq.h:32</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a1124ea727c53e8b2be904124c14035d3"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a1124ea727c53e8b2be904124c14035d3">ripple::test::jtx::seq::manual_</a></div><div class="ttdeci">bool manual_</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00036">seq.h:36</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:33</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_abed9d1f5cc4d264c4eb1fb9d28a682be"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#abed9d1f5cc4d264c4eb1fb9d28a682be">ripple::test::jtx::seq::seq</a></div><div class="ttdeci">seq(none_t)</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00043">seq.h:43</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a24f882c3c91938bb57b850d9883ff35f"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a24f882c3c91938bb57b850d9883ff35f">ripple::test::jtx::seq::seq</a></div><div class="ttdeci">seq(autofill_t)</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00039">seq.h:39</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_abed9d1f5cc4d264c4eb1fb9d28a682be"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#abed9d1f5cc4d264c4eb1fb9d28a682be">ripple::test::jtx::seq::seq</a></div><div class="ttdeci">seq(none_t)</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00044">seq.h:44</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a927d6514d5cd75307da9a27f239757a1"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a927d6514d5cd75307da9a27f239757a1">ripple::test::jtx::seq::num_</a></div><div class="ttdeci">std::optional&lt; std::uint32_t &gt; num_</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00037">seq.h:37</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_a24f882c3c91938bb57b850d9883ff35f"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#a24f882c3c91938bb57b850d9883ff35f">ripple::test::jtx::seq::seq</a></div><div class="ttdeci">seq(autofill_t)</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00040">seq.h:40</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00115">Env.h:115</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html_afe71ec60d3d961d0d930014f06326eff"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html#afe71ec60d3d961d0d930014f06326eff">ripple::test::jtx::seq::num_</a></div><div class="ttdeci">boost::optional&lt; std::uint32_t &gt; num_</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00036">seq.h:36</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

@@ -160,9 +160,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac1d377c35a8332d069b09be8f4008dec"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#ac1d377c35a8332d069b09be8f4008dec">exists</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const =0</td></tr>
 <tr class="memdesc:ac1d377c35a8332d069b09be8f4008dec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if a state item exists.  <a href="classripple_1_1ReadView.html#ac1d377c35a8332d069b09be8f4008dec">More...</a><br /></td></tr>
 <tr class="separator:ac1d377c35a8332d069b09be8f4008dec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b1718fdf4ffd63d8fe7650f66114804"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a2b1718fdf4ffd63d8fe7650f66114804">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, boost::optional&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=boost::none) const =0</td></tr>
-<tr class="memdesc:a2b1718fdf4ffd63d8fe7650f66114804"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1ReadView.html#a2b1718fdf4ffd63d8fe7650f66114804">More...</a><br /></td></tr>
-<tr class="separator:a2b1718fdf4ffd63d8fe7650f66114804"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb3ef95cbd470775fe1e09955399667f"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=std::nullopt) const =0</td></tr>
+<tr class="memdesc:adb3ef95cbd470775fe1e09955399667f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">More...</a><br /></td></tr>
+<tr class="separator:adb3ef95cbd470775fe1e09955399667f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3351e0244f921234d5ba005a07ddf539"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const =0</td></tr>
 <tr class="memdesc:a3351e0244f921234d5ba005a07ddf539"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the state item associated with a key.  <a href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">More...</a><br /></td></tr>
 <tr class="separator:a3351e0244f921234d5ba005a07ddf539"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -577,8 +577,8 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a2b1718fdf4ffd63d8fe7650f66114804"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b1718fdf4ffd63d8fe7650f66114804">&#9670;&nbsp;</a></span>succ()</h2>
+<a id="adb3ef95cbd470775fe1e09955399667f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb3ef95cbd470775fe1e09955399667f">&#9670;&nbsp;</a></span>succ()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -587,7 +587,7 @@ Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>&gt; ripple::ReadView::succ </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>&gt; ripple::ReadView::succ </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
@@ -595,8 +595,8 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>last</em> = <code>boost::none</code>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>last</em> = <code>std::nullopt</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -612,10 +612,10 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Return the key of the next state item. </p>
-<p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, boost::none is returned.</p>
-<p>If <code>last</code> is engaged, returns boost::none when the key returned would be outside the open interval (key, last). </p>
+<p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, std::nullopt is returned.</p>
+<p>If <code>last</code> is engaged, returns std::nullopt when the key returned would be outside the open interval (key, last). </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a111df7decb50a3a2cb279b12acb5fc55">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a7773c892f7298830387e6f49711060b9">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#aacb6aa0fa3390a04cee9cf619b95beb9">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a96f3599bffc047126acfd74f075d2125">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>

@@ -113,9 +113,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a90ce3f79e011586bc87d6fdcb4cf9a0e"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStore.html#a90ce3f79e011586bc87d6fdcb4cf9a0e">fdRequired</a> () const =0</td></tr>
 <tr class="memdesc:a90ce3f79e011586bc87d6fdcb4cf9a0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of file descriptors that are needed.  <a href="classripple_1_1SHAMapStore.html#a90ce3f79e011586bc87d6fdcb4cf9a0e">More...</a><br /></td></tr>
 <tr class="separator:a90ce3f79e011586bc87d6fdcb4cf9a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05bec537a1aea25f251635dafc755900"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStore.html#a05bec537a1aea25f251635dafc755900">minimumOnline</a> () const =0</td></tr>
-<tr class="memdesc:a05bec537a1aea25f251635dafc755900"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum ledger to try and maintain in our database.  <a href="classripple_1_1SHAMapStore.html#a05bec537a1aea25f251635dafc755900">More...</a><br /></td></tr>
-<tr class="separator:a05bec537a1aea25f251635dafc755900"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c8484a5340cf2188a382816148b549b"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStore.html#a5c8484a5340cf2188a382816148b549b">minimumOnline</a> () const =0</td></tr>
+<tr class="memdesc:a5c8484a5340cf2188a382816148b549b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum ledger to try and maintain in our database.  <a href="classripple_1_1SHAMapStore.html#a5c8484a5340cf2188a382816148b549b">More...</a><br /></td></tr>
+<tr class="separator:a5c8484a5340cf2188a382816148b549b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>class to create database, launch online delete thread, and related SQLite database </p>
@@ -417,8 +417,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a05bec537a1aea25f251635dafc755900"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a05bec537a1aea25f251635dafc755900">&#9670;&nbsp;</a></span>minimumOnline()</h2>
+<a id="a5c8484a5340cf2188a382816148b549b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c8484a5340cf2188a382816148b549b">&#9670;&nbsp;</a></span>minimumOnline()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -427,7 +427,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&gt; ripple::SHAMapStore::minimumOnline </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&gt; ripple::SHAMapStore::minimumOnline </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -445,7 +445,7 @@ Public Member Functions</h2></td></tr>
 <p>If online_delete is enabled, then each time online_delete executes and just prior to clearing SQL databases of historical ledgers, move the value forward to one past the greatest ledger being deleted. This minimizes fetching of ledgers that are in the process of being deleted. Without online_delete or before online_delete is executed, this value is always the minimum value persisted in the ledger database, if any.</p>
 <dl class="section return"><dt>Returns</dt><dd>The minimum ledger sequence to keep online based on the description above. If not set, then an unseated optional. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1SHAMapStoreImp.html#a6a83852c52d91ffb7fe55092d7b07bce">ripple::SHAMapStoreImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1SHAMapStoreImp.html#aae4d284b5bd80fa3860d9b49b05fc1ec">ripple::SHAMapStoreImp</a>.</p>
 
 </div>
 </div>

@@ -83,10 +83,10 @@ Collaboration diagram for ripple::Validations&lt; Adaptor &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Validations__coll__graph.png" border="0" usemap="#ripple_1_1Validations_3_01Adaptor_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1Validations_3_01Adaptor_01_4_coll__map" id="ripple_1_1Validations_3_01Adaptor_01_4_coll__map">
-<area shape="rect" title="Maintains current and recent ledger validations." alt="" coords="1675,644,1813,685"/>
-<area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,417,1520,517"/>
-<area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html" title=" " alt="" coords="821,357,1011,442"/>
+<area shape="rect" title="Maintains current and recent ledger validations." alt="" coords="1675,667,1813,708"/>
 <area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,281,1520,381"/>
+<area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html" title=" " alt="" coords="821,357,1011,442"/>
+<area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,417,1520,517"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="434,437,635,522"/>
 <area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="821,247,1011,333"/>
 <area shape="rect" href="classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="439,138,630,223"/>
@@ -104,11 +104,12 @@ Collaboration diagram for ripple::Validations&lt; Adaptor &gt;:</div>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title=" " alt="" coords="845,627,987,668"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/utility/pair.html" title=" " alt="" coords="841,575,991,602"/>
 <area shape="rect" title=" " alt="" coords="515,575,554,602"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1347,644,1499,685"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1315,710,1531,766"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1336,791,1509,832"/>
-<area shape="rect" href="structripple_1_1ValidationParms.html" title="Timing parameters to control validation staleness and expiration." alt="" coords="1337,857,1509,883"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="839,857,993,883"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="1344,645,1501,671"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1347,696,1499,737"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1315,762,1531,818"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1336,843,1509,884"/>
+<area shape="rect" href="structripple_1_1ValidationParms.html" title="Timing parameters to control validation staleness and expiration." alt="" coords="1337,909,1509,935"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="839,909,993,935"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -141,9 +142,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac764335dc3c5d9625cc74fd757331722"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4436616304f6309389ddd6d11f5560d2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a4436616304f6309389ddd6d11f5560d2">getJsonTrie</a> () const</td></tr>
 <tr class="separator:a4436616304f6309389ddd6d11f5560d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49e72adb9b1df906dc15cc1fa073aefb"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a49e72adb9b1df906dc15cc1fa073aefb">getPreferred</a> (<a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> const &amp;curr)</td></tr>
-<tr class="memdesc:a49e72adb9b1df906dc15cc1fa073aefb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the sequence number and ID of the preferred working ledger.  <a href="classripple_1_1Validations.html#a49e72adb9b1df906dc15cc1fa073aefb">More...</a><br /></td></tr>
-<tr class="separator:a49e72adb9b1df906dc15cc1fa073aefb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeef036f0efc7d98bfbd99e00857e7269"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#aeef036f0efc7d98bfbd99e00857e7269">getPreferred</a> (<a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> const &amp;curr)</td></tr>
+<tr class="memdesc:aeef036f0efc7d98bfbd99e00857e7269"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the sequence number and ID of the preferred working ledger.  <a href="classripple_1_1Validations.html#aeef036f0efc7d98bfbd99e00857e7269">More...</a><br /></td></tr>
+<tr class="separator:aeef036f0efc7d98bfbd99e00857e7269"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8cbed0563344b297789575879aae482"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#ad8cbed0563344b297789575879aae482">getPreferred</a> (<a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> const &amp;curr, <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> minValidSeq)</td></tr>
 <tr class="memdesc:ad8cbed0563344b297789575879aae482"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the ID of the preferred working ledger that exceeds a minimum valid ledger sequence number.  <a href="classripple_1_1Validations.html#ad8cbed0563344b297789575879aae482">More...</a><br /></td></tr>
 <tr class="separator:ad8cbed0563344b297789575879aae482"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -202,9 +203,9 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:adbb465aa9320edb48f75f409180b66ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84d89d10b9ee57fcdb8fccd003a8125a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a84d89d10b9ee57fcdb8fccd003a8125a">updateTrie</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1Validations.html#a29cc46e5ba5073e181331bb824dfa4f5">Mutex</a> &gt; const &amp;, <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a> const &amp;nodeID, <a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> ledger)</td></tr>
 <tr class="separator:a84d89d10b9ee57fcdb8fccd003a8125a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1f0579601ac7207399ccc2e46455f27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#af1f0579601ac7207399ccc2e46455f27">updateTrie</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1Validations.html#a29cc46e5ba5073e181331bb824dfa4f5">Mutex</a> &gt; const &amp;lock, <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a> const &amp;nodeID, <a class="el" href="classripple_1_1Validations.html#a347521e28c20acb8fe6582fc5b917888">Validation</a> const &amp;val, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> &gt;&gt; prior)</td></tr>
-<tr class="memdesc:af1f0579601ac7207399ccc2e46455f27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a new validation.  <a href="classripple_1_1Validations.html#af1f0579601ac7207399ccc2e46455f27">More...</a><br /></td></tr>
-<tr class="separator:af1f0579601ac7207399ccc2e46455f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3da711fd9e31460dba53c28b8ba4248"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#ac3da711fd9e31460dba53c28b8ba4248">updateTrie</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1Validations.html#a29cc46e5ba5073e181331bb824dfa4f5">Mutex</a> &gt; const &amp;lock, <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a> const &amp;nodeID, <a class="el" href="classripple_1_1Validations.html#a347521e28c20acb8fe6582fc5b917888">Validation</a> const &amp;val, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> &gt;&gt; prior)</td></tr>
+<tr class="memdesc:ac3da711fd9e31460dba53c28b8ba4248"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a new validation.  <a href="classripple_1_1Validations.html#ac3da711fd9e31460dba53c28b8ba4248">More...</a><br /></td></tr>
+<tr class="separator:ac3da711fd9e31460dba53c28b8ba4248"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15378109defef58e85955ce6de26f465"><td class="memTemplParams" colspan="2">template&lt;class F &gt; </td></tr>
 <tr class="memitem:a15378109defef58e85955ce6de26f465"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a15378109defef58e85955ce6de26f465">withTrie</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1Validations.html#a29cc46e5ba5073e181331bb824dfa4f5">Mutex</a> &gt; const &amp;lock, F &amp;&amp;f)</td></tr>
 <tr class="memdesc:a15378109defef58e85955ce6de26f465"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the trie for a calculation.  <a href="classripple_1_1Validations.html#a15378109defef58e85955ce6de26f465">More...</a><br /></td></tr>
@@ -233,8 +234,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a6bebdea6f71ad168e8521ddc5ae01a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac130cfc0517fa32929f05f5489883e5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacebeast.html#af6181fa93ab6095c2364cc166ad6eca3">beast::aged_unordered_map</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a>, <a class="el" href="classripple_1_1Validations.html#a347521e28c20acb8fe6582fc5b917888">Validation</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#ac130cfc0517fa32929f05f5489883e5a">bySequence_</a></td></tr>
 <tr class="separator:ac130cfc0517fa32929f05f5489883e5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ccf53fc1e9d50a9997d7956eb4b5188"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a8ccf53fc1e9d50a9997d7956eb4b5188">toKeep_</a></td></tr>
-<tr class="separator:a8ccf53fc1e9d50a9997d7956eb4b5188"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47efd32ec659cdd89b8a93d23192427e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a47efd32ec659cdd89b8a93d23192427e">toKeep_</a></td></tr>
+<tr class="separator:a47efd32ec659cdd89b8a93d23192427e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8aab0cbcea7bfc39e53aaaf4a19b841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1LedgerTrie.html">LedgerTrie</a>&lt; <a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a8aab0cbcea7bfc39e53aaaf4a19b841d">trie_</a></td></tr>
 <tr class="separator:a8aab0cbcea7bfc39e53aaaf4a19b841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a182a987f9c2f6cf9b67fe3cb0d12b247"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a>, <a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a182a987f9c2f6cf9b67fe3cb0d12b247">lastLedger_</a></td></tr>
@@ -311,7 +312,7 @@ class ripple::Validations&lt; Adaptor &gt;</h3>
 <div class="line">    <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now() <span class="keyword">const</span>;</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// Attempt to acquire a specific ledger.</span></div>
-<div class="line">    boost::optional&lt;Ledger&gt; acquire(Ledger::ID <span class="keyword">const</span> &amp; ledgerID);</div>
+<div class="line">    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Ledger&gt;</a> acquire(Ledger::ID <span class="keyword">const</span> &amp; ledgerID);</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// ... implementation specific</span></div>
 <div class="line">};</div>
@@ -579,7 +580,7 @@ template&lt;class... Ts&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00564">564</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00563">563</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -706,8 +707,8 @@ template&lt;class Adaptor &gt; </div>
 
 </div>
 </div>
-<a id="af1f0579601ac7207399ccc2e46455f27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1f0579601ac7207399ccc2e46455f27">&#9670;&nbsp;</a></span>updateTrie() <span class="overload">[2/2]</span></h2>
+<a id="ac3da711fd9e31460dba53c28b8ba4248"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3da711fd9e31460dba53c28b8ba4248">&#9670;&nbsp;</a></span>updateTrie() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -738,7 +739,7 @@ template&lt;class Adaptor &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> &gt;&gt;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> &gt;&gt;&#160;</td>
           <td class="paramname"><em>prior</em>&#160;</td>
         </tr>
         <tr>
@@ -819,7 +820,7 @@ template&lt;class F &gt; </div>
 </dl>
 <dl class="section warning"><dt>Warning</dt><dd>The invokable <code>f</code> is expected to be a simple transformation of its arguments and will be called with mutex_ under lock. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00474">474</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00473">473</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -879,7 +880,7 @@ template&lt;class Pre , class F &gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>The invokable <code>pre</code> is called <em>prior</em> to checking for staleness and reflects an upper-bound on the number of calls to <code>f. @warning The invokable</code>f` is expected to be a simple transformation of its arguments and will be called with mutex_ under lock. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00501">501</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00500">500</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -946,7 +947,7 @@ template&lt;class Pre , class F &gt; </div>
 <dl class="section note"><dt>Note</dt><dd>The invokable <code>pre</code> is called prior to iterating validations. The argument is the number of times <code>f</code> will be called. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>The invokable f is expected to be a simple transformation of its arguments and will be called with mutex_ under lock. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00539">539</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00538">538</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -969,7 +970,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Return the adaptor instance. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00578">578</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00577">577</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -992,7 +993,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Return the validation timing parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00586">586</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00585">585</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1023,7 +1024,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether the validation satisfies the invariant, updating the largest sequence number seen accordingly </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00599">599</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00598">598</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1066,7 +1067,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The outcome </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00614">614</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00613">613</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1096,7 +1097,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00697">697</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00703">703</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1120,7 +1121,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Expire old validation sets. </p>
 <p>Remove validation sets that were accessed more than validationSET_EXPIRES ago and were not asked to keep. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00709">709</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00715">715</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1163,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00747">747</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00753">753</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1183,12 +1184,12 @@ template&lt;class Adaptor &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00783">783</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00789">789</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
-<a id="a49e72adb9b1df906dc15cc1fa073aefb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49e72adb9b1df906dc15cc1fa073aefb">&#9670;&nbsp;</a></span>getPreferred() <span class="overload">[1/2]</span></h2>
+<a id="aeef036f0efc7d98bfbd99e00857e7269"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeef036f0efc7d98bfbd99e00857e7269">&#9670;&nbsp;</a></span>getPreferred() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1196,7 +1197,7 @@ template&lt;class Adaptor &gt; </div>
 template&lt;class Adaptor &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a>&gt; &gt; <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::getPreferred </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a>&gt; &gt; <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::getPreferred </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> const &amp;&#160;</td>
           <td class="paramname"><em>curr</em></td><td>)</td>
@@ -1213,9 +1214,9 @@ template&lt;class Adaptor &gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The sequence and id of the preferred working ledger, or boost::none if no trusted validations are available to determine the preferred ledger. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The sequence and id of the preferred working ledger, or std::nullopt if no trusted validations are available to determine the preferred ledger. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00802">802</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00808">808</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1257,7 +1258,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>ID Of the preferred ledger, or curr if the preferred ledger is not valid </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00863">863</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00869">869</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1308,7 +1309,7 @@ template&lt;class Adaptor &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>The preferred last closed ledger ID</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The minSeq does not apply to the peerCounts, since this function does not know their sequence number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00888">888</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00894">894</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1351,7 +1352,7 @@ template&lt;class Adaptor &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>The number of current trusted validators working on a descendant of the preferred ledger</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>If ledger.id() != ledgerID, only counts immediate child ledgers of ledgerID </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00926">926</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00932">932</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1375,7 +1376,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Get the currently trusted full validations. </p>
 <dl class="section return"><dt>Returns</dt><dd>Vector of validations from currently trusted validators </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00952">952</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00958">958</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1400,7 +1401,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Get the set of node ids associated with current validations. </p>
 <dl class="section return"><dt>Returns</dt><dd>The set of node ids for active, listed validators </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00971">971</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00977">977</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1431,7 +1432,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The number of trusted validations </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00989">989</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00995">995</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1462,7 +1463,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Trusted validations associated with ledger </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01010">1010</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01016">1016</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1504,7 +1505,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of fees </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01033">1033</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01039">1039</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1527,7 +1528,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Flush all current validations. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01057">1057</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01063">1063</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1571,7 +1572,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Quantity of laggards. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01079">1079</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01085">1085</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1734,8 +1735,8 @@ template&lt;class Adaptor &gt; </div>
 
 </div>
 </div>
-<a id="a8ccf53fc1e9d50a9997d7956eb4b5188"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ccf53fc1e9d50a9997d7956eb4b5188">&#9670;&nbsp;</a></span>toKeep_</h2>
+<a id="a47efd32ec659cdd89b8a93d23192427e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47efd32ec659cdd89b8a93d23192427e">&#9670;&nbsp;</a></span>toKeep_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1746,7 +1747,7 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>&gt; <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::toKeep_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>&gt; <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::toKeep_</td>
         </tr>
       </table>
   </td>
@@ -1895,9 +1896,10 @@ template&lt;class Adaptor &gt; </div>
 <div class="ttc" id="aclassripple_1_1Validations_html_a29cc46e5ba5073e181331bb824dfa4f5"><div class="ttname"><a href="classripple_1_1Validations.html#a29cc46e5ba5073e181331bb824dfa4f5">ripple::Validations::Mutex</a></div><div class="ttdeci">typename Adaptor::Mutex Mutex</div><div class="ttdef"><b>Definition:</b> <a href="Validations_8h_source.html#l00286">Validations.h:286</a></div></div>
 <div class="ttc" id="aclassripple_1_1Validations_html_a478fe0e878e729d04eaad7b4c6897e26"><div class="ttname"><a href="classripple_1_1Validations.html#a478fe0e878e729d04eaad7b4c6897e26">ripple::Validations::NodeKey</a></div><div class="ttdeci">typename Validation::NodeKey NodeKey</div><div class="ttdef"><b>Definition:</b> <a href="Validations_8h_source.html#l00292">Validations.h:292</a></div></div>
 <div class="ttc" id="aclassripple_1_1Validations_html_a678c0348bd68f913d6f53f53e40c3f50"><div class="ttname"><a href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">ripple::Validations::NodeID</a></div><div class="ttdeci">typename Validation::NodeID NodeID</div><div class="ttdef"><b>Definition:</b> <a href="Validations_8h_source.html#l00291">Validations.h:291</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1Validations_html_ab12762703bf6418522381ff513a33856"><div class="ttname"><a href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">ripple::Validations::Ledger</a></div><div class="ttdeci">typename Adaptor::Ledger Ledger</div><div class="ttdef"><b>Definition:</b> <a href="Validations_8h_source.html#l00288">Validations.h:288</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00054">chrono.h:54</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00056">chrono.h:56</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

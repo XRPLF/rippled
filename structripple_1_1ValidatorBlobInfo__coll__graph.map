@@ -1,4 +1,5 @@
 <map id="ripple::ValidatorBlobInfo" name="ripple::ValidatorBlobInfo">
-<area shape="rect" id="node1" title="Used to represent the information stored in the blobs_v2 Json array." alt="" coords="5,109,184,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="51,5,138,32"/>
+<area shape="rect" id="node1" title="Used to represent the information stored in the blobs_v2 Json array." alt="" coords="53,124,232,151"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,144,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="169,13,255,39"/>
 </map>

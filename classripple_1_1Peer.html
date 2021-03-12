@@ -123,8 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3a7b97f3e4307066f4e0a6abc9f9be35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1781d176803366238413407a0815124a"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a1781d176803366238413407a0815124a">supportsFeature</a> (<a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150">ProtocolFeature</a> f) const =0</td></tr>
 <tr class="separator:a1781d176803366238413407a0815124a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a973af11e1d85c35b496a942261cdc3dc"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a973af11e1d85c35b496a942261cdc3dc">publisherListSequence</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;) const =0</td></tr>
-<tr class="separator:a973af11e1d85c35b496a942261cdc3dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1ca96d5fb66c617c63b54fccff8246f"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#af1ca96d5fb66c617c63b54fccff8246f">publisherListSequence</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;) const =0</td></tr>
+<tr class="separator:af1ca96d5fb66c617c63b54fccff8246f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc1069de1a8a5ff1364003caf00bb139"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#adc1069de1a8a5ff1364003caf00bb139">setPublisherListSequence</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const)=0</td></tr>
 <tr class="separator:adc1069de1a8a5ff1364003caf00bb139"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7be0fe54e7f2f72ddc0ec749122b8d10"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a7be0fe54e7f2f72ddc0ec749122b8d10">getClosedLedgerHash</a> () const =0</td></tr>
@@ -489,8 +489,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a973af11e1d85c35b496a942261cdc3dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a973af11e1d85c35b496a942261cdc3dc">&#9670;&nbsp;</a></span>publisherListSequence()</h2>
+<a id="af1ca96d5fb66c617c63b54fccff8246f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1ca96d5fb66c617c63b54fccff8246f">&#9670;&nbsp;</a></span>publisherListSequence()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -499,7 +499,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; ripple::Peer::publisherListSequence </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; ripple::Peer::publisherListSequence </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -513,7 +513,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#afe921257b5b3a7e0fe953192c89899bb">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a1f23d68a54c1a9edfa444716e0344971">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a22e01aa2fc79d1932541bc7897b9d5d8">ripple::test::PeerPartial</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#a8bf9ad36c4aeca52a640d56db6a591b8">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a089a7f15cfbf68aebcbb19e1eb763972">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#abe41429496d6860fa3652d301c063e8c">ripple::test::PeerPartial</a>.</p>
 
 </div>
 </div>

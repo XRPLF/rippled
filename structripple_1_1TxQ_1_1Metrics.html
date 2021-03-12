@@ -81,7 +81,8 @@ Collaboration diagram for ripple::TxQ::Metrics:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1TxQ_1_1Metrics__coll__graph.png" border="0" usemap="#ripple_1_1TxQ_1_1Metrics_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1TxQ_1_1Metrics_coll__map" id="ripple_1_1TxQ_1_1Metrics_coll__map">
-<area shape="rect" title="Structure returned by TxQ::getMetrics, expressed in reference fee level units." alt="" coords="688,284,836,311"/>
+<area shape="rect" title="Structure returned by TxQ::getMetrics, expressed in reference fee level units." alt="" coords="688,247,836,273"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="319,150,457,191"/>
 <area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="293,239,483,281"/>
 <area shape="rect" title=" " alt="" coords="14,5,203,61"/>
 <area shape="rect" title=" " alt="" coords="7,86,210,127"/>
@@ -105,9 +106,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ade3363912328dbd806a24207929c4fb3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Metrics.html#ade3363912328dbd806a24207929c4fb3">txCount</a></td></tr>
 <tr class="memdesc:ade3363912328dbd806a24207929c4fb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of transactions in the queue.  <a href="structripple_1_1TxQ_1_1Metrics.html#ade3363912328dbd806a24207929c4fb3">More...</a><br /></td></tr>
 <tr class="separator:ade3363912328dbd806a24207929c4fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d641988ce8dc10a03e2a9e16cde913a"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Metrics.html#a6d641988ce8dc10a03e2a9e16cde913a">txQMaxSize</a></td></tr>
-<tr class="memdesc:a6d641988ce8dc10a03e2a9e16cde913a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Max transactions currently allowed in queue.  <a href="structripple_1_1TxQ_1_1Metrics.html#a6d641988ce8dc10a03e2a9e16cde913a">More...</a><br /></td></tr>
-<tr class="separator:a6d641988ce8dc10a03e2a9e16cde913a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61ea155db2d26ef9addb0e889775ce85"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Metrics.html#a61ea155db2d26ef9addb0e889775ce85">txQMaxSize</a></td></tr>
+<tr class="memdesc:a61ea155db2d26ef9addb0e889775ce85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Max transactions currently allowed in queue.  <a href="structripple_1_1TxQ_1_1Metrics.html#a61ea155db2d26ef9addb0e889775ce85">More...</a><br /></td></tr>
+<tr class="separator:a61ea155db2d26ef9addb0e889775ce85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6d188cab1f33a838cda74a0dc6cbbf2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Metrics.html#aa6d188cab1f33a838cda74a0dc6cbbf2">txInLedger</a></td></tr>
 <tr class="memdesc:aa6d188cab1f33a838cda74a0dc6cbbf2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of transactions currently in the open ledger.  <a href="structripple_1_1TxQ_1_1Metrics.html#aa6d188cab1f33a838cda74a0dc6cbbf2">More...</a><br /></td></tr>
 <tr class="separator:aa6d188cab1f33a838cda74a0dc6cbbf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -130,7 +131,7 @@ Public Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Structure returned by <a class="el" href="classripple_1_1TxQ.html#a2a08d6cdb1e6700a24dc0f71eb3ef7ed">TxQ::getMetrics</a>, expressed in reference fee level units. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00159">159</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00160">160</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5f8431c7f8f88f9455e5dce38defa925"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5f8431c7f8f88f9455e5dce38defa925">&#9670;&nbsp;</a></span>Metrics()</h2>
@@ -174,25 +175,25 @@ Public Attributes</h2></td></tr>
 
 <p>Number of transactions in the queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00165">165</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00166">166</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
-<a id="a6d641988ce8dc10a03e2a9e16cde913a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d641988ce8dc10a03e2a9e16cde913a">&#9670;&nbsp;</a></span>txQMaxSize</h2>
+<a id="a61ea155db2d26ef9addb0e889775ce85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61ea155db2d26ef9addb0e889775ce85">&#9670;&nbsp;</a></span>txQMaxSize</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; ripple::TxQ::Metrics::txQMaxSize</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; ripple::TxQ::Metrics::txQMaxSize</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Max transactions currently allowed in queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00167">167</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00168">168</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -210,7 +211,7 @@ Public Attributes</h2></td></tr>
 
 <p>Number of transactions currently in the open ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00169">169</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00170">170</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -228,7 +229,7 @@ Public Attributes</h2></td></tr>
 
 <p>Number of transactions expected per ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00171">171</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00172">172</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -246,7 +247,7 @@ Public Attributes</h2></td></tr>
 
 <p>Reference transaction fee level. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00173">173</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00174">174</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -264,7 +265,7 @@ Public Attributes</h2></td></tr>
 
 <p>Minimum fee level for a transaction to be considered for the open ledger or the queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00176">176</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00177">177</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -282,7 +283,7 @@ Public Attributes</h2></td></tr>
 
 <p>Median fee level of the last ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00178">178</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00179">179</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +301,7 @@ Public Attributes</h2></td></tr>
 
 <p>Minimum fee level to get into the current open ledger, bypassing the queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00181">181</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00182">182</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>

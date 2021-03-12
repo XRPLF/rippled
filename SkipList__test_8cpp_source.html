@@ -126,59 +126,57 @@ $(function() {
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="keyword">auto</span> l = *(<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a>(history)));</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            BEAST_EXPECT((*<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a>(history))-&gt;info().<a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq &lt; l-&gt;</a>info().<a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(*l, l-&gt;info().seq + 1, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) == boost::none);</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                !<a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(*l, l-&gt;info().seq + 1, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>).has_value());</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(*l, l-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) == l-&gt;info().hash);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                <a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(*l, l-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) == l-&gt;info().hash);</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(*l, l-&gt;info().seq - 1, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                <a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(*l, l-&gt;info().seq - 1, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                l-&gt;info().parentHash);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(*history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>(), l-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                boost::none);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment">// ledger skip lists store up to the previous 256 hashes</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rbegin.html">crbegin</a>(); i != history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rend.html">crend</a>(); i += 256)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        {</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> n = i;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                 n != <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(i, (*i)-&gt;info().seq - 256 &gt; 1 ? 257 : 256);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                 ++n)</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            {</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                    <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(**i, (*n)-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                    (*n)-&gt;info().hash);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            }</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="comment">// edge case accessing beyond 256</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(**i, (*i)-&gt;info().seq - 258, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                boost::none);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        }</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="comment">// every 256th hash beyond the first 256 is stored</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rbegin.html">crbegin</a>(); i != <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rend.html">crend</a>(), -512);</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;             i += 256)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        {</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> n = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(i, 512); n != history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rend.html">crend</a>(); n += 256)</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            {</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                    <a class="code" href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">hashOfSeq</a>(**i, (*n)-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                    (*n)-&gt;info().hash);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            }</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        }</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    }</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1SkipList__test.html#ac413d69791579bf5a5eee76fb21afdce">  101</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1SkipList__test.html#ac413d69791579bf5a5eee76fb21afdce">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <a class="code" href="classripple_1_1test_1_1SkipList__test.html#a16ee45304e45df16413127995bde3d43">testSkipList</a>();</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    }</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;};</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            BEAST_EXPECT(!<a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(*history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>(), l-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>)</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                              .has_value());</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="comment">// ledger skip lists store up to the previous 256 hashes</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rbegin.html">crbegin</a>(); i != history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rend.html">crend</a>(); i += 256)</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        {</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> n = i;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                 n != <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(i, (*i)-&gt;info().seq - 256 &gt; 1 ? 257 : 256);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                 ++n)</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            {</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                    <a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(**i, (*n)-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                    (*n)-&gt;info().hash);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            }</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <span class="comment">// edge case accessing beyond 256</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            BEAST_EXPECT(!<a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(**i, (*i)-&gt;info().seq - 258, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>)</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                              .has_value());</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        }</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="comment">// every 256th hash beyond the first 256 is stored</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rbegin.html">crbegin</a>(); i != <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rend.html">crend</a>(), -512);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;             i += 256)</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        {</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> n = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(i, 512); n != history.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/rend.html">crend</a>(); n += 256)</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            {</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                    <a class="code" href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">hashOfSeq</a>(**i, (*n)-&gt;info().seq, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#af238c2610022423bbbdbf9f493bc74e1">journal</a>) ==</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                    (*n)-&gt;info().hash);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            }</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        }</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1SkipList__test.html#ac413d69791579bf5a5eee76fb21afdce">   99</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1SkipList__test.html#ac413d69791579bf5a5eee76fb21afdce">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <a class="code" href="classripple_1_1test_1_1SkipList__test.html#a16ee45304e45df16413127995bde3d43">testSkipList</a>();</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    }</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;};</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(SkipList, ledger, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(SkipList, ledger, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
@@ -187,13 +185,13 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a9e55bbdb66a785bfd0dda93802b514b6"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">ripple::test::jtx::Env::app</a></div><div class="ttdeci">Application &amp; app()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00240">Env.h:240</a></div></div>
 <div class="ttc" id="aback_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/back.html">std::vector::back</a></div><div class="ttdeci">T back(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a280004d4cce56d8f1ec4664950aa58d4"><div class="ttname"><a href="classripple_1_1Application.html#a280004d4cce56d8f1ec4664950aa58d4">ripple::Application::timeKeeper</a></div><div class="ttdeci">virtual TimeKeeper &amp; timeKeeper()=0</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1SkipList__test_html_ac413d69791579bf5a5eee76fb21afdce"><div class="ttname"><a href="classripple_1_1test_1_1SkipList__test.html#ac413d69791579bf5a5eee76fb21afdce">ripple::test::SkipList_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="SkipList__test_8cpp_source.html#l00101">SkipList_test.cpp:101</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1SkipList__test_html_ac413d69791579bf5a5eee76fb21afdce"><div class="ttname"><a href="classripple_1_1test_1_1SkipList__test.html#ac413d69791579bf5a5eee76fb21afdce">ripple::test::SkipList_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="SkipList__test_8cpp_source.html#l00099">SkipList_test.cpp:99</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00067">Config.h:67</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4099618475b06c3fa5554a99178a8a59"><div class="ttname"><a href="namespaceripple.html#a4099618475b06c3fa5554a99178a8a59">ripple::hashOfSeq</a></div><div class="ttdeci">std::optional&lt; uint256 &gt; hashOfSeq(ReadView const &amp;ledger, LedgerIndex seq, beast::Journal journal)</div><div class="ttdoc">Return the hash of a ledger by sequence.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00577">View.cpp:577</a></div></div>
 <div class="ttc" id="aclassripple_1_1TimeKeeper_html_a106491f0751b8c2c75978a4d1f7aa0e6"><div class="ttname"><a href="classripple_1_1TimeKeeper.html#a106491f0751b8c2c75978a4d1f7aa0e6">ripple::TimeKeeper::closeTime</a></div><div class="ttdeci">virtual time_point closeTime() const =0</div><div class="ttdoc">Returns the close time, in network time.</div></div>
 <div class="ttc" id="arend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/rend.html">std::vector::crend</a></div><div class="ttdeci">T crend(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a43e44648f3d01b0d857edbdd5589514c"><div class="ttname"><a href="namespaceripple.html#a43e44648f3d01b0d857edbdd5589514c">ripple::hashOfSeq</a></div><div class="ttdeci">boost::optional&lt; uint256 &gt; hashOfSeq(ReadView const &amp;ledger, LedgerIndex seq, beast::Journal journal)</div><div class="ttdoc">Return the hash of a ledger by sequence.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00576">View.cpp:576</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00032">seq.h:32</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:33</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1SkipList__test_html"><div class="ttname"><a href="classripple_1_1test_1_1SkipList__test.html">ripple::test::SkipList_test</a></div><div class="ttdef"><b>Definition:</b> <a href="SkipList__test_8cpp_source.html#l00029">SkipList_test.cpp:29</a></div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>

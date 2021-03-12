@@ -1,8 +1,8 @@
 <map id="ripple::Validations&lt; Adaptor &gt;" name="ripple::Validations&lt; Adaptor &gt;">
-<area shape="rect" id="node1" title="Maintains current and recent ledger validations." alt="" coords="1675,644,1813,685"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,417,1520,517"/>
+<area shape="rect" id="node1" title="Maintains current and recent ledger validations." alt="" coords="1675,667,1813,708"/>
+<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,281,1520,381"/>
 <area shape="rect" id="node3" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html" title=" " alt="" coords="821,357,1011,442"/>
-<area shape="rect" id="node17" href="$classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,281,1520,381"/>
+<area shape="rect" id="node17" href="$classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="1325,417,1520,517"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="434,437,635,522"/>
 <area shape="rect" id="node5" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="821,247,1011,333"/>
 <area shape="rect" id="node6" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="439,138,630,223"/>
@@ -20,9 +20,10 @@
 <area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_set.html" title=" " alt="" coords="845,627,987,668"/>
 <area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="841,575,991,602"/>
 <area shape="rect" id="node21" title=" " alt="" coords="515,575,554,602"/>
-<area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1347,644,1499,685"/>
-<area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1315,710,1531,766"/>
-<area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1336,791,1509,832"/>
-<area shape="rect" id="node25" href="$structripple_1_1ValidationParms.html" title="Timing parameters to control validation staleness and expiration." alt="" coords="1337,857,1509,883"/>
-<area shape="rect" id="node26" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="839,857,993,883"/>
+<area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="1344,645,1501,671"/>
+<area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1347,696,1499,737"/>
+<area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1315,762,1531,818"/>
+<area shape="rect" id="node25" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1336,843,1509,884"/>
+<area shape="rect" id="node26" href="$structripple_1_1ValidationParms.html" title="Timing parameters to control validation staleness and expiration." alt="" coords="1337,909,1509,935"/>
+<area shape="rect" id="node27" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="839,909,993,935"/>
 </map>

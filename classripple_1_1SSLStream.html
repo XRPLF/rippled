@@ -88,11 +88,12 @@ Collaboration diagram for ripple::SSLStream:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1SSLStream__coll__graph.png" border="0" usemap="#ripple_1_1SSLStream_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1SSLStream_coll__map" id="ripple_1_1SSLStream_coll__map">
-<area shape="rect" title=" " alt="" coords="32,273,169,300"/>
-<area shape="rect" href="classripple_1_1HTTPStream.html" title=" " alt="" coords="5,184,153,211"/>
-<area shape="rect" href="classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="178,184,391,211"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="229,95,340,121"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="211,5,358,32"/>
+<area shape="rect" title=" " alt="" coords="745,79,883,105"/>
+<area shape="rect" href="classripple_1_1HTTPStream.html" title=" " alt="" coords="459,5,607,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="456,57,611,127"/>
+<area shape="rect" href="classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="427,152,640,179"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="252,152,363,179"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,152,152,179"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -124,14 +125,14 @@ Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:ab6046a8cc6199064c1d581c42f9e2eea"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLStream.html#ab6046a8cc6199064c1d581c42f9e2eea">ssl_ctx_</a></td></tr>
 <tr class="separator:ab6046a8cc6199064c1d581c42f9e2eea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4540b5870e36b7956406f51a26332223"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; boost::asio::ssl::stream&lt; boost::asio::ip::tcp::socket &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLStream.html#a4540b5870e36b7956406f51a26332223">stream_</a></td></tr>
-<tr class="separator:a4540b5870e36b7956406f51a26332223"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c2de227aadacf11425c13ea755b1687"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; boost::asio::ssl::stream&lt; boost::asio::ip::tcp::socket &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLStream.html#a6c2de227aadacf11425c13ea755b1687">stream_</a></td></tr>
+<tr class="separator:a6c2de227aadacf11425c13ea755b1687"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0e1d660271bc2fcaa97cdbd1dd14963"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service::strand &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLStream.html#ab0e1d660271bc2fcaa97cdbd1dd14963">strand_</a></td></tr>
 <tr class="separator:ab0e1d660271bc2fcaa97cdbd1dd14963"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00072">72</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00074">74</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="adaedf72be1e41c7baad6422bd4c4b965"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adaedf72be1e41c7baad6422bd4c4b965">&#9670;&nbsp;</a></span>request</h2>
@@ -153,7 +154,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00036">36</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00038">38</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
 
 </div>
 </div>
@@ -177,7 +178,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00037">37</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00039">39</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
 
 </div>
 </div>
@@ -496,12 +497,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00113">113</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00115">115</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
 
 </div>
 </div>
-<a id="a4540b5870e36b7956406f51a26332223"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4540b5870e36b7956406f51a26332223">&#9670;&nbsp;</a></span>stream_</h2>
+<a id="a6c2de227aadacf11425c13ea755b1687"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c2de227aadacf11425c13ea755b1687">&#9670;&nbsp;</a></span>stream_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -510,7 +511,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&gt; &gt; ripple::SSLStream::stream_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&gt; &gt; ripple::SSLStream::stream_</td>
         </tr>
       </table>
   </td>
@@ -520,7 +521,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00115">115</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00117">117</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
 
 </div>
 </div>
@@ -544,7 +545,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00116">116</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPStream_8h_source.html#l00118">118</a> of file <a class="el" href="HTTPStream_8h_source.html">HTTPStream.h</a>.</p>
 
 </div>
 </div>

@@ -93,22 +93,23 @@ Collaboration diagram for beast::insight::detail::StatsDCollectorImp:</div>
 <div class="dyncontent">
 <div class="center"><img src="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp__coll__graph.png" border="0" usemap="#beast_1_1insight_1_1detail_1_1StatsDCollectorImp_coll__map" alt="Collaboration graph"/></div>
 <map name="beast_1_1insight_1_1detail_1_1StatsDCollectorImp_coll__map" id="beast_1_1insight_1_1detail_1_1StatsDCollectorImp_coll__map">
-<area shape="rect" title=" " alt="" coords="941,231,1097,273"/>
+<area shape="rect" title=" " alt="" coords="941,273,1097,314"/>
 <area shape="rect" href="classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="584,5,803,32"/>
 <area shape="rect" href="classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="285,5,461,32"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="590,56,797,112"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="614,136,773,163"/>
-<area shape="rect" href="classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="622,187,765,213"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="321,187,424,213"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="329,260,416,287"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/deque.html" title=" " alt="" coords="601,300,786,327"/>
-<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="588,351,799,407"/>
-<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="275,332,471,388"/>
-<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,339,173,381"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="329,412,417,439"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/thread.html" title="STL class." alt="" coords="647,431,739,457"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="638,481,749,508"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="299,481,446,508"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="600,137,787,178"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="614,203,773,229"/>
+<area shape="rect" href="classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="622,253,765,280"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="321,253,424,280"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="329,331,416,357"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/deque.html" title=" " alt="" coords="601,367,786,393"/>
+<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="588,417,799,473"/>
+<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="275,397,471,453"/>
+<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,405,173,446"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="329,477,417,504"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/thread.html" title="STL class." alt="" coords="647,497,739,524"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="638,548,749,575"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="299,548,446,575"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -244,8 +245,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:abd7a818c08776177b04af09d7df5cd4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7806aea83a5d7cc8a3bf9c26e356a48"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#aa7806aea83a5d7cc8a3bf9c26e356a48">m_io_service</a></td></tr>
 <tr class="separator:aa7806aea83a5d7cc8a3bf9c26e356a48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0482a78c02c6cfaba20229087936d5c6"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; boost::asio::io_service::work &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#a0482a78c02c6cfaba20229087936d5c6">m_work</a></td></tr>
-<tr class="separator:a0482a78c02c6cfaba20229087936d5c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e24a539b15b88b4c3e60f5b3f77873f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; boost::asio::io_service::work &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#a4e24a539b15b88b4c3e60f5b3f77873f">m_work</a></td></tr>
+<tr class="separator:a4e24a539b15b88b4c3e60f5b3f77873f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afab974f818ccaf869f4700c93fdb0338"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service::strand&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#afab974f818ccaf869f4700c93fdb0338">m_strand</a></td></tr>
 <tr class="separator:afab974f818ccaf869f4700c93fdb0338"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab31ccde4bcc3c695209ca42117bb30e2"><td class="memItemLeft" align="right" valign="top">boost::asio::basic_waitable_timer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#ab31ccde4bcc3c695209ca42117bb30e2">m_timer</a></td></tr>
@@ -1161,8 +1162,8 @@ template&lt;class Handler &gt; </div>
 
 </div>
 </div>
-<a id="a0482a78c02c6cfaba20229087936d5c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0482a78c02c6cfaba20229087936d5c6">&#9670;&nbsp;</a></span>m_work</h2>
+<a id="a4e24a539b15b88b4c3e60f5b3f77873f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e24a539b15b88b4c3e60f5b3f77873f">&#9670;&nbsp;</a></span>m_work</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1171,7 +1172,7 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;boost::asio::io_service::work&gt; beast::insight::detail::StatsDCollectorImp::m_work</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;boost::asio::io_service::work&gt; beast::insight::detail::StatsDCollectorImp::m_work</td>
         </tr>
       </table>
   </td>

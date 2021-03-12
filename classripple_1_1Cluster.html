@@ -103,9 +103,9 @@ Classes</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a77c34bca1d6969d172e311a57fb7dcb0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Cluster.html#a77c34bca1d6969d172e311a57fb7dcb0">Cluster</a> (<a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a77c34bca1d6969d172e311a57fb7dcb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c718ec2f55e267d3b4f484fcac27717"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Cluster.html#a0c718ec2f55e267d3b4f484fcac27717">member</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;node) const</td></tr>
-<tr class="memdesc:a0c718ec2f55e267d3b4f484fcac27717"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether a node belongs in the cluster.  <a href="classripple_1_1Cluster.html#a0c718ec2f55e267d3b4f484fcac27717">More...</a><br /></td></tr>
-<tr class="separator:a0c718ec2f55e267d3b4f484fcac27717"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adffcdc10e28e4fa6f3e9b9c5f4bb3afa"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Cluster.html#adffcdc10e28e4fa6f3e9b9c5f4bb3afa">member</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;node) const</td></tr>
+<tr class="memdesc:adffcdc10e28e4fa6f3e9b9c5f4bb3afa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether a node belongs in the cluster.  <a href="classripple_1_1Cluster.html#adffcdc10e28e4fa6f3e9b9c5f4bb3afa">More...</a><br /></td></tr>
+<tr class="separator:adffcdc10e28e4fa6f3e9b9c5f4bb3afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70e89130fad4d1c0b8b01a12712f676c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Cluster.html#a70e89130fad4d1c0b8b01a12712f676c">size</a> () const</td></tr>
 <tr class="memdesc:a70e89130fad4d1c0b8b01a12712f676c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of nodes in the cluster list.  <a href="classripple_1_1Cluster.html#a70e89130fad4d1c0b8b01a12712f676c">More...</a><br /></td></tr>
 <tr class="separator:a70e89130fad4d1c0b8b01a12712f676c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -153,14 +153,14 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a0c718ec2f55e267d3b4f484fcac27717"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c718ec2f55e267d3b4f484fcac27717">&#9670;&nbsp;</a></span>member()</h2>
+<a id="adffcdc10e28e4fa6f3e9b9c5f4bb3afa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adffcdc10e28e4fa6f3e9b9c5f4bb3afa">&#9670;&nbsp;</a></span>member()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; ripple::Cluster::member </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; ripple::Cluster::member </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;&#160;</td>
           <td class="paramname"><em>node</em></td><td>)</td>
@@ -170,7 +170,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Determines whether a node belongs in the cluster. </p>
-<dl class="section return"><dt>Returns</dt><dd>boost::none if the node isn't a member, otherwise, the comment associated with the node (which may be an empty string). </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>std::nullopt if the node isn't a member, otherwise, the comment associated with the node (which may be an empty string). </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="Cluster_8cpp_source.html#l00039">39</a> of file <a class="el" href="Cluster_8cpp_source.html">Cluster.cpp</a>.</p>
 

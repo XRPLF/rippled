@@ -117,7 +117,7 @@ $(function() {
 <div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="structripple_1_1StrandResult.html#a3bab02a2e809107f1a0178b70ad19ecd">   47</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="structripple_1_1StrandResult.html#a3bab02a2e809107f1a0178b70ad19ecd">success</a>;                                  </div>
 <div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="structripple_1_1StrandResult.html#acea40d3c04504e132b87c1f533a073bd">   48</a></span>&#160;    TInAmt <a class="code" href="structripple_1_1StrandResult.html#acea40d3c04504e132b87c1f533a073bd">in</a> = beast::zero;                       </div>
 <div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structripple_1_1StrandResult.html#a61c26159ba7d60c856c7e668ec6a0d94">   49</a></span>&#160;    TOutAmt <a class="code" href="structripple_1_1StrandResult.html#a61c26159ba7d60c856c7e668ec6a0d94">out</a> = beast::zero;                     </div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structripple_1_1StrandResult.html#a314f53d1ce13e4a07d0c4c74937abb48">   50</a></span>&#160;    boost::optional&lt;PaymentSandbox&gt; <a class="code" href="structripple_1_1StrandResult.html#a314f53d1ce13e4a07d0c4c74937abb48">sandbox</a>;       </div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structripple_1_1StrandResult.html#a4895ab90189a3292721fcb8dea377028">   50</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;PaymentSandbox&gt;</a> <a class="code" href="structripple_1_1StrandResult.html#a4895ab90189a3292721fcb8dea377028">sandbox</a>;         </div>
 <div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="structripple_1_1StrandResult.html#a76c0e7ce0c754e232a089bdd84f00b33">   51</a></span>&#160;    boost::container::flat_set&lt;uint256&gt; <a class="code" href="structripple_1_1StrandResult.html#a76c0e7ce0c754e232a089bdd84f00b33">ofrsToRm</a>;  </div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="comment">// Num offers consumed or partially consumed (includes expired and unfunded</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="comment">// offers)</span></div>
@@ -138,7 +138,7 @@ $(function() {
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        : <a class="code" href="structripple_1_1StrandResult.html#a3bab02a2e809107f1a0178b70ad19ecd">success</a>(true)</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#acea40d3c04504e132b87c1f533a073bd">in</a>(in_)</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#a61c26159ba7d60c856c7e668ec6a0d94">out</a>(out_)</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#a314f53d1ce13e4a07d0c4c74937abb48">sandbox</a>(<a class="code" href="namespacestd.html">std</a>::move(sandbox_))</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#a4895ab90189a3292721fcb8dea377028">sandbox</a>(<a class="code" href="namespacestd.html">std</a>::move(sandbox_))</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#a76c0e7ce0c754e232a089bdd84f00b33">ofrsToRm</a>(<a class="code" href="namespacestd.html">std</a>::move(ofrsToRm_))</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#a3c99d3cccbd0bf109de0f572b8142d6a">ofrsUsed</a>(offersUsed(strand))</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        , <a class="code" href="structripple_1_1StrandResult.html#a34318e69d95f3132660d2ad01a037418">inactive</a>(inactive_)</div>
@@ -157,10 +157,10 @@ $(function() {
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TInAmt, <span class="keyword">class</span> TOutAmt&gt;</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;StrandResult&lt;TInAmt, TOutAmt&gt;</div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceripple.html#a0caab74e36b11df9ad3324f87dac24a8">  103</a></span>&#160;<a class="code" href="namespaceripple.html#aea839338eb91258b10d5d14262ef079f">flow</a>(</div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceripple.html#afe861104eacf66fb6b9720ee8798ad78">  103</a></span>&#160;<a class="code" href="namespaceripple.html#a5b20ec034d803aeea7502c4fe2bfdff7">flow</a>(</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> <span class="keyword">const</span>&amp; baseView,</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    Strand <span class="keyword">const</span>&amp; strand,</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    boost::optional&lt;TInAmt&gt; <span class="keyword">const</span>&amp; maxIn,</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;TInAmt&gt;</a> <span class="keyword">const</span>&amp; maxIn,</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    TOutAmt <span class="keyword">const</span>&amp; out,</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;{</div>
@@ -183,11 +183,11 @@ $(function() {
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <span class="keyword">const</span> s = strand.size();</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> limitingStep = strand.size();</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        boost::optional&lt;PaymentSandbox&gt; sb(&amp;baseView);</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;PaymentSandbox&gt;</a> sb(&amp;baseView);</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <span class="comment">// The &quot;all funds&quot; view determines if an offer becomes unfunded or is</span></div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="comment">// found unfunded</span></div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="comment">// These are the account balances before the strand executes</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        boost::optional&lt;PaymentSandbox&gt; afView(&amp;baseView);</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;PaymentSandbox&gt;</a> afView(&amp;baseView);</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <a class="code" href="structripple_1_1EitherAmount.html">EitherAmount</a> <a class="code" href="namespaceripple.html#a7ae29d6afe7ae8560c7b6c106b2e7826">limitStepOut</a>;</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        {</div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <a class="code" href="structripple_1_1EitherAmount.html">EitherAmount</a> stepOut(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>);</div>
@@ -204,7 +204,7 @@ $(function() {
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                {</div>
 <div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    <span class="comment">// limiting - exceeded maxIn</span></div>
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    <span class="comment">// Throw out previous results</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    sb.emplace(&amp;baseView);</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    sb.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(&amp;baseView);</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    limitingStep = i;</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    <span class="comment">// re-execute the limiting step</span></div>
@@ -224,8 +224,8 @@ $(function() {
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                        <span class="comment">// yet the limiting is still limiting</span></div>
 <div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                        JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
 <div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot;Re-executed limiting step failed. r.first: &quot;</span></div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                            &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(get&lt;TInAmt&gt;(r.first))</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot; maxIn: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(*maxIn);</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                            &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(get&lt;TInAmt&gt;(r.first))</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot; maxIn: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(*maxIn);</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                        assert(0);</div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                        <span class="keywordflow">return</span> Result{strand, std::move(ofrsToRm)};</div>
 <div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                    }</div>
@@ -234,8 +234,8 @@ $(function() {
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                {</div>
 <div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                    <span class="comment">// limiting</span></div>
 <div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                    <span class="comment">// Throw out previous results</span></div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    sb.emplace(&amp;baseView);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                    afView.emplace(&amp;baseView);</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    sb.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(&amp;baseView);</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                    afView.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(&amp;baseView);</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                    limitingStep = i;</div>
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                    <span class="comment">// re-execute the limiting step</span></div>
@@ -352,7 +352,7 @@ $(function() {
 <div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;{</div>
 <div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    TInAmt in = beast::zero;</div>
 <div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    TOutAmt out = beast::zero;</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    boost::optional&lt;PaymentSandbox&gt; sandbox;</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;PaymentSandbox&gt;</a> sandbox;</div>
 <div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    boost::container::flat_set&lt;uint256&gt; removableOffers;</div>
 <div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    <a class="code" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ter = <a class="code" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a1dad6e2d630423dd67f4a540305f8b3c">temUNKNOWN</a>;</div>
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
@@ -386,18 +386,18 @@ $(function() {
 <div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    }</div>
 <div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;};</div>
 <div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;<span class="keyword">inline</span> boost::optional&lt;Quality&gt;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Quality&gt;</a></div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;qualityUpperBound(ReadView <span class="keyword">const</span>&amp; v, Strand <span class="keyword">const</span>&amp; strand)</div>
 <div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;{</div>
 <div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    Quality q{<a class="code" href="classripple_1_1STAmount.html#a9f6e18316bf76a83906dfbebba3be79a">STAmount::uRateOne</a>};</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    boost::optional&lt;Quality&gt; stepQ;</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Quality&gt;</a> stepQ;</div>
 <div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <a class="code" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> dir = <a class="code" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401eafe5fe0415fc3e0ff4942d8454f363d2c">DebtDirection::issues</a>;</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; step : strand)</div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    {</div>
 <div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/tie.html">std::tie</a>(stepQ, dir) = step-&gt;qualityUpperBound(v, dir); stepQ)</div>
 <div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            q = <a class="code" href="namespaceripple.html#a7c8945b5034bba5f9df719cff2503495">composed_quality</a>(q, *stepQ);</div>
 <div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keywordflow">return</span> boost::none;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    }</div>
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="keywordflow">return</span> q;</div>
 <div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;};</div>
@@ -429,156 +429,156 @@ $(function() {
 <div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="comment">// Start a new iteration in the search for liquidity</span></div>
 <div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="comment">// Set the current strands to the strands in `next_`</span></div>
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    activateNext(</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        ReadView <span class="keyword">const</span>&amp; v,</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        boost::optional&lt;Quality&gt; <span class="keyword">const</span>&amp; limitQuality)</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    {</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        <span class="comment">// add the strands in `next_` to `cur_`, sorted by theoretical quality.</span></div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="comment">// Best quality first.</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/clear.html">clear</a>();</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;        <span class="keywordflow">if</span> (v.rules().enabled(<a class="code" href="namespaceripple.html#aa4a3b6da5fd09c790148fab25803d4bc">featureFlowSortStrands</a>) &amp;&amp; !next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>())</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        {</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::pair&lt;Quality, Strand const*&gt;</a>&gt; strandQuals;</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            <span class="keywordflow">if</span> (next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() &gt; 1)  <span class="comment">// no need to sort one strand</span></div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            {</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;                <span class="keywordflow">for</span> (Strand <span class="keyword">const</span>* strand : next_)</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                {</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                    <span class="keywordflow">if</span> (!strand)</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                    {</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                        <span class="comment">// should not happen</span></div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                        <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                    }</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;                    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> qual = qualityUpperBound(v, *strand))</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                    {</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;                        <span class="keywordflow">if</span> (limitQuality &amp;&amp; *qual &lt; *limitQuality)</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;                        {</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;                            <span class="comment">// If a strand&#39;s quality is ever over limitQuality</span></div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;                            <span class="comment">// it is no longer part of the candidate set. Note</span></div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;                            <span class="comment">// that when transfer fees are charged, and an</span></div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;                            <span class="comment">// account goes from redeeming to issuing then</span></div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;                            <span class="comment">// strand quality _can_ increase; However, this is</span></div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;                            <span class="comment">// an unusual corner case.</span></div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;                            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;                        }</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;                        strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>({*qual, strand});</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;                    }</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;                }</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;                <span class="comment">// must stable sort for deterministic order across different c++</span></div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;                <span class="comment">// standard library implementations</span></div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/stable_sort.html">std::stable_sort</a>(</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;                    strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(),</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;                    strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>(),</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;                    [](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; lhs, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; rhs) {</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;                        <span class="comment">// higher qualities first</span></div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;                        return std::get&lt;Quality&gt;(lhs) &gt; std::get&lt;Quality&gt;(rhs);</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;                    });</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;                next_.clear();</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;                next_.reserve(strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; sq : strandQuals)</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;                {</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;                    next_.push_back(std::get&lt;Strand const*&gt;(sq));</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;                }</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;            }</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;        }</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/swap.html">std::swap</a>(cur_, next_);</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    }</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160; </div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    Strand <span class="keyword">const</span>*</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    <a class="code" href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">get</a>(<span class="keywordtype">size_t</span> i)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;        <span class="keywordflow">if</span> (i &gt;= cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>())</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        {</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;            assert(0);</div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;        }</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;        <span class="keywordflow">return</span> cur_[i];</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    }</div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;    push(Strand <span class="keyword">const</span>* s)</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    {</div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;        next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(s);</div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    }</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160; </div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    <span class="comment">// Push the strands from index i to the end of cur_ to next_</span></div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;    pushRemainingCurToNext(<span class="keywordtype">size_t</span> i)</div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    {</div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        <span class="keywordflow">if</span> (i &gt;= cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>())</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;        next_.insert(next_.end(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), i), cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>());</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    }</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160; </div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;    <span class="keyword">auto</span></div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/size.html">size</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;        <span class="keywordflow">return</span> cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>();</div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;    }</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;    removeIndex(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i)</div>
-<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;    {</div>
-<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;        <span class="keywordflow">if</span> (i &gt;= next_.size())</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;        next_.erase(next_.begin() + i);</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;    }</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;};</div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160; </div>
-<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TInAmt, <span class="keyword">class</span> TOutAmt&gt;</div>
-<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;FlowResult&lt;TInAmt, TOutAmt&gt;</div>
-<div class="line"><a name="l00498"></a><span class="lineno"><a class="line" href="namespaceripple.html#a244ff49d42005b2b379221191c15695f">  498</a></span>&#160;<a class="code" href="namespaceripple.html#aea839338eb91258b10d5d14262ef079f">flow</a>(</div>
-<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> <span class="keyword">const</span>&amp; baseView,</div>
-<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Strand&gt;</a> <span class="keyword">const</span>&amp; strands,</div>
-<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;    TOutAmt <span class="keyword">const</span>&amp; outReq,</div>
-<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;    <span class="keywordtype">bool</span> partialPayment,</div>
-<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;    <span class="keywordtype">bool</span> offerCrossing,</div>
-<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;    boost::optional&lt;Quality&gt; <span class="keyword">const</span>&amp; limitQuality,</div>
-<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;    boost::optional&lt;STAmount&gt; <span class="keyword">const</span>&amp; sendMaxST,</div>
-<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j,</div>
-<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;    <a class="code" href="structripple_1_1path_1_1detail_1_1FlowDebugInfo.html">path::detail::FlowDebugInfo</a>* flowDebugInfo = <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;{</div>
-<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;    <span class="comment">// Used to track the strand that offers the best quality (output/input</span></div>
-<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;    <span class="comment">// ratio)</span></div>
-<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;    <span class="keyword">struct </span>BestStrand</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;    {</div>
-<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;        TInAmt <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>;</div>
-<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;        TOutAmt <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;        <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> sb;</div>
-<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        Strand <span class="keyword">const</span>&amp; strand;</div>
-<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        Quality quality;</div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160; </div>
-<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;        BestStrand(</div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;            TInAmt <span class="keyword">const</span>&amp; in_,</div>
-<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;            TOutAmt <span class="keyword">const</span>&amp; out_,</div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;            <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a>&amp;&amp; sb_,</div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;            Strand <span class="keyword">const</span>&amp; strand_,</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;            Quality <span class="keyword">const</span>&amp; quality_)</div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;            : <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>(in_)</div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;            , <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>(out_)</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            , sb(std::move(sb_))</div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;            , strand(strand_)</div>
-<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;            , quality(quality_)</div>
-<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        {</div>
-<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;        }</div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;    };</div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160; </div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <span class="keyword">const</span> maxTries = 1000;</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> curTry = 0;</div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> maxOffersToConsider = 1500;</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> offersConsidered = 0;</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160; </div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;    <span class="comment">// There is a bug in gcc that incorrectly warns about using uninitialized</span></div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;    <span class="comment">// values if `remainingIn` is initialized through a copy constructor. We can</span></div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;    <span class="comment">// get similar warnings for `sendMax` if it is initialized in the most</span></div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;    <span class="comment">// natural way. Using `make_optional`, allows us to work around this bug.</span></div>
-<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    TInAmt <span class="keyword">const</span> sendMaxInit =</div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        sendMaxST ? toAmount&lt;TInAmt&gt;(*sendMaxST) : TInAmt{beast::zero};</div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    boost::optional&lt;TInAmt&gt; <span class="keyword">const</span> sendMax = boost::make_optional(</div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;        sendMaxST &amp;&amp; sendMaxInit &gt;= beast::zero, sendMaxInit);</div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    boost::optional&lt;TInAmt&gt; remainingIn =</div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        boost::make_optional(!!sendMax, sendMaxInit);</div>
-<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;    <span class="comment">// boost::optional&lt;TInAmt&gt; remainingIn{sendMax};</span></div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    activateNext(ReadView <span class="keyword">const</span>&amp; v, <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Quality&gt;</a> <span class="keyword">const</span>&amp; limitQuality)</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    {</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <span class="comment">// add the strands in `next_` to `cur_`, sorted by theoretical quality.</span></div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="comment">// Best quality first.</span></div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/clear.html">clear</a>();</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="keywordflow">if</span> (v.rules().enabled(<a class="code" href="namespaceripple.html#aa4a3b6da5fd09c790148fab25803d4bc">featureFlowSortStrands</a>) &amp;&amp; !next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>())</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        {</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::pair&lt;Quality, Strand const*&gt;</a>&gt; strandQuals;</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            <span class="keywordflow">if</span> (next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() &gt; 1)  <span class="comment">// no need to sort one strand</span></div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            {</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;                <span class="keywordflow">for</span> (Strand <span class="keyword">const</span>* strand : next_)</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;                {</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;                    <span class="keywordflow">if</span> (!strand)</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                    {</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                        <span class="comment">// should not happen</span></div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                        <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                    }</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> qual = qualityUpperBound(v, *strand))</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                    {</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;                        <span class="keywordflow">if</span> (limitQuality &amp;&amp; *qual &lt; *limitQuality)</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                        {</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;                            <span class="comment">// If a strand&#39;s quality is ever over limitQuality</span></div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;                            <span class="comment">// it is no longer part of the candidate set. Note</span></div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;                            <span class="comment">// that when transfer fees are charged, and an</span></div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;                            <span class="comment">// account goes from redeeming to issuing then</span></div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;                            <span class="comment">// strand quality _can_ increase; However, this is</span></div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;                            <span class="comment">// an unusual corner case.</span></div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;                            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;                        }</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;                        strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>({*qual, strand});</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;                    }</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;                }</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;                <span class="comment">// must stable sort for deterministic order across different c++</span></div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;                <span class="comment">// standard library implementations</span></div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/stable_sort.html">std::stable_sort</a>(</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;                    strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(),</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;                    strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>(),</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;                    [](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; lhs, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; rhs) {</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;                        <span class="comment">// higher qualities first</span></div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;                        return std::get&lt;Quality&gt;(lhs) &gt; std::get&lt;Quality&gt;(rhs);</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;                    });</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;                next_.clear();</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;                next_.reserve(strandQuals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; sq : strandQuals)</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;                {</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;                    next_.push_back(std::get&lt;Strand const*&gt;(sq));</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;                }</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;            }</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;        }</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/swap.html">std::swap</a>(cur_, next_);</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    }</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160; </div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    Strand <span class="keyword">const</span>*</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    <a class="code" href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">get</a>(<span class="keywordtype">size_t</span> i)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;        <span class="keywordflow">if</span> (i &gt;= cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>())</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;        {</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;            assert(0);</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;        }</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;        <span class="keywordflow">return</span> cur_[i];</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    }</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160; </div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    push(Strand <span class="keyword">const</span>* s)</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;    {</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;        next_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(s);</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    }</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160; </div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    <span class="comment">// Push the strands from index i to the end of cur_ to next_</span></div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    pushRemainingCurToNext(<span class="keywordtype">size_t</span> i)</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    {</div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        <span class="keywordflow">if</span> (i &gt;= cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>())</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        next_.insert(next_.end(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a>(cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), i), cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>());</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;    }</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160; </div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    <span class="keyword">auto</span></div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/size.html">size</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;        <span class="keywordflow">return</span> cur_.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>();</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;    }</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160; </div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;    removeIndex(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i)</div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;    {</div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;        <span class="keywordflow">if</span> (i &gt;= next_.size())</div>
+<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;        next_.erase(next_.begin() + i);</div>
+<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;    }</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;};</div>
+<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160; </div>
+<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TInAmt, <span class="keyword">class</span> TOutAmt&gt;</div>
+<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;FlowResult&lt;TInAmt, TOutAmt&gt;</div>
+<div class="line"><a name="l00496"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6d692a04e1ea7842e7cfd357c57d30da">  496</a></span>&#160;<a class="code" href="namespaceripple.html#a5b20ec034d803aeea7502c4fe2bfdff7">flow</a>(</div>
+<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> <span class="keyword">const</span>&amp; baseView,</div>
+<div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Strand&gt;</a> <span class="keyword">const</span>&amp; strands,</div>
+<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;    TOutAmt <span class="keyword">const</span>&amp; outReq,</div>
+<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;    <span class="keywordtype">bool</span> partialPayment,</div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;    <span class="keywordtype">bool</span> offerCrossing,</div>
+<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Quality&gt;</a> <span class="keyword">const</span>&amp; limitQuality,</div>
+<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STAmount&gt;</a> <span class="keyword">const</span>&amp; sendMaxST,</div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j,</div>
+<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;    <a class="code" href="structripple_1_1path_1_1detail_1_1FlowDebugInfo.html">path::detail::FlowDebugInfo</a>* flowDebugInfo = <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;{</div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;    <span class="comment">// Used to track the strand that offers the best quality (output/input</span></div>
+<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;    <span class="comment">// ratio)</span></div>
+<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;    <span class="keyword">struct </span>BestStrand</div>
+<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;    {</div>
+<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;        TInAmt <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>;</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;        TOutAmt <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;        <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> sb;</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;        Strand <span class="keyword">const</span>&amp; strand;</div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;        Quality quality;</div>
+<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160; </div>
+<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        BestStrand(</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;            TInAmt <span class="keyword">const</span>&amp; in_,</div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;            TOutAmt <span class="keyword">const</span>&amp; out_,</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;            <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a>&amp;&amp; sb_,</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;            Strand <span class="keyword">const</span>&amp; strand_,</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;            Quality <span class="keyword">const</span>&amp; quality_)</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;            : <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>(in_)</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;            , <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>(out_)</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;            , sb(std::move(sb_))</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;            , strand(strand_)</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            , quality(quality_)</div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;        {</div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        }</div>
+<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;    };</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160; </div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <span class="keyword">const</span> maxTries = 1000;</div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> curTry = 0;</div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> maxOffersToConsider = 1500;</div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> offersConsidered = 0;</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160; </div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;    <span class="comment">// There is a bug in gcc that incorrectly warns about using uninitialized</span></div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;    <span class="comment">// values if `remainingIn` is initialized through a copy constructor. We can</span></div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;    <span class="comment">// get similar warnings for `sendMax` if it is initialized in the most</span></div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;    <span class="comment">// natural way. Using `make_optional`, allows us to work around this bug.</span></div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;    TInAmt <span class="keyword">const</span> sendMaxInit =</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;        sendMaxST ? toAmount&lt;TInAmt&gt;(*sendMaxST) : TInAmt{beast::zero};</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;TInAmt&gt;</a> <span class="keyword">const</span> sendMax =</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        (sendMaxST &amp;&amp; sendMaxInit &gt;= beast::zero)</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        ? <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/make_optional.html">std::make_optional</a>(sendMaxInit)</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;        : std::nullopt;</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;TInAmt&gt;</a> remainingIn =</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        !!sendMax ? <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/make_optional.html">std::make_optional</a>(sendMaxInit) : std::nullopt;</div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;    <span class="comment">// std::optional&lt;TInAmt&gt; remainingIn{sendMax};</span></div>
 <div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160; </div>
 <div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;    TOutAmt remainingOut(outReq);</div>
 <div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160; </div>
@@ -618,14 +618,14 @@ $(function() {
 <div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;        activeStrands.activateNext(sb, limitQuality);</div>
 <div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160; </div>
 <div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        boost::container::flat_set&lt;uint256&gt; ofrsToRm;</div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;        boost::optional&lt;BestStrand&gt; best;</div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;BestStrand&gt;</a> best;</div>
 <div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;        <span class="keywordflow">if</span> (flowDebugInfo)</div>
 <div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;            flowDebugInfo-&gt;newLiquidityPass();</div>
 <div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        <span class="comment">// Index of strand to mark as inactive (remove from the active list) if</span></div>
 <div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        <span class="comment">// the liquidity is used. This is used for strands that consume too many</span></div>
 <div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;        <span class="comment">// offers Constructed as `false,0` to workaround a gcc warning about</span></div>
 <div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;        <span class="comment">// uninitialized variables</span></div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;        boost::optional&lt;std::size_t&gt; markInactiveOnUse{<span class="keyword">false</span>, 0};</div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::size_t&gt;</a> markInactiveOnUse;</div>
 <div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> strandIndex = 0, sie = activeStrands.size();</div>
 <div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;             strandIndex != sie;</div>
 <div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;             ++strandIndex)</div>
@@ -665,7 +665,7 @@ $(function() {
 <div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160; </div>
 <div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
 <div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;New flow iter (iter, in, out): &quot;</span> &lt;&lt; curTry - 1 &lt;&lt; <span class="stringliteral">&quot; &quot;</span></div>
-<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;                &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(f.in) &lt;&lt; <span class="stringliteral">&quot; &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(f.out);</div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;                &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(f.in) &lt;&lt; <span class="stringliteral">&quot; &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(f.out);</div>
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160; </div>
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;            <span class="keywordflow">if</span> (limitQuality &amp;&amp; q &lt; *limitQuality)</div>
 <div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;            {</div>
@@ -680,7 +680,7 @@ $(function() {
 <div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;                assert(!best);</div>
 <div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;                <span class="keywordflow">if</span> (!f.inactive)</div>
 <div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;                    activeStrands.push(strand);</div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;                best.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(f.in, f.out, std::move(*f.sandbox), *strand, q);</div>
 <div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;                activeStrands.pushRemainingCurToNext(strandIndex + 1);</div>
 <div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;                <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;            }</div>
@@ -703,10 +703,10 @@ $(function() {
 <div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;                }</div>
 <div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;                <span class="keywordflow">else</span></div>
 <div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;                {</div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;                    markInactiveOnUse.reset();</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;                    markInactiveOnUse.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/reset.html">reset</a>();</div>
 <div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;                }</div>
 <div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160; </div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;                best.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>(f.in, f.out, std::move(*f.sandbox), *strand, q);</div>
 <div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            }</div>
 <div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;        }</div>
 <div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160; </div>
@@ -721,7 +721,7 @@ $(function() {
 <div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;            <span class="keywordflow">if</span> (markInactiveOnUse)</div>
 <div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;            {</div>
 <div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;                activeStrands.removeIndex(*markInactiveOnUse);</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;                markInactiveOnUse.reset();</div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;                markInactiveOnUse.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/reset.html">reset</a>();</div>
 <div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;            }</div>
 <div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            savedIns.insert(best-&gt;in);</div>
 <div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;            savedOuts.insert(best-&gt;out);</div>
@@ -735,9 +735,9 @@ $(function() {
 <div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                    <a class="code" href="structripple_1_1EitherAmount.html">EitherAmount</a>(best-&gt;out),</div>
 <div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;                    activeStrands.size());</div>
 <div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160; </div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Best path: in: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(best-&gt;in)</div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot; out: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(best-&gt;out)</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot; remainingOut: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(remainingOut);</div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Best path: in: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(best-&gt;in)</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot; out: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(best-&gt;out)</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;                            &lt;&lt; <span class="stringliteral">&quot; remainingOut: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(remainingOut);</div>
 <div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160; </div>
 <div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            best-&gt;sb.apply(sb);</div>
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        }</div>
@@ -746,7 +746,7 @@ $(function() {
 <div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;All strands dry.&quot;</span>;</div>
 <div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;        }</div>
 <div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160; </div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        best.reset();  <span class="comment">// view in best must be destroyed before modifying base</span></div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        best.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/reset.html">reset</a>();  <span class="comment">// view in best must be destroyed before modifying base</span></div>
 <div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;                       <span class="comment">// view</span></div>
 <div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;        <span class="keywordflow">if</span> (!ofrsToRm.empty())</div>
 <div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;        {</div>
@@ -765,8 +765,8 @@ $(function() {
 <div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> actualOut = <a class="code" href="namespaceripple.html#a06f1da429e6a72c7a8be4248d88ed6e7">sum</a>(savedOuts);</div>
 <div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> actualIn = <a class="code" href="namespaceripple.html#a06f1da429e6a72c7a8be4248d88ed6e7">sum</a>(savedIns);</div>
 <div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160; </div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;    JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Total flow: in: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(actualIn)</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot; out: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(actualOut);</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;    JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Total flow: in: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(actualIn)</div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot; out: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(actualOut);</div>
 <div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160; </div>
 <div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;    <span class="keywordflow">if</span> (actualOut != outReq)</div>
 <div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;    {</div>
@@ -825,13 +825,15 @@ $(function() {
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
+<div class="ttc" id="amake_optional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/make_optional.html">std::make_optional</a></div><div class="ttdeci">T make_optional(T... args)</div></div>
 <div class="ttc" id="aiterator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iterator.html">iterator</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a5d33427228ab1869c37fcf11132865f6"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">ripple::keylet::offer</a></div><div class="ttdeci">Keylet offer(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">An offer from an account.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00223">Indexes.cpp:223</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a5d33427228ab1869c37fcf11132865f6"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">ripple::keylet::offer</a></div><div class="ttdeci">Keylet offer(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">An offer from an account.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00219">Indexes.cpp:219</a></div></div>
+<div class="ttc" id="aemplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">std::optional::emplace</a></div><div class="ttdeci">T emplace(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_ad8fefe3e8ad583e1ed1bf02094ac3d8f"><div class="ttname"><a href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">beast::Journal::warn</a></div><div class="ttdeci">Stream warn() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00327">Journal.h:327</a></div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_a61c26159ba7d60c856c7e668ec6a0d94"><div class="ttname"><a href="structripple_1_1StrandResult.html#a61c26159ba7d60c856c7e668ec6a0d94">ripple::StrandResult::out</a></div><div class="ttdeci">TOutAmt out</div><div class="ttdoc">Currency amount out.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00049">StrandFlow.h:49</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf"><div class="ttname"><a href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">ripple::QualityDirection::in</a></div><div class="ttdeci">@ in</div></div>
 <div class="ttc" id="aall_any_none_of_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/all_any_none_of.html">std::any_of</a></div><div class="ttdeci">T any_of(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00045">ValidatorList.cpp:45</a></div></div>
+<div class="ttc" id="areset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/reset.html">std::optional::reset</a></div><div class="ttdeci">T reset(T... args)</div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="aclear_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/clear.html">std::vector::clear</a></div><div class="ttdeci">T clear(T... args)</div></div>
 <div class="ttc" id="atie_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/tuple/tie.html">std::tie</a></div><div class="ttdeci">T tie(T... args)</div></div>
@@ -839,14 +841,15 @@ $(function() {
 <div class="ttc" id="astructripple_1_1StrandResult_html_a76c0e7ce0c754e232a089bdd84f00b33"><div class="ttname"><a href="structripple_1_1StrandResult.html#a76c0e7ce0c754e232a089bdd84f00b33">ripple::StrandResult::ofrsToRm</a></div><div class="ttdeci">boost::container::flat_set&lt; uint256 &gt; ofrsToRm</div><div class="ttdoc">Offers to remove.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00051">StrandFlow.h:51</a></div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_acea40d3c04504e132b87c1f533a073bd"><div class="ttname"><a href="structripple_1_1StrandResult.html#acea40d3c04504e132b87c1f533a073bd">ripple::StrandResult::in</a></div><div class="ttdeci">TInAmt in</div><div class="ttdoc">Currency amount in.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00048">StrandFlow.h:48</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a260d2970ac1119109937ed1c5d4ca962a453d7db3d36a5516e925c466d1dc0ac1"><div class="ttname"><a href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a453d7db3d36a5516e925c466d1dc0ac1">ripple::telFAILED_PROCESSING</a></div><div class="ttdeci">@ telFAILED_PROCESSING</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00055">TER.h:55</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5b20ec034d803aeea7502c4fe2bfdff7"><div class="ttname"><a href="namespaceripple.html#a5b20ec034d803aeea7502c4fe2bfdff7">ripple::flow</a></div><div class="ttdeci">path::RippleCalc::Output flow(PaymentSandbox &amp;view, STAmount const &amp;deliver, AccountID const &amp;src, AccountID const &amp;dst, STPathSet const &amp;paths, bool defaultPaths, bool partialPayment, bool ownerPaysTransferFee, bool offerCrossing, std::optional&lt; Quality &gt; const &amp;limitQuality, std::optional&lt; STAmount &gt; const &amp;sendMax, beast::Journal j, path::detail::FlowDebugInfo *flowDebugInfo=nullptr)</div><div class="ttdoc">Make a payment from the src account to the dst account.</div></div>
 <div class="ttc" id="anamespaceripple_html_a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275"><div class="ttname"><a href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">ripple::QualityDirection::out</a></div><div class="ttdeci">@ out</div></div>
-<div class="ttc" id="anamespaceripple_html_a66af773abebf361a8c930c1dc457a740"><div class="ttname"><a href="namespaceripple.html#a66af773abebf361a8c930c1dc457a740">ripple::offerDelete</a></div><div class="ttdeci">TER offerDelete(ApplyView &amp;view, std::shared_ptr&lt; SLE &gt; const &amp;sle, beast::Journal j)</div><div class="ttdoc">Delete an offer.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00899">View.cpp:899</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a66af773abebf361a8c930c1dc457a740"><div class="ttname"><a href="namespaceripple.html#a66af773abebf361a8c930c1dc457a740">ripple::offerDelete</a></div><div class="ttdeci">TER offerDelete(ApplyView &amp;view, std::shared_ptr&lt; SLE &gt; const &amp;sle, beast::Journal j)</div><div class="ttdoc">Delete an offer.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00900">View.cpp:900</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adfb760bc3e4ccb79d5d4f6ecff2f1817"><div class="ttname"><a href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">ripple::TER</a></div><div class="ttdeci">TERSubset&lt; CanCvtToTER &gt; TER</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00552">TER.h:552</a></div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_ad2aeb74ea0283590413f70fd91ac5769"><div class="ttname"><a href="structripple_1_1StrandResult.html#ad2aeb74ea0283590413f70fd91ac5769">ripple::StrandResult::StrandResult</a></div><div class="ttdeci">StrandResult(Strand const &amp;strand, boost::container::flat_set&lt; uint256 &gt; ofrsToRm_)</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00080">StrandFlow.h:80</a></div></div>
 <div class="ttc" id="aaccumulate_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/accumulate.html">std::accumulate</a></div><div class="ttdeci">T accumulate(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1Rules_html_a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"><div class="ttname"><a href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">ripple::Rules::enabled</a></div><div class="ttdeci">bool enabled(uint256 const &amp;id) const</div><div class="ttdoc">Returns true if a feature is enabled.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8cpp_source.html#l00103">ReadView.cpp:103</a></div></div>
+<div class="ttc" id="aclassripple_1_1Rules_html_a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"><div class="ttname"><a href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">ripple::Rules::enabled</a></div><div class="ttdeci">bool enabled(uint256 const &amp;id) const</div><div class="ttdoc">Returns true if a feature is enabled.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8cpp_source.html#l00102">ReadView.cpp:102</a></div></div>
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46a1dad6e2d630423dd67f4a540305f8b3c"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a1dad6e2d630423dd67f4a540305f8b3c">ripple::temUNKNOWN</a></div><div class="ttdeci">@ temUNKNOWN</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00119">TER.h:119</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38cabd7038b5669becf7271665614c94efb6"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cabd7038b5669becf7271665614c94efb6">ripple::tecPATH_PARTIAL</a></div><div class="ttdeci">@ tecPATH_PARTIAL</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00244">TER.h:244</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa4a3b6da5fd09c790148fab25803d4bc"><div class="ttname"><a href="namespaceripple.html#aa4a3b6da5fd09c790148fab25803d4bc">ripple::featureFlowSortStrands</a></div><div class="ttdeci">const uint256 featureFlowSortStrands</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00192">Feature.cpp:192</a></div></div>
@@ -857,12 +860,13 @@ $(function() {
 <div class="ttc" id="astructripple_1_1StrandResult_html_a3bab02a2e809107f1a0178b70ad19ecd"><div class="ttname"><a href="structripple_1_1StrandResult.html#a3bab02a2e809107f1a0178b70ad19ecd">ripple::StrandResult::success</a></div><div class="ttdeci">bool success</div><div class="ttdoc">Strand succeeded.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00047">StrandFlow.h:47</a></div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/begin.html">std::vector::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
-<div class="ttc" id="astructripple_1_1EitherAmount_html"><div class="ttname"><a href="structripple_1_1EitherAmount.html">ripple::EitherAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="AmountSpec_8h_source.html#l00057">AmountSpec.h:57</a></div></div>
+<div class="ttc" id="astructripple_1_1EitherAmount_html"><div class="ttname"><a href="structripple_1_1EitherAmount.html">ripple::EitherAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="AmountSpec_8h_source.html#l00059">AmountSpec.h:59</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38cad7c0f4891446922b7248ed12f2207a57"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cad7c0f4891446922b7248ed12f2207a57">ripple::tecPATH_DRY</a></div><div class="ttdeci">@ tecPATH_DRY</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00256">TER.h:256</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/empty.html">std::vector::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a7dfbbc119e9821f91f95982dadcfd712"><div class="ttname"><a href="namespaceripple.html#a7dfbbc119e9821f91f95982dadcfd712">ripple::SetUnion</a></div><div class="ttdeci">void SetUnion(boost::container::flat_set&lt; T &gt; &amp;dst, boost::container::flat_set&lt; T &gt; const &amp;src)</div><div class="ttdoc">Given two flat sets dst and src, compute dst = dst union src.</div><div class="ttdef"><b>Definition:</b> <a href="FlatSets_8h_source.html#l00035">FlatSets.h:35</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aea839338eb91258b10d5d14262ef079f"><div class="ttname"><a href="namespaceripple.html#aea839338eb91258b10d5d14262ef079f">ripple::flow</a></div><div class="ttdeci">path::RippleCalc::Output flow(PaymentSandbox &amp;view, STAmount const &amp;deliver, AccountID const &amp;src, AccountID const &amp;dst, STPathSet const &amp;paths, bool defaultPaths, bool partialPayment, bool ownerPaysTransferFee, bool offerCrossing, boost::optional&lt; Quality &gt; const &amp;limitQuality, boost::optional&lt; STAmount &gt; const &amp;sendMax, beast::Journal j, path::detail::FlowDebugInfo *flowDebugInfo=nullptr)</div><div class="ttdoc">Make a payment from the src account to the dst account.</div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00038">app/misc/impl/Manifest.cpp:38</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1ApplyViewBase_html_afe88196d7aec85f2af00d7cd0b1a28c3"><div class="ttname"><a href="classripple_1_1detail_1_1ApplyViewBase.html#afe88196d7aec85f2af00d7cd0b1a28c3">ripple::detail::ApplyViewBase::peek</a></div><div class="ttdeci">std::shared_ptr&lt; SLE &gt; peek(Keylet const &amp;k) override</div><div class="ttdoc">Prepare to modify the SLE associated with key.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyViewBase_8cpp_source.html#l00129">ApplyViewBase.cpp:129</a></div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1ApplyViewBase_html_af16244cf2efd903b4575a0b85c94d159"><div class="ttname"><a href="classripple_1_1detail_1_1ApplyViewBase.html#af16244cf2efd903b4575a0b85c94d159">ripple::detail::ApplyViewBase::rules</a></div><div class="ttdeci">Rules const  &amp; rules() const override</div><div class="ttdoc">Returns the tx processing rules.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyViewBase_8cpp_source.html#l00053">ApplyViewBase.cpp:53</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/end.html">std::vector::end</a></div><div class="ttdeci">T end(T... args)</div></div>
@@ -872,11 +876,11 @@ $(function() {
 <div class="ttc" id="astable_sort_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/stable_sort.html">std::stable_sort</a></div><div class="ttdeci">T stable_sort(T... args)</div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a06f1da429e6a72c7a8be4248d88ed6e7"><div class="ttname"><a href="namespaceripple.html#a06f1da429e6a72c7a8be4248d88ed6e7">ripple::sum</a></div><div class="ttdeci">static auto sum(TCollection const &amp;col)</div><div class="ttdef"><b>Definition:</b> <a href="BookStep_8cpp_source.html#l00711">BookStep.cpp:711</a></div></div>
+<div class="ttc" id="astructripple_1_1StrandResult_html_a4895ab90189a3292721fcb8dea377028"><div class="ttname"><a href="structripple_1_1StrandResult.html#a4895ab90189a3292721fcb8dea377028">ripple::StrandResult::sandbox</a></div><div class="ttdeci">std::optional&lt; PaymentSandbox &gt; sandbox</div><div class="ttdoc">Resulting Sandbox state.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00050">StrandFlow.h:50</a></div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_a34318e69d95f3132660d2ad01a037418"><div class="ttname"><a href="structripple_1_1StrandResult.html#a34318e69d95f3132660d2ad01a037418">ripple::StrandResult::inactive</a></div><div class="ttdeci">bool inactive</div><div class="ttdoc">Strand should not considered as a further source of liquidity (dry)</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00057">StrandFlow.h:57</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151"><div class="ttname"><a href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">ripple::tesSUCCESS</a></div><div class="ttdeci">@ tesSUCCESS</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00217">TER.h:217</a></div></div>
-<div class="ttc" id="astructripple_1_1StrandResult_html_a314f53d1ce13e4a07d0c4c74937abb48"><div class="ttname"><a href="structripple_1_1StrandResult.html#a314f53d1ce13e4a07d0c4c74937abb48">ripple::StrandResult::sandbox</a></div><div class="ttdeci">boost::optional&lt; PaymentSandbox &gt; sandbox</div><div class="ttdoc">Resulting Sandbox state.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00050">StrandFlow.h:50</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a9f6e18316bf76a83906dfbebba3be79a"><div class="ttname"><a href="classripple_1_1STAmount.html#a9f6e18316bf76a83906dfbebba3be79a">ripple::STAmount::uRateOne</a></div><div class="ttdeci">static const std::uint64_t uRateOne</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00073">STAmount.h:73</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a104985c6e3067babe99aca6bbc51ba5d"><div class="ttname"><a href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">ripple::get</a></div><div class="ttdeci">T &amp; get(EitherAmount &amp;amt)</div><div class="ttdef"><b>Definition:</b> <a href="AmountSpec_8h_source.html#l00116">AmountSpec.h:116</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a104985c6e3067babe99aca6bbc51ba5d"><div class="ttname"><a href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">ripple::get</a></div><div class="ttdeci">T &amp; get(EitherAmount &amp;amt)</div><div class="ttdef"><b>Definition:</b> <a href="AmountSpec_8h_source.html#l00118">AmountSpec.h:118</a></div></div>
 <div class="ttc" id="anext_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/next.html">std::next</a></div><div class="ttdeci">T next(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_a6db644aec626a02524fe13a7892b7e3f"><div class="ttname"><a href="structripple_1_1StrandResult.html#a6db644aec626a02524fe13a7892b7e3f">ripple::StrandResult::StrandResult</a></div><div class="ttdeci">StrandResult(Strand const &amp;strand, TInAmt const &amp;in_, TOutAmt const &amp;out_, PaymentSandbox &amp;&amp;sandbox_, boost::container::flat_set&lt; uint256 &gt; ofrsToRm_, bool inactive_)</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00063">StrandFlow.h:63</a></div></div>
 <!-- start footer part -->

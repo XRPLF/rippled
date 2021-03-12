@@ -157,9 +157,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5b22f0c89730a59843fa1840d9225d27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerHistory.html#a5b22f0c89730a59843fa1840d9225d27">builtLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;consensusHash, <a class="el" href="classJson_1_1Value.html">Json::Value</a>)</td></tr>
 <tr class="memdesc:a5b22f0c89730a59843fa1840d9225d27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report that we have locally built a particular ledger.  <a href="classripple_1_1LedgerHistory.html#a5b22f0c89730a59843fa1840d9225d27">More...</a><br /></td></tr>
 <tr class="separator:a5b22f0c89730a59843fa1840d9225d27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae20522c290ede961bc6f313452c0cd2a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerHistory.html#ae20522c290ede961bc6f313452c0cd2a">validatedLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;, boost::optional&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;consensusHash)</td></tr>
-<tr class="memdesc:ae20522c290ede961bc6f313452c0cd2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report that we have validated a particular ledger.  <a href="classripple_1_1LedgerHistory.html#ae20522c290ede961bc6f313452c0cd2a">More...</a><br /></td></tr>
-<tr class="separator:ae20522c290ede961bc6f313452c0cd2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3a7cdee19a26b3859e86b02e2cc3742"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerHistory.html#ae3a7cdee19a26b3859e86b02e2cc3742">validatedLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;consensusHash)</td></tr>
+<tr class="memdesc:ae3a7cdee19a26b3859e86b02e2cc3742"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report that we have validated a particular ledger.  <a href="classripple_1_1LedgerHistory.html#ae3a7cdee19a26b3859e86b02e2cc3742">More...</a><br /></td></tr>
+<tr class="separator:ae3a7cdee19a26b3859e86b02e2cc3742"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae03adeae0930b7092edb4139cc7d0330"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerHistory.html#ae03adeae0930b7092edb4139cc7d0330">fixIndex</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex, <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;ledgerHash)</td></tr>
 <tr class="memdesc:ae03adeae0930b7092edb4139cc7d0330"><td class="mdescLeft">&#160;</td><td class="mdescRight">Repair a hash to index mapping.  <a href="classripple_1_1LedgerHistory.html#ae03adeae0930b7092edb4139cc7d0330">More...</a><br /></td></tr>
 <tr class="separator:ae03adeae0930b7092edb4139cc7d0330"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,9 +175,9 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a4a6c17ff87da460004e72dde394579d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerHistory.html#a4a6c17ff87da460004e72dde394579d4">handleMismatch</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;built, <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;valid, boost::optional&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;builtConsensusHash, boost::optional&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;validatedConsensusHash, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;consensus)</td></tr>
-<tr class="memdesc:a4a6c17ff87da460004e72dde394579d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log details in the case where we build one ledger but validate a different one.  <a href="classripple_1_1LedgerHistory.html#a4a6c17ff87da460004e72dde394579d4">More...</a><br /></td></tr>
-<tr class="separator:a4a6c17ff87da460004e72dde394579d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a5ccffa6c8b9c83d07f608b37a20899"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerHistory.html#a8a5ccffa6c8b9c83d07f608b37a20899">handleMismatch</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;built, <a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;valid, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;builtConsensusHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;validatedConsensusHash, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;consensus)</td></tr>
+<tr class="memdesc:a8a5ccffa6c8b9c83d07f608b37a20899"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log details in the case where we build one ledger but validate a different one.  <a href="classripple_1_1LedgerHistory.html#a8a5ccffa6c8b9c83d07f608b37a20899">More...</a><br /></td></tr>
+<tr class="separator:a8a5ccffa6c8b9c83d07f608b37a20899"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -199,7 +199,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Retains historical ledgers. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00034">34</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00036">36</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a1e34d9ee13455de3ea2f919c202a1e1e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1e34d9ee13455de3ea2f919c202a1e1e">&#9670;&nbsp;</a></span>LedgersByHash</h2>
@@ -221,7 +221,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00134">134</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00136">136</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -245,7 +245,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00153">153</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00155">155</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ Private Attributes</h2></td></tr>
 <p>Get the ledgers_by_hash cache hit rate. </p>
 <dl class="section return"><dt>Returns</dt><dd>the hit rate </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00051">51</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00053">53</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -465,7 +465,7 @@ Private Attributes</h2></td></tr>
 
 <p>Remove stale cache entries. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00081">81</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00083">83</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -507,8 +507,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ae20522c290ede961bc6f313452c0cd2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae20522c290ede961bc6f313452c0cd2a">&#9670;&nbsp;</a></span>validatedLedger()</h2>
+<a id="ae3a7cdee19a26b3859e86b02e2cc3742"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3a7cdee19a26b3859e86b02e2cc3742">&#9670;&nbsp;</a></span>validatedLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -522,7 +522,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>consensusHash</em>&#160;</td>
         </tr>
         <tr>
@@ -600,8 +600,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a4a6c17ff87da460004e72dde394579d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a6c17ff87da460004e72dde394579d4">&#9670;&nbsp;</a></span>handleMismatch()</h2>
+<a id="a8a5ccffa6c8b9c83d07f608b37a20899"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a5ccffa6c8b9c83d07f608b37a20899">&#9670;&nbsp;</a></span>handleMismatch()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -624,13 +624,13 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>builtConsensusHash</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>validatedConsensusHash</em>, </td>
         </tr>
         <tr>
@@ -689,7 +689,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00130">130</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00132">132</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -713,7 +713,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00131">131</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00133">133</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -737,7 +737,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00132">132</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00134">134</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -761,7 +761,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00136">136</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00138">138</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -785,7 +785,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00154">154</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00156">156</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -809,7 +809,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00157">157</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00159">159</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>
@@ -833,7 +833,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00159">159</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHistory_8h_source.html#l00161">161</a> of file <a class="el" href="LedgerHistory_8h_source.html">LedgerHistory.h</a>.</p>
 
 </div>
 </div>

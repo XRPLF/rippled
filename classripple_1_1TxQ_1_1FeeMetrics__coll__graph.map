@@ -1,14 +1,15 @@
 <map id="ripple::TxQ::FeeMetrics" name="ripple::TxQ::FeeMetrics">
-<area shape="rect" id="node1" title="Track and use the fee escalation metrics of the current open ledger." alt="" coords="689,399,860,425"/>
-<area shape="rect" id="node2" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="312,277,501,318"/>
-<area shape="rect" id="node3" title=" " alt="" coords="14,5,203,61"/>
-<area shape="rect" id="node4" title=" " alt="" coords="7,86,210,127"/>
-<area shape="rect" id="node5" title=" " alt="" coords="7,152,210,208"/>
-<area shape="rect" id="node6" title=" " alt="" coords="15,232,202,288"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,313,212,354"/>
-<area shape="rect" id="node8" title=" " alt="" coords="14,379,203,435"/>
-<area shape="rect" id="node9" title=" " alt="" coords="89,459,128,485"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="363,399,451,425"/>
-<area shape="rect" id="node11" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="351,465,462,492"/>
-<area shape="rect" id="node12" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="35,509,182,536"/>
+<area shape="rect" id="node1" title="Track and use the fee escalation metrics of the current open ledger." alt="" coords="691,321,861,348"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="337,211,476,253"/>
+<area shape="rect" id="node3" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="312,277,501,318"/>
+<area shape="rect" id="node4" title=" " alt="" coords="14,5,203,61"/>
+<area shape="rect" id="node5" title=" " alt="" coords="7,86,210,127"/>
+<area shape="rect" id="node6" title=" " alt="" coords="7,152,210,208"/>
+<area shape="rect" id="node7" title=" " alt="" coords="15,232,202,288"/>
+<area shape="rect" id="node8" title=" " alt="" coords="5,313,212,354"/>
+<area shape="rect" id="node9" title=" " alt="" coords="14,379,203,435"/>
+<area shape="rect" id="node10" title=" " alt="" coords="89,459,128,485"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="363,359,451,385"/>
+<area shape="rect" id="node12" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="351,441,462,468"/>
+<area shape="rect" id="node13" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="35,509,182,536"/>
 </map>

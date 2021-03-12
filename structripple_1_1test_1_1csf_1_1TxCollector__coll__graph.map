@@ -1,10 +1,11 @@
 <map id="ripple::test::csf::TxCollector" name="ripple::test::csf::TxCollector">
-<area shape="rect" id="node1" title="Tracks the submission &#45;&gt; accepted &#45;&gt; validated evolution of transactions." alt="" coords="1056,93,1183,134"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Histogram.html" title=" " alt="" coords="720,85,891,141"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="207,51,295,77"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="436,113,605,183"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="723,186,887,257"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,233,108,260"/>
-<area shape="rect" id="node8" href="$classripple_1_1test_1_1csf_1_1Tx.html" title="A single transaction." alt="" coords="180,260,323,287"/>
-<area shape="rect" id="node7" href="$structripple_1_1test_1_1csf_1_1TxCollector_1_1Tracker.html" title=" " alt="" coords="445,259,596,301"/>
+<area shape="rect" id="node1" title="Tracks the submission &#45;&gt; accepted &#45;&gt; validated evolution of transactions." alt="" coords="1104,77,1231,118"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Histogram.html" title=" " alt="" coords="768,69,939,125"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="231,37,319,64"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="484,99,653,170"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="771,173,935,243"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,220,108,247"/>
+<area shape="rect" id="node8" href="$classripple_1_1test_1_1csf_1_1Tx.html" title="A single transaction." alt="" coords="204,245,347,272"/>
+<area shape="rect" id="node7" href="$structripple_1_1test_1_1csf_1_1TxCollector_1_1Tracker.html" title=" " alt="" coords="493,246,644,287"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="180,305,371,332"/>
 </map>

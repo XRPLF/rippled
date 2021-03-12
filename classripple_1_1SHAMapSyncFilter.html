@@ -97,8 +97,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a772cb041257b294a6d9641fc1aab0f03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52d6a1cab3037707977a764d146d939f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapSyncFilter.html#a52d6a1cab3037707977a764d146d939f">gotNode</a> (bool fromFilter, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;nodeHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;nodeData, <a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type) const =0</td></tr>
 <tr class="separator:a52d6a1cab3037707977a764d146d939f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad819277f2ef6accf331971c69a583e00"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapSyncFilter.html#ad819277f2ef6accf331971c69a583e00">getNode</a> (<a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;nodeHash) const =0</td></tr>
-<tr class="separator:ad819277f2ef6accf331971c69a583e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab30f4bd0cd629af0cb5a7f53afb7fb4"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapSyncFilter.html#aab30f4bd0cd629af0cb5a7f53afb7fb4">getNode</a> (<a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;nodeHash) const =0</td></tr>
+<tr class="separator:aab30f4bd0cd629af0cb5a7f53afb7fb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -263,8 +263,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad819277f2ef6accf331971c69a583e00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad819277f2ef6accf331971c69a583e00">&#9670;&nbsp;</a></span>getNode()</h2>
+<a id="aab30f4bd0cd629af0cb5a7f53afb7fb4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab30f4bd0cd629af0cb5a7f53afb7fb4">&#9670;&nbsp;</a></span>getNode()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -273,7 +273,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a>&gt; ripple::SHAMapSyncFilter::getNode </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a>&gt; ripple::SHAMapSyncFilter::getNode </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;&#160;</td>
           <td class="paramname"><em>nodeHash</em></td><td>)</td>
@@ -287,7 +287,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="structripple_1_1tests_1_1FetchPack__test_1_1TestFilter.html#a25f084b1c15cd6b006de9a25f51d5b83">ripple::tests::FetchPack_test::TestFilter</a>, <a class="el" href="classripple_1_1ConsensusTransSetSF.html#a312ca1779784b81d78feda410a1a3fee">ripple::ConsensusTransSetSF</a>, <a class="el" href="classripple_1_1AccountStateSF.html#a08d504422867106427aedf103af743bb">ripple::AccountStateSF</a>, and <a class="el" href="classripple_1_1TransactionStateSF.html#a3f02e220d5108f1b94010382869100d8">ripple::TransactionStateSF</a>.</p>
+<p>Implemented in <a class="el" href="structripple_1_1tests_1_1FetchPack__test_1_1TestFilter.html#a1689d506385e83eac57724296aee5ac7">ripple::tests::FetchPack_test::TestFilter</a>, <a class="el" href="classripple_1_1ConsensusTransSetSF.html#a2ff174d8c863ae309b98af42cf52a6c2">ripple::ConsensusTransSetSF</a>, <a class="el" href="classripple_1_1AccountStateSF.html#a1d7287ca2601f5afbb881b6ed1d1e5fb">ripple::AccountStateSF</a>, and <a class="el" href="classripple_1_1TransactionStateSF.html#ac1820e2e81c8a10726d1d3b6e85632bf">ripple::TransactionStateSF</a>.</p>
 
 </div>
 </div>

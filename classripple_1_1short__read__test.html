@@ -90,10 +90,11 @@ Collaboration diagram for ripple::short_read_test:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1short__read__test__coll__graph.png" border="0" usemap="#ripple_1_1short__read__test_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1short__read__test_coll__map" id="ripple_1_1short__read__test_coll__map">
-<area shape="rect" title=" " alt="" coords="86,109,254,136"/>
-<area shape="rect" title=" " alt="" coords="5,13,60,39"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="85,5,255,47"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/thread.html" title="STL class." alt="" coords="280,13,372,39"/>
+<area shape="rect" title=" " alt="" coords="361,108,529,135"/>
+<area shape="rect" title=" " alt="" coords="101,5,156,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="5,56,252,112"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="43,137,214,178"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/thread.html" title="STL class." alt="" coords="83,203,175,229"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -146,8 +147,8 @@ Static Private Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:aae67885567bc109e954b4798d29f83e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1short__read__test.html#a5a35bd0c5a674cf7d4a1028479a859ae">io_context_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1short__read__test.html#aae67885567bc109e954b4798d29f83e9">io_context_</a></td></tr>
 <tr class="separator:aae67885567bc109e954b4798d29f83e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c41a0068105ee41b003ecb0129c3b0a"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; boost::asio::executor_work_guard&lt; boost::asio::executor &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1short__read__test.html#a6c41a0068105ee41b003ecb0129c3b0a">work_</a></td></tr>
-<tr class="separator:a6c41a0068105ee41b003ecb0129c3b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78d2aae0e7c126f1a61dbf18d4c8ecf0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; boost::asio::executor_work_guard&lt; boost::asio::executor &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1short__read__test.html#a78d2aae0e7c126f1a61dbf18d4c8ecf0">work_</a></td></tr>
+<tr class="separator:a78d2aae0e7c126f1a61dbf18d4c8ecf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f21e5c48ea45094fd8e91ff9806b051"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1short__read__test.html#a5f21e5c48ea45094fd8e91ff9806b051">thread_</a></td></tr>
 <tr class="separator:a5f21e5c48ea45094fd8e91ff9806b051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11edc9b9fbc6e2ccb062001b96b411be"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; boost::asio::ssl::context &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1short__read__test.html#a11edc9b9fbc6e2ccb062001b96b411be">context_</a></td></tr>
@@ -155,7 +156,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00048">48</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00050">50</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a5a35bd0c5a674cf7d4a1028479a859ae"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5a35bd0c5a674cf7d4a1028479a859ae">&#9670;&nbsp;</a></span>io_context_type</h2>
@@ -177,7 +178,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00051">51</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00053">53</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -201,7 +202,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00052">52</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00054">54</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -225,7 +226,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00054">54</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00056">56</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -249,7 +250,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00055">55</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00057">57</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -273,7 +274,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00056">56</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00058">58</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -297,7 +298,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00057">57</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00059">59</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -321,7 +322,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00058">58</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00060">60</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -345,7 +346,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00059">59</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00061">61</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -369,7 +370,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00060">60</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00062">62</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -389,7 +390,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00630">630</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00632">632</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +409,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00640">640</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00642">642</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -449,7 +450,7 @@ template&lt;class Streambuf &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00070">70</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00072">72</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -476,7 +477,7 @@ template&lt;class Streambuf &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00647">647</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00649">649</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -501,12 +502,12 @@ template&lt;class Streambuf &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00062">62</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00064">64</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a6c41a0068105ee41b003ecb0129c3b0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c41a0068105ee41b003ecb0129c3b0a">&#9670;&nbsp;</a></span>work_</h2>
+<a id="a78d2aae0e7c126f1a61dbf18d4c8ecf0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78d2aae0e7c126f1a61dbf18d4c8ecf0">&#9670;&nbsp;</a></span>work_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -515,7 +516,7 @@ template&lt;class Streambuf &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;boost::asio::executor_work_guard&lt;boost::asio::executor&gt; &gt; ripple::short_read_test::work_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;boost::asio::executor_work_guard&lt;boost::asio::executor&gt; &gt; ripple::short_read_test::work_</td>
         </tr>
       </table>
   </td>
@@ -525,7 +526,7 @@ template&lt;class Streambuf &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00064">64</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00066">66</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -549,7 +550,7 @@ template&lt;class Streambuf &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00065">65</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00067">67</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -573,7 +574,7 @@ template&lt;class Streambuf &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00066">66</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="short__read__test_8cpp_source.html#l00068">68</a> of file <a class="el" href="short__read__test_8cpp_source.html">short_read_test.cpp</a>.</p>
 
 </div>
 </div>

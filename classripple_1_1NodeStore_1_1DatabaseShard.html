@@ -136,9 +136,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a620a17c7b2a6ca4a05c79a1f6637abca"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a620a17c7b2a6ca4a05c79a1f6637abca">init</a> ()=0</td></tr>
 <tr class="memdesc:a620a17c7b2a6ca4a05c79a1f6637abca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the database.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a620a17c7b2a6ca4a05c79a1f6637abca">More...</a><br /></td></tr>
 <tr class="separator:a620a17c7b2a6ca4a05c79a1f6637abca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98859a0327f85b03a0543aef924401fa"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a98859a0327f85b03a0543aef924401fa">prepareLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> validLedgerSeq)=0</td></tr>
-<tr class="memdesc:a98859a0327f85b03a0543aef924401fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to store a new ledger in the shard being acquired.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a98859a0327f85b03a0543aef924401fa">More...</a><br /></td></tr>
-<tr class="separator:a98859a0327f85b03a0543aef924401fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78a0781aff3b86e44c701c280317d146"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a78a0781aff3b86e44c701c280317d146">prepareLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> validLedgerSeq)=0</td></tr>
+<tr class="memdesc:a78a0781aff3b86e44c701c280317d146"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to store a new ledger in the shard being acquired.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a78a0781aff3b86e44c701c280317d146">More...</a><br /></td></tr>
+<tr class="separator:a78a0781aff3b86e44c701c280317d146"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4b147629a573d6a8a69599356016a83"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#ac4b147629a573d6a8a69599356016a83">prepareShards</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; const &amp;shardIndexes)=0</td></tr>
 <tr class="memdesc:ac4b147629a573d6a8a69599356016a83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare one or more shard indexes to be imported into the database.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#ac4b147629a573d6a8a69599356016a83">More...</a><br /></td></tr>
 <tr class="separator:ac4b147629a573d6a8a69599356016a83"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -365,7 +365,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A collection of historical shards. </p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00037">37</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00036">36</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a43594a8835ccb53d7b80983694d26cad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a43594a8835ccb53d7b80983694d26cad">&#9670;&nbsp;</a></span>Children</h2>
@@ -455,7 +455,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00049">49</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00048">48</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
 
 </div>
 </div>
@@ -490,8 +490,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a98859a0327f85b03a0543aef924401fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98859a0327f85b03a0543aef924401fa">&#9670;&nbsp;</a></span>prepareLedger()</h2>
+<a id="a78a0781aff3b86e44c701c280317d146"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78a0781aff3b86e44c701c280317d146">&#9670;&nbsp;</a></span>prepareLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -500,7 +500,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt; ripple::NodeStore::DatabaseShard::prepareLedger </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt; ripple::NodeStore::DatabaseShard::prepareLedger </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>validLedgerSeq</em></td><td>)</td>
@@ -521,9 +521,9 @@ Private Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>If a ledger should be fetched and stored, then returns the ledger sequence of the ledger to request. Otherwise returns boost::none. Some reasons this may return boost::none are: all shards are stored and full, max allowed disk space would be exceeded, or a ledger was recently requested and not enough time has passed between requests. @implNote adds a new writable shard if necessary </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>If a ledger should be fetched and stored, then returns the ledger sequence of the ledger to request. Otherwise returns std::nullopt. Some reasons this may return std::nullopt are: all shards are stored and full, max allowed disk space would be exceeded, or a ledger was recently requested and not enough time has passed between requests. @implNote adds a new writable shard if necessary </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#af47575a39dc19bdcb72712efbc6f21fa">ripple::NodeStore::DatabaseShardImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a646556cbe43984251b01b0c748d79b6f">ripple::NodeStore::DatabaseShardImp</a>.</p>
 
 </div>
 </div>

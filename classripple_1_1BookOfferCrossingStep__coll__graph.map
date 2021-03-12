@@ -1,15 +1,16 @@
 <map id="ripple::BookOfferCrossingStep&lt; TIn, TOut &gt;" name="ripple::BookOfferCrossingStep&lt; TIn, TOut &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="1648,167,1836,208"/>
-<area shape="rect" id="node2" href="$classripple_1_1BookStep.html" title=" " alt="" coords="1384,159,1599,215"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1648,211,1836,252"/>
+<area shape="rect" id="node2" href="$classripple_1_1BookStep.html" title=" " alt="" coords="1384,203,1599,259"/>
 <area shape="rect" id="node3" title=" " alt="" coords="1091,5,1267,76"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,178,108,205"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,248,389,289"/>
-<area shape="rect" id="node5" href="$classripple_1_1Step.html" title="A step in a payment path." alt="" coords="1131,151,1227,178"/>
-<area shape="rect" id="node6" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1123,202,1234,229"/>
-<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="823,193,969,219"/>
-<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,288,693,329"/>
-<area shape="rect" id="node12" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="845,253,947,279"/>
-<area shape="rect" id="node13" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,216,689,257"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,174,349,201"/>
-<area shape="rect" id="node11" href="$classripple_1_1Book.html" title="Specifies an order book." alt="" coords="1129,253,1229,279"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,201,108,227"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,275,389,316"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="1101,152,1256,193"/>
+<area shape="rect" id="node6" href="$classripple_1_1Step.html" title="A step in a payment path." alt="" coords="1131,218,1227,245"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1123,269,1234,295"/>
+<area shape="rect" id="node8" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="823,254,969,281"/>
+<area shape="rect" id="node9" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,320,693,361"/>
+<area shape="rect" id="node13" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="845,314,947,341"/>
+<area shape="rect" id="node14" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,255,689,296"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,199,349,226"/>
+<area shape="rect" id="node12" href="$classripple_1_1Book.html" title="Specifies an order book." alt="" coords="1129,319,1229,346"/>
 </map>

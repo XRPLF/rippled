@@ -106,10 +106,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af0786d10092850fd4a1f10d0bec927a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">join</a> (char const *name, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> wait, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:af0786d10092850fd4a1f10d0bec927a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns once all counted in-flight closures are destroyed.  <a href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">More...</a><br /></td></tr>
 <tr class="separator:af0786d10092850fd4a1f10d0bec927a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abf5545804f1efba38a45e356c36ad997"><td class="memTemplParams" colspan="2">template&lt;class Closure &gt; </td></tr>
-<tr class="memitem:abf5545804f1efba38a45e356c36ad997"><td class="memTemplItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1ClosureCounter_1_1Wrapper.html">Wrapper</a>&lt; Closure &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html#abf5545804f1efba38a45e356c36ad997">wrap</a> (Closure &amp;&amp;closure)</td></tr>
-<tr class="memdesc:abf5545804f1efba38a45e356c36ad997"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrap the passed closure with a reference counter.  <a href="classripple_1_1ClosureCounter.html#abf5545804f1efba38a45e356c36ad997">More...</a><br /></td></tr>
-<tr class="separator:abf5545804f1efba38a45e356c36ad997"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab677f67ea9791e7087ca12eba53ab80d"><td class="memTemplParams" colspan="2">template&lt;class Closure &gt; </td></tr>
+<tr class="memitem:ab677f67ea9791e7087ca12eba53ab80d"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ClosureCounter_1_1Wrapper.html">Wrapper</a>&lt; Closure &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html#ab677f67ea9791e7087ca12eba53ab80d">wrap</a> (Closure &amp;&amp;closure)</td></tr>
+<tr class="memdesc:ab677f67ea9791e7087ca12eba53ab80d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrap the passed closure with a reference counter.  <a href="classripple_1_1ClosureCounter.html#ab677f67ea9791e7087ca12eba53ab80d">More...</a><br /></td></tr>
+<tr class="separator:ab677f67ea9791e7087ca12eba53ab80d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2194cbada192730b683d89a27434fb8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html#aa2194cbada192730b683d89a27434fb8">count</a> () const</td></tr>
 <tr class="memdesc:aa2194cbada192730b683d89a27434fb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Current number of Closures outstanding.  <a href="classripple_1_1ClosureCounter.html#aa2194cbada192730b683d89a27434fb8">More...</a><br /></td></tr>
 <tr class="separator:aa2194cbada192730b683d89a27434fb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -355,8 +355,8 @@ template&lt;typename Ret_t , typename... Args_t&gt; </div>
 
 </div>
 </div>
-<a id="abf5545804f1efba38a45e356c36ad997"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abf5545804f1efba38a45e356c36ad997">&#9670;&nbsp;</a></span>wrap()</h2>
+<a id="ab677f67ea9791e7087ca12eba53ab80d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab677f67ea9791e7087ca12eba53ab80d">&#9670;&nbsp;</a></span>wrap()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -366,7 +366,7 @@ template&lt;typename Ret_t , typename... Args_t&gt; </div>
 template&lt;class Closure &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="classripple_1_1ClosureCounter_1_1Wrapper.html">Wrapper</a>&lt;Closure&gt; &gt; <a class="el" href="classripple_1_1ClosureCounter.html">ripple::ClosureCounter</a>&lt; Ret_t, Args_t &gt;::wrap </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1ClosureCounter_1_1Wrapper.html">Wrapper</a>&lt;Closure&gt; &gt; <a class="el" href="classripple_1_1ClosureCounter.html">ripple::ClosureCounter</a>&lt; Ret_t, Args_t &gt;::wrap </td>
           <td>(</td>
           <td class="paramtype">Closure &amp;&amp;&#160;</td>
           <td class="paramname"><em>closure</em></td><td>)</td>
@@ -382,7 +382,7 @@ template&lt;class Closure &gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>If <a class="el" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7" title="Returns once all counted in-flight closures are destroyed.">join()</a> has been called returns boost::none. Otherwise returns a boost::optional that wraps closure with a reference counter. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>If <a class="el" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7" title="Returns once all counted in-flight closures are destroyed.">join()</a> has been called returns std::nullopt. Otherwise returns a <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a> that wraps closure with a reference counter. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="ClosureCounter_8h_source.html#l00178">178</a> of file <a class="el" href="ClosureCounter_8h_source.html">ClosureCounter.h</a>.</p>
 

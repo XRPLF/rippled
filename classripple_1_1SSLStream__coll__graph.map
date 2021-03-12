@@ -1,7 +1,8 @@
 <map id="ripple::SSLStream" name="ripple::SSLStream">
-<area shape="rect" id="node1" title=" " alt="" coords="32,273,169,300"/>
-<area shape="rect" id="node2" href="$classripple_1_1HTTPStream.html" title=" " alt="" coords="5,184,153,211"/>
-<area shape="rect" id="node3" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="178,184,391,211"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="229,95,340,121"/>
-<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="211,5,358,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="745,79,883,105"/>
+<area shape="rect" id="node2" href="$classripple_1_1HTTPStream.html" title=" " alt="" coords="459,5,607,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="456,57,611,127"/>
+<area shape="rect" id="node4" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="427,152,640,179"/>
+<area shape="rect" id="node5" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="252,152,363,179"/>
+<area shape="rect" id="node6" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,152,152,179"/>
 </map>

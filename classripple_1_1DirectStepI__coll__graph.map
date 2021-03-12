@@ -1,12 +1,13 @@
 <map id="ripple::DirectStepI&lt; TDerived &gt;" name="ripple::DirectStepI&lt; TDerived &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="813,127,952,169"/>
+<area shape="rect" id="node1" title=" " alt="" coords="813,167,952,209"/>
 <area shape="rect" id="node2" title=" " alt="" coords="502,5,683,61"/>
-<area shape="rect" id="node3" href="$classripple_1_1Step.html" title="A step in a payment path." alt="" coords="545,85,641,112"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="537,136,648,163"/>
-<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="232,135,379,161"/>
-<area shape="rect" id="node6" href="$classripple_1_1base__uint.html" title=" " alt="" coords="493,253,692,294"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,307,389,349"/>
-<area shape="rect" id="node10" href="$classripple_1_1base__uint.html" title=" " alt="" coords="489,187,696,229"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,315,108,341"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,240,349,267"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="510,86,675,127"/>
+<area shape="rect" id="node4" href="$classripple_1_1Step.html" title="A step in a payment path." alt="" coords="545,152,641,179"/>
+<area shape="rect" id="node5" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="537,203,648,229"/>
+<area shape="rect" id="node6" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="232,201,379,228"/>
+<area shape="rect" id="node7" href="$classripple_1_1base__uint.html" title=" " alt="" coords="493,254,692,295"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,374,389,415"/>
+<area shape="rect" id="node11" href="$classripple_1_1base__uint.html" title=" " alt="" coords="489,319,696,361"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,381,108,408"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,307,349,333"/>
 </map>

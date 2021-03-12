@@ -88,32 +88,32 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a88ad248e118ca56aa1f67ea2b356388f"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a>, <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a88ad248e118ca56aa1f67ea2b356388f">fwd</a> (<a class="el" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> &amp;sb, <a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;afView, boost::container::flat_set&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; &amp;ofrsToRm, <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> const &amp;in)=0</td></tr>
 <tr class="memdesc:a88ad248e118ca56aa1f67ea2b356388f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find the amount we get out of the step given the input subject to liquidity limits.  <a href="classripple_1_1Step.html#a88ad248e118ca56aa1f67ea2b356388f">More...</a><br /></td></tr>
 <tr class="separator:a88ad248e118ca56aa1f67ea2b356388f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2596ab56299158ee3244eec70ebbd644"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a2596ab56299158ee3244eec70ebbd644">cachedIn</a> () const =0</td></tr>
-<tr class="memdesc:a2596ab56299158ee3244eec70ebbd644"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amount of currency computed coming into the <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a> the last time the step ran in reverse.  <a href="classripple_1_1Step.html#a2596ab56299158ee3244eec70ebbd644">More...</a><br /></td></tr>
-<tr class="separator:a2596ab56299158ee3244eec70ebbd644"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9273b4d526a8f0a904a0afcaa4812577"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a9273b4d526a8f0a904a0afcaa4812577">cachedOut</a> () const =0</td></tr>
-<tr class="memdesc:a9273b4d526a8f0a904a0afcaa4812577"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amount of currency computed coming out of the <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a> the last time the step ran in reverse.  <a href="classripple_1_1Step.html#a9273b4d526a8f0a904a0afcaa4812577">More...</a><br /></td></tr>
-<tr class="separator:a9273b4d526a8f0a904a0afcaa4812577"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98fda1ca2b88444baa3db59720953ea2"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a98fda1ca2b88444baa3db59720953ea2">directStepSrcAcct</a> () const</td></tr>
-<tr class="memdesc:a98fda1ca2b88444baa3db59720953ea2"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> (IOU-&gt;IOU direct step), return the src account.  <a href="classripple_1_1Step.html#a98fda1ca2b88444baa3db59720953ea2">More...</a><br /></td></tr>
-<tr class="separator:a98fda1ca2b88444baa3db59720953ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad340fc1160bd43abd258a6b30bc61c90"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#ad340fc1160bd43abd258a6b30bc61c90">directStepAccts</a> () const</td></tr>
-<tr class="separator:ad340fc1160bd43abd258a6b30bc61c90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3abdd7984b2b564617642b19241b0ea9"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a3abdd7984b2b564617642b19241b0ea9">cachedIn</a> () const =0</td></tr>
+<tr class="memdesc:a3abdd7984b2b564617642b19241b0ea9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amount of currency computed coming into the <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a> the last time the step ran in reverse.  <a href="classripple_1_1Step.html#a3abdd7984b2b564617642b19241b0ea9">More...</a><br /></td></tr>
+<tr class="separator:a3abdd7984b2b564617642b19241b0ea9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24766fe2e6d1f0bc8467fa40bd95c301"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a24766fe2e6d1f0bc8467fa40bd95c301">cachedOut</a> () const =0</td></tr>
+<tr class="memdesc:a24766fe2e6d1f0bc8467fa40bd95c301"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amount of currency computed coming out of the <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a> the last time the step ran in reverse.  <a href="classripple_1_1Step.html#a24766fe2e6d1f0bc8467fa40bd95c301">More...</a><br /></td></tr>
+<tr class="separator:a24766fe2e6d1f0bc8467fa40bd95c301"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25c5c19a6f0971f3ff0752fd1cd028c8"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a25c5c19a6f0971f3ff0752fd1cd028c8">directStepSrcAcct</a> () const</td></tr>
+<tr class="memdesc:a25c5c19a6f0971f3ff0752fd1cd028c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> (IOU-&gt;IOU direct step), return the src account.  <a href="classripple_1_1Step.html#a25c5c19a6f0971f3ff0752fd1cd028c8">More...</a><br /></td></tr>
+<tr class="separator:a25c5c19a6f0971f3ff0752fd1cd028c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9150649697d30c944666a0b0fec1bb96"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a9150649697d30c944666a0b0fec1bb96">directStepAccts</a> () const</td></tr>
+<tr class="separator:a9150649697d30c944666a0b0fec1bb96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13f46801cf68bd4ba5e0c995db490463"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a13f46801cf68bd4ba5e0c995db490463">debtDirection</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;sb, <a class="el" href="namespaceripple.html#a2fca0f72cfacc04d15ad41d84ebf46fd">StrandDirection</a> dir) const =0</td></tr>
 <tr class="memdesc:a13f46801cf68bd4ba5e0c995db490463"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is a <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> and the src redeems to the dst, return true, otherwise return false.  <a href="classripple_1_1Step.html#a13f46801cf68bd4ba5e0c995db490463">More...</a><br /></td></tr>
 <tr class="separator:a13f46801cf68bd4ba5e0c995db490463"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08d02c3dc700867a12c2772267918bac"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a08d02c3dc700867a12c2772267918bac">lineQualityIn</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;) const</td></tr>
 <tr class="memdesc:a08d02c3dc700867a12c2772267918bac"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is a <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a>, return the quality in of the dst account.  <a href="classripple_1_1Step.html#a08d02c3dc700867a12c2772267918bac">More...</a><br /></td></tr>
 <tr class="separator:a08d02c3dc700867a12c2772267918bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a092c3b7efb3668303c4ee7adf4113a69"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; boost::optional&lt; Quality &gt;, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a092c3b7efb3668303c4ee7adf4113a69">qualityUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;v, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> prevStepDir) const =0</td></tr>
-<tr class="memdesc:a092c3b7efb3668303c4ee7adf4113a69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an upper bound of quality for the step.  <a href="classripple_1_1Step.html#a092c3b7efb3668303c4ee7adf4113a69">More...</a><br /></td></tr>
-<tr class="separator:a092c3b7efb3668303c4ee7adf4113a69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81ae600c7c6c3c240cd4a74f756e8cd6"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; Quality &gt;, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a81ae600c7c6c3c240cd4a74f756e8cd6">qualityUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;v, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a> prevStepDir) const =0</td></tr>
+<tr class="memdesc:a81ae600c7c6c3c240cd4a74f756e8cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an upper bound of quality for the step.  <a href="classripple_1_1Step.html#a81ae600c7c6c3c240cd4a74f756e8cd6">More...</a><br /></td></tr>
+<tr class="separator:a81ae600c7c6c3c240cd4a74f756e8cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c0b0fb5f0e476dfee59b2a085f34a93"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a8c0b0fb5f0e476dfee59b2a085f34a93">offersUsed</a> () const</td></tr>
 <tr class="memdesc:a8c0b0fb5f0e476dfee59b2a085f34a93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the number of offers consumed or partially consumed the last time the step ran, including expired and unfunded offers.  <a href="classripple_1_1Step.html#a8c0b0fb5f0e476dfee59b2a085f34a93">More...</a><br /></td></tr>
 <tr class="separator:a8c0b0fb5f0e476dfee59b2a085f34a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e2523f5403b4e921c6338c02bdfac70"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="classripple_1_1Book.html">Book</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a0e2523f5403b4e921c6338c02bdfac70">bookStepBook</a> () const</td></tr>
-<tr class="memdesc:a0e2523f5403b4e921c6338c02bdfac70"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is a <a class="el" href="classripple_1_1BookStep.html">BookStep</a>, return the book.  <a href="classripple_1_1Step.html#a0e2523f5403b4e921c6338c02bdfac70">More...</a><br /></td></tr>
-<tr class="separator:a0e2523f5403b4e921c6338c02bdfac70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fdf5073d616414671f6ec1caa4a7744"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Book.html">Book</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a6fdf5073d616414671f6ec1caa4a7744">bookStepBook</a> () const</td></tr>
+<tr class="memdesc:a6fdf5073d616414671f6ec1caa4a7744"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is a <a class="el" href="classripple_1_1BookStep.html">BookStep</a>, return the book.  <a href="classripple_1_1Step.html#a6fdf5073d616414671f6ec1caa4a7744">More...</a><br /></td></tr>
+<tr class="separator:a6fdf5073d616414671f6ec1caa4a7744"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74ef4eb5de8105bf5e2a741755033e53"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a74ef4eb5de8105bf5e2a741755033e53">isZero</a> (<a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> const &amp;out) const =0</td></tr>
 <tr class="memdesc:a74ef4eb5de8105bf5e2a741755033e53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if amount is zero.  <a href="classripple_1_1Step.html#a74ef4eb5de8105bf5e2a741755033e53">More...</a><br /></td></tr>
 <tr class="separator:a74ef4eb5de8105bf5e2a741755033e53"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -304,8 +304,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a2596ab56299158ee3244eec70ebbd644"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2596ab56299158ee3244eec70ebbd644">&#9670;&nbsp;</a></span>cachedIn()</h2>
+<a id="a3abdd7984b2b564617642b19241b0ea9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3abdd7984b2b564617642b19241b0ea9">&#9670;&nbsp;</a></span>cachedIn()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -314,7 +314,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a>&gt; ripple::Step::cachedIn </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a>&gt; ripple::Step::cachedIn </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -331,8 +331,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a9273b4d526a8f0a904a0afcaa4812577"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9273b4d526a8f0a904a0afcaa4812577">&#9670;&nbsp;</a></span>cachedOut()</h2>
+<a id="a24766fe2e6d1f0bc8467fa40bd95c301"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24766fe2e6d1f0bc8467fa40bd95c301">&#9670;&nbsp;</a></span>cachedOut()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -341,7 +341,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a>&gt; ripple::Step::cachedOut </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a>&gt; ripple::Step::cachedOut </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -358,8 +358,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a98fda1ca2b88444baa3db59720953ea2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98fda1ca2b88444baa3db59720953ea2">&#9670;&nbsp;</a></span>directStepSrcAcct()</h2>
+<a id="a25c5c19a6f0971f3ff0752fd1cd028c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a25c5c19a6f0971f3ff0752fd1cd028c8">&#9670;&nbsp;</a></span>directStepSrcAcct()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -368,7 +368,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&gt; ripple::Step::directStepSrcAcct </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&gt; ripple::Step::directStepSrcAcct </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -388,8 +388,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="ad340fc1160bd43abd258a6b30bc61c90"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad340fc1160bd43abd258a6b30bc61c90">&#9670;&nbsp;</a></span>directStepAccts()</h2>
+<a id="a9150649697d30c944666a0b0fec1bb96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9150649697d30c944666a0b0fec1bb96">&#9670;&nbsp;</a></span>directStepAccts()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -398,7 +398,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&gt; &gt; ripple::Step::directStepAccts </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&gt; &gt; ripple::Step::directStepAccts </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -491,8 +491,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a092c3b7efb3668303c4ee7adf4113a69"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a092c3b7efb3668303c4ee7adf4113a69">&#9670;&nbsp;</a></span>qualityUpperBound()</h2>
+<a id="a81ae600c7c6c3c240cd4a74f756e8cd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81ae600c7c6c3c240cd4a74f756e8cd6">&#9670;&nbsp;</a></span>qualityUpperBound()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -501,7 +501,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;boost::optional&lt;Quality&gt;, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a>&gt; ripple::Step::qualityUpperBound </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;Quality&gt;, <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a>&gt; ripple::Step::qualityUpperBound </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
           <td class="paramname"><em>v</em>, </td>
@@ -533,7 +533,7 @@ Friends</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A pair. The first element is the upper bound of quality for the step, or boost::none if the step is dry. The second element will be set to <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401ea7e611dd9f79193db43a5e9983752239e">DebtDirection::redeems</a> if this steps redeems, DebtDirection:issues if this step issues. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>A pair. The first element is the upper bound of quality for the step, or std::nullopt if the step is dry. The second element will be set to <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401ea7e611dd9f79193db43a5e9983752239e">DebtDirection::redeems</a> if this steps redeems, DebtDirection:issues if this step issues. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>it is an upper bound because offers on the books may be unfunded. If there is always a funded offer at the tip of the book, then we could rename this <code>theoreticalQuality</code> rather than <code>qualityUpperBound</code>. It could still differ from the actual quality, but except for "dust" amounts, it should be a good estimate for the actual quality. </dd></dl>
 
 </div>
@@ -568,8 +568,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a0e2523f5403b4e921c6338c02bdfac70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e2523f5403b4e921c6338c02bdfac70">&#9670;&nbsp;</a></span>bookStepBook()</h2>
+<a id="a6fdf5073d616414671f6ec1caa4a7744"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fdf5073d616414671f6ec1caa4a7744">&#9670;&nbsp;</a></span>bookStepBook()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -578,7 +578,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="classripple_1_1Book.html">Book</a>&gt; ripple::Step::bookStepBook </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1Book.html">Book</a>&gt; ripple::Step::bookStepBook </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>

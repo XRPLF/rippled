@@ -107,6 +107,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acd6ac096e54166098107227a8d168044"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acd6ac096e54166098107227a8d168044">isOpen</a> ()=0</td></tr>
 <tr class="memdesc:acd6ac096e54166098107227a8d168044"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true is the database is open.  <a href="classripple_1_1NodeStore_1_1Backend.html#acd6ac096e54166098107227a8d168044">More...</a><br /></td></tr>
 <tr class="separator:acd6ac096e54166098107227a8d168044"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4e7c931c5382d31d877c6f7162dd21e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ae4e7c931c5382d31d877c6f7162dd21e">open</a> (bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)</td></tr>
+<tr class="memdesc:ae4e7c931c5382d31d877c6f7162dd21e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open the backend.  <a href="classripple_1_1NodeStore_1_1Backend.html#ae4e7c931c5382d31d877c6f7162dd21e">More...</a><br /></td></tr>
+<tr class="separator:ae4e7c931c5382d31d877c6f7162dd21e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b13f9a9bbf0bf6470648f4910a92dd0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a6b13f9a9bbf0bf6470648f4910a92dd0">close</a> ()=0</td></tr>
 <tr class="memdesc:a6b13f9a9bbf0bf6470648f4910a92dd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close the backend.  <a href="classripple_1_1NodeStore_1_1Backend.html#a6b13f9a9bbf0bf6470648f4910a92dd0">More...</a><br /></td></tr>
 <tr class="separator:a6b13f9a9bbf0bf6470648f4910a92dd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -216,7 +219,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a586356a9f6050201be9d184bc3fd2c83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a586356a9f6050201be9d184bc3fd2c83">&#9670;&nbsp;</a></span>open()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a586356a9f6050201be9d184bc3fd2c83">&#9670;&nbsp;</a></span>open() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -247,7 +250,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a4e5920f4c51902aef93021277aa8ab37">ripple::NodeStore::MemoryBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2160cbce008b1fd13e1797d81d989128">ripple::NodeStore::NuDBBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a0b2c45caa5842849382a198b28687c8e">ripple::NodeStore::NullBackend</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2160cbce008b1fd13e1797d81d989128">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a4e5920f4c51902aef93021277aa8ab37">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a0b2c45caa5842849382a198b28687c8e">ripple::NodeStore::NullBackend</a>.</p>
 
 </div>
 </div>
@@ -277,6 +280,75 @@ Public Member Functions</h2></td></tr>
 <p>Returns true is the database is open. </p>
 
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#acf5ab73b7ec283a9ee0b73462e1d8531">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ada78f1edc055747acbcd9b0da846d743">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a06edcc6548cdcac4785c1de9c3a1662f">ripple::NodeStore::NullBackend</a>.</p>
+
+</div>
+</div>
+<a id="ae4e7c931c5382d31d877c6f7162dd21e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4e7c931c5382d31d877c6f7162dd21e">&#9670;&nbsp;</a></span>open() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::NodeStore::Backend::open </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>createIfMissing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>appType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>uid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>salt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Open the backend. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">createIfMissing</td><td>Create the database files if necessary. </td></tr>
+    <tr><td class="paramname">appType</td><td>Deterministic appType used to create a backend. </td></tr>
+    <tr><td class="paramname">uid</td><td>Deterministic uid used to create a backend. </td></tr>
+    <tr><td class="paramname">salt</td><td>Deterministic salt used to create a backend. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="elRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html" title="STL class.">std::runtime_error</a></td><td>is function is called not for NuDB backend. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a9e494839a2dcf789bb6cdc300ad65931">ripple::NodeStore::NuDBBackend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00099">99</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>
@@ -687,7 +759,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns read and write stats. </p>
 <dl class="section note"><dt>Note</dt><dd>The <a class="el" href="structripple_1_1NodeStore_1_1Backend_1_1Counters.html">Counters</a> struct is specific to and only used by CassandraBackend. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00166">166</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00181">181</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>
@@ -708,7 +780,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00173">173</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00188">188</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

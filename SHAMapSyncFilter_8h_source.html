@@ -93,7 +93,7 @@ $(function() {
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/shamap/SHAMapNodeID.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/shamap/SHAMapTreeNode.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
@@ -115,8 +115,8 @@ $(function() {
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Blob</a>&amp;&amp; nodeData,</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <a class="code" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type) <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">virtual</span> boost::optional&lt;Blob&gt;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="classripple_1_1SHAMapSyncFilter.html#ad819277f2ef6accf331971c69a583e00">getNode</a>(<a class="code" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> <span class="keyword">const</span>&amp; nodeHash) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Blob&gt;</a></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="classripple_1_1SHAMapSyncFilter.html#aab30f4bd0cd629af0cb5a7f53afb7fb4">getNode</a>(<a class="code" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> <span class="keyword">const</span>&amp; nodeHash) <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;};</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}  <span class="comment">// namespace ripple</span></div>
@@ -124,15 +124,16 @@ $(function() {
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html_a772cb041257b294a6d9641fc1aab0f03"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html#a772cb041257b294a6d9641fc1aab0f03">ripple::SHAMapSyncFilter::operator=</a></div><div class="ttdeci">SHAMapSyncFilter &amp; operator=(SHAMapSyncFilter const &amp;)=delete</div></div>
+<div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html_aab30f4bd0cd629af0cb5a7f53afb7fb4"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html#aab30f4bd0cd629af0cb5a7f53afb7fb4">ripple::SHAMapSyncFilter::getNode</a></div><div class="ttdeci">virtual std::optional&lt; Blob &gt; getNode(SHAMapHash const &amp;nodeHash) const =0</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt; unsigned char &gt;</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae0356b1de00f841c554c830be509dd58"><div class="ttname"><a href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">ripple::SHAMapNodeType</a></div><div class="ttdeci">SHAMapNodeType</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00126">SHAMapTreeNode.h:126</a></div></div>
-<div class="ttc" id="aclassripple_1_1SHAMapHash_html"><div class="ttname"><a href="classripple_1_1SHAMapHash.html">ripple::SHAMapHash</a></div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00047">SHAMapTreeNode.h:47</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae0356b1de00f841c554c830be509dd58"><div class="ttname"><a href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">ripple::SHAMapNodeType</a></div><div class="ttdeci">SHAMapNodeType</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00127">SHAMapTreeNode.h:127</a></div></div>
+<div class="ttc" id="aclassripple_1_1SHAMapHash_html"><div class="ttname"><a href="classripple_1_1SHAMapHash.html">ripple::SHAMapHash</a></div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00048">SHAMapTreeNode.h:48</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html_a7b90a29145ea826ab4d8f2e467623b9e"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html#a7b90a29145ea826ab4d8f2e467623b9e">ripple::SHAMapSyncFilter::~SHAMapSyncFilter</a></div><div class="ttdeci">virtual ~SHAMapSyncFilter()=default</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html_a52d6a1cab3037707977a764d146d939f"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html#a52d6a1cab3037707977a764d146d939f">ripple::SHAMapSyncFilter::gotNode</a></div><div class="ttdeci">virtual void gotNode(bool fromFilter, SHAMapHash const &amp;nodeHash, std::uint32_t ledgerSeq, Blob &amp;&amp;nodeData, SHAMapNodeType type) const =0</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html_ad819277f2ef6accf331971c69a583e00"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html#ad819277f2ef6accf331971c69a583e00">ripple::SHAMapSyncFilter::getNode</a></div><div class="ttdeci">virtual boost::optional&lt; Blob &gt; getNode(SHAMapHash const &amp;nodeHash) const =0</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html_a21d04df23bfa6803bc1d0d427efd5c17"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html#a21d04df23bfa6803bc1d0d427efd5c17">ripple::SHAMapSyncFilter::SHAMapSyncFilter</a></div><div class="ttdeci">SHAMapSyncFilter()=default</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapSyncFilter_html"><div class="ttname"><a href="classripple_1_1SHAMapSyncFilter.html">ripple::SHAMapSyncFilter</a></div><div class="ttdef"><b>Definition:</b> <a href="SHAMapSyncFilter_8h_source.html#l00030">SHAMapSyncFilter.h:30</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

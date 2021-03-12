@@ -1,8 +1,0 @@
-<map id="beast::detail::seconds_clock_thread" name="beast::detail::seconds_clock_thread">
-<area shape="rect" id="node1" title=" " alt="" coords="565,71,729,113"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="283,5,453,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="322,56,414,83"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="289,107,447,149"/>
-<area shape="rect" id="node5" href="$classbeast_1_1detail_1_1seconds__clock__worker.html" title=" " alt="" coords="5,107,169,149"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="322,173,414,200"/>
-</map>

@@ -1,4 +1,5 @@
 <map id="ripple::StrandResult&lt; TInAmt, TOutAmt &gt;" name="ripple::StrandResult&lt; TInAmt, TOutAmt &gt;">
-<area shape="rect" id="node1" title="Result of flow() execution of a single Strand." alt="" coords="5,95,171,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,5,139,32"/>
+<area shape="rect" id="node1" title="Result of flow() execution of a single Strand." alt="" coords="51,109,217,151"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,13,108,39"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="132,5,291,47"/>
 </map>

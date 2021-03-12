@@ -1,4 +1,5 @@
 <map id="ripple::test::Server_test::TestThread" name="ripple::test::Server_test::TestThread">
-<area shape="rect" id="node1" title=" " alt="" coords="5,95,148,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="31,5,123,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="109,109,251,151"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,192,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="217,13,309,39"/>
 </map>

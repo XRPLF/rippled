@@ -1,20 +1,21 @@
 <map id="ripple::SNTPClientImp" name="ripple::SNTPClientImp">
-<area shape="rect" id="node1" title=" " alt="" coords="901,287,1065,313"/>
-<area shape="rect" id="node2" href="$classripple_1_1SNTPClock.html" title="A clock based on system_clock and adjusted for SNTP." alt="" coords="633,20,771,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="905,336,1069,363"/>
+<area shape="rect" id="node2" href="$classripple_1_1SNTPClock.html" title="A clock based on system_clock and adjusted for SNTP." alt="" coords="635,20,773,47"/>
 <area shape="rect" id="node3" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="302,5,467,61"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="618,71,786,142"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="620,71,788,142"/>
 <area shape="rect" id="node5" href="$structripple_1_1SNTPClientImp_1_1Query.html" title=" " alt="" coords="303,86,467,127"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="47,77,149,104"/>
 <area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,143,191,185"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="619,217,785,244"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="337,217,432,244"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="307,304,462,331"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/deque.html" title=" " alt="" coords="613,331,791,373"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="611,397,793,453"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="289,405,480,446"/>
-<area shape="rect" id="node13" title=" " alt="" coords="79,412,117,439"/>
-<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="656,477,748,504"/>
-<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="656,528,748,555"/>
-<area shape="rect" id="node17" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="647,579,757,605"/>
-<area shape="rect" id="node18" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="311,579,458,605"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="611,218,797,259"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="621,284,787,311"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="337,284,432,311"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="307,371,462,397"/>
+<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/deque.html" title=" " alt="" coords="615,398,793,439"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="613,464,795,520"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="289,471,480,513"/>
+<area shape="rect" id="node14" title=" " alt="" coords="79,479,117,505"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="658,544,750,571"/>
+<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="658,595,750,621"/>
+<area shape="rect" id="node18" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="649,645,759,672"/>
+<area shape="rect" id="node19" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="311,645,458,672"/>
 </map>

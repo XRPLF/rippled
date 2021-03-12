@@ -89,9 +89,9 @@ Inheritance diagram for ripple::AbstractFetchPackContainer:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2bef43de3153bf61d0308cb077285313"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AbstractFetchPackContainer.html#a2bef43de3153bf61d0308cb077285313">~AbstractFetchPackContainer</a> ()=default</td></tr>
 <tr class="separator:a2bef43de3153bf61d0308cb077285313"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a842e498bd4e29dd315a100536456f7af"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AbstractFetchPackContainer.html#a842e498bd4e29dd315a100536456f7af">getFetchPack</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;nodeHash)=0</td></tr>
-<tr class="memdesc:a842e498bd4e29dd315a100536456f7af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves partial ledger data of the coresponding hash from peers.  <a href="classripple_1_1AbstractFetchPackContainer.html#a842e498bd4e29dd315a100536456f7af">More...</a><br /></td></tr>
-<tr class="separator:a842e498bd4e29dd315a100536456f7af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20b49247b790371ff50608f29dfe555d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AbstractFetchPackContainer.html#a20b49247b790371ff50608f29dfe555d">getFetchPack</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;nodeHash)=0</td></tr>
+<tr class="memdesc:a20b49247b790371ff50608f29dfe555d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves partial ledger data of the coresponding hash from peers.  <a href="classripple_1_1AbstractFetchPackContainer.html#a20b49247b790371ff50608f29dfe555d">More...</a><br /></td></tr>
+<tr class="separator:a20b49247b790371ff50608f29dfe555d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An interface facilitating retrieval of fetch packs without an application or ledgermaster object. </p>
@@ -124,8 +124,8 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a842e498bd4e29dd315a100536456f7af"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a842e498bd4e29dd315a100536456f7af">&#9670;&nbsp;</a></span>getFetchPack()</h2>
+<a id="a20b49247b790371ff50608f29dfe555d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20b49247b790371ff50608f29dfe555d">&#9670;&nbsp;</a></span>getFetchPack()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -134,7 +134,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a>&gt; ripple::AbstractFetchPackContainer::getFetchPack </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a>&gt; ripple::AbstractFetchPackContainer::getFetchPack </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>nodeHash</em></td><td>)</td>
@@ -156,9 +156,9 @@ Public Member Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd><code>boost::none</code> if the hash isn't cached, otherwise, the hash associated data. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd><code>std::nullopt</code> if the hash isn't cached, otherwise, the hash associated data. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1LedgerMaster.html#afc48bba6c28fe01038e50364d4552308">ripple::LedgerMaster</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1LedgerMaster.html#aa65154f38461c13e79695d7d6c7fa4c9">ripple::LedgerMaster</a>.</p>
 
 </div>
 </div>

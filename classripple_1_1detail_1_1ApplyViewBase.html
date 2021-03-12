@@ -152,9 +152,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ab5b90b656223e19272dfe10e2dcd7f56"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#ab5b90b656223e19272dfe10e2dcd7f56">exists</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const override</td></tr>
 <tr class="memdesc:ab5b90b656223e19272dfe10e2dcd7f56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if a state item exists.  <a href="classripple_1_1detail_1_1ApplyViewBase.html#ab5b90b656223e19272dfe10e2dcd7f56">More...</a><br /></td></tr>
 <tr class="separator:ab5b90b656223e19272dfe10e2dcd7f56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacb6aa0fa3390a04cee9cf619b95beb9"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#aacb6aa0fa3390a04cee9cf619b95beb9">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, boost::optional&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=boost::none) const override</td></tr>
-<tr class="memdesc:aacb6aa0fa3390a04cee9cf619b95beb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1detail_1_1ApplyViewBase.html#aacb6aa0fa3390a04cee9cf619b95beb9">More...</a><br /></td></tr>
-<tr class="separator:aacb6aa0fa3390a04cee9cf619b95beb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb4191e08ea906c3074d4020ad6c8fde"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=std::nullopt) const override</td></tr>
+<tr class="memdesc:abb4191e08ea906c3074d4020ad6c8fde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">More...</a><br /></td></tr>
+<tr class="separator:abb4191e08ea906c3074d4020ad6c8fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4609256b709351fe56d7039441502512"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#a4609256b709351fe56d7039441502512">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const override</td></tr>
 <tr class="memdesc:a4609256b709351fe56d7039441502512"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the state item associated with a key.  <a href="classripple_1_1detail_1_1ApplyViewBase.html#a4609256b709351fe56d7039441502512">More...</a><br /></td></tr>
 <tr class="separator:a4609256b709351fe56d7039441502512"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -236,9 +236,9 @@ Protected Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a080612d2b57bd395c73290aea671b551"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">dirAdd</a> (bool preserveOrder, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;directory, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;)&gt; const &amp;describe)</td></tr>
-<tr class="memdesc:a080612d2b57bd395c73290aea671b551"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a directory using the specified insert strategy.  <a href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">More...</a><br /></td></tr>
-<tr class="separator:a080612d2b57bd395c73290aea671b551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94b3d125ad93f0015829ffd8b8be59d6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplyView.html#a94b3d125ad93f0015829ffd8b8be59d6">dirAdd</a> (bool preserveOrder, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;directory, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;)&gt; const &amp;describe)</td></tr>
+<tr class="memdesc:a94b3d125ad93f0015829ffd8b8be59d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a directory using the specified insert strategy.  <a href="classripple_1_1ApplyView.html#a94b3d125ad93f0015829ffd8b8be59d6">More...</a><br /></td></tr>
+<tr class="separator:a94b3d125ad93f0015829ffd8b8be59d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
@@ -640,8 +640,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="aacb6aa0fa3390a04cee9cf619b95beb9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aacb6aa0fa3390a04cee9cf619b95beb9">&#9670;&nbsp;</a></span>succ()</h2>
+<a id="abb4191e08ea906c3074d4020ad6c8fde"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb4191e08ea906c3074d4020ad6c8fde">&#9670;&nbsp;</a></span>succ()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -658,8 +658,8 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>last</em> = <code>boost::none</code>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>last</em> = <code>std::nullopt</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -675,10 +675,10 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Return the key of the next state item. </p>
-<p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, boost::none is returned.</p>
-<p>If <code>last</code> is engaged, returns boost::none when the key returned would be outside the open interval (key, last). </p>
+<p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, std::nullopt is returned.</p>
+<p>If <code>last</code> is engaged, returns std::nullopt when the key returned would be outside the open interval (key, last). </p>
 
-<p>Implements <a class="el" href="classripple_1_1ReadView.html#a2b1718fdf4ffd63d8fe7650f66114804">ripple::ReadView</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">ripple::ReadView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="ApplyViewBase_8cpp_source.html#l00065">65</a> of file <a class="el" href="ApplyViewBase_8cpp_source.html">ApplyViewBase.cpp</a>.</p>
 
@@ -1249,8 +1249,8 @@ on this instance of the RawView.
 
 </div>
 </div>
-<a id="a080612d2b57bd395c73290aea671b551"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a080612d2b57bd395c73290aea671b551">&#9670;&nbsp;</a></span>dirAdd()</h2>
+<a id="a94b3d125ad93f0015829ffd8b8be59d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94b3d125ad93f0015829ffd8b8be59d6">&#9670;&nbsp;</a></span>dirAdd()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1259,7 +1259,7 @@ on this instance of the RawView.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; ripple::ApplyView::dirAdd </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; ripple::ApplyView::dirAdd </td>
           <td>(</td>
           <td class="paramtype">bool&#160;</td>
           <td class="paramname"><em>preserveOrder</em>, </td>
@@ -1349,7 +1349,7 @@ on this instance of the RawView.
 
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a651f7b9013b9de728969272c3b1e8712">ripple::PaymentSandbox</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00241">241</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00240">240</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>
@@ -1395,12 +1395,12 @@ on this instance of the RawView.
 
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#abab734ed913c11e2dbca4b1d33634535">ripple::PaymentSandbox</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00252">252</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00251">251</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>
-<a id="a2080b81a136060b31c5ec6268846c89d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2080b81a136060b31c5ec6268846c89d">&#9670;&nbsp;</a></span>dirAppend() <span class="overload">[1/2]</span></h2>
+<a id="aa15fba1b0c64fd234520d482e8d83242"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa15fba1b0c64fd234520d482e8d83242">&#9670;&nbsp;</a></span>dirAppend() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1409,7 +1409,7 @@ on this instance of the RawView.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirAppend </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirAppend </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
           <td class="paramname"><em>directory</em>, </td>
@@ -1449,15 +1449,15 @@ on this instance of the RawView.
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>a <code>boost::optional</code> which, if insertion was successful, will contain the page number in which the item was stored.</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></code> which, if insertion was successful, will contain the page number in which the item was stored.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>this function may create a page (including a root page), if no page with space is available. This function will only fail if the page counter exceeds the protocol-defined maximum number of allowable pages. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00278">278</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00277">277</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>
-<a id="a85884923e11e8e2ceb0cff4a09b9f8d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85884923e11e8e2ceb0cff4a09b9f8d6">&#9670;&nbsp;</a></span>dirAppend() <span class="overload">[2/2]</span></h2>
+<a id="a0576b441e682b2a0b8355a0496758d16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0576b441e682b2a0b8355a0496758d16">&#9670;&nbsp;</a></span>dirAppend() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1466,7 +1466,7 @@ on this instance of the RawView.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirAppend </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirAppend </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
           <td class="paramname"><em>directory</em>, </td>
@@ -1496,12 +1496,12 @@ on this instance of the RawView.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00287">287</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00286">286</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>
-<a id="ac157168b6d8afa47ec1956546dd268cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac157168b6d8afa47ec1956546dd268cb">&#9670;&nbsp;</a></span>dirInsert() <span class="overload">[1/2]</span></h2>
+<a id="ade751364c7a9580032ef5988a953a6ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade751364c7a9580032ef5988a953a6ee">&#9670;&nbsp;</a></span>dirInsert() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1510,7 +1510,7 @@ on this instance of the RawView.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirInsert </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirInsert </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
           <td class="paramname"><em>directory</em>, </td>
@@ -1550,15 +1550,15 @@ on this instance of the RawView.
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>a <code>boost::optional</code> which, if insertion was successful, will contain the page number in which the item was stored.</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></code> which, if insertion was successful, will contain the page number in which the item was stored.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>this function may create a page (including a root page), if no page with space is available.this function will only fail if the page counter exceeds the protocol-defined maximum number of allowable pages. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00315">315</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00314">314</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>
-<a id="acf2c9059c95e587514db3d08d00e961a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf2c9059c95e587514db3d08d00e961a">&#9670;&nbsp;</a></span>dirInsert() <span class="overload">[2/2]</span></h2>
+<a id="a6f2b7d7672f4202c38d1448f0bc8afc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f2b7d7672f4202c38d1448f0bc8afc6">&#9670;&nbsp;</a></span>dirInsert() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1567,7 +1567,7 @@ on this instance of the RawView.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirInsert </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; ripple::ApplyView::dirInsert </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
           <td class="paramname"><em>directory</em>, </td>
@@ -1597,7 +1597,7 @@ on this instance of the RawView.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00324">324</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00323">323</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>
@@ -1710,7 +1710,7 @@ on this instance of the RawView.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00357">357</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00356">356</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
 
 </div>
 </div>

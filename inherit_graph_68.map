@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classbeast_1_1insight_1_1Event.html" title="A metric for reporting event timing." alt="" coords="5,5,160,32"/>
+<area shape="rect" id="node1" href="$classbeast_1_1insight_1_1Groups.html" title="A container for managing a set of metric groups." alt="" coords="5,13,169,39"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1detail_1_1GroupsImp.html" title=" " alt="" coords="217,5,372,47"/>
 </map>

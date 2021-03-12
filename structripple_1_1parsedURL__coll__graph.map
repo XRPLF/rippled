@@ -1,4 +1,5 @@
 <map id="ripple::parsedURL" name="ripple::parsedURL">
-<area shape="rect" id="node1" title=" " alt="" coords="5,153,143,180"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="31,5,117,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="74,168,211,195"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,144,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="169,13,255,39"/>
 </map>

@@ -181,9 +181,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae449949223905ec9bd5b8dbc1c9e9ded"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ae449949223905ec9bd5b8dbc1c9e9ded">closed</a> ()</td></tr>
 <tr class="memdesc:ae449949223905ec9bd5b8dbc1c9e9ded"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the last closed ledger.  <a href="classripple_1_1test_1_1jtx_1_1Env.html#ae449949223905ec9bd5b8dbc1c9e9ded">More...</a><br /></td></tr>
 <tr class="separator:ae449949223905ec9bd5b8dbc1c9e9ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c5dcd5bbad5c5b767ff713b6f7cb1ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> &gt; consensusDelay=boost::none)</td></tr>
-<tr class="memdesc:a2c5dcd5bbad5c5b767ff713b6f7cb1ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close and advance the ledger.  <a href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">More...</a><br /></td></tr>
-<tr class="separator:a2c5dcd5bbad5c5b767ff713b6f7cb1ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69095691c9bcfab1f3d69c645f2dbe33"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> &gt; consensusDelay=std::nullopt)</td></tr>
+<tr class="memdesc:a69095691c9bcfab1f3d69c645f2dbe33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close and advance the ledger.  <a href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">More...</a><br /></td></tr>
+<tr class="separator:a69095691c9bcfab1f3d69c645f2dbe33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d23c4539fe2b11e87ef6f9dd0eddf77"><td class="memTemplParams" colspan="2">template&lt;class Rep , class Period &gt; </td></tr>
 <tr class="memitem:a4d23c4539fe2b11e87ef6f9dd0eddf77"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a4d23c4539fe2b11e87ef6f9dd0eddf77">close</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; Rep, Period &gt; const &amp;elapsed)</td></tr>
 <tr class="memdesc:a4d23c4539fe2b11e87ef6f9dd0eddf77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close and advance the ledger.  <a href="classripple_1_1test_1_1jtx_1_1Env.html#a4d23c4539fe2b11e87ef6f9dd0eddf77">More...</a><br /></td></tr>
@@ -762,7 +762,7 @@ template&lt;class... Args&gt; </div>
 <p>Execute an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command. </p>
 <p>The command is examined and used to build the correct JSON as per the arguments. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00684">684</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00683">683</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -794,7 +794,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00695">695</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00694">694</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -842,8 +842,8 @@ template&lt;class... Args&gt; </div>
 
 </div>
 </div>
-<a id="a2c5dcd5bbad5c5b767ff713b6f7cb1ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">&#9670;&nbsp;</a></span>close() <span class="overload">[1/3]</span></h2>
+<a id="a69095691c9bcfab1f3d69c645f2dbe33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69095691c9bcfab1f3d69c645f2dbe33">&#9670;&nbsp;</a></span>close() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -857,8 +857,8 @@ template&lt;class... Args&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> &gt;&#160;</td>
-          <td class="paramname"><em>consensusDelay</em> = <code>boost::none</code>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> &gt;&#160;</td>
+          <td class="paramname"><em>consensusDelay</em> = <code>std::nullopt</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -906,7 +906,7 @@ template&lt;class Rep , class Period &gt; </div>
 <p>The time is calculated as the duration from the previous ledger closing time.</p>
 <dl class="section return"><dt>Returns</dt><dd>true if no error, false if error </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00348">348</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00347">347</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -929,7 +929,7 @@ template&lt;class Rep , class Period &gt; </div>
 <p>The time is calculated as five seconds from the previous ledger closing time.</p>
 <dl class="section return"><dt>Returns</dt><dd>true if no error, false if error </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00362">362</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00361">361</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -952,7 +952,7 @@ template&lt;class Rep , class Period &gt; </div>
 <p>Turn on JSON tracing. </p>
 <p>With no arguments, trace all </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00372">372</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00371">371</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -973,7 +973,7 @@ template&lt;class Rep , class Period &gt; </div>
 
 <p>Turn off JSON tracing. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00379">379</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00378">378</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -994,7 +994,7 @@ template&lt;class Rep , class Period &gt; </div>
 
 <p>Turn off signature checks. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00386">386</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00385">385</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1217,7 +1217,7 @@ template&lt;class JsonValue , class... FN&gt; </div>
 
 <p>Create a <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html" title="Execution context for applying a JSON transaction.">JTx</a> from parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00439">439</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00438">438</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1252,7 +1252,7 @@ template&lt;class JsonValue , class... FN&gt; </div>
 <p>Create JSON from parameters. </p>
 <p>This will apply funclets and autofill. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00453">453</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00452">452</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1277,7 +1277,7 @@ template&lt;class... Args&gt; </div>
 <p>Check a set of requirements. </p>
 <p>The requirements are formed from condition functors. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00466">466</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00465">465</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1443,7 +1443,7 @@ template&lt;class JsonValue , class... FN&gt; </div>
 
 <p>Apply funclets and submit. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00498">498</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00497">497</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1475,7 +1475,7 @@ template&lt;class JsonValue , class... FN&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00505">505</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00504">504</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1496,7 +1496,7 @@ template&lt;class JsonValue , class... FN&gt; </div>
 
 <p>Return the TER for the last <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html" title="Execution context for applying a JSON transaction.">JTx</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00513">513</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00512">512</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1647,7 +1647,7 @@ effects.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00551">551</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00550">550</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1687,7 +1687,7 @@ template&lt;std::size_t N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00558">558</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00557">557</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1739,7 +1739,7 @@ template&lt;class Arg , class... Args&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00593">593</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00592">592</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1819,7 +1819,7 @@ template&lt;class... Accounts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00623">623</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00622">622</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1984,7 +1984,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00665">665</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00664">664</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2024,7 +2024,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00673">673</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00672">672</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2121,7 +2121,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00635">635</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00634">634</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2145,7 +2145,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00636">636</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00635">635</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2169,7 +2169,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00637">637</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00636">636</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2193,7 +2193,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00638">638</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00637">637</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2217,7 +2217,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00679">679</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00678">678</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>

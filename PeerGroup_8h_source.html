@@ -300,7 +300,7 @@ $(function() {
 <div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;double&gt;</a> <span class="keyword">const</span>&amp; ranks,</div>
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordtype">int</span> numGroups,</div>
 <div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    RandomNumberDistribution sizeDist,</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <a class="code" href="classripple_1_1Generator.html">Generator</a>&amp; g)</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    Generator&amp; g)</div>
 <div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;{</div>
 <div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    assert(peers.<a class="code" href="classripple_1_1test_1_1csf_1_1PeerGroup.html#a23cf7e9d34ea5f5439c16845770d99cb">size</a>() == ranks.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
 <div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160; </div>
@@ -323,7 +323,7 @@ $(function() {
 <div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;double&gt;</a> <span class="keyword">const</span>&amp; ranks,</div>
 <div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keywordtype">int</span> numGroups,</div>
 <div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    RandomNumberDistribution sizeDist,</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    <a class="code" href="classripple_1_1Generator.html">Generator</a>&amp; g)</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    Generator&amp; g)</div>
 <div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;{</div>
 <div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;PeerGroup&gt;</a> <span class="keyword">const</span> groups =</div>
 <div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1csf.html#a332b4f5003db6cef52ad563513535f6f">randomRankedGroups</a>(peers, ranks, numGroups, sizeDist, g);</div>
@@ -343,7 +343,7 @@ $(function() {
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;double&gt;</a> <span class="keyword">const</span>&amp; ranks,</div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="keywordtype">int</span> numGroups,</div>
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    RandomNumberDistribution sizeDist,</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    <a class="code" href="classripple_1_1Generator.html">Generator</a>&amp; g,</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    Generator&amp; g,</div>
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <a class="code" href="namespaceripple_1_1test_1_1csf.html#a2cc5b9919f5be7d4d0dac98f48da80f2">SimDuration</a> delay)</div>
 <div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;{</div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;PeerGroup&gt;</a> <span class="keyword">const</span> groups =</div>
@@ -369,7 +369,6 @@ $(function() {
 <div class="ttc" id="auniform_int_distribution_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution.html">std::uniform_int_distribution</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1csf_1_1PeerGroup_html_a0594ef32a7b7ae3a09f39110a5164234"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1PeerGroup.html#a0594ef32a7b7ae3a09f39110a5164234">ripple::test::csf::PeerGroup::contains</a></div><div class="ttdeci">bool contains(Peer const *p)</div><div class="ttdef"><b>Definition:</b> <a href="PeerGroup_8h_source.html#l00098">PeerGroup.h:98</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1csf_1_1PeerGroup_html_a23cf7e9d34ea5f5439c16845770d99cb"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1PeerGroup.html#a23cf7e9d34ea5f5439c16845770d99cb">ripple::test::csf::PeerGroup::size</a></div><div class="ttdeci">std::size_t size() const</div><div class="ttdef"><b>Definition:</b> <a href="PeerGroup_8h_source.html#l00112">PeerGroup.h:112</a></div></div>
-<div class="ttc" id="aclassripple_1_1Generator_html"><div class="ttname"><a href="classripple_1_1Generator.html">ripple::Generator</a></div><div class="ttdoc">Produces a sequence of secp256k1 key pairs.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00059">SecretKey.cpp:59</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a></div></div>
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>

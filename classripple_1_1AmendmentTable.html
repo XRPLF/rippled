@@ -104,8 +104,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8eee69252a4b7961d0d8cd411896eeb9"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a8eee69252a4b7961d0d8cd411896eeb9">hasUnsupportedEnabled</a> () const =0</td></tr>
 <tr class="memdesc:a8eee69252a4b7961d0d8cd411896eeb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns true if one or more amendments on the network have been enabled that this server does not support  <a href="classripple_1_1AmendmentTable.html#a8eee69252a4b7961d0d8cd411896eeb9">More...</a><br /></td></tr>
 <tr class="separator:a8eee69252a4b7961d0d8cd411896eeb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f446677c34bd26566000b9989d3c278"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a1f446677c34bd26566000b9989d3c278">firstUnsupportedExpected</a> () const =0</td></tr>
-<tr class="separator:a1f446677c34bd26566000b9989d3c278"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af59e59a074e1dbef4faf0eef0c9dcfa7"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#af59e59a074e1dbef4faf0eef0c9dcfa7">firstUnsupportedExpected</a> () const =0</td></tr>
+<tr class="separator:af59e59a074e1dbef4faf0eef0c9dcfa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac63a31d38346fba5d5ca78c4894af31a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#ac63a31d38346fba5d5ca78c4894af31a">getJson</a> () const =0</td></tr>
 <tr class="separator:ac63a31d38346fba5d5ca78c4894af31a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a679a2a34193d9788688eb8456631bc49"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a679a2a34193d9788688eb8456631bc49">getJson</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;amendment) const =0</td></tr>
@@ -132,7 +132,7 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><p>The amendment table stores the list of enabled and potential amendments. </p>
 <p>Individuals amendments are voted on by validators during the consensus process. </p>
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00034">34</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00036">36</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aef6ef4d534e0ef300563731966ed7f1d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aef6ef4d534e0ef300563731966ed7f1d">&#9670;&nbsp;</a></span>~AmendmentTable()</h2>
@@ -358,8 +358,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a1f446677c34bd26566000b9989d3c278"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f446677c34bd26566000b9989d3c278">&#9670;&nbsp;</a></span>firstUnsupportedExpected()</h2>
+<a id="af59e59a074e1dbef4faf0eef0c9dcfa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af59e59a074e1dbef4faf0eef0c9dcfa7">&#9670;&nbsp;</a></span>firstUnsupportedExpected()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -368,7 +368,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&gt; ripple::AmendmentTable::firstUnsupportedExpected </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&gt; ripple::AmendmentTable::firstUnsupportedExpected </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -381,7 +381,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a954558c94ea6976d05d20e136f7251e5">ripple::AmendmentTableImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#ae591250cf5ab06c0310da46a9e5543fb">ripple::AmendmentTableImpl</a>.</p>
 
 </div>
 </div>
@@ -460,7 +460,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Called when a new fully-validated ledger is accepted. </p>
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00076">76</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00078">78</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +682,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00127">127</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00129">129</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
 
 </div>
 </div>

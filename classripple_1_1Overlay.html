@@ -202,9 +202,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aad55ed02e7b9785c3b162926e50f77d7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#aad55ed02e7b9785c3b162926e50f77d7">crawlShards</a> (bool pubKey, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> hops)=0</td></tr>
 <tr class="memdesc:aad55ed02e7b9785c3b162926e50f77d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns information reported to the crawl shard <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command.  <a href="classripple_1_1Overlay.html#aad55ed02e7b9785c3b162926e50f77d7">More...</a><br /></td></tr>
 <tr class="separator:aad55ed02e7b9785c3b162926e50f77d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37167b4a5b6a376aa205e51794d5d647"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a37167b4a5b6a376aa205e51794d5d647">networkID</a> () const =0</td></tr>
-<tr class="memdesc:a37167b4a5b6a376aa205e51794d5d647"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the ID of the network this server is configured for, if any.  <a href="classripple_1_1Overlay.html#a37167b4a5b6a376aa205e51794d5d647">More...</a><br /></td></tr>
-<tr class="separator:a37167b4a5b6a376aa205e51794d5d647"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f7a3d7c70388657579d552b82f159b2"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a1f7a3d7c70388657579d552b82f159b2">networkID</a> () const =0</td></tr>
+<tr class="memdesc:a1f7a3d7c70388657579d552b82f159b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the ID of the network this server is configured for, if any.  <a href="classripple_1_1Overlay.html#a1f7a3d7c70388657579d552b82f159b2">More...</a><br /></td></tr>
+<tr class="separator:a1f7a3d7c70388657579d552b82f159b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
 <tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
@@ -1227,8 +1227,8 @@ template&lt;class Function &gt; </div>
 
 </div>
 </div>
-<a id="a37167b4a5b6a376aa205e51794d5d647"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37167b4a5b6a376aa205e51794d5d647">&#9670;&nbsp;</a></span>networkID()</h2>
+<a id="a1f7a3d7c70388657579d552b82f159b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f7a3d7c70388657579d552b82f159b2">&#9670;&nbsp;</a></span>networkID()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1237,7 +1237,7 @@ template&lt;class Function &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt; ripple::Overlay::networkID </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt; ripple::Overlay::networkID </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1254,7 +1254,7 @@ template&lt;class Function &gt; </div>
 <p>The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to identify the mainnet, the testnet and the devnet respectively.</p>
 <dl class="section return"><dt>Returns</dt><dd>The numerical identifier configured by the administrator of the server. An unseated optional, otherwise. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#aa146ae9946ec29c3513e2e9d0f4b0049">ripple::OverlayImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#ab719d5e97c8ed68bd0817b852f533f7b">ripple::OverlayImpl</a>.</p>
 
 </div>
 </div>

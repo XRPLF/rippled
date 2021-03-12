@@ -92,17 +92,19 @@ Collaboration diagram for ripple::Config:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Config__coll__graph.png" border="0" usemap="#ripple_1_1Config_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1Config_coll__map" id="ripple_1_1Config_coll__map">
-<area shape="rect" title=" " alt="" coords="1689,529,1797,556"/>
+<area shape="rect" title=" " alt="" coords="1689,616,1797,643"/>
 <area shape="rect" href="classripple_1_1BasicConfig.html" title="Holds unparsed configuration information." alt="" coords="1306,271,1449,297"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="903,232,1066,288"/>
 <area shape="rect" href="classripple_1_1Section.html" title="Holds a collection of configuration values." alt="" coords="568,248,683,275"/>
 <area shape="rect" title=" " alt="" coords="205,153,428,223"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="5,176,92,203"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="223,311,410,337"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="265,437,368,464"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="265,443,368,469"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="541,471,709,513"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1300,667,1455,693"/>
-<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="1283,791,1472,833"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1300,649,1455,676"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="1308,701,1447,742"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="1300,766,1455,807"/>
+<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="1283,831,1472,873"/>
 <area shape="rect" title=" " alt="" coords="877,953,1092,994"/>
 <area shape="rect" title=" " alt="" coords="883,1018,1086,1059"/>
 <area shape="rect" title=" " alt="" coords="869,625,1100,666"/>
@@ -113,13 +115,13 @@ Collaboration diagram for ripple::Config:</div>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title=" " alt="" coords="1303,481,1452,537"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="914,482,1055,523"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="581,555,669,581"/>
-<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="1306,1176,1449,1203"/>
+<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="1306,1175,1449,1201"/>
 <area shape="rect" title=" " alt="" coords="902,1318,1067,1359"/>
 <area shape="rect" title=" " alt="" coords="872,1084,1097,1111"/>
 <area shape="rect" title=" " alt="" coords="880,1135,1089,1177"/>
 <area shape="rect" title=" " alt="" coords="877,1201,1092,1242"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="937,1267,1032,1293"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1322,1289,1433,1316"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1322,1320,1433,1347"/>
 <area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="911,1384,1058,1411"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
@@ -168,9 +170,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae3984f90f3af1dce579c8f7e50babe8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4be0279770c8d63868d2ec64049bd09f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a4be0279770c8d63868d2ec64049bd09f">canSign</a> () const</td></tr>
 <tr class="separator:a4be0279770c8d63868d2ec64049bd09f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa6a41c4bde1f4a893ec927ecadea014"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#aaa6a41c4bde1f4a893ec927ecadea014">getValueFor</a> (<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a> item, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt; node=boost::none) const</td></tr>
-<tr class="memdesc:aaa6a41c4bde1f4a893ec927ecadea014"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the default value for the item at the specified node size.  <a href="classripple_1_1Config.html#aaa6a41c4bde1f4a893ec927ecadea014">More...</a><br /></td></tr>
-<tr class="separator:aaa6a41c4bde1f4a893ec927ecadea014"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe2b226bd6705b7010feb45f66363142"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142">getValueFor</a> (<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a> item, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt; node=std::nullopt) const</td></tr>
+<tr class="memdesc:abe2b226bd6705b7010feb45f66363142"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the default value for the item at the specified node size.  <a href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142">More...</a><br /></td></tr>
+<tr class="separator:abe2b226bd6705b7010feb45f66363142"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09b31b8ed3c769b4c23b040c3d4798ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BasicConfig.html#a09b31b8ed3c769b4c23b040c3d4798ed">exists</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name) const</td></tr>
 <tr class="memdesc:a09b31b8ed3c769b4c23b040c3d4798ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a section with the given name exists.  <a href="classripple_1_1BasicConfig.html#a09b31b8ed3c769b4c23b040c3d4798ed">More...</a><br /></td></tr>
 <tr class="separator:a09b31b8ed3c769b4c23b040c3d4798ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,8 +257,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a7abcd82f19d7506fc18019df86a31984"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a757dbe77ad46c6e6e3a549c33fbd4f8e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a757dbe77ad46c6e6e3a549c33fbd4f8e">PATH_SEARCH_MAX</a> = 10</td></tr>
 <tr class="separator:a757dbe77ad46c6e6e3a549c33fbd4f8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8e2979eee7869551f38caa42a53eb74"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#ab8e2979eee7869551f38caa42a53eb74">VALIDATION_QUORUM</a></td></tr>
-<tr class="separator:ab8e2979eee7869551f38caa42a53eb74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f7c7672fc4808f9658d61cf82c496d4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a1f7c7672fc4808f9658d61cf82c496d4">VALIDATION_QUORUM</a></td></tr>
+<tr class="separator:a1f7c7672fc4808f9658d61cf82c496d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad12fcadf97f74076f421712b8c95902e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#ad12fcadf97f74076f421712b8c95902e">FEE_DEFAULT</a> {10}</td></tr>
 <tr class="separator:ad12fcadf97f74076f421712b8c95902e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ef24c92845b20ec8be2f79fc9dba500"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a2ef24c92845b20ec8be2f79fc9dba500">FEE_ACCOUNT_RESERVE</a> {200 * <a class="el" href="namespaceripple.html#afa493631a6ea5b71b91ceb86576fc328">DROPS_PER_XRP</a>}</td></tr>
@@ -289,8 +291,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a4f58c0a0eba0e944f27ef18d0c8da8bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae419884a24fc1328aa02afa7c534c382"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#ae419884a24fc1328aa02afa7c534c382">VP_REDUCE_RELAY_SQUELCH</a> = false</td></tr>
 <tr class="separator:ae419884a24fc1328aa02afa7c534c382"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c0bb47a632ac7a3671c3e35c3f63da2"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a9c0bb47a632ac7a3671c3e35c3f63da2">rpc_ip</a></td></tr>
-<tr class="separator:a9c0bb47a632ac7a3671c3e35c3f63da2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a568c380fe9c0a28afc8b09ab9174c864"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a568c380fe9c0a28afc8b09ab9174c864">rpc_ip</a></td></tr>
+<tr class="separator:a568c380fe9c0a28afc8b09ab9174c864"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad053293ba571075ebfa6f086ed70fdc5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#ad053293ba571075ebfa6f086ed70fdc5">features</a></td></tr>
 <tr class="separator:ad053293ba571075ebfa6f086ed70fdc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa131c01373dfc0db715eb3c94a1ff7ac"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#aa131c01373dfc0db715eb3c94a1ff7ac">SERVER_DOMAIN</a></td></tr>
@@ -708,8 +710,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aaa6a41c4bde1f4a893ec927ecadea014"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa6a41c4bde1f4a893ec927ecadea014">&#9670;&nbsp;</a></span>getValueFor()</h2>
+<a id="abe2b226bd6705b7010feb45f66363142"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe2b226bd6705b7010feb45f66363142">&#9670;&nbsp;</a></span>getValueFor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -723,8 +725,8 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td>
-          <td class="paramname"><em>node</em> = <code>boost::none</code>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td>
+          <td class="paramname"><em>node</em> = <code>std::nullopt</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1818,14 +1820,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab8e2979eee7869551f38caa42a53eb74"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8e2979eee7869551f38caa42a53eb74">&#9670;&nbsp;</a></span>VALIDATION_QUORUM</h2>
+<a id="a1f7c7672fc4808f9658d61cf82c496d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f7c7672fc4808f9658d61cf82c496d4">&#9670;&nbsp;</a></span>VALIDATION_QUORUM</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; ripple::Config::VALIDATION_QUORUM</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; ripple::Config::VALIDATION_QUORUM</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2138,14 +2140,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a9c0bb47a632ac7a3671c3e35c3f63da2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c0bb47a632ac7a3671c3e35c3f63da2">&#9670;&nbsp;</a></span>rpc_ip</h2>
+<a id="a568c380fe9c0a28afc8b09ab9174c864"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a568c380fe9c0a28afc8b09ab9174c864">&#9670;&nbsp;</a></span>rpc_ip</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&gt; ripple::Config::rpc_ip</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&gt; ripple::Config::rpc_ip</td>
         </tr>
       </table>
 </div><div class="memdoc">

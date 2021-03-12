@@ -141,7 +141,7 @@ $(function() {
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            <span class="keywordtype">bool</span> parsedOK(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(faulty, faultyJson));</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            unexpected(!parsedOK, <span class="stringliteral">&quot;failed to parse&quot;</span>);</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, faultyJson);</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        }</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>&amp; e)</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        {</div>
@@ -162,9 +162,9 @@ $(function() {
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="keywordflow">if</span> (parsedOK)</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        {</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jsonObject);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; serialized(</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)));</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)));</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            BEAST_EXPECT(serialized == json);</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        }</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordflow">else</span></div>
@@ -186,10 +186,10 @@ $(function() {
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="stringliteral">            </span><span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(goodJson, jv)))</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            {</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                <span class="keywordflow">if</span> (BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>))</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                <span class="keywordflow">if</span> (BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>))</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                {</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; serialized(</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                        <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)));</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                        <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)));</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                    BEAST_EXPECT(serialized == goodJson);</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                }</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            }</div>
@@ -210,10 +210,10 @@ $(function() {
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                <span class="comment">// unless they&#39;re too big. We want a small uint.</span></div>
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                jv[<span class="stringliteral">&quot;CloseResolution&quot;</span>] = <a class="code" href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a>(19);</div>
 <div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="keywordflow">if</span> (BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>))</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="keywordflow">if</span> (BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>))</div>
 <div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                {</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; serialized(</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                        <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)));</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                        <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)));</div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    BEAST_EXPECT(serialized == expectedJson);</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                }</div>
 <div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            }</div>
@@ -227,7 +227,7 @@ $(function() {
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<span class="stringliteral">            </span><span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(json, jv)))</div>
 <div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            {</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                BEAST_EXPECT(</div>
@@ -244,7 +244,7 @@ $(function() {
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;<span class="stringliteral">            </span><span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(json, jv)))</div>
 <div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            {</div>
 <div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
 <div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
 <div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                BEAST_EXPECT(</div>
@@ -262,7 +262,7 @@ $(function() {
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<span class="stringliteral">            </span><span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(json, jv)))</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            {</div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                BEAST_EXPECT(</div>
@@ -279,7 +279,7 @@ $(function() {
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;<span class="stringliteral">            </span><span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(json, jv)))</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            {</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
 <div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
 <div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                BEAST_EXPECT(</div>
@@ -297,7 +297,7 @@ $(function() {
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;<span class="stringliteral">            </span><span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">parseJSONString</a>(json, jv)))</div>
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            {</div>
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                <a class="code" href="classripple_1_1STParsedJSONObject.html">STParsedJSONObject</a> parsed(<span class="stringliteral">&quot;test&quot;</span>, jv);</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">object</a>);</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                BEAST_EXPECT(!parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">object</a>);</div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                BEAST_EXPECT(parsed.<a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                BEAST_EXPECT(</div>
@@ -486,7 +486,7 @@ $(function() {
 <div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            except&lt;STObject::FieldErr&gt;([&amp;]() { st[sf3Outer]; });</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;            BEAST_EXPECT(*st[~sf1Outer] == 1);</div>
 <div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;            BEAST_EXPECT(*st[~sf2Outer] == 2);</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;            BEAST_EXPECT(st[~sf3Outer] == boost::none);</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;            BEAST_EXPECT(st[~sf3Outer] == std::nullopt);</div>
 <div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;            BEAST_EXPECT(!!st[~sf1Outer]);</div>
 <div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;            BEAST_EXPECT(!!st[~sf2Outer]);</div>
 <div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;            BEAST_EXPECT(!st[~sf3Outer]);</div>
@@ -528,14 +528,14 @@ $(function() {
 <div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;            <a class="code" href="classripple_1_1STObject.html">STObject</a> st(<a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>);</div>
 <div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;            unexcept([&amp;]() { st[sf1Outer]; });</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;            except([&amp;]() { <span class="keywordflow">return</span> st[sf1Outer] == 0; });</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == boost::none);</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == boost::optional&lt;std::uint32_t&gt;{});</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            BEAST_EXPECT(st[~sf1Outer] != boost::optional&lt;std::uint32_t&gt;(1));</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == std::nullopt);</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a>{});</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            BEAST_EXPECT(st[~sf1Outer] != <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a>(1));</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;            BEAST_EXPECT(!st[~sf1Outer]);</div>
 <div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;            st[sf1Outer] = 2;</div>
 <div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;            BEAST_EXPECT(st[sf1Outer] == 2);</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;            BEAST_EXPECT(st[~sf1Outer] != boost::none);</div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == boost::optional&lt;std::uint32_t&gt;(2));</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;            BEAST_EXPECT(st[~sf1Outer] != std::nullopt);</div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a>(2));</div>
 <div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;            BEAST_EXPECT(!!st[~sf1Outer]);</div>
 <div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            st[sf1Outer] = 1;</div>
 <div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;            BEAST_EXPECT(st[sf1Outer] == 1);</div>
@@ -544,11 +544,11 @@ $(function() {
 <div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;            st[sf1Outer] = 0;</div>
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;            BEAST_EXPECT(!st[sf1Outer]);</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;            BEAST_EXPECT(!!st[~sf1Outer]);</div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;            st[~sf1Outer] = boost::none;</div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;            st[~sf1Outer] = std::nullopt;</div>
 <div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            BEAST_EXPECT(!st[~sf1Outer]);</div>
-<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == boost::none);</div>
-<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == boost::optional&lt;std::uint32_t&gt;{});</div>
-<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;            st[~sf1Outer] = boost::none;</div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == std::nullopt);</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;            BEAST_EXPECT(st[~sf1Outer] == <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a>{});</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;            st[~sf1Outer] = std::nullopt;</div>
 <div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;            BEAST_EXPECT(!st[~sf1Outer]);</div>
 <div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;            except([&amp;]() { <span class="keywordflow">return</span> st[sf1Outer] == 0; });</div>
 <div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;            except([&amp;]() { <span class="keywordflow">return</span> *st[~sf1Outer]; });</div>
@@ -573,16 +573,16 @@ $(function() {
 <div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;        {</div>
 <div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;            <a class="code" href="classripple_1_1STObject.html">STObject</a> st(sotOuter, <a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>);</div>
 <div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;            BEAST_EXPECT(!!st[~sf1Outer]);</div>
-<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;            BEAST_EXPECT(st[~sf1Outer] != boost::none);</div>
+<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;            BEAST_EXPECT(st[~sf1Outer] != std::nullopt);</div>
 <div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;            BEAST_EXPECT(st[sf1Outer] == 0);</div>
 <div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;            BEAST_EXPECT(*st[~sf1Outer] == 0);</div>
 <div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;            BEAST_EXPECT(!st[~sf2Outer]);</div>
-<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;            BEAST_EXPECT(st[~sf2Outer] == boost::none);</div>
+<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;            BEAST_EXPECT(st[~sf2Outer] == std::nullopt);</div>
 <div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;            except([&amp;]() { <span class="keywordflow">return</span> st[sf2Outer] == 0; });</div>
 <div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;            BEAST_EXPECT(!!st[~sf3Outer]);</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;            BEAST_EXPECT(st[~sf3Outer] != boost::none);</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;            BEAST_EXPECT(st[~sf3Outer] != std::nullopt);</div>
 <div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;            BEAST_EXPECT(st[sf3Outer] == 0);</div>
-<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;            except([&amp;]() { st[~sf1Outer] = boost::none; });</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;            except([&amp;]() { st[~sf1Outer] = std::nullopt; });</div>
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;            st[sf1Outer] = 1;</div>
 <div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;            BEAST_EXPECT(st[sf1Outer] == 1);</div>
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;            BEAST_EXPECT(*st[~sf1Outer] == 1);</div>
@@ -595,7 +595,7 @@ $(function() {
 <div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;            BEAST_EXPECT(st[sf2Outer] == 2);</div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;            BEAST_EXPECT(*st[~sf2Outer] == 2);</div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;            BEAST_EXPECT(!!st[~sf2Outer]);</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            st[~sf2Outer] = boost::none;</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            st[~sf2Outer] = std::nullopt;</div>
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;            except([&amp;]() { <span class="keywordflow">return</span> *st[~sf2Outer]; });</div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;            BEAST_EXPECT(!st[~sf2Outer]);</div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;            st[sf3Outer] = 3;</div>
@@ -610,13 +610,13 @@ $(function() {
 <div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;            BEAST_EXPECT(st[sf3Outer] == 0);</div>
 <div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;            BEAST_EXPECT(*st[~sf3Outer] == 0);</div>
 <div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;            BEAST_EXPECT(!!st[~sf3Outer]);</div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;            except([&amp;]() { st[~sf3Outer] = boost::none; });</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;            except([&amp;]() { st[~sf3Outer] = std::nullopt; });</div>
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;            BEAST_EXPECT(st[sf3Outer] == 0);</div>
 <div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;            BEAST_EXPECT(*st[~sf3Outer] == 0);</div>
 <div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;            BEAST_EXPECT(!!st[~sf3Outer]);</div>
 <div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;        }</div>
 <div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160; </div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        <span class="comment">// coercion operator to boost::optional</span></div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        <span class="comment">// coercion operator to std::optional</span></div>
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160; </div>
 <div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        {</div>
 <div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;            <a class="code" href="classripple_1_1STObject.html">STObject</a> st(<a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>);</div>
@@ -624,7 +624,7 @@ $(function() {
 <div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;            static_assert(</div>
 <div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
 <div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/decay.html">std::decay_t</a>&lt;decltype(v)&gt;,</div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;                    boost::optional&lt;std::uint32_t&gt;&gt;::value,</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a>&gt;::value,</div>
 <div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;                <span class="stringliteral">&quot;&quot;</span>);</div>
 <div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        }</div>
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
@@ -648,7 +648,7 @@ $(function() {
 <div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;        st[sf4] = std::move(b);</div>
 <div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;        BEAST_EXPECT(b.<a class="code" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
 <div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;        BEAST_EXPECT(<a class="code" href="classripple_1_1Slice.html">Slice</a>(st[sf4]).size() == 1);</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;        st[~sf4] = boost::none;</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;        st[~sf4] = std::nullopt;</div>
 <div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;        BEAST_EXPECT(!~st[~sf4]);</div>
 <div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;        b = <a class="code" href="classripple_1_1Buffer.html">Buffer</a>{2};</div>
 <div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;        st[sf4] = <a class="code" href="classripple_1_1Slice.html">Slice</a>(b);</div>
@@ -667,7 +667,7 @@ $(function() {
 <div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;        st[sf5] = std::move(b);</div>
 <div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;        BEAST_EXPECT(b.<a class="code" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
 <div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;        BEAST_EXPECT(<a class="code" href="classripple_1_1Slice.html">Slice</a>(st[sf5]).size() == 1);</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;        st[~sf4] = boost::none;</div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;        st[~sf4] = std::nullopt;</div>
 <div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        BEAST_EXPECT(!~st[~sf4]);</div>
 <div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;    }</div>
 <div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;}</div>
@@ -681,7 +681,7 @@ $(function() {
 <div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        <a class="code" href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">generateKeyPair</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, <a class="code" href="namespaceripple.html#a50df1a645790d124729a6ed973edf519">generateSeed</a>(<span class="stringliteral">&quot;masterpassphrase&quot;</span>));</div>
 <div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;    st[sf5] = kp.first;</div>
 <div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;    BEAST_EXPECT(st[sf5] != <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a>{});</div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    st[~sf5] = boost::none;</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    st[~sf5] = std::nullopt;</div>
 <div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;<span class="preprocessor">#if 0</span></div>
 <div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            pk = st[sf5];</div>
 <div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;            BEAST_EXPECT(pk.size() == 0);</div>
@@ -734,7 +734,7 @@ $(function() {
 <div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;    st[sf2] = v;</div>
 <div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;    BEAST_EXPECT(cst[sf2].size() == 1);</div>
 <div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;    BEAST_EXPECT(cst[sf2][0] == <a class="code" href="classripple_1_1base__uint.html">uint256</a>{1});</div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;    st[~sf2] = boost::none;</div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;    st[~sf2] = std::nullopt;</div>
 <div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;    BEAST_EXPECT(!st[~sf2]);</div>
 <div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;    st[sf3] = v;</div>
 <div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;    BEAST_EXPECT(cst[sf3].size() == 1);</div>
@@ -826,14 +826,14 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Buffer_html"><div class="ttname"><a href="classripple_1_1Buffer.html">ripple::Buffer</a></div><div class="ttdoc">Like std::vector&lt;char&gt; but better.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00035">Buffer.h:35</a></div></div>
 <div class="ttc" id="aclassripple_1_1STParsedJSONObject_html"><div class="ttname"><a href="classripple_1_1STParsedJSONObject.html">ripple::STParsedJSONObject</a></div><div class="ttdoc">Holds the serialized result of parsing an input JSON object.</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8h_source.html#l00031">STParsedJSON.h:31</a></div></div>
 <div class="ttc" id="aclassripple_1_1SField_html_ac50e95825ecf10dfd786cb9b8da4ae39"><div class="ttname"><a href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">ripple::SField::getField</a></div><div class="ttdeci">static const SField &amp; getField(int fieldCode)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8cpp_source.html#l00321">SField.cpp:321</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00045">ValidatorList.cpp:45</a></div></div>
 <div class="ttc" id="aclassripple_1_1STObject_html_af1235d307d6f464392a583d0dfaa3cc4"><div class="ttname"><a href="classripple_1_1STObject.html#af1235d307d6f464392a583d0dfaa3cc4">ripple::STObject::setFieldVL</a></div><div class="ttdeci">void setFieldVL(SField const &amp;field, Blob const &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00668">STObject.cpp:668</a></div></div>
 <div class="ttc" id="aclassripple_1_1STObject_html_a09be758ae97b9e9e392aa2606cc0559f"><div class="ttname"><a href="classripple_1_1STObject.html#a09be758ae97b9e9e392aa2606cc0559f">ripple::STObject::getFieldVL</a></div><div class="ttdeci">Blob getFieldVL(SField const &amp;field) const</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00568">STObject.cpp:568</a></div></div>
 <div class="ttc" id="aclassJson_1_1Reader_html"><div class="ttname"><a href="classJson_1_1Reader.html">Json::Reader</a></div><div class="ttdoc">Unserialize a JSON document into a Value.</div><div class="ttdef"><b>Definition:</b> <a href="json__reader_8h_source.html#l00036">json_reader.h:36</a></div></div>
+<div class="ttc" id="aclassripple_1_1STParsedJSONObject_html_a5684522fa6918e6256d910053cd58c47"><div class="ttname"><a href="classripple_1_1STParsedJSONObject.html#a5684522fa6918e6256d910053cd58c47">ripple::STParsedJSONObject::object</a></div><div class="ttdeci">std::optional&lt; STObject &gt; object</div><div class="ttdoc">The STObject if the parse was successful.</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8h_source.html#l00050">STParsedJSON.h:50</a></div></div>
 <div class="ttc" id="anamespaceripple_html_acb4c76f4bb5b316911034e025cde5489"><div class="ttname"><a href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">ripple::sfInvalid</a></div><div class="ttdeci">const SField sfInvalid(access, -1)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00331">SField.h:331</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a355ec605d1063c4316b6f1480359da19"><div class="ttname"><a href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">ripple::generateKeyPair</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; generateKeyPair(KeyType type, Seed const &amp;seed)</div><div class="ttdoc">Generate a key pair deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00243">SecretKey.cpp:243</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a355ec605d1063c4316b6f1480359da19"><div class="ttname"><a href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">ripple::generateKeyPair</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; generateKeyPair(KeyType type, Seed const &amp;seed)</div><div class="ttdoc">Generate a key pair deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00351">SecretKey.cpp:351</a></div></div>
 <div class="ttc" id="aclassripple_1_1STParsedJSONObject_html_a75ae1e4c096f722a17614c58d8b284a4"><div class="ttname"><a href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">ripple::STParsedJSONObject::error</a></div><div class="ttdeci">Json::Value error</div><div class="ttdoc">On failure, an appropriate set of error values.</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8h_source.html#l00053">STParsedJSON.h:53</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a356c68147333a9a48a344718038576d9"><div class="ttname"><a href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a></div><div class="ttdeci">base_uint&lt; 256 &gt; uint256</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00457">base_uint.h:457</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a356c68147333a9a48a344718038576d9"><div class="ttname"><a href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a></div><div class="ttdeci">base_uint&lt; 256 &gt; uint256</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00526">base_uint.h:526</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae3182ff3db5f7f67e4fe8bcd69316727"><div class="ttname"><a href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">ripple::sfExpiration</a></div><div class="ttdeci">const SF_UINT32 sfExpiration</div></div>
 <div class="ttc" id="anamespaceripple_html_a5db6a436a1b570fd3fdfc1583c34883f"><div class="ttname"><a href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">ripple::sfIndexes</a></div><div class="ttdeci">const SF_VECTOR256 sfIndexes</div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
@@ -855,10 +855,9 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a6c00213ffc53619a25ca3335de1a604b"><div class="ttname"><a href="namespaceripple.html#a6c00213ffc53619a25ca3335de1a604b">ripple::sfMajority</a></div><div class="ttdeci">const SField sfMajority</div></div>
 <div class="ttc" id="aclassripple_1_1STObject__test_html_abc69d93b131bd2bd76e1bf144a38f47a"><div class="ttname"><a href="classripple_1_1STObject__test.html#abc69d93b131bd2bd76e1bf144a38f47a">ripple::STObject_test::parseJSONString</a></div><div class="ttdeci">bool parseJSONString(std::string const &amp;json, Json::Value &amp;to)</div><div class="ttdef"><b>Definition:</b> <a href="STObject__test_8cpp_source.html#l00039">STObject_test.cpp:39</a></div></div>
 <div class="ttc" id="aruntime_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00308">Serializer.h:308</a></div></div>
+<div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00310">Serializer.h:310</a></div></div>
 <div class="ttc" id="aclassripple_1_1STObject__test_html_aa82e25f08c9b7b2ee9e017ab5a4f79b6"><div class="ttname"><a href="classripple_1_1STObject__test.html#aa82e25f08c9b7b2ee9e017ab5a4f79b6">ripple::STObject_test::testParseJSONArray</a></div><div class="ttdeci">void testParseJSONArray()</div><div class="ttdef"><b>Definition:</b> <a href="STObject__test_8cpp_source.html#l00083">STObject_test.cpp:83</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a3e7e3f29aef85bcca06706da54e950fcaeaa9cf802e71e6cc4311ee75d896d809"><div class="ttname"><a href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaeaa9cf802e71e6cc4311ee75d896d809">ripple::STI_VECTOR256</a></div><div class="ttdeci">@ STI_VECTOR256</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00075">SField.h:75</a></div></div>
-<div class="ttc" id="aclassripple_1_1STParsedJSONObject_html_aa0229aee8ade6fa3c00b5ffa47a66f52"><div class="ttname"><a href="classripple_1_1STParsedJSONObject.html#aa0229aee8ade6fa3c00b5ffa47a66f52">ripple::STParsedJSONObject::object</a></div><div class="ttdeci">boost::optional&lt; STObject &gt; object</div><div class="ttdoc">The STObject if the parse was successful.</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8h_source.html#l00050">STParsedJSON.h:50</a></div></div>
 <div class="ttc" id="aclassripple_1_1STObject__test_html_af2c76b8b0fdc0f36bc5a67a0575485a8"><div class="ttname"><a href="classripple_1_1STObject__test.html#af2c76b8b0fdc0f36bc5a67a0575485a8">ripple::STObject_test::testFields</a></div><div class="ttdeci">void testFields()</div><div class="ttdef"><b>Definition:</b> <a href="STObject__test_8cpp_source.html#l00393">STObject_test.cpp:393</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aaf9423a4e079677e10ecaa97f8cea493"><div class="ttname"><a href="namespaceripple.html#aaf9423a4e079677e10ecaa97f8cea493">ripple::sfCheckID</a></div><div class="ttdeci">const SF_HASH256 sfCheckID</div></div>
@@ -883,6 +882,8 @@ $(function() {
 <div class="ttc" id="aclassJson_1_1Reader_html_a8ee4d40504e4f8b069745d762ab4d78c"><div class="ttname"><a href="classJson_1_1Reader.html#a8ee4d40504e4f8b069745d762ab4d78c">Json::Reader::parse</a></div><div class="ttdeci">bool parse(std::string const &amp;document, Value &amp;root)</div><div class="ttdoc">Read a Value from a JSON document.</div><div class="ttdef"><b>Definition:</b> <a href="json__reader_8cpp_source.html#l00074">json_reader.cpp:74</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a61932ff70203e248b70ca3b215667435"><div class="ttname"><a href="namespaceripple.html#a61932ff70203e248b70ca3b215667435">ripple::sfSignature</a></div><div class="ttdeci">const SF_VL sfSignature</div></div>
 <div class="ttc" id="aclassripple_1_1STVector256_html"><div class="ttname"><a href="classripple_1_1STVector256.html">ripple::STVector256</a></div><div class="ttdef"><b>Definition:</b> <a href="STVector256_8h_source.html#l00029">STVector256.h:29</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt; std::uint32_t &gt;</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00038">app/misc/impl/Manifest.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5bab99595719d22579e10d21cf048eb0"><div class="ttname"><a href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">ripple::sfAccount</a></div><div class="ttdeci">const SF_ACCOUNT sfAccount</div></div>
 <div class="ttc" id="anamespaceripple_html_a3e7e3f29aef85bcca06706da54e950fca25713e3bf675f93eaf769eb23f025f01"><div class="ttname"><a href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca25713e3bf675f93eaf769eb23f025f01">ripple::STI_OBJECT</a></div><div class="ttdeci">@ STI_OBJECT</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00068">SField.h:68</a></div></div>
 <div class="ttc" id="aclassripple_1_1STObject_html_acc2ceb95cdb8fc8b2520aeceabf17553"><div class="ttname"><a href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">ripple::STObject::getJson</a></div><div class="ttdeci">virtual Json::Value getJson(JsonOptions options) const override</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00698">STObject.cpp:698</a></div></div>
