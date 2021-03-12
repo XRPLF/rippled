@@ -188,9 +188,9 @@ lower) fee to get into the same position as a reference transaction.
 
 For consensus to be considered healthy, the consensus process must take
 less than 5 seconds. This time limit was chosen based on observed past
-behavior of the ripple network. Note that this is not necessarily the
-time between ledger closings, as consensus usually starts some amount
-of time after a ledger opens.
+behavior of the network. Note that this is not necessarily the time between
+ledger closings, as consensus usually starts some amount of time after
+a ledger opens.
 
 ### Other Constants
 
@@ -213,7 +213,7 @@ than what the default would allow. This exact value was chosen
 experimentally, and can easily change in the future.
 * *Transaction queue size limit*. The limit is computed based on the
 base fee transaction limit per ledger, so that the queue can grow
-automatically as the ripple network's performance improves, allowing
+automatically as the network's performance improves, allowing
 more transactions per second, and thus more transactions per ledger
 to process successfully.  The limit of 20 ledgers was used to provide
 a balance between resource (specifically memory) usage, and giving
@@ -291,7 +291,7 @@ Result format:
 }
 ```
 
-### [`server_info`](https://ripple.com/build/rippled-apis/#server-info) command
+### [`server_info`](https://xrpl.org/server_info.html) command
 
 **The fields listed here are still experimental, and may change
 without warning.**
@@ -313,7 +313,7 @@ need to overcome `load_factor_fee_escalation`, though if it does not, it
 is more likely to be queued than immediately processed into the open
 ledger.
 
-### [`server_state`](https://ripple.com/build/rippled-apis/#server-state) command
+### [`server_state`](https://xrpl.org/server_state.html) command
 
 **The fields listed here are still experimental, and may change
 without warning.**
