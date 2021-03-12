@@ -444,8 +444,7 @@ Pathfinder::computePathRanks(int maxPaths)
 static bool
 isDefaultPath(STPath const& path)
 {
-    // TODO(tom): default paths can consist of more than just an account:
-    // https://forum.ripple.com/viewtopic.php?f=2&t=8206&start=10#p57713
+    // FIXME: default paths can consist of more than just an account:
     //
     // JoelKatz writes:
     // So the test for whether a path is a default path is incorrect. I'm not

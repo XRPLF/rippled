@@ -40,7 +40,7 @@ using days = std::chrono::duration<
 using weeks = std::chrono::
     duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
-/** Clock for measuring Ripple Network Time.
+/** Clock for measuring the network time.
 
     The epoch is January 1, 2000
     epoch_offset = days(10957);  // 2000-01-01
