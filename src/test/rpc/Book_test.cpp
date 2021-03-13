@@ -1670,12 +1670,17 @@ public:
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account gw{"gw"};
         env.fund(XRP(200000), gw);
-        env.close();
+        // Note that calls to env.close() fail without admin permission.
+        if (asAdmin)
+            env.close();
+
         auto USD = gw["USD"];
 
         for (auto i = 0; i <= RPC::Tuning::bookOffers.rmax; i++)
             env(offer(gw, XRP(50 + 1 * i), USD(1.0 + 0.1 * i)));
-        env.close();
+
+        if (asAdmin)
+            env.close();
 
         Json::Value jvParams;
         jvParams[jss::limit] = 1;
