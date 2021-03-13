@@ -136,9 +136,15 @@ Env::close(
         auto resp = rpc("ledger_accept");
         if (resp["result"]["status"] != std::string("success"))
         {
-            JLOG(journal.error())
-                << "Env::close() failed: " << resp["result"]["status"]
-                << std::endl;
+            std::string reason = "internal error";
+            if (resp.isMember("error_what"))
+                reason = resp["error_what"].asString();
+            else if (resp.isMember("error_message"))
+                reason = resp["error_message"].asString();
+            else if (resp.isMember("error"))
+                reason = resp["error"].asString();
+
+            JLOG(journal.error()) << "Env::close() failed: " << reason;
             res = false;
         }
     }
