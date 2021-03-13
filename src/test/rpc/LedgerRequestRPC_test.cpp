@@ -360,7 +360,6 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
-        env.close();
 
         auto const result = env.rpc("ledger_request", "1")[jss::result];
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here
