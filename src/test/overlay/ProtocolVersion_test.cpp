@@ -92,8 +92,8 @@ public:
                 make_protocol(2, 0));
             BEAST_EXPECT(
                 negotiateProtocolVersion("XRPL/999.999, WebSocket/1.0") ==
-                boost::none);
-            BEAST_EXPECT(negotiateProtocolVersion("") == boost::none);
+                std::nullopt);
+            BEAST_EXPECT(negotiateProtocolVersion("") == std::nullopt);
         }
     }
 };

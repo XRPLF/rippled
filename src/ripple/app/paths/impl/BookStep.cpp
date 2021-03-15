@@ -72,7 +72,7 @@ protected:
         }
     };
 
-    boost::optional<Cache> cache_;
+    std::optional<Cache> cache_;
 
     static uint32_t
     getMaxOffersToConsume(StrandContext const& ctx)
@@ -100,19 +100,19 @@ public:
         return book_;
     }
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cachedIn() const override
     {
         if (!cache_)
-            return boost::none;
+            return std::nullopt;
         return EitherAmount(cache_->in);
     }
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cachedOut() const override
     {
         if (!cache_)
-            return boost::none;
+            return std::nullopt;
         return EitherAmount(cache_->out);
     }
 
@@ -123,13 +123,13 @@ public:
                                      : DebtDirection::redeems;
     }
 
-    boost::optional<Book>
+    std::optional<Book>
     bookStepBook() const override
     {
         return book_;
     }
 
-    std::pair<boost::optional<Quality>, DebtDirection>
+    std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
         const override;
 
@@ -239,7 +239,7 @@ public:
         AccountID const&,
         AccountID const&,
         TOffer<TIn, TOut> const& offer,
-        boost::optional<Quality>&,
+        std::optional<Quality>&,
         FlowOfferStream<TIn, TOut>&,
         bool) const
     {
@@ -319,7 +319,7 @@ private:
     // Helper function that throws if the optional passed to the constructor
     // is none.
     static Quality
-    getQuality(boost::optional<Quality> const& limitQuality)
+    getQuality(std::optional<Quality> const& limitQuality)
     {
         // It's really a programming error if the quality is missing.
         assert(limitQuality);
@@ -344,7 +344,7 @@ public:
         AccountID const& strandSrc,
         AccountID const& strandDst,
         TOffer<TIn, TOut> const& offer,
-        boost::optional<Quality>& ofrQ,
+        std::optional<Quality>& ofrQ,
         FlowOfferStream<TIn, TOut>& offers,
         bool const offerAttempted) const
     {
@@ -386,7 +386,7 @@ public:
             // If no offers have been attempted yet then it's okay to move to
             // a different quality.
             if (!offerAttempted)
-                ofrQ = boost::none;
+                ofrQ = std::nullopt;
 
             // Return true so the current offer will be deleted.
             return true;
@@ -411,7 +411,7 @@ public:
         std::uint32_t trIn) const
     {
         auto const srcAcct =
-            prevStep ? prevStep->directStepSrcAcct() : boost::none;
+            prevStep ? prevStep->directStepSrcAcct() : std::nullopt;
 
         return                             // If offer crossing
             srcAcct &&                     // && prevStep is DirectI
@@ -473,7 +473,7 @@ BookStep<TIn, TOut, TDerived>::equal(Step const& rhs) const
 }
 
 template <class TIn, class TOut, class TDerived>
-std::pair<boost::optional<Quality>, DebtDirection>
+std::pair<std::optional<Quality>, DebtDirection>
 BookStep<TIn, TOut, TDerived>::qualityUpperBound(
     ReadView const& v,
     DebtDirection prevStepDir) const
@@ -484,7 +484,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
     Sandbox sb(&v, tapNONE);
     BookTip bt(sb, book_);
     if (!bt.step(j_))
-        return {boost::none, dir};
+        return {std::nullopt, dir};
 
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
         v, bt.quality(), prevStepDir);
@@ -579,7 +579,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     bool const flowCross = afView.rules().enabled(featureFlowCross);
     bool offerAttempted = false;
-    boost::optional<Quality> ofrQ;
+    std::optional<Quality> ofrQ;
     while (offers.step())
     {
         auto& offer = offers.tip();
@@ -619,7 +619,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     offers.permRmOffer(offer.key());
                     if (!offerAttempted)
                         // Change quality only if no previous offers were tried.
-                        ofrQ = boost::none;
+                        ofrQ = std::nullopt;
                     // This continue causes offers.step() to delete the offer.
                     continue;
                 }

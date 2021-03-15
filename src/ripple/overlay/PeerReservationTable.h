@@ -27,10 +27,10 @@
 #include <ripple/protocol/PublicKey.h>
 
 #define SOCI_USE_BOOST
-#include <boost/optional.hpp>
 #include <soci/soci.h>
 
 #include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -104,15 +104,14 @@ public:
      * @return the replaced reservation if it existed
      * @throw soci::soci_error
      */
-    auto
-    insert_or_assign(PeerReservation const& reservation)
-        -> boost::optional<PeerReservation>;
+    std::optional<PeerReservation>
+    insert_or_assign(PeerReservation const& reservation);
 
     /**
      * @return the erased reservation if it existed
      */
-    auto
-    erase(PublicKey const& nodeId) -> boost::optional<PeerReservation>;
+    std::optional<PeerReservation>
+    erase(PublicKey const& nodeId);
 
 private:
     beast::Journal mutable journal_;

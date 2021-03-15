@@ -41,7 +41,7 @@ namespace RPC {
 
   GetLedgerIndex is a callable that returns a LedgerIndex
   GetCloseTime is a callable that returns a
-               boost::optional<NetClock::time_point>
+               std::optional<NetClock::time_point>
  */
 template <class GetLedgerIndex, class GetCloseTime>
 std::optional<STAmount>
@@ -174,7 +174,7 @@ insertDeliveredAmount(
 }
 
 template <class GetLedgerIndex>
-std::optional<STAmount>
+static std::optional<STAmount>
 getDeliveredAmount(
     RPC::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
@@ -185,7 +185,7 @@ getDeliveredAmount(
     {
         auto const getCloseTime =
             [&context,
-             &getLedgerIndex]() -> boost::optional<NetClock::time_point> {
+             &getLedgerIndex]() -> std::optional<NetClock::time_point> {
             return context.ledgerMaster.getCloseTimeBySeq(getLedgerIndex());
         };
         return getDeliveredAmount(

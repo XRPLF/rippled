@@ -60,10 +60,10 @@ public:
     bool
     exists(Keylet const& k) const override;
 
-    boost::optional<key_type>
+    std::optional<key_type>
     succ(
         key_type const& key,
-        boost::optional<key_type> const& last = boost::none) const override;
+        std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;

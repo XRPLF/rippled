@@ -26,9 +26,9 @@
 #include <ripple/ledger/PaymentSandbox.h>
 
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
 
 #include <chrono>
+#include <optional>
 #include <sstream>
 
 namespace ripple {
@@ -357,7 +357,7 @@ balanceDiffs(PaymentSandbox const& sb, ReadView const& rv)
 }
 
 inline std::string
-balanceDiffsToString(boost::optional<BalanceDiffs> const& bd)
+balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
 {
     if (!bd)
         return std::string{};

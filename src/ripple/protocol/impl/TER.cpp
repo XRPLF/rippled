@@ -152,6 +152,7 @@ transResults()
         MAKE_ERROR(temINVALID_ACCOUNT_ID,     "Malformed: A field contains an invalid account ID."),
         MAKE_ERROR(temCANNOT_PREAUTH_SELF,    "Malformed: An account may not preauthorize itself."),
         MAKE_ERROR(temINVALID_COUNT,          "Malformed: Count field outside valid range."),
+        MAKE_ERROR(temSEQ_AND_TICKET,         "Transaction contains a TicketSequence and a non-zero Sequence."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -209,7 +210,7 @@ transHuman(TER code)
     return transResultInfo(code, token, text) ? text : "-";
 }
 
-boost::optional<TER>
+std::optional<TER>
 transCode(std::string const& token)
 {
     static auto const results = [] {
@@ -226,7 +227,7 @@ transCode(std::string const& token)
     auto const r = results.find(token);
 
     if (r == results.end())
-        return boost::none;
+        return std::nullopt;
 
     return TER::fromInt(r->second);
 }

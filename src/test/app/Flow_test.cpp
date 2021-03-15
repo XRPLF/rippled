@@ -482,7 +482,7 @@ struct Flow_test : public beast::unit_test::suite
                     false,
                     true,
                     false,
-                    boost::none,
+                    std::nullopt,
                     smax,
                     flowJournal);
             }();

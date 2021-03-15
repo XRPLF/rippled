@@ -65,14 +65,14 @@ public:
     void
     updateHash() final override
     {
-        hash_ = SHAMapHash{sha512Half(
-            HashPrefix::transactionID, makeSlice(item_->peekData()))};
+        hash_ =
+            SHAMapHash{sha512Half(HashPrefix::transactionID, item_->slice())};
     }
 
     void
     serializeForWire(Serializer& s) const final override
     {
-        s.addRaw(item_->peekData());
+        s.addRaw(item_->slice());
         s.add8(wireTypeTransaction);
     }
 
@@ -80,7 +80,7 @@ public:
     serializeWithPrefix(Serializer& s) const final override
     {
         s.add32(HashPrefix::transactionID);
-        s.addRaw(item_->peekData());
+        s.addRaw(item_->slice());
     }
 };
 

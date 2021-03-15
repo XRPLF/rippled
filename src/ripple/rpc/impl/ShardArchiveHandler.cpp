@@ -330,7 +330,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
     // that comes after the last ledger in this shard. A
     // later ledger must be present in order to reliably
     // retrieve the hash of the shard's last ledger.
-    boost::optional<uint256> expectedHash;
+    std::optional<uint256> expectedHash;
     bool shouldHaveHash = false;
     if (auto const seq = app_.getShardStore()->lastLedgerSeq(shardIndex);
         (shouldHaveHash = app_.getLedgerMaster().getValidLedgerIndex() > seq))
@@ -387,7 +387,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 
         if (!downloader_->download(
                 url.domain,
-                std::to_string(url.port.get_value_or(defaultPort)),
+                std::to_string(url.port.value_or(defaultPort)),
                 url.path,
                 11,
                 dstDir / "archive.tar.lz4",

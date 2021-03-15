@@ -57,7 +57,7 @@ preflight1(PreflightContext const& ctx)
 {
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
-    if (ctx.tx.getSeqProxy().isTicket() &&
+    if (ctx.tx.isFieldPresent(sfTicketSequence) &&
         !ctx.rules.enabled(featureTicketBatch))
     {
         return temMALFORMED;
@@ -254,18 +254,29 @@ Transactor::checkSeqProxy(
     SeqProxy const t_seqProx = tx.getSeqProxy();
     SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
 
-    if (t_seqProx.isSeq() && t_seqProx != a_seq)
+    if (t_seqProx.isSeq())
     {
-        if (a_seq < t_seqProx)
+        if (tx.isFieldPresent(sfTicketSequence) &&
+            view.rules().enabled(featureTicketBatch))
         {
-            JLOG(j.trace()) << "applyTransaction: has future sequence number "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-            return terPRE_SEQ;
+            JLOG(j.trace()) << "applyTransaction: has both a TicketSequence "
+                               "and a non-zero Sequence number";
+            return temSEQ_AND_TICKET;
         }
-        // It's an already-used sequence number.
-        JLOG(j.trace()) << "applyTransaction: has past sequence number "
-                        << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-        return tefPAST_SEQ;
+        if (t_seqProx != a_seq)
+        {
+            if (a_seq < t_seqProx)
+            {
+                JLOG(j.trace())
+                    << "applyTransaction: has future sequence number "
+                    << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                return terPRE_SEQ;
+            }
+            // It's an already-used sequence number.
+            JLOG(j.trace()) << "applyTransaction: has past sequence number "
+                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return tefPAST_SEQ;
+        }
     }
     else if (t_seqProx.isTicket())
     {

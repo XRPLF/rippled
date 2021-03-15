@@ -194,6 +194,7 @@ accountTxPage(
         Blob rawData;
         Blob rawMeta;
 
+        // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::uint32_t> txnSeq;
         boost::optional<std::string> status;

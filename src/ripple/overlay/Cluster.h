@@ -71,11 +71,11 @@ public:
     Cluster(beast::Journal j);
 
     /** Determines whether a node belongs in the cluster
-        @return boost::none if the node isn't a member,
+        @return std::nullopt if the node isn't a member,
                 otherwise, the comment associated with the
                 node (which may be an empty string).
     */
-    boost::optional<std::string>
+    std::optional<std::string>
     member(PublicKey const& node) const;
 
     /** The number of nodes in the cluster list. */

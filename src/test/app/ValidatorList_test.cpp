@@ -130,7 +130,7 @@ private:
         std::vector<Validator> const& validators,
         std::size_t sequence,
         std::size_t validUntil,
-        boost::optional<std::size_t> validFrom = {})
+        std::optional<std::size_t> validFrom = {})
     {
         std::string data = "{\"sequence\":" + std::to_string(sequence) +
             ",\"expiration\":" + std::to_string(validUntil);
@@ -1635,7 +1635,7 @@ private:
                 env.journal);
 
             // Empty list has no expiration
-            BEAST_EXPECT(trustedKeys->expires() == boost::none);
+            BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
 
             // Config listed keys have maximum expiry
             PublicKey emptyLocalKey;
@@ -1643,7 +1643,7 @@ private:
             trustedKeys->load(emptyLocalKey, {toStr(localCfgListed)}, {});
             BEAST_EXPECT(
                 trustedKeys->expires() &&
-                trustedKeys->expires().get() == NetClock::time_point::max());
+                trustedKeys->expires().value() == NetClock::time_point::max());
             BEAST_EXPECT(trustedKeys->listed(localCfgListed));
         }
 
@@ -1726,7 +1726,7 @@ private:
             PreparedList prep2 = addPublishedList();
 
             // Initially, no list has been published, so no known expiration
-            BEAST_EXPECT(trustedKeys->expires() == boost::none);
+            BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
 
             // Apply first list
             checkResult(
@@ -1738,7 +1738,7 @@ private:
 
             // One list still hasn't published, so expiration is still
             // unknown
-            BEAST_EXPECT(trustedKeys->expires() == boost::none);
+            BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
 
             // Apply second list
             checkResult(
@@ -1750,7 +1750,7 @@ private:
             // We now have loaded both lists, so expiration is known
             BEAST_EXPECT(
                 trustedKeys->expires() &&
-                trustedKeys->expires().get() == prep1.expirations.back());
+                trustedKeys->expires().value() == prep1.expirations.back());
 
             // Advance past the first list's LAST validFrom date. It remains
             // the earliest validUntil, while rotating in the second list
@@ -1764,7 +1764,7 @@ private:
                     env.app().getHashRouter());
                 BEAST_EXPECT(
                     trustedKeys->expires() &&
-                    trustedKeys->expires().get() == prep1.expirations.back());
+                    trustedKeys->expires().value() == prep1.expirations.back());
                 BEAST_EXPECT(!changes.added.empty());
                 BEAST_EXPECT(changes.removed.empty());
             }
@@ -1781,7 +1781,7 @@ private:
                     env.app().getHashRouter());
                 BEAST_EXPECT(
                     trustedKeys->expires() &&
-                    trustedKeys->expires().get() == prep1.expirations.back());
+                    trustedKeys->expires().value() == prep1.expirations.back());
                 BEAST_EXPECT(changes.added.empty());
                 BEAST_EXPECT(changes.removed.empty());
             }
@@ -1798,7 +1798,7 @@ private:
 
         auto createValidatorList =
             [&](std::uint32_t vlSize,
-                boost::optional<std::size_t> minimumQuorum = {})
+                std::optional<std::size_t> minimumQuorum = {})
             -> std::shared_ptr<ValidatorList> {
             auto trustedKeys = std::make_shared<ValidatorList>(
                 manifests,

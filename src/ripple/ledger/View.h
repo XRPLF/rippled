@@ -33,7 +33,6 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/TER.h>
-#include <boost/optional.hpp>
 #include <functional>
 #include <map>
 #include <memory>
@@ -164,11 +163,11 @@ getMajorityAmendments(ReadView const& view);
     in the passed ledger. As the skip list is limited
     in size, if the requested ledger sequence number is
     out of the range of ledgers represented in the skip
-    list, then boost::none is returned.
+    list, then std::nullopt is returned.
     @return The hash of the ledger with the
-            given sequence number or boost::none.
+            given sequence number or std::nullopt.
 */
-[[nodiscard]] boost::optional<uint256>
+[[nodiscard]] std::optional<uint256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal);
 
 /** Find a ledger index from which we could easily get the requested ledger
@@ -251,7 +250,7 @@ dirNext(
 describeOwnerDir(AccountID const& account);
 
 // deprecated
-boost::optional<std::uint64_t>
+std::optional<std::uint64_t>
 dirAdd(
     ApplyView& view,
     Keylet const& uRootIndex,

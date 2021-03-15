@@ -216,7 +216,7 @@ private:
     // Unset if no unsupported amendments reach majority,
     // else set to the earliest time an unsupported amendment
     // will be enabled.
-    boost::optional<NetClock::time_point> firstUnsupportedExpected_;
+    std::optional<NetClock::time_point> firstUnsupportedExpected_;
 
     beast::Journal const j_;
 
@@ -276,7 +276,7 @@ public:
     bool
     hasUnsupportedEnabled() const override;
 
-    boost::optional<NetClock::time_point>
+    std::optional<NetClock::time_point>
     firstUnsupportedExpected() const override;
 
     Json::Value
@@ -332,6 +332,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         std::string sql =
             "SELECT count(*) FROM sqlite_master "
             "WHERE type='table' AND name='FeatureVotes'";
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<int> featureVotesCount;
         *db << sql, soci::into(featureVotesCount);
         bool exists = static_cast<bool>(*featureVotesCount);
@@ -410,6 +411,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     soci::transaction tr(*db);
     std::string sql =
         "SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes";
+    // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> amendment_hash;
     boost::optional<std::string> amendment_name;
     boost::optional<int> vote_to_veto;
@@ -588,7 +590,7 @@ AmendmentTableImpl::hasUnsupportedEnabled() const
     return unsupportedEnabled_;
 }
 
-boost::optional<NetClock::time_point>
+std::optional<NetClock::time_point>
 AmendmentTableImpl::firstUnsupportedExpected() const
 {
     std::lock_guard sl(mutex_);

@@ -223,6 +223,8 @@ public:
             }
             try
             {
+                // SOCI requires boost::optional (not std::optional) as
+                // parameters.
                 boost::optional<std::int32_t> ig;
                 boost::optional<std::uint32_t> uig;
                 boost::optional<std::int64_t> big;

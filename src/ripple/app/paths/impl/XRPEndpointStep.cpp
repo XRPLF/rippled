@@ -47,13 +47,13 @@ private:
     // Since this step will always be an endpoint in a strand
     // (either the first or last step) the same cache is used
     // for cachedIn and cachedOut and only one will ever be used
-    boost::optional<XRPAmount> cache_;
+    std::optional<XRPAmount> cache_;
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cached() const
     {
         if (!cache_)
-            return boost::none;
+            return std::nullopt;
         return EitherAmount(*cache_);
     }
 
@@ -69,7 +69,7 @@ public:
         return acc_;
     }
 
-    boost::optional<std::pair<AccountID, AccountID>>
+    std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         if (isLast_)
@@ -77,13 +77,13 @@ public:
         return std::make_pair(acc_, xrpAccount());
     }
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cachedIn() const override
     {
         return cached();
     }
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cachedOut() const override
     {
         return cached();
@@ -95,7 +95,7 @@ public:
         return DebtDirection::issues;
     }
 
-    std::pair<boost::optional<Quality>, DebtDirection>
+    std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
         const override;
 
@@ -242,7 +242,7 @@ operator==(
 }
 
 template <class TDerived>
-std::pair<boost::optional<Quality>, DebtDirection>
+std::pair<std::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(
     ReadView const& v,
     DebtDirection prevStepDir) const

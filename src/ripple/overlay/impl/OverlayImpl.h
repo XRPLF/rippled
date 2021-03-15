@@ -39,7 +39,6 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -47,6 +46,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 
 namespace ripple {
@@ -96,7 +96,7 @@ private:
 
     Application& app_;
     boost::asio::io_service& io_service_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
     std::condition_variable_any cond_;
@@ -124,7 +124,7 @@ private:
     // Peer IDs expecting to receive a last link notification
     std::set<std::uint32_t> csIDs_;
 
-    boost::optional<std::uint32_t> networkID_;
+    std::optional<std::uint32_t> networkID_;
 
     reduce_relay::Slots<UptimeClock> slots_;
 
@@ -359,7 +359,7 @@ public:
         return peerDisconnectsCharges_;
     }
 
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     networkID() const override
     {
         return networkID_;

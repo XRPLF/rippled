@@ -47,7 +47,7 @@ struct StrandResult
     bool success;                                  ///< Strand succeeded
     TInAmt in = beast::zero;                       ///< Currency amount in
     TOutAmt out = beast::zero;                     ///< Currency amount out
-    boost::optional<PaymentSandbox> sandbox;       ///< Resulting Sandbox state
+    std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
     boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
     // Num offers consumed or partially consumed (includes expired and unfunded
     // offers)
@@ -103,7 +103,7 @@ StrandResult<TInAmt, TOutAmt>
 flow(
     PaymentSandbox const& baseView,
     Strand const& strand,
-    boost::optional<TInAmt> const& maxIn,
+    std::optional<TInAmt> const& maxIn,
     TOutAmt const& out,
     beast::Journal j)
 {
@@ -126,11 +126,11 @@ flow(
         std::size_t const s = strand.size();
 
         std::size_t limitingStep = strand.size();
-        boost::optional<PaymentSandbox> sb(&baseView);
+        std::optional<PaymentSandbox> sb(&baseView);
         // The "all funds" view determines if an offer becomes unfunded or is
         // found unfunded
         // These are the account balances before the strand executes
-        boost::optional<PaymentSandbox> afView(&baseView);
+        std::optional<PaymentSandbox> afView(&baseView);
         EitherAmount limitStepOut;
         {
             EitherAmount stepOut(out);
@@ -296,7 +296,7 @@ struct FlowResult
 {
     TInAmt in = beast::zero;
     TOutAmt out = beast::zero;
-    boost::optional<PaymentSandbox> sandbox;
+    std::optional<PaymentSandbox> sandbox;
     boost::container::flat_set<uint256> removableOffers;
     TER ter = temUNKNOWN;
 
@@ -332,18 +332,18 @@ struct FlowResult
 /// @endcond
 
 /// @cond INTERNAL
-inline boost::optional<Quality>
+inline std::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
     Quality q{STAmount::uRateOne};
-    boost::optional<Quality> stepQ;
+    std::optional<Quality> stepQ;
     DebtDirection dir = DebtDirection::issues;
     for (auto const& step : strand)
     {
         if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
             q = composed_quality(q, *stepQ);
         else
-            return boost::none;
+            return std::nullopt;
     }
     return q;
 };
@@ -377,9 +377,7 @@ public:
     // Start a new iteration in the search for liquidity
     // Set the current strands to the strands in `next_`
     void
-    activateNext(
-        ReadView const& v,
-        boost::optional<Quality> const& limitQuality)
+    activateNext(ReadView const& v, std::optional<Quality> const& limitQuality)
     {
         // add the strands in `next_` to `cur_`, sorted by theoretical quality.
         // Best quality first.
@@ -501,8 +499,8 @@ flow(
     TOutAmt const& outReq,
     bool partialPayment,
     bool offerCrossing,
-    boost::optional<Quality> const& limitQuality,
-    boost::optional<STAmount> const& sendMaxST,
+    std::optional<Quality> const& limitQuality,
+    std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
 {
@@ -542,11 +540,13 @@ flow(
     // natural way. Using `make_optional`, allows us to work around this bug.
     TInAmt const sendMaxInit =
         sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::zero};
-    boost::optional<TInAmt> const sendMax = boost::make_optional(
-        sendMaxST && sendMaxInit >= beast::zero, sendMaxInit);
-    boost::optional<TInAmt> remainingIn =
-        boost::make_optional(!!sendMax, sendMaxInit);
-    // boost::optional<TInAmt> remainingIn{sendMax};
+    std::optional<TInAmt> const sendMax =
+        (sendMaxST && sendMaxInit >= beast::zero)
+        ? std::make_optional(sendMaxInit)
+        : std::nullopt;
+    std::optional<TInAmt> remainingIn =
+        !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
+    // std::optional<TInAmt> remainingIn{sendMax};
 
     TOutAmt remainingOut(outReq);
 
@@ -586,14 +586,14 @@ flow(
         activeStrands.activateNext(sb, limitQuality);
 
         boost::container::flat_set<uint256> ofrsToRm;
-        boost::optional<BestStrand> best;
+        std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();
         // Index of strand to mark as inactive (remove from the active list) if
         // the liquidity is used. This is used for strands that consume too many
         // offers Constructed as `false,0` to workaround a gcc warning about
         // uninitialized variables
-        boost::optional<std::size_t> markInactiveOnUse{false, 0};
+        std::optional<std::size_t> markInactiveOnUse;
         for (size_t strandIndex = 0, sie = activeStrands.size();
              strandIndex != sie;
              ++strandIndex)

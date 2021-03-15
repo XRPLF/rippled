@@ -20,9 +20,10 @@
 #define RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
 
 #include <ripple/basics/tagged_integer.h>
-#include <boost/optional.hpp>
-#include <memory>
 #include <test/csf/ledgers.h>
+
+#include <memory>
+#include <optional>
 #include <utility>
 
 namespace ripple {
@@ -54,7 +55,7 @@ class Validation
     PeerID nodeID_{0};
     bool trusted_ = false;
     bool full_ = false;
-    boost::optional<std::uint32_t> loadFee_;
+    std::optional<std::uint32_t> loadFee_;
     std::uint64_t cookie_{0};
 
 public:
@@ -69,7 +70,7 @@ public:
         PeerKey key,
         PeerID nodeID,
         bool full,
-        boost::optional<std::uint32_t> loadFee = boost::none,
+        std::optional<std::uint32_t> loadFee = std::nullopt,
         std::uint64_t cookie = 0)
         : ledgerID_{id}
         , seq_{seq}
@@ -107,13 +108,13 @@ public:
         return seenTime_;
     }
 
-    PeerKey
+    PeerKey const&
     key() const
     {
         return key_;
     }
 
-    PeerID
+    PeerID const&
     nodeID() const
     {
         return nodeID_;
@@ -137,7 +138,7 @@ public:
         return cookie_;
     }
 
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     loadFee() const
     {
         return loadFee_;

@@ -79,7 +79,7 @@ msig::operator()(Env& env, JTx& jt) const
     auto const mySigners = signers;
     jt.signer = [mySigners, &env](Env&, JTx& jtx) {
         jtx[sfSigningPubKey.getJsonName()] = "";
-        boost::optional<STObject> st;
+        std::optional<STObject> st;
         try
         {
             st = parse(jtx.jv);

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_KEYTYPE_H_INCLUDED
 #define RIPPLE_PROTOCOL_KEYTYPE_H_INCLUDED
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <string>
 
 namespace ripple {
@@ -30,7 +30,7 @@ enum class KeyType {
     ed25519 = 1,
 };
 
-inline boost::optional<KeyType>
+inline std::optional<KeyType>
 keyTypeFromString(std::string const& s)
 {
     if (s == "secp256k1")

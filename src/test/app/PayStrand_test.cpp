@@ -286,24 +286,24 @@ public:
         AccFactory&& accF,
         IssFactory&& issF,
         CurrencyFactory&& currencyF,
-        boost::optional<AccountID> const& existingAcc,
-        boost::optional<Currency> const& existingCur,
-        boost::optional<AccountID> const& existingIss)
+        std::optional<AccountID> const& existingAcc,
+        std::optional<Currency> const& existingCur,
+        std::optional<AccountID> const& existingIss)
     {
         assert(!has(SB::last));
 
-        auto const acc = [&]() -> boost::optional<AccountID> {
+        auto const acc = [&]() -> std::optional<AccountID> {
             if (!has(SB::acc))
-                return boost::none;
+                return std::nullopt;
             if (has(SB::rootAcc))
                 return xrpAccount();
             if (has(SB::existingAcc) && existingAcc)
                 return existingAcc;
             return accF().id();
         }();
-        auto const iss = [&]() -> boost::optional<AccountID> {
+        auto const iss = [&]() -> std::optional<AccountID> {
             if (!has(SB::iss))
-                return boost::none;
+                return std::nullopt;
             if (has(SB::rootIss))
                 return xrpAccount();
             if (has(SB::sameAccIss))
@@ -312,9 +312,9 @@ public:
                 return *existingIss;
             return issF().id();
         }();
-        auto const cur = [&]() -> boost::optional<Currency> {
+        auto const cur = [&]() -> std::optional<Currency> {
             if (!has(SB::cur))
-                return boost::none;
+                return std::nullopt;
             if (has(SB::xrp))
                 return xrpCurrency();
             if (has(SB::existingCur) && existingCur)
@@ -395,7 +395,7 @@ struct ExistingElementPool
         jtx::Env& env,
         size_t numAct,
         size_t numCur,
-        boost::optional<size_t> const& offererIndex)
+        std::optional<size_t> const& offererIndex)
     {
         using namespace jtx;
 
@@ -582,9 +582,9 @@ struct ExistingElementPool
         STAmount const& deliver,
         std::vector<STPathElement> const& prefix,
         std::vector<STPathElement> const& suffix,
-        boost::optional<AccountID> const& existingAcc,
-        boost::optional<Currency> const& existingCur,
-        boost::optional<AccountID> const& existingIss,
+        std::optional<AccountID> const& existingAcc,
+        std::optional<Currency> const& existingCur,
+        std::optional<AccountID> const& existingIss,
         F&& f)
     {
         auto accF = [&] { return this->getAvailAccount(); };
@@ -660,7 +660,7 @@ struct PayStrand_test : public beast::unit_test::suite
         auto test = [&, this](
                         jtx::Env& env,
                         Issue const& deliver,
-                        boost::optional<Issue> const& sendMaxIssue,
+                        std::optional<Issue> const& sendMaxIssue,
                         STPath const& path,
                         TER expTer,
                         auto&&... expSteps) {
@@ -669,7 +669,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 alice,
                 bob,
                 deliver,
-                boost::none,
+                std::nullopt,
                 sendMaxIssue,
                 path,
                 true,
@@ -696,7 +696,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     alice,
                     /*deliver*/ xrpIssue(),
-                    /*limitQuality*/ boost::none,
+                    /*limitQuality*/ std::nullopt,
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
@@ -713,7 +713,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     alice,
                     /*deliver*/ xrpIssue(),
-                    /*limitQuality*/ boost::none,
+                    /*limitQuality*/ std::nullopt,
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
@@ -730,10 +730,10 @@ struct PayStrand_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol, gw);
 
-            test(env, USD, boost::none, STPath(), terNO_LINE);
+            test(env, USD, std::nullopt, STPath(), terNO_LINE);
 
             env.trust(USD(1000), alice, bob, carol);
-            test(env, USD, boost::none, STPath(), tecPATH_DRY);
+            test(env, USD, std::nullopt, STPath(), tecPATH_DRY);
 
             env(pay(gw, alice, USD(100)));
             env(pay(gw, carol, USD(100)));
@@ -742,7 +742,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 USD,
-                boost::none,
+                std::nullopt,
                 STPath(),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -818,7 +818,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 D{gw, bob, eurC});
 
             // XRP -> XRP transaction can't include a path
-            test(env, XRP, boost::none, STPath({ape(carol)}), temBAD_PATH);
+            test(env, XRP, std::nullopt, STPath({ape(carol)}), temBAD_PATH);
 
             {
                 // The root account can't be the src or dst
@@ -830,7 +830,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         alice,
                         xrpAccount(),
                         XRP,
-                        boost::none,
+                        std::nullopt,
                         USD.issue(),
                         STPath(),
                         true,
@@ -845,8 +845,8 @@ struct PayStrand_test : public beast::unit_test::suite
                         xrpAccount(),
                         alice,
                         XRP,
-                        boost::none,
-                        boost::none,
+                        std::nullopt,
+                        std::nullopt,
                         STPath(),
                         true,
                         false,
@@ -860,8 +860,8 @@ struct PayStrand_test : public beast::unit_test::suite
                         noAccount(),
                         bob,
                         USD,
-                        boost::none,
-                        boost::none,
+                        std::nullopt,
+                        std::nullopt,
                         STPath(),
                         true,
                         false,
@@ -882,7 +882,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 USD,
-                boost::none,
+                std::nullopt,
                 STPath({STPathElement(
                     0, xrpAccount(), xrpCurrency(), xrpAccount())}),
                 temBAD_PATH);
@@ -893,7 +893,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 USD,
-                boost::none,
+                std::nullopt,
                 STPath({ape(gw), ape(carol)}),
                 temBAD_PATH_LOOP);
 
@@ -936,7 +936,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, noripple(gw));
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
-            test(env, USD, boost::none, STPath(), terNO_RIPPLE);
+            test(env, USD, std::nullopt, STPath(), terNO_RIPPLE);
         }
 
         {
@@ -948,21 +948,21 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // Account can still issue payments
             env(fset(alice, asfGlobalFreeze));
-            test(env, USD, boost::none, STPath(), tesSUCCESS);
+            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
             env(fclear(alice, asfGlobalFreeze));
-            test(env, USD, boost::none, STPath(), tesSUCCESS);
+            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
 
             // Account can not issue funds
             env(fset(gw, asfGlobalFreeze));
-            test(env, USD, boost::none, STPath(), terNO_LINE);
+            test(env, USD, std::nullopt, STPath(), terNO_LINE);
             env(fclear(gw, asfGlobalFreeze));
-            test(env, USD, boost::none, STPath(), tesSUCCESS);
+            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
 
             // Account can not receive funds
             env(fset(bob, asfGlobalFreeze));
-            test(env, USD, boost::none, STPath(), terNO_LINE);
+            test(env, USD, std::nullopt, STPath(), terNO_LINE);
             env(fclear(bob, asfGlobalFreeze));
-            test(env, USD, boost::none, STPath(), tesSUCCESS);
+            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
         }
         {
             // Freeze between gw and alice
@@ -970,10 +970,10 @@ struct PayStrand_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, gw);
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
-            test(env, USD, boost::none, STPath(), tesSUCCESS);
+            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
             env(trust(gw, alice["USD"](0), tfSetFreeze));
             BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::freeze));
-            test(env, USD, boost::none, STPath(), terNO_LINE);
+            test(env, USD, std::nullopt, STPath(), terNO_LINE);
         }
         {
             // check no auth
@@ -988,7 +988,7 @@ struct PayStrand_test : public beast::unit_test::suite
             BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::auth));
             env(pay(gw, alice, USD(100)));
             env.require(balance(alice, USD(100)));
-            test(env, USD, boost::none, STPath(), terNO_AUTH);
+            test(env, USD, std::nullopt, STPath(), terNO_AUTH);
 
             // Check pure issue redeem still works
             auto [ter, strand] = toStrand(
@@ -996,8 +996,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 alice,
                 gw,
                 USD,
-                boost::none,
-                boost::none,
+                std::nullopt,
+                std::nullopt,
                 STPath(),
                 true,
                 false,
@@ -1029,15 +1029,15 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // alice -> USD/XRP -> bob
             STPath path;
-            path.emplace_back(boost::none, USD.currency, USD.account.id());
-            path.emplace_back(boost::none, xrpCurrency(), boost::none);
+            path.emplace_back(std::nullopt, USD.currency, USD.account.id());
+            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
 
             auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
                 bob,
                 XRP,
-                boost::none,
+                std::nullopt,
                 USD.issue(),
                 path,
                 false,

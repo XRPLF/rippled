@@ -43,7 +43,7 @@ getEndpoint(std::string const& peer)
             peerClean = peer.substr(first + 1);
         }
 
-        boost::optional<beast::IP::Endpoint> endpoint =
+        std::optional<beast::IP::Endpoint> endpoint =
             beast::IP::Endpoint::from_string_checked(peerClean);
         if (endpoint)
             return beast::IP::to_asio_endpoint(endpoint.value());

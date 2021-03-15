@@ -76,7 +76,7 @@ protected:
     NetClock::time_point const expire_;
     BookTip tip_;
     TOffer<TIn, TOut> offer_;
-    boost::optional<TOut> ownerFunds_;
+    std::optional<TOut> ownerFunds_;
     StepCounter& counter_;
 
     void

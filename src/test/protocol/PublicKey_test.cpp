@@ -73,7 +73,7 @@ public:
     }
 
     bool
-    check(boost::optional<ECDSACanonicality> answer, std::string const& s)
+    check(std::optional<ECDSACanonicality> answer, std::string const& s)
     {
         return ecdsaCanonicality(makeSlice(sig(s))) == answer;
     }
@@ -179,126 +179,126 @@ public:
             "b6ba"));
 
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3005"
             "0201FF"
             "0200"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020101"
             "020202"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020701"
             "020102"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020401"
             "020102"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020501"
             "020102"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020201"
             "020102"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020301"
             "020202"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3006"
             "020401"
             "020202"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3047"
             "0221005990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba"
             "6105"
             "022200002d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e56"
             "6695ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3144"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3045"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "301F"
             "01205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3045"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed00"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3044"
             "01205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3024"
             "0200"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3044"
             "02208990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3045"
             "0221005990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba"
             "6105"
             "02202d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3044"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05012"
             "02d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695e"
             "d"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3024"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "0200"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3044"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"
             "0220fd5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695"
             "ed"));
         BEAST_EXPECT(check(
-            boost::none,
+            std::nullopt,
             "3045"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba61"
             "05"

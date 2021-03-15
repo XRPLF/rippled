@@ -835,6 +835,16 @@ ReportingETL::ReportingETL(Application& app, Stoppable& parent)
     // if present, get endpoint from config
     if (app_.config().exists("reporting"))
     {
+#ifndef RIPPLED_REPORTING
+        Throw<std::runtime_error>(
+            "Config file specifies reporting, but software was not built with "
+            "-Dreporting=1. To use reporting, configure CMake with "
+            "-Dreporting=1");
+#endif
+        if (!app_.config().useTxTables())
+            Throw<std::runtime_error>(
+                "Reporting requires tx tables. Set use_tx_tables=1 in config "
+                "file, under [ledger_tx_tables] section");
         Section section = app_.config().section("reporting");
 
         JLOG(journal_.debug()) << "Parsing config info";

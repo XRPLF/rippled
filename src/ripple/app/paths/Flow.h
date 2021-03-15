@@ -63,8 +63,8 @@ flow(
     bool partialPayment,
     bool ownerPaysTransferFee,
     bool offerCrossing,
-    boost::optional<Quality> const& limitQuality,
-    boost::optional<STAmount> const& sendMax,
+    std::optional<Quality> const& limitQuality,
+    std::optional<STAmount> const& sendMax,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
 

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TEST_JTX_MEMO_H_INCLUDED
 #define RIPPLE_TEST_JTX_MEMO_H_INCLUDED
 
-#include <boost/optional.hpp>
 #include <test/jtx/Env.h>
 
 namespace ripple {

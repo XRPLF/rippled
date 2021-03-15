@@ -34,10 +34,10 @@
 namespace ripple {
 namespace RPC {
 
-boost::optional<AccountID>
+std::optional<AccountID>
 accountFromStringStrict(std::string const& account)
 {
-    boost::optional<AccountID> result;
+    std::optional<AccountID> result;
 
     auto const publicKey =
         parseBase58<PublicKey>(TokenType::AccountPublic, account);
@@ -92,7 +92,7 @@ bool
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
-    boost::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
     uint256 const& entryIndex,
     std::uint32_t const limit,
@@ -608,7 +608,7 @@ injectSLE(Json::Value& jv, SLE const& sle)
     }
 }
 
-boost::optional<Json::Value>
+std::optional<Json::Value>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const& range,
@@ -624,17 +624,17 @@ readLimitField(
         if (!isUnlimited(context.role))
             limit = std::max(range.rmin, std::min(range.rmax, limit));
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<Seed>
+std::optional<Seed>
 parseRippleLibSeed(Json::Value const& value)
 {
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While rippled never encode seeds that way, we
     // try to detect such keys to avoid user confusion.
     if (!value.isString())
-        return boost::none;
+        return std::nullopt;
 
     auto const result = decodeBase58Token(value.asString(), TokenType::None);
 
@@ -643,10 +643,10 @@ parseRippleLibSeed(Json::Value const& value)
         static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
         return Seed(makeSlice(result.substr(2)));
 
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<Seed>
+std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
     // The array should be constexpr, but that makes Visual Studio unhappy.
@@ -671,20 +671,20 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
             "Exactly one of the following must be specified: " +
             std::string(jss::passphrase) + ", " + std::string(jss::seed) +
             " or " + std::string(jss::seed_hex));
-        return boost::none;
+        return std::nullopt;
     }
 
     // Make sure a string is present
     if (!params[seedType].isString())
     {
         error = RPC::expected_field_error(seedType, "string");
-        return boost::none;
+        return std::nullopt;
     }
 
     auto const fieldContents = params[seedType].asString();
 
     // Convert string to seed.
-    boost::optional<Seed> seed;
+    std::optional<Seed> seed;
 
     if (seedType == jss::seed.c_str())
         seed = parseBase58<Seed>(fieldContents);
@@ -745,8 +745,8 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
         return {};
     }
 
-    boost::optional<KeyType> keyType;
-    boost::optional<Seed> seed;
+    std::optional<KeyType> keyType;
+    std::optional<Seed> seed;
 
     if (has_key_type)
     {

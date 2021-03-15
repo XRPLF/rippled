@@ -42,11 +42,8 @@ SHAMapTreeNode::makeTransaction(
     SHAMapHash const& hash,
     bool hashValid)
 {
-    // FIXME: using a Serializer results in a copy; avoid it?
-    Serializer s(data.begin(), data.size());
-
     auto item = std::make_shared<SHAMapItem const>(
-        sha512Half(HashPrefix::transactionID, data), s);
+        sha512Half(HashPrefix::transactionID, data), data);
 
     if (hashValid)
         return std::make_shared<SHAMapTxLeafNode>(std::move(item), 0, hash);
@@ -74,7 +71,7 @@ SHAMapTreeNode::makeTransactionWithMeta(
 
     s.chop(tag.bytes);
 
-    auto item = std::make_shared<SHAMapItem const>(tag, s.peekData());
+    auto item = std::make_shared<SHAMapItem const>(tag, s.slice());
 
     if (hashValid)
         return std::make_shared<SHAMapTxPlusMetaLeafNode>(
@@ -106,7 +103,7 @@ SHAMapTreeNode::makeAccountState(
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");
 
-    auto item = std::make_shared<SHAMapItem const>(tag, s.peekData());
+    auto item = std::make_shared<SHAMapItem const>(tag, s.slice());
 
     if (hashValid)
         return std::make_shared<SHAMapAccountStateLeafNode>(

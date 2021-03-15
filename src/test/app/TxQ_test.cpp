@@ -26,7 +26,6 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
-#include <boost/optional.hpp>
 #include <test/jtx.h>
 #include <test/jtx/TestSuite.h>
 #include <test/jtx/WSClient.h>
@@ -43,7 +42,7 @@ class TxQ1_test : public beast::unit_test::suite
     checkMetrics(
         jtx::Env& env,
         std::size_t expectedCount,
-        boost::optional<std::size_t> expectedMaxCount,
+        std::optional<std::size_t> expectedMaxCount,
         std::size_t expectedInLedger,
         std::size_t expectedPerLedger,
         std::uint64_t expectedMinFeeLevel,
@@ -188,23 +187,23 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice, bob, charlie, daria));
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
         // Alice - price starts exploding: held
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 4, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 4, 3, 256);
 
         // Bob with really high fee - applies
         env(noop(bob), openLedgerFee(env));
-        checkMetrics(env, 1, boost::none, 5, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 5, 3, 256);
 
         // Daria with low fee: hold
         env(noop(daria), fee(1000), queued);
-        checkMetrics(env, 2, boost::none, 5, 3, 256);
+        checkMetrics(env, 2, std::nullopt, 5, 3, 256);
 
         env.close();
         // Verify that the held transactions got applied
@@ -390,14 +389,14 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         // Fund alice and then fill the ledger.
         env.fund(XRP(50000), noripple(alice));
         env(noop(alice));
         env(noop(alice));
         env(noop(alice));
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
         //////////////////////////////////////////////////////////////////
 
@@ -409,7 +408,7 @@ public:
         env(noop(alice), ticket::use(tkt1 - 2), ter(tefNO_TICKET));
         env(noop(alice), ticket::use(tkt1 - 1), ter(terPRE_TICKET));
         env.require(owners(alice, 0), tickets(alice, 0));
-        checkMetrics(env, 1, boost::none, 4, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 4, 3, 256);
 
         env.close();
         env.require(owners(alice, 250), tickets(alice, 250));
@@ -645,11 +644,11 @@ public:
         auto gw = Account("gw");
         auto USD = gw["USD"];
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 2, 256);
 
         // Create accounts
         env.fund(XRP(50000), noripple(alice, gw));
-        checkMetrics(env, 0, boost::none, 2, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 2, 256);
         env.close();
         checkMetrics(env, 0, 4, 0, 2, 256);
 
@@ -686,38 +685,38 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 2, 256);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice, bob, charlie));
-        checkMetrics(env, 0, boost::none, 3, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 3, 2, 256);
 
         // Future transaction for Alice - fails
         env(noop(alice),
             openLedgerFee(env),
             seq(env.seq(alice) + 1),
             ter(terPRE_SEQ));
-        checkMetrics(env, 0, boost::none, 3, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 3, 2, 256);
 
         // Current transaction for Alice: held
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256);
+        checkMetrics(env, 1, std::nullopt, 3, 2, 256);
 
         // Alice - sequence is too far ahead, so won't queue.
         env(noop(alice), seq(env.seq(alice) + 2), ter(telCAN_NOT_QUEUE));
-        checkMetrics(env, 1, boost::none, 3, 2, 256);
+        checkMetrics(env, 1, std::nullopt, 3, 2, 256);
 
         // Bob with really high fee - applies
         env(noop(bob), openLedgerFee(env));
-        checkMetrics(env, 1, boost::none, 4, 2, 256);
+        checkMetrics(env, 1, std::nullopt, 4, 2, 256);
 
         // Daria with low fee: hold
         env(noop(charlie), fee(1000), queued);
-        checkMetrics(env, 2, boost::none, 4, 2, 256);
+        checkMetrics(env, 2, std::nullopt, 4, 2, 256);
 
         // Alice with normal fee: hold
         env(noop(alice), seq(env.seq(alice) + 1), queued);
-        checkMetrics(env, 3, boost::none, 4, 2, 256);
+        checkMetrics(env, 3, std::nullopt, 4, 2, 256);
 
         env.close();
         // Verify that the held transactions got applied
@@ -744,7 +743,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 2, 256);
 
         // Fund across several ledgers so the TxQ metrics stay restricted.
         env.fund(XRP(1000), noripple(alice, bob));
@@ -754,11 +753,11 @@ public:
         env.fund(XRP(1000), noripple(edgar, felicia));
         env.close(env.now() + 5s, 10000ms);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 2, 256);
         env(noop(bob));
         env(noop(charlie));
         env(noop(daria));
-        checkMetrics(env, 0, boost::none, 3, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 3, 2, 256);
 
         BEAST_EXPECT(env.current()->info().seq == 6);
         // Fail to queue an item with a low LastLedgerSeq
@@ -773,7 +772,7 @@ public:
         env(noop(charlie), fee(7000), queued);
         env(noop(daria), fee(7000), queued);
         env(noop(edgar), fee(7000), queued);
-        checkMetrics(env, 5, boost::none, 3, 2, 256);
+        checkMetrics(env, 5, std::nullopt, 3, 2, 256);
         {
             auto& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
@@ -852,7 +851,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 2, 256);
 
         // Fund across several ledgers so the TxQ metrics stay restricted.
         env.fund(XRP(1000), noripple(alice, bob));
@@ -864,14 +863,14 @@ public:
         env(noop(alice));
         env(noop(alice));
         env(noop(alice));
-        checkMetrics(env, 0, boost::none, 3, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 3, 2, 256);
 
         env(noop(bob), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256);
+        checkMetrics(env, 1, std::nullopt, 3, 2, 256);
 
         // Since Alice's queue is empty this blocker can go into her queue.
         env(regkey(alice, bob), fee(0), queued);
-        checkMetrics(env, 2, boost::none, 3, 2, 256);
+        checkMetrics(env, 2, std::nullopt, 3, 2, 256);
 
         // Close out this ledger so we can get a maxsize
         env.close();
@@ -971,19 +970,19 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 2, 256);
 
         env.fund(XRP(1000), noripple(alice, bob));
 
-        checkMetrics(env, 0, boost::none, 2, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 2, 256);
 
         // Fill the ledger
         env(noop(alice));
-        checkMetrics(env, 0, boost::none, 3, 2, 256);
+        checkMetrics(env, 0, std::nullopt, 3, 2, 256);
 
         // Put a transaction in the queue
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256);
+        checkMetrics(env, 1, std::nullopt, 3, 2, 256);
 
         // Now cheat, and bypass the queue.
         {
@@ -1001,7 +1000,7 @@ public:
                 });
             env.postconditions(jt, ter, didApply);
         }
-        checkMetrics(env, 1, boost::none, 4, 2, 256);
+        checkMetrics(env, 1, std::nullopt, 4, 2, 256);
 
         env.close();
         // Alice's queued transaction failed in TxQ::accept
@@ -1030,7 +1029,7 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         // ledgers in queue is 2 because of makeConfig
         auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
@@ -1300,11 +1299,11 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 4, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 4, 256);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice, bob, charlie, daria));
-        checkMetrics(env, 0, boost::none, 4, 4, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 4, 256);
 
         env.close();
         checkMetrics(env, 0, 8, 0, 4, 256);
@@ -1429,13 +1428,13 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 1, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 1, 256);
 
         env.fund(XRP(50000), noripple(alice));
-        checkMetrics(env, 0, boost::none, 1, 1, 256);
+        checkMetrics(env, 0, std::nullopt, 1, 1, 256);
 
         env(fset(alice, asfAccountTxnID));
-        checkMetrics(env, 0, boost::none, 2, 1, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 1, 256);
 
         // Immediately after the fset, the sfAccountTxnID field
         // is still uninitialized, so preflight succeeds here,
@@ -1444,7 +1443,7 @@ public:
             json(R"({"AccountTxnID": "0"})"),
             ter(telCAN_NOT_QUEUE));
 
-        checkMetrics(env, 0, boost::none, 2, 1, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 1, 256);
         env.close();
         // The failed transaction is retried from LocalTx
         // and succeeds.
@@ -1473,15 +1472,15 @@ public:
 
             auto alice = Account("alice");
 
-            checkMetrics(env, 0, boost::none, 0, 2, 256);
+            checkMetrics(env, 0, std::nullopt, 0, 2, 256);
 
             env.fund(XRP(50000), noripple(alice));
-            checkMetrics(env, 0, boost::none, 1, 2, 256);
+            checkMetrics(env, 0, std::nullopt, 1, 2, 256);
 
             for (int i = 0; i < 10; ++i)
                 env(noop(alice), openLedgerFee(env));
 
-            checkMetrics(env, 0, boost::none, 11, 2, 256);
+            checkMetrics(env, 0, std::nullopt, 11, 2, 256);
 
             env.close();
             // If not for the maximum, the per ledger would be 11.
@@ -1667,11 +1666,11 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         env.fund(XRP(50000), noripple(alice, bob));
         env.memoize(charlie);
-        checkMetrics(env, 0, boost::none, 2, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 3, 256);
         {
             // Cannot put a blocker in an account's queue if that queue
             // already holds two or more (non-blocker) entries.
@@ -1680,7 +1679,7 @@ public:
             env(noop(alice));
             // Set a regular key just to clear the password spent flag
             env(regkey(alice, charlie));
-            checkMetrics(env, 0, boost::none, 4, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
             // Put two "normal" txs in the queue
             auto const aliceSeq = env.seq(alice);
@@ -1706,7 +1705,7 @@ public:
 
             // Other accounts are not affected
             env(noop(bob), queued);
-            checkMetrics(env, 3, boost::none, 4, 3, 256);
+            checkMetrics(env, 3, std::nullopt, 4, 3, 256);
 
             // Drain the queue.
             env.close();
@@ -1797,12 +1796,12 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         env.fund(XRP(50000), noripple(alice, bob));
         env.memoize(charlie);
 
-        checkMetrics(env, 0, boost::none, 2, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 3, 256);
 
         std::uint32_t tkt{env.seq(alice) + 1};
         {
@@ -1813,7 +1812,7 @@ public:
             env(ticket::create(alice, 250), seq(tkt - 1));
             // Set a regular key just to clear the password spent flag
             env(regkey(alice, charlie));
-            checkMetrics(env, 0, boost::none, 4, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
             // Put two "normal" txs in the queue
             auto const aliceSeq = env.seq(alice);
@@ -1843,7 +1842,7 @@ public:
 
             // Other accounts are not affected
             env(noop(bob), queued);
-            checkMetrics(env, 3, boost::none, 4, 3, 256);
+            checkMetrics(env, 3, std::nullopt, 4, 3, 256);
 
             // Drain the queue and local transactions.
             env.close();
@@ -2382,23 +2381,23 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         // Fund accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice, bob, charlie));
-        checkMetrics(env, 0, boost::none, 3, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 3, 3, 256);
 
         // Alice - no fee change yet
         env(noop(alice));
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
         // Bob with really high fee - applies
         env(noop(bob), openLedgerFee(env));
-        checkMetrics(env, 0, boost::none, 5, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 5, 3, 256);
 
         // Charlie with low fee: queued
         env(noop(charlie), fee(1000), queued);
-        checkMetrics(env, 1, boost::none, 5, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 5, 3, 256);
 
         env.close();
         // Verify that the queued transaction was applied
@@ -2556,7 +2555,7 @@ public:
         auto const bob = Account("bob");
 
         env.fund(XRP(500000), noripple(alice, bob));
-        checkMetrics(env, 0, boost::none, 2, 1, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 1, 256);
 
         auto const aliceSeq = env.seq(alice);
         BEAST_EXPECT(env.current()->info().seq == 3);
@@ -2576,7 +2575,7 @@ public:
             seq(aliceSeq + 3),
             json(R"({"LastLedgerSequence":11})"),
             ter(terQUEUED));
-        checkMetrics(env, 4, boost::none, 2, 1, 256);
+        checkMetrics(env, 4, std::nullopt, 2, 1, 256);
         auto const bobSeq = env.seq(bob);
         // Ledger 4 gets 3,
         // Ledger 5 gets 4,
@@ -2585,7 +2584,7 @@ public:
         {
             env(noop(bob), seq(bobSeq + i), fee(200), ter(terQUEUED));
         }
-        checkMetrics(env, 4 + 3 + 4 + 5, boost::none, 2, 1, 256);
+        checkMetrics(env, 4 + 3 + 4 + 5, std::nullopt, 2, 1, 256);
         // Close ledger 3
         env.close();
         checkMetrics(env, 4 + 4 + 5, 20, 3, 2, 256);
@@ -2650,7 +2649,7 @@ public:
         auto const bob = Account("bob");
 
         env.fund(XRP(500000), noripple(alice, bob));
-        checkMetrics(env, 0, boost::none, 2, 1, 256);
+        checkMetrics(env, 0, std::nullopt, 2, 1, 256);
 
         auto const aliceSeq = env.seq(alice);
         BEAST_EXPECT(env.current()->info().seq == 3);
@@ -2697,7 +2696,7 @@ public:
             seq(aliceSeq + 19),
             json(R"({"LastLedgerSequence":11})"),
             ter(terQUEUED));
-        checkMetrics(env, 10, boost::none, 2, 1, 256);
+        checkMetrics(env, 10, std::nullopt, 2, 1, 256);
 
         auto const bobSeq = env.seq(bob);
         // Ledger 4 gets 2 from bob and 1 from alice,
@@ -2707,7 +2706,7 @@ public:
         {
             env(noop(bob), seq(bobSeq + i), fee(200), ter(terQUEUED));
         }
-        checkMetrics(env, 10 + 2 + 4 + 5, boost::none, 2, 1, 256);
+        checkMetrics(env, 10 + 2 + 4 + 5, std::nullopt, 2, 1, 256);
         // Close ledger 3
         env.close();
         checkMetrics(env, 9 + 4 + 5, 20, 3, 2, 256);
@@ -2801,7 +2800,7 @@ public:
         env.fund(XRP(100000), alice, bob);
 
         fillQueue(env, alice);
-        checkMetrics(env, 0, boost::none, 7, 6, 256);
+        checkMetrics(env, 0, std::nullopt, 7, 6, 256);
 
         // Queue up several transactions for alice sign-and-submit
         auto const aliceSeq = env.seq(alice);
@@ -2821,7 +2820,7 @@ public:
                 envs(noop(alice), fee(1000), seq(none), ter(terQUEUED))(
                     submitParams);
         }
-        checkMetrics(env, 5, boost::none, 7, 6, 256);
+        checkMetrics(env, 5, std::nullopt, 7, 6, 256);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             SeqProxy seq = SeqProxy::sequence(aliceSeq);
@@ -2846,7 +2845,7 @@ public:
         // Give them a higher fee so they'll beat alice's.
         for (int i = 0; i < 8; ++i)
             envs(noop(bob), fee(2000), seq(none), ter(terQUEUED))();
-        checkMetrics(env, 13, boost::none, 7, 6, 256);
+        checkMetrics(env, 13, std::nullopt, 7, 6, 256);
 
         env.close();
         checkMetrics(env, 5, 14, 8, 7, 256);
@@ -3479,7 +3478,7 @@ public:
 
         // Fund the first few accounts at non escalated fee
         env.fund(XRP(50000), noripple(a, b, c, d));
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
         // First transaction establishes the messaging
         using namespace std::chrono_literals;
@@ -3612,14 +3611,14 @@ public:
         auto alice = Account("alice");
         auto bob = Account("bob");
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
         env.fund(XRP(50000000), alice, bob);
 
         fillQueue(env, alice);
 
         auto calcTotalFee = [&](std::int64_t alreadyPaid,
-                                boost::optional<std::size_t> numToClear =
-                                    boost::none) -> std::uint64_t {
+                                std::optional<std::size_t> numToClear =
+                                    std::nullopt) -> std::uint64_t {
             auto totalFactor = 0;
             auto const metrics = env.app().getTxQ().getMetrics(*env.current());
             if (!numToClear)
@@ -3658,7 +3657,7 @@ public:
                 seq(aliceSeq++),
                 ter(terQUEUED));
 
-            checkMetrics(env, 3, boost::none, 4, 3, 256);
+            checkMetrics(env, 3, std::nullopt, 4, 3, 256);
 
             // Figure out how much it would cost to cover all the
             // queued txs + itself
@@ -3671,7 +3670,7 @@ public:
             // the edge case test.
             env(noop(alice), fee(totalFee1), seq(aliceSeq++), ter(terQUEUED));
 
-            checkMetrics(env, 4, boost::none, 4, 3, 256);
+            checkMetrics(env, 4, std::nullopt, 4, 3, 256);
 
             // Now repeat the process including the new tx
             // and avoiding the rounding error
@@ -3681,7 +3680,7 @@ public:
             // Submit a transaction with that fee. It will succeed.
             env(noop(alice), fee(totalFee2), seq(aliceSeq++));
 
-            checkMetrics(env, 0, boost::none, 9, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 9, 3, 256);
         }
 
         testcase("replace last tx with enough to clear queue");
@@ -3701,7 +3700,7 @@ public:
                 seq(aliceSeq++),
                 ter(terQUEUED));
 
-            checkMetrics(env, 3, boost::none, 9, 3, 256);
+            checkMetrics(env, 3, std::nullopt, 9, 3, 256);
 
             // Figure out how much it would cost to cover all the
             // queued txs + itself
@@ -3714,7 +3713,7 @@ public:
             env(noop(alice), fee(totalFee), seq(aliceSeq++));
 
             // The queue is clear
-            checkMetrics(env, 0, boost::none, 12, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 12, 3, 256);
 
             env.close();
             checkMetrics(env, 0, 24, 0, 12, 256);
@@ -3826,16 +3825,16 @@ public:
                      {"maximum_txn_per_account", "200"}}));
             auto alice = Account("alice");
 
-            checkMetrics(env, 0, boost::none, 0, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 0, 3, 256);
             env.fund(XRP(50000000), alice);
 
             fillQueue(env, alice);
-            checkMetrics(env, 0, boost::none, 4, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 4, 3, 256);
             auto seqAlice = env.seq(alice);
             auto txCount = 140;
             for (int i = 0; i < txCount; ++i)
                 env(noop(alice), seq(seqAlice++), ter(terQUEUED));
-            checkMetrics(env, txCount, boost::none, 4, 3, 256);
+            checkMetrics(env, txCount, std::nullopt, 4, 3, 256);
 
             // Close a few ledgers successfully, so the limit grows
 
@@ -3912,16 +3911,16 @@ public:
                      {"maximum_txn_per_account", "200"}}));
             auto alice = Account("alice");
 
-            checkMetrics(env, 0, boost::none, 0, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 0, 3, 256);
             env.fund(XRP(50000000), alice);
 
             fillQueue(env, alice);
-            checkMetrics(env, 0, boost::none, 4, 3, 256);
+            checkMetrics(env, 0, std::nullopt, 4, 3, 256);
             auto seqAlice = env.seq(alice);
             auto txCount = 43;
             for (int i = 0; i < txCount; ++i)
                 env(noop(alice), seq(seqAlice++), ter(terQUEUED));
-            checkMetrics(env, txCount, boost::none, 4, 3, 256);
+            checkMetrics(env, txCount, std::nullopt, 4, 3, 256);
 
             // Close a few ledgers successfully, so the limit grows
 
@@ -3970,19 +3969,19 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         // Create account
         env.fund(XRP(50000), noripple(alice));
-        checkMetrics(env, 0, boost::none, 1, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 1, 3, 256);
 
         fillQueue(env, alice);
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
         // Queue a transaction
         auto const aliceSeq = env.seq(alice);
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 4, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 4, 3, 256);
 
         // Now, apply a (different) transaction directly
         // to the open ledger, bypassing the queue
@@ -3998,18 +3997,18 @@ public:
             return result.second;
         });
         // the queued transaction is still there
-        checkMetrics(env, 1, boost::none, 5, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 5, 3, 256);
 
         // The next transaction should be able to go into the open
         // ledger, even though aliceSeq is queued.  In earlier incarnations
         // of the TxQ this would cause an assert.
         env(noop(alice), seq(aliceSeq + 1), openLedgerFee(env));
-        checkMetrics(env, 1, boost::none, 6, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 6, 3, 256);
         // Now queue a couple more transactions to make sure
         // they succeed despite aliceSeq being queued
         env(noop(alice), seq(aliceSeq + 2), queued);
         env(noop(alice), seq(aliceSeq + 3), queued);
-        checkMetrics(env, 3, boost::none, 6, 3, 256);
+        checkMetrics(env, 3, std::nullopt, 6, 3, 256);
 
         // Now close the ledger. One of the queued transactions
         // (aliceSeq) should be dropped.
@@ -4037,11 +4036,11 @@ public:
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 0, 3, 256);
 
         // Create account
         env.fund(XRP(50000), noripple(alice));
-        checkMetrics(env, 0, boost::none, 1, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 1, 3, 256);
 
         // Create tickets
         std::uint32_t const tktSeq0{env.seq(alice) + 1};
@@ -4049,12 +4048,12 @@ public:
 
         // Fill the queue so the next transaction will be queued.
         fillQueue(env, alice);
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, std::nullopt, 4, 3, 256);
 
         // Queue a transaction with a ticket.  Leave an unused ticket
         // on either side.
         env(noop(alice), ticket::use(tktSeq0 + 1), queued);
-        checkMetrics(env, 1, boost::none, 4, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 4, 3, 256);
 
         // Now, apply a (different) transaction directly
         // to the open ledger, bypassing the queue
@@ -4070,25 +4069,25 @@ public:
             return result.second;
         });
         // the queued transaction is still there
-        checkMetrics(env, 1, boost::none, 5, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 5, 3, 256);
 
         // The next (sequence-based) transaction should be able to go into
         // the open ledger, even though tktSeq0 is queued.  Note that this
         // sequence-based transaction goes in front of the queued
         // transaction, so the queued transaction is left in the queue.
         env(noop(alice), openLedgerFee(env));
-        checkMetrics(env, 1, boost::none, 6, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 6, 3, 256);
 
         // We should be able to do the same thing with a ticket that goes
         // if front of the queued transaction.  This one too will leave
         // the queued transaction in place.
         env(noop(alice), ticket::use(tktSeq0 + 0), openLedgerFee(env));
-        checkMetrics(env, 1, boost::none, 7, 3, 256);
+        checkMetrics(env, 1, std::nullopt, 7, 3, 256);
 
         // We have one ticketed transaction in the queue.  We should able
         // to add another to the queue.
         env(noop(alice), ticket::use(tktSeq0 + 2), queued);
-        checkMetrics(env, 2, boost::none, 7, 3, 256);
+        checkMetrics(env, 2, std::nullopt, 7, 3, 256);
 
         // Here we try to force the queued transactions into the ledger by
         // adding one more queued (ticketed) transaction that pays enough
@@ -4104,7 +4103,7 @@ public:
         // transaction is equally capable of going into the ledger independent
         // of all other ticket- or sequence-based transactions.
         env(noop(alice), ticket::use(tktSeq0 + 3), fee(XRP(1)));
-        checkMetrics(env, 2, boost::none, 8, 3, 256);
+        checkMetrics(env, 2, std::nullopt, 8, 3, 256);
 
         // Now close the ledger. One of the queued transactions
         // (the one with tktSeq0 + 1) should be dropped.

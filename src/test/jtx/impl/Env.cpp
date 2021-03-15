@@ -120,7 +120,7 @@ Env::closed()
 bool
 Env::close(
     NetClock::time_point closeTime,
-    boost::optional<std::chrono::milliseconds> consensusDelay)
+    std::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
@@ -422,7 +422,7 @@ Env::st(JTx const& jt)
 {
     // The parse must succeed, since we
     // generated the JSON ourselves.
-    boost::optional<STObject> obj;
+    std::optional<STObject> obj;
     try
     {
         obj = jtx::parse(jt.jv);

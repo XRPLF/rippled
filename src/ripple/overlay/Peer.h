@@ -96,7 +96,7 @@ public:
     virtual bool
     supportsFeature(ProtocolFeature f) const = 0;
 
-    virtual boost::optional<std::size_t>
+    virtual std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const = 0;
 
     virtual void

@@ -62,8 +62,8 @@ ApplyViewBase::exists(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::succ(key_type const& key, boost::optional<key_type> const& last)
-    const -> boost::optional<key_type>
+ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last)
+    const -> std::optional<key_type>
 {
     return items_.succ(*base_, key, last);
 }

@@ -25,8 +25,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/icl/closed_interval.hpp>
 #include <boost/icl/interval_set.hpp>
-#include <boost/optional.hpp>
 
+#include <optional>
 #include <string>
 
 namespace ripple {
@@ -177,18 +177,18 @@ from_string(RangeSet<T>& rs, std::string const& s)
     @param t The value that must be larger than the result
     @param minVal (Default is 0) The smallest allowed value
     @return The largest v such that minV <= v < t and !contains(rs, v) or
-            boost::none if no such v exists.
+            std::nullopt if no such v exists.
 */
 template <class T>
-boost::optional<T>
+std::optional<T>
 prevMissing(RangeSet<T> const& rs, T t, T minVal = 0)
 {
     if (rs.empty() || t == minVal)
-        return boost::none;
+        return std::nullopt;
     RangeSet<T> tgt{ClosedInterval<T>{minVal, t - 1}};
     tgt -= rs;
     if (tgt.empty())
-        return boost::none;
+        return std::nullopt;
     return boost::icl::last(tgt);
 }
 

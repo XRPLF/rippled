@@ -51,7 +51,7 @@ public:
     [[nodiscard]] bool
     init() override;
 
-    [[nodiscard]] boost::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) override;
 
     bool
@@ -230,10 +230,10 @@ private:
     // values are not updated in real time and are modified only
     // when adding shards to the database, in order to determine where
     // pending shards will be stored on the filesystem. A value of
-    // boost::none indicates that the corresponding shard is not held
+    // std::nullopt indicates that the corresponding shard is not held
     // by the database.
-    boost::optional<std::uint32_t> latestShardIndex_;
-    boost::optional<std::uint32_t> secondLatestShardIndex_;
+    std::optional<std::uint32_t> latestShardIndex_;
+    std::optional<std::uint32_t> secondLatestShardIndex_;
 
     // Initialize settings from the configuration file
     // Lock must be held
@@ -254,7 +254,7 @@ private:
 
     // Randomly select a shard index not stored
     // Lock must be held
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     findAcquireIndex(
         std::uint32_t validLedgerSeq,
         std::lock_guard<std::mutex> const&);
@@ -265,7 +265,7 @@ private:
     finalizeShard(
         std::shared_ptr<Shard>& shard,
         bool writeSQLite,
-        boost::optional<uint256> const& expectedHash);
+        std::optional<uint256> const& expectedHash);
 
     // Set storage and file descriptor usage stats
     void
@@ -312,11 +312,11 @@ private:
 
     // Checks whether the shard can be stored. If
     // the new shard can't be stored, returns
-    // boost::none. Otherwise returns an enum
+    // std::nullopt. Otherwise returns an enum
     // indicating whether the new shard should be
     // placed in a separate directory for historical
     // shards.
-    boost::optional<PathDesignation>
+    std::optional<PathDesignation>
     prepareForNewShard(
         std::uint32_t shardIndex,
         std::uint32_t numHistoricalShards,

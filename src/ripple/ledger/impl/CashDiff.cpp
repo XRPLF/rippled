@@ -23,6 +23,7 @@
 #include <boost/container/static_vector.hpp>
 #include <cassert>
 #include <cstdlib>  // std::abs()
+#include <optional>
 
 namespace ripple {
 namespace detail {
@@ -299,7 +300,7 @@ private:
     std::size_t commonKeys_ = 0;  // Number of keys common to both rhs and lhs.
     std::size_t lhsKeys_ = 0;     // Number of keys in lhs but not rhs.
     std::size_t rhsKeys_ = 0;     // Number of keys in rhs but not lhs.
-    boost::optional<DropsGone> dropsGone_;
+    std::optional<DropsGone> dropsGone_;
     detail::CashSummary lhsDiffs_;
     detail::CashSummary rhsDiffs_;
 
@@ -337,7 +338,7 @@ public:
     bool
     hasDiff() const
     {
-        return dropsGone_ != boost::none || lhsDiffs_.hasDiff() ||
+        return dropsGone_ != std::nullopt || lhsDiffs_.hasDiff() ||
             rhsDiffs_.hasDiff();
     }
 

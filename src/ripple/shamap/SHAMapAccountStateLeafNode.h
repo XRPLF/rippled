@@ -67,14 +67,14 @@ public:
     void
     updateHash() final override
     {
-        hash_ = SHAMapHash{sha512Half(
-            HashPrefix::leafNode, makeSlice(item_->peekData()), item_->key())};
+        hash_ = SHAMapHash{
+            sha512Half(HashPrefix::leafNode, item_->slice(), item_->key())};
     }
 
     void
     serializeForWire(Serializer& s) const final override
     {
-        s.addRaw(item_->peekData());
+        s.addRaw(item_->slice());
         s.addBitString(item_->key());
         s.add8(wireTypeAccountState);
     }
@@ -83,7 +83,7 @@ public:
     serializeWithPrefix(Serializer& s) const final override
     {
         s.add32(HashPrefix::leafNode);
-        s.addRaw(item_->peekData());
+        s.addRaw(item_->slice());
         s.addBitString(item_->key());
     }
 };

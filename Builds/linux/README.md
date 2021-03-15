@@ -22,6 +22,11 @@ $ apt-get update
 $ apt-get install -y gcc g++ wget git cmake pkg-config protobuf-compiler libprotobuf-dev libssl-dev
 ```
 
+To build the software in reporting mode, install these additional dependencies:
+```
+$ apt-get install -y autoconf flex bison
+```
+
 Advanced users can choose to install newer versions of gcc, or the clang compiler.
 At this time, rippled only supports protobuf version 2. Using version 3 of 
 protobuf will give errors.

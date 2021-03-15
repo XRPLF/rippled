@@ -159,7 +159,7 @@ doBookOffers(RPC::JsonContext& context)
             rpcDST_ISR_MALFORMED,
             "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
 
-    boost::optional<AccountID> takerID;
+    std::optional<AccountID> takerID;
     if (context.params.isMember(jss::taker))
     {
         if (!context.params[jss::taker].isString())

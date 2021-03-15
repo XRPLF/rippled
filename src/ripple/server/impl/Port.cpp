@@ -72,7 +72,7 @@ populate(
     Section const& section,
     std::string const& field,
     std::ostream& log,
-    boost::optional<std::vector<beast::IP::Address>>& ips,
+    std::optional<std::vector<beast::IP::Address>>& ips,
     bool allowAllIps,
     std::vector<beast::IP::Address> const& admin_ip)
 {
@@ -240,7 +240,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
         log,
         port.secure_gateway_ip,
         false,
-        port.admin_ip.get_value_or({}));
+        port.admin_ip.value_or(std::vector<beast::IP::Address>{}));
 
     set(port.user, "user", section);
     set(port.password, "password", section);

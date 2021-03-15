@@ -25,7 +25,7 @@ std::string
 getFileContents(
     boost::system::error_code& ec,
     boost::filesystem::path const& sourcePath,
-    boost::optional<std::size_t> maxSize)
+    std::optional<std::size_t> maxSize)
 {
     using namespace boost::filesystem;
     using namespace boost::system::errc;

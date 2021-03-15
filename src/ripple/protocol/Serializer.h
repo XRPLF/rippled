@@ -102,6 +102,8 @@ public:
     int
     addRaw(Blob const& vector);
     int
+    addRaw(Slice slice);
+    int
     addRaw(const void* ptr, int len);
     int
     addRaw(const Serializer& s);

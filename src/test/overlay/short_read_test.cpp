@@ -20,15 +20,17 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/envconfig.h>
+
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
+
 #include <cassert>
 #include <condition_variable>
 #include <functional>
 #include <memory>
-#include <test/jtx/envconfig.h>
+#include <optional>
 #include <thread>
 #include <utility>
 
@@ -60,7 +62,7 @@ private:
     using address_type = boost::asio::ip::address;
 
     io_context_type io_context_;
-    boost::optional<boost::asio::executor_work_guard<boost::asio::executor>>
+    std::optional<boost::asio::executor_work_guard<boost::asio::executor>>
         work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
@@ -639,7 +641,7 @@ public:
 
     ~short_read_test()
     {
-        work_ = boost::none;
+        work_.reset();
         thread_.join();
     }
 

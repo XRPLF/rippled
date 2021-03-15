@@ -125,7 +125,7 @@ LedgerOracle::accept(
     return Ledger(it->second, &(it->first));
 }
 
-boost::optional<Ledger>
+std::optional<Ledger>
 LedgerOracle::lookup(Ledger::ID const& id) const
 {
     auto const it = instances_.right.find(id);
@@ -133,7 +133,7 @@ LedgerOracle::lookup(Ledger::ID const& id) const
     {
         return Ledger(it->first, &(it->second));
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 std::size_t

@@ -541,7 +541,7 @@ PayChanClaim::doApply()
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
-        (*slep)[~sfExpiration] = boost::none;
+        (*slep)[~sfExpiration] = std::nullopt;
         ctx_.view().update(slep);
     }
 
