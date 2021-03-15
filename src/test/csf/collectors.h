@@ -20,12 +20,13 @@
 #define RIPPLE_TEST_CSF_COLLECTORS_H_INCLUDED
 
 #include <ripple/basics/UnorderedContainers.h>
-#include <boost/optional.hpp>
-#include <chrono>
-#include <ostream>
 #include <test/csf/Histogram.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/events.h>
+
+#include <chrono>
+#include <optional>
+#include <ostream>
 #include <tuple>
 
 namespace ripple {
@@ -180,8 +181,8 @@ struct TxCollector
     {
         Tx tx;
         SimTime submitted;
-        boost::optional<SimTime> accepted;
-        boost::optional<SimTime> validated;
+        std::optional<SimTime> accepted;
+        std::optional<SimTime> validated;
 
         Tracker(Tx tx_, SimTime submitted_) : tx{tx_}, submitted{submitted_}
         {
@@ -453,7 +454,7 @@ struct LedgerCollector
     struct Tracker
     {
         SimTime accepted;
-        boost::optional<SimTime> fullyValidated;
+        std::optional<SimTime> fullyValidated;
 
         Tracker(SimTime accepted_) : accepted{accepted_}
         {

@@ -28,8 +28,8 @@
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/STObject.h>
-#include <boost/optional.hpp>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -48,7 +48,7 @@ struct STExchange<STInteger<U>, T>
     using value_type = U;
 
     static void
-    get(boost::optional<T>& t, STInteger<U> const& u)
+    get(std::optional<T>& t, STInteger<U> const& u)
     {
         t = u.value();
     }
@@ -68,7 +68,7 @@ struct STExchange<STBlob, Slice>
     using value_type = Slice;
 
     static void
-    get(boost::optional<value_type>& t, STBlob const& u)
+    get(std::optional<value_type>& t, STBlob const& u)
     {
         t.emplace(u.data(), u.size());
     }
@@ -88,7 +88,7 @@ struct STExchange<STBlob, Buffer>
     using value_type = Buffer;
 
     static void
-    get(boost::optional<Buffer>& t, STBlob const& u)
+    get(std::optional<Buffer>& t, STBlob const& u)
     {
         t.emplace(u.data(), u.size());
     }
@@ -111,10 +111,10 @@ struct STExchange<STBlob, Buffer>
 /** Return the value of a field in an STObject as a given type. */
 /** @{ */
 template <class T, class U>
-boost::optional<T>
+std::optional<T>
 get(STObject const& st, TypedField<U> const& f)
 {
-    boost::optional<T> t;
+    std::optional<T> t;
     STBase const* const b = st.peekAtPField(f);
     if (!b)
         return t;
@@ -130,7 +130,7 @@ get(STObject const& st, TypedField<U> const& f)
 }
 
 template <class U>
-boost::optional<typename STExchange<U, typename U::value_type>::value_type>
+std::optional<typename STExchange<U, typename U::value_type>::value_type>
 get(STObject const& st, TypedField<U> const& f)
 {
     return get<typename U::value_type>(st, f);

@@ -47,7 +47,7 @@ namespace detail {
 void
 stpath_append_one(STPath& st, jtx::Account const& account)
 {
-    st.push_back(STPathElement({account.id(), boost::none, boost::none}));
+    st.push_back(STPathElement({account.id(), std::nullopt, std::nullopt}));
 }
 
 template <class T>
@@ -60,7 +60,7 @@ stpath_append_one(STPath& st, T const& t)
 void
 stpath_append_one(STPath& st, jtx::IOU const& iou)
 {
-    st.push_back(STPathElement({iou.account.id(), iou.currency, boost::none}));
+    st.push_back(STPathElement({iou.account.id(), iou.currency, std::nullopt}));
 }
 
 void
@@ -72,7 +72,7 @@ stpath_append_one(STPath& st, STPathElement const& pe)
 void
 stpath_append_one(STPath& st, jtx::BookSpec const& book)
 {
-    st.push_back(STPathElement({boost::none, book.currency, book.account}));
+    st.push_back(STPathElement({std::nullopt, book.currency, book.account}));
 }
 
 template <class T, class... Args>
@@ -207,8 +207,8 @@ public:
         jtx::Account const& src,
         jtx::Account const& dst,
         STAmount const& saDstAmount,
-        boost::optional<STAmount> const& saSendMax = boost::none,
-        boost::optional<Currency> const& saSrcCurrency = boost::none)
+        std::optional<STAmount> const& saSendMax = std::nullopt,
+        std::optional<Currency> const& saSrcCurrency = std::nullopt)
     {
         using namespace jtx;
 
@@ -268,8 +268,8 @@ public:
         jtx::Account const& src,
         jtx::Account const& dst,
         STAmount const& saDstAmount,
-        boost::optional<STAmount> const& saSendMax = boost::none,
-        boost::optional<Currency> const& saSrcCurrency = boost::none)
+        std::optional<STAmount> const& saSendMax = std::nullopt,
+        std::optional<Currency> const& saSrcCurrency = std::nullopt)
     {
         Json::Value result = find_paths_request(
             env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
@@ -516,14 +516,14 @@ public:
                 "alice",
                 "bob",
                 Account("bob")["AUD"](-1),
-                boost::optional<STAmount>(XRP(100000000)));
+                std::optional<STAmount>(XRP(100000000)));
             BEAST_EXPECT(st.empty());
             std::tie(st, sa, da) = find_paths(
                 env,
                 "alice",
                 "bob",
                 Account("bob")["USD"](-1),
-                boost::optional<STAmount>(XRP(100000000)));
+                std::optional<STAmount>(XRP(100000000)));
             BEAST_EXPECT(sa == XRP(100));
             BEAST_EXPECT(equal(da, Account("bob")["USD"](100)));
         }
@@ -970,7 +970,7 @@ public:
         {
             auto const& send_amt = XRP(10);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, boost::none, xrpCurrency());
+                find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(st.empty());
         }
@@ -980,7 +980,7 @@ public:
             // does not exist.
             auto const& send_amt = XRP(200);
             std::tie(st, sa, da) = find_paths(
-                env, A1, Account{"A0"}, send_amt, boost::none, xrpCurrency());
+                env, A1, Account{"A0"}, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(st.empty());
         }
@@ -988,7 +988,7 @@ public:
         {
             auto const& send_amt = G3["ABC"](10);
             std::tie(st, sa, da) =
-                find_paths(env, A2, G3, send_amt, boost::none, xrpCurrency());
+                find_paths(env, A2, G3, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, XRP(100)));
             BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]))));
@@ -997,7 +997,7 @@ public:
         {
             auto const& send_amt = A2["ABC"](1);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A2, send_amt, boost::none, xrpCurrency());
+                find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, XRP(10)));
             BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3)));
@@ -1006,7 +1006,7 @@ public:
         {
             auto const& send_amt = A3["ABC"](1);
             std::tie(st, sa, da) =
-                find_paths(env, A1, A3, send_amt, boost::none, xrpCurrency());
+                find_paths(env, A1, A3, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, XRP(10)));
             BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3, A2)));
@@ -1044,7 +1044,7 @@ public:
 
         auto const& send_amt = XRP(10);
         std::tie(st, sa, da) =
-            find_paths(env, A1, A2, send_amt, boost::none, A2["ABC"].currency);
+            find_paths(env, A1, A2, send_amt, std::nullopt, A2["ABC"].currency);
         BEAST_EXPECT(equal(da, send_amt));
         BEAST_EXPECT(equal(sa, A1["ABC"](1)));
         BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
@@ -1087,7 +1087,7 @@ public:
         {
             auto const& send_amt = A2["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A1, A2, send_amt, boost::none, A2["HKD"].currency);
+                env, A1, A2, send_amt, std::nullopt, A2["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A1["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(G1BS, M1, G2SW)));
@@ -1096,7 +1096,7 @@ public:
         {
             auto const& send_amt = A1["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A2, A1, send_amt, boost::none, A1["HKD"].currency);
+                env, A2, A1, send_amt, std::nullopt, A1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A2["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(G2SW, M1, G1BS)));
@@ -1105,7 +1105,7 @@ public:
         {
             auto const& send_amt = A2["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, G1BS, A2, send_amt, boost::none, A1["HKD"].currency);
+                env, G1BS, A2, send_amt, std::nullopt, A1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, G1BS["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(M1, G2SW)));
@@ -1114,7 +1114,7 @@ public:
         {
             auto const& send_amt = M1["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, M1, G1BS, send_amt, boost::none, A1["HKD"].currency);
+                env, M1, G1BS, send_amt, std::nullopt, A1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, M1["HKD"](10)));
             BEAST_EXPECT(st.empty());
@@ -1123,7 +1123,7 @@ public:
         {
             auto const& send_amt = A1["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, G2SW, A1, send_amt, boost::none, A1["HKD"].currency);
+                env, G2SW, A1, send_amt, std::nullopt, A1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, G2SW["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(M1, G1BS)));
@@ -1182,7 +1182,7 @@ public:
             //  Source -> Destination (repay source issuer)
             auto const& send_amt = G1["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A1, G1, send_amt, boost::none, G1["HKD"].currency);
+                env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency);
             BEAST_EXPECT(st.empty());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A1["HKD"](10)));
@@ -1193,7 +1193,7 @@ public:
             //  Source -> Destination (repay destination issuer)
             auto const& send_amt = A1["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A1, G1, send_amt, boost::none, G1["HKD"].currency);
+                env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency);
             BEAST_EXPECT(st.empty());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A1["HKD"](10)));
@@ -1204,7 +1204,7 @@ public:
             //  Source -> AC -> Destination
             auto const& send_amt = A3["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A1, A3, send_amt, boost::none, G1["HKD"].currency);
+                env, A1, A3, send_amt, std::nullopt, G1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A1["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(G1)));
@@ -1215,7 +1215,7 @@ public:
             //  Source -> OB -> Destination
             auto const& send_amt = G2["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, G1, G2, send_amt, boost::none, G1["HKD"].currency);
+                env, G1, G2, send_amt, std::nullopt, G1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, G1["HKD"](10)));
             BEAST_EXPECT(same(
@@ -1231,7 +1231,7 @@ public:
             //  Source -> AC -> OB -> Destination
             auto const& send_amt = G2["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A1, G2, send_amt, boost::none, G1["HKD"].currency);
+                env, A1, G2, send_amt, std::nullopt, G1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A1["HKD"](10)));
             BEAST_EXPECT(same(
@@ -1247,7 +1247,7 @@ public:
             //  Source -> AC -> OB to XRP -> OB from XRP -> AC -> Destination
             auto const& send_amt = A2["HKD"](10);
             std::tie(st, sa, da) = find_paths(
-                env, A1, A2, send_amt, boost::none, G1["HKD"].currency);
+                env, A1, A2, send_amt, std::nullopt, G1["HKD"].currency);
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, A1["HKD"](10)));
             BEAST_EXPECT(same(
@@ -1297,7 +1297,7 @@ public:
         STPathSet st;
         STAmount sa, da;
         std::tie(st, sa, da) =
-            find_paths(env, G1, A2, send_amt, boost::none, G1["HKD"].currency);
+            find_paths(env, G1, A2, send_amt, std::nullopt, G1["HKD"].currency);
         BEAST_EXPECT(equal(da, send_amt));
         BEAST_EXPECT(equal(sa, G1["HKD"](10)));
         BEAST_EXPECT(same(st, stpath(M1, G2), stpath(IPE(G2["HKD"]), G2)));

@@ -440,7 +440,7 @@ preclaim(
     Application& app,
     OpenView const& view)
 {
-    boost::optional<PreclaimContext const> ctx;
+    std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
         auto secondFlight = preflight(

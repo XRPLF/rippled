@@ -37,7 +37,7 @@
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/messages.h>
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <mutex>
 
@@ -178,7 +178,7 @@ public:
     getHashBySeq(std::uint32_t index);
 
     /** Walk to a ledger's hash using the skip list */
-    boost::optional<LedgerHash>
+    std::optional<LedgerHash>
     walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason);
 
     /** Walk the chain of ledger hashes to determine the hash of the
@@ -188,7 +188,7 @@ public:
         from the reference ledger or any prior ledger are not present
         in the node store.
     */
-    boost::optional<LedgerHash>
+    std::optional<LedgerHash>
     walkHashBySeq(
         std::uint32_t index,
         std::shared_ptr<ReadView const> const& referenceLedger,
@@ -203,10 +203,10 @@ public:
     void
     setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV);
 
-    boost::optional<NetClock::time_point>
+    std::optional<NetClock::time_point>
     getCloseTimeBySeq(LedgerIndex ledgerIndex);
 
-    boost::optional<NetClock::time_point>
+    std::optional<NetClock::time_point>
     getCloseTimeByHash(LedgerHash const& ledgerHash, LedgerIndex ledgerIndex);
 
     void
@@ -276,7 +276,7 @@ public:
     void
     addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data);
 
-    boost::optional<Blob>
+    std::optional<Blob>
     getFetchPack(uint256 const& hash) override;
 
     void
@@ -297,7 +297,7 @@ public:
     }
 
     // Returns the minimum ledger sequence in SQL database, if any.
-    boost::optional<LedgerIndex>
+    std::optional<LedgerIndex>
     minSqlSeq();
 
 private:
@@ -312,7 +312,7 @@ private:
     void
     getFetchPack(LedgerIndex missing, InboundLedger::Reason reason);
 
-    boost::optional<LedgerHash>
+    std::optional<LedgerHash>
     getLedgerHashForHistory(LedgerIndex index, InboundLedger::Reason reason);
 
     std::size_t

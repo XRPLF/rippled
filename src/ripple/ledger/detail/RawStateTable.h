@@ -68,11 +68,11 @@ public:
     bool
     exists(ReadView const& base, Keylet const& k) const;
 
-    boost::optional<key_type>
+    std::optional<key_type>
     succ(
         ReadView const& base,
         key_type const& key,
-        boost::optional<key_type> const& last) const;
+        std::optional<key_type> const& last) const;
 
     void
     erase(std::shared_ptr<SLE> const& sle);

@@ -371,7 +371,8 @@ Ledger::setAccepted(
 bool
 Ledger::addSLE(SLE const& sle)
 {
-    SHAMapItem item(sle.key(), sle.getSerializer());
+    auto const s = sle.getSerializer();
+    SHAMapItem item(sle.key(), s.slice());
     return stateMap_->addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(item));
 }
 
@@ -416,14 +417,14 @@ Ledger::exists(uint256 const& key) const
     return stateMap_->hasItem(key);
 }
 
-boost::optional<uint256>
-Ledger::succ(uint256 const& key, boost::optional<uint256> const& last) const
+std::optional<uint256>
+Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 {
     auto item = stateMap_->upper_bound(key);
     if (item == stateMap_->end())
-        return boost::none;
+        return std::nullopt;
     if (last && item->key() >= last)
-        return boost::none;
+        return std::nullopt;
     return item->key();
 }
 
@@ -438,8 +439,7 @@ Ledger::read(Keylet const& k) const
     auto const& item = stateMap_->peekItem(k.key);
     if (!item)
         return nullptr;
-    auto sle = std::make_shared<SLE>(
-        SerialIter{item->data(), item->size()}, item->key());
+    auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key());
     if (!k.check(*sle))
         return nullptr;
     return sle;
@@ -500,13 +500,13 @@ Ledger::txRead(key_type const& key) const -> tx_type
 }
 
 auto
-Ledger::digest(key_type const& key) const -> boost::optional<digest_type>
+Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 {
     SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
     //        from the NodeStore needlessly.
     if (!stateMap_->peekItem(key, digest))
-        return boost::none;
+        return std::nullopt;
     return digest.as_uint256();
 }
 
@@ -533,7 +533,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_->addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), std::move(ss))))
+            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
         LogicError("Ledger::rawInsert: key already exists");
 }
 
@@ -544,7 +544,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_->updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), std::move(ss))))
+            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
         LogicError("Ledger::rawReplace: key not found");
 }
 
@@ -562,7 +562,7 @@ Ledger::rawTxInsert(
     s.addVL(metaData->peekData());
     if (!txMap().addGiveItem(
             SHAMapNodeType::tnTRANSACTION_MD,
-            std::make_shared<SHAMapItem const>(key, std::move(s))))
+            std::make_shared<SHAMapItem const>(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
 }
 
@@ -578,9 +578,8 @@ Ledger::rawTxInsertWithHash(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    auto item = std::make_shared<SHAMapItem const>(key, std::move(s));
-    auto hash = sha512Half(
-        HashPrefix::txNode, makeSlice(item->peekData()), item->key());
+    auto item = std::make_shared<SHAMapItem const>(key, s.slice());
+    auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
     if (!txMap().addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
         LogicError("duplicate_tx: " + to_string(key));
 
@@ -647,8 +646,7 @@ Ledger::peek(Keylet const& k) const
     auto const& value = stateMap_->peekItem(k.key);
     if (!value)
         return nullptr;
-    auto sle = std::make_shared<SLE>(
-        SerialIter{value->data(), value->size()}, value->key());
+    auto sle = std::make_shared<SLE>(SerialIter{value->slice()}, value->key());
     if (!k.check(*sle))
         return nullptr;
     return sle;
@@ -680,7 +678,7 @@ Ledger::negativeUNL() const
     return negUnl;
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 Ledger::validatorToDisable() const
 {
     if (auto sle = read(keylet::negativeUNL());
@@ -692,10 +690,10 @@ Ledger::validatorToDisable() const
             return PublicKey(s);
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 Ledger::validatorToReEnable() const
 {
     if (auto sle = read(keylet::negativeUNL());
@@ -707,7 +705,7 @@ Ledger::validatorToReEnable() const
             return PublicKey(s);
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 void
@@ -1205,6 +1203,7 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app, bool acquire)
 
     auto db = app.getLedgerDB().checkoutDb();
 
+    // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> sLedgerHash, sPrevHash, sAccountHash,
         sTransHash;
     boost::optional<std::uint64_t> totDrops, closingTime, prevClosingTime,
@@ -1512,8 +1511,6 @@ loadByHashPostgres(uint256 const& ledgerHash, Application& app)
 static uint256
 getHashByIndexPostgres(std::uint32_t ledgerIndex, Application& app)
 {
-    uint256 ret;
-
     auto infos = loadLedgerInfosPostgres(ledgerIndex, app);
     assert(infos.size() <= 1);
     if (infos.size())
@@ -1619,6 +1616,7 @@ getHashByIndex(std::uint32_t ledgerIndex, Application& app)
     {
         auto db = app.getLedgerDB().checkoutDb();
 
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::string> lh;
         *db << sql, soci::into(lh);
 
@@ -1646,6 +1644,7 @@ getHashesByIndex(
             ledgerIndex, ledgerHash, parentHash, app);
     auto db = app.getLedgerDB().checkoutDb();
 
+    // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> lhO, phO;
 
     *db << "SELECT LedgerHash,PrevHash FROM Ledgers "
@@ -1680,6 +1679,8 @@ getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app)
 
     std::uint64_t ls;
     std::string lh;
+
+    // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> ph;
     soci::statement st =
         (db->prepare << sql, soci::into(ls), soci::into(lh), soci::into(ph));

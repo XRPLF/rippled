@@ -121,7 +121,7 @@ OverlayImpl::OverlayImpl(
     beast::insight::Collector::ptr const& collector)
     : app_(app)
     , io_service_(io_service)
-    , work_(boost::in_place(std::ref(io_service_)))
+    , work_(std::in_place, std::ref(io_service_))
     , strand_(io_service_)
     , setup_(setup)
     , journal_(app_.journal("Overlay"))
@@ -1289,7 +1289,7 @@ OverlayImpl::stopChildren()
         std::lock_guard lock(mutex_);
         if (!work_)
             return;
-        work_ = boost::none;
+        work_ = std::nullopt;
 
         children.reserve(list_.size());
         for (auto const& element : list_)

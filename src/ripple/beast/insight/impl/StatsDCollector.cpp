@@ -26,12 +26,12 @@
 #include <ripple/beast/insight/StatsDCollector.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/optional.hpp>
 #include <cassert>
 #include <climits>
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <thread>
@@ -224,7 +224,7 @@ private:
     IP::Endpoint m_address;
     std::string m_prefix;
     boost::asio::io_service m_io_service;
-    boost::optional<boost::asio::io_service::work> m_work;
+    std::optional<boost::asio::io_service::work> m_work;
     boost::asio::io_service::strand m_strand;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     boost::asio::ip::udp::socket m_socket;
@@ -262,7 +262,7 @@ public:
         boost::system::error_code ec;
         m_timer.cancel(ec);
 
-        m_work = boost::none;
+        m_work.reset();
         m_thread.join();
     }
 

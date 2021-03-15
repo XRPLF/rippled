@@ -81,6 +81,7 @@
 #include <iostream>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <variant>
 
@@ -176,7 +177,7 @@ public:
     std::unique_ptr<SHAMapStore> m_shaMapStore;
     PendingSaves pendingSaves_;
     AccountIDCache accountIDCache_;
-    boost::optional<OpenLedger> openLedger_;
+    std::optional<OpenLedger> openLedger_;
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
@@ -992,7 +993,7 @@ public:
             std::unique_ptr<NodeStore::Database> source =
                 NodeStore::Manager::instance().make_Database(
                     megabytes(config_->getValueFor(
-                        SizedItem::burstSize, boost::none)),
+                        SizedItem::burstSize, std::nullopt)),
                     dummyScheduler,
                     0,
                     config_->section(ConfigSection::importNodeDatabase()),
@@ -1209,7 +1210,7 @@ public:
                 DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config_);
                 boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
                 boost::system::error_code ec;
-                boost::optional<std::uint64_t> dbSize =
+                std::optional<std::uint64_t> dbSize =
                     boost::filesystem::file_size(dbPath, ec);
                 if (ec)
                 {
@@ -2281,6 +2282,7 @@ ApplicationImp::setMaxDisallowedLedger()
     }
     else
     {
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<LedgerIndex> seq;
         {
             auto db = getLedgerDB().checkoutDb();

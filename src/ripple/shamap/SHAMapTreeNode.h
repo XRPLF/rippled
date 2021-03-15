@@ -23,6 +23,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 

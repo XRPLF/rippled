@@ -21,10 +21,10 @@
 #define RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
 
 #include <ripple/basics/Log.h>
-#include <boost/optional.hpp>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <type_traits>
 
 namespace ripple {
@@ -183,15 +183,15 @@ public:
     /** Wrap the passed closure with a reference counter.
 
         @param closure Closure that accepts Args_t parameters and returns Ret_t.
-        @return If join() has been called returns boost::none.  Otherwise
-                returns a boost::optional that wraps closure with a
+        @return If join() has been called returns std::nullopt.  Otherwise
+                returns a std::optional that wraps closure with a
                 reference counter.
     */
     template <class Closure>
-    boost::optional<Substitute<Closure>>
+    std::optional<Substitute<Closure>>
     wrap(Closure&& closure)
     {
-        boost::optional<Substitute<Closure>> ret;
+        std::optional<Substitute<Closure>> ret;
 
         std::lock_guard lock{mutex_};
         if (!waitForClosures_)

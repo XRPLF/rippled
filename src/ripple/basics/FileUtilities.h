@@ -21,8 +21,9 @@
 #define RIPPLE_BASICS_FILEUTILITIES_H_INCLUDED
 
 #include <boost/filesystem.hpp>
-#include <boost/optional.hpp>
 #include <boost/system/error_code.hpp>
+
+#include <optional>
 
 namespace ripple {
 
@@ -30,7 +31,7 @@ std::string
 getFileContents(
     boost::system::error_code& ec,
     boost::filesystem::path const& sourcePath,
-    boost::optional<std::size_t> maxSize = boost::none);
+    std::optional<std::size_t> maxSize = std::nullopt);
 
 void
 writeFileContents(

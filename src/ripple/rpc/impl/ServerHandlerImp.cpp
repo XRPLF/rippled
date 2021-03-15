@@ -45,7 +45,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
-#include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <boost/type_traits.hpp>
 #include <algorithm>

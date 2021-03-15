@@ -821,7 +821,7 @@ Config::getDebugLogFile() const
 }
 
 int
-Config::getValueFor(SizedItem item, boost::optional<std::size_t> node) const
+Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
     assert(index < sizedItems.size());

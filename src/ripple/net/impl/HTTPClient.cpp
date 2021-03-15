@@ -27,12 +27,12 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/optional.hpp>
 #include <boost/regex.hpp>
+#include <optional>
 
 namespace ripple {
 
-boost::optional<HTTPClientSSLContext> httpClientSSLContext;
+static std::optional<HTTPClientSSLContext> httpClientSSLContext;
 
 void
 HTTPClient::initializeSSLContext(Config const& config, beast::Journal j)

@@ -27,7 +27,6 @@
 #include <ripple/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
-#include <boost/optional.hpp>
 
 #include <numeric>
 #include <sstream>
@@ -64,7 +63,7 @@ protected:
         }
     };
 
-    boost::optional<Cache> cache_;
+    std::optional<Cache> cache_;
 
     // Compute the maximum value that can flow from src->dst at
     // the best available quality.
@@ -120,29 +119,29 @@ public:
         return currency_;
     }
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cachedIn() const override
     {
         if (!cache_)
-            return boost::none;
+            return std::nullopt;
         return EitherAmount(cache_->in);
     }
 
-    boost::optional<EitherAmount>
+    std::optional<EitherAmount>
     cachedOut() const override
     {
         if (!cache_)
-            return boost::none;
+            return std::nullopt;
         return EitherAmount(cache_->out);
     }
 
-    boost::optional<AccountID>
+    std::optional<AccountID>
     directStepSrcAcct() const override
     {
         return src_;
     }
 
-    boost::optional<std::pair<AccountID, AccountID>>
+    std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         return std::make_pair(src_, dst_);
@@ -154,7 +153,7 @@ public:
     std::uint32_t
     lineQualityIn(ReadView const& v) const override;
 
-    std::pair<boost::optional<Quality>, DebtDirection>
+    std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection dir) const override;
 
     std::pair<IOUAmount, IOUAmount>
@@ -831,7 +830,7 @@ DirectStepI<TDerived>::lineQualityIn(ReadView const& v) const
 }
 
 template <class TDerived>
-std::pair<boost::optional<Quality>, DebtDirection>
+std::pair<std::optional<Quality>, DebtDirection>
 DirectStepI<TDerived>::qualityUpperBound(
     ReadView const& v,
     DebtDirection prevStepDir) const

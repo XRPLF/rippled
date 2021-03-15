@@ -65,7 +65,7 @@ public:
     Message(
         ::google::protobuf::Message const& message,
         int type,
-        boost::optional<PublicKey> const& validator = {});
+        std::optional<PublicKey> const& validator = {});
 
     /** Retrieve the size of the packed but uncompressed message data. */
     std::size_t
@@ -94,7 +94,7 @@ public:
     }
 
     /** Get the validator's key */
-    boost::optional<PublicKey> const&
+    std::optional<PublicKey> const&
     getValidatorKey() const
     {
         return validatorKey_;
@@ -105,7 +105,7 @@ private:
     std::vector<uint8_t> bufferCompressed_;
     std::size_t category_;
     std::once_flag once_flag_;
-    boost::optional<PublicKey> validatorKey_;
+    std::optional<PublicKey> validatorKey_;
 
     /** Set the payload header
      * @param in Pointer to the payload

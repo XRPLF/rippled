@@ -23,7 +23,7 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <ostream>
 #include <string>
 
@@ -115,9 +115,10 @@ enum TEMcodes : TERUnderlyingType {
     temCANNOT_PREAUTH_SELF,
     temINVALID_COUNT,
 
-    // An intermediate result used internally, should never be returned.
-    temUNCERTAIN,
-    temUNKNOWN,
+    temUNCERTAIN,  // An internal intermediate result; should never be returned.
+    temUNKNOWN,    // An internal intermediate result; should never be returned.
+
+    temSEQ_AND_TICKET,
 };
 
 //------------------------------------------------------------------------------
@@ -597,7 +598,7 @@ transToken(TER code);
 std::string
 transHuman(TER code);
 
-boost::optional<TER>
+std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace ripple

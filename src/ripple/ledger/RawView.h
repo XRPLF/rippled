@@ -23,7 +23,6 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/Serializer.h>
-#include <boost/optional.hpp>
 #include <cstdint>
 #include <memory>
 #include <utility>

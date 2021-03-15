@@ -88,6 +88,21 @@ public:
     virtual bool
     isOpen() = 0;
 
+    /** Open the backend.
+        @param createIfMissing Create the database files if necessary.
+        @param appType Deterministic appType used to create a backend.
+        @param uid Deterministic uid used to create a backend.
+        @param salt Deterministic salt used to create a backend.
+        @throws std::runtime_error is function is called not for NuDB backend.
+    */
+    virtual void
+    open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)
+    {
+        Throw<std::runtime_error>(
+            "Deterministic appType/uid/salt not supported by backend " +
+            getName());
+    }
+
     /** Close the backend.
         This allows the caller to catch exceptions.
     */

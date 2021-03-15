@@ -25,6 +25,7 @@
 #include <ripple/app/ledger/impl/LedgerDeltaAcquire.h>
 #include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
 #include <ripple/app/ledger/impl/SkipListAcquire.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <test/jtx.h>
@@ -245,7 +246,7 @@ public:
             return true;
         return false;
     }
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};
@@ -1272,7 +1273,11 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
         auto skipList = net.client.findSkipListAcquire(finalHash);
-        auto item = std::make_shared<SHAMapItem>(uint256(12345), Blob(55, 55));
+
+        std::uint8_t payload[55] = {
+            0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
+        auto item = std::make_shared<SHAMapItem>(
+            uint256(12345), Slice(payload, sizeof(payload)));
         skipList->processData(l->seq(), item);
 
         std::vector<TaskStatus> deltaStatuses;

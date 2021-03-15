@@ -30,7 +30,6 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -112,7 +111,7 @@ std::variant<
     TxSearched>
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
-    return load(id, app, boost::none, ec);
+    return load(id, app, std::nullopt, ec);
 }
 
 std::variant<
@@ -124,7 +123,7 @@ Transaction::load(
     ClosedInterval<uint32_t> const& range,
     error_code_i& ec)
 {
-    using op = boost::optional<ClosedInterval<uint32_t>>;
+    using op = std::optional<ClosedInterval<uint32_t>>;
 
     return load(id, app, op{range}, ec);
 }
@@ -211,7 +210,7 @@ std::variant<
 Transaction::load(
     uint256 const& id,
     Application& app,
-    boost::optional<ClosedInterval<uint32_t>> const& range,
+    std::optional<ClosedInterval<uint32_t>> const& range,
     error_code_i& ec)
 {
     std::string sql =
@@ -221,6 +220,7 @@ Transaction::load(
     sql.append(to_string(id));
     sql.append("';");
 
+    // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::uint64_t> ledgerSeq;
     boost::optional<std::string> status;
     Blob rawTxn, rawMeta;

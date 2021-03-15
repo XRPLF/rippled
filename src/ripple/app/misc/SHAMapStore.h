@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace ripple {
 
@@ -95,7 +95,7 @@ public:
         @return The minimum ledger sequence to keep online based on the
             description above. If not set, then an unseated optional.
     */
-    virtual boost::optional<LedgerIndex>
+    virtual std::optional<LedgerIndex>
     minimumOnline() const = 0;
 };
 

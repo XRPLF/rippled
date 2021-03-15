@@ -22,7 +22,7 @@
 
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
-#include <boost/optional.hpp>
+#include <optional>
 
 /** Callback for filtering SHAMap during sync. */
 namespace ripple {
@@ -45,7 +45,7 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const = 0;
 
-    virtual boost::optional<Blob>
+    virtual std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 

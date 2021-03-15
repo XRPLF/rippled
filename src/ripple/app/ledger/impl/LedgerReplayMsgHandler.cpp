@@ -264,8 +264,8 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             STObject meta(metaSit, sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
-            auto item = std::make_shared<SHAMapItem const>(
-                tid, std::move(shaMapItemData));
+            auto item =
+                std::make_shared<SHAMapItem const>(tid, shaMapItemData.slice());
             if (!item ||
                 !txMap.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, item))
             {

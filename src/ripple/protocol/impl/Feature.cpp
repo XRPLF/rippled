@@ -48,12 +48,12 @@ detail::FeatureCollections::FeatureCollections()
     }
 }
 
-boost::optional<uint256>
+std::optional<uint256>
 detail::FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     auto const i = nameToFeature.find(name);
     if (i == nameToFeature.end())
-        return boost::none;
+        return std::nullopt;
     return i->second;
 }
 
@@ -141,7 +141,7 @@ detail::supportedAmendments()
 
 //------------------------------------------------------------------------------
 
-boost::optional<uint256>
+std::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
     return featureCollections.getRegisteredFeature(name);

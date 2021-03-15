@@ -22,9 +22,9 @@
 
 #include <ripple/basics/base_uint.h>
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
 #include <array>
 #include <bitset>
+#include <optional>
 #include <string>
 
 /**
@@ -131,7 +131,7 @@ public:
         return sizeof(featureNames) / sizeof(featureNames[0]);
     }
 
-    boost::optional<uint256>
+    std::optional<uint256>
     getRegisteredFeature(std::string const& name) const;
 
     std::size_t
@@ -147,7 +147,7 @@ supportedAmendments();
 
 }  // namespace detail
 
-boost::optional<uint256>
+std::optional<uint256>
 getRegisteredFeature(std::string const& name);
 
 size_t

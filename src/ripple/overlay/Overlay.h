@@ -32,9 +32,9 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/optional.hpp>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 namespace boost {
@@ -222,7 +222,7 @@ public:
         @return The numerical identifier configured by the administrator of the
                 server. An unseated optional, otherwise.
     */
-    virtual boost::optional<std::uint32_t>
+    virtual std::optional<std::uint32_t>
     networkID() const = 0;
 };
 

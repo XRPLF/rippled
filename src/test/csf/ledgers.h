@@ -25,7 +25,7 @@
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_value.h>
 #include <boost/bimap/bimap.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include <set>
 #include <test/csf/Tx.h>
 
@@ -256,7 +256,7 @@ public:
     LedgerOracle();
 
     /** Find the ledger with the given ID */
-    boost::optional<Ledger>
+    std::optional<Ledger>
     lookup(Ledger::ID const& id) const;
 
     /** Accept the given txs and generate a new ledger

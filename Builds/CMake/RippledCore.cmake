@@ -19,6 +19,7 @@ endif ()
     TODO: review these sources for removal or replacement
 #]===============================]
 target_sources (xrpl_core PRIVATE
+  src/ripple/beast/clock/basic_seconds_clock.cpp
   src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
   src/ripple/beast/hash/impl/xxhash.cpp
@@ -110,11 +111,8 @@ target_sources (xrpl_core PRIVATE
     main sources:
       subdir: crypto
   #]===============================]
-  src/ripple/crypto/impl/GenerateDeterministicKey.cpp
   src/ripple/crypto/impl/RFC1751.cpp
   src/ripple/crypto/impl/csprng.cpp
-  src/ripple/crypto/impl/ec_key.cpp
-  src/ripple/crypto/impl/openssl.cpp
   src/ripple/crypto/impl/secure_erase.cpp)
 
 add_library (Ripple::xrpl_core ALIAS xrpl_core)
@@ -173,16 +171,10 @@ install (
   DESTINATION include/ripple/basics)
 install (
   FILES
-    src/ripple/crypto/GenerateDeterministicKey.h
     src/ripple/crypto/RFC1751.h
     src/ripple/crypto/csprng.h
     src/ripple/crypto/secure_erase.h
   DESTINATION include/ripple/crypto)
-install (
-  FILES
-    src/ripple/crypto/impl/ec_key.h
-    src/ripple/crypto/impl/openssl.h
-  DESTINATION include/ripple/crypto/impl)
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
@@ -515,6 +507,7 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DatabaseNodeImp.cpp
   src/ripple/nodestore/impl/DatabaseRotatingImp.cpp
   src/ripple/nodestore/impl/DatabaseShardImp.cpp
+  src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
   src/ripple/nodestore/impl/EncodedBlob.cpp
@@ -647,7 +640,6 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMap.cpp
   src/ripple/shamap/impl/SHAMapDelta.cpp
   src/ripple/shamap/impl/SHAMapInnerNode.cpp
-  src/ripple/shamap/impl/SHAMapItem.cpp
   src/ripple/shamap/impl/SHAMapLeafNode.cpp
   src/ripple/shamap/impl/SHAMapNodeID.cpp
   src/ripple/shamap/impl/SHAMapSync.cpp
@@ -767,11 +759,6 @@ target_sources (rippled PRIVATE
   src/test/core/JobQueue_test.cpp
   src/test/core/SociDB_test.cpp
   src/test/core/Workers_test.cpp
-  #[===============================[
-     test sources:
-       subdir: crypto
-  #]===============================]
-  src/test/crypto/Openssl_test.cpp
   #[===============================[
      test sources:
        subdir: csf

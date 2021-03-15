@@ -333,7 +333,7 @@ ConnectAttempt::processResponse()
 
     // Just because our peer selected a particular protocol version doesn't
     // mean that it's acceptable to us. Check that it is:
-    boost::optional<ProtocolVersion> negotiatedProtocol;
+    std::optional<ProtocolVersion> negotiatedProtocol;
 
     {
         auto const pvs = parseProtocolVersions(response_["Upgrade"]);

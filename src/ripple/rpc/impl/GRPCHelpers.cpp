@@ -1756,10 +1756,10 @@ convert(
 
         std::uint32_t seqCount = 0;
         std::uint32_t ticketCount = 0;
-        boost::optional<std::uint32_t> lowestSeq;
-        boost::optional<std::uint32_t> highestSeq;
-        boost::optional<std::uint32_t> lowestTicket;
-        boost::optional<std::uint32_t> highestTicket;
+        std::optional<std::uint32_t> lowestSeq;
+        std::optional<std::uint32_t> highestSeq;
+        std::optional<std::uint32_t> lowestTicket;
+        std::optional<std::uint32_t> highestTicket;
         bool anyAuthChanged = false;
         XRPAmount totalSpend(0);
 

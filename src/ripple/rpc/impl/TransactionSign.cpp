@@ -229,7 +229,7 @@ checkPayment(
                     sendMax.issue().currency,
                     sendMax.issue().account,
                     amount,
-                    boost::none,
+                    std::nullopt,
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
@@ -441,7 +441,9 @@ transactionPreProcessImpl(
     {
         if (!tx_json.isMember(jss::Sequence))
         {
-            if (!sle)
+            bool const hasTicketSeq =
+                tx_json.isMember(sfTicketSequence.jsonName);
+            if (!hasTicketSeq && !sle)
             {
                 JLOG(j.debug())
                     << "transactionSign: Failed to find source account "
@@ -449,7 +451,8 @@ transactionPreProcessImpl(
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] = app.getTxQ().nextQueuableSeq(sle).value();
+            tx_json[jss::Sequence] =
+                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
 
         if (!tx_json.isMember(jss::Flags))
@@ -493,7 +496,7 @@ transactionPreProcessImpl(
     }
 
     STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
-    if (parsed.object == boost::none)
+    if (!parsed.object.has_value())
     {
         Json::Value err;
         err[jss::error] = parsed.error[jss::error];
@@ -511,7 +514,7 @@ transactionPreProcessImpl(
             sfSigningPubKey,
             signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
 
-        stpTrans = std::make_shared<STTx>(std::move(parsed.object.get()));
+        stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
     catch (STObject::FieldErr& err)
     {
@@ -1115,7 +1118,7 @@ transactionSubmitMultiSigned(
         try
         {
             stpTrans =
-                std::make_shared<STTx>(std::move(parsedTx_json.object.get()));
+                std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
         catch (STObject::FieldErr& err)
         {

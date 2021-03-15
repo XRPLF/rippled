@@ -24,13 +24,13 @@
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
-#include <boost/optional.hpp>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>

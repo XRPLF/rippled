@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace ripple {
 
@@ -43,10 +44,7 @@ constexpr std::uint32_t vfFullyCanonicalSig = 0x80000000;
 class STValidation final : public STObject, public CountedObject<STValidation>
 {
 public:
-    /** Construct a STValidation from a peer.
-
-        Construct a STValidation from serialized data previously shared by a
-        peer.
+    /** Construct a STValidation from a peer from serialized data.
 
         @param sit Iterator over serialized data
         @param lookupNodeID Invocable with signature
@@ -65,16 +63,16 @@ public:
         LookupNodeID&& lookupNodeID,
         bool checkSignature)
         : STObject(validationFormat(), sit, sfValidation)
+        , signingPubKey_([this]() {
+            auto const spk = getFieldVL(sfSigningPubKey);
+
+            if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
+                Throw<std::runtime_error>("Invalid public key in validation");
+
+            return PublicKey{makeSlice(spk)};
+        }())
+        , nodeID_(lookupNodeID(signingPubKey_))
     {
-        auto const spk = getFieldVL(sfSigningPubKey);
-
-        if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
-        {
-            JLOG(debugLog().error()) << "Invalid public key in validation: "
-                                     << getJson(JsonOptions::none);
-            Throw<std::runtime_error>("Invalid public key in validation");
-        }
-
         if (checkSignature && !isValid())
         {
             JLOG(debugLog().error()) << "Invalid signature in validation: "
@@ -82,7 +80,6 @@ public:
             Throw<std::runtime_error>("Invalid signature in validation");
         }
 
-        nodeID_ = lookupNodeID(PublicKey(makeSlice(spk)));
         assert(nodeID_.isNonZero());
     }
 
@@ -102,9 +99,12 @@ public:
         NodeID const& nodeID,
         F&& f)
         : STObject(validationFormat(), sfValidation)
+        , signingPubKey_(pk)
         , nodeID_(nodeID)
         , seenTime_(signTime)
     {
+        assert(nodeID_.isNonZero());
+
         // First, set our own public key:
         if (publicKeyType(pk) != KeyType::secp256k1)
             LogicError(
@@ -129,6 +129,9 @@ public:
                     "Required field '" + e.sField().getName() +
                     "' missing from validation.");
         }
+
+        // We just signed this, so it should be valid.
+        valid_ = true;
     }
 
     STBase*
@@ -155,25 +158,28 @@ public:
     getSignTime() const;
 
     NetClock::time_point
-    getSeenTime() const;
+    getSeenTime() const noexcept;
 
-    PublicKey
-    getSignerPublic() const;
+    PublicKey const&
+    getSignerPublic() const noexcept
+    {
+        return signingPubKey_;
+    }
 
-    NodeID
-    getNodeID() const
+    NodeID const&
+    getNodeID() const noexcept
     {
         return nodeID_;
     }
 
     bool
-    isValid() const;
+    isValid() const noexcept;
 
     bool
-    isFull() const;
+    isFull() const noexcept;
 
     bool
-    isTrusted() const
+    isTrusted() const noexcept
     {
         return mTrusted;
     }
@@ -209,8 +215,19 @@ private:
     static SOTemplate const&
     validationFormat();
 
-    NodeID nodeID_;
     bool mTrusted = false;
+
+    // Determines the validity of the signature in this validation; unseated
+    // optional if we haven't yet checked it, a boolean otherwise.
+    mutable std::optional<bool> valid_;
+
+    // The public key associated with the key used to sign this validation
+    PublicKey const signingPubKey_;
+
+    // The ID of the validator that issued this validation. For validators
+    // that use manifests this will be derived from the master public key.
+    NodeID const nodeID_;
+
     NetClock::time_point seenTime_ = {};
 };
 

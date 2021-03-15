@@ -35,14 +35,14 @@ Cluster::Cluster(beast::Journal j) : j_(j)
 {
 }
 
-boost::optional<std::string>
+std::optional<std::string>
 Cluster::member(PublicKey const& identity) const
 {
     std::lock_guard lock(mutex_);
 
     auto iter = nodes_.find(identity);
     if (iter == nodes_.end())
-        return boost::none;
+        return std::nullopt;
     return iter->name();
 }
 

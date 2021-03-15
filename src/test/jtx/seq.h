@@ -20,9 +20,10 @@
 #ifndef RIPPLE_TEST_JTX_SEQ_H_INCLUDED
 #define RIPPLE_TEST_JTX_SEQ_H_INCLUDED
 
-#include <boost/optional.hpp>
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
+
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -33,7 +34,7 @@ struct seq
 {
 private:
     bool manual_ = true;
-    boost::optional<std::uint32_t> num_;
+    std::optional<std::uint32_t> num_;
 
 public:
     explicit seq(autofill_t) : manual_(false)

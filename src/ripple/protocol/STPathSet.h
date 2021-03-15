@@ -24,9 +24,9 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/UintTypes.h>
-#include <boost/optional.hpp>
 #include <cassert>
 #include <cstddef>
+#include <optional>
 
 namespace ripple {
 
@@ -50,9 +50,9 @@ private:
 
 public:
     STPathElement(
-        boost::optional<AccountID> const& account,
-        boost::optional<Currency> const& currency,
-        boost::optional<AccountID> const& issuer)
+        std::optional<AccountID> const& account,
+        std::optional<Currency> const& currency,
+        std::optional<AccountID> const& issuer)
         : mType(typeNone)
     {
         if (!account)

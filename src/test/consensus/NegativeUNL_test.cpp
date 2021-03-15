@@ -2020,9 +2020,9 @@ negUnlSizeTest(
 {
     bool sameSize = l->negativeUNL().size() == size;
     bool sameToDisable =
-        (l->validatorToDisable() != boost::none) == hasToDisable;
+        (l->validatorToDisable() != std::nullopt) == hasToDisable;
     bool sameToReEnable =
-        (l->validatorToReEnable() != boost::none) == hasToReEnable;
+        (l->validatorToReEnable() != std::nullopt) == hasToReEnable;
 
     return sameSize && sameToDisable && sameToReEnable;
 }

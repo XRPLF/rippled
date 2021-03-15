@@ -24,7 +24,6 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/impl/utils.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 namespace cryptoconditions {

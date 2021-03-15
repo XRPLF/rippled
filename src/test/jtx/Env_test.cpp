@@ -25,9 +25,10 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
-#include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
 #include <test/jtx.h>
+
+#include <boost/lexical_cast.hpp>
+#include <optional>
 #include <utility>
 
 namespace ripple {
@@ -765,13 +766,13 @@ public:
         // the supported amendments list and tests that it can be
         // enabled explicitly
 
-        auto const neverSupportedFeat = [&]() -> boost::optional<uint256> {
+        auto const neverSupportedFeat = [&]() -> std::optional<uint256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
                 if (!supported[i])
                     return bitsetIndexToFeature(i);
 
-            return boost::none;
+            return std::nullopt;
         }();
 
         if (!neverSupportedFeat)

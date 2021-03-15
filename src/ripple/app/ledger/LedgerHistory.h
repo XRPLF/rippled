@@ -26,6 +26,8 @@
 #include <ripple/beast/insight/Event.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 
+#include <optional>
+
 namespace ripple {
 
 // VFALCO TODO Rename to OldLedgers ?
@@ -95,7 +97,7 @@ public:
     void
     validatedLedger(
         std::shared_ptr<Ledger const> const&,
-        boost::optional<uint256> const& consensusHash);
+        std::optional<uint256> const& consensusHash);
 
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired
@@ -123,8 +125,8 @@ private:
     handleMismatch(
         LedgerHash const& built,
         LedgerHash const& valid,
-        boost::optional<uint256> const& builtConsensusHash,
-        boost::optional<uint256> const& validatedConsensusHash,
+        std::optional<uint256> const& builtConsensusHash,
+        std::optional<uint256> const& validatedConsensusHash,
         Json::Value const& consensus);
 
     Application& app_;
@@ -140,15 +142,15 @@ private:
     struct cv_entry
     {
         // Hash of locally built ledger
-        boost::optional<LedgerHash> built;
+        std::optional<LedgerHash> built;
         // Hash of the validated ledger
-        boost::optional<LedgerHash> validated;
+        std::optional<LedgerHash> validated;
         // Hash of locally accepted consensus transaction set
-        boost::optional<uint256> builtConsensusHash;
+        std::optional<uint256> builtConsensusHash;
         // Hash of validated consensus transaction set
-        boost::optional<uint256> validatedConsensusHash;
+        std::optional<uint256> validatedConsensusHash;
         // Consensus metadata of built ledger
-        boost::optional<Json::Value> consensus;
+        std::optional<Json::Value> consensus;
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
     ConsensusValidated m_consensus_validated;

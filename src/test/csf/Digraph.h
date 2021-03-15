@@ -21,10 +21,11 @@
 #define RIPPLE_TEST_CSF_DIGRAPH_H_INCLUDED
 
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range.hpp>
+
 #include <fstream>
+#include <optional>
 #include <type_traits>
 #include <unordered_map>
 
@@ -111,10 +112,10 @@ public:
 
         @param source The source vertex
         @param target The target vertex
-        @return optional<Edge> which is boost::none if no edge exists
+        @return optional<Edge> which is std::nullopt if no edge exists
 
     */
-    boost::optional<EdgeData>
+    std::optional<EdgeData>
     edge(Vertex source, Vertex target) const
     {
         auto it = graph_.find(source);
@@ -124,7 +125,7 @@ public:
             if (edgeIt != it->second.end())
                 return edgeIt->second;
         }
-        return boost::none;
+        return std::nullopt;
     }
 
     /** Check if two vertices are connected
@@ -136,7 +137,7 @@ public:
     bool
     connected(Vertex source, Vertex target) const
     {
-        return edge(source, target) != boost::none;
+        return edge(source, target) != std::nullopt;
     }
 
     /** Range over vertices in the graph

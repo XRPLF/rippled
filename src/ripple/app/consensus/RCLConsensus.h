@@ -63,9 +63,8 @@ class RCLConsensus
         InboundTransactions& inboundTransactions_;
         beast::Journal const j_;
 
-        NodeID const nodeID_;
-        PublicKey const valPublic_;
-        SecretKey const valSecret_;
+        // If the server is validating, the necessary keying information:
+        ValidatorKeys const& validatorKeys_;
 
         // A randomly selected non-zero value used to tag our validations
         std::uint64_t const valCookie_;
@@ -200,7 +199,7 @@ class RCLConsensus
             @param hash The ID/hash of the ledger acquire
             @return Optional ledger, will be seated if we locally had the ledger
         */
-        boost::optional<RCLCxLedger>
+        std::optional<RCLCxLedger>
         acquireLedger(LedgerHash const& hash);
 
         /** Share the given proposal with all peers
@@ -227,7 +226,7 @@ class RCLConsensus
             @param setId The transaction set ID associated with the proposal
             @return Optional set of transactions, seated if available.
        */
-        boost::optional<RCLTxSet>
+        std::optional<RCLTxSet>
         acquireTxSet(RCLTxSet::ID const& setId);
 
         /** Whether the open ledger has any transactions
@@ -386,7 +385,7 @@ class RCLConsensus
             @param failedTxs Populate with transactions that we could not
                              successfully apply.
             @return The newly built ledger
-      */
+        */
         RCLCxLedger
         buildLCL(
             RCLCxLedger const& previousLedger,
@@ -507,7 +506,7 @@ public:
     void
     simulate(
         NetClock::time_point const& now,
-        boost::optional<std::chrono::milliseconds> consensusDelay);
+        std::optional<std::chrono::milliseconds> consensusDelay);
 
     //! @see Consensus::proposal
     bool

@@ -145,6 +145,9 @@ public:
     // the payload size (`content_length`) which we can
     // optionally use for optimization.
     //
+    // Note: boost::Beast calls init() and requires a
+    // boost::optional (not a std::optional) as the
+    // parameter.
     void
     init(boost::optional<std::uint64_t> const&, boost::system::error_code& ec);
 

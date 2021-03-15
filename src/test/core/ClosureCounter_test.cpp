@@ -58,7 +58,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(evidence == 2);
 
             // Destroying the contents of wrapped should decrement voidCounter.
-            wrapped = boost::none;
+            wrapped = std::nullopt;
             BEAST_EXPECT(voidCounter.count() == 0);
         }
         {
@@ -82,7 +82,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(evidence == 11);
 
             // Destroying the contents of wrapped should decrement setCounter.
-            wrapped = boost::none;
+            wrapped = std::nullopt;
             BEAST_EXPECT(setCounter.count() == 0);
         }
         {
@@ -102,7 +102,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT((*wrapped)(2, -8) == -6);
 
             // Destroying the contents of wrapped should decrement sumCounter.
-            wrapped = boost::none;
+            wrapped = std::nullopt;
             BEAST_EXPECT(sumCounter.count() == 0);
         }
     }
@@ -274,8 +274,8 @@ class ClosureCounter_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         voidCounter.join("testWrap", 1ms, j);
 
-        // Wrapping a closure after join() should return boost::none.
-        BEAST_EXPECT(voidCounter.wrap([]() {}) == boost::none);
+        // Wrapping a closure after join() should return std::nullopt.
+        BEAST_EXPECT(voidCounter.wrap([]() {}) == std::nullopt);
     }
 
     void
@@ -310,7 +310,7 @@ class ClosureCounter_test : public beast::unit_test::suite
 
         // Destroy the contents of wrapped and expect the thread to exit
         // (asynchronously).
-        wrapped = boost::none;
+        wrapped = std::nullopt;
         BEAST_EXPECT(voidCounter.count() == 0);
 
         // Wait for the thread to exit.

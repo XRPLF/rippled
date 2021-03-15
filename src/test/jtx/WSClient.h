@@ -21,10 +21,11 @@
 #define RIPPLE_TEST_WSCLIENT_H_INCLUDED
 
 #include <ripple/core/Config.h>
-#include <boost/optional.hpp>
+#include <test/jtx/AbstractClient.h>
+
 #include <chrono>
 #include <memory>
-#include <test/jtx/AbstractClient.h>
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -33,13 +34,13 @@ class WSClient : public AbstractClient
 {
 public:
     /** Retrieve a message. */
-    virtual boost::optional<Json::Value>
+    virtual std::optional<Json::Value>
     getMsg(
         std::chrono::milliseconds const& timeout = std::chrono::milliseconds{
             0}) = 0;
 
     /** Retrieve a message that meets the predicate criteria. */
-    virtual boost::optional<Json::Value>
+    virtual std::optional<Json::Value>
     findMsg(
         std::chrono::milliseconds const& timeout,
         std::function<bool(Json::Value const&)> pred) = 0;

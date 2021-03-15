@@ -810,11 +810,11 @@ trustthesevalidators.gov
         ParsedPort rpc;
         if (!unexcept([&]() { parse_Port(rpc, conf["port_rpc"], log); }))
             return;
-        BEAST_EXPECT(rpc.admin_ip && (rpc.admin_ip.get().size() == 2));
+        BEAST_EXPECT(rpc.admin_ip && (rpc.admin_ip.value().size() == 2));
         ParsedPort wss;
         if (!unexcept([&]() { parse_Port(wss, conf["port_wss_admin"], log); }))
             return;
-        BEAST_EXPECT(wss.admin_ip && (wss.admin_ip.get().size() == 1));
+        BEAST_EXPECT(wss.admin_ip && (wss.admin_ip.value().size() == 1));
     }
 
     void
@@ -991,7 +991,7 @@ r.ripple.com 51235
             BEAST_EXPECT(!get_if_exists(s, "a_string", val_10));
             BEAST_EXPECT(val_10 == 10);
 
-            BEAST_EXPECT(s.get<int>("not_a_key") == boost::none);
+            BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
             {
                 s.get<int>("a_string");

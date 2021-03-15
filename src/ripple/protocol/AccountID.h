@@ -26,9 +26,9 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
-#include <boost/optional.hpp>
 #include <cstddef>
 #include <mutex>
+#include <optional>
 #include <string>
 
 namespace ripple {
@@ -51,10 +51,10 @@ std::string
 toBase58(AccountID const& v);
 
 /** Parse AccountID from checked, base58 string.
-    @return boost::none if a parse error occurs
+    @return std::nullopt if a parse error occurs
 */
 template <>
-boost::optional<AccountID>
+std::optional<AccountID>
 parseBase58(std::string const& s);
 
 /** Compute AccountID from public key.

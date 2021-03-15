@@ -231,7 +231,6 @@ public:
     void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
-        const uint256 uZero;
         Serializer s;
         try
         {

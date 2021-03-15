@@ -20,14 +20,10 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
+#include <ripple/basics/Buffer.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/base_uint.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/Serializer.h>
-
-#include <cstddef>
 
 namespace ripple {
 
@@ -36,59 +32,39 @@ class SHAMapItem : public CountedObject<SHAMapItem>
 {
 private:
     uint256 tag_;
-    Blob data_;
+    Buffer data_;
 
 public:
-    SHAMapItem(uint256 const& tag, Blob const& data);
-    SHAMapItem(uint256 const& tag, Serializer const& s);
-    SHAMapItem(uint256 const& tag, Serializer&& s);
+    SHAMapItem() = delete;
 
-    Slice
-    slice() const;
+    SHAMapItem(uint256 const& tag, Slice data) : tag_(tag), data_(data)
+    {
+    }
 
     uint256 const&
-    key() const;
+    key() const
+    {
+        return tag_;
+    }
 
-    Blob const&
-    peekData() const;
+    Slice
+    slice() const
+    {
+        return static_cast<Slice>(data_);
+    }
 
     std::size_t
-    size() const;
+    size() const
+    {
+        return data_.size();
+    }
+
     void const*
-    data() const;
+    data() const
+    {
+        return data_.data();
+    }
 };
-
-//------------------------------------------------------------------------------
-
-inline Slice
-SHAMapItem::slice() const
-{
-    return {data_.data(), data_.size()};
-}
-
-inline std::size_t
-SHAMapItem::size() const
-{
-    return data_.size();
-}
-
-inline void const*
-SHAMapItem::data() const
-{
-    return data_.data();
-}
-
-inline uint256 const&
-SHAMapItem::key() const
-{
-    return tag_;
-}
-
-inline Blob const&
-SHAMapItem::peekData() const
-{
-    return data_;
-}
 
 }  // namespace ripple
 

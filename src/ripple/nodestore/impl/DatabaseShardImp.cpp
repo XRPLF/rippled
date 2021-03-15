@@ -53,7 +53,7 @@ DatabaseShardImp::DatabaseShardImp(
     , earliestShardIndex_(seqToShardIndex(earliestLedgerSeq()))
     , avgShardFileSz_(ledgersPerShard_ * kilobytes(192ull))
     , openFinalLimit_(
-          app.config().getValueFor(SizedItem::openFinalLimit, boost::none))
+          app.config().getValueFor(SizedItem::openFinalLimit, std::nullopt))
 {
     if (app.config().reporting())
     {
@@ -185,7 +185,7 @@ DatabaseShardImp::init()
                                 shards_.emplace(shardIndex, std::move(shard))
                                     .first->second,
                                 true,
-                                boost::none);
+                                std::nullopt);
                             break;
 
                         case Shard::acquire:
@@ -223,10 +223,10 @@ DatabaseShardImp::init()
     return true;
 }
 
-boost::optional<std::uint32_t>
+std::optional<std::uint32_t>
 DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 {
-    boost::optional<std::uint32_t> shardIndex;
+    std::optional<std::uint32_t> shardIndex;
 
     {
         std::lock_guard lock(mutex_);
@@ -239,11 +239,11 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 
             // Should never get here
             assert(false);
-            return boost::none;
+            return std::nullopt;
         }
 
         if (!canAdd_)
-            return boost::none;
+            return std::nullopt;
 
         shardIndex = findAcquireIndex(validLedgerSeq, lock);
     }
@@ -255,7 +255,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
             std::lock_guard lock(mutex_);
             canAdd_ = false;
         }
-        return boost::none;
+        return std::nullopt;
     }
 
     auto const pathDesignation = [this, shardIndex = *shardIndex]() {
@@ -264,7 +264,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
     }();
 
     if (!pathDesignation)
-        return boost::none;
+        return std::nullopt;
 
     auto const needsHistoricalPath =
         *pathDesignation == PathDesignation::historical;
@@ -280,7 +280,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
     }();
 
     if (!shard->init(scheduler_, *ctx_))
-        return boost::none;
+        return std::nullopt;
 
     auto const ledgerSeq{shard->prepare()};
     {
@@ -296,7 +296,7 @@ DatabaseShardImp::prepareShards(std::vector<std::uint32_t> const& shardIndexes)
 {
     auto fail = [j = j_, &shardIndexes](
                     std::string const& msg,
-                    boost::optional<std::uint32_t> shardIndex = boost::none) {
+                    std::optional<std::uint32_t> shardIndex = std::nullopt) {
         auto multipleIndexPrequel = [&shardIndexes] {
             std::vector<std::string> indexesAsString(shardIndexes.size());
             std::transform(
@@ -729,7 +729,7 @@ DatabaseShardImp::import(Database& source)
         std::uint32_t latestIndex;
         {
             auto loadLedger = [&](bool ascendSort =
-                                      true) -> boost::optional<std::uint32_t> {
+                                      true) -> std::optional<std::uint32_t> {
                 std::shared_ptr<Ledger> ledger;
                 std::uint32_t ledgerSeq;
                 std::tie(ledger, ledgerSeq, std::ignore) = loadLedgerHelper(
@@ -743,7 +743,7 @@ DatabaseShardImp::import(Database& source)
                 {
                     JLOG(j_.error()) << "no suitable ledgers were found in"
                                         " the SQLite database to import";
-                    return boost::none;
+                    return std::nullopt;
                 }
                 return ledgerSeq;
             };
@@ -868,7 +868,7 @@ DatabaseShardImp::import(Database& source)
 
             // Copy the ledgers from node store
             std::shared_ptr<Ledger> recentStored;
-            boost::optional<uint256> lastLedgerHash;
+            std::optional<uint256> lastLedgerHash;
 
             while (auto const ledgerSeq = shard->prepare())
             {
@@ -917,7 +917,7 @@ DatabaseShardImp::import(Database& source)
                             shards_.emplace(shardIndex, std::move(shard))
                                 .first->second,
                             true,
-                            boost::none);
+                            std::nullopt);
                         success = true;
 
                         if (shardIndex < shardBoundaryIndex())
@@ -1193,13 +1193,13 @@ DatabaseShardImp::fetchNodeObject(
     return shard->fetchNodeObject(hash, fetchReport);
 }
 
-boost::optional<std::uint32_t>
+std::optional<std::uint32_t>
 DatabaseShardImp::findAcquireIndex(
     std::uint32_t validLedgerSeq,
     std::lock_guard<std::mutex> const&)
 {
     if (validLedgerSeq < earliestLedgerSeq())
-        return boost::none;
+        return std::nullopt;
 
     auto const maxShardIndex{[this, validLedgerSeq]() {
         auto shardIndex{seqToShardIndex(validLedgerSeq)};
@@ -1211,7 +1211,7 @@ DatabaseShardImp::findAcquireIndex(
 
     // Check if the shard store has all shards
     if (shards_.size() >= maxNumShards)
-        return boost::none;
+        return std::nullopt;
 
     if (maxShardIndex < 1024 ||
         static_cast<float>(shards_.size()) / maxNumShards > 0.5f)
@@ -1233,7 +1233,7 @@ DatabaseShardImp::findAcquireIndex(
         }
 
         if (available.empty())
-            return boost::none;
+            return std::nullopt;
 
         if (available.size() == 1)
             return available.front();
@@ -1256,14 +1256,14 @@ DatabaseShardImp::findAcquireIndex(
     }
 
     assert(false);
-    return boost::none;
+    return std::nullopt;
 }
 
 void
 DatabaseShardImp::finalizeShard(
     std::shared_ptr<Shard>& shard,
     bool writeSQLite,
-    boost::optional<uint256> const& expectedHash)
+    std::optional<uint256> const& expectedHash)
 {
     taskQueue_.addTask([this,
                         wptr = std::weak_ptr<Shard>(shard),
@@ -1498,7 +1498,7 @@ DatabaseShardImp::setStoredInShard(
             if (shard->index() == acquireIndex_)
                 acquireIndex_ = 0;
 
-            finalizeShard(it->second, false, boost::none);
+            finalizeShard(it->second, false, std::nullopt);
         }
         else
         {
@@ -1521,10 +1521,10 @@ DatabaseShardImp::removeFailedShard(std::shared_ptr<Shard>& shard)
             acquireIndex_ = 0;
 
         if (shard->index() == latestShardIndex_)
-            latestShardIndex_ = boost::none;
+            latestShardIndex_ = std::nullopt;
 
         if (shard->index() == secondLatestShardIndex_)
-            secondLatestShardIndex_ = boost::none;
+            secondLatestShardIndex_ = std::nullopt;
 
         if ((shards_.erase(shard->index()) > 0) &&
             shard->getState() == Shard::final)
@@ -1694,7 +1694,7 @@ DatabaseShardImp::relocateOutdatedShards(
                     moveShard(*prev);
                 }
 
-                prev = boost::none;
+                prev = std::nullopt;
             }
 
             if (cur)
@@ -1715,17 +1715,17 @@ DatabaseShardImp::relocateOutdatedShards(
                     }
                 }
 
-                cur = boost::none;
+                cur = std::nullopt;
             }
         }
     }
 }
 
-auto
+std::optional<DatabaseShardImp::PathDesignation>
 DatabaseShardImp::prepareForNewShard(
     std::uint32_t shardIndex,
     std::uint32_t numHistoricalShards,
-    std::lock_guard<std::mutex> const& lock) -> boost::optional<PathDesignation>
+    std::lock_guard<std::mutex> const& lock)
 {
     // Any shard earlier than the two most recent shards is a historical shard
     auto const boundaryIndex{shardBoundaryIndex()};
@@ -1740,13 +1740,13 @@ DatabaseShardImp::prepareForNewShard(
     {
         JLOG(j_.error()) << "maximum number of historical shards reached";
         canAdd_ = false;
-        return boost::none;
+        return std::nullopt;
     }
     if (!sufficientStorage(1, designation, lock))
     {
         JLOG(j_.error()) << "insufficient storage space available";
         canAdd_ = false;
-        return boost::none;
+        return std::nullopt;
     }
 
     return designation;
