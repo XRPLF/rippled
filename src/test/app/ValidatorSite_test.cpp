@@ -659,7 +659,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ValidatorSite, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple

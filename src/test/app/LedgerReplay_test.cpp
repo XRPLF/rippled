@@ -1572,7 +1572,7 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerReplay, app, ripple);
-BEAST_DEFINE_TESTSUITE(LedgerReplayer, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, ripple, 1);
 BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
 
