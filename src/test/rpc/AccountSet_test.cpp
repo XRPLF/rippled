@@ -555,6 +555,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountSet, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, app, ripple, 1);
 
 }  // namespace ripple

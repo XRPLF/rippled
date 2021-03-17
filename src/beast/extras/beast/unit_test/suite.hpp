@@ -670,6 +670,11 @@ run(runner& r)
     @endcode
 
     The macro invocation must appear in the same namespace as the test class.
+
+    Unit test priorities were introduced so parallel unit_test::suites would
+    execute faster. Suites with longer running times have higher priorities
+    than unit tests with shorter running times.  Suites with no priorities
+    are assumed to run most quickly, so they run last.
 */
 
 #if BEAST_NO_UNIT_TEST_INLINE
