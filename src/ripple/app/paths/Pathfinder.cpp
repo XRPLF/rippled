@@ -22,7 +22,6 @@
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/impl/PathfinderUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -67,6 +66,10 @@ same path request (particularly if the search depth may change).
 namespace ripple {
 
 namespace {
+
+// This is an arbitrary cutoff, and it might cause us to miss other
+// good paths with this arbitrary cut off.
+constexpr std::size_t PATHFINDER_MAX_COMPLETE_PATHS = 1000;
 
 struct AccountCandidate
 {
@@ -318,8 +321,6 @@ Pathfinder::findPaths(int searchLevel)
         {
             addPathsForType(costedPath.type);
 
-            // TODO(tom): we might be missing other good paths with this
-            // arbitrary cut off.
             if (mCompletePaths.size() > PATHFINDER_MAX_COMPLETE_PATHS)
                 break;
         }

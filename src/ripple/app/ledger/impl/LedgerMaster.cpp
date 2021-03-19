@@ -1272,27 +1272,6 @@ LedgerMaster::consensusBuilt(
     }
 }
 
-void
-LedgerMaster::advanceThread()
-{
-    std::unique_lock sl(m_mutex);
-    assert(!mValidLedger.empty() && mAdvanceThread);
-
-    JLOG(m_journal.trace()) << "advanceThread<";
-
-    try
-    {
-        doAdvance(sl);
-    }
-    catch (std::exception const&)
-    {
-        JLOG(m_journal.fatal()) << "doAdvance throws an exception";
-    }
-
-    mAdvanceThread = false;
-    JLOG(m_journal.trace()) << "advanceThread>";
-}
-
 std::optional<LedgerHash>
 LedgerMaster::getLedgerHashForHistory(
     LedgerIndex index,
@@ -1470,8 +1449,25 @@ LedgerMaster::tryAdvance()
     if (!mAdvanceThread && !mValidLedger.empty())
     {
         mAdvanceThread = true;
-        app_.getJobQueue().addJob(
-            jtADVANCE, "advanceLedger", [this](Job&) { advanceThread(); });
+        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this](Job&) {
+            std::unique_lock sl(m_mutex);
+
+            assert(!mValidLedger.empty() && mAdvanceThread);
+
+            JLOG(m_journal.trace()) << "advanceThread<";
+
+            try
+            {
+                doAdvance(sl);
+            }
+            catch (std::exception const& ex)
+            {
+                JLOG(m_journal.fatal()) << "doAdvance throws: " << ex.what();
+            }
+
+            mAdvanceThread = false;
+            JLOG(m_journal.trace()) << "advanceThread>";
+        });
     }
 }
 

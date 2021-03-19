@@ -326,8 +326,6 @@ private:
     std::size_t
     getNeededValidations();
     void
-    advanceThread();
-    void
     fetchForHistory(
         std::uint32_t missing,
         bool& progress,
