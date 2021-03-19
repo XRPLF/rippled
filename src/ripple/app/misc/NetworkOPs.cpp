@@ -42,15 +42,12 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/UptimeClock.h>
-#include <ripple/basics/base64.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/consensus/ConsensusParms.h>
-#include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>

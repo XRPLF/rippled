@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/paths/Credit.h>
-#include <ripple/app/paths/NodeDirectory.h>
 #include <ripple/app/paths/impl/FlatSets.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/tx/impl/OfferStream.h>
