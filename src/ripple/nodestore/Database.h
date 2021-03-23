@@ -27,6 +27,7 @@
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/protocol/SystemParameters.h>
 
+#include <condition_variable>
 #include <thread>
 
 namespace ripple {
