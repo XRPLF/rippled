@@ -702,7 +702,6 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     false,
                     env.app().logs().journal("Flow"));
-                (void)ter;
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
             }
@@ -719,12 +718,10 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     false,
                     env.app().logs().journal("Flow"));
-                (void)ter;
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
             }
-            return;
-        };
+        }
 
         {
             Env env(*this, features);
@@ -794,12 +791,16 @@ struct PayStrand_test : public beast::unit_test::suite
                 B{XRP, USD},
                 D{gw, bob, usdC});
 
-            // Path with XRP dst currency
+            // Path with XRP dst currency.
             test(
                 env,
                 xrpIssue(),
                 USD.issue(),
-                STPath({ipe(XRP)}),
+                STPath({STPathElement{
+                    STPathElement::typeCurrency,
+                    xrpAccount(),
+                    xrpCurrency(),
+                    xrpAccount()}}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
                 B{USD, XRP},
@@ -854,7 +855,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
                 {
-                    // The root account can't be the src
+                    // The root account can't be the src.
                     auto r = toStrand(
                         *env.current(),
                         noAccount(),
@@ -866,7 +867,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         false,
                         flowJournal);
-                    BEAST_EXPECT(r.first == terNO_ACCOUNT);
+                    BEAST_EXPECT(r.first == temBAD_PATH);
                 }
             }
 
@@ -1005,20 +1006,6 @@ struct PayStrand_test : public beast::unit_test::suite
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
         }
-        {
-            // Check path with sendMax and node with correct sendMax already set
-            Env env(*this, features);
-            env.fund(XRP(10000), alice, bob, gw);
-            env.trust(USD(1000), alice, bob);
-            env.trust(EUR(1000), alice, bob);
-            env(pay(gw, alice, EUR(100)));
-            auto const path = STPath({STPathElement(
-                STPathElement::typeAll,
-                EUR.account,
-                EUR.currency,
-                EUR.account)});
-            test(env, USD, EUR.issue(), path, tesSUCCESS);
-        }
 
         {
             // last step xrp from offer
@@ -1029,7 +1016,6 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // alice -> USD/XRP -> bob
             STPath path;
-            path.emplace_back(std::nullopt, USD.currency, USD.account.id());
             path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
 
             auto [ter, strand] = toStrand(
