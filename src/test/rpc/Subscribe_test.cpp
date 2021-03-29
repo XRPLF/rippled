@@ -365,24 +365,68 @@ public:
         }
 
         {
-            // Accept a ledger
-            env.close();
+            // Lambda to check ledger validations from the stream.
+            auto validValidationFields = [&env, &valPublicKey](
+                                             Json::Value const& jv) {
+                if (jv[jss::type] != "validationReceived")
+                    return false;
 
-            // Check stream update
-            using namespace std::chrono_literals;
+                if (jv[jss::validation_public_key].asString() != valPublicKey)
+                    return false;
 
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::type] == "validationReceived" &&
-                    jv[jss::validation_public_key].asString() == valPublicKey &&
-                    jv[jss::ledger_hash] ==
-                    to_string(env.closed()->info().hash) &&
-                    jv[jss::ledger_index] ==
-                    std::to_string(env.closed()->info().seq) &&
-                    jv[jss::flags] ==
-                    (vfFullyCanonicalSig | vfFullValidation) &&
-                    jv[jss::full] == true && !jv.isMember(jss::load_fee) &&
-                    jv[jss::signature] && jv[jss::signing_time];
-            }));
+                if (jv[jss::ledger_hash] !=
+                    to_string(env.closed()->info().hash))
+                    return false;
+
+                if (jv[jss::ledger_index] !=
+                    std::to_string(env.closed()->info().seq))
+                    return false;
+
+                if (jv[jss::flags] != (vfFullyCanonicalSig | vfFullValidation))
+                    return false;
+
+                if (jv[jss::full] != true)
+                    return false;
+
+                if (jv.isMember(jss::load_fee))
+                    return false;
+
+                if (!jv.isMember(jss::signature))
+                    return false;
+
+                if (!jv.isMember(jss::signing_time))
+                    return false;
+
+                if (!jv.isMember(jss::cookie))
+                    return false;
+
+                if (!jv.isMember(jss::validated_hash))
+                    return false;
+
+                // Certain fields are only added on a flag ledger.
+                bool const isFlagLedger =
+                    (env.closed()->info().seq + 1) % 256 == 0;
+
+                if (jv.isMember(jss::server_version) != isFlagLedger)
+                    return false;
+
+                if (jv.isMember(jss::reserve_base) != isFlagLedger)
+                    return false;
+
+                if (jv.isMember(jss::reserve_inc) != isFlagLedger)
+                    return false;
+
+                return true;
+            };
+
+            // Check stream update.  Look at enough stream entries so we see
+            // at least one flag ledger.
+            while (env.closed()->info().seq < 300)
+            {
+                env.close();
+                using namespace std::chrono_literals;
+                BEAST_EXPECT(wsc->findMsg(5s, validValidationFields));
+            }
         }
 
         // RPC unsubscribe

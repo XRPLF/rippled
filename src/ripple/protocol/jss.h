@@ -178,6 +178,7 @@ JSS(complete_shards);        // out: OverlayImpl, PeerImp
 JSS(consensus);              // out: NetworkOPs, LedgerConsensus
 JSS(converge_time);          // out: NetworkOPs
 JSS(converge_time_s);        // out: NetworkOPs
+JSS(cookie);                 // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
 JSS(currentShard);           // out: NodeToShardStatus
@@ -498,6 +499,7 @@ JSS(server_domain);             // out: NetworkOPs
 JSS(server_state);              // out: NetworkOPs
 JSS(server_state_duration_us);  // out: NetworkOPs
 JSS(server_status);             // out: NetworkOPs
+JSS(server_version);            // out: NetworkOPs
 JSS(settle_delay);              // out: AccountChannels
 JSS(severity);                  // in: LogLevel
 JSS(shards);                    // in/out: GetCounts, DownloadShard
@@ -587,6 +589,7 @@ JSS(validated);               // out: NetworkOPs, RPCHelpers, AccountTx*
 JSS(validator_list_expires);  // out: NetworkOps, ValidatorList
 JSS(validator_list);          // out: NetworkOps, ValidatorList
 JSS(validators);
+JSS(validated_hash);          // out: NetworkOPs
 JSS(validated_ledger);        // out: NetworkOPs
 JSS(validated_ledger_index);  // out: SubmitTransaction
 JSS(validated_ledgers);       // out: NetworkOPs
