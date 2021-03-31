@@ -112,6 +112,9 @@ JSS(account_objects);        // out: AccountObjects
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
 JSS(account_sequence_available);  // out: SubmitTransaction
+JSS(account_history_tx_stream);   // in: Subscribe, Unsubscribe
+JSS(account_history_tx_index);    // out: Account txn history subscribe
+JSS(account_history_tx_first);    // out: Account txn history subscribe
 JSS(accounts);                    // in: LedgerEntry, Subscribe,
                                   //     handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
@@ -518,29 +521,30 @@ JSS(source_tag);                // out: AccountChannels
 JSS(stand_alone);               // out: NetworkOPs
 JSS(start);                     // in: TxHistory
 JSS(started);
-JSS(state);               // out: Logic.h, ServerState, LedgerData
-JSS(state_accounting);    // out: NetworkOPs
-JSS(state_now);           // in: Subscribe
-JSS(status);              // error
-JSS(stop);                // in: LedgerCleaner
-JSS(storedSeqs);          // out: NodeToShardStatus
-JSS(streams);             // in: Subscribe, Unsubscribe
-JSS(strict);              // in: AccountCurrencies, AccountInfo
-JSS(sub_index);           // in: LedgerEntry
-JSS(subcommand);          // in: PathFind
-JSS(success);             // rpc
-JSS(supported);           // out: AmendmentTableImpl
-JSS(system_time_offset);  // out: NetworkOPs
-JSS(tag);                 // out: Peers
-JSS(taker);               // in: Subscribe, BookOffers
-JSS(taker_gets);          // in: Subscribe, Unsubscribe, BookOffers
-JSS(taker_gets_funded);   // out: NetworkOPs
-JSS(taker_pays);          // in: Subscribe, Unsubscribe, BookOffers
-JSS(taker_pays_funded);   // out: NetworkOPs
-JSS(threshold);           // in: Blacklist
-JSS(ticket);              // in: AccountObjects
-JSS(ticket_count);        // out: AccountInfo
-JSS(ticket_seq);          // in: LedgerEntry
+JSS(state);                 // out: Logic.h, ServerState, LedgerData
+JSS(state_accounting);      // out: NetworkOPs
+JSS(state_now);             // in: Subscribe
+JSS(status);                // error
+JSS(stop);                  // in: LedgerCleaner
+JSS(stop_history_tx_only);  // in: Unsubscribe, stop history tx stream
+JSS(storedSeqs);            // out: NodeToShardStatus
+JSS(streams);               // in: Subscribe, Unsubscribe
+JSS(strict);                // in: AccountCurrencies, AccountInfo
+JSS(sub_index);             // in: LedgerEntry
+JSS(subcommand);            // in: PathFind
+JSS(success);               // rpc
+JSS(supported);             // out: AmendmentTableImpl
+JSS(system_time_offset);    // out: NetworkOPs
+JSS(tag);                   // out: Peers
+JSS(taker);                 // in: Subscribe, BookOffers
+JSS(taker_gets);            // in: Subscribe, Unsubscribe, BookOffers
+JSS(taker_gets_funded);     // out: NetworkOPs
+JSS(taker_pays);            // in: Subscribe, Unsubscribe, BookOffers
+JSS(taker_pays_funded);     // out: NetworkOPs
+JSS(threshold);             // in: Blacklist
+JSS(ticket);                // in: AccountObjects
+JSS(ticket_count);          // out: AccountInfo
+JSS(ticket_seq);            // in: LedgerEntry
 JSS(time);
 JSS(timeouts);                // out: InboundLedger
 JSS(track);                   // out: PeerImp

@@ -736,6 +736,407 @@ public:
     }
 
     void
+    testHistoryTxStream()
+    {
+        testcase("HistoryTxStream");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        using IdxHashVec = std::vector<std::pair<int, std::string>>;
+
+        Account alice("alice");
+        Account bob("bob");
+        Account carol("carol");
+        Account david("david");
+        ///////////////////////////////////////////////////////////////////
+
+        /*
+         * return true if the subscribe or unsubscribe result is a success
+         */
+        auto goodSubRPC = [](Json::Value const& subReply) -> bool {
+            return subReply.isMember(jss::result) &&
+                subReply[jss::result].isMember(jss::status) &&
+                subReply[jss::result][jss::status] == jss::success;
+        };
+
+        /*
+         * try to receive txns from the tx stream subscription via the WSClient.
+         * return {true, true} if received numReplies replies and also
+         * received a tx with the account_history_tx_first == true
+         */
+        auto getTxHash = [](WSClient& wsc,
+                            IdxHashVec& v,
+                            int numReplies) -> std::pair<bool, bool> {
+            bool first_flag = false;
+
+            for (int i = 0; i < numReplies; ++i)
+            {
+                std::uint32_t idx{0};
+                auto reply = wsc.getMsg(100ms);
+                if (reply)
+                {
+                    auto r = *reply;
+                    if (r.isMember(jss::account_history_tx_index))
+                        idx = r[jss::account_history_tx_index].asInt();
+                    if (r.isMember(jss::account_history_tx_first))
+                        first_flag = true;
+                    if (r.isMember(jss::transaction) &&
+                        r[jss::transaction].isMember(jss::hash))
+                    {
+                        v.emplace_back(
+                            idx, r[jss::transaction][jss::hash].asString());
+                        continue;
+                    }
+                }
+                return {false, first_flag};
+            }
+
+            return {true, first_flag};
+        };
+
+        /*
+         * send payments between the two accounts a and b,
+         * and close ledgersToClose ledgers
+         */
+        auto sendPayments = [](Env& env,
+                               Account const& a,
+                               Account const& b,
+                               int newTxns,
+                               std::uint32_t ledgersToClose) {
+            env.memoize(a);
+            env.memoize(b);
+            for (int i = 0; i < newTxns; ++i)
+            {
+                auto& from = (i % 2 == 0) ? a : b;
+                auto& to = (i % 2 == 0) ? b : a;
+                env.apply(
+                    pay(from, to, jtx::XRP(100)),
+                    jtx::seq(jtx::autofill),
+                    jtx::fee(jtx::autofill),
+                    jtx::sig(jtx::autofill));
+            }
+            for (int i = 0; i < ledgersToClose; ++i)
+                env.close();
+            return newTxns;
+        };
+
+        /*
+         * Check if txHistoryVec has every item of accountVec,
+         * and in the same order.
+         * If sizeCompare is false, txHistoryVec is allowed to be larger.
+         */
+        auto hashCompare = [](IdxHashVec const& accountVec,
+                              IdxHashVec const& txHistoryVec,
+                              bool sizeCompare) -> bool {
+            if (accountVec.empty() || txHistoryVec.empty())
+                return false;
+            if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
+                return false;
+
+            hash_map<std::string, int> txHistoryMap;
+            for (auto const& tx : txHistoryVec)
+            {
+                txHistoryMap.emplace(tx.second, tx.first);
+            }
+
+            auto getHistoryIndex = [&](std::size_t i) -> std::optional<int> {
+                if (i >= accountVec.size())
+                    return {};
+                auto it = txHistoryMap.find(accountVec[i].second);
+                if (it == txHistoryMap.end())
+                    return {};
+                return it->second;
+            };
+
+            auto firstHistoryIndex = getHistoryIndex(0);
+            if (!firstHistoryIndex)
+                return false;
+            for (std::size_t i = 1; i < accountVec.size(); ++i)
+            {
+                if (auto idx = getHistoryIndex(i);
+                    !idx || *idx != *firstHistoryIndex + i)
+                    return false;
+            }
+            return true;
+        };
+
+        ///////////////////////////////////////////////////////////////////
+
+        {
+            /*
+             * subscribe to an account twice with same WS client,
+             * the second should fail
+             *
+             * also test subscribe to the account before it is created
+             */
+            Env env(*this);
+            auto wscTxHistory = makeWSClient(env.app().config());
+            Json::Value request;
+            request[jss::account_history_tx_stream] = Json::objectValue;
+            request[jss::account_history_tx_stream][jss::account] =
+                alice.human();
+            auto jv = wscTxHistory->invoke("subscribe", request);
+            if (!BEAST_EXPECT(goodSubRPC(jv)))
+                return;
+            jv = wscTxHistory->invoke("subscribe", request);
+            BEAST_EXPECT(!goodSubRPC(jv));
+
+            /*
+             * unsubscribe history only, future txns should still be streamed
+             */
+            request[jss::account_history_tx_stream][jss::stop_history_tx_only] =
+                true;
+            jv = wscTxHistory->invoke("unsubscribe", request);
+            if (!BEAST_EXPECT(goodSubRPC(jv)))
+                return;
+
+            env.apply(
+                pay(env.master, alice, XRP(123456)),
+                jtx::seq(jtx::autofill),
+                fee(jtx::autofill),
+                sig(jtx::autofill));
+            env.close();
+
+            IdxHashVec vec;
+            auto r = getTxHash(*wscTxHistory, vec, 1);
+            if (!BEAST_EXPECT(r.first && r.second))
+                return;
+
+            /*
+             * unsubscribe, future txns should not be streamed
+             */
+            request[jss::account_history_tx_stream][jss::stop_history_tx_only] =
+                false;
+            jv = wscTxHistory->invoke("unsubscribe", request);
+            BEAST_EXPECT(goodSubRPC(jv));
+
+            env.apply(
+                pay(env.master, alice, XRP(456)),
+                jtx::seq(jtx::autofill),
+                fee(jtx::autofill),
+                sig(jtx::autofill));
+            env.close();
+
+            r = getTxHash(*wscTxHistory, vec, 1);
+            BEAST_EXPECT(!r.first);
+        }
+
+        {
+            /*
+             * subscribe genesis account tx history without txns
+             * subscribe to bob's account after it is created
+             */
+            Env env(*this);
+            auto wscTxHistory = makeWSClient(env.app().config());
+            Json::Value request;
+            request[jss::account_history_tx_stream] = Json::objectValue;
+            request[jss::account_history_tx_stream][jss::account] =
+                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            auto jv = wscTxHistory->invoke("subscribe", request);
+            if (!BEAST_EXPECT(goodSubRPC(jv)))
+                return;
+            IdxHashVec genesisFullHistoryVec;
+            if (!BEAST_EXPECT(
+                    !getTxHash(*wscTxHistory, genesisFullHistoryVec, 1).first))
+                return;
+
+            /*
+             * create bob's account with one tx
+             * the two subscriptions should both stream it
+             */
+            env.apply(
+                pay(env.master, bob, XRP(123456)),
+                jtx::seq(jtx::autofill),
+                fee(jtx::autofill),
+                sig(jtx::autofill));
+            env.close();
+
+            auto r = getTxHash(*wscTxHistory, genesisFullHistoryVec, 1);
+            if (!BEAST_EXPECT(r.first && r.second))
+                return;
+
+            request[jss::account_history_tx_stream][jss::account] = bob.human();
+            jv = wscTxHistory->invoke("subscribe", request);
+            if (!BEAST_EXPECT(goodSubRPC(jv)))
+                return;
+            IdxHashVec bobFullHistoryVec;
+            r = getTxHash(*wscTxHistory, bobFullHistoryVec, 1);
+            if (!BEAST_EXPECT(r.first && r.second))
+                return;
+            BEAST_EXPECT(
+                bobFullHistoryVec.back().second ==
+                genesisFullHistoryVec.back().second);
+
+            /*
+             * unsubscribe to prepare next test
+             */
+            jv = wscTxHistory->invoke("unsubscribe", request);
+            if (!BEAST_EXPECT(goodSubRPC(jv)))
+                return;
+            request[jss::account_history_tx_stream][jss::account] =
+                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            jv = wscTxHistory->invoke("unsubscribe", request);
+            BEAST_EXPECT(goodSubRPC(jv));
+
+            /*
+             * add more txns, then subscribe bob tx history and
+             * genesis account tx history. Their earliest txns should match.
+             */
+            sendPayments(env, env.master, bob, 30, 300);
+            wscTxHistory = makeWSClient(env.app().config());
+            request[jss::account_history_tx_stream][jss::account] = bob.human();
+            jv = wscTxHistory->invoke("subscribe", request);
+
+            bobFullHistoryVec.clear();
+            BEAST_EXPECT(
+                getTxHash(*wscTxHistory, bobFullHistoryVec, 31).second);
+            jv = wscTxHistory->invoke("unsubscribe", request);
+
+            request[jss::account_history_tx_stream][jss::account] =
+                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            jv = wscTxHistory->invoke("subscribe", request);
+            genesisFullHistoryVec.clear();
+            BEAST_EXPECT(
+                getTxHash(*wscTxHistory, genesisFullHistoryVec, 31).second);
+            jv = wscTxHistory->invoke("unsubscribe", request);
+
+            BEAST_EXPECT(
+                bobFullHistoryVec.back().second ==
+                genesisFullHistoryVec.back().second);
+        }
+
+        {
+            /*
+             * subscribe account and subscribe account tx history
+             * and compare txns streamed
+             */
+            Env env(*this);
+            auto wscAccount = makeWSClient(env.app().config());
+            auto wscTxHistory = makeWSClient(env.app().config());
+
+            std::array<Account, 2> accounts = {alice, bob};
+            env.fund(XRP(222222), accounts);
+            env.close();
+
+            // subscribe account
+            Json::Value stream = Json::objectValue;
+            stream[jss::accounts] = Json::arrayValue;
+            stream[jss::accounts].append(alice.human());
+            auto jv = wscAccount->invoke("subscribe", stream);
+
+            sendPayments(env, alice, bob, 5, 1);
+            sendPayments(env, alice, bob, 5, 1);
+            IdxHashVec accountVec;
+            if (!BEAST_EXPECT(getTxHash(*wscAccount, accountVec, 10).first))
+                return;
+
+            // subscribe account tx history
+            Json::Value request;
+            request[jss::account_history_tx_stream] = Json::objectValue;
+            request[jss::account_history_tx_stream][jss::account] =
+                alice.human();
+            jv = wscTxHistory->invoke("subscribe", request);
+
+            // compare historical txns
+            IdxHashVec txHistoryVec;
+            if (!BEAST_EXPECT(getTxHash(*wscTxHistory, txHistoryVec, 10).first))
+                return;
+            if (!BEAST_EXPECT(hashCompare(accountVec, txHistoryVec, true)))
+                return;
+
+            {
+                // take out all history txns from stream to prepare next test
+                IdxHashVec initFundTxns;
+                if (!BEAST_EXPECT(
+                        getTxHash(*wscTxHistory, initFundTxns, 10).second))
+                    return;
+            }
+
+            // compare future txns
+            sendPayments(env, alice, bob, 10, 1);
+            if (!BEAST_EXPECT(getTxHash(*wscAccount, accountVec, 10).first))
+                return;
+            if (!BEAST_EXPECT(getTxHash(*wscTxHistory, txHistoryVec, 10).first))
+                return;
+            if (!BEAST_EXPECT(hashCompare(accountVec, txHistoryVec, true)))
+                return;
+            wscTxHistory->invoke("unsubscribe", request);
+            wscAccount->invoke("unsubscribe", stream);
+        }
+
+        {
+            /*
+             * alice and bob issue USD to carol
+             * mix USD and XRP payments
+             */
+            Env env(*this);
+            auto const USD_a = alice["USD"];
+            auto const USD_b = bob["USD"];
+
+            std::array<Account, 3> accounts = {alice, bob, carol};
+            env.fund(XRP(333333), accounts);
+            env.trust(USD_a(20000), carol);
+            env.trust(USD_b(30000), carol);
+            env.close();
+            env.close();
+
+            std::uint32_t amount = 1;
+            auto sendUSDPayments = [&](int newTxns,
+                                       std::uint32_t ledgersToClose) {
+                for (int i = 0; i < newTxns; ++i)
+                {
+                    env(pay(bob, carol, USD_b(amount++)));
+                    env(pay(alice, carol, USD_a(amount++)));
+                }
+                for (int i = 0; i < ledgersToClose; ++i)
+                    env.close();
+                return 2 * newTxns;
+            };
+
+            // mix XRP and USD payments, and close lots of ledgers
+            auto oneRound = [&](int uxux) {
+                return sendUSDPayments(uxux, 0) +
+                    sendPayments(env, alice, carol, uxux, 0) +
+                    sendUSDPayments(uxux, 0) +
+                    sendPayments(env, bob, carol, uxux, 300);
+            };
+            env.close();
+
+            // subscribe
+            Json::Value request;
+            request[jss::account_history_tx_stream] = Json::objectValue;
+            request[jss::account_history_tx_stream][jss::account] =
+                carol.human();
+            auto wscLong = makeWSClient(env.app().config());
+            auto jv = wscLong->invoke("subscribe", request);
+            {
+                // take out existing txns from the stream
+                IdxHashVec tempVec;
+                getTxHash(*wscLong, tempVec, 1000);
+            }
+
+            // repeat the mix payments many rounds
+            for (int kk = 0; kk < 10; ++kk)
+            {
+                auto count = oneRound(kk + 2);
+                IdxHashVec vec1;
+                if (!BEAST_EXPECT(getTxHash(*wscLong, vec1, count).first))
+                    return;
+
+                // another subscribe, only for this round
+                auto wscShort = makeWSClient(env.app().config());
+                auto jv = wscShort->invoke("subscribe", request);
+                IdxHashVec vec2;
+                if (!BEAST_EXPECT(getTxHash(*wscShort, vec2, count).first))
+                    return;
+                if (!BEAST_EXPECT(hashCompare(vec1, vec2, true)))
+                    return;
+                wscShort->invoke("unsubscribe", request);
+            }
+        }
+    }
+
+    void
     run() override
     {
         testServer();
@@ -746,6 +1147,7 @@ public:
         testSubErrors(true);
         testSubErrors(false);
         testSubByUrl();
+        testHistoryTxStream();
     }
 };
 
