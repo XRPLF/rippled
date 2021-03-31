@@ -908,8 +908,11 @@ ServerHandlerImp::processRequest(
             reply[jss::result].isMember(jss::result))
         {
             reply = reply[jss::result];
-            reply[jss::result][jss::status] = reply[jss::status];
-            reply.removeMember(jss::status);
+            if (reply.isMember(jss::status))
+            {
+                reply[jss::result][jss::status] = reply[jss::status];
+                reply.removeMember(jss::status);
+            }
         }
     }
     auto response = to_string(reply);
