@@ -906,7 +906,11 @@ ServerHandlerImp::processRequest(
 
         if (reply.isMember(jss::result) &&
             reply[jss::result].isMember(jss::result))
+        {
             reply = reply[jss::result];
+            reply[jss::result][jss::status] = reply[jss::status];
+            reply.removeMember(jss::status);
+        }
     }
     auto response = to_string(reply);
 
