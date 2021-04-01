@@ -22,10 +22,11 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
@@ -689,15 +690,7 @@ OverlayImpl::onManifests(
                 if (app_.validators().listed(mo->masterKey))
                 {
                     auto db = app_.getWalletDB().checkoutDb();
-
-                    soci::transaction tr(*db);
-                    static const char* const sql =
-                        "INSERT INTO ValidatorManifests (RawData) VALUES "
-                        "(:rawData);";
-                    soci::blob rawData(*db);
-                    convert(serialized, rawData);
-                    *db << sql, soci::use(rawData);
-                    tr.commit();
+                    addValidatorManifest(*db, serialized);
                 }
             }
         }

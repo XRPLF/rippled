@@ -365,7 +365,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/main/Main.cpp
   src/ripple/app/main/NodeIdentity.cpp
   src/ripple/app/main/NodeStoreScheduler.cpp
-  src/ripple/app/reporting/DBHelpers.cpp
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
@@ -398,6 +397,13 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp
   src/ripple/app/paths/impl/XRPEndpointStep.cpp
+  src/ripple/app/rdb/backend/RelationalDBInterfacePostgres.cpp
+  src/ripple/app/rdb/backend/RelationalDBInterfaceSqlite.cpp
+  src/ripple/app/rdb/impl/RelationalDBInterface.cpp
+  src/ripple/app/rdb/impl/RelationalDBInterface_global.cpp
+  src/ripple/app/rdb/impl/RelationalDBInterface_nodes.cpp
+  src/ripple/app/rdb/impl/RelationalDBInterface_postgres.cpp
+  src/ripple/app/rdb/impl/RelationalDBInterface_shards.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp

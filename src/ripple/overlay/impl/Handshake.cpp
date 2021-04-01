@@ -268,7 +268,6 @@ verifyHandshake(
         // We can't blindly "return a-b;" because TimeKeeper::time_point
         // uses an unsigned integer for representing durations, which is
         // a problem when trying to subtract time points.
-        // FIXME: @HowardHinnant, should we migrate to using std::int64_t?
         auto calculateOffset = [](TimeKeeper::time_point a,
                                   TimeKeeper::time_point b) {
             if (a > b)
@@ -278,7 +277,7 @@ verifyHandshake(
 
         auto const offset = calculateOffset(netTime, ourTime);
 
-        if (date::abs(offset) > tolerance)
+        if (abs(offset) > tolerance)
             throw std::runtime_error("Peer clock is too far off");
     }
 

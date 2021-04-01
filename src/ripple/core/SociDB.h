@@ -47,40 +47,20 @@ struct sqlite3;
 
 namespace ripple {
 
-template <class T, class C>
-T
-rangeCheckedCast(C c)
-{
-    if ((c > std::numeric_limits<T>::max()) ||
-        (!std::numeric_limits<T>::is_signed && c < 0) ||
-        (std::numeric_limits<T>::is_signed &&
-         std::numeric_limits<C>::is_signed &&
-         c < std::numeric_limits<T>::lowest()))
-    {
-        JLOG(debugLog().error())
-            << "rangeCheckedCast domain error:"
-            << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
-            << " max: " << std::numeric_limits<T>::max();
-    }
-
-    return static_cast<T>(c);
-}
-
 class BasicConfig;
 
 /**
-   SociConfig is used when a client wants to delay opening a soci::session after
+   DBConfig is used when a client wants to delay opening a soci::session after
    parsing the config parameters. If a client want to open a session
    immediately, use the free function "open" below.
  */
-class SociConfig
+class DBConfig
 {
     std::string connectionString_;
-    soci::backend_factory const& backendFactory_;
-    SociConfig(std::pair<std::string, soci::backend_factory const&> init);
+    DBConfig(std::string const& dbPath);
 
 public:
-    SociConfig(BasicConfig const& config, std::string const& dbName);
+    DBConfig(BasicConfig const& config, std::string const& dbName);
     std::string
     connectionString() const;
     void

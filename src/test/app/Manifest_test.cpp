@@ -20,10 +20,10 @@
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
@@ -254,14 +254,12 @@ public:
 
         std::string const dbName("ManifestCacheTestDB");
         {
+            jtx::Env env(*this);
             DatabaseCon::Setup setup;
             setup.dataDir = getDatabasePath();
-            BEAST_EXPECT(!setup.useGlobalPragma);
-            DatabaseCon dbCon(
-                setup,
-                dbName.data(),
-                std::array<char const*, 0>(),
-                WalletDBInit);
+            assert(!setup.useGlobalPragma);
+
+            auto dbCon = makeTestWalletDB(setup, dbName);
 
             auto getPopulatedManifests =
                 [](ManifestCache const& cache) -> std::vector<Manifest const*> {
@@ -284,7 +282,6 @@ public:
             std::vector<Manifest const*> const inManifests(
                 sort(getPopulatedManifests(m)));
 
-            jtx::Env env(*this);
             auto& app = env.app();
             auto unl = std::make_unique<ValidatorList>(
                 m,
@@ -297,7 +294,7 @@ public:
                 // save should not store untrusted master keys to db
                 // except for revocations
                 m.save(
-                    dbCon,
+                    *dbCon,
                     "ValidatorManifests",
                     [&unl](PublicKey const& pubKey) {
                         return unl->listed(pubKey);
@@ -305,7 +302,7 @@ public:
 
                 ManifestCache loaded;
 
-                loaded.load(dbCon, "ValidatorManifests");
+                loaded.load(*dbCon, "ValidatorManifests");
 
                 // check that all loaded manifests are revocations
                 std::vector<Manifest const*> const loadedManifests(
@@ -326,13 +323,13 @@ public:
                 unl->load(emptyLocalKey, s1, keys);
 
                 m.save(
-                    dbCon,
+                    *dbCon,
                     "ValidatorManifests",
                     [&unl](PublicKey const& pubKey) {
                         return unl->listed(pubKey);
                     });
                 ManifestCache loaded;
-                loaded.load(dbCon, "ValidatorManifests");
+                loaded.load(*dbCon, "ValidatorManifests");
 
                 // check that the manifest caches are the same
                 std::vector<Manifest const*> const loadedManifests(
@@ -360,7 +357,10 @@ public:
 
                 std::string const badManifest = "bad manifest";
                 BEAST_EXPECT(!loaded.load(
-                    dbCon, "ValidatorManifests", badManifest, emptyRevocation));
+                    *dbCon,
+                    "ValidatorManifests",
+                    badManifest,
+                    emptyRevocation));
 
                 auto const sk = randomSecretKey();
                 auto const pk = derivePublicKey(KeyType::ed25519, sk);
@@ -370,7 +370,10 @@ public:
                     makeManifestString(pk, sk, kp.first, kp.second, 0);
 
                 BEAST_EXPECT(loaded.load(
-                    dbCon, "ValidatorManifests", cfgManifest, emptyRevocation));
+                    *dbCon,
+                    "ValidatorManifests",
+                    cfgManifest,
+                    emptyRevocation));
             }
             {
                 // load config revocation
@@ -380,7 +383,10 @@ public:
                 std::vector<std::string> const badRevocation = {
                     "bad revocation"};
                 BEAST_EXPECT(!loaded.load(
-                    dbCon, "ValidatorManifests", emptyManifest, badRevocation));
+                    *dbCon,
+                    "ValidatorManifests",
+                    emptyManifest,
+                    badRevocation));
 
                 auto const sk = randomSecretKey();
                 auto const keyType = KeyType::ed25519;
@@ -390,13 +396,16 @@ public:
                     makeManifestString(pk, sk, kp.first, kp.second, 0)};
 
                 BEAST_EXPECT(!loaded.load(
-                    dbCon, "ValidatorManifests", emptyManifest, nonRevocation));
+                    *dbCon,
+                    "ValidatorManifests",
+                    emptyManifest,
+                    nonRevocation));
                 BEAST_EXPECT(!loaded.revoked(pk));
 
                 std::vector<std::string> const badSigRevocation = {
                     makeRevocationString(sk, keyType, true)};
                 BEAST_EXPECT(!loaded.load(
-                    dbCon,
+                    *dbCon,
                     "ValidatorManifests",
                     emptyManifest,
                     badSigRevocation));
@@ -405,7 +414,10 @@ public:
                 std::vector<std::string> const cfgRevocation = {
                     makeRevocationString(sk, keyType)};
                 BEAST_EXPECT(loaded.load(
-                    dbCon, "ValidatorManifests", emptyManifest, cfgRevocation));
+                    *dbCon,
+                    "ValidatorManifests",
+                    emptyManifest,
+                    cfgRevocation));
 
                 BEAST_EXPECT(loaded.revoked(pk));
             }

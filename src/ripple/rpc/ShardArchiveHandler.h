@@ -23,6 +23,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/net/DatabaseDownloader.h>
 #include <ripple/rpc/ShardVerificationScheduler.h>
 
@@ -127,13 +128,13 @@ private:
     /////////////////////////////////////////////////
     // m_ is used to protect access to downloader_,
     // archives_, process_ and to protect setting and
-    // destroying sqliteDB_.
+    // destroying sqlDB_.
     /////////////////////////////////////////////////
     std::mutex mutable m_;
     std::shared_ptr<DatabaseDownloader> downloader_;
     std::map<std::uint32_t, parsedURL> archives_;
     bool process_;
-    std::unique_ptr<DatabaseCon> sqliteDB_;
+    std::unique_ptr<DatabaseCon> sqlDB_;
     /////////////////////////////////////////////////
 
     Application& app_;

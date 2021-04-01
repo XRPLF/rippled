@@ -32,6 +32,7 @@
 #include <boost/asio.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <chrono>
+#include <date/date.h>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <test/unit_test/FileDirGuard.h>

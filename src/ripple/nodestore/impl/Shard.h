@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_SHARD_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/core/DatabaseCon.h>
@@ -195,6 +196,30 @@ public:
     {
         removeOnDestroy_ = true;
     }
+
+    /**
+     * @brief callForLedgerSQL Checks out ledger database for the shard and
+     *        calls given callback function passing shard index and session
+     *        with the database to it.
+     * @param callback Callback function to call.
+     * @return Value returned by callback function.
+     */
+    bool
+    callForLedgerSQL(
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback);
+
+    /**
+     * @brief callForTransactionSQL Checks out transaction database for the
+     *        shard and calls given callback function passing shard index and
+     *        session with the database to it.
+     * @param callback Callback function to call.
+     * @return Value returned by callback function.
+     */
+    bool
+    callForTransactionSQL(
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback);
 
     // Current shard version
     static constexpr std::uint32_t version{2};

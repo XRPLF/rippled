@@ -152,7 +152,9 @@ isCurrent(
     // Because this can be called on untrusted, possibly
     // malicious validations, we do our math in a way
     // that avoids any chance of overflowing or underflowing
-    // the signing time.
+    // the signing time.  All of the expressions below are
+    // promoted from unsigned 32 bit to signed 64 bit prior
+    // to computation.
 
     return (signTime > (now - p.validationCURRENT_EARLY)) &&
         (signTime < (now + p.validationCURRENT_WALL)) &&
