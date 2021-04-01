@@ -141,14 +141,14 @@ Reference Transaction</h2>
 <p>In the future, there may be other transaction types that require more (or less) work for rippled to process. Those transactions may have a higher (or lower) base fee, requiring a correspondingly higher (or lower) fee to get into the same position as a reference transaction.</p>
 <h2><a class="anchor" id="autotoc_md114"></a>
 Consensus Health</h2>
-<p>For consensus to be considered healthy, the consensus process must take less than 5 seconds. This time limit was chosen based on observed past behavior of the ripple network. Note that this is not necessarily the time between ledger closings, as consensus usually starts some amount of time after a ledger opens.</p>
+<p>For consensus to be considered healthy, the consensus process must take less than 5 seconds. This time limit was chosen based on observed past behavior of the network. Note that this is not necessarily the time between ledger closings, as consensus usually starts some amount of time after a ledger opens.</p>
 <h2><a class="anchor" id="autotoc_md115"></a>
 Other Constants</h2>
 <ul>
 <li><em>Base fee transaction limit per ledger</em>. The minimum value of 5 was chosen to ensure the limit never gets so small that the ledger becomes unusable. The "target" value of 50 was chosen so the limit never gets large enough to invite abuse, but keeps up if the network stays healthy and active. These exact values were chosen experimentally, and can easily change in the future.</li>
 <li><em>Expected ledger size growth and reduction percentages</em>. The growth value of 20% was chosen to allow the limit to grow quickly as load increases, but not so quickly as to allow bad actors to run unrestricted. The reduction value of 50% was chosen to cause the limit to drop significantly, but not so drastically that the limit cannot quickly recover if the problem is temporary. These exact values were chosen experimentally, and can easily change in the future.</li>
 <li><em>Minimum <code>lastLedgerMedianFeeLevel</code></em>. The value of 500 was chosen to ensure that the first escalated fee was more significant and noticable than what the default would allow. This exact value was chosen experimentally, and can easily change in the future.</li>
-<li><em>Transaction queue size limit</em>. The limit is computed based on the base fee transaction limit per ledger, so that the queue can grow automatically as the ripple network's performance improves, allowing more transactions per second, and thus more transactions per ledger to process successfully. The limit of 20 ledgers was used to provide a balance between resource (specifically memory) usage, and giving transactions a realistic chance to be processed. The minimum size of 2000 transactions was chosen to allow a decent functional backlog during network congestion conditions. These exact values were chosen experimentally, and can easily change in the future.</li>
+<li><em>Transaction queue size limit</em>. The limit is computed based on the base fee transaction limit per ledger, so that the queue can grow automatically as the network's performance improves, allowing more transactions per second, and thus more transactions per ledger to process successfully. The limit of 20 ledgers was used to provide a balance between resource (specifically memory) usage, and giving transactions a realistic chance to be processed. The minimum size of 2000 transactions was chosen to allow a decent functional backlog during network congestion conditions. These exact values were chosen experimentally, and can easily change in the future.</li>
 <li><em>Maximum retries</em>. A transaction in the queue can attempt to apply to the open ledger, but get a retry (<code>ter</code>) code up to 10 times, at which point, it will be removed from the queue and dropped. The value was chosen to be large enough to allow temporary failures to clear up, but small enough that the queue doesn't fill up with stale transactions which prevent lower fee level, but more likely to succeed, transactions from queuing.</li>
 <li><em>Maximum transactions per account</em>. A single account can have up to 10 transactions in the queue at any given time. This is primarily to mitigate the lost cost of broadcasting multiple transactions if one of the earlier ones fails or is otherwise removed from the queue without being applied to the open ledger. The value was chosen arbitrarily, and can easily change in the future.</li>
 <li><em>Minimum last ledger sequence buffer</em>. If a transaction has a <code>LastLedgerSequence</code> value, and cannot be processed into the open ledger, that <code>LastLedgerSequence</code> must be at least 2 more than the sequence number of the open ledger to be considered for the queue. The value was chosen to provide a balance between letting the user control the lifespan of the transaction, and giving a queued transaction a chance to get processed out of the queue before getting discarded, particularly since it may have dependent transactions also in the queue, which will never succeed if this one is discarded.</li>
@@ -181,7 +181,7 @@ Other Constants</h2>
 <div class="line">   }</div>
 <div class="line">}</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md117"></a>
-&lt;a href="https://ripple.com/build/rippled-apis/#server-info"&gt;&lt;tt&gt;server_info&lt;/tt&gt;&lt;/a&gt; command</h2>
+&lt;a href="https://xrpl.org/server_info.html"&gt;&lt;tt&gt;server_info&lt;/tt&gt;&lt;/a&gt; command</h2>
 <p><b>The fields listed here are still experimental, and may change without warning.</b></p>
 <p>Up to two fields in <code>server_info</code> output are related to fee escalation.</p>
 <ol type="1">
@@ -190,7 +190,7 @@ Other Constants</h2>
 </ol>
 <p>In all cases, the transaction fee must be high enough to overcome both <code>load_factor_fee_queue</code> and <code>load_factor</code> to be considered. It does not need to overcome <code>load_factor_fee_escalation</code>, though if it does not, it is more likely to be queued than immediately processed into the open ledger.</p>
 <h2><a class="anchor" id="autotoc_md118"></a>
-&lt;a href="https://ripple.com/build/rippled-apis/#server-state"&gt;&lt;tt&gt;server_state&lt;/tt&gt;&lt;/a&gt; command</h2>
+&lt;a href="https://xrpl.org/server_state.html"&gt;&lt;tt&gt;server_state&lt;/tt&gt;&lt;/a&gt; command</h2>
 <p><b>The fields listed here are still experimental, and may change without warning.</b></p>
 <p>Three fields in <code>server_state</code> output are related to fee escalation.</p>
 <ol type="1">

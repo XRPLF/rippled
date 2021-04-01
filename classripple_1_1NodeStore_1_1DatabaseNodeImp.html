@@ -74,7 +74,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1NodeStore_1_1DatabaseNodeImp-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::NodeStore::DatabaseNodeImp Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">ripple::NodeStore::DatabaseNodeImp Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -161,6 +161,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a2917747708b498ce8b0a24e074aa5b1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Import objects from another database.  <a href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a2917747708b498ce8b0a24e074aa5b1f">More...</a><br /></td></tr>
 <tr class="separator:a2917747708b498ce8b0a24e074aa5b1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f23a54188aa2329d979c937d932dbaf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a5f23a54188aa2329d979c937d932dbaf">store</a> (<a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3">NodeObjectType</a> type, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;data, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) override</td></tr>
+<tr class="memdesc:a5f23a54188aa2329d979c937d932dbaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store the object.  <a href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a5f23a54188aa2329d979c937d932dbaf">More...</a><br /></td></tr>
 <tr class="separator:a5f23a54188aa2329d979c937d932dbaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a257548afff5a0e3c3f8c2817f71b96f3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a257548afff5a0e3c3f8c2817f71b96f3">isSameDB</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) override</td></tr>
 <tr class="separator:a257548afff5a0e3c3f8c2817f71b96f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -174,9 +175,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af83b106a8e0f80ef92cc3140e1112ec0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#af83b106a8e0f80ef92cc3140e1112ec0">sweep</a> () override</td></tr>
 <tr class="memdesc:af83b106a8e0f80ef92cc3140e1112ec0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove expired entries from the positive and negative caches.  <a href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#af83b106a8e0f80ef92cc3140e1112ec0">More...</a><br /></td></tr>
 <tr class="separator:af83b106a8e0f80ef92cc3140e1112ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7da2336581ee3348aad97c0d885658d0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a7da2336581ee3348aad97c0d885658d0">store</a> (<a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3">NodeObjectType</a> type, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;data, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq)=0</td></tr>
-<tr class="memdesc:a7da2336581ee3348aad97c0d885658d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store the object.  <a href="classripple_1_1NodeStore_1_1Database.html#a7da2336581ee3348aad97c0d885658d0">More...</a><br /></td></tr>
-<tr class="separator:a7da2336581ee3348aad97c0d885658d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c2e13367bf02755107ee7ca3ad756be"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a4c2e13367bf02755107ee7ca3ad756be">fetchNodeObject</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq=0, <a class="el" href="namespaceripple_1_1NodeStore.html#a6334ed426a8dbe335761b9d81ab6f19f">FetchType</a> fetchType=<a class="el" href="namespaceripple_1_1NodeStore.html#a6334ed426a8dbe335761b9d81ab6f19fa1303c4f41a88e739bc859612321b189f">FetchType::synchronous</a>)</td></tr>
 <tr class="memdesc:a4c2e13367bf02755107ee7ca3ad756be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch a node object.  <a href="classripple_1_1NodeStore_1_1Database.html#a4c2e13367bf02755107ee7ca3ad756be">More...</a><br /></td></tr>
 <tr class="separator:a4c2e13367bf02755107ee7ca3ad756be"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -630,7 +628,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a5f23a54188aa2329d979c937d932dbaf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f23a54188aa2329d979c937d932dbaf">&#9670;&nbsp;</a></span>store() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f23a54188aa2329d979c937d932dbaf">&#9670;&nbsp;</a></span>store()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -660,7 +658,7 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname">&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -670,10 +668,25 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Store the object. </p>
+<p>The caller's Blob parameter is overwritten.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">type</td><td>The type of object. </td></tr>
+    <tr><td class="paramname">data</td><td>The payload of the object. The caller's variable is overwritten. </td></tr>
+    <tr><td class="paramname">hash</td><td>The 256-bit hash of the payload data. </td></tr>
+    <tr><td class="paramname">ledgerSeq</td><td>The sequence of the ledger the object belongs to.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><code>true</code> if the object was stored? </dd></dl>
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a7da2336581ee3348aad97c0d885658d0">ripple::NodeStore::Database</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="DatabaseNodeImp_8cpp_source.html#l00028">28</a> of file <a class="el" href="DatabaseNodeImp_8cpp_source.html">DatabaseNodeImp.cpp</a>.</p>
 
@@ -873,10 +886,12 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a3f629d9f90e843367887aee6f52f6e1e">ripple::NodeStore::Database</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="DatabaseNodeImp_8cpp_source.html#l00047">47</a> of file <a class="el" href="DatabaseNodeImp_8cpp_source.html">DatabaseNodeImp.cpp</a>.</p>
 
@@ -945,69 +960,6 @@ Private Attributes</h2></td></tr>
 <p>Reimplemented from <a class="el" href="classripple_1_1NodeStore_1_1Database.html#aba0e02eea82d047dde49d56f362347bf">ripple::NodeStore::Database</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="DatabaseNodeImp_8h_source.html#l00157">157</a> of file <a class="el" href="DatabaseNodeImp_8h_source.html">DatabaseNodeImp.h</a>.</p>
-
-</div>
-</div>
-<a id="a7da2336581ee3348aad97c0d885658d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7da2336581ee3348aad97c0d885658d0">&#9670;&nbsp;</a></span>store() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void ripple::NodeStore::Database::store </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3">NodeObjectType</a>&#160;</td>
-          <td class="paramname"><em>type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>ledgerSeq</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Store the object. </p>
-<p>The caller's Blob parameter is overwritten.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">type</td><td>The type of object. </td></tr>
-    <tr><td class="paramname">data</td><td>The payload of the object. The caller's variable is overwritten. </td></tr>
-    <tr><td class="paramname">hash</td><td>The 256-bit hash of the payload data. </td></tr>
-    <tr><td class="paramname">ledgerSeq</td><td>The sequence of the ledger the object belongs to.</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd><code>true</code> if the object was stored? </dd></dl>
-
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a7992d0dd009c5b855c331c73872c946d">ripple::NodeStore::DatabaseRotatingImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#aa2a32f28cb0b4e0a5097205410c346eb">ripple::NodeStore::DatabaseShardImp</a>.</p>
 
 </div>
 </div>

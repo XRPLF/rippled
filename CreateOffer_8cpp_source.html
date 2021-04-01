@@ -709,7 +709,7 @@ $(function() {
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;    <a class="code" href="classripple_1_1Sandbox.html">Sandbox</a>&amp; sbCancel,</div>
 <div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;    Amounts <span class="keyword">const</span>&amp; takerAmount)</div>
 <div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;{</div>
-<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> when{ctx_.view().parentCloseTime()};</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> when = ctx_.view().parentCloseTime();</div>
 <div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160; </div>
 <div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;    <a class="code" href="classbeast_1_1WrappedSink.html">beast::WrappedSink</a> takerSink(j_, <span class="stringliteral">&quot;Taker &quot;</span>);</div>
 <div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160; </div>

@@ -161,11 +161,11 @@ Static Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
-<tr class="memitem:a95cf1ac52529ed5a81964f2d73134800"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a95cf1ac52529ed5a81964f2d73134800">left_t</a> = boost::bimaps::unordered_set_of&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> &gt;</td></tr>
-<tr class="separator:a95cf1ac52529ed5a81964f2d73134800"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b9e5f665ea06c88d336349124713820"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b9e5f665ea06c88d336349124713820">right_t</a> = boost::bimaps::multiset_of&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> &gt;</td></tr>
-<tr class="separator:a7b9e5f665ea06c88d336349124713820"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc639e0296c50cf46be66b0ef17d0500"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#afc639e0296c50cf46be66b0ef17d0500">map_type</a> = boost::bimap&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a95cf1ac52529ed5a81964f2d73134800">left_t</a>, <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b9e5f665ea06c88d336349124713820">right_t</a> &gt;</td></tr>
+<tr class="memitem:a96646bf5f1a246cfbc18738c867f8175"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a96646bf5f1a246cfbc18738c867f8175">left_t</a> = boost::bimaps::unordered_set_of&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>, boost::hash&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> &gt;, <a class="el" href="structripple_1_1equal__to.html">ripple::equal_to</a>&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> &gt; &gt;</td></tr>
+<tr class="separator:a96646bf5f1a246cfbc18738c867f8175"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af55463fd50cf151c128d664b8c53de63"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#af55463fd50cf151c128d664b8c53de63">right_t</a> = boost::bimaps::multiset_of&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a>, <a class="el" href="structripple_1_1less.html">ripple::less</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> &gt; &gt;</td></tr>
+<tr class="separator:af55463fd50cf151c128d664b8c53de63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc639e0296c50cf46be66b0ef17d0500"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#afc639e0296c50cf46be66b0ef17d0500">map_type</a> = boost::bimap&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a96646bf5f1a246cfbc18738c867f8175">left_t</a>, <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#af55463fd50cf151c128d664b8c53de63">right_t</a> &gt;</td></tr>
 <tr class="separator:afc639e0296c50cf46be66b0ef17d0500"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b29b6612ede739e3df1da76c79ae871"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b29b6612ede739e3df1da76c79ae871">value_type</a> = map_type::value_type</td></tr>
 <tr class="separator:a7b29b6612ede739e3df1da76c79ae871"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -202,10 +202,10 @@ Private Attributes</h2></td></tr>
 <p>Valence A signed integer which represents the number of successful consecutive connection attempts when positive, and the number of failed consecutive connection attempts when negative.</p>
 <p>When choosing addresses from the boot cache for the purpose of establishing outgoing connections, addresses are ranked in decreasing order of high uptime, with valence as the tie breaker. </p>
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00050">50</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00051">51</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a95cf1ac52529ed5a81964f2d73134800"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a95cf1ac52529ed5a81964f2d73134800">&#9670;&nbsp;</a></span>left_t</h2>
+<a id="a96646bf5f1a246cfbc18738c867f8175"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96646bf5f1a246cfbc18738c867f8175">&#9670;&nbsp;</a></span>left_t</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -214,7 +214,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a95cf1ac52529ed5a81964f2d73134800">ripple::PeerFinder::Bootcache::left_t</a> =  boost::bimaps::unordered_set_of&lt;<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a96646bf5f1a246cfbc18738c867f8175">ripple::PeerFinder::Bootcache::left_t</a> =  boost::bimaps::unordered_set_of&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>, boost::hash&lt;<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&gt;, <a class="el" href="structripple_1_1equal__to.html">ripple::equal_to</a>&lt;<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&gt; &gt;</td>
         </tr>
       </table>
   </td>
@@ -224,12 +224,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00084">84</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00088">88</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
-<a id="a7b9e5f665ea06c88d336349124713820"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b9e5f665ea06c88d336349124713820">&#9670;&nbsp;</a></span>right_t</h2>
+<a id="af55463fd50cf151c128d664b8c53de63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af55463fd50cf151c128d664b8c53de63">&#9670;&nbsp;</a></span>right_t</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -238,7 +238,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b9e5f665ea06c88d336349124713820">ripple::PeerFinder::Bootcache::right_t</a> =  boost::bimaps::multiset_of&lt;<a class="el" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#af55463fd50cf151c128d664b8c53de63">ripple::PeerFinder::Bootcache::right_t</a> =  boost::bimaps::multiset_of&lt;<a class="el" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a>, <a class="el" href="structripple_1_1less.html">ripple::less</a>&lt;<a class="el" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a>&gt; &gt;</td>
         </tr>
       </table>
   </td>
@@ -248,7 +248,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00085">85</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00089">89</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -262,7 +262,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#afc639e0296c50cf46be66b0ef17d0500">ripple::PeerFinder::Bootcache::map_type</a> =  boost::bimap&lt;<a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a95cf1ac52529ed5a81964f2d73134800">left_t</a>, <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b9e5f665ea06c88d336349124713820">right_t</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#afc639e0296c50cf46be66b0ef17d0500">ripple::PeerFinder::Bootcache::map_type</a> =  boost::bimap&lt;<a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#a96646bf5f1a246cfbc18738c867f8175">left_t</a>, <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#af55463fd50cf151c128d664b8c53de63">right_t</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -272,7 +272,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00086">86</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00090">90</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -296,7 +296,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00087">87</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00091">91</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -312,7 +312,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00129">129</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00133">133</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -328,7 +328,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00131">131</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00135">135</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -809,7 +809,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00113">113</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00117">117</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -833,7 +833,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00115">115</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00119">119</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -857,7 +857,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00116">116</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00120">120</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -881,7 +881,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00117">117</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00121">121</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -905,7 +905,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00120">120</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00124">124</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -929,7 +929,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00123">123</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00127">127</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>
@@ -953,7 +953,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00126">126</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Bootcache_8h_source.html#l00130">130</a> of file <a class="el" href="Bootcache_8h_source.html">Bootcache.h</a>.</p>
 
 </div>
 </div>

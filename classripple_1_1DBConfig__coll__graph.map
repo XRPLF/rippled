@@ -1,0 +1,4 @@
+<map id="ripple::DBConfig" name="ripple::DBConfig">
+<area shape="rect" id="node1" title="DBConfig is used when a client wants to delay opening a soci::session after parsing the config parame..." alt="" coords="5,95,132,121"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="25,5,112,32"/>
+</map>

@@ -97,8 +97,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
-<tr class="memitem:a6cf0120ed429496bd837c64be63096fa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a6cf0120ed429496bd837c64be63096fa">InstanceMap</a> = boost::bimaps::bimap&lt; <a class="el" href="structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html">Ledger::Instance</a>, <a class="el" href="classripple_1_1test_1_1csf_1_1Ledger.html#afe81f84534dea5767de43a3dc0fe5b9b">Ledger::ID</a> &gt;</td></tr>
-<tr class="separator:a6cf0120ed429496bd837c64be63096fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf9cf53659194829c130fa990d73a19f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#aaf9cf53659194829c130fa990d73a19f">InstanceMap</a> = boost::bimaps::bimap&lt; boost::bimaps::set_of&lt; <a class="el" href="structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html">Ledger::Instance</a>, <a class="el" href="structripple_1_1less.html">ripple::less</a>&lt; <a class="el" href="structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html">Ledger::Instance</a> &gt; &gt;, boost::bimaps::set_of&lt; <a class="el" href="classripple_1_1test_1_1csf_1_1Ledger.html#afe81f84534dea5767de43a3dc0fe5b9b">Ledger::ID</a>, <a class="el" href="structripple_1_1less.html">ripple::less</a>&lt; <a class="el" href="classripple_1_1test_1_1csf_1_1Ledger.html#afe81f84534dea5767de43a3dc0fe5b9b">Ledger::ID</a> &gt; &gt;&gt;</td></tr>
+<tr class="separator:aaf9cf53659194829c130fa990d73a19f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d89c460f3342a86889a560b6bfb6192"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a2d89c460f3342a86889a560b6bfb6192">InstanceEntry</a> = InstanceMap::value_type</td></tr>
 <tr class="separator:a2d89c460f3342a86889a560b6bfb6192"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -109,16 +109,16 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a9eadbbd2c55e5879e7f9a4e24ea4ed34"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a6cf0120ed429496bd837c64be63096fa">InstanceMap</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a9eadbbd2c55e5879e7f9a4e24ea4ed34">instances_</a></td></tr>
+<tr class="memitem:a9eadbbd2c55e5879e7f9a4e24ea4ed34"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#aaf9cf53659194829c130fa990d73a19f">InstanceMap</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a9eadbbd2c55e5879e7f9a4e24ea4ed34">instances_</a></td></tr>
 <tr class="separator:a9eadbbd2c55e5879e7f9a4e24ea4ed34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Oracle maintaining unique ledgers for a simulation. </p>
 
-<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00243">243</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00244">244</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a6cf0120ed429496bd837c64be63096fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6cf0120ed429496bd837c64be63096fa">&#9670;&nbsp;</a></span>InstanceMap</h2>
+<a id="aaf9cf53659194829c130fa990d73a19f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf9cf53659194829c130fa990d73a19f">&#9670;&nbsp;</a></span>InstanceMap</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -127,7 +127,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a6cf0120ed429496bd837c64be63096fa">ripple::test::csf::LedgerOracle::InstanceMap</a> =  boost::bimaps::bimap&lt;<a class="el" href="structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html">Ledger::Instance</a>, <a class="el" href="classripple_1_1test_1_1csf_1_1Ledger.html#afe81f84534dea5767de43a3dc0fe5b9b">Ledger::ID</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#aaf9cf53659194829c130fa990d73a19f">ripple::test::csf::LedgerOracle::InstanceMap</a> =  boost::bimaps::bimap&lt; boost::bimaps::set_of&lt;<a class="el" href="structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html">Ledger::Instance</a>, <a class="el" href="structripple_1_1less.html">ripple::less</a>&lt;<a class="el" href="structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html">Ledger::Instance</a>&gt; &gt;, boost::bimaps::set_of&lt;<a class="el" href="classripple_1_1test_1_1csf_1_1Ledger.html#afe81f84534dea5767de43a3dc0fe5b9b">Ledger::ID</a>, <a class="el" href="structripple_1_1less.html">ripple::less</a>&lt;<a class="el" href="classripple_1_1test_1_1csf_1_1Ledger.html#afe81f84534dea5767de43a3dc0fe5b9b">Ledger::ID</a>&gt; &gt;&gt;</td>
         </tr>
       </table>
   </td>
@@ -137,7 +137,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00245">245</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00248">248</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
 
 </div>
 </div>
@@ -161,7 +161,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00246">246</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00249">249</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
 
 </div>
 </div>
@@ -314,7 +314,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00278">278</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00281">281</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
 
 </div>
 </div>
@@ -353,7 +353,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#a6cf0120ed429496bd837c64be63096fa">InstanceMap</a> ripple::test::csf::LedgerOracle::instances_</td>
+          <td class="memname"><a class="el" href="classripple_1_1test_1_1csf_1_1LedgerOracle.html#aaf9cf53659194829c130fa990d73a19f">InstanceMap</a> ripple::test::csf::LedgerOracle::instances_</td>
         </tr>
       </table>
   </td>
@@ -363,7 +363,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00249">249</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ledgers_8h_source.html#l00252">252</a> of file <a class="el" href="ledgers_8h_source.html">ledgers.h</a>.</p>
 
 </div>
 </div>

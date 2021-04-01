@@ -75,7 +75,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1InboundTransactionsImp-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::InboundTransactionsImp Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">ripple::InboundTransactionsImp Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -172,9 +172,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa7e193d3f153d0bd6c294c1b060a62aa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactionsImp.html#aa7e193d3f153d0bd6c294c1b060a62aa">onStop</a> () override</td></tr>
 <tr class="memdesc:aa7e193d3f153d0bd6c294c1b060a62aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called when the stop notification is issued.  <a href="classripple_1_1InboundTransactionsImp.html#aa7e193d3f153d0bd6c294c1b060a62aa">More...</a><br /></td></tr>
 <tr class="separator:aa7e193d3f153d0bd6c294c1b060a62aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc34365d8412a8ae51acc35b40c26295"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#afc34365d8412a8ae51acc35b40c26295">gotData</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;setHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; peer, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; message)=0</td></tr>
-<tr class="memdesc:afc34365d8412a8ae51acc35b40c26295"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a transaction set from a LedgerData message.  <a href="classripple_1_1InboundTransactions.html#afc34365d8412a8ae51acc35b40c26295">More...</a><br /></td></tr>
-<tr class="separator:afc34365d8412a8ae51acc35b40c26295"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
 <tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
@@ -465,7 +462,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="ac3cf03fa813190019d8ef47edd49a568"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac3cf03fa813190019d8ef47edd49a568">&#9670;&nbsp;</a></span>gotData() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3cf03fa813190019d8ef47edd49a568">&#9670;&nbsp;</a></span>gotData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -499,12 +496,14 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 <p>We received a TMLedgerData from a peer. </p>
+
+<p>Implements <a class="el" href="classripple_1_1InboundTransactions.html#afc34365d8412a8ae51acc35b40c26295">ripple::InboundTransactions</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="InboundTransactions_8cpp_source.html#l00140">140</a> of file <a class="el" href="InboundTransactions_8cpp_source.html">InboundTransactions.cpp</a>.</p>
 
@@ -630,58 +629,6 @@ Private Attributes</h2></td></tr>
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a4278b4c199fbe20a75d69610a8970c03">ripple::Stoppable</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="InboundTransactions_8cpp_source.html#l00245">245</a> of file <a class="el" href="InboundTransactions_8cpp_source.html">InboundTransactions.cpp</a>.</p>
-
-</div>
-</div>
-<a id="afc34365d8412a8ae51acc35b40c26295"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc34365d8412a8ae51acc35b40c26295">&#9670;&nbsp;</a></span>gotData() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void ripple::InboundTransactions::gotData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>setHash</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt;&#160;</td>
-          <td class="paramname"><em>peer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt;&#160;</td>
-          <td class="paramname"><em>message</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Add a transaction set from a LedgerData message. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">setHash</td><td>The transaction set ID (digest of the <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> root node). </td></tr>
-    <tr><td class="paramname">peer</td><td>The peer that sent the message. </td></tr>
-    <tr><td class="paramname">message</td><td>The LedgerData message. </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

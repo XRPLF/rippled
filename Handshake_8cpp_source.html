@@ -325,154 +325,153 @@ $(function() {
 <div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        <span class="comment">// We can&#39;t blindly &quot;return a-b;&quot; because TimeKeeper::time_point</span></div>
 <div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        <span class="comment">// uses an unsigned integer for representing durations, which is</span></div>
 <div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        <span class="comment">// a problem when trying to subtract time points.</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <span class="comment">// FIXME: @HowardHinnant, should we migrate to using std::int64_t?</span></div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        <span class="keyword">auto</span> calculateOffset = [](<a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">TimeKeeper::time_point</a> a,</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                                  <a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">TimeKeeper::time_point</a> b) {</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            <span class="keywordflow">if</span> (a &gt; b)</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                <span class="keywordflow">return</span> duration_cast&lt;std::chrono::seconds&gt;(a - b);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;            <span class="keywordflow">return</span> -duration_cast&lt;std::chrono::seconds&gt;(b - a);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        };</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> offset = calculateOffset(netTime, ourTime);</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <span class="keywordflow">if</span> (date::abs(offset) &gt; tolerance)</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Peer clock is too far off&quot;</span>);</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    }</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span> publicKey = [&amp;headers] {</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Public-Key&quot;</span>); iter != headers.end())</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        {</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            <span class="keyword">auto</span> pk = parseBase58&lt;PublicKey&gt;(</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                <a class="code" href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03ac3fe5edb1f8a81a8e585f6a27c120be6">TokenType::NodePublic</a>, iter-&gt;value().to_string());</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            <span class="keywordflow">if</span> (pk)</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            {</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(*pk) != <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>)</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                    <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Unsupported public key type&quot;</span>);</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                <span class="keywordflow">return</span> *pk;</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            }</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        }</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160; </div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Bad node public key&quot;</span>);</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    }();</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <span class="keywordflow">if</span> (publicKey == app.<a class="code" href="classripple_1_1Application.html#a9b3f2eb30c34c4c8a516bce076be513e">nodeIdentity</a>().first)</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Self connection&quot;</span>);</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160; </div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="comment">// This check gets two birds with one stone:</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="comment">// 1) it verifies that the node we are talking to has access to the</span></div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="comment">//    private key corresponding to the public node identity it claims.</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="comment">// 2) it verifies that our SSL session is end-to-end with that node</span></div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="comment">//    and not through a proxy that establishes two separate sessions.</span></div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    {</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Session-Signature&quot;</span>);</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160; </div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        <span class="keywordflow">if</span> (iter == headers.end())</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;No session signature specified&quot;</span>);</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keyword">auto</span> sig = <a class="code" href="namespaceripple.html#a551be32de1cc0f8a8ff1f14ee84d892b">base64_decode</a>(iter-&gt;value().to_string());</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">verifyDigest</a>(publicKey, sharedValue, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(sig), <span class="keyword">false</span>))</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Failed to verify session&quot;</span>);</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    }</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Local-IP&quot;</span>); iter != headers.end())</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    {</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        boost::system::error_code ec;</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> local_ip = boost::asio::ip::address::from_string(</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            iter-&gt;value().to_string(), ec);</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Invalid Local-IP&quot;</span>);</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a>(remote) &amp;&amp; remote != local_ip)</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                <span class="stringliteral">&quot;Incorrect Local-IP: &quot;</span> + remote.to_string() + <span class="stringliteral">&quot; instead of &quot;</span> +</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                local_ip.to_string());</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    }</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Remote-IP&quot;</span>); iter != headers.end())</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    {</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        boost::system::error_code ec;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> remote_ip = boost::asio::ip::address::from_string(</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            iter-&gt;value().to_string(), ec);</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Invalid Remote-IP&quot;</span>);</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a>(remote) &amp;&amp;</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            !<a class="code" href="namespacebeast_1_1IP.html#ab294c32a52d800b61d2fbe6f6d130faa">beast::IP::is_unspecified</a>(public_ip))</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        {</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            <span class="comment">// We know our public IP and peer reports our connection came</span></div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="comment">// from some other IP.</span></div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <span class="keywordflow">if</span> (remote_ip != public_ip)</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                    <span class="stringliteral">&quot;Incorrect Remote-IP: &quot;</span> + public_ip.to_string() +</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                    <span class="stringliteral">&quot; instead of &quot;</span> + remote_ip.to_string());</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        }</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    }</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keywordflow">return</span> publicKey;</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;}</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;<span class="keyword">auto</span></div>
-<div class="line"><a name="l00364"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2760587a1b198e51b16d86958d7c7e10">  364</a></span>&#160;<a class="code" href="namespaceripple.html#a2760587a1b198e51b16d86958d7c7e10">makeRequest</a>(</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="keywordtype">bool</span> crawlPublic,</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keywordtype">bool</span> comprEnabled,</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="keywordtype">bool</span> vpReduceRelayEnabled,</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    <span class="keywordtype">bool</span> ledgerReplayEnabled) -&gt; <a class="code" href="namespaceripple.html#aca9c2c7a74ddd4a436b5984f6a265621">request_type</a></div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;{</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    <a class="code" href="namespaceripple.html#aca9c2c7a74ddd4a436b5984f6a265621">request_type</a> m;</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    m.method(boost::beast::http::verb::get);</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    m.target(<span class="stringliteral">&quot;/&quot;</span>);</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    m.version(11);</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    m.insert(<span class="stringliteral">&quot;User-Agent&quot;</span>, <a class="code" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">BuildInfo::getFullVersionString</a>());</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    m.insert(<span class="stringliteral">&quot;Upgrade&quot;</span>, <a class="code" href="namespaceripple.html#a72ff7246abef14a2be411b9002f81beb">supportedProtocolVersions</a>());</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    m.insert(<span class="stringliteral">&quot;Connection&quot;</span>, <span class="stringliteral">&quot;Upgrade&quot;</span>);</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    m.insert(<span class="stringliteral">&quot;Connect-As&quot;</span>, <span class="stringliteral">&quot;Peer&quot;</span>);</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    m.insert(<span class="stringliteral">&quot;Crawl&quot;</span>, crawlPublic ? <span class="stringliteral">&quot;public&quot;</span> : <span class="stringliteral">&quot;private&quot;</span>);</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    m.insert(</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <span class="stringliteral">&quot;X-Protocol-Ctl&quot;</span>,</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <a class="code" href="namespaceripple.html#a3a4c6df02ba4c47aeae824ab8befd97a">makeFeaturesRequestHeader</a>(</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            comprEnabled, vpReduceRelayEnabled, ledgerReplayEnabled));</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="keywordflow">return</span> m;</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;}</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;<a class="code" href="namespaceripple.html#a2581fa85c4291f16bf9e17d78615d584">http_response_type</a></div>
-<div class="line"><a name="l00387"></a><span class="lineno"><a class="line" href="namespaceripple.html#a5590ae6006b178275628bde91fa03129">  387</a></span>&#160;<a class="code" href="namespaceripple.html#a5590ae6006b178275628bde91fa03129">makeResponse</a>(</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <span class="keywordtype">bool</span> crawlPublic,</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    <a class="code" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> <span class="keyword">const</span>&amp; req,</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    <a class="code" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> public_ip,</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    <a class="code" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> remote_ip,</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; sharedValue,</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> networkID,</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">ProtocolVersion</a> <a class="code" href="namespaceprotocol.html">protocol</a>,</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app)</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;{</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    <a class="code" href="namespaceripple.html#a2581fa85c4291f16bf9e17d78615d584">http_response_type</a> resp;</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    resp.result(boost::beast::http::status::switching_protocols);</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    resp.version(req.version());</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    resp.insert(<span class="stringliteral">&quot;Connection&quot;</span>, <span class="stringliteral">&quot;Upgrade&quot;</span>);</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    resp.insert(<span class="stringliteral">&quot;Upgrade&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="namespaceprotocol.html">protocol</a>));</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    resp.insert(<span class="stringliteral">&quot;Connect-As&quot;</span>, <span class="stringliteral">&quot;Peer&quot;</span>);</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    resp.insert(<span class="stringliteral">&quot;Server&quot;</span>, <a class="code" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">BuildInfo::getFullVersionString</a>());</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    resp.insert(<span class="stringliteral">&quot;Crawl&quot;</span>, crawlPublic ? <span class="stringliteral">&quot;public&quot;</span> : <span class="stringliteral">&quot;private&quot;</span>);</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;    resp.insert(</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        <span class="stringliteral">&quot;X-Protocol-Ctl&quot;</span>,</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        <a class="code" href="namespaceripple.html#a44808f1128f93cb432367c2683a4ac2e">makeFeaturesResponseHeader</a>(</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;            req,</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;            app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#ad8dab098919bf5cf79de7ab62c5b8fba">COMPRESSION</a>,</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a4f58c0a0eba0e944f27ef18d0c8da8bb">VP_REDUCE_RELAY_ENABLE</a>,</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;            app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a7174b4395af72d89dc078e64d31c769c">LEDGER_REPLAY</a>));</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160; </div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <a class="code" href="namespaceripple.html#a2f6f4c48edfa4bab7857fc6d554d0bcf">buildHandshake</a>(resp, sharedValue, networkID, public_ip, remote_ip, app);</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160; </div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    <span class="keywordflow">return</span> resp;</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;}</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160; </div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <span class="keyword">auto</span> calculateOffset = [](<a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">TimeKeeper::time_point</a> a,</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                                  <a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">TimeKeeper::time_point</a> b) {</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            <span class="keywordflow">if</span> (a &gt; b)</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                <span class="keywordflow">return</span> duration_cast&lt;std::chrono::seconds&gt;(a - b);</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            <span class="keywordflow">return</span> -duration_cast&lt;std::chrono::seconds&gt;(b - a);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        };</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> offset = calculateOffset(netTime, ourTime);</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <span class="keywordflow">if</span> (abs(offset) &gt; tolerance)</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Peer clock is too far off&quot;</span>);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    }</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160; </div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span> publicKey = [&amp;headers] {</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Public-Key&quot;</span>); iter != headers.end())</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        {</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            <span class="keyword">auto</span> pk = parseBase58&lt;PublicKey&gt;(</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                <a class="code" href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03ac3fe5edb1f8a81a8e585f6a27c120be6">TokenType::NodePublic</a>, iter-&gt;value().to_string());</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            <span class="keywordflow">if</span> (pk)</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            {</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(*pk) != <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>)</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                    <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Unsupported public key type&quot;</span>);</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                <span class="keywordflow">return</span> *pk;</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            }</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        }</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160; </div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Bad node public key&quot;</span>);</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    }();</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordflow">if</span> (publicKey == app.<a class="code" href="classripple_1_1Application.html#a9b3f2eb30c34c4c8a516bce076be513e">nodeIdentity</a>().first)</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Self connection&quot;</span>);</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="comment">// This check gets two birds with one stone:</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="comment">// 1) it verifies that the node we are talking to has access to the</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="comment">//    private key corresponding to the public node identity it claims.</span></div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="comment">// 2) it verifies that our SSL session is end-to-end with that node</span></div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="comment">//    and not through a proxy that establishes two separate sessions.</span></div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    {</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Session-Signature&quot;</span>);</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160; </div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <span class="keywordflow">if</span> (iter == headers.end())</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;No session signature specified&quot;</span>);</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keyword">auto</span> sig = <a class="code" href="namespaceripple.html#a551be32de1cc0f8a8ff1f14ee84d892b">base64_decode</a>(iter-&gt;value().to_string());</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">verifyDigest</a>(publicKey, sharedValue, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(sig), <span class="keyword">false</span>))</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Failed to verify session&quot;</span>);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    }</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Local-IP&quot;</span>); iter != headers.end())</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    {</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        boost::system::error_code ec;</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> local_ip = boost::asio::ip::address::from_string(</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            iter-&gt;value().to_string(), ec);</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160; </div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Invalid Local-IP&quot;</span>);</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a>(remote) &amp;&amp; remote != local_ip)</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                <span class="stringliteral">&quot;Incorrect Local-IP: &quot;</span> + remote.to_string() + <span class="stringliteral">&quot; instead of &quot;</span> +</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                local_ip.to_string());</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    }</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160; </div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> iter = headers.find(<span class="stringliteral">&quot;Remote-IP&quot;</span>); iter != headers.end())</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    {</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        boost::system::error_code ec;</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> remote_ip = boost::asio::ip::address::from_string(</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            iter-&gt;value().to_string(), ec);</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160; </div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Invalid Remote-IP&quot;</span>);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a>(remote) &amp;&amp;</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            !<a class="code" href="namespacebeast_1_1IP.html#ab294c32a52d800b61d2fbe6f6d130faa">beast::IP::is_unspecified</a>(public_ip))</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        {</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            <span class="comment">// We know our public IP and peer reports our connection came</span></div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            <span class="comment">// from some other IP.</span></div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="keywordflow">if</span> (remote_ip != public_ip)</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                    <span class="stringliteral">&quot;Incorrect Remote-IP: &quot;</span> + public_ip.to_string() +</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                    <span class="stringliteral">&quot; instead of &quot;</span> + remote_ip.to_string());</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        }</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    }</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    <span class="keywordflow">return</span> publicKey;</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;}</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160; </div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2760587a1b198e51b16d86958d7c7e10">  363</a></span>&#160;<a class="code" href="namespaceripple.html#a2760587a1b198e51b16d86958d7c7e10">makeRequest</a>(</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keywordtype">bool</span> crawlPublic,</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="keywordtype">bool</span> comprEnabled,</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keywordtype">bool</span> vpReduceRelayEnabled,</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="keywordtype">bool</span> ledgerReplayEnabled) -&gt; <a class="code" href="namespaceripple.html#aca9c2c7a74ddd4a436b5984f6a265621">request_type</a></div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;{</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <a class="code" href="namespaceripple.html#aca9c2c7a74ddd4a436b5984f6a265621">request_type</a> m;</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    m.method(boost::beast::http::verb::get);</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    m.target(<span class="stringliteral">&quot;/&quot;</span>);</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    m.version(11);</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    m.insert(<span class="stringliteral">&quot;User-Agent&quot;</span>, <a class="code" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">BuildInfo::getFullVersionString</a>());</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    m.insert(<span class="stringliteral">&quot;Upgrade&quot;</span>, <a class="code" href="namespaceripple.html#a72ff7246abef14a2be411b9002f81beb">supportedProtocolVersions</a>());</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    m.insert(<span class="stringliteral">&quot;Connection&quot;</span>, <span class="stringliteral">&quot;Upgrade&quot;</span>);</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    m.insert(<span class="stringliteral">&quot;Connect-As&quot;</span>, <span class="stringliteral">&quot;Peer&quot;</span>);</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    m.insert(<span class="stringliteral">&quot;Crawl&quot;</span>, crawlPublic ? <span class="stringliteral">&quot;public&quot;</span> : <span class="stringliteral">&quot;private&quot;</span>);</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    m.insert(</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="stringliteral">&quot;X-Protocol-Ctl&quot;</span>,</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <a class="code" href="namespaceripple.html#a3a4c6df02ba4c47aeae824ab8befd97a">makeFeaturesRequestHeader</a>(</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            comprEnabled, vpReduceRelayEnabled, ledgerReplayEnabled));</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keywordflow">return</span> m;</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;}</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;<a class="code" href="namespaceripple.html#a2581fa85c4291f16bf9e17d78615d584">http_response_type</a></div>
+<div class="line"><a name="l00386"></a><span class="lineno"><a class="line" href="namespaceripple.html#a5590ae6006b178275628bde91fa03129">  386</a></span>&#160;<a class="code" href="namespaceripple.html#a5590ae6006b178275628bde91fa03129">makeResponse</a>(</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <span class="keywordtype">bool</span> crawlPublic,</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <a class="code" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> <span class="keyword">const</span>&amp; req,</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    <a class="code" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> public_ip,</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    <a class="code" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> remote_ip,</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; sharedValue,</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> networkID,</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">ProtocolVersion</a> <a class="code" href="namespaceprotocol.html">protocol</a>,</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app)</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;{</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    <a class="code" href="namespaceripple.html#a2581fa85c4291f16bf9e17d78615d584">http_response_type</a> resp;</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    resp.result(boost::beast::http::status::switching_protocols);</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    resp.version(req.version());</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    resp.insert(<span class="stringliteral">&quot;Connection&quot;</span>, <span class="stringliteral">&quot;Upgrade&quot;</span>);</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    resp.insert(<span class="stringliteral">&quot;Upgrade&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="namespaceprotocol.html">protocol</a>));</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    resp.insert(<span class="stringliteral">&quot;Connect-As&quot;</span>, <span class="stringliteral">&quot;Peer&quot;</span>);</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    resp.insert(<span class="stringliteral">&quot;Server&quot;</span>, <a class="code" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">BuildInfo::getFullVersionString</a>());</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    resp.insert(<span class="stringliteral">&quot;Crawl&quot;</span>, crawlPublic ? <span class="stringliteral">&quot;public&quot;</span> : <span class="stringliteral">&quot;private&quot;</span>);</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    resp.insert(</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        <span class="stringliteral">&quot;X-Protocol-Ctl&quot;</span>,</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        <a class="code" href="namespaceripple.html#a44808f1128f93cb432367c2683a4ac2e">makeFeaturesResponseHeader</a>(</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;            req,</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;            app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#ad8dab098919bf5cf79de7ab62c5b8fba">COMPRESSION</a>,</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;            app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a4f58c0a0eba0e944f27ef18d0c8da8bb">VP_REDUCE_RELAY_ENABLE</a>,</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a7174b4395af72d89dc078e64d31c769c">LEDGER_REPLAY</a>));</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160; </div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    <a class="code" href="namespaceripple.html#a2f6f4c48edfa4bab7857fc6d554d0bcf">buildHandshake</a>(resp, sharedValue, networkID, public_ip, remote_ip, app);</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160; </div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    <span class="keywordflow">return</span> resp;</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;}</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160; </div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_ae20ef532133659cf3199e44124e98212"><div class="ttname"><a href="namespaceripple.html#ae20ef532133659cf3199e44124e98212">ripple::hashLastMessage</a></div><div class="ttdeci">static std::optional&lt; base_uint&lt; 512 &gt; &gt; hashLastMessage(SSL const *ssl, size_t(*get)(const SSL *, void *, size_t))</div><div class="ttdoc">Hashes the latest finished message from an SSL stream.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00121">Handshake.cpp:121</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00102">Application.h:102</a></div></div>
@@ -514,11 +513,11 @@ $(function() {
 <div class="ttc" id="anamespacebeast_1_1IP_html_af5a04b94fad7e242325069c5f730bde6"><div class="ttname"><a href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a></div><div class="ttdeci">bool is_public(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns true if the address is a public routable address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00041">IPAddressV4.cpp:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab289776c60bd705e640136f8248adff9"><div class="ttname"><a href="namespaceripple.html#ab289776c60bd705e640136f8248adff9">ripple::getFeatureValue</a></div><div class="ttdeci">std::optional&lt; std::string &gt; getFeatureValue(boost::beast::http::fields const &amp;headers, std::string const &amp;feature)</div><div class="ttdoc">Get feature's header value.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00038">Handshake.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a0356489dd518b8dc89a1153048cb4aee"><div class="ttname"><a href="namespaceripple.html#a0356489dd518b8dc89a1153048cb4aee">ripple::stream_type</a></div><div class="ttdeci">boost::beast::ssl_stream&lt; socket_type &gt; stream_type</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8h_source.html#l00043">Handshake.h:43</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2760587a1b198e51b16d86958d7c7e10"><div class="ttname"><a href="namespaceripple.html#a2760587a1b198e51b16d86958d7c7e10">ripple::makeRequest</a></div><div class="ttdeci">auto makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled, bool ledgerReplayEnabled) -&gt; request_type</div><div class="ttdoc">Make outbound http request.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00364">Handshake.cpp:364</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2760587a1b198e51b16d86958d7c7e10"><div class="ttname"><a href="namespaceripple.html#a2760587a1b198e51b16d86958d7c7e10">ripple::makeRequest</a></div><div class="ttdeci">auto makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled, bool ledgerReplayEnabled) -&gt; request_type</div><div class="ttdoc">Make outbound http request.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00363">Handshake.cpp:363</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757"><div class="ttname"><a href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">ripple::KeyType::secp256k1</a></div><div class="ttdeci">@ secp256k1</div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a4f58c0a0eba0e944f27ef18d0c8da8bb"><div class="ttname"><a href="classripple_1_1Config.html#a4f58c0a0eba0e944f27ef18d0c8da8bb">ripple::Config::VP_REDUCE_RELAY_ENABLE</a></div><div class="ttdeci">bool VP_REDUCE_RELAY_ENABLE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00205">Config.h:205</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a1e2b1646cf948c1c19ff190903c3e789"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">ripple::BuildInfo::getFullVersionString</a></div><div class="ttdeci">std::string const  &amp; getFullVersionString()</div><div class="ttdoc">Full server version string.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00074">BuildInfo.cpp:74</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a72ff7246abef14a2be411b9002f81beb"><div class="ttname"><a href="namespaceripple.html#a72ff7246abef14a2be411b9002f81beb">ripple::supportedProtocolVersions</a></div><div class="ttdeci">std::string const  &amp; supportedProtocolVersions()</div><div class="ttdoc">The list of all the protocol versions we support.</div><div class="ttdef"><b>Definition:</b> <a href="ProtocolVersion_8cpp_source.html#l00169">ProtocolVersion.cpp:169</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a72ff7246abef14a2be411b9002f81beb"><div class="ttname"><a href="namespaceripple.html#a72ff7246abef14a2be411b9002f81beb">ripple::supportedProtocolVersions</a></div><div class="ttdeci">std::string const  &amp; supportedProtocolVersions()</div><div class="ttdoc">The list of all the protocol versions we support.</div><div class="ttdef"><b>Definition:</b> <a href="ProtocolVersion_8cpp_source.html#l00157">ProtocolVersion.cpp:157</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerMaster_html_a34727ce57c17ba7af9d75527e17f0e1e"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#a34727ce57c17ba7af9d75527e17f0e1e">ripple::LedgerMaster::getClosedLedger</a></div><div class="ttdeci">std::shared_ptr&lt; Ledger const  &gt; getClosedLedger()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8h_source.html#l00105">LedgerMaster.h:105</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1rfc2616_html_accd76c534f760053842f265c2c09a5a9"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#accd76c534f760053842f265c2c09a5a9">beast::rfc2616::token_in_list</a></div><div class="ttdeci">bool token_in_list(boost::string_ref const &amp;value, boost::string_ref const &amp;token)</div><div class="ttdoc">Returns true if the specified token exists in the list.</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00376">rfc2616.h:376</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
@@ -535,11 +534,11 @@ $(function() {
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt; std::string &gt;</a></div></div>
 <div class="ttc" id="astr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">std::stringstream::str</a></div><div class="ttdeci">T str(T... args)</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00038">app/misc/impl/Manifest.cpp:38</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00040">app/misc/impl/Manifest.cpp:40</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aab94edddae84fcd70e7261ecc19173b7"><div class="ttname"><a href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">ripple::isProperlyFormedTomlDomain</a></div><div class="ttdeci">bool isProperlyFormedTomlDomain(std::string const &amp;domain)</div><div class="ttdoc">Determines if the given string looks like a TOML-file hosting domain.</div></div>
 <div class="ttc" id="anamespaceripple_html_a44808f1128f93cb432367c2683a4ac2e"><div class="ttname"><a href="namespaceripple.html#a44808f1128f93cb432367c2683a4ac2e">ripple::makeFeaturesResponseHeader</a></div><div class="ttdeci">std::string makeFeaturesResponseHeader(http_request_type const &amp;headers, bool comprEnabled, bool vpReduceRelayEnabled, bool ledgerReplayEnabled)</div><div class="ttdoc">Make response header X-Protocol-Ctl value with supported features.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00090">Handshake.cpp:90</a></div></div>
 <div class="ttc" id="anamespaceripple_html_acd7881ae39681c7d64a5904b367219ab"><div class="ttname"><a href="namespaceripple.html#acd7881ae39681c7d64a5904b367219ab">ripple::verifyHandshake</a></div><div class="ttdeci">PublicKey verifyHandshake(boost::beast::http::fields const &amp;headers, ripple::uint256 const &amp;sharedValue, std::optional&lt; std::uint32_t &gt; networkID, beast::IP::Address public_ip, beast::IP::Address remote, Application &amp;app)</div><div class="ttdoc">Validate header fields necessary for upgrading the link to the peer protocol.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00224">Handshake.cpp:224</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5590ae6006b178275628bde91fa03129"><div class="ttname"><a href="namespaceripple.html#a5590ae6006b178275628bde91fa03129">ripple::makeResponse</a></div><div class="ttdeci">http_response_type makeResponse(bool crawlPublic, http_request_type const &amp;req, beast::IP::Address public_ip, beast::IP::Address remote_ip, uint256 const &amp;sharedValue, std::optional&lt; std::uint32_t &gt; networkID, ProtocolVersion protocol, Application &amp;app)</div><div class="ttdoc">Make http response.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00387">Handshake.cpp:387</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5590ae6006b178275628bde91fa03129"><div class="ttname"><a href="namespaceripple.html#a5590ae6006b178275628bde91fa03129">ripple::makeResponse</a></div><div class="ttdeci">http_response_type makeResponse(bool crawlPublic, http_request_type const &amp;req, beast::IP::Address public_ip, beast::IP::Address remote_ip, uint256 const &amp;sharedValue, std::optional&lt; std::uint32_t &gt; networkID, ProtocolVersion protocol, Application &amp;app)</div><div class="ttdoc">Make http response.</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8cpp_source.html#l00386">Handshake.cpp:386</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1IP_html_ab294c32a52d800b61d2fbe6f6d130faa"><div class="ttname"><a href="namespacebeast_1_1IP.html#ab294c32a52d800b61d2fbe6f6d130faa">beast::IP::is_unspecified</a></div><div class="ttdeci">bool is_unspecified(Address const &amp;addr)</div><div class="ttdoc">Returns true if the address is unspecified.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddress_8h_source.html#l00059">IPAddress.h:59</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa265217edeb8282e636c78b50049f4c0"><div class="ttname"><a href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">ripple::http_request_type</a></div><div class="ttdeci">boost::beast::http::request&lt; boost::beast::http::dynamic_body &gt; http_request_type</div><div class="ttdef"><b>Definition:</b> <a href="Handshake_8h_source.html#l00047">Handshake.h:47</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_a4e16832b0bdf9392c5138bbbde024d8e"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">beast::abstract_clock&lt; NetClock &gt;::time_point</a></div><div class="ttdeci">typename NetClock ::time_point time_point</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00063">abstract_clock.h:63</a></div></div>

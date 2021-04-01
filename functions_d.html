@@ -181,6 +181,12 @@ $(function() {
 , <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a12f5d73bb2f976932b27c91dc7076983">ripple::tests::TestNodeFamily</a>
 , <a class="el" href="classripple_1_1TransactionStateSF.html#a8943aa5bbf6ef194568367f0422b02e3">ripple::TransactionStateSF</a>
 </li>
+<li>DBConfig()
+: <a class="el" href="classripple_1_1DBConfig.html#a6076a52e29d46143d573841049c5eaeb">ripple::DBConfig</a>
+</li>
+<li>dbHasSpace()
+: <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#aed1f68b4e56cc4888af54a9e578bc451">ripple::RelationalDBInterfacePostgresImp</a>
+</li>
 <li>dbName_
 : <a class="el" href="classripple_1_1SHAMapStoreImp.html#ada1f2f842cafba373412841435061c5f">ripple::SHAMapStoreImp</a>
 </li>
@@ -342,8 +348,16 @@ $(function() {
 <li>DeleteAccount()
 : <a class="el" href="classripple_1_1DeleteAccount.html#a18caedf3ef1bf93da8c87aa9ba991064">ripple::DeleteAccount</a>
 </li>
+<li>deleteAccountTransactionsBeforeLedgerSeq()
+: <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a498aa027d3f6575296c05e6b0ed1acbe">ripple::RelationalDBInterfaceSqlite</a>
+, <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a01aaa4094abf83d24eceda17c2db8511">ripple::RelationalDBInterfaceSqliteImp</a>
+</li>
 <li>deleteBatch_
 : <a class="el" href="classripple_1_1SHAMapStoreImp.html#a71fc064e474c3b0dd17a92bdbaebe60f">ripple::SHAMapStoreImp</a>
+</li>
+<li>deleteBeforeLedgerSeq()
+: <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a77ecacdc4eca4bc5d1d62495aa5a528f">ripple::RelationalDBInterfaceSqlite</a>
+, <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a618b6818b92791cc48db699e324ae6c7">ripple::RelationalDBInterfaceSqliteImp</a>
 </li>
 <li>deleted
 : <a class="el" href="structripple_1_1test_1_1AccountTx__test_1_1NodeSanity.html#a270cb6f52ce84cfc101a73861b901e35">ripple::test::AccountTx_test::NodeSanity</a>
@@ -380,6 +394,14 @@ $(function() {
 </li>
 <li>deleteSubAccountInfo()
 : <a class="el" href="classripple_1_1InfoSub.html#a703eee5ea694a757ee549b97e65ac75b">ripple::InfoSub</a>
+</li>
+<li>deleteTransactionByLedgerSeq()
+: <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a925efb25de1639b059becd08444dcb9f">ripple::RelationalDBInterfaceSqlite</a>
+, <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#aebe1f00892bc96c5da5cb179347dfeb6">ripple::RelationalDBInterfaceSqliteImp</a>
+</li>
+<li>deleteTransactionsBeforeLedgerSeq()
+: <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a64b8aedd1beb6fc95d71bc5be1f9bc85">ripple::RelationalDBInterfaceSqlite</a>
+, <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a1b32dc1a957b0468ba8f09c6e0cd1b1a">ripple::RelationalDBInterfaceSqliteImp</a>
 </li>
 <li>deleteWorkers()
 : <a class="el" href="classripple_1_1Workers.html#a5f6a6068ef793a580da7aa31a873a804">ripple::Workers</a>
@@ -560,7 +582,7 @@ $(function() {
 , <a class="el" href="classripple_1_1DigestAwareReadView.html#a1ec6ee4c2f796ba0dfecf983dfb95178">ripple::DigestAwareReadView</a>
 </li>
 <li>DigestAwareReadView()
-: <a class="el" href="classripple_1_1DigestAwareReadView.html#a0cd752896cc40936bd40b1a7bfaeb572">ripple::DigestAwareReadView</a>
+: <a class="el" href="classripple_1_1DigestAwareReadView.html#a15524ad1d78aac8677ccf5b7ca17ae09">ripple::DigestAwareReadView</a>
 </li>
 <li>dir()
 : <a class="el" href="classripple_1_1BookTip.html#a1e903a45ae4a5dca6a34781fcaf61392">ripple::BookTip</a>
@@ -611,7 +633,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ApplyView.html#ade751364c7a9580032ef5988a953a6ee">ripple::ApplyView</a>
 </li>
 <li>dirRemove()
-: <a class="el" href="classripple_1_1ApplyView.html#add05adf228213dde2bc48821c0f7cc75">ripple::ApplyView</a>
+: <a class="el" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ripple::ApplyView</a>
 </li>
 <li>dirtyUp()
 : <a class="el" href="classripple_1_1SHAMap.html#a36ba184d7125776bff17e081e9e1d7ed">ripple::SHAMap</a>
@@ -847,6 +869,7 @@ $(function() {
 </li>
 <li>doLedger()
 : <a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#ad0fe64ff9e23d3246e51e81456adc09a">ripple::detail::LedgerCleanerImp</a>
+, <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a922f24950a54df7537d50174920dd246">ripple::RelationalDBInterfaceSqliteImp</a>
 </li>
 <li>doLedgerCleaner()
 : <a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#adc5f204e5b1e54820158a093249dfde1">ripple::detail::LedgerCleanerImp</a>
@@ -916,6 +939,9 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1compression__test.html#a41559f2bc22d60f420321146922a2b2b">ripple::test::compression_test</a>
 , <a class="el" href="classripple_1_1test_1_1reduce__relay__test.html#a893103e6a3ac66cc9f6fb5023bc28145">ripple::test::reduce_relay_test</a>
 </li>
+<li>doTransaction()
+: <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a5dc8f280b2786987d60836a71077eaa5">ripple::RelationalDBInterfaceSqliteImp</a>
+</li>
 <li>doTransactionAsync()
 : <a class="el" href="classripple_1_1NetworkOPsImp.html#a5d23290b36936e1ecb867a23cf2ce902">ripple::NetworkOPsImp</a>
 </li>
@@ -926,7 +952,7 @@ $(function() {
 : <a class="el" href="classripple_1_1PathRequest.html#a1c768c91db09df17dc03cf9c34f780ef">ripple::PathRequest</a>
 </li>
 <li>doValidatedLedger()
-: <a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#ac721ac20262609226483f1436b0df02f">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a5a1de10b5b7e51cc4f20f2636503c2e6">ripple::AmendmentTableImpl</a>
 </li>
 <li>doValidation()

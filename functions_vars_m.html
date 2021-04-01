@@ -198,6 +198,7 @@ $(function() {
 <li>m_config
 : <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#a87748a93e656cdc2ca260f19cd1fedad">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
 , <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a1a2566c3728b604457222e76964a8cf7">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
+, <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#ac7d63ce07c3426d0f20b884b79af47d3">ripple::PeerFinder::ManagerImp</a>
 </li>
 <li>m_consensus_validated
 : <a class="el" href="classripple_1_1LedgerHistory.html#a7c71cafdd85eba74ab6e4436d9ec9037">ripple::LedgerHistory</a>
@@ -675,9 +676,6 @@ $(function() {
 <li>m_server
 : <a class="el" href="classripple_1_1ServerHandlerImp.html#aa6bb212d7a244def087eed932cccc3b4">ripple::ServerHandlerImp</a>
 </li>
-<li>m_session
-: <a class="el" href="classripple_1_1PeerFinder_1_1StoreSqdb.html#a811d22b084cc9a1853c2960991ea8035">ripple::PeerFinder::StoreSqdb</a>
-</li>
 <li>m_shaMapStore
 : <a class="el" href="classripple_1_1ApplicationImp.html#a44b6f29c784df8f777cd7eadf7c76a91">ripple::ApplicationImp</a>
 </li>
@@ -692,9 +690,6 @@ $(function() {
 <li>m_size
 : <a class="el" href="classbeast_1_1List.html#affdad43179d987f5dee90f8f48823ba9">beast::List&lt; T, Tag &gt;</a>
 </li>
-<li>m_sociConfig
-: <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a58435f6c9130f446f158da398f105b69">ripple::PeerFinder::ManagerImp</a>
-</li>
 <li>m_socket
 : <a class="el" href="classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html#a61429a08d3a7b4ff72522dede7fb4709">beast::insight::detail::StatsDCollectorImp</a>
 </li>
@@ -707,6 +702,9 @@ $(function() {
 </li>
 <li>m_special
 : <a class="el" href="classripple_1_1JobTypeInfo.html#ac4c57028ae13a3a25b284853b6d28681">ripple::JobTypeInfo</a>
+</li>
+<li>m_sqlDb
+: <a class="el" href="classripple_1_1PeerFinder_1_1StoreSqdb.html#ad58a915e32d918c3febea3751117de52">ripple::PeerFinder::StoreSqdb</a>
 </li>
 <li>m_squelches
 : <a class="el" href="classripple_1_1PeerFinder_1_1ConnectHandouts.html#a466fa0804ef94c9baf56b82bb5b0f9d5">ripple::PeerFinder::ConnectHandouts</a>
@@ -926,8 +924,9 @@ $(function() {
 : <a class="el" href="classripple_1_1LoadEvent.html#a7d8cd80ba960994c3da1ba313c86876d">ripple::LoadEvent</a>
 </li>
 <li>marker
-: <a class="el" href="structripple_1_1AccountTxArgs.html#a391f999fc162da3a8306da9889400fd2">ripple::AccountTxArgs</a>
-, <a class="el" href="structripple_1_1AccountTxResult.html#a9dda8933c09f8e0ee0ef2a98f7cb8914">ripple::AccountTxResult</a>
+: <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxArgs.html#a340a023714004cd6c1cd29bb1fe40d08">ripple::RelationalDBInterface::AccountTxArgs</a>
+, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxPageOptions.html#a2741dccb5b756fc0ac07436f7e63b6a0">ripple::RelationalDBInterface::AccountTxPageOptions</a>
+, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxResult.html#a1f8d5502a7e362773c2e3cc66a6be85e">ripple::RelationalDBInterface::AccountTxResult</a>
 </li>
 <li>mask_
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1detail_1_1flags__helper.html#ab33a0cef8d362b73292a038209ebc2e2">ripple::test::jtx::detail::flags_helper</a>
@@ -1032,11 +1031,18 @@ $(function() {
 <li>maxInt
 : <a class="el" href="classJson_1_1Value.html#a978c799a8af3114ef7dab6fd0a310a1b">Json::Value</a>
 </li>
+<li>maxLedger
+: <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxOptions.html#aa632a6a84bdc973cc7e9cf04eaa05afe">ripple::RelationalDBInterface::AccountTxOptions</a>
+, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxPageOptions.html#a76c90a6d082d0fc4c9852ef26eef3798">ripple::RelationalDBInterface::AccountTxPageOptions</a>
+</li>
 <li>maxLedger_
 : <a class="el" href="classripple_1_1PeerImp.html#a31af9885f3287b33d324d59f8f549878">ripple::PeerImp</a>
 </li>
 <li>maxLedgers_
 : <a class="el" href="classripple_1_1NodeStore_1_1Shard.html#a30ea2e9887ce7784bee09f09a0b3506e">ripple::NodeStore::Shard</a>
+</li>
+<li>maxLedgerSequence
+: <a class="el" href="structripple_1_1RelationalDBInterface_1_1CountMinMax.html#acd4511868f6eae4559762e9effab9b58">ripple::RelationalDBInterface::CountMinMax</a>
 </li>
 <li>maxMemObjs_
 : <a class="el" href="classripple_1_1NodeStore_1_1DeterministicShard.html#a8f3ac076a35018a3a75b46c0753991c7">ripple::NodeStore::DeterministicShard</a>
@@ -1392,11 +1398,18 @@ $(function() {
 <li>minInt
 : <a class="el" href="classJson_1_1Value.html#a7df8a39e2502b8c92a6a41e3d752d2c8">Json::Value</a>
 </li>
+<li>minLedger
+: <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxOptions.html#a69ebe27c8e30eb5c3cc8ae99be6d51b9">ripple::RelationalDBInterface::AccountTxOptions</a>
+, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxPageOptions.html#a7f0f3586b7402e52e0321886f072bcf5">ripple::RelationalDBInterface::AccountTxPageOptions</a>
+</li>
 <li>mInLedger
 : <a class="el" href="classripple_1_1Transaction.html#a8d8e94341e54529c6fa1db600e8b9d33">ripple::Transaction</a>
 </li>
 <li>minLedger_
 : <a class="el" href="classripple_1_1PeerImp.html#ad3c64392ebd7001f10a0cb93010858e5">ripple::PeerImp</a>
+</li>
+<li>minLedgerSequence
+: <a class="el" href="structripple_1_1RelationalDBInterface_1_1CountMinMax.html#a05a594e7c308997f0065c9681c4f7d2a">ripple::RelationalDBInterface::CountMinMax</a>
 </li>
 <li>minMultiSigners
 : <a class="el" href="classripple_1_1STTx.html#a961b75b06010e0381ace3f0820117abe">ripple::STTx</a>
@@ -1505,9 +1518,6 @@ $(function() {
 </li>
 <li>mLedgerCleaner
 : <a class="el" href="classripple_1_1LedgerMaster.html#ac71ee2ac0b7190c4b061b63b84edfbf2">ripple::LedgerMaster</a>
-</li>
-<li>mLedgerDB
-: <a class="el" href="classripple_1_1ApplicationImp.html#a11984e8384cf53009b243167b7e5f3f8">ripple::ApplicationImp</a>
 </li>
 <li>mLedgerHistory
 : <a class="el" href="classripple_1_1LedgerMaster.html#a2dc054158ffca412c8d193abc60f9a41">ripple::LedgerMaster</a>
@@ -1673,6 +1683,9 @@ $(function() {
 <li>mRecentNodes
 : <a class="el" href="classripple_1_1InboundLedger.html#a41d0600d8e996763c915ef7f3b48dbf6">ripple::InboundLedger</a>
 </li>
+<li>mRelationalDBInterface
+: <a class="el" href="classripple_1_1ApplicationImp.html#a3f7becc47f9385b67fe944e962c4dcd8">ripple::ApplicationImp</a>
+</li>
 <li>mRemainingAmount
 : <a class="el" href="classripple_1_1Pathfinder.html#a7266a68af52c3edee265dadf910ff488">ripple::Pathfinder</a>
 </li>
@@ -1819,9 +1832,6 @@ $(function() {
 </li>
 <li>mTxn
 : <a class="el" href="classripple_1_1AcceptedLedgerTx.html#a3dd1f3038153f8e90724610575796136">ripple::AcceptedLedgerTx</a>
-</li>
-<li>mTxnDB
-: <a class="el" href="classripple_1_1ApplicationImp.html#ab6bdd408aceb7a2ef3665e9c7c14cca4">ripple::ApplicationImp</a>
 </li>
 <li>mType
 : <a class="el" href="classripple_1_1Job.html#aba9b6441ec53d750edc217c2ed81de25">ripple::Job</a>

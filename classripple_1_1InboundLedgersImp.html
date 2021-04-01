@@ -75,7 +75,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1InboundLedgersImp-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::InboundLedgersImp Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">ripple::InboundLedgersImp Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -185,8 +185,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a56c2e865dd2f67eef9cf7516d5f57876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13863a89515101f87c811717eff67560"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a13863a89515101f87c811717eff67560">onStop</a> () override</td></tr>
 <tr class="separator:a13863a89515101f87c811717eff67560"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d8a7699ca582b7fd8eab345f10c021d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgers.html#a0d8a7699ca582b7fd8eab345f10c021d">find</a> (<a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;hash)=0</td></tr>
-<tr class="separator:a0d8a7699ca582b7fd8eab345f10c021d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
 <tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
@@ -505,7 +503,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a970ca13c3ac53d4be592a7e9d000cf2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a970ca13c3ac53d4be592a7e9d000cf2b">&#9670;&nbsp;</a></span>find() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a970ca13c3ac53d4be592a7e9d000cf2b">&#9670;&nbsp;</a></span>find()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -523,10 +521,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a0d8a7699ca582b7fd8eab345f10c021d">ripple::InboundLedgers</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00137">137</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
@@ -887,34 +887,6 @@ Here is the call graph for this function:</div>
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a264fc685562692d9b237a7de9469e5c4">ripple::InboundLedgers</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00391">391</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a0d8a7699ca582b7fd8eab345f10c021d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d8a7699ca582b7fd8eab345f10c021d">&#9670;&nbsp;</a></span>find() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a>&gt; ripple::InboundLedgers::find </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a077afaa330c14078c1f60b740ffc7f73">LedgerHash</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1test_1_1MagicInboundLedgers.html#a588f7b40af6c6c3ffa7b084c6325c03a">ripple::test::MagicInboundLedgers</a>.</p>
 
 </div>
 </div>

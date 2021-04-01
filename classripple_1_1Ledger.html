@@ -75,7 +75,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1Ledger-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::Ledger Class Reference<span class="mlabels"><span class="mlabel">final</span><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">ripple::Ledger Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -211,6 +211,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:afbe0e4067ff6bcaf7df2b690ea15e204"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#afbe0e4067ff6bcaf7df2b690ea15e204">exists</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key) const</td></tr>
 <tr class="separator:afbe0e4067ff6bcaf7df2b690ea15e204"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0a63c9a1943ea6a18726df087a37bdc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#ae0a63c9a1943ea6a18726df087a37bdc">succ</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;last=std::nullopt) const override</td></tr>
+<tr class="memdesc:ae0a63c9a1943ea6a18726df087a37bdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1Ledger.html#ae0a63c9a1943ea6a18726df087a37bdc">More...</a><br /></td></tr>
 <tr class="separator:ae0a63c9a1943ea6a18726df087a37bdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85c52f6c826b0b32bd773e1d1cfbdb78"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a85c52f6c826b0b32bd773e1d1cfbdb78">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const override</td></tr>
 <tr class="memdesc:a85c52f6c826b0b32bd773e1d1cfbdb78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the state item associated with a key.  <a href="classripple_1_1Ledger.html#a85c52f6c826b0b32bd773e1d1cfbdb78">More...</a><br /></td></tr>
@@ -226,6 +227,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acaf4d523fa7525606f7b1e576cf048c5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">txs_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#acaf4d523fa7525606f7b1e576cf048c5">txsEnd</a> () const override</td></tr>
 <tr class="separator:acaf4d523fa7525606f7b1e576cf048c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46a546d8198b17cb9dff3036d920eee4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a46a546d8198b17cb9dff3036d920eee4">txExists</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key) const override</td></tr>
+<tr class="memdesc:a46a546d8198b17cb9dff3036d920eee4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a tx exists in the tx map.  <a href="classripple_1_1Ledger.html#a46a546d8198b17cb9dff3036d920eee4">More...</a><br /></td></tr>
 <tr class="separator:a46a546d8198b17cb9dff3036d920eee4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6cf0862134638e77b99e53c25c41f3a9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ReadView.html#ab1430dec61fd5ef9bf4a013aab558d71">tx_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a6cf0862134638e77b99e53c25c41f3a9">txRead</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const override</td></tr>
 <tr class="memdesc:a6cf0862134638e77b99e53c25c41f3a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read a transaction from the tx map.  <a href="classripple_1_1Ledger.html#a6cf0862134638e77b99e53c25c41f3a9">More...</a><br /></td></tr>
@@ -248,6 +250,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a12a86d2a4af573d10f76664259df1b1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy XRP.  <a href="classripple_1_1Ledger.html#a12a86d2a4af573d10f76664259df1b1e">More...</a><br /></td></tr>
 <tr class="separator:a12a86d2a4af573d10f76664259df1b1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0432690b8a2af03cd14cf6c07561ea53"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a0432690b8a2af03cd14cf6c07561ea53">rawTxInsert</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;txn, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;metaData) override</td></tr>
+<tr class="memdesc:a0432690b8a2af03cd14cf6c07561ea53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a transaction to the tx map.  <a href="classripple_1_1Ledger.html#a0432690b8a2af03cd14cf6c07561ea53">More...</a><br /></td></tr>
 <tr class="separator:a0432690b8a2af03cd14cf6c07561ea53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7a5631ff08a7cf45c966d70fd9d3f01"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#aa7a5631ff08a7cf45c966d70fd9d3f01">rawTxInsertWithHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;txn, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;metaData)</td></tr>
 <tr class="separator:aa7a5631ff08a7cf45c966d70fd9d3f01"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -313,21 +316,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac284afc905c482953c35c61b459fd85b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#ac284afc905c482953c35c61b459fd85b">seq</a> () const</td></tr>
 <tr class="memdesc:ac284afc905c482953c35c61b459fd85b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the sequence number of the base ledger.  <a href="classripple_1_1ReadView.html#ac284afc905c482953c35c61b459fd85b">More...</a><br /></td></tr>
 <tr class="separator:ac284afc905c482953c35c61b459fd85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adb3ef95cbd470775fe1e09955399667f"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=std::nullopt) const =0</td></tr>
-<tr class="memdesc:adb3ef95cbd470775fe1e09955399667f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">More...</a><br /></td></tr>
-<tr class="separator:adb3ef95cbd470775fe1e09955399667f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81e1b7628e44e758a0359061c4b17c96"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a81e1b7628e44e758a0359061c4b17c96">balanceHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;issuer, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount) const</td></tr>
 <tr class="separator:a81e1b7628e44e758a0359061c4b17c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a6989ce9f6240d5c600d3a4f526f89d29">ownerCountHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count) const</td></tr>
 <tr class="separator:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">slesUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const =0</td></tr>
-<tr class="separator:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af95bff423d062ed89665e9f628972ece"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#af95bff423d062ed89665e9f628972ece">txExists</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const =0</td></tr>
-<tr class="memdesc:af95bff423d062ed89665e9f628972ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a tx exists in the tx map.  <a href="classripple_1_1ReadView.html#af95bff423d062ed89665e9f628972ece">More...</a><br /></td></tr>
-<tr class="separator:af95bff423d062ed89665e9f628972ece"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0a1537fc962314ebc611a569e366368"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">rawTxInsert</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">ReadView::key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;txn, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;metaData)=0</td></tr>
-<tr class="memdesc:af0a1537fc962314ebc611a569e366368"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a transaction to the tx map.  <a href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">More...</a><br /></td></tr>
-<tr class="separator:af0a1537fc962314ebc611a569e366368"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -972,7 +964,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </div>
 </div>
 <a id="ae0a63c9a1943ea6a18726df087a37bdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0a63c9a1943ea6a18726df087a37bdc">&#9670;&nbsp;</a></span>succ() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0a63c9a1943ea6a18726df087a37bdc">&#9670;&nbsp;</a></span>succ()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1000,10 +992,16 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Return the key of the next state item. </p>
+<p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, std::nullopt is returned.</p>
+<p>If <code>last</code> is engaged, returns std::nullopt when the key returned would be outside the open interval (key, last). </p>
+
+<p>Implements <a class="el" href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">ripple::ReadView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00421">421</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
@@ -1103,7 +1101,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </div>
 </div>
 <a id="a0b300e04e1cd2c608710d02467f4e7be"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b300e04e1cd2c608710d02467f4e7be">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b300e04e1cd2c608710d02467f4e7be">&#9670;&nbsp;</a></span>slesUpperBound()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1121,10 +1119,12 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">ripple::ReadView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00463">463</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
@@ -1189,7 +1189,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </div>
 </div>
 <a id="a46a546d8198b17cb9dff3036d920eee4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46a546d8198b17cb9dff3036d920eee4">&#9670;&nbsp;</a></span>txExists() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a46a546d8198b17cb9dff3036d920eee4">&#9670;&nbsp;</a></span>txExists()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1207,10 +1207,15 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns <code>true</code> if a tx exists in the tx map. </p>
+<p>A tx exists in the map if it is part of the base ledger, or if it is a newly inserted tx. </p>
+
+<p>Implements <a class="el" href="classripple_1_1ReadView.html#af95bff423d062ed89665e9f628972ece">ripple::ReadView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00482">482</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
@@ -1440,7 +1445,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </div>
 </div>
 <a id="a0432690b8a2af03cd14cf6c07561ea53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0432690b8a2af03cd14cf6c07561ea53">&#9670;&nbsp;</a></span>rawTxInsert() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0432690b8a2af03cd14cf6c07561ea53">&#9670;&nbsp;</a></span>rawTxInsert()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1474,10 +1479,15 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Add a transaction to the tx map. </p>
+<p>Closed ledgers must have metadata, while open ledgers omit metadata. </p>
+
+<p>Implements <a class="el" href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">ripple::TxsRawView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00552">552</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
@@ -1838,7 +1848,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01178">1178</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01001">1001</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1857,7 +1867,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01171">1171</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00994">994</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -2097,48 +2107,6 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 </div>
 </div>
-<a id="adb3ef95cbd470775fe1e09955399667f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adb3ef95cbd470775fe1e09955399667f">&#9670;&nbsp;</a></span>succ() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a>&gt; ripple::ReadView::succ </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>key</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>last</em> = <code>std::nullopt</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the key of the next state item. </p>
-<p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, std::nullopt is returned.</p>
-<p>If <code>last</code> is engaged, returns std::nullopt when the key returned would be outside the open interval (key, last). </p>
-
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a96f3599bffc047126acfd74f075d2125">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">ripple::detail::ApplyViewBase</a>.</p>
-
-</div>
-</div>
 <a id="a81e1b7628e44e758a0359061c4b17c96"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a81e1b7628e44e758a0359061c4b17c96">&#9670;&nbsp;</a></span>balanceHook()</h2>
 
@@ -2222,110 +2190,6 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">ripple::PaymentSandbox</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00334">334</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
-
-</div>
-</div>
-<a id="abccd7f2f0b2ebfaafc8fedd6cc7ad081"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abccd7f2f0b2ebfaafc8fedd6cc7ad081">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a>&gt; ripple::ReadView::slesUpperBound </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>key</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="af95bff423d062ed89665e9f628972ece"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af95bff423d062ed89665e9f628972ece">&#9670;&nbsp;</a></span>txExists() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool ripple::ReadView::txExists </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>key</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns <code>true</code> if a tx exists in the tx map. </p>
-<p>A tx exists in the map if it is part of the base ledger, or if it is a newly inserted tx. </p>
-
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a2294a6339fc789d88ca4b155a493c71a">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a5315d4aaf5a02b646e44cbc28cfca9ec">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#ad7cd53575d79dd8f0bf93a0143957b9d">ripple::detail::ApplyViewBase</a>.</p>
-
-</div>
-</div>
-<a id="af0a1537fc962314ebc611a569e366368"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0a1537fc962314ebc611a569e366368">&#9670;&nbsp;</a></span>rawTxInsert() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void ripple::TxsRawView::rawTxInsert </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">ReadView::key_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>key</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>txn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Serializer.html">Serializer</a> const &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>metaData</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Add a transaction to the tx map. </p>
-<p>Closed ledgers must have metadata, while open ledgers omit metadata. </p>
-
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#ab230a32cbeedf37d8b30bbec8a91961d">ripple::OpenView</a>.</p>
 
 </div>
 </div>

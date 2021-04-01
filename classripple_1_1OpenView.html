@@ -75,7 +75,7 @@ $(function() {
 <a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classripple_1_1OpenView-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::OpenView Class Reference<span class="mlabels"><span class="mlabel">final</span><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">ripple::OpenView Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -231,8 +231,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a81e1b7628e44e758a0359061c4b17c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a6989ce9f6240d5c600d3a4f526f89d29">ownerCountHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count) const</td></tr>
 <tr class="separator:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">slesUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const =0</td></tr>
-<tr class="separator:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:a9a69e7cec0443c1f9b7864e2a1a25aa3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a9a69e7cec0443c1f9b7864e2a1a25aa3">OpenView</a> (<a class="el" href="structripple_1_1open__ledger__t.html">open_ledger_t</a>, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const *base, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;<a class="el" href="classripple_1_1OpenView.html#a9b6ad540708bc720bdd66164078e640a">rules</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; void const &gt; hold=nullptr)</td></tr>
 <tr class="memdesc:a9a69e7cec0443c1f9b7864e2a1a25aa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an open ledger view.  <a href="classripple_1_1OpenView.html#a9a69e7cec0443c1f9b7864e2a1a25aa3">More...</a><br /></td></tr>
@@ -978,7 +976,7 @@ The rules are inherited from the base.
 </div>
 </div>
 <a id="a13b527a568cd66ab382e38fc6834ebd8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13b527a568cd66ab382e38fc6834ebd8">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a13b527a568cd66ab382e38fc6834ebd8">&#9670;&nbsp;</a></span>slesUpperBound()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -996,10 +994,12 @@ The rules are inherited from the base.
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">ripple::ReadView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="OpenView_8cpp_source.html#l00189">189</a> of file <a class="el" href="OpenView_8cpp_source.html">OpenView.cpp</a>.</p>
 
@@ -1456,32 +1456,6 @@ The rules are inherited from the base.
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">ripple::PaymentSandbox</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00334">334</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
-
-</div>
-</div>
-<a id="abccd7f2f0b2ebfaafc8fedd6cc7ad081"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abccd7f2f0b2ebfaafc8fedd6cc7ad081">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a>&gt; ripple::ReadView::slesUpperBound </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>key</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
 
 </div>
 </div>

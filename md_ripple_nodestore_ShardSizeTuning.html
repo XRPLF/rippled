@@ -66,12 +66,12 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>The purpose of this document is to compare the sizes of shards containing varying amounts of ledgers.</p>
-<h1><a class="anchor" id="autotoc_md216"></a>
+<h1><a class="anchor" id="autotoc_md207"></a>
 Methodology</h1>
 <p>One can see visually from a block explorer that a typical mainnet ledger consists of about 30 offer transactions issued by about 8 different accounts, and several transactions of other types. To simulate this situation and similar situations we have constructed deterministic shards of differenet sizes, with varying amounts of offers per ledger and varying amounts of accounts issuing these offers.</p>
 <p>In the following results table, the number of ledgers per shard ranges from 256 to 16K with the size doubling the size at each step. We considered the following numbers of offers per ledger: 0, 1, 5, 10 and 30. Also we considered case of 1 and 8 accounts issuing offers. For each constructed deterministic shard we counted its size. Finally we compared doubled size of the shard with N ledgers and the size of a shard with 2*N ledgers where othere parameters such as number of offers and accounts are the same. This comparison is sufficient to determine which number of ledgers per shard leads to less storage size on the disk.</p>
 <p>Note that we minimize total storage size on the disk, but not the size of each shard because data below shows that the size of a typical shard is not larger than 10G, but sizes of modern disks, even SSDs, start from 250G. So there is no problem to fit a single shard to a disk, even small.</p>
-<h1><a class="anchor" id="autotoc_md217"></a>
+<h1><a class="anchor" id="autotoc_md208"></a>
 Raw results table</h1>
 <p>All sizes of constructed shards are shown in the following table. Rows corresponds to shard sizes (S) counted in ledgers, columns corresponds to numbers of offers (O) per ledger. In each cell there are two numbers: first number corresponds to the case of 1 account issuing offers, the second number corresponds to 8 accounts. Each number is a size of the shard with given parameters measured in megabytes.</p>
 <table class="markdownTable">
@@ -92,12 +92,12 @@ Raw results table</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">16K </td><td class="markdownTableBodyNone">142.3/ 143.9 </td><td class="markdownTableBodyNone">279/9 280.8 </td><td class="markdownTableBodyNone">465.7/ 698.1 </td><td class="markdownTableBodyNone">696.4/ 1094.2 </td><td class="markdownTableBodyNone">1590.5/ 2166.6  </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md218"></a>
+<h1><a class="anchor" id="autotoc_md209"></a>
 Preliminary conclusion</h1>
 <p>If one compares a doubled size of shard with N ledgers and a size of shard with 2*N ledgers anywhere in the above table than the conlusion will be that the second number is greater. For example, the following table shows the percentage by which the second number is greater for the most interesting case of 30 offers per ledger. The first row corresponds to the case of 1 account issuing offers, and the second row corresponds to the case of 8 issuing accounts.</p>
 <p>|A\N|256|512|1K|2K|4K|8K| |&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;| |1|8%|6%|6%|6%|7%|6%|5%| |8|9%|7%|7%|8%|6%|7%|6%|</p>
 <p>The common conclusion in this model is that if one doubled the number of the ledgers in a shard then the total disk space utilized will raise by 5-9%.</p>
-<h1><a class="anchor" id="autotoc_md219"></a>
+<h1><a class="anchor" id="autotoc_md210"></a>
 Adding accounts into consideration</h1>
 <p>Previous model does not take into account that there are large number of XRP accounts in the mainnet, and each shard should contain information about each of these accounts. As of January 2020, there were about 1.9 million XRP accounts, and stored information about each of them is not less than 133 bytes. The constant 133 was obtained from debug print of rippled program when it saves account object to the database. So the actual size of each shard from raw table should be increased by at least 1.9M * 133 = 252.7M. Thus we obtained the following table of shard sizes for the most interesting case (30 offers per ledger and 8 issuing accounts) where S is shard size in ledgers and M is shard size in megabytes</p>
 <table class="markdownTable">
@@ -107,7 +107,7 @@ Adding accounts into consideration</h1>
 <td class="markdownTableBodyNone">M </td><td class="markdownTableBodyNone">274.6 </td><td class="markdownTableBodyNone">300.6 </td><td class="markdownTableBodyNone">355.6 </td><td class="markdownTableBodyNone">473.7 </td><td class="markdownTableBodyNone">728.7 </td><td class="markdownTableBodyNone">1273.7 </td><td class="markdownTableBodyNone">2419.3  </td></tr>
 </table>
 <p>Now we can see from the last table that even considering minimum assumption about number of accounts and corresponding additional size of a shard, doubled size of shard with N ledgers is larger than size of a shard with 2*N ledgers. If number of accounts increase then this inequality will be even stronger.</p>
-<h1><a class="anchor" id="autotoc_md220"></a>
+<h1><a class="anchor" id="autotoc_md211"></a>
 Using mainnet data</h1>
 <p>Next idea to improve model is to count real shard sizes from mainnet. We used real 16k-ledgers shards with indexes from 2600 to 3600 with step 100, and corresponding real 8k-ledgers shards. Each 16k-ledgers shard consists of two 8k-ledgers shards which are called "corresponding". For example, 16k-ledgers shard with index 2600 consists of two 8k-ledgers shards with indexes 5200 and 5201.</p>
 <p>In the following table we compare size of a 16k-ledgers shard with sum of sizes of two corresponding 8k-ledgers shards. There we only count size of nudb.dat file, sizes are in GB. Ratio is the size of two 8k-ledgers shards divided to the size of 16k-ledgers shard.</p>
@@ -169,7 +169,7 @@ Using mainnet data</h1>
 <td class="markdownTableBodyNone">Average </td><td class="markdownTableBodyNone">4.43 </td><td class="markdownTableBodyNone">2.70 + 2.70 = 5.40 </td><td class="markdownTableBodyNone">1.22  </td></tr>
 </table>
 <p>We can see that in all tables ratio is greater then 1, so using shards with 16 ledgers is preferred.</p>
-<h1><a class="anchor" id="autotoc_md221"></a>
+<h1><a class="anchor" id="autotoc_md212"></a>
 Compare 16K shards and 32K shards</h1>
 <p>To claim that shards with 16K ledgers are the best choice, we also assembled shards with 32k ledgers per shard with indexes from 1300 to 1800 with step 50 and corresponding shards with 16k ledgers per shard. For example, 32k-ledgers shard 1800 correnspond to 16k-ledgers shards with indexes 3600 and 3601 etc.</p>
 <p>Here are result tables for these shards similar to tables from previous part. In the first table we only take into consideration sizes of nudb.dat files.</p>
@@ -230,7 +230,7 @@ Compare 16K shards and 32K shards</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Average </td><td class="markdownTableBodyNone">7.69 </td><td class="markdownTableBodyNone">4.43 + 4.20 = 8.63 </td><td class="markdownTableBodyNone">1.12  </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md222"></a>
+<h1><a class="anchor" id="autotoc_md213"></a>
 Conclusion</h1>
 <p>We showed that using shards with 8k ledgers leads to raising required disk size by 22% in comparison with using shards with 16k ledgers. In the same way, using shards with 16k ledgers leads to raising required disk space by 12% in comparison with using shards with 32k ledgers. Note that increase ratio 12% is much less than 22% so using 32k-ledgers shards will bring us not so much economy in disk space.</p>
 <p>At the same time, size is one thing to compare but there are other aspects. Smaller shards have an advantage that they take less time to acquire and finalize. They also make for smaller archived shards which take less time to download and import. Having more/smaller shards might also lead to better database concurrency/performance.</p>

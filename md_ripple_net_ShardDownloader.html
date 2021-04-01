@@ -65,10 +65,10 @@ $(function() {
 <div class="title">Shard Downloader </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md164"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md155"></a>
 Overview</h1>
 <p>This document describes mechanics of the <code>HTTPDownloader</code>, a class that performs the task of downloading shards from remote web servers via HTTP. The downloader utilizes a strand (<code>boost::asio::io_service::strand</code>) to ensure that downloads are never executed concurrently. Hence, if a download is in progress when another download is initiated, the second download will be queued and invoked only when the first download is completed.</p>
-<h1><a class="anchor" id="autotoc_md165"></a>
+<h1><a class="anchor" id="autotoc_md156"></a>
 Motivation</h1>
 <p>In March 2020 the downloader was modified to include some key features:</p>
 <ul>
@@ -76,7 +76,7 @@ Motivation</h1>
 <li>The ability to resume partial downloads after a crash or shutdown.</li>
 </ul>
 <p>This document was created to document the changes introduced by this change.</p>
-<h1><a class="anchor" id="autotoc_md166"></a>
+<h1><a class="anchor" id="autotoc_md157"></a>
 Classes</h1>
 <p>Much of the shard downloading process concerns the following classes:</p>
 <ul>
@@ -107,19 +107,19 @@ Classes</h1>
 <p class="startli">This class defines a custom message body type, allowing an <code><a href="http::response_parser">http::response_parser</a></code> to write to an SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.</p>
 </li>
 </ul>
-<h1><a class="anchor" id="autotoc_md167"></a>
+<h1><a class="anchor" id="autotoc_md158"></a>
 Graceful Shutdowns &amp; Recovery</h1>
 <p>This section describes in greater detail how the shutdown and recovery features of the downloader are implemented in C++ using the <code><a class="el" href="namespaceboost_1_1asio.html">boost::asio</a></code> framework.</p>
-<h4><a class="anchor" id="autotoc_md168"></a>
+<h4><a class="anchor" id="autotoc_md159"></a>
 Member Variables:</h4>
 <p>The variables shown here are members of the <code>HTTPDownloader</code> class and will be used in the following code examples.</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">std::unique_ptr&lt;HTTPStream&gt; stream_;</div>
 <div class="line">std::condition_variable     c_;</div>
 <div class="line">std::atomic&lt;bool&gt;           stop_;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md169"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md160"></a>
 Graceful Shutdowns</h2>
-<h4><a class="anchor" id="autotoc_md170"></a>
+<h4><a class="anchor" id="autotoc_md161"></a>
 Thread 1:</h4>
 <p>A graceful shutdown begins when the <code>onStop()</code> method of the <code>ShardArchiveHandler</code> is invoked:</p>
 <div class="fragment"><div class="line"> {c++}</div>
@@ -155,7 +155,7 @@ Thread 1:</h4>
 <div class="line">            });</div>
 <div class="line">    }</div>
 <div class="line">}</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md171"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md162"></a>
 Thread 2:</h4>
 <p>The graceful shutdown is realized when the thread executing the download polls <code>stop_</code> after this variable has been set to <code>true</code>. Polling occurs while the file is being downloaded, in between calls to <code>async_read_some()</code>. The stop takes effect when the socket is closed and the handler function ( <code>do_session()</code> ) is exited.</p>
 <div class="fragment"><div class="line"> {c++}</div>
@@ -176,10 +176,10 @@ Thread 2:</h4>
 <div class="line"> </div>
 <div class="line">   break;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md172"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md163"></a>
 Recovery</h2>
 <p>Persisting the current state of both the archive handler and the downloader is achieved by leveraging an SQLite database rather than flat files, as the database protects against data corruption that could result from a system crash.</p>
-<h4><a class="anchor" id="autotoc_md173"></a>
+<h4><a class="anchor" id="autotoc_md164"></a>
 ShardArchiveHandler</h4>
 <p>Although <code>HTTPDownloader</code> is a generic class that could be used to download a variety of file types, currently it is used exclusively by the <code>ShardArchiveHandler</code> to download shards. In order to provide resilience, the <code>ShardArchiveHandler</code> will use an SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The <code>shard_db</code> section in the configuration file allows users to specify the location of the database to use for this purpose.</p>
 <h5>SQLite Table Format</h5>
@@ -193,7 +193,7 @@ ShardArchiveHandler</h4>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyCenter">5 </td><td class="markdownTableBodyCenter">https://example.com/5.tar.lz4  </td></tr>
 </table>
-<h4><a class="anchor" id="autotoc_md174"></a>
+<h4><a class="anchor" id="autotoc_md165"></a>
 HTTPDownloader</h4>
 <p>While the archive handler maintains a list of all partial and queued downloads, the <code>HTTPDownloader</code> stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more <code>BLOB</code> entries in an SQLite database. As the maximum size of a <code>BLOB</code> entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.</p>
 <h5>SQLite Table Format</h5>
@@ -208,19 +208,19 @@ HTTPDownloader</h4>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyCenter">0x... </td><td class="markdownTableBodyCenter">705032706 </td><td class="markdownTableBodyCenter">2  </td></tr>
 </table>
-<h4><a class="anchor" id="autotoc_md175"></a>
+<h4><a class="anchor" id="autotoc_md166"></a>
 Config File Entry</h4>
 <p>The <code>download_path</code> field of the <code>shard_db</code> entry is used to determine where to store the recovery database. If this field is omitted, the <code>path</code> field will be used instead.</p>
 <div class="fragment"><div class="line"># This is the persistent datastore for shards. It is important for the health</div>
-<div class="line"># of the ripple network that rippled operators shard as much as practical.</div>
-<div class="line"># NuDB requires SSD storage. Helpful information can be found here</div>
-<div class="line"># https://ripple.com/build/history-sharding</div>
+<div class="line"># of the network that rippled operators shard as much as practical.</div>
+<div class="line"># NuDB requires SSD storage. Helpful information can be found on</div>
+<div class="line"># https://xrpl.org/history-sharding.html</div>
 <div class="line">[shard_db]</div>
 <div class="line">type=NuDB</div>
 <div class="line">path=/var/lib/rippled/db/shards/nudb</div>
 <div class="line">download_path=/var/lib/rippled/db/shards/</div>
 <div class="line">max_historical_shards=50</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md176"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md167"></a>
 Resuming Partial Downloads</h4>
 <p>When resuming downloads after a shutdown, crash, or other interruption, the <code>HTTPDownloader</code> will utilize the <code>range</code> field of the HTTP header to download only the remainder of the partially downloaded file.</p>
 <div class="fragment"><div class="line"> {C++}</div>
@@ -250,7 +250,7 @@ Resuming Partial Downloads</h4>
 <div class="line">  // the total download size. Error condition. Handle</div>
 <div class="line">  // appropriately.</div>
 <div class="line">}</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md177"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md168"></a>
 DatabaseBody</h4>
 <p>Previously, the <code>HTTPDownloader</code> leveraged an <code><a href="http::response_parser">http::response_parser</a></code> instantiated with an <code><a href="http::file_body">http::file_body</a></code>. The <code>file_body</code> class declares a nested type, <code>reader</code>, which does the task of writing HTTP message payloads (constituting a requested file) to the filesystem. In order for the <code><a href="http::response_parser">http::response_parser</a></code> to interface with the database, we implement a custom body type that declares a nested <code>reader</code> type which has been outfitted to persist octects received from the remote host to a local SQLite database. The code snippet below illustrates the customization points available to user-defined body types:</p>
 <div class="fragment"><div class="line"> {C++}</div>
@@ -277,11 +277,11 @@ DatabaseBody</h4>
 <div class="fragment"><div class="line"> {C++}</div>
 <div class="line">std::size_t</div>
 <div class="line">body::reader::put(ConstBufferSequence const&amp; buffers, error_code&amp; ec);</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md178"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md169"></a>
 Sequence Diagram</h1>
 <p>This sequence diagram demonstrates a scenario wherein the <code>ShardArchiveHandler</code> leverages the state persisted in the database to recover from a crash and resume the requested downloads.</p>
 <p><img src="./images/interrupt_sequence.png" alt="alt_text" title="Resuming downloads post abort" class="inline"/></p>
-<h1><a class="anchor" id="autotoc_md179"></a>
+<h1><a class="anchor" id="autotoc_md170"></a>
 State Diagram</h1>
 <p>This diagram illustrates the various states of the Shard Downloader module.</p>
 <p><img src="./images/states.png" alt="alt_text" title="Shard Downloader states" class="inline"/> </p>

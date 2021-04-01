@@ -160,6 +160,24 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a244dc1088aa5c92cd08977375e49ce6c"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a244dc1088aa5c92cd08977375e49ce6c">getCompleteShards</a> ()=0</td></tr>
 <tr class="memdesc:a244dc1088aa5c92cd08977375e49ce6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query which complete shards are stored.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a244dc1088aa5c92cd08977375e49ce6c">More...</a><br /></td></tr>
 <tr class="separator:a244dc1088aa5c92cd08977375e49ce6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8417fc440d7ca371295cfc665e611f31"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a8417fc440d7ca371295cfc665e611f31">callForLedgerSQL</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;callback)=0</td></tr>
+<tr class="memdesc:a8417fc440d7ca371295cfc665e611f31"><td class="mdescLeft">&#160;</td><td class="mdescRight">callForLedgerSQL Checkouts ledger database for shard containing given ledger and calls given callback function passing shard index and session with the database to it.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a8417fc440d7ca371295cfc665e611f31">More...</a><br /></td></tr>
+<tr class="separator:a8417fc440d7ca371295cfc665e611f31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbbb6c70f6625b4e784a5a964762607e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#acbbb6c70f6625b4e784a5a964762607e">callForTransactionSQL</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;callback)=0</td></tr>
+<tr class="memdesc:acbbb6c70f6625b4e784a5a964762607e"><td class="mdescLeft">&#160;</td><td class="mdescRight">callForTransactionSQL Checkouts transaction database for shard containing given ledger and calls given callback function passing shard index and session with the database to it.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#acbbb6c70f6625b4e784a5a964762607e">More...</a><br /></td></tr>
+<tr class="separator:acbbb6c70f6625b4e784a5a964762607e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6baffa344648d383b4f42dcc1161f4e5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a6baffa344648d383b4f42dcc1161f4e5">iterateLedgerSQLsForward</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; minShardIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;callback)=0</td></tr>
+<tr class="memdesc:a6baffa344648d383b4f42dcc1161f4e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">iterateLedgerSQLsForward Checkouts ledger databases for all shards in ascending order starting from given shard index until shard with the largest index visited or callback returned false.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a6baffa344648d383b4f42dcc1161f4e5">More...</a><br /></td></tr>
+<tr class="separator:a6baffa344648d383b4f42dcc1161f4e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad522ade6ca2620e01a2b48d1c2ee4132"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#ad522ade6ca2620e01a2b48d1c2ee4132">iterateTransactionSQLsForward</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; minShardIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;callback)=0</td></tr>
+<tr class="memdesc:ad522ade6ca2620e01a2b48d1c2ee4132"><td class="mdescLeft">&#160;</td><td class="mdescRight">iterateTransactionSQLsForward Checkouts transaction databases for all shards in ascending order starting from given shard index until shard with the largest index visited or callback returned false.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#ad522ade6ca2620e01a2b48d1c2ee4132">More...</a><br /></td></tr>
+<tr class="separator:ad522ade6ca2620e01a2b48d1c2ee4132"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2ea6a79937b1df27cbd0893bb9d6944"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#ab2ea6a79937b1df27cbd0893bb9d6944">iterateLedgerSQLsBack</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; maxShardIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;callback)=0</td></tr>
+<tr class="memdesc:ab2ea6a79937b1df27cbd0893bb9d6944"><td class="mdescLeft">&#160;</td><td class="mdescRight">iterateLedgerSQLsBack Checkouts ledger databases for all shards in descending order starting from given shard index until shard with the smallest index visited or callback returned false.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#ab2ea6a79937b1df27cbd0893bb9d6944">More...</a><br /></td></tr>
+<tr class="separator:ab2ea6a79937b1df27cbd0893bb9d6944"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f5add66e74c912f09b5ed56900186a7"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a7f5add66e74c912f09b5ed56900186a7">iterateTransactionSQLsBack</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; maxShardIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;callback)=0</td></tr>
+<tr class="memdesc:a7f5add66e74c912f09b5ed56900186a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">iterateTransactionSQLsBack Checkouts transaction databases for all shards in descending order starting from given shard index until shard with the smallest index visited or callback returned false.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a7f5add66e74c912f09b5ed56900186a7">More...</a><br /></td></tr>
+<tr class="separator:a7f5add66e74c912f09b5ed56900186a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41cdfc11611d60733f42c72cfa684bed"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a41cdfc11611d60733f42c72cfa684bed">ledgersPerShard</a> () const =0</td></tr>
 <tr class="separator:a41cdfc11611d60733f42c72cfa684bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf2ae45e50a851560136d60e7ed82a15"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#aaf2ae45e50a851560136d60e7ed82a15">earliestShardIndex</a> () const =0</td></tr>
@@ -365,7 +383,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A collection of historical shards. </p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00036">36</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00037">37</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a43594a8835ccb53d7b80983694d26cad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a43594a8835ccb53d7b80983694d26cad">&#9670;&nbsp;</a></span>Children</h2>
@@ -455,7 +473,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00048">48</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00049">49</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
 
 </div>
 </div>
@@ -789,6 +807,294 @@ Private Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>the indexes of complete shards </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a2cd2db2080765e82032149961701b2c0">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="a8417fc440d7ca371295cfc665e611f31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8417fc440d7ca371295cfc665e611f31">&#9670;&nbsp;</a></span>callForLedgerSQL()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::DatabaseShard::callForLedgerSQL </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>callForLedgerSQL Checkouts ledger database for shard containing given ledger and calls given callback function passing shard index and session with the database to it. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback function to call. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Value returned by callback function. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a959f8fbba48647df3b71166ecdd6754c">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="acbbb6c70f6625b4e784a5a964762607e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbbb6c70f6625b4e784a5a964762607e">&#9670;&nbsp;</a></span>callForTransactionSQL()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::DatabaseShard::callForTransactionSQL </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>callForTransactionSQL Checkouts transaction database for shard containing given ledger and calls given callback function passing shard index and session with the database to it. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback function to call. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Value returned by callback function. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#ad587e07a3dfd7406e80e28f4bbc61fea">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="a6baffa344648d383b4f42dcc1161f4e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6baffa344648d383b4f42dcc1161f4e5">&#9670;&nbsp;</a></span>iterateLedgerSQLsForward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::DatabaseShard::iterateLedgerSQLsForward </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td>
+          <td class="paramname"><em>minShardIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>iterateLedgerSQLsForward Checkouts ledger databases for all shards in ascending order starting from given shard index until shard with the largest index visited or callback returned false. </p>
+<p>For each visited shard calls given callback function passing shard index and session with the database to it. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">minShardIndex</td><td>Start shard index to visit or none if all shards should be visited. </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback function to call. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if each callback function returns true, false otherwise. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#afef66907bcb87635c106ab9fd60d27ba">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="ad522ade6ca2620e01a2b48d1c2ee4132"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad522ade6ca2620e01a2b48d1c2ee4132">&#9670;&nbsp;</a></span>iterateTransactionSQLsForward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::DatabaseShard::iterateTransactionSQLsForward </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td>
+          <td class="paramname"><em>minShardIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>iterateTransactionSQLsForward Checkouts transaction databases for all shards in ascending order starting from given shard index until shard with the largest index visited or callback returned false. </p>
+<p>For each visited shard calls given callback function passing shard index and session with the database to it. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">minShardIndex</td><td>Start shard index to visit or none if all shards should be visited. </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback function to call. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if each callback function returns true, false otherwise. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#aa2df012e467b7e57c31789f26e73d81a">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="ab2ea6a79937b1df27cbd0893bb9d6944"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2ea6a79937b1df27cbd0893bb9d6944">&#9670;&nbsp;</a></span>iterateLedgerSQLsBack()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::DatabaseShard::iterateLedgerSQLsBack </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td>
+          <td class="paramname"><em>maxShardIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>iterateLedgerSQLsBack Checkouts ledger databases for all shards in descending order starting from given shard index until shard with the smallest index visited or callback returned false. </p>
+<p>For each visited shard calls given callback function passing shard index and session with the database to it. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">maxShardIndex</td><td>Start shard index to visit or none if all shards should be visited. </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback function to call. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if each callback function returns true, false otherwise. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a4643ea070dfbd98ca0829c589d76a4f8">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="a7f5add66e74c912f09b5ed56900186a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f5add66e74c912f09b5ed56900186a7">&#9670;&nbsp;</a></span>iterateTransactionSQLsBack()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::DatabaseShard::iterateTransactionSQLsBack </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td>
+          <td class="paramname"><em>maxShardIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>iterateTransactionSQLsBack Checkouts transaction databases for all shards in descending order starting from given shard index until shard with the smallest index visited or callback returned false. </p>
+<p>For each visited shard calls given callback function passing shard index and session with the database to it. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">maxShardIndex</td><td>Start shard index to visit or none if all shards should be visited. </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback function to call. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if each callback function returns true, false otherwise. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a6cdba2af0a4cef2b1fb99167f8fd7178">ripple::NodeStore::DatabaseShardImp</a>.</p>
 
 </div>
 </div>
@@ -1137,7 +1443,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the object was stored? </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a7992d0dd009c5b855c331c73872c946d">ripple::NodeStore::DatabaseRotatingImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#aa2a32f28cb0b4e0a5097205410c346eb">ripple::NodeStore::DatabaseShardImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a5f23a54188aa2329d979c937d932dbaf">ripple::NodeStore::DatabaseNodeImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a7992d0dd009c5b855c331c73872c946d">ripple::NodeStore::DatabaseRotatingImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#aa2a32f28cb0b4e0a5097205410c346eb">ripple::NodeStore::DatabaseShardImp</a>.</p>
 
 </div>
 </div>
@@ -1303,7 +1609,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ac8979815c7dbf46de5ca0dd7b293d5bb">ripple::NodeStore::DatabaseRotatingImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a0c873130f5ec07fee5d648a17bf42012">ripple::NodeStore::DatabaseShardImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseNodeImp.html#a0e021f41fc02828e0a5cfeb076523f2e">ripple::NodeStore::DatabaseNodeImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ac8979815c7dbf46de5ca0dd7b293d5bb">ripple::NodeStore::DatabaseRotatingImp</a>, and <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a0c873130f5ec07fee5d648a17bf42012">ripple::NodeStore::DatabaseShardImp</a>.</p>
 
 </div>
 </div>
@@ -2435,7 +2741,7 @@ Private Attributes</h2></td></tr>
 
 <p>The number of ledgers in a shard. </p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00179">179</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00276">276</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
 
 </div>
 </div>

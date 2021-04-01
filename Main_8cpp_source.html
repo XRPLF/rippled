@@ -90,14 +90,14 @@ $(function() {
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/main/Application.h&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/app/main/DBInit.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/StringUtilities.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/clock/basic_seconds_clock.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/CurrentThreadName.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/core/Config.h&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;ripple/core/DatabaseCon.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/app/rdb/RelationalDBInterface_global.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/StringUtilities.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/clock/basic_seconds_clock.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/CurrentThreadName.h&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/core/Config.h&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;ripple/core/TimeKeeper.h&gt;</span></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;ripple/json/to_string.h&gt;</span></div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;ripple/net/RPCCall.h&gt;</span></div>
@@ -619,274 +619,236 @@ $(function() {
 <div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;            <span class="keywordflow">return</span> -1;</div>
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;        }</div>
 <div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160; </div>
-<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;        <span class="keyword">using namespace </span>boost::filesystem;</div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        DatabaseCon::Setup <span class="keyword">const</span> dbSetup = <a class="code" href="namespaceripple.html#a1d3bf5cf699aaa0e0bf24af623b4bc48">setup_DatabaseCon</a>(*config);</div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;        path dbPath = dbSetup.dataDir / <a class="code" href="namespaceripple.html#aaeddb4a3396c616a7ef7350e4cc327f0">TxDBName</a>;</div>
-<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160; </div>
-<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        {</div>
-<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">uintmax_t</a> <span class="keyword">const</span> dbSize = <a class="codeRef" href="http://en.cppreference.com/w/cpp/experimental/fs/file_size.html">file_size</a>(dbPath);</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;            assert(dbSize != <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">uintmax_t</a><span class="keyword">&gt;</span>(-1));</div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> available = <a class="codeRef" href="http://en.cppreference.com/w/cpp/experimental/fs/space.html">space</a>(dbPath.parent_path()).available;</div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;                available &lt; dbSize)</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;            {</div>
-<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;The database filesystem must have at least as &quot;</span></div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;                             <span class="stringliteral">&quot;much free space as the size of &quot;</span></div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;                          &lt;&lt; dbPath.string() &lt;&lt; <span class="stringliteral">&quot;, which is &quot;</span> &lt;&lt; dbSize</div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot; bytes. Only &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">available</a></div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;                          &lt;&lt; <span class="stringliteral">&quot; bytes are available.\n&quot;</span>;</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;                <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;            }</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160; </div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;            <span class="keyword">auto</span> txnDB = std::make_unique&lt;DatabaseCon&gt;(</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;                dbSetup, <a class="code" href="namespaceripple.html#aaeddb4a3396c616a7ef7350e4cc327f0">TxDBName</a>, <a class="code" href="namespaceripple.html#a8f9d13b765a2cd0e391d4ccf7395a51b">TxDBPragma</a>, <a class="code" href="namespaceripple.html#a02dace5f2b8af172e9d2d4ee7ea04c55">TxDBInit</a>);</div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;            <span class="keyword">auto</span>&amp; session = txnDB-&gt;getSession();</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> pageSize;</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160; </div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;            <span class="comment">// Only the most trivial databases will fit in memory on typical</span></div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;            <span class="comment">// (recommended) software. Force temp files to be written to disk</span></div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;            <span class="comment">// regardless of the config settings.</span></div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;            session &lt;&lt; boost::format(<a class="code" href="namespaceripple.html#a75396e0d47cf97ef093f6e94f0230780">CommonDBPragmaTemp</a>) % <span class="stringliteral">&quot;file&quot;</span>;</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;            session &lt;&lt; <span class="stringliteral">&quot;PRAGMA page_size;&quot;</span>, soci::into(pageSize);</div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160; </div>
-<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;VACUUM beginning. page_size: &quot;</span> &lt;&lt; pageSize</div>
-<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160; </div>
-<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;            session &lt;&lt; <span class="stringliteral">&quot;VACUUM;&quot;</span>;</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;            assert(dbSetup.globalPragma);</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; p : *dbSetup.globalPragma)</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;                session &lt;&lt; p;</div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;            session &lt;&lt; <span class="stringliteral">&quot;PRAGMA page_size;&quot;</span>, soci::into(pageSize);</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160; </div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;VACUUM finished. page_size: &quot;</span> &lt;&lt; pageSize</div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        }</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;        {</div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;exception &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() &lt;&lt; <span class="stringliteral">&quot; in function &quot;</span> &lt;&lt; __func__</div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;        }</div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160; </div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;    }</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160; </div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;start&quot;</span>))</div>
-<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;    {</div>
-<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea0e7baa77ef581ef9dc61862d39238fe8">Config::FRESH</a>;</div>
-<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;    }</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160; </div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;startReporting&quot;</span>))</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;    {</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea0e7baa77ef581ef9dc61862d39238fe8">Config::FRESH</a>;</div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;startReporting&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    }</div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160; </div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;reportingReadOnly&quot;</span>))</div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;    {</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        config-&gt;setReportingReadOnly(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;    }</div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160; </div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;import&quot;</span>))</div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;        config-&gt;doImport = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160; </div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;    if (vm.count(<span class="stringliteral">&quot;nodetoshard&quot;</span>))</div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        config-&gt;nodeToShard = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160; </div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;    if (vm.count(<span class="stringliteral">&quot;ledger&quot;</span>))</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;    {</div>
-<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;ledger&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
-<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;        <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;replay&quot;</span>))</div>
-<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;            config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">Config::REPLAY</a>;</div>
-<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>;</div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;    }</div>
-<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;ledgerfile&quot;</span>))</div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;    {</div>
-<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;ledgerfile&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
-<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1">Config::LOAD_FILE</a>;</div>
-<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;    }</div>
-<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;load&quot;</span>))</div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;    {</div>
-<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>;</div>
-<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;    }</div>
-<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160; </div>
-<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;valid&quot;</span>))</div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;    {</div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;        config-&gt;START_VALID = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;    }</div>
-<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160; </div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;net&quot;</span>))</div>
-<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;    {</div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;        <span class="keywordflow">if</span> ((config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>) ||</div>
-<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;            (config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">Config::REPLAY</a>))</div>
-<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        {</div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Net and load/replay options are incompatible&quot;</span></div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;        }</div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160; </div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea50338de0064b157025d2811e1655e663">Config::NETWORK</a>;</div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;    }</div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160; </div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;    <span class="comment">// Override the RPC destination IP address. This must</span></div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;    <span class="comment">// happen after the config file is loaded.</span></div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;rpc_ip&quot;</span>))</div>
+<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        {</div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;            <span class="keyword">auto</span> setup = <a class="code" href="namespaceripple.html#a1d3bf5cf699aaa0e0bf24af623b4bc48">setup_DatabaseCon</a>(*config);</div>
+<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;            <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a66c57e7cfe01ff1ccccf7cad2db534db">doVacuumDB</a>(setup))</div>
+<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;                <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        }</div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        {</div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;exception &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() &lt;&lt; <span class="stringliteral">&quot; in function &quot;</span> &lt;&lt; __func__</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;        }</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160; </div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;    }</div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160; </div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;start&quot;</span>))</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;    {</div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea0e7baa77ef581ef9dc61862d39238fe8">Config::FRESH</a>;</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;    }</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160; </div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;startReporting&quot;</span>))</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;    {</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea0e7baa77ef581ef9dc61862d39238fe8">Config::FRESH</a>;</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;startReporting&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;    }</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160; </div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;reportingReadOnly&quot;</span>))</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;    {</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;        config-&gt;setReportingReadOnly(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;    }</div>
+<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160; </div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;import&quot;</span>))</div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;        config-&gt;doImport = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160; </div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;    if (vm.count(<span class="stringliteral">&quot;nodetoshard&quot;</span>))</div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;        config-&gt;nodeToShard = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160; </div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;    if (vm.count(<span class="stringliteral">&quot;ledger&quot;</span>))</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;    {</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;ledger&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;replay&quot;</span>))</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;            config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">Config::REPLAY</a>;</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;            config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>;</div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;    }</div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;ledgerfile&quot;</span>))</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;    {</div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;ledgerfile&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1">Config::LOAD_FILE</a>;</div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;    }</div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;load&quot;</span>))</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;    {</div>
+<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>;</div>
+<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;    }</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160; </div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;valid&quot;</span>))</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;    {</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;        config-&gt;START_VALID = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;    }</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160; </div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;net&quot;</span>))</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    {</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;        <span class="keywordflow">if</span> ((config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>) ||</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            (config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">Config::REPLAY</a>))</div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;        {</div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Net and load/replay options are incompatible&quot;</span></div>
+<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;        }</div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160; </div>
+<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea50338de0064b157025d2811e1655e663">Config::NETWORK</a>;</div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;    }</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160; </div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;    <span class="comment">// Override the RPC destination IP address. This must</span></div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;    <span class="comment">// happen after the config file is loaded.</span></div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;rpc_ip&quot;</span>))</div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;    {</div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;        <span class="keyword">auto</span> endpoint = <a class="code" href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a>(</div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;            vm[<span class="stringliteral">&quot;rpc_ip&quot;</span>].as&lt;std::string&gt;());</div>
+<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;        <span class="keywordflow">if</span> (!endpoint)</div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;        {</div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Invalid rpc_ip = &quot;</span> &lt;&lt; vm[<span class="stringliteral">&quot;rpc_ip&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;()</div>
+<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;        }</div>
+<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160; </div>
+<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;        <span class="keywordflow">if</span> (endpoint-&gt;port() == 0)</div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;        {</div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;No port specified in rpc_ip.\n&quot;</span>;</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;            <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;rpc_port&quot;</span>))</div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;            {</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;WARNING: using deprecated rpc_port param.\n&quot;</span>;</div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;                <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;                {</div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;                    endpoint =</div>
+<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;                        endpoint-&gt;at_port(vm[<span class="stringliteral">&quot;rpc_port&quot;</span>].as&lt;std::uint16_t&gt;());</div>
+<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;                    <span class="keywordflow">if</span> (endpoint-&gt;port() == 0)</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;                        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a>(<span class="stringliteral">&quot;0&quot;</span>);</div>
+<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;                }</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;                <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;                {</div>
+<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Invalid rpc_port = &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;                    <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;                }</div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            }</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;                <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;        }</div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160; </div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;        config-&gt;rpc_ip = std::move(*endpoint);</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;    }</div>
+<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160; </div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;quorum&quot;</span>))</div>
 <div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;    {</div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;        <span class="keyword">auto</span> endpoint = <a class="code" href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a>(</div>
-<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;            vm[<span class="stringliteral">&quot;rpc_ip&quot;</span>].as&lt;std::string&gt;());</div>
-<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;        <span class="keywordflow">if</span> (!endpoint)</div>
-<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;        {</div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Invalid rpc_ip = &quot;</span> &lt;&lt; vm[<span class="stringliteral">&quot;rpc_ip&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;()</div>
-<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;        {</div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;            config-&gt;VALIDATION_QUORUM = vm[<span class="stringliteral">&quot;quorum&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;();</div>
+<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;            <span class="keywordflow">if</span> (config-&gt;VALIDATION_QUORUM == <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>{})</div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;            {</div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;                <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a>(<span class="stringliteral">&quot;0&quot;</span>);</div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;            }</div>
 <div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;        }</div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160; </div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;        <span class="keywordflow">if</span> (endpoint-&gt;port() == 0)</div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;        {</div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;No port specified in rpc_ip.\n&quot;</span>;</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;rpc_port&quot;</span>))</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            {</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;WARNING: using deprecated rpc_port param.\n&quot;</span>;</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;                <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                {</div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                    endpoint =</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                        endpoint-&gt;at_port(vm[<span class="stringliteral">&quot;rpc_port&quot;</span>].as&lt;std::uint16_t&gt;());</div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                    <span class="keywordflow">if</span> (endpoint-&gt;port() == 0)</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;                        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a>(<span class="stringliteral">&quot;0&quot;</span>);</div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;                }</div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;                <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;                {</div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Invalid rpc_port = &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;                    <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;                }</div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;            }</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;                <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;        }</div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160; </div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;        config-&gt;rpc_ip = std::move(*endpoint);</div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;    }</div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160; </div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;quorum&quot;</span>))</div>
-<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;    {</div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;        {</div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;            config-&gt;VALIDATION_QUORUM = vm[<span class="stringliteral">&quot;quorum&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;();</div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            <span class="keywordflow">if</span> (config-&gt;VALIDATION_QUORUM == <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>{})</div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;            {</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;                <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a>(<span class="stringliteral">&quot;0&quot;</span>);</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;            }</div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;        }</div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;        {</div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Invalid value specified for --quorum (&quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot;)\n&quot;</span>;</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;        }</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;    }</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;        {</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Invalid value specified for --quorum (&quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot;)\n&quot;</span>;</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;        }</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;    }</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160; </div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;    <span class="comment">// Construct the logs object at the configured severity</span></div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;    <span class="keyword">using namespace </span><a class="code" href="namespacebeast_1_1severities.html">beast::severities</a>;</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;    <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">Severity</a> thresh = <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea2a7ebee41624279bb6f58f8999ab7b30">kInfo</a>;</div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160; </div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;quiet&quot;</span>))</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;        thresh = <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73beafb23b01f4530b3bffdf2b2253ae4f6e7">kFatal</a>;</div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;verbose&quot;</span>))</div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;        thresh = <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea6cb881c12779afecb054fd4e578ee22c">kTrace</a>;</div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160; </div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;    <span class="keyword">auto</span> logs = std::make_unique&lt;Logs&gt;(thresh);</div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160; </div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;    <span class="comment">// No arguments. Run server.</span></div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;    <span class="keywordflow">if</span> (!vm.count(<span class="stringliteral">&quot;parameters&quot;</span>))</div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;    {</div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;        <span class="comment">// TODO: this comment can be removed in a future release -</span></div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;        <span class="comment">// say 1.7 or higher</span></div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;        <span class="keywordflow">if</span> (config-&gt;had_trailing_comments())</div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;        {</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            JLOG(logs-&gt;journal(<span class="stringliteral">&quot;Application&quot;</span>).warn())</div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Trailing comments were seen in your config file. &quot;</span></div>
+<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;The treatment of inline/trailing comments has changed &quot;</span></div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                   <span class="stringliteral">&quot;recently. &quot;</span></div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Any `#` characters NOT intended to delimit comments should &quot;</span></div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;                   <span class="stringliteral">&quot;be &quot;</span></div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;preceded by a \\&quot;</span>;</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;        }</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160; </div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;        <span class="comment">// We want at least 1024 file descriptors. We&#39;ll</span></div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;        <span class="comment">// tweak this further.</span></div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#ac760f917d80e2705add72d1047cb6d23">adjustDescriptorLimit</a>(1024, logs-&gt;journal(<span class="stringliteral">&quot;Application&quot;</span>)))</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160; </div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;        <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;debug&quot;</span>))</div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;            <a class="code" href="namespaceripple.html#ad9129e0ba7f7dc36dd0ae69b323d07ac">setDebugLogSink</a>(logs-&gt;makeSink(<span class="stringliteral">&quot;Debug&quot;</span>, <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea6cb881c12779afecb054fd4e578ee22c">beast::severities::kTrace</a>));</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160; </div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        <span class="keyword">auto</span> timeKeeper = <a class="code" href="namespaceripple.html#a377354f4cc31fdeef30b6fdc97203e86">make_TimeKeeper</a>(logs-&gt;journal(<span class="stringliteral">&quot;TimeKeeper&quot;</span>));</div>
 <div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160; </div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;    <span class="comment">// Construct the logs object at the configured severity</span></div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;    <span class="keyword">using namespace </span><a class="code" href="namespacebeast_1_1severities.html">beast::severities</a>;</div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;    <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">Severity</a> thresh = <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea2a7ebee41624279bb6f58f8999ab7b30">kInfo</a>;</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160; </div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;quiet&quot;</span>))</div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;        thresh = <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73beafb23b01f4530b3bffdf2b2253ae4f6e7">kFatal</a>;</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;verbose&quot;</span>))</div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        thresh = <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea6cb881c12779afecb054fd4e578ee22c">kTrace</a>;</div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160; </div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;    <span class="keyword">auto</span> logs = std::make_unique&lt;Logs&gt;(thresh);</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160; </div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;    <span class="comment">// No arguments. Run server.</span></div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;    <span class="keywordflow">if</span> (!vm.count(<span class="stringliteral">&quot;parameters&quot;</span>))</div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;    {</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;        <span class="comment">// TODO: this comment can be removed in a future release -</span></div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;        <span class="comment">// say 1.7 or higher</span></div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;        <span class="keywordflow">if</span> (config-&gt;had_trailing_comments())</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;        {</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;            JLOG(logs-&gt;journal(<span class="stringliteral">&quot;Application&quot;</span>).warn())</div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Trailing comments were seen in your config file. &quot;</span></div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;The treatment of inline/trailing comments has changed &quot;</span></div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                   <span class="stringliteral">&quot;recently. &quot;</span></div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Any `#` characters NOT intended to delimit comments should &quot;</span></div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;                   <span class="stringliteral">&quot;be &quot;</span></div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;preceded by a \\&quot;</span>;</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;        }</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;        <span class="keyword">auto</span> app = <a class="code" href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">make_Application</a>(</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;            std::move(config), std::move(logs), std::move(timeKeeper));</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;        <span class="keywordflow">if</span> (!app-&gt;setup())</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160; </div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;        <span class="comment">// With our configuration parsed, ensure we have</span></div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        <span class="comment">// enough file descriptors available:</span></div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#ac760f917d80e2705add72d1047cb6d23">adjustDescriptorLimit</a>(</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;                app-&gt;fdRequired(), app-&gt;logs().journal(<span class="stringliteral">&quot;Application&quot;</span>)))</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160; </div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;        <span class="comment">// Start the server</span></div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;        app-&gt;doStart(<span class="keyword">true</span> <span class="comment">/*start timers*/</span>);</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160; </div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;        <span class="comment">// Block until we get a stop RPC.</span></div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;        app-&gt;run();</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160; </div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;        <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;    }</div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160; </div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;    <span class="comment">// We have an RPC command to process:</span></div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;    <a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a>(<span class="stringliteral">&quot;rippled: rpc&quot;</span>);</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPCCall.html#a1a95d65d49327d8f4cc8c1bf142cc0eb">RPCCall::fromCommandLine</a>(</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        *config, vm[<span class="stringliteral">&quot;parameters&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a>&gt;(), *logs);</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;}</div>
 <div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160; </div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        <span class="comment">// We want at least 1024 file descriptors. We&#39;ll</span></div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;        <span class="comment">// tweak this further.</span></div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#ac760f917d80e2705add72d1047cb6d23">adjustDescriptorLimit</a>(1024, logs-&gt;journal(<span class="stringliteral">&quot;Application&quot;</span>)))</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160; </div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;        <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;debug&quot;</span>))</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;            <a class="code" href="namespaceripple.html#ad9129e0ba7f7dc36dd0ae69b323d07ac">setDebugLogSink</a>(logs-&gt;makeSink(<span class="stringliteral">&quot;Debug&quot;</span>, <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea6cb881c12779afecb054fd4e578ee22c">beast::severities::kTrace</a>));</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160; </div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;        <span class="keyword">auto</span> timeKeeper = <a class="code" href="namespaceripple.html#a377354f4cc31fdeef30b6fdc97203e86">make_TimeKeeper</a>(logs-&gt;journal(<span class="stringliteral">&quot;TimeKeeper&quot;</span>));</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160; </div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;        <span class="keyword">auto</span> app = <a class="code" href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">make_Application</a>(</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;            std::move(config), std::move(logs), std::move(timeKeeper));</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160; </div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        <span class="keywordflow">if</span> (!app-&gt;setup())</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160; </div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;        <span class="comment">// With our configuration parsed, ensure we have</span></div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;        <span class="comment">// enough file descriptors available:</span></div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#ac760f917d80e2705add72d1047cb6d23">adjustDescriptorLimit</a>(</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;                app-&gt;fdRequired(), app-&gt;logs().journal(<span class="stringliteral">&quot;Application&quot;</span>)))</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160; </div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;        <span class="comment">// Start the server</span></div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;        app-&gt;doStart(<span class="keyword">true</span> <span class="comment">/*start timers*/</span>);</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160; </div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;<span class="comment">// Must be outside the namespace for obvious reasons</span></div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;<span class="keywordtype">int</span></div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv)</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;{</div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;<span class="preprocessor">#if BOOST_OS_WINDOWS</span></div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;    {</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;        <span class="comment">// Work around for https://svn.boost.org/trac/boost/ticket/10657</span></div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;        <span class="comment">// Reported against boost version 1.56.0.  If an application&#39;s</span></div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;        <span class="comment">// first call to GetTimeZoneInformation is from a coroutine, an</span></div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;        <span class="comment">// unhandled exception is generated.  A workaround is to call</span></div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        <span class="comment">// GetTimeZoneInformation at least once before launching any</span></div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;        <span class="comment">// coroutines.  At the time of this writing the _ftime call is</span></div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;        <span class="comment">// used to initialize the timezone information.</span></div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;        <span class="keyword">struct </span>_timeb t;</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;<span class="preprocessor">#ifdef _INC_TIME_INL</span></div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;        _ftime_s(&amp;t);</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;        _ftime(&amp;t);</div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;    }</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160; </div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;        <span class="comment">// Block until we get a stop RPC.</span></div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;        app-&gt;run();</div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160; </div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;        <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;    }</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160; </div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;    <span class="comment">// We have an RPC command to process:</span></div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;    <a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a>(<span class="stringliteral">&quot;rippled: rpc&quot;</span>);</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1RPCCall.html#a1a95d65d49327d8f4cc8c1bf142cc0eb">RPCCall::fromCommandLine</a>(</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;        *config, vm[<span class="stringliteral">&quot;parameters&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a>&gt;(), *logs);</div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;}</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160; </div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160; </div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;<span class="comment">// Must be outside the namespace for obvious reasons</span></div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;<span class="keywordtype">int</span></div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv)</div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;{</div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;<span class="preprocessor">#if BOOST_OS_WINDOWS</span></div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;    {</div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;        <span class="comment">// Work around for https://svn.boost.org/trac/boost/ticket/10657</span></div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;        <span class="comment">// Reported against boost version 1.56.0.  If an application&#39;s</span></div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;        <span class="comment">// first call to GetTimeZoneInformation is from a coroutine, an</span></div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;        <span class="comment">// unhandled exception is generated.  A workaround is to call</span></div>
-<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;        <span class="comment">// GetTimeZoneInformation at least once before launching any</span></div>
-<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;        <span class="comment">// coroutines.  At the time of this writing the _ftime call is</span></div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;        <span class="comment">// used to initialize the timezone information.</span></div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;        <span class="keyword">struct </span>_timeb t;</div>
-<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;<span class="preprocessor">#ifdef _INC_TIME_INL</span></div>
-<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;        _ftime_s(&amp;t);</div>
-<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;        _ftime(&amp;t);</div>
-<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;    }</div>
-<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160; </div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/program/atexit.html">atexit</a>(&amp;google::protobuf::ShutdownProtobufLibrary);</div>
-<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160; </div>
-<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> result(ripple::run(argc, argv));</div>
-<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160; </div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;}</div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/program/atexit.html">atexit</a>(&amp;google::protobuf::ShutdownProtobufLibrary);</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160; </div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> result(ripple::run(argc, argv));</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160; </div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;}</div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1severities_html_a069a8a312b9123b77f6aa31733ca73bea6cb881c12779afecb054fd4e578ee22c"><div class="ttname"><a href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea6cb881c12779afecb054fd4e578ee22c">beast::severities::kTrace</a></div><div class="ttdeci">@ kTrace</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00034">Journal.h:34</a></div></div>
 <div class="ttc" id="afor_each_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a></div><div class="ttdeci">T for_each(T... args)</div></div>
-<div class="ttc" id="afile_size_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/experimental/fs/file_size.html">std::experimental::filesystem::file_size</a></div><div class="ttdeci">T file_size(T... args)</div></div>
 <div class="ttc" id="adomain_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1multi__runner__parent_html_a5b21c264691e4c37be53667d5dfc33fa"><div class="ttname"><a href="classripple_1_1test_1_1multi__runner__parent.html#a5b21c264691e4c37be53667d5dfc33fa">ripple::test::multi_runner_parent::add_failures</a></div><div class="ttdeci">void add_failures(std::size_t failures)</div><div class="ttdef"><b>Definition:</b> <a href="multi__runner_8cpp_source.html#l00501">multi_runner.cpp:501</a></div></div>
@@ -905,7 +867,6 @@ $(function() {
 <div class="ttc" id="acerr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a></div></div>
 <div class="ttc" id="aiostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iostream.html">iostream</a></div></div>
 <div class="ttc" id="acout_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aaeddb4a3396c616a7ef7350e4cc327f0"><div class="ttname"><a href="namespaceripple.html#aaeddb4a3396c616a7ef7350e4cc327f0">ripple::TxDBName</a></div><div class="ttdeci">constexpr auto TxDBName</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00073">DBInit.h:73</a></div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
 <div class="ttc" id="aatexit_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/program/atexit.html">std::atexit</a></div><div class="ttdeci">T atexit(T... args)</div></div>
 <div class="ttc" id="alog_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/math/log.html">std::log</a></div><div class="ttdeci">T log(T... args)</div></div>
@@ -915,11 +876,8 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a8aa97a762a323b5f5e96db0a2fc1e33a"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">ripple::BuildInfo::getVersionString</a></div><div class="ttdeci">std::string const  &amp; getVersionString()</div><div class="ttdoc">Server version.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00061">BuildInfo.cpp:61</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1multi__runner__parent_html_a7950097337ad68e7b1e42088a46280a8"><div class="ttname"><a href="classripple_1_1test_1_1multi__runner__parent.html#a7950097337ad68e7b1e42088a46280a8">ripple::test::multi_runner_parent::any_failed</a></div><div class="ttdeci">bool any_failed() const</div><div class="ttdef"><b>Definition:</b> <a href="multi__runner_8cpp_source.html#l00483">multi_runner.cpp:483</a></div></div>
-<div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintmax_t</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a75396e0d47cf97ef093f6e94f0230780"><div class="ttname"><a href="namespaceripple.html#a75396e0d47cf97ef093f6e94f0230780">ripple::CommonDBPragmaTemp</a></div><div class="ttdeci">constexpr char const  * CommonDBPragmaTemp</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00034">DBInit.h:34</a></div></div>
 <div class="ttc" id="aatomic_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt; bool &gt;</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1severities_html_a069a8a312b9123b77f6aa31733ca73bea2a7ebee41624279bb6f58f8999ab7b30"><div class="ttname"><a href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73bea2a7ebee41624279bb6f58f8999ab7b30">beast::severities::kInfo</a></div><div class="ttdeci">@ kInfo</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00036">Journal.h:36</a></div></div>
-<div class="ttc" id="aspace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/experimental/fs/space.html">std::experimental::filesystem::space</a></div><div class="ttdeci">T space(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1RPCCall_html_a1a95d65d49327d8f4cc8c1bf142cc0eb"><div class="ttname"><a href="namespaceripple_1_1RPCCall.html#a1a95d65d49327d8f4cc8c1bf142cc0eb">ripple::RPCCall::fromCommandLine</a></div><div class="ttdeci">int fromCommandLine(Config const &amp;config, const std::vector&lt; std::string &gt; &amp;vCmd, Logs &amp;logs)</div><div class="ttdef"><b>Definition:</b> <a href="RPCCall_8cpp_source.html#l01671">RPCCall.cpp:1671</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a8852c4bb7703599e82fb733e2f514aef"><div class="ttname"><a href="namespaceripple_1_1test.html#a8852c4bb7703599e82fb733e2f514aef">ripple::test::envUseIPv4</a></div><div class="ttdeci">std::atomic&lt; bool &gt; envUseIPv4</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8cpp_source.html#l00034">envconfig.cpp:34</a></div></div>
 <div class="ttc" id="anamespacebeast_html_ab3bd70e6eb43bbd99b5fe518efce8c7e"><div class="ttname"><a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a></div><div class="ttdeci">void setCurrentThreadName(std::string_view name)</div><div class="ttdoc">Changes the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00119">CurrentThreadName.cpp:119</a></div></div>
@@ -934,12 +892,11 @@ $(function() {
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c"><div class="ttname"><a href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">ripple::Config::REPLAY</a></div><div class="ttdeci">@ REPLAY</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00128">Config.h:128</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a377354f4cc31fdeef30b6fdc97203e86"><div class="ttname"><a href="namespaceripple.html#a377354f4cc31fdeef30b6fdc97203e86">ripple::make_TimeKeeper</a></div><div class="ttdeci">std::unique_ptr&lt; TimeKeeper &gt; make_TimeKeeper(beast::Journal j)</div><div class="ttdef"><b>Definition:</b> <a href="TimeKeeper_8cpp_source.html#l00119">TimeKeeper.cpp:119</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8f9d13b765a2cd0e391d4ccf7395a51b"><div class="ttname"><a href="namespaceripple.html#a8f9d13b765a2cd0e391d4ccf7395a51b">ripple::TxDBPragma</a></div><div class="ttdeci">constexpr std::array TxDBPragma</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00076">DBInit.h:76</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1multi__runner__child_html"><div class="ttname"><a href="classripple_1_1test_1_1multi__runner__child.html">ripple::test::multi_runner_child</a></div><div class="ttdoc">A class to run a subset of unit tests.</div><div class="ttdef"><b>Definition:</b> <a href="multi__runner_8h_source.html#l00253">multi_runner.h:253</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aca32bc5eec87c90ce71880dbba08b93e"><div class="ttname"><a href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">ripple::systemName</a></div><div class="ttdeci">static std::string const  &amp; systemName()</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00034">SystemParameters.h:34</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/end.html">std::vector::end</a></div><div class="ttdeci">T end(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a02dace5f2b8af172e9d2d4ee7ea04c55"><div class="ttname"><a href="namespaceripple.html#a02dace5f2b8af172e9d2d4ee7ea04c55">ripple::TxDBInit</a></div><div class="ttdeci">constexpr std::array&lt; char const  *, 8 &gt; TxDBInit</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00084">DBInit.h:84</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a66c57e7cfe01ff1ccccf7cad2db534db"><div class="ttname"><a href="namespaceripple.html#a66c57e7cfe01ff1ccccf7cad2db534db">ripple::doVacuumDB</a></div><div class="ttdeci">bool doVacuumDB(DatabaseCon::Setup const &amp;setup)</div><div class="ttdoc">doVacuumDB Creates, initialises DB, and performs its cleanup.</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDBInterface__global_8cpp_source.html#l00540">RelationalDBInterface_global.cpp:540</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1severities_html_a069a8a312b9123b77f6aa31733ca73beafb23b01f4530b3bffdf2b2253ae4f6e7"><div class="ttname"><a href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73beafb23b01f4530b3bffdf2b2253ae4f6e7">beast::severities::kFatal</a></div><div class="ttdeci">@ kFatal</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00039">Journal.h:39</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a></div><div class="ttdeci">T max(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1multi__runner__parent_html"><div class="ttname"><a href="classripple_1_1test_1_1multi__runner__parent.html">ripple::test::multi_runner_parent</a></div><div class="ttdoc">Manager for children running unit tests.</div><div class="ttdef"><b>Definition:</b> <a href="multi__runner_8h_source.html#l00218">multi_runner.h:218</a></div></div>
@@ -947,7 +904,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Config_html_a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1"><div class="ttname"><a href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1">ripple::Config::LOAD_FILE</a></div><div class="ttdeci">@ LOAD_FILE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00128">Config.h:128</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/data.html">std::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html_a0d6ba5509dc00fbf39e8b91e5f267a87"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a></div><div class="ttdeci">static std::optional&lt; Endpoint &gt; from_string_checked(std::string const &amp;s)</div><div class="ttdoc">Create an Endpoint from a string.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8cpp_source.html#l00035">IPEndpoint.cpp:35</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a37eda33d77f068d8788e5a5a81a7cc77"><div class="ttname"><a href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">ripple::make_Application</a></div><div class="ttdeci">std::unique_ptr&lt; Application &gt; make_Application(std::unique_ptr&lt; Config &gt; config, std::unique_ptr&lt; Logs &gt; logs, std::unique_ptr&lt; TimeKeeper &gt; timeKeeper)</div><div class="ttdef"><b>Definition:</b> <a href="Application_8cpp_source.html#l02305">Application.cpp:2305</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a37eda33d77f068d8788e5a5a81a7cc77"><div class="ttname"><a href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">ripple::make_Application</a></div><div class="ttdeci">std::unique_ptr&lt; Application &gt; make_Application(std::unique_ptr&lt; Config &gt; config, std::unique_ptr&lt; Logs &gt; logs, std::unique_ptr&lt; TimeKeeper &gt; timeKeeper)</div><div class="ttdef"><b>Definition:</b> <a href="Application_8cpp_source.html#l02137">Application.cpp:2137</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb"><div class="ttname"><a href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">ripple::PublisherStatus::available</a></div><div class="ttdeci">@ available</div></div>
 <div class="ttc" id="astructripple_1_1ConfigSection_html_a44ee859a6705ddcac4e318602f8fe6ac"><div class="ttname"><a href="structripple_1_1ConfigSection.html#a44ee859a6705ddcac4e318602f8fe6ac">ripple::ConfigSection::nodeDatabase</a></div><div class="ttdeci">static std::string nodeDatabase()</div><div class="ttdef"><b>Definition:</b> <a href="ConfigSections_8h_source.html#l00033">ConfigSections.h:33</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::exception::what</a></div><div class="ttdeci">T what(T... args)</div></div>
