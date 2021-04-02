@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2017 Ripple Labs Inc.
@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
@@ -37,6 +38,7 @@
 #endif
 
 namespace ripple {
+
 namespace NodeStore {
 
 DatabaseShardImp::DatabaseShardImp(
@@ -731,14 +733,27 @@ DatabaseShardImp::import(Database& source)
             auto loadLedger = [&](bool ascendSort =
                                       true) -> std::optional<std::uint32_t> {
                 std::shared_ptr<Ledger> ledger;
-                std::uint32_t ledgerSeq;
-                std::tie(ledger, ledgerSeq, std::ignore) = loadLedgerHelper(
-                    "WHERE LedgerSeq >= " +
-                        std::to_string(earliestLedgerSeq()) +
-                        " order by LedgerSeq " + (ascendSort ? "asc" : "desc") +
-                        " limit 1",
-                    app_,
-                    false);
+                std::uint32_t ledgerSeq{0};
+                std::optional<LedgerInfo> info;
+                if (ascendSort)
+                {
+                    info =
+                        dynamic_cast<RelationalDBInterfaceSqlite*>(
+                            &app_.getRelationalDBInterface())
+                            ->getLimitedOldestLedgerInfo(earliestLedgerSeq());
+                }
+                else
+                {
+                    info =
+                        dynamic_cast<RelationalDBInterfaceSqlite*>(
+                            &app_.getRelationalDBInterface())
+                            ->getLimitedNewestLedgerInfo(earliestLedgerSeq());
+                }
+                if (info)
+                {
+                    ledger = loadLedgerHelper(*info, app_, false);
+                    ledgerSeq = info->seq;
+                }
                 if (!ledger || ledgerSeq == 0)
                 {
                     JLOG(j_.error()) << "no suitable ledgers were found in"
@@ -823,14 +838,16 @@ DatabaseShardImp::import(Database& source)
                 auto const numLedgers{
                     shardIndex == earliestShardIndex() ? lastSeq - firstSeq + 1
                                                        : ledgersPerShard_};
-                auto ledgerHashes{getHashesByIndex(firstSeq, lastSeq, app_)};
+                auto ledgerHashes{
+                    app_.getRelationalDBInterface().getHashesByIndex(
+                        firstSeq, lastSeq)};
                 if (ledgerHashes.size() != numLedgers)
                     continue;
 
                 bool valid{true};
                 for (std::uint32_t n = firstSeq; n <= lastSeq; n += 256)
                 {
-                    if (!source.fetchNodeObject(ledgerHashes[n].first, n))
+                    if (!source.fetchNodeObject(ledgerHashes[n].ledgerHash, n))
                     {
                         JLOG(j_.warn()) << "SQLite ledger sequence " << n
                                         << " mismatches node store";
@@ -1864,6 +1881,144 @@ DatabaseShardImp::checkHistoricalPaths() const
 #endif
 
     return true;
+}
+
+bool
+DatabaseShardImp::callForLedgerSQL(
+    LedgerIndex ledgerSeq,
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    std::lock_guard lock(mutex_);
+    auto shardIndex = seqToShardIndex(ledgerSeq);
+
+    if (shards_.count(shardIndex) &&
+        shards_[shardIndex]->getState() == Shard::State::final)
+    {
+        return shards_[shardIndex]->callForLedgerSQL(callback);
+    }
+
+    return false;
+}
+
+bool
+DatabaseShardImp::callForTransactionSQL(
+    LedgerIndex ledgerSeq,
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    std::lock_guard lock(mutex_);
+    auto shardIndex = seqToShardIndex(ledgerSeq);
+
+    if (shards_.count(shardIndex) &&
+        shards_[shardIndex]->getState() == Shard::State::final)
+    {
+        return shards_[shardIndex]->callForTransactionSQL(callback);
+    }
+
+    return false;
+}
+
+bool
+DatabaseShardImp::iterateShardsForward(
+    std::optional<std::uint32_t> minShardIndex,
+    std::function<bool(Shard& shard)> const& visit)
+{
+    std::lock_guard lock(mutex_);
+
+    std::map<std::uint32_t, std::shared_ptr<Shard>>::iterator it, eit;
+
+    if (!minShardIndex)
+        it = shards_.begin();
+    else
+        it = shards_.lower_bound(*minShardIndex);
+
+    eit = shards_.end();
+
+    for (; it != eit; it++)
+    {
+        if (it->second->getState() == Shard::State::final)
+        {
+            if (!visit(*it->second))
+                return false;
+        }
+    }
+
+    return true;
+}
+bool
+DatabaseShardImp::iterateLedgerSQLsForward(
+    std::optional<std::uint32_t> minShardIndex,
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    return iterateShardsForward(
+        minShardIndex, [&callback](Shard& shard) -> bool {
+            return shard.callForLedgerSQL(callback);
+        });
+}
+
+bool
+DatabaseShardImp::iterateTransactionSQLsForward(
+    std::optional<std::uint32_t> minShardIndex,
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    return iterateShardsForward(
+        minShardIndex, [&callback](Shard& shard) -> bool {
+            return shard.callForTransactionSQL(callback);
+        });
+}
+
+bool
+DatabaseShardImp::iterateShardsBack(
+    std::optional<std::uint32_t> maxShardIndex,
+    std::function<bool(Shard& shard)> const& visit)
+{
+    std::lock_guard lock(mutex_);
+
+    std::map<std::uint32_t, std::shared_ptr<Shard>>::reverse_iterator it, eit;
+
+    if (!maxShardIndex)
+        it = shards_.rbegin();
+    else
+        it = std::make_reverse_iterator(shards_.upper_bound(*maxShardIndex));
+
+    eit = shards_.rend();
+
+    for (; it != eit; it++)
+    {
+        if (it->second->getState() == Shard::State::final &&
+            (!maxShardIndex || it->first <= *maxShardIndex))
+        {
+            if (!visit(*it->second))
+                return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+DatabaseShardImp::iterateLedgerSQLsBack(
+    std::optional<std::uint32_t> maxShardIndex,
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    return iterateShardsBack(maxShardIndex, [&callback](Shard& shard) -> bool {
+        return shard.callForLedgerSQL(callback);
+    });
+}
+
+bool
+DatabaseShardImp::iterateTransactionSQLsBack(
+    std::optional<std::uint32_t> maxShardIndex,
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    return iterateShardsBack(maxShardIndex, [&callback](Shard& shard) -> bool {
+        return shard.callForTransactionSQL(callback);
+    });
 }
 
 //------------------------------------------------------------------------------

@@ -28,8 +28,6 @@
 
 namespace ripple {
 
-// See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
-
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {

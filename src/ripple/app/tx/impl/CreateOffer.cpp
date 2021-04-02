@@ -638,7 +638,7 @@ CreateOffer::takerCross(
     Sandbox& sbCancel,
     Amounts const& takerAmount)
 {
-    NetClock::time_point const when{ctx_.view().parentCloseTime()};
+    NetClock::time_point const when = ctx_.view().parentCloseTime();
 
     beast::WrappedSink takerSink(j_, "Taker ");
 

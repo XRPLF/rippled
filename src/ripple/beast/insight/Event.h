@@ -22,8 +22,6 @@
 
 #include <ripple/beast/insight/EventImpl.h>
 
-#include <date/date.h>
-
 #include <chrono>
 #include <memory>
 
@@ -67,7 +65,7 @@ public:
     {
         using namespace std::chrono;
         if (m_impl)
-            m_impl->notify(date::ceil<value_type>(value));
+            m_impl->notify(ceil<value_type>(value));
     }
 
     std::shared_ptr<EventImpl> const&

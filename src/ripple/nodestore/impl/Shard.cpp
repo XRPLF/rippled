@@ -19,6 +19,8 @@
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/main/DBInit.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/RelationalDBInterface_shards.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
@@ -617,36 +619,23 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
             if (!acquireInfo_)
                 return fail("missing acquire SQLite database");
 
-            // index and sHash must be boost::optional (not std) because that's
-            // what SOCI expects in its interface.
-            auto session{acquireInfo_->SQLiteDB->checkoutDb()};
-            boost::optional<std::uint32_t> index;
-            boost::optional<std::string> sHash;
-            soci::blob sociBlob(*session);
-            soci::indicator blobPresent;
-            *session << "SELECT ShardIndex, LastLedgerHash, StoredLedgerSeqs "
-                        "FROM Shard "
-                        "WHERE ShardIndex = :index;",
-                soci::into(index), soci::into(sHash),
-                soci::into(sociBlob, blobPresent), soci::use(index_);
+            auto [res, seqshash] = selectAcquireDBLedgerSeqsHash(
+                *acquireInfo_->SQLiteDB->checkoutDb(), index_);
 
-            if (!index || index != index_)
+            if (!res)
                 return fail("missing or invalid ShardIndex");
 
-            if (!sHash)
+            if (!seqshash.hash)
                 return fail("missing LastLedgerHash");
 
-            if (!hash.parseHex(*sHash) || hash.isZero())
+            if (!hash.parseHex(*seqshash.hash) || hash.isZero())
                 return fail("invalid LastLedgerHash");
 
-            if (blobPresent != soci::i_ok)
+            if (!seqshash.sequences)
                 return fail("missing StoredLedgerSeqs");
 
-            std::string s;
-            convert(sociBlob, s);
-
             auto& storedSeqs{acquireInfo_->storedSeqs};
-            if (!from_string(storedSeqs, s) ||
+            if (!from_string(storedSeqs, *seqshash.sequences) ||
                 boost::icl::first(storedSeqs) != firstSeq_ ||
                 boost::icl::last(storedSeqs) != lastSeq_ ||
                 storedSeqs.size() != maxLedgers_)
@@ -871,11 +860,8 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         setup.dataDir = dir_;
         setup.useGlobalPragma = true;
 
-        acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
+        acquireInfo_->SQLiteDB = makeAcquireDB(
             setup,
-            AcquireShardDBName,
-            AcquireShardDBPragma,
-            AcquireShardDBInit,
             DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
         state_ = acquire;
     };
@@ -890,37 +876,22 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         {
             // A new shard
             createAcquireInfo();
-            acquireInfo_->SQLiteDB->getSession()
-                << "INSERT INTO Shard (ShardIndex) "
-                   "VALUES (:shardIndex);",
-                soci::use(index_);
+            insertAcquireDBIndex(acquireInfo_->SQLiteDB->getSession(), index_);
         }
         else if (exists(dir_ / AcquireShardDBName))
         {
             // A shard being acquired, backend is likely incomplete
             createAcquireInfo();
+            auto [res, s] = selectAcquireDBLedgerSeqs(
+                acquireInfo_->SQLiteDB->getSession(), index_);
 
-            // index and must be boost::optional (not std) because that's
-            // what SOCI expects in its interface.
-            auto& session{acquireInfo_->SQLiteDB->getSession()};
-            boost::optional<std::uint32_t> index;
-            soci::blob sociBlob(session);
-            soci::indicator blobPresent;
-
-            session << "SELECT ShardIndex, StoredLedgerSeqs "
-                       "FROM Shard "
-                       "WHERE ShardIndex = :index;",
-                soci::into(index), soci::into(sociBlob, blobPresent),
-                soci::use(index_);
-
-            if (!index || index != index_)
+            if (!res)
                 return fail("invalid acquire SQLite database");
 
-            if (blobPresent == soci::i_ok)
+            if (s)
             {
-                std::string s;
                 auto& storedSeqs{acquireInfo_->storedSeqs};
-                if (convert(sociBlob, s); !from_string(storedSeqs, s))
+                if (!from_string(storedSeqs, *s))
                     return fail("invalid StoredLedgerSeqs");
 
                 if (boost::icl::first(storedSeqs) < firstSeq_ ||
@@ -1003,44 +974,19 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
 
         if (state_ == final)
         {
-            lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, FinalShardDBPragma, LgrDBInit);
-            lgrSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(
-                    config.getValueFor(SizedItem::lgrDBCache, std::nullopt)));
-
-            txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, FinalShardDBPragma, TxDBInit);
-            txSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(
-                    config.getValueFor(SizedItem::txnDBCache, std::nullopt)));
+            auto [lgr, tx] = makeShardCompleteLedgerDBs(config, setup);
+            txSQLiteDB_ = std::move(tx);
+            lgrSQLiteDB_ = std::move(lgr);
         }
         else
         {
-            // Non final shards use a Write Ahead Log for performance
-            lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
+            auto [lgr, tx] = makeShardIncompleteLedgerDBs(
+                config,
                 setup,
-                LgrDBName,
-                LgrDBPragma,
-                LgrDBInit,
                 DatabaseCon::CheckpointerSetup{
                     &app_.getJobQueue(), &app_.logs()});
-            lgrSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
-
-            txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup,
-                TxDBName,
-                TxDBPragma,
-                TxDBInit,
-                DatabaseCon::CheckpointerSetup{
-                    &app_.getJobQueue(), &app_.logs()});
-            txSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config.getValueFor(SizedItem::txnDBCache)));
+            txSQLiteDB_ = std::move(tx);
+            lgrSQLiteDB_ = std::move(lgr);
         }
     }
     catch (std::exception const& e)
@@ -1060,127 +1006,32 @@ Shard::storeSQLite(std::shared_ptr<Ledger const> const& ledger)
     if (stop_)
         return false;
 
-    auto const ledgerSeq{ledger->info().seq};
-
     try
     {
-        // Update the transactions database
+        auto res = updateLedgerDBs(
+            *txSQLiteDB_->checkoutDb(),
+            *lgrSQLiteDB_->checkoutDb(),
+            ledger,
+            index_,
+            stop_,
+            j_);
+
+        if (!res)
+            return false;
+
+        // Update the acquire database if present
+        if (acquireInfo_)
         {
-            auto session{txSQLiteDB_->checkoutDb()};
-            soci::transaction tr(*session);
+            std::optional<std::string> s;
+            if (!acquireInfo_->storedSeqs.empty())
+                s = to_string(acquireInfo_->storedSeqs);
 
-            *session << "DELETE FROM Transactions "
-                        "WHERE LedgerSeq = :seq;",
-                soci::use(ledgerSeq);
-            *session << "DELETE FROM AccountTransactions "
-                        "WHERE LedgerSeq = :seq;",
-                soci::use(ledgerSeq);
-
-            if (ledger->info().txHash.isNonZero())
-            {
-                auto const sSeq{std::to_string(ledgerSeq)};
-                if (!ledger->txMap().isValid())
-                {
-                    JLOG(j_.error()) << "shard " << index_
-                                     << " has an invalid transaction map"
-                                     << " on sequence " << sSeq;
-                    return false;
-                }
-
-                for (auto const& item : ledger->txs)
-                {
-                    if (stop_)
-                        return false;
-
-                    auto const txID{item.first->getTransactionID()};
-                    auto const sTxID{to_string(txID)};
-                    auto const txMeta{std::make_shared<TxMeta>(
-                        txID, ledger->seq(), *item.second)};
-
-                    *session << "DELETE FROM AccountTransactions "
-                                "WHERE TransID = :txID;",
-                        soci::use(sTxID);
-
-                    auto const& accounts = txMeta->getAffectedAccounts(j_);
-                    if (!accounts.empty())
-                    {
-                        auto const sTxnSeq{std::to_string(txMeta->getIndex())};
-                        auto const s{boost::str(
-                            boost::format("('%s','%s',%s,%s)") % sTxID % "%s" %
-                            sSeq % sTxnSeq)};
-                        std::string sql;
-                        sql.reserve((accounts.size() + 1) * 128);
-                        sql =
-                            "INSERT INTO AccountTransactions "
-                            "(TransID, Account, LedgerSeq, TxnSeq) VALUES ";
-                        sql += boost::algorithm::join(
-                            accounts |
-                                boost::adaptors::transformed(
-                                    [&](AccountID const& accountID) {
-                                        return boost::str(
-                                            boost::format(s) %
-                                            ripple::toBase58(accountID));
-                                    }),
-                            ",");
-                        sql += ';';
-                        *session << sql;
-
-                        JLOG(j_.trace()) << "shard " << index_
-                                         << " account transaction: " << sql;
-                    }
-                    else
-                    {
-                        JLOG(j_.warn())
-                            << "shard " << index_ << " transaction in ledger "
-                            << sSeq << " affects no accounts";
-                    }
-
-                    Serializer s;
-                    item.second->add(s);
-                    *session
-                        << (STTx::getMetaSQLInsertReplaceHeader() +
-                            item.first->getMetaSQL(
-                                ledgerSeq, sqlBlobLiteral(s.modData())) +
-                            ';');
-                }
-            }
-
-            tr.commit();
-        }
-
-        // Update the ledger database
-        {
-            auto const sParentHash{to_string(ledger->info().parentHash)};
-            auto const sDrops{to_string(ledger->info().drops)};
-            auto const sAccountHash{to_string(ledger->info().accountHash)};
-            auto const sTxHash{to_string(ledger->info().txHash)};
-            auto const sHash{to_string(ledger->info().hash)};
-
-            auto session{lgrSQLiteDB_->checkoutDb()};
-            soci::transaction tr(*session);
-
-            *session << "DELETE FROM Ledgers "
-                        "WHERE LedgerSeq = :seq;",
-                soci::use(ledgerSeq);
-            *session
-                << "INSERT OR REPLACE INTO Ledgers ("
-                   "LedgerHash, LedgerSeq, PrevHash, TotalCoins, ClosingTime,"
-                   "PrevClosingTime, CloseTimeRes, CloseFlags, AccountSetHash,"
-                   "TransSetHash)"
-                   "VALUES ("
-                   ":ledgerHash, :ledgerSeq, :prevHash, :totalCoins,"
-                   ":closingTime, :prevClosingTime, :closeTimeRes,"
-                   ":closeFlags, :accountSetHash, :transSetHash);",
-                soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),
-                soci::use(sDrops),
-                soci::use(ledger->info().closeTime.time_since_epoch().count()),
-                soci::use(
-                    ledger->info().parentCloseTime.time_since_epoch().count()),
-                soci::use(ledger->info().closeTimeResolution.count()),
-                soci::use(ledger->info().closeFlags), soci::use(sAccountHash),
-                soci::use(sTxHash);
-
-            tr.commit();
+            updateAcquireDB(
+                acquireInfo_->SQLiteDB->getSession(),
+                ledger,
+                index_,
+                lastSeq_,
+                s);
         }
     }
     catch (std::exception const& e)
@@ -1364,6 +1215,32 @@ Shard::makeBackendCount()
         lastAccess_ = std::chrono::steady_clock::now();
 
     return Shard::Count(&backendCount_);
+}
+
+bool
+Shard::callForLedgerSQL(
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return false;
+
+    auto db = lgrSQLiteDB_->checkoutDb();
+    return callback(*db, index_);
+}
+
+bool
+Shard::callForTransactionSQL(
+    std::function<bool(soci::session& session, std::uint32_t index)> const&
+        callback)
+{
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return false;
+
+    auto db = txSQLiteDB_->checkoutDb();
+    return callback(*db, index_);
 }
 
 }  // namespace NodeStore

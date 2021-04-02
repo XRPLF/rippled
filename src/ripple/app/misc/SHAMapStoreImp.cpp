@@ -20,6 +20,8 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStoreImp.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/Pg.h>
@@ -34,68 +36,15 @@ SHAMapStoreImp::SavedStateDB::init(
     std::string const& dbName)
 {
     std::lock_guard lock(mutex_);
-
-    open(session_, config, dbName);
-
-    session_ << "PRAGMA synchronous=FULL;";
-
-    session_ << "CREATE TABLE IF NOT EXISTS DbState ("
-                "  Key                    INTEGER PRIMARY KEY,"
-                "  WritableDb             TEXT,"
-                "  ArchiveDb              TEXT,"
-                "  LastRotatedLedger      INTEGER"
-                ");";
-
-    session_ << "CREATE TABLE IF NOT EXISTS CanDelete ("
-                "  Key                    INTEGER PRIMARY KEY,"
-                "  CanDeleteSeq           INTEGER"
-                ");";
-
-    std::int64_t count = 0;
-    {
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<std::int64_t> countO;
-        session_ << "SELECT COUNT(Key) FROM DbState WHERE Key = 1;",
-            soci::into(countO);
-        if (!countO)
-            Throw<std::runtime_error>(
-                "Failed to fetch Key Count from DbState.");
-        count = *countO;
-    }
-
-    if (!count)
-    {
-        session_ << "INSERT INTO DbState VALUES (1, '', '', 0);";
-    }
-
-    {
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<std::int64_t> countO;
-        session_ << "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;",
-            soci::into(countO);
-        if (!countO)
-            Throw<std::runtime_error>(
-                "Failed to fetch Key Count from CanDelete.");
-        count = *countO;
-    }
-
-    if (!count)
-    {
-        session_ << "INSERT INTO CanDelete VALUES (1, 0);";
-    }
+    initStateDB(sqlDb_, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    LedgerIndex seq;
     std::lock_guard lock(mutex_);
 
-    session_ << "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;",
-        soci::into(seq);
-    ;
-
-    return seq;
+    return ripple::getCanDelete(sqlDb_);
 }
 
 LedgerIndex
@@ -103,47 +52,29 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
     std::lock_guard lock(mutex_);
 
-    session_ << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;",
-        soci::use(canDelete);
-
-    return canDelete;
+    return ripple::setCanDelete(sqlDb_, canDelete);
 }
 
-SHAMapStoreImp::SavedState
+SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    SavedState state;
-
     std::lock_guard lock(mutex_);
 
-    session_ << "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
-                " FROM DbState WHERE Key = 1;",
-        soci::into(state.writableDb), soci::into(state.archiveDb),
-        soci::into(state.lastRotated);
-
-    return state;
+    return ripple::getSavedState(sqlDb_);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
     std::lock_guard lock(mutex_);
-    session_ << "UPDATE DbState"
-                " SET WritableDb = :writableDb,"
-                " ArchiveDb = :archiveDb,"
-                " LastRotatedLedger = :lastRotated"
-                " WHERE Key = 1;",
-        soci::use(state.writableDb), soci::use(state.archiveDb),
-        soci::use(state.lastRotated);
+    ripple::setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
     std::lock_guard lock(mutex_);
-    session_ << "UPDATE DbState SET LastRotatedLedger = :seq"
-                " WHERE Key = 1;",
-        soci::use(seq);
+    ripple::setLastRotated(sqlDb_, seq);
 }
 
 //------------------------------------------------------------------------------
@@ -337,9 +268,7 @@ SHAMapStoreImp::run()
     ledgerMaster_ = &app_.getLedgerMaster();
     fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache(0));
     treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache(0));
-    if (app_.config().useTxTables())
-        transactionDb_ = &app_.getTxnDB();
-    ledgerDb_ = &app_.getLedgerDB();
+
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
 
@@ -583,24 +512,19 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 
 void
 SHAMapStoreImp::clearSql(
-    DatabaseCon& database,
     LedgerIndex lastRotated,
-    std::string const& minQuery,
-    std::string const& deleteQuery)
+    const std::string TableName,
+    std::function<std::optional<LedgerIndex>()> const& getMinSeq,
+    std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
     assert(deleteInterval_);
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<std::uint64_t> m;
         JLOG(journal_.trace())
-            << "Begin: Look up lowest value of: " << minQuery;
-        {
-            auto db = database.checkoutDb();
-            *db << minQuery, soci::into(m);
-        }
-        JLOG(journal_.trace()) << "End: Look up lowest value of: " << minQuery;
+            << "Begin: Look up lowest value of: " << TableName;
+        auto m = getMinSeq();
+        JLOG(journal_.trace()) << "End: Look up lowest value of: " << TableName;
         if (!m)
             return;
         min = *m;
@@ -611,27 +535,22 @@ SHAMapStoreImp::clearSql(
     if (min == lastRotated)
     {
         // Micro-optimization mainly to clarify logs
-        JLOG(journal_.trace()) << "Nothing to delete from " << deleteQuery;
+        JLOG(journal_.trace()) << "Nothing to delete from " << TableName;
         return;
     }
 
-    boost::format formattedDeleteQuery(deleteQuery);
-
-    JLOG(journal_.debug()) << "start: " << deleteQuery << " from " << min
-                           << " to " << lastRotated;
+    JLOG(journal_.debug()) << "start deleting in: " << TableName << " from "
+                           << min << " to " << lastRotated;
     while (min < lastRotated)
     {
         min = std::min(lastRotated, min + deleteBatch_);
-        JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
-                               << " rows with LedgerSeq < " << min
-                               << " using query: " << deleteQuery;
-        {
-            auto db = database.checkoutDb();
-            *db << boost::str(formattedDeleteQuery % min);
-        }
+        JLOG(journal_.trace())
+            << "Begin: Delete up to " << deleteBatch_
+            << " rows with LedgerSeq < " << min << " from: " << TableName;
+        deleteBeforeSeq(min);
         JLOG(journal_.trace())
             << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
-            << min << " using query: " << deleteQuery;
+            << min << " from: " << TableName;
         if (health())
             return;
         if (min < lastRotated)
@@ -639,7 +558,7 @@ SHAMapStoreImp::clearSql(
         if (health())
             return;
     }
-    JLOG(journal_.debug()) << "finished: " << deleteQuery;
+    JLOG(journal_.debug()) << "finished deleting from: " << TableName;
 }
 
 void
@@ -679,11 +598,19 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (health())
         return;
 
+    RelationalDBInterfaceSqlite* iface =
+        dynamic_cast<RelationalDBInterfaceSqlite*>(
+            &app_.getRelationalDBInterface());
+
     clearSql(
-        *ledgerDb_,
         lastRotated,
-        "SELECT MIN(LedgerSeq) FROM Ledgers;",
-        "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
+        "Ledgers",
+        [&iface]() -> std::optional<LedgerIndex> {
+            return iface->getMinLedgerSeq();
+        },
+        [&iface](LedgerIndex min) -> void {
+            iface->deleteBeforeLedgerSeq(min);
+        });
     if (health())
         return;
 
@@ -691,18 +618,26 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         return;
 
     clearSql(
-        *transactionDb_,
         lastRotated,
-        "SELECT MIN(LedgerSeq) FROM Transactions;",
-        "DELETE FROM Transactions WHERE LedgerSeq < %u;");
+        "Transactions",
+        [&iface]() -> std::optional<LedgerIndex> {
+            return iface->getTransactionsMinLedgerSeq();
+        },
+        [&iface](LedgerIndex min) -> void {
+            iface->deleteTransactionsBeforeLedgerSeq(min);
+        });
     if (health())
         return;
 
     clearSql(
-        *transactionDb_,
         lastRotated,
-        "SELECT MIN(LedgerSeq) FROM AccountTransactions;",
-        "DELETE FROM AccountTransactions WHERE LedgerSeq < %u;");
+        "AccountTransactions",
+        [&iface]() -> std::optional<LedgerIndex> {
+            return iface->getAccountTransactionsMinLedgerSeq();
+        },
+        [&iface](LedgerIndex min) -> void {
+            iface->deleteAccountTransactionsBeforeLedgerSeq(min);
+        });
     if (health())
         return;
 }

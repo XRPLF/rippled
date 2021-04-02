@@ -19,8 +19,8 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/TxFlags.h>
@@ -328,25 +328,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     // Find out if the FeatureVotes table exists in WalletDB
     bool const featureVotesExist = [this]() {
         auto db = db_.checkoutDb();
-        soci::transaction tr(*db);
-        std::string sql =
-            "SELECT count(*) FROM sqlite_master "
-            "WHERE type='table' AND name='FeatureVotes'";
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<int> featureVotesCount;
-        *db << sql, soci::into(featureVotesCount);
-        bool exists = static_cast<bool>(*featureVotesCount);
-
-        // Create FeatureVotes table in WalletDB if it doesn't exist
-        if (!exists)
-        {
-            *db << "CREATE TABLE  FeatureVotes ( "
-                   "AmendmentHash      CHARACTER(64) NOT NULL, "
-                   "AmendmentName      TEXT, "
-                   "Veto               INTEGER NOT NULL );";
-            tr.commit();
-        }
-        return exists;
+        return createFeatureVotes(*db);
     }();
 
     // Parse supported amendments
@@ -408,51 +390,42 @@ AmendmentTableImpl::AmendmentTableImpl(
 
     // Read amendment votes from wallet.db
     auto db = db_.checkoutDb();
-    soci::transaction tr(*db);
-    std::string sql =
-        "SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes";
-    // SOCI requires boost::optional (not std::optional) as parameters.
-    boost::optional<std::string> amendment_hash;
-    boost::optional<std::string> amendment_name;
-    boost::optional<int> vote_to_veto;
-    soci::statement st =
-        (db->prepare << sql,
-         soci::into(amendment_hash),
-         soci::into(amendment_name),
-         soci::into(vote_to_veto));
-    st.execute();
-    while (st.fetch())
-    {
-        uint256 amend_hash;
-        if (!amend_hash.parseHex(*amendment_hash))
-        {
-            Throw<std::runtime_error>(
-                "Invalid amendment ID '" + *amendment_hash + " in wallet.db");
-        }
-        if (*vote_to_veto)
-        {
-            // Unknown amendments are effectively vetoed already
-            if (auto s = get(amend_hash, sl))
+    readAmendments(
+        *db,
+        [&](boost::optional<std::string> amendment_hash,
+            boost::optional<std::string> amendment_name,
+            boost::optional<int> vote_to_veto) {
+            uint256 amend_hash;
+            if (!amend_hash.parseHex(*amendment_hash))
             {
-                JLOG(j_.info()) << "Amendment {" << *amendment_name << ", "
-                                << amend_hash << "} is vetoed.";
-                if (!amendment_name->empty())
-                    s->name = *amendment_name;
-                s->vetoed = true;
+                Throw<std::runtime_error>(
+                    "Invalid amendment ID '" + *amendment_hash +
+                    " in wallet.db");
             }
-        }
-        else  // un-veto
-        {
-            if (auto s = add(amend_hash, sl))
+            if (*vote_to_veto)
             {
-                JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", "
-                                 << amend_hash << "} is un-vetoed.";
-                if (!amendment_name->empty())
-                    s->name = *amendment_name;
-                s->vetoed = false;
+                // Unknown amendments are effectively vetoed already
+                if (auto s = get(amend_hash, sl))
+                {
+                    JLOG(j_.info()) << "Amendment {" << *amendment_name << ", "
+                                    << amend_hash << "} is vetoed.";
+                    if (!amendment_name->empty())
+                        s->name = *amendment_name;
+                    s->vetoed = true;
+                }
             }
-        }
-    }
+            else  // un-veto
+            {
+                if (auto s = add(amend_hash, sl))
+                {
+                    JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", "
+                                     << amend_hash << "} is un-vetoed.";
+                    if (!amendment_name->empty())
+                        s->name = *amendment_name;
+                    s->vetoed = false;
+                }
+            }
+        });
 }
 
 AmendmentState*
@@ -509,15 +482,7 @@ AmendmentTableImpl::persistVote(
     bool vote_to_veto) const
 {
     auto db = db_.checkoutDb();
-    soci::transaction tr(*db);
-    std::string sql =
-        "INSERT INTO FeatureVotes (AmendmentHash, AmendmentName, Veto) VALUES "
-        "('";
-    sql += to_string(amendment);
-    sql += "', '" + name;
-    sql += "', '" + std::to_string(int{vote_to_veto}) + "');";
-    *db << sql;
-    tr.commit();
+    voteAmendment(*db, amendment, name, vote_to_veto);
 }
 
 bool

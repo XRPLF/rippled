@@ -275,9 +275,9 @@ and several paths for historical storage:
 
 ```dosini
 # This is the persistent datastore for shards. It is important for the health
-# of the ripple network that rippled operators shard as much as practical.
-# NuDB requires SSD storage. Helpful information can be found here
-# https://ripple.com/build/history-sharding
+# of the network that server operators shard as much as practical.
+# NuDB requires SSD storage. Helpful information can be found on
+# https://xrpl.org/history-sharding.html
 [shard_db]
 type=NuDB
 

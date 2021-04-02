@@ -403,14 +403,14 @@ JobQueue::processTask(int instance)
 
             // The amount of time that the job was in the queue
             auto const q_time =
-                date::ceil<microseconds>(start_time - job.queue_time());
+                ceil<microseconds>(start_time - job.queue_time());
             perfLog_.jobStart(type, q_time, start_time, instance);
 
             job.doJob();
 
             // The amount of time it took to execute the job
             auto const x_time =
-                date::ceil<microseconds>(Job::clock_type::now() - start_time);
+                ceil<microseconds>(Job::clock_type::now() - start_time);
 
             if (x_time >= 10ms || q_time >= 10ms)
             {

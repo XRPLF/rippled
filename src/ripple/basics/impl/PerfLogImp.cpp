@@ -288,7 +288,7 @@ PerfLogImp::report()
     lastLog_ = present;
 
     Json::Value report(Json::objectValue);
-    report[jss::time] = to_string(date::floor<microseconds>(present));
+    report[jss::time] = to_string(floor<microseconds>(present));
     {
         std::lock_guard lock{counters_.jobsMutex_};
         report[jss::workers] =

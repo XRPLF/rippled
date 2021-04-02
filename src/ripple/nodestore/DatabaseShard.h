@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/Types.h>
 
@@ -131,6 +132,102 @@ public:
     */
     virtual std::string
     getCompleteShards() = 0;
+
+    /**
+     * @brief callForLedgerSQL Checkouts ledger database for shard
+     *        containing given ledger and calls given callback function passing
+     *        shard index and session with the database to it.
+     * @param ledgerSeq Ledger sequence.
+     * @param callback Callback function to call.
+     * @return Value returned by callback function.
+     */
+    virtual bool
+    callForLedgerSQL(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) = 0;
+
+    /**
+     * @brief callForTransactionSQL Checkouts transaction database for shard
+     *        containing given ledger and calls given callback function passing
+     *        shard index and session with the database to it.
+     * @param ledgerSeq Ledger sequence.
+     * @param callback Callback function to call.
+     * @return Value returned by callback function.
+     */
+    virtual bool
+    callForTransactionSQL(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) = 0;
+
+    /**
+     * @brief iterateLedgerSQLsForward Checkouts ledger databases for all
+     *        shards in ascending order starting from given shard index until
+     *        shard with the largest index visited or callback returned false.
+     *        For each visited shard calls given callback function passing
+     *        shard index and session with the database to it.
+     * @param minShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
+     */
+    virtual bool
+    iterateLedgerSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) = 0;
+
+    /**
+     * @brief iterateTransactionSQLsForward Checkouts transaction databases for
+     *        all shards in ascending order starting from given shard index
+     *        until shard with the largest index visited or callback returned
+     *        false. For each visited shard calls given callback function
+     *        passing shard index and session with the database to it.
+     * @param minShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
+     */
+    virtual bool
+    iterateTransactionSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) = 0;
+
+    /**
+     * @brief iterateLedgerSQLsBack Checkouts ledger databases for
+     *        all shards in descending order starting from given shard index
+     *        until shard with the smallest index visited or callback returned
+     *        false. For each visited shard calls given callback function
+     *        passing shard index and session with the database to it.
+     * @param maxShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
+     */
+    virtual bool
+    iterateLedgerSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) = 0;
+
+    /**
+     * @brief iterateTransactionSQLsBack Checkouts transaction databases for
+     *        all shards in descending order starting from given shard index
+     *        until shard with the smallest index visited or callback returned
+     *        false. For each visited shard calls given callback function
+     *        passing shard index and session with the database to it.
+     * @param maxShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
+     */
+    virtual bool
+    iterateTransactionSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) = 0;
 
     /** @return The maximum number of ledgers stored in a shard
      */

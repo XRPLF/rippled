@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/core/SociDB.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Checker.h>
 #include <ripple/peerfinder/impl/Logic.h>
@@ -42,7 +41,7 @@ public:
     StoreSqdb m_store;
     Checker<boost::asio::ip::tcp> checker_;
     Logic<decltype(checker_)> m_logic;
-    SociConfig m_sociConfig;
+    BasicConfig const& m_config;
 
     //--------------------------------------------------------------------------
 
@@ -60,7 +59,7 @@ public:
         , m_store(journal)
         , checker_(io_service_)
         , m_logic(clock, m_store, checker_, journal)
-        , m_sociConfig(config, "peerfinder")
+        , m_config(config)
         , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
     {
     }
@@ -216,7 +215,7 @@ public:
     void
     start() override
     {
-        m_store.open(m_sociConfig);
+        m_store.open(m_config);
         m_logic.load();
     }
 

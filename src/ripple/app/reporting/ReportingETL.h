@@ -21,6 +21,7 @@
 #define RIPPLE_APP_REPORTING_REPORTINGETL_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/app/reporting/ETLHelpers.h>
 #include <ripple/app/reporting/ETLSource.h>
 #include <ripple/core/JobQueue.h>
@@ -49,7 +50,7 @@
 #include <chrono>
 namespace ripple {
 
-struct AccountTransactionsData;
+using AccountTransactionsData = RelationalDBInterface::AccountTransactionsData;
 
 /**
  * This class is responsible for continuously extracting data from a
@@ -314,8 +315,8 @@ public:
         result["is_writer"] = writing_.load();
         auto last = getLastPublish();
         if (last.time_since_epoch().count() != 0)
-            result["last_publish_time"] = to_string(
-                date::floor<std::chrono::microseconds>(getLastPublish()));
+            result["last_publish_time"] =
+                to_string(floor<std::chrono::microseconds>(getLastPublish()));
         return result;
     }
 
