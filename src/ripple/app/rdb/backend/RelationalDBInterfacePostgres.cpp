@@ -67,7 +67,9 @@ public:
     void
     stop() override
     {
+#ifdef RIPPLED_REPORTING
         pgPool_->stop();
+#endif
     }
 
     void
