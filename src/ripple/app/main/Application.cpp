@@ -1020,9 +1020,11 @@ public:
         if (config_->reporting())
         {
             reportingETL_->stop();
+#ifdef RIPPLED_REPORTING
             dynamic_cast<RelationalDBInterfacePostgres*>(
                 &*mRelationalDBInterface)
                 ->stop();
+#endif
         }
         m_nodeStore->stop();
         perfLog_->stop();
