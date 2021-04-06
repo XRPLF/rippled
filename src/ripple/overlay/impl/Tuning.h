@@ -54,6 +54,9 @@ enum {
 
     /** How often we check for idle peers (seconds) */
     checkIdlePeers = 4,
+
+    /** The maximum number of levels to search */
+    maxQueryDepth = 3,
 };
 
 /** Size of buffer used to read from the socket. */

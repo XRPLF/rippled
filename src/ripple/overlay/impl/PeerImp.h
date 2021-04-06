@@ -46,6 +46,7 @@
 namespace ripple {
 
 struct ValidatorBlobInfo;
+class SHAMap;
 
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
@@ -564,7 +565,18 @@ private:
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
-    getLedger(std::shared_ptr<protocol::TMGetLedger> const& packet);
+    sendLedgerBase(
+        std::shared_ptr<Ledger const> const& ledger,
+        protocol::TMLedgerData& ledgerData);
+
+    std::shared_ptr<Ledger const>
+    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+    std::shared_ptr<SHAMap const>
+    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
+
+    void
+    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
 };
 
 //------------------------------------------------------------------------------
