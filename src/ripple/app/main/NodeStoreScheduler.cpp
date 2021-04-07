@@ -29,6 +29,9 @@ NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue) : jobQueue_(jobQueue)
 void
 NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 {
+    if (jobQueue_.isStopped())
+        return;
+
     if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task](Job&) {
             task.performScheduledTask();
         }))
@@ -42,6 +45,9 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 void
 NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
+    if (jobQueue_.isStopped())
+        return;
+
     jobQueue_.addLoadEvents(
         report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
                                                         : jtNS_SYNC_READ,
@@ -52,6 +58,9 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 void
 NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
 {
+    if (jobQueue_.isStopped())
+        return;
+
     jobQueue_.addLoadEvents(jtNS_WRITE, report.writeCount, report.elapsed);
 }
 

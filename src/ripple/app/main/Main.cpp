@@ -159,7 +159,7 @@ printHelp(const po::options_description& desc)
            "     ledger_request <ledger>\n"
            "     log_level [[<partition>] <severity>]\n"
            "     logrotate\n"
-           "     nodetoshard_status\n"
+           "     node_to_shard [status|start|stop]\n"
            "     peers\n"
            "     ping\n"
            "     random\n"
