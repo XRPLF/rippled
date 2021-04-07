@@ -1289,15 +1289,20 @@ class DatabaseShard_test : public TestBase
                 }
             });
 
+            auto join = [&pauseVerifier]() {
+                if (pauseVerifier.joinable())
+                    pauseVerifier.join();
+            };
+
             // Create more ledgers to trigger online deletion
             data = TestData(seedValue * 2);
             if (!BEAST_EXPECT(data.makeLedgers(env, shardCount)))
             {
-                pauseVerifier.join();
+                join();
                 return;
             }
 
-            pauseVerifier.join();
+            join();
             BEAST_EXPECT(store.getLastRotated() != lastRotated);
         }
 

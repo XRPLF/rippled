@@ -722,6 +722,8 @@ DatabaseShardImp::stop()
         }
     }
 
+    std::unique_lock lock(mutex_);
+
     // Notify the shard being imported
     // from the node store to stop
     if (databaseImportStatus_)
@@ -735,7 +737,28 @@ DatabaseShardImp::stop()
     // Wait for the node store import thread
     // if necessary
     if (databaseImporter_.joinable())
-        databaseImporter_.join();
+    {
+        // Tells the import function to halt
+        haltDatabaseImport_ = true;
+
+        // Wait for the function to exit
+        while (databaseImportStatus_)
+        {
+            // Unlock just in case the import
+            // function is waiting on the mutex
+            lock.unlock();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            lock.lock();
+        }
+
+        // Calling join while holding the mutex_ without
+        // first making sure that doImportDatabase has
+        // exited could lead to deadlock via the mutex
+        // acquisition that occurs in that function
+        if (databaseImporter_.joinable())
+            databaseImporter_.join();
+    }
 }
 
 void
@@ -754,15 +777,19 @@ DatabaseShardImp::importDatabase(Database& source)
         return;
     }
 
-    // Run the lengthy node store import process in the background
-    // on a dedicated thread.
-    databaseImporter_ = std::thread([this] { doImportDatabase(); });
+    startDatabaseImportThread(lock);
 }
 
 void
 DatabaseShardImp::doImportDatabase()
 {
-    if (isStopping())
+    auto shouldHalt = [this] {
+        bool expected = true;
+        return haltDatabaseImport_.compare_exchange_strong(expected, false) ||
+            isStopping();
+    };
+
+    if (shouldHalt())
         return;
 
     auto loadLedger =
@@ -848,7 +875,7 @@ DatabaseShardImp::doImportDatabase()
     for (std::uint32_t shardIndex = earliestIndex; shardIndex <= latestIndex;
          ++shardIndex)
     {
-        if (isStopping())
+        if (shouldHalt())
             return;
 
         auto const pathDesignation = [this, shardIndex] {
@@ -920,7 +947,7 @@ DatabaseShardImp::doImportDatabase()
                 continue;
         }
 
-        if (isStopping())
+        if (shouldHalt())
             return;
 
         bool const needsHistoricalPath =
@@ -938,7 +965,7 @@ DatabaseShardImp::doImportDatabase()
         {
             std::lock_guard lock(mutex_);
 
-            if (isStopping())
+            if (shouldHalt())
                 return;
 
             databaseImportStatus_->currentIndex = shardIndex;
@@ -967,7 +994,7 @@ DatabaseShardImp::doImportDatabase()
 
         while (auto const ledgerSeq = shard->prepare())
         {
-            if (isStopping())
+            if (shouldHalt())
                 return;
 
             // Not const so it may be moved later
@@ -989,7 +1016,7 @@ DatabaseShardImp::doImportDatabase()
             recentStored = std::move(ledger);
         }
 
-        if (isStopping())
+        if (shouldHalt())
             return;
 
         using namespace boost::filesystem;
@@ -1044,17 +1071,14 @@ DatabaseShardImp::doImportDatabase()
         {
             JLOG(j_.error()) << "shard " << shardIndex
                              << " failed to import from the NodeStore";
-            shard->removeOnDestroy();
+
+            if (shard)
+                shard->removeOnDestroy();
         }
     }
 
-    {
-        std::lock_guard lock(mutex_);
-        if (isStopping())
-            return;
-
-        databaseImportStatus_.reset();
-    }
+    if (shouldHalt())
+        return;
 
     updateFileStats();
 }
@@ -1200,10 +1224,10 @@ DatabaseShardImp::sweep()
 Json::Value
 DatabaseShardImp::getDatabaseImportStatus() const
 {
-    Json::Value ret(Json::objectValue);
-
     if (std::lock_guard lock(mutex_); databaseImportStatus_)
     {
+        Json::Value ret(Json::objectValue);
+
         ret[jss::firstShardIndex] = databaseImportStatus_->earliestIndex;
         ret[jss::lastShardIndex] = databaseImportStatus_->latestIndex;
         ret[jss::currentShardIndex] = databaseImportStatus_->currentIndex;
@@ -1216,11 +1240,59 @@ DatabaseShardImp::getDatabaseImportStatus() const
             currentShard[jss::storedSeqs] = shard->getStoredSeqs();
 
         ret[jss::currentShard] = currentShard;
-    }
-    else
-        ret = "Database import not running";
 
-    return ret;
+        if (haltDatabaseImport_)
+            ret[jss::message] = "Database import halt initiated...";
+
+        return ret;
+    }
+
+    return RPC::make_error(rpcINTERNAL, "Database import not running");
+}
+
+Json::Value
+DatabaseShardImp::startNodeToShard()
+{
+    std::lock_guard lock(mutex_);
+
+    if (!init_)
+        return RPC::make_error(rpcINTERNAL, "Shard store not initialized");
+
+    if (databaseImporter_.joinable())
+        return RPC::make_error(
+            rpcINTERNAL, "Database import already in progress");
+
+    if (isStopping())
+        return RPC::make_error(rpcINTERNAL, "Node is shutting down");
+
+    startDatabaseImportThread(lock);
+
+    Json::Value result(Json::objectValue);
+    result[jss::message] = "Database import initiated...";
+
+    return result;
+}
+
+Json::Value
+DatabaseShardImp::stopNodeToShard()
+{
+    std::lock_guard lock(mutex_);
+
+    if (!init_)
+        return RPC::make_error(rpcINTERNAL, "Shard store not initialized");
+
+    if (!databaseImporter_.joinable())
+        return RPC::make_error(rpcINTERNAL, "Database import not running");
+
+    if (isStopping())
+        return RPC::make_error(rpcINTERNAL, "Node is shutting down");
+
+    haltDatabaseImport_ = true;
+
+    Json::Value result(Json::objectValue);
+    result[jss::message] = "Database import halt initiated...";
+
+    return result;
 }
 
 std::optional<std::uint32_t>
@@ -2129,6 +2201,27 @@ DatabaseShardImp::updatePeers(std::lock_guard<std::mutex> const& lock) const
         app_.overlay().foreach(send_always(std::make_shared<Message>(
             message, protocol::mtPEER_SHARD_INFO_V2)));
     }
+}
+
+void
+DatabaseShardImp::startDatabaseImportThread(std::lock_guard<std::mutex> const&)
+{
+    // Run the lengthy node store import process in the background
+    // on a dedicated thread.
+    databaseImporter_ = std::thread([this] {
+        doImportDatabase();
+
+        std::lock_guard lock(mutex_);
+
+        // Make sure to clear this in case the import
+        // exited early.
+        databaseImportStatus_.reset();
+
+        // Detach the thread so subsequent attempts
+        // to start the import won't get held up by
+        // the old thread of execution
+        databaseImporter_.detach();
+    });
 }
 
 //------------------------------------------------------------------------------

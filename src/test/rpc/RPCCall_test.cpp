@@ -4301,33 +4301,71 @@ static RPCCallTestData const rpcCallTestArray[] = {
     ]
     })"},
 
-    // nodetoshard_status
+    // node_to_shard
     // -------------------------------------------------------------------
-    {"nodetoshard_status: minimal.",
+    {"node_to_shard: status.",
      __LINE__,
-     {
-         "nodetoshard_status",
-     },
+     {"node_to_shard", "status"},
      RPCCallTestData::no_exception,
      R"({
-    "method" : "nodetoshard_status",
+    "method" : "node_to_shard",
     "params" : [
       {
          "api_version" : %MAX_API_VER%,
+         "action" : "status"
       }
     ]
     })"},
-    {"nodetoshard_status: too many arguments.",
+    {"node_to_shard: start.",
      __LINE__,
-     {"nodetoshard_status", "extra"},
+     {"node_to_shard", "start"},
      RPCCallTestData::no_exception,
      R"({
-    "method" : "nodetoshard_status",
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "start"
+      }
+    ]
+    })"},
+    {"node_to_shard: stop.",
+     __LINE__,
+     {"node_to_shard", "stop"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "stop"
+      }
+    ]
+    })"},
+    {"node_to_shard: too many arguments.",
+     __LINE__,
+     {"node_to_shard", "start", "stop"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
     "params" : [
       {
          "error" : "badSyntax",
          "error_code" : 1,
          "error_message" : "Syntax error."
+      }
+    ]
+    })"},
+    {"node_to_shard: invalid argument.",
+     __LINE__,
+     {"node_to_shard", "invalid"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "invalid"
       }
     ]
     })"},

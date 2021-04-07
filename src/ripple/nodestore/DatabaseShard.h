@@ -252,8 +252,24 @@ public:
     [[nodiscard]] virtual boost::filesystem::path const&
     getRootDir() const = 0;
 
+    /** Returns a JSON object detailing the status of an ongoing
+        database import if one is running, otherwise an error
+        object.
+     */
     virtual Json::Value
     getDatabaseImportStatus() const = 0;
+
+    /** Initiates a NodeStore to ShardStore import and returns
+        the result in a JSON object.
+     */
+    virtual Json::Value
+    startNodeToShard() = 0;
+
+    /** Terminates a NodeStore to ShardStore import and returns
+        the result in a JSON object.
+    */
+    virtual Json::Value
+    stopNodeToShard() = 0;
 
     /** Returns the first ledger sequence of the shard currently being imported
         from the NodeStore

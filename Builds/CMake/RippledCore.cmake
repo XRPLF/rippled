@@ -598,7 +598,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/LogLevel.cpp
   src/ripple/rpc/handlers/LogRotate.cpp
   src/ripple/rpc/handlers/Manifest.cpp
-  src/ripple/rpc/handlers/NodeToShardStatus.cpp
+  src/ripple/rpc/handlers/NodeToShard.cpp
   src/ripple/rpc/handlers/NoRippleCheck.cpp
   src/ripple/rpc/handlers/OwnerInfo.cpp
   src/ripple/rpc/handlers/PathFind.cpp
@@ -934,6 +934,7 @@ if (tests)
     src/test/rpc/LedgerRPC_test.cpp
     src/test/rpc/LedgerRequestRPC_test.cpp
     src/test/rpc/ManifestRPC_test.cpp
+    src/test/rpc/NodeToShardRPC_test.cpp
     src/test/rpc/NoRippleCheck_test.cpp
     src/test/rpc/NoRipple_test.cpp
     src/test/rpc/OwnerInfo_test.cpp
