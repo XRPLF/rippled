@@ -28,7 +28,6 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 #include <boost/algorithm/clamp.hpp>
-#include <boost/regex.hpp>
 #include <algorithm>
 
 namespace ripple {

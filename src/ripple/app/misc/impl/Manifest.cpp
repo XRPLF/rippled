@@ -30,7 +30,6 @@
 #include <ripple/protocol/Sign.h>
 #include <boost/algorithm/clamp.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/regex.hpp>
 #include <numeric>
 #include <stdexcept>
 
