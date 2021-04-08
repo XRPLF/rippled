@@ -348,8 +348,9 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
     if (jt.ter &&
         !test.expect(
             ter == *jt.ter,
-            "apply: " + transToken(ter) + " (" + transHuman(ter) + ") != " +
-                transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")"))
+            "apply: Got " + transToken(ter) + " (" + transHuman(ter) +
+                "); Expected " + transToken(*jt.ter) + " (" +
+                transHuman(*jt.ter) + ")"))
     {
         test.log << pretty(jt.jv) << std::endl;
         // Don't check postconditions if
