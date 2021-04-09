@@ -798,7 +798,11 @@ transactionsSQL(
  * @param j Journal.
  * @return Vector of pairs of found transactions and its metadata
  *         sorted in given order by account sequence.
- *         Also number of transactions processed.
+ *         Also the number of transactions processed or skipped.
+ *         If this number is >= 0, then it means number of transactions
+ *         processed, if it is < 0, then ~number means number of transactions
+ *         skipped. We need to skip some quantity of transactions if option
+ *         offset is > 0 in the options structure.
  */
 static std::pair<RelationalDBInterface::AccountTxs, int>
 getAccountTxs(
@@ -937,7 +941,11 @@ getNewestAccountTxs(
  * @param j Journal.
  * @return Vector of tuples of found transactions, its metadata and
  *         account sequences sorted in given order by account
- *         sequence. Also number of transactions processed.
+ *         sequence. Also number of transactions processed or skipped.
+ *         If this number is >= 0, then it means number of transactions
+ *         processed, if it is < 0, then ~number means number of transactions
+ *         skipped. We need to skip some quantity of transactions if option
+ *         offset is > 0 in the options structure.
  */
 static std::pair<std::vector<RelationalDBInterface::txnMetaLedgerType>, int>
 getAccountTxsB(
