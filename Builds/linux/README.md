@@ -13,7 +13,7 @@ management tools.
 
 ## Dependencies
 
-gcc-7 or later is required.
+gcc-8 or later is required.
 
 Use `apt-get` to install the dependencies provided by the distribution
 
