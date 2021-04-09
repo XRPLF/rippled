@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/jss.h>
@@ -38,6 +40,15 @@ doServerInfo(RPC::JsonContext& context)
         context.params.isMember(jss::counters) &&
             context.params[jss::counters].asBool());
 
+    if (context.app.config().reporting())
+    {
+        Json::Value proxied = forwardToP2p(context);
+        if (proxied.isMember(jss::result) &&
+            proxied[jss::result].isMember(jss::info) &&
+            proxied[jss::result][jss::info].isMember(jss::load_factor))
+            ret[jss::info][jss::load_factor] =
+                proxied[jss::result][jss::info][jss::load_factor];
+    }
     return ret;
 }
 
