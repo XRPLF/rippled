@@ -316,7 +316,8 @@ public:
         auto last = getLastPublish();
         if (last.time_since_epoch().count() != 0)
             result["last_publish_time"] =
-                to_string(floor<std::chrono::microseconds>(getLastPublish()));
+                to_string(std::chrono::floor<std::chrono::microseconds>(
+                    getLastPublish()));
         return result;
     }
 
