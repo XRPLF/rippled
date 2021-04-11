@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 namespace ripple {
 namespace test {
