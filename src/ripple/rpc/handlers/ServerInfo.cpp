@@ -48,6 +48,8 @@ doServerInfo(RPC::JsonContext& context)
             proxied[jss::result][jss::info].isMember(jss::load_factor))
             ret[jss::info][jss::load_factor] =
                 proxied[jss::result][jss::info][jss::load_factor];
+        else
+            ret[jss::info][jss::load_factor] = 1;
     }
     return ret;
 }
