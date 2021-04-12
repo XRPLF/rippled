@@ -746,8 +746,6 @@ run(int argc, char** argv)
 
 }  // namespace ripple
 
-// Must be outside the namespace for obvious reasons
-//
 int
 main(int argc, char** argv)
 {
@@ -771,7 +769,5 @@ main(int argc, char** argv)
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
 
-    auto const result(ripple::run(argc, argv));
-
-    return result;
+    return ripple::run(argc, argv);
 }
