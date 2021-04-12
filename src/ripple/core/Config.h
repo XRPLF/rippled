@@ -56,7 +56,8 @@ enum class SizedItem : std::size_t {
     txnDBCache,
     lgrDBCache,
     openFinalLimit,
-    burstSize
+    burstSize,
+    ramSizeGB
 };
 
 //  This entire derived class is deprecated.
@@ -116,6 +117,9 @@ private:
     */
     bool signingEnabled_ = false;
 
+    // The amount of RAM, in bytes, that we detected on this system.
+    std::uint64_t const ramSize_;
+
 public:
     bool doImport = false;
     bool nodeToShard = false;
@@ -156,8 +160,6 @@ public:
     std::size_t PEERS_OUT_MAX = 0;
     std::size_t PEERS_IN_MAX = 0;
 
-    std::chrono::seconds WEBSOCKET_PING_FREQ = std::chrono::minutes{5};
-
     // Path searching
     int PATH_SEARCH_OLD = 7;
     int PATH_SEARCH = 7;
@@ -176,6 +178,9 @@ public:
     std::uint32_t LEDGER_HISTORY = 256;
     std::uint32_t FETCH_DEPTH = 1000000000;
 
+    // Tunable that adjusts various parameters, typically associated
+    // with hardware parameters (RAM size and CPU cores). The default
+    // is 'tiny'.
     std::size_t NODE_SIZE = 0;
 
     bool SSL_VERIFY = true;
@@ -227,9 +232,7 @@ public:
     std::chrono::seconds MAX_DIVERGED_TIME{300};
 
 public:
-    Config() : j_{beast::Journal::getNullSink()}
-    {
-    }
+    Config();
 
     /* Be very careful to make sure these bool params
         are in the right order. */

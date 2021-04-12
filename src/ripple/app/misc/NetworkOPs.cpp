@@ -2241,6 +2241,25 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
+        switch (app_.config().NODE_SIZE)
+        {
+            case 0:
+                info[jss::node_size] = "tiny";
+                break;
+            case 1:
+                info[jss::node_size] = "small";
+                break;
+            case 2:
+                info[jss::node_size] = "medium";
+                break;
+            case 3:
+                info[jss::node_size] = "large";
+                break;
+            case 4:
+                info[jss::node_size] = "huge";
+                break;
+        }
+
         auto when = app_.validators().expires();
 
         if (!human)
