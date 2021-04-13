@@ -2308,11 +2308,7 @@ public:
         env.memoize("bob");
         env.memoize("carol");
         {
-            Json::Value cancelOffer;
-            cancelOffer[jss::Account] = alice.human();
-            cancelOffer[jss::OfferSequence] = 3;
-            cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            auto const jtx = env.jt(cancelOffer, seq(5), fee(10));
+            auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),

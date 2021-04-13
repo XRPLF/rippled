@@ -223,13 +223,7 @@ public:
         env.close();
 
         BEAST_EXPECT(isOffer(env, alice, XRP(222), USD(111)));
-        {
-            Json::Value cancelOffer;
-            cancelOffer[jss::Account] = alice.human();
-            cancelOffer[jss::OfferSequence] = offer4Seq;
-            cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            env(cancelOffer);
-        }
+        env(offer_cancel(alice, offer4Seq));
         env.close();
         BEAST_EXPECT(env.seq(alice) == offer4Seq + 2);
 
@@ -1068,13 +1062,9 @@ public:
         }
 
         // cancel that lingering second offer so that it doesn't interfere
-        // with the next set of offers we test. this will not be needed once
+        // with the next set of offers we test. This will not be needed once
         // the bridging bug is fixed
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = account_to_test.human();
-        cancelOffer[jss::OfferSequence] = secondLegSeq;
-        cancelOffer[jss::TransactionType] = jss::OfferCancel;
-        env(cancelOffer);
+        env(offer_cancel(account_to_test, secondLegSeq));
         env.require(offers(account_to_test, 0));
 
         // PART 2:
@@ -1297,11 +1287,7 @@ public:
         env(offer(env.master, XRP(500), USD(100)));
         env.close();
 
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = env.master.human();
-        cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = jss::OfferCancel;
-        env(cancelOffer);
+        env(offer_cancel(env.master, nextOfferSeq));
         BEAST_EXPECT(env.seq(env.master) == nextOfferSeq + 2);
 
         // ledger_accept, call twice and verify no odd behavior
@@ -1324,19 +1310,14 @@ public:
         auto const nextOfferSeq = env.seq(env.master);
         env.fund(XRP(10000), alice);
 
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = env.master.human();
-        cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = jss::OfferCancel;
-        env(cancelOffer);
+        env(offer_cancel(env.master, nextOfferSeq));
 
-        cancelOffer[jss::OfferSequence] = env.seq(env.master);
-        env(cancelOffer, ter(temBAD_SEQUENCE));
+        env(offer_cancel(env.master, env.seq(env.master)),
+            ter(temBAD_SEQUENCE));
 
-        cancelOffer[jss::OfferSequence] = env.seq(env.master) + 1;
-        env(cancelOffer, ter(temBAD_SEQUENCE));
+        env(offer_cancel(env.master, env.seq(env.master) + 1),
+            ter(temBAD_SEQUENCE));
 
-        env.close();
         env.close();
     }
 
