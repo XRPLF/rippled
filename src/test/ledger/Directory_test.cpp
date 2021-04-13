@@ -279,12 +279,8 @@ struct Directory_test : public beast::unit_test::suite
         {
             for (int i = 0; i < dirNodeMaxEntries; ++i)
             {
-                Json::Value cancelOffer;
-                cancelOffer[jss::Account] = alice.human();
-                cancelOffer[jss::OfferSequence] =
-                    Json::UInt(firstOfferSeq + page * dirNodeMaxEntries + i);
-                cancelOffer[jss::TransactionType] = jss::OfferCancel;
-                env(cancelOffer);
+                env(offer_cancel(
+                    alice, firstOfferSeq + page * dirNodeMaxEntries + i));
                 env.close();
             }
         }

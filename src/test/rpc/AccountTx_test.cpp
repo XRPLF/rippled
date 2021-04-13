@@ -277,13 +277,7 @@ class AccountTx_test : public beast::unit_test::suite
         env(offer(alice, USD(50), XRP(150)), sig(alie));
         env.close();
 
-        {
-            Json::Value cancelOffer;
-            cancelOffer[jss::Account] = alice.human();
-            cancelOffer[jss::OfferSequence] = offerSeq;
-            cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            env(cancelOffer, sig(alie));
-        }
+        env(offer_cancel(alice, offerSeq), sig(alie));
         env.close();
 
         // SignerListSet
