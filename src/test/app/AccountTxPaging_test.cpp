@@ -584,13 +584,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         txns.emplace_back(env.tx());
         env.close();
 
-        {
-            Json::Value cancelOffer;
-            cancelOffer[jss::Account] = alice.human();
-            cancelOffer[jss::OfferSequence] = offerSeq;
-            cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            env(cancelOffer, sig(alie));
-        }
+        env(offer_cancel(alice, offerSeq), sig(alie));
         env.close();
 
         txns.emplace_back(env.tx());
