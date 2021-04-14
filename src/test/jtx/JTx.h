@@ -42,7 +42,7 @@ class Env;
 struct JTx
 {
     Json::Value jv;
-    requires_t requires;
+    requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
     bool fill_fee = true;
     bool fill_seq = true;
