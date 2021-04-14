@@ -362,7 +362,7 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
             --trace_;
         test.log << pretty(jt.jv) << std::endl;
     }
-    for (auto const& f : jt.requires)
+    for (auto const& f : jt.require)
         f(*this);
 }
 
