@@ -122,6 +122,9 @@ public:
         // Alice can't delete her account and then give herself the XRP.
         env(acctdelete(alice, alice), ter(temDST_IS_SRC));
 
+        // alice can't delete her account with a negative fee.
+        env(acctdelete(alice, becky), fee(drops(-1)), ter(temBAD_FEE));
+
         // Invalid flags.
         env(acctdelete(alice, becky),
             txflags(tfImmediateOrCancel),
@@ -194,8 +197,22 @@ public:
         env(acctdelete(becky, carol), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
         env.close();
 
-        // Verify that becky's account is still there.
-        env(noop(becky));
+        // Verify that becky's account is still there by giving her a regular
+        // key.  This has the side effect of setting the lsfPasswordSpent bit
+        // on her account root.
+        Account const beck("beck");
+        env(regkey(becky, beck), fee(drops(0)));
+        env.close();
+
+        // Show that the lsfPasswordSpent bit is set by attempting to change
+        // becky's regular key for free again.  That fails.
+        Account const reb("reb");
+        env(regkey(becky, reb), sig(becky), fee(drops(0)), ter(telINSUF_FEE_P));
+
+        // Close enough ledgers that becky's failing regkey transaction is
+        // no longer retried.
+        for (int i = 0; i < 8; ++i)
+            env.close();
 
         {
             auto const beckyOldBalance{env.balance(becky)};
@@ -234,6 +251,10 @@ public:
             BEAST_EXPECT(
                 env.balance(becky) ==
                 carolOldBalance + beckyOldBalance - acctDelFee);
+
+            // Since becky received an influx of XRP, her lsfPasswordSpent bit
+            // is cleared and she can change her regular key for free again.
+            env(regkey(becky, reb), sig(becky), fee(drops(0)));
         }
     }
 
@@ -833,6 +854,61 @@ public:
     }
 
     void
+    testDest()
+    {
+        testcase("Destination Constraints");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const becky{"becky"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+
+        Env env{*this};
+        env.fund(XRP(100000), alice, becky, carol);
+        env.close();
+
+        // alice sets the lsfDepositAuth flag on her account.  This should
+        // prevent becky from deleting her account while using alice as the
+        // destination.
+        env(fset(alice, asfDepositAuth));
+
+        // carol requires a destination tag.
+        env(fset(carol, asfRequireDest));
+        env.close();
+
+        // Close enough ledgers to be able to delete becky's account.
+        incLgrSeqForAccDel(env, becky);
+
+        // becky attempts to delete her account using daria as the destination.
+        // Since daria is not in the ledger the delete attempt fails.
+        auto const acctDelFee{drops(env.current()->fees().increment)};
+        env(acctdelete(becky, daria), fee(acctDelFee), ter(tecNO_DST));
+        env.close();
+
+        // becky attempts to delete her account, but carol requires a
+        // destination tag which becky has omitted.
+        env(acctdelete(becky, carol), fee(acctDelFee), ter(tecDST_TAG_NEEDED));
+        env.close();
+
+        // becky attempts to delete her account, but alice won't take her XRP,
+        // so the delete is blocked.
+        env(acctdelete(becky, alice), fee(acctDelFee), ter(tecNO_PERMISSION));
+        env.close();
+
+        // alice preauthorizes deposits from becky.  Now becky can delete her
+        // account and forward the leftovers to alice.
+        env(deposit::auth(alice, becky));
+        env.close();
+
+        auto const beckyOldBalance{env.balance(becky)};
+        env(acctdelete(becky, alice), fee(acctDelFee));
+        verifyDeliveredAmount(env, beckyOldBalance - acctDelFee);
+        env.close();
+    }
+
+    void
     run() override
     {
         testBasics();
@@ -844,6 +920,7 @@ public:
         testImplicitlyCreatedTrustline();
         testBalanceTooSmallForFee();
         testWithTickets();
+        testDest();
     }
 };
 
