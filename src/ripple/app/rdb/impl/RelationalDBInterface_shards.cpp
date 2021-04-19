@@ -274,8 +274,10 @@ updateLedgerDBs(
                     JLOG(j.trace())
                         << "shard " << index << " account transaction: " << sql;
                 }
-                else
+                else if (!isPseudoTx(*item.first))
                 {
+                    // It's okay for pseudo transactions to not affect any
+                    // accounts.  But otherwise...
                     JLOG(j.warn())
                         << "shard " << index << " transaction in ledger "
                         << sSeq << " affects no accounts";
