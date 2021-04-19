@@ -204,7 +204,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             uDirEntry,
             dirEntry,
             ctx.j))
-        // Account has no directory at all.  Looks good.
+        // Account has no directory at all.  This _should_ have been caught
+        // by the dirIsEmpty() check earlier, but it's okay to catch it here.
         return tesSUCCESS;
 
     std::int32_t deletableDirEntryCount{0};
