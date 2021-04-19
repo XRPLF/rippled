@@ -317,12 +317,14 @@ saveValidatedLedger(
                     JLOG(j.trace()) << "ActTx: " << sql;
                     *db << sql;
                 }
-                else
+                else if (auto const sleTxn = acceptedLedgerTx->getTxn();
+                         !isPseudoTx(*sleTxn))
                 {
+                    // It's okay for pseudo transactions to not affect any
+                    // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq
                                    << " affects no accounts";
-                    JLOG(j.warn()) << acceptedLedgerTx->getTxn()->getJson(
-                        JsonOptions::none);
+                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::none);
                 }
 
                 *db
