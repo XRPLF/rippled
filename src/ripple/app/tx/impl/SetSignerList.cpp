@@ -342,13 +342,8 @@ SetSignerList::replaceSignerList()
 
     auto viewJ = ctx_.app.journal("View");
     // Add the signer list to the account's directory.
-    auto const page = dirAdd(
-        ctx_.view(),
-        ownerDirKeylet,
-        signerListKeylet.key,
-        false,
-        describeOwnerDir(account_),
-        viewJ);
+    auto const page = ctx_.view().dirInsert(
+        ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
 
     JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_)
                      << ": " << (page ? "success" : "failure");

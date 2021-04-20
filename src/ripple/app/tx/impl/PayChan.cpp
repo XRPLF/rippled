@@ -246,8 +246,10 @@ PayChanCreate::doApply()
     //
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    auto const slep = std::make_shared<SLE>(
-        keylet::payChan(account, dst, ctx_.tx.getSeqProxy().value()));
+    Keylet const payChanKeylet =
+        keylet::payChan(account, dst, ctx_.tx.getSeqProxy().value());
+    auto const slep = std::make_shared<SLE>(payChanKeylet);
+
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
@@ -264,13 +266,10 @@ PayChanCreate::doApply()
 
     // Add PayChan to owner directory
     {
-        auto const page = dirAdd(
-            ctx_.view(),
+        auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account),
-            slep->key(),
-            false,
-            describeOwnerDir(account),
-            ctx_.app.journal("View"));
+            payChanKeylet,
+            describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -279,13 +278,8 @@ PayChanCreate::doApply()
     // Add PayChan to the recipient's owner directory
     if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
-        auto const page = dirAdd(
-            ctx_.view(),
-            keylet::ownerDir(dst),
-            slep->key(),
-            false,
-            describeOwnerDir(dst),
-            ctx_.app.journal("View"));
+        auto const page = ctx_.view().dirInsert(
+            keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfDestinationNode] = *page;
