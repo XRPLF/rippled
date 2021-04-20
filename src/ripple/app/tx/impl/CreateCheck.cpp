@@ -186,7 +186,8 @@ CreateCheck::doApply()
     // Note that we we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqProxy().value();
-    auto sleCheck = std::make_shared<SLE>(keylet::check(account_, seq));
+    Keylet const checkKeylet = keylet::check(account_, seq);
+    auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
     sleCheck->setAccountID(sfAccount, account_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
@@ -209,13 +210,10 @@ CreateCheck::doApply()
     // destination's owner directory.
     if (dstAccountId != account_)
     {
-        auto const page = dirAdd(
-            view(),
+        auto const page = view().dirInsert(
             keylet::ownerDir(dstAccountId),
-            sleCheck->key(),
-            false,
-            describeOwnerDir(dstAccountId),
-            viewJ);
+            checkKeylet,
+            describeOwnerDir(dstAccountId));
 
         JLOG(j_.trace()) << "Adding Check to destination directory "
                          << to_string(sleCheck->key()) << ": "
@@ -228,13 +226,10 @@ CreateCheck::doApply()
     }
 
     {
-        auto const page = dirAdd(
-            view(),
+        auto const page = view().dirInsert(
             keylet::ownerDir(account_),
-            sleCheck->key(),
-            false,
-            describeOwnerDir(account_),
-            viewJ);
+            checkKeylet,
+            describeOwnerDir(account_));
 
         JLOG(j_.trace()) << "Adding Check to owner directory "
                          << to_string(sleCheck->key()) << ": "

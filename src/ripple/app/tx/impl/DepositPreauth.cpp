@@ -127,8 +127,8 @@ DepositPreauth::doApply()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
-        auto slePreauth =
-            std::make_shared<SLE>(keylet::depositPreauth(account_, auth));
+        Keylet const preauthKeylet = keylet::depositPreauth(account_, auth);
+        auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
         slePreauth->setAccountID(sfAccount, account_);
         slePreauth->setAccountID(sfAuthorize, auth);
@@ -137,7 +137,7 @@ DepositPreauth::doApply()
         auto viewJ = ctx_.app.journal("View");
         auto const page = view().dirInsert(
             keylet::ownerDir(account_),
-            slePreauth->key(),
+            preauthKeylet,
             describeOwnerDir(account_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "

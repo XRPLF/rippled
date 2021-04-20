@@ -721,21 +721,6 @@ describeOwnerDir(AccountID const& account)
     };
 }
 
-std::optional<std::uint64_t>
-dirAdd(
-    ApplyView& view,
-    Keylet const& dir,
-    uint256 const& uLedgerIndex,
-    bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
-    beast::Journal j)
-{
-    if (strictOrder)
-        return view.dirAppend(dir, uLedgerIndex, fDescriber);
-
-    return view.dirInsert(dir, uLedgerIndex, fDescriber);
-}
-
 TER
 trustCreate(
     ApplyView& view,
@@ -765,24 +750,18 @@ trustCreate(
     auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
     view.insert(sleRippleState);
 
-    auto lowNode = dirAdd(
-        view,
+    auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID),
         sleRippleState->key(),
-        false,
-        describeOwnerDir(uLowAccountID),
-        j);
+        describeOwnerDir(uLowAccountID));
 
     if (!lowNode)
         return tecDIR_FULL;
 
-    auto highNode = dirAdd(
-        view,
+    auto highNode = view.dirInsert(
         keylet::ownerDir(uHighAccountID),
         sleRippleState->key(),
-        false,
-        describeOwnerDir(uHighAccountID),
-        j);
+        describeOwnerDir(uHighAccountID));
 
     if (!highNode)
         return tecDIR_FULL;
