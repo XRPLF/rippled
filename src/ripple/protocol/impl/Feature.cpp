@@ -135,6 +135,7 @@ detail::supportedAmendments()
         "TicketBatch",
         "FlowSortStrands",
         "fixSTAmountCanonicalize",
+        "fixRmSmallIncreasedQOffers",
     };
     return supported;
 }
@@ -190,7 +191,8 @@ uint256 const
     featureNegativeUNL              = *getRegisteredFeature("NegativeUNL"),
     featureTicketBatch              = *getRegisteredFeature("TicketBatch"),
     featureFlowSortStrands          = *getRegisteredFeature("FlowSortStrands"),
-    fixSTAmountCanonicalize         = *getRegisteredFeature("fixSTAmountCanonicalize");
+    fixSTAmountCanonicalize         = *getRegisteredFeature("fixSTAmountCanonicalize"),
+    fixRmSmallIncreasedQOffers      = *getRegisteredFeature("fixRmSmallIncreasedQOffers");
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.

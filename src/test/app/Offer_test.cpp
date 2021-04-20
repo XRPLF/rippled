@@ -320,17 +320,20 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10000), alice, bob, carol, dan, erin, gw);
+        env.close();
         env.trust(USD(1000), alice, bob, carol, dan, erin);
+        env.close();
         env(pay(gw, carol, USD(0.99999)));
         env(pay(gw, dan, USD(1)));
         env(pay(gw, erin, USD(1)));
+        env.close();
 
         // Carol doesn't quite have enough funds for this offer
         // The amount left after this offer is taken will cause
         // STAmount to incorrectly round to zero when the next offer
-        // (at a good quality) is considered. (when the
-        // stAmountCalcSwitchover2 patch is inactive)
-        env(offer(carol, drops(1), USD(1)));
+        // (at a good quality) is considered. (when the now removed
+        // stAmountCalcSwitchover2 patch was inactive)
+        env(offer(carol, drops(1), USD(0.99999)));
         // Offer at a quality poor enough so when the input xrp is
         // calculated  in the reverse pass, the amount is not zero.
         env(offer(dan, XRP(100), USD(1)));
@@ -340,9 +343,9 @@ public:
         // It is considered after the offer from carol, which leaves a
         // tiny amount left to pay. When calculating the amount of xrp
         // needed for this offer, it will incorrectly compute zero in both
-        // the forward and reverse passes (when the stAmountCalcSwitchover2
-        // is inactive.)
-        env(offer(erin, drops(2), USD(2)));
+        // the forward and reverse passes (when the now removed
+        // stAmountCalcSwitchover2 was inactive.)
+        env(offer(erin, drops(2), USD(1)));
 
         env(pay(alice, bob, USD(1)),
             path(~USD),
@@ -354,6 +357,317 @@ public:
         // offer was correctly consumed. There is still some
         // liquidity left on that offer.
         env.require(balance(erin, USD(0.99999)), offers(erin, 1));
+    }
+
+    void
+    testRmSmallIncreasedQOffersXRP(FeatureBitset features)
+    {
+        testcase("Rm small increased q offers XRP");
+
+        // Carol places an offer, but cannot fully fund the offer. When her
+        // funding is taken into account, the offer's quality drops below its
+        // initial quality and has an input amount of 1 drop. This is removed as
+        // an offer that may block offer books.
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const gw = Account{"gw"};
+
+        auto const USD = gw["USD"];
+
+        // Test offer crossing
+        for (auto crossBothOffers : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            // underfund carol's offer
+            auto initialCarolUSD = USD(0.499);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, drops(1), USD(1)));
+            env.close();
+            // offer at a lower quality
+            env(offer(bob, drops(2), USD(1), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            // alice places an offer that crosses carol's; depending on
+            // "crossBothOffers" it may cross bob's as well
+            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            env(offer(alice, USD(1), aliceTakerGets));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                env.require(
+                    offers(carol, 0),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                if (crossBothOffers)
+                {
+                    env.require(
+                        offers(alice, 0),
+                        balance(alice, USD(1)));  // alice's offer is crossed
+                }
+                else
+                {
+                    env.require(
+                        offers(alice, 1),
+                        balance(
+                            alice, USD(0)));  // alice's offer is not crossed
+                }
+            }
+            else
+            {
+                env.require(
+                    offers(alice, 1),
+                    offers(bob, 1),
+                    offers(carol, 1),
+                    balance(alice, USD(0)),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is not crossed at all
+            }
+        }
+
+        // Test payments
+        for (auto partialPayment : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.close();
+            auto const initialCarolUSD = USD(0.999);
+            env(pay(gw, carol, initialCarolUSD));
+            env.close();
+            env(pay(gw, bob, USD(100)));
+            env.close();
+            env(offer(carol, drops(1), USD(1)));
+            env.close();
+            env(offer(bob, drops(2), USD(2), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            std::uint32_t const flags = partialPayment
+                ? (tfNoRippleDirect | tfPartialPayment)
+                : tfNoRippleDirect;
+
+            TER const expectedTer =
+                partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
+
+            env(pay(alice, bob, USD(5)),
+                path(~USD),
+                sendmax(XRP(1)),
+                txflags(flags),
+                ter(expectedTer));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                if (expectedTer == tesSUCCESS)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                }
+                else
+                {
+                    // TODO: Offers are not removed when payments fail
+                    // If that is addressed, the test should show that carol's
+                    // offer is removed but not taken, as in the other branch of
+                    // this if statement
+                }
+            }
+            else
+            {
+                if (partialPayment)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(
+                        balance(carol, USD(0)));  // offer is removed and taken
+                }
+                else
+                {
+                    // offer is not removed or taken
+                    BEAST_EXPECT(isOffer(env, carol, drops(1), USD(1)));
+                }
+            }
+        }
+    }
+
+    void
+    testRmSmallIncreasedQOffersIOU(FeatureBitset features)
+    {
+        testcase("Rm small increased q offers IOU");
+
+        // Carol places an offer, but cannot fully fund the offer. When her
+        // funding is taken into account, the offer's quality drops below its
+        // initial quality and has an input amount of 1 drop. This is removed as
+        // an offer that may block offer books.
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const gw = Account{"gw"};
+
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
+            STAmount amt(
+                iou.issue(),
+                /*mantissa*/ 1,
+                /*exponent*/ -81);
+            return PrettyAmount(amt, iou.account.name());
+        };
+
+        // Test offer crossing
+        for (auto crossBothOffers : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.trust(EUR(1000), alice, bob, carol);
+            // underfund carol's offer
+            auto initialCarolUSD = tinyAmount(USD);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, EUR(1), USD(10)));
+            env.close();
+            // offer at a lower quality
+            env(offer(bob, EUR(1), USD(5), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            // alice places an offer that crosses carol's; depending on
+            // "crossBothOffers" it may cross bob's as well
+            // Whatever
+            auto aliceTakerGets = crossBothOffers ? EUR(0.2) : EUR(0.1);
+            env(offer(alice, USD(1), aliceTakerGets));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                env.require(
+                    offers(carol, 0),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                if (crossBothOffers)
+                {
+                    env.require(
+                        offers(alice, 0),
+                        balance(alice, USD(1)));  // alice's offer is crossed
+                }
+                else
+                {
+                    env.require(
+                        offers(alice, 1),
+                        balance(
+                            alice, USD(0)));  // alice's offer is not crossed
+                }
+            }
+            else
+            {
+                env.require(
+                    offers(alice, 1),
+                    offers(bob, 1),
+                    offers(carol, 1),
+                    balance(alice, USD(0)),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is not crossed at all
+            }
+        }
+
+        // Test payments
+        for (auto partialPayment : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.trust(EUR(1000), alice, bob, carol);
+            env.close();
+            // underfund carol's offer
+            auto const initialCarolUSD = tinyAmount(USD);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, EUR(1), USD(2)));
+            env.close();
+            env(offer(bob, EUR(2), USD(4), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            std::uint32_t const flags = partialPayment
+                ? (tfNoRippleDirect | tfPartialPayment)
+                : tfNoRippleDirect;
+
+            TER const expectedTer =
+                partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
+
+            env(pay(alice, bob, USD(5)),
+                path(~USD),
+                sendmax(EUR(10)),
+                txflags(flags),
+                ter(expectedTer));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                if (expectedTer == tesSUCCESS)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                }
+                else
+                {
+                    // TODO: Offers are not removed when payments fail
+                    // If that is addressed, the test should show that carol's
+                    // offer is removed but not taken, as in the other branch of
+                    // this if statement
+                }
+            }
+            else
+            {
+                if (partialPayment)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(
+                        balance(carol, USD(0)));  // offer is removed and taken
+                }
+                else
+                {
+                    // offer is not removed or taken
+                    BEAST_EXPECT(isOffer(env, carol, EUR(1), USD(2)));
+                }
+            }
+        }
     }
 
     void
@@ -5387,7 +5701,7 @@ public:
     {
         // An assert was falsely triggering when computing rates for offers.
         // This unit test would trigger that assert (which has been removed).
-        testcase("false assert");
+        testcase("incorrect assert fixed");
         using namespace jtx;
 
         Env env{*this};
@@ -5459,6 +5773,8 @@ public:
         testTickSize(features);
         testTicketOffer(features);
         testTicketCancelOffer(features);
+        testRmSmallIncreasedQOffersXRP(features);
+        testRmSmallIncreasedQOffersIOU(features);
     }
 
     void
@@ -5468,10 +5784,12 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
+        FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
 
         testAll(all - takerDryOffer);
         testAll(all - flowCross - takerDryOffer);
         testAll(all - flowCross);
+        testAll(all - rmSmallIncreasedQOffers);
         testAll(all);
         testFalseAssert();
     }

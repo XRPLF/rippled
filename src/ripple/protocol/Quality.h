@@ -134,6 +134,13 @@ public:
 
     /** Create a quality from the ratio of two amounts. */
     template <class In, class Out>
+    Quality(TAmounts<In, Out> const& amount)
+        : Quality(Amounts(toSTAmount(amount.in), toSTAmount(amount.out)))
+    {
+    }
+
+    /** Create a quality from the ratio of two amounts. */
+    template <class In, class Out>
     Quality(Out const& out, In const& in)
         : Quality(Amounts(toSTAmount(in), toSTAmount(out)))
     {
