@@ -129,6 +129,9 @@ public:
     {
         return mantissa_;
     }
+
+    static IOUAmount
+    minPositiveAmount();
 };
 
 std::string

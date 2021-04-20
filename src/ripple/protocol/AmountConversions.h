@@ -102,6 +102,36 @@ toAmount<XRPAmount>(STAmount const& amt)
     return XRPAmount(sMant);
 }
 
+template <class T>
+T
+toAmount(IOUAmount const& amt)
+{
+    static_assert(sizeof(T) == -1, "Must use specialized function");
+    return T(0);
+}
+
+template <>
+inline IOUAmount
+toAmount<IOUAmount>(IOUAmount const& amt)
+{
+    return amt;
+}
+
+template <class T>
+T
+toAmount(XRPAmount const& amt)
+{
+    static_assert(sizeof(T) == -1, "Must use specialized function");
+    return T(0);
+}
+
+template <>
+inline XRPAmount
+toAmount<XRPAmount>(XRPAmount const& amt)
+{
+    return amt;
+}
+
 }  // namespace ripple
 
 #endif

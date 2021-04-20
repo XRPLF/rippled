@@ -116,6 +116,7 @@ class FeatureCollections
         "TicketBatch",
         "FlowSortStrands",
         "fixSTAmountCanonicalize",
+        "fixRmSmallIncreasedQOffers",
     };
 
     std::vector<uint256> features;
@@ -376,6 +377,7 @@ extern uint256 const featureNegativeUNL;
 extern uint256 const featureTicketBatch;
 extern uint256 const featureFlowSortStrands;
 extern uint256 const fixSTAmountCanonicalize;
+extern uint256 const fixRmSmallIncreasedQOffers;
 
 }  // namespace ripple
 

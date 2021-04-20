@@ -85,6 +85,10 @@ protected:
     virtual void
     permRmOffer(uint256 const& offerIndex) = 0;
 
+    template <class TTakerPays, class TTakerGets>
+    bool
+    shouldRmSmallIncreasedQOffer() const;
+
 public:
     TOfferStreamBase(
         ApplyView& view,
