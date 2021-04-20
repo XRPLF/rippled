@@ -249,16 +249,6 @@ dirNext(
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
-// deprecated
-std::optional<std::uint64_t>
-dirAdd(
-    ApplyView& view,
-    Keylet const& uRootIndex,
-    uint256 const& uLedgerIndex,
-    bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
-    beast::Journal j);
-
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
