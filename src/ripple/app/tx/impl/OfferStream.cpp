@@ -162,7 +162,13 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     constexpr bool const outIsXRP = std::is_same_v<TTakerGets, XRPAmount>;
 
     if (outIsXRP)
+    {
+        // If `TakerGets` is XRP, worse this offer's quality can change is to
+        // about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
+        // remarkably good quality for any realistic asset, so these offers
+        // don't need this extra check.
         return false;
+    }
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in),
@@ -294,18 +300,24 @@ TOfferStreamBase<TIn, TOut>::step()
             bool const outIsXRP = isXRP(offer_.issueOut());
             if (inIsXRP && !outIsXRP)
             {
+                // Without the `if constexpr`, the
+                // `shouldRmSmallIncreasedQOffer` template will be instantiated
+                // even if it is never used. This can cause compiler errors in
+                // some cases, hense the `if constexpr` guard.
                 if constexpr (!(std::is_same_v<TIn, IOUAmount> ||
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<XRPAmount, IOUAmount>();
             }
             if (!inIsXRP && outIsXRP)
             {
+                // See comment above for `if constexpr` rational
                 if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
                                 std::is_same_v<TOut, IOUAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, XRPAmount>();
             }
             if (!inIsXRP && !outIsXRP)
             {
+                // See comment above for `if constexpr` rational
                 if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();

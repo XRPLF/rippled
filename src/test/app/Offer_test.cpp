@@ -598,6 +598,76 @@ public:
                         initialCarolUSD));  // offer is not crossed at all
             }
         }
+
+        // Test payments
+        for (auto partialPayment : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.trust(EUR(1000), alice, bob, carol);
+            env.close();
+            // underfund carol's offer
+            auto const initialCarolUSD = tinyAmount(USD);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, EUR(1), USD(2)));
+            env.close();
+            env(offer(bob, EUR(2), USD(4), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            std::uint32_t const flags = partialPayment
+                ? (tfNoRippleDirect | tfPartialPayment)
+                : tfNoRippleDirect;
+
+            TER const expectedTer =
+                partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
+
+            env(pay(alice, bob, USD(5)),
+                path(~USD),
+                sendmax(EUR(10)),
+                txflags(flags),
+                ter(expectedTer));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                if (expectedTer == tesSUCCESS)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                }
+                else
+                {
+                    // TODO: Offers are not removed when payments fail
+                    // If that is addressed, the test should show that carol's
+                    // offer is removed but not taken, as in the other branch of
+                    // this if statement
+                }
+            }
+            else
+            {
+                if (partialPayment)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(
+                        balance(carol, USD(0)));  // offer is removed and taken
+                }
+                else
+                {
+                    // offer is not removed or taken
+                    BEAST_EXPECT(isOffer(env, carol, EUR(1), USD(2)));
+                }
+            }
+        }
     }
 
     void
