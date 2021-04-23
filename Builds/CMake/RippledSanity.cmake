@@ -73,9 +73,9 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif ()
 
 if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio" AND
-    NOT ("${CMAKE_GENERATOR}" MATCHES .*Win64.*))
+    NOT ("${CMAKE_GENERATOR_PLATFORM}" MATCHES "x64"))
   message (FATAL_ERROR
-    "Visual Studio 32-bit build is not supported. Use -G\"${CMAKE_GENERATOR} Win64\"")
+    "Visual Studio 32-bit build is not supported. Use `-A x64`")
 endif ()
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
