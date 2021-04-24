@@ -22,7 +22,7 @@ assignees: ''
 
 ## Environment
 <!--Please describe your environment setup (such as Ubuntu 18.04 with Boost 1.70).-->
-<!-- If you are using a formal release, please use the version returned by './rippled --version' as the verison number-->
+<!-- If you are using a formal release, please use the version returned by './rippled --version' as the version number-->
 <!-- If you are working off of develop, please add the git hash via 'git rev-parse HEAD'-->
 
 ## Supporting Files
