@@ -144,7 +144,7 @@ testing and running.
 * `-Dsan=thread` to enable the thread sanitizer with clang
 * `-Dsan=address` to enable the address sanitizer with clang
 * `-Dstatic=ON` to enable static linking library dependencies
-* `-Dreporting=ON` to build code neccessary for reporting mode (defaults to OFF)
+* `-Dreporting=ON` to build code necessary for reporting mode (defaults to OFF)
 
 Several other infrequently used options are available - run `ccmake` or
 `cmake-gui` for a list of all options.
@@ -161,7 +161,7 @@ the `-j` parameter in this example tells the build tool to compile several
 files in parallel. This value should be chosen roughly based on the number of
 cores you have available and/or want to use for building.
 
-When the build completes succesfully, you will have a `rippled` executable in
+When the build completes successfully, you will have a `rippled` executable in
 the current directory, which can be used to connect to the network (when
 properly configured) or to run unit tests.
 

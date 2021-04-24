@@ -164,7 +164,7 @@ the `-j` parameter in this example tells the build tool to compile several
 files in parallel. This value should be chosen roughly based on the number of
 cores you have available and/or want to use for building.
 
-When the build completes succesfully, you will have a `rippled` executable in
+When the build completes successfully, you will have a `rippled` executable in
 the current directory, which can be used to connect to the network (when
 properly configured) or to run unit tests.
 
