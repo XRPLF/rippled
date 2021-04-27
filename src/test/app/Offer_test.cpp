@@ -5701,7 +5701,7 @@ public:
     {
         // An assert was falsely triggering when computing rates for offers.
         // This unit test would trigger that assert (which has been removed).
-        testcase("false assert");
+        testcase("incorrect assert fixed");
         using namespace jtx;
 
         Env env{*this};

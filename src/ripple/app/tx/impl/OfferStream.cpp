@@ -141,12 +141,12 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     static_assert(
         std::is_same_v<TTakerPays, IOUAmount> ||
             std::is_same_v<TTakerPays, XRPAmount>,
-        "");
+        "STAmount is not supported");
 
     static_assert(
         std::is_same_v<TTakerGets, IOUAmount> ||
             std::is_same_v<TTakerGets, XRPAmount>,
-        "");
+        "STAmount is not supported");
 
     static_assert(
         !std::is_same_v<TTakerPays, XRPAmount> ||
@@ -156,15 +156,16 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     if (!view_.rules().enabled(fixRmSmallIncreasedQOffers))
         return false;
 
-    // Consider removing the offer if `TakerPays` is XRP or `TakerPays` and
-    // `TakerGets` are both IOU and `TakerPays` < `TakerGets`
+    // Consider removing the offer if:
+    //  o `TakerPays` is XRP (because of XRP drops granularity) or
+    //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
     constexpr bool const inIsXRP = std::is_same_v<TTakerPays, XRPAmount>;
     constexpr bool const outIsXRP = std::is_same_v<TTakerGets, XRPAmount>;
 
-    if (outIsXRP)
+    if constexpr (outIsXRP)
     {
-        // If `TakerGets` is XRP, worse this offer's quality can change is to
-        // about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
+        // If `TakerGets` is XRP, the worst this offer's quality can change is
+        // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
         // remarkably good quality for any realistic asset, so these offers
         // don't need this extra check.
         return false;
@@ -291,7 +292,7 @@ TOfferStreamBase<TIn, TOut>::step()
                     << "Removing became unfunded offer " << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
-            // See comment at top of loop for why the offer is removed
+            // See comment at top of loop for how the offer is removed
             continue;
         }
 
@@ -303,7 +304,7 @@ TOfferStreamBase<TIn, TOut>::step()
                 // Without the `if constexpr`, the
                 // `shouldRmSmallIncreasedQOffer` template will be instantiated
                 // even if it is never used. This can cause compiler errors in
-                // some cases, hense the `if constexpr` guard.
+                // some cases, hence the `if constexpr` guard.
                 if constexpr (!(std::is_same_v<TIn, IOUAmount> ||
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<XRPAmount, IOUAmount>();
@@ -350,7 +351,7 @@ TOfferStreamBase<TIn, TOut>::step()
                                  << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
-            // See comment at top of loop for why the offer is removed
+            // See comment at top of loop for how the offer is removed
             continue;
         }
 
