@@ -387,7 +387,7 @@ public:
             env.close();
             env.trust(USD(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = USD(0.1);
+            auto initialCarolUSD = USD(0.499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, USD(100)));
             env.close();
@@ -448,7 +448,7 @@ public:
             env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.close();
-            auto const initialCarolUSD = USD(0.1);
+            auto const initialCarolUSD = USD(0.999);
             env(pay(gw, carol, initialCarolUSD));
             env.close();
             env(pay(gw, bob, USD(100)));
