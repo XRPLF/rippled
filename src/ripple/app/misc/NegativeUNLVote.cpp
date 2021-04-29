@@ -167,7 +167,7 @@ NegativeUNLVote::buildScoreTable(
     // Ask the validation container to keep enough validation message history
     // for next time.
     auto const seq = prevLedger->info().seq + 1;
-    validations.setSeqToKeep(seq - 1);
+    validations.setSeqToKeep(seq - 1, seq + FLAG_LEDGER_INTERVAL);
 
     // Find FLAG_LEDGER_INTERVAL (i.e. 256) previous ledger hashes
     auto const hashIndex = prevLedger->read(keylet::skip());
