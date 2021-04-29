@@ -324,8 +324,13 @@ class Validations
         beast::uhash<>>
         bySequence_;
 
-    // Sequence of the earliest validation to keep from expire
-    std::optional<Seq> toKeep_;
+    // A range [low_, high_) of validations to keep from expire
+    struct KeepRange
+    {
+        Seq low_;
+        Seq high_;
+    };
+    std::optional<KeepRange> toKeep_;
 
     // Represents the ancestry of validated ledgers
     LedgerTrie<Ledger> trie_;
@@ -698,14 +703,17 @@ public:
     }
 
     /**
-     * Set the smallest sequence number of validations to keep from expire
-     * @param s the sequence number
+     * Set the range [low, high) of validations to keep from expire
+     * @param low the lower sequence number
+     * @param high the higher sequence number
+     * @note high must be greater than low
      */
     void
-    setSeqToKeep(Seq const& s)
+    setSeqToKeep(Seq const& low, Seq const& high)
     {
         std::lock_guard lock{mutex_};
-        toKeep_ = s;
+        assert(low < high);
+        toKeep_ = {low, high};
     }
 
     /** Expire old validation sets
@@ -719,21 +727,35 @@ public:
         std::lock_guard lock{mutex_};
         if (toKeep_)
         {
-            for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
+            // We only need to refresh the keep range when it's just about to
+            // expire. Track the next time we need to refresh.
+            static std::chrono::steady_clock::time_point refreshTime;
+            if (auto const now = byLedger_.clock().now(); refreshTime <= now)
             {
-                auto const& validationMap = i->second;
-                if (!validationMap.empty() &&
-                    validationMap.begin()->second.seq() >= toKeep_)
-                {
-                    byLedger_.touch(i);
-                }
-            }
+                // The next refresh time is shortly before the expiration
+                // time from now.
+                refreshTime = now + parms_.validationSET_EXPIRES -
+                    parms_.validationFRESHNESS;
 
-            for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
-            {
-                if (i->first >= toKeep_)
+                for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
                 {
-                    bySequence_.touch(i);
+                    auto const& validationMap = i->second;
+                    if (!validationMap.empty())
+                    {
+                        auto const seq = validationMap.begin()->second.seq();
+                        if (toKeep_->low_ <= seq && seq < toKeep_->high_)
+                        {
+                            byLedger_.touch(i);
+                        }
+                    }
+                }
+
+                for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
+                {
+                    if (toKeep_->low_ <= i->first && i->first < toKeep_->high_)
+                    {
+                        bySequence_.touch(i);
+                    }
                 }
             }
         }
