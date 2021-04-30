@@ -42,14 +42,9 @@ doServerInfo(RPC::JsonContext& context)
 
     if (context.app.config().reporting())
     {
-        Json::Value proxied = forwardToP2p(context);
-        if (proxied.isMember(jss::result) &&
-            proxied[jss::result].isMember(jss::info) &&
-            proxied[jss::result][jss::info].isMember(jss::load_factor))
-            ret[jss::info][jss::load_factor] =
-                proxied[jss::result][jss::info][jss::load_factor];
-        else
-            ret[jss::info][jss::load_factor] = 1;
+        Json::Value const proxied = forwardToP2p(context);
+        auto const lf = proxied[jss::result][jss::info][jss::load_factor];
+        ret[jss::info][jss::load_factor] = lf.isNull() ? 1 : lf;
     }
     return ret;
 }
