@@ -1020,11 +1020,9 @@ public:
         if (config_->reporting())
         {
             reportingETL_->stop();
-#ifdef RIPPLED_REPORTING
             dynamic_cast<RelationalDBInterfacePostgres*>(
                 &*mRelationalDBInterface)
                 ->stop();
-#endif
         }
         m_nodeStore->stop();
         perfLog_->stop();
@@ -1565,7 +1563,6 @@ ApplicationImp::start(bool withTimers)
     JLOG(m_journal.info()) << "Application starting. Version is "
                            << BuildInfo::getVersionString();
 
-    using namespace std::chrono_literals;
     if (withTimers)
     {
         setSweepTimer();
