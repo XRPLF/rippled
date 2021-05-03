@@ -279,7 +279,7 @@ OverlayImpl::onHandoff(
             }
         }
 
-        auto const peer = std::make_shared<PeerImp>(
+        auto const ih = std::make_shared<InboundHandoff>(
             app_,
             id,
             slot,
@@ -290,18 +290,10 @@ OverlayImpl::onHandoff(
             std::move(stream_ptr),
             *this);
         {
-            // As we are not on the strand, run() must be called
-            // while holding the lock, otherwise new I/O can be
-            // queued after a call to stop().
             std::lock_guard<decltype(mutex_)> lock(mutex_);
-            {
-                auto const result = m_peers.emplace(peer->slot(), peer);
-                assert(result.second);
-                (void)result.second;
-            }
-            list_.emplace(peer.get(), peer);
+            list_.emplace(ih.get(), ih);
 
-            peer->run();
+            ih->run();
         }
         handoff.moved = true;
         return handoff;
