@@ -48,6 +48,23 @@ preflight0(PreflightContext const& ctx)
         return temINVALID;
     }
 
+    if (!ctx.rules.enabled(featureTemporalTxValidity))
+    {
+        if (ctx.tx.isFieldPresent(sfNotValidAfter))
+            return temMALFORMED;
+
+        if (ctx.tx.isFieldPresent(sfNotValidBefore))
+            return temMALFORMED;
+    }
+    else
+    {
+        auto const notBefore = ctx.tx[~sfNotValidBefore];
+        auto const notAfter = ctx.tx[~sfNotValidAfter];
+
+        if (notBefore && notAfter && (notBefore >= notAfter))
+            return temBAD_TEMPORAL_VALIDITY;
+    }
+
     return tesSUCCESS;
 }
 
@@ -446,6 +463,31 @@ Transactor::apply()
     }
 
     return doApply();
+}
+
+NotTEC
+Transactor::checkTemporalTxValidity(PreclaimContext const& ctx)
+{
+    using d = NetClock::duration;
+    using tp = NetClock::time_point;
+
+    if (ctx.view.rules().enabled(featureTemporalTxValidity))
+    {
+        // We check time against the close time of the parent ledger,
+        // because that is the time that the network, as a whole,
+        // agrees on.
+        auto const pct = ctx.view.parentCloseTime();
+
+        if (auto const cutoff = ctx.tx[~sfNotValidBefore];
+            cutoff && (pct < tp{d{*cutoff}}))
+            return tefTOO_EARLY;
+
+        if (auto const cutoff = ctx.tx[~sfNotValidAfter];
+            cutoff && (pct > tp{d{*cutoff}}))
+            return tefTOO_LATE;
+    }
+
+    return tesSUCCESS;
 }
 
 NotTEC

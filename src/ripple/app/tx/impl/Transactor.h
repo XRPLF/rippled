@@ -135,6 +135,9 @@ public:
     checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee);
 
     static NotTEC
+    checkTemporalTxValidity(PreclaimContext const& ctx);
+
+    static NotTEC
     checkSign(PreclaimContext const& ctx);
 
     // Returns the fee in fee units, not scaled for load.

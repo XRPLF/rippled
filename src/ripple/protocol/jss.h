@@ -597,6 +597,9 @@ JSS(warnings);                // out: server_info, server_state
 JSS(workers);
 JSS(write_load);   // out: GetCounts
 JSS(NegativeUNL);  // out: ValidatorList; ledger type
+JSS(NotValidAfter);
+JSS(NotValidBefore);
+
 #undef JSS
 
 }  // namespace jss

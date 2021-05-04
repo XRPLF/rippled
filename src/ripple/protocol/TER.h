@@ -119,6 +119,7 @@ enum TEMcodes : TERUnderlyingType {
     temUNKNOWN,    // An internal intermediate result; should never be returned.
 
     temSEQ_AND_TICKET,
+    temBAD_TEMPORAL_VALIDITY,
 };
 
 //------------------------------------------------------------------------------
@@ -161,6 +162,8 @@ enum TEFcodes : TERUnderlyingType {
     tefINVARIANT_FAILED,
     tefTOO_BIG,
     tefNO_TICKET,
+    tefTOO_EARLY,
+    tefTOO_LATE
 };
 
 //------------------------------------------------------------------------------

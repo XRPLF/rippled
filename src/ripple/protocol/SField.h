@@ -392,6 +392,8 @@ extern SF_UINT32 const sfSignerListID;
 extern SF_UINT32 const sfSettleDelay;
 extern SF_UINT32 const sfTicketCount;
 extern SF_UINT32 const sfTicketSequence;
+extern SF_UINT32 const sfNotValidBefore;
+extern SF_UINT32 const sfNotValidAfter;
 
 // 64-bit integers
 extern SF_UINT64 const sfIndexNext;

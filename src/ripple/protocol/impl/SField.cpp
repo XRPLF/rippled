@@ -139,6 +139,8 @@ CONSTRUCT_TYPED_SFIELD(sfSignerListID,          "SignerListID",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfSettleDelay,           "SettleDelay",          UINT32,    39);
 CONSTRUCT_TYPED_SFIELD(sfTicketCount,           "TicketCount",          UINT32,    40);
 CONSTRUCT_TYPED_SFIELD(sfTicketSequence,        "TicketSequence",       UINT32,    41);
+CONSTRUCT_TYPED_SFIELD(sfNotValidBefore,        "NotValidBefore",       UINT32,    42);
+CONSTRUCT_TYPED_SFIELD(sfNotValidAfter,         "NotValidAfter",        UINT32,    43);
 
 // 64-bit integers
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);

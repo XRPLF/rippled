@@ -101,6 +101,9 @@ transResults()
         MAKE_ERROR(tefINVARIANT_FAILED,       "Fee claim violated invariants for the transaction."),
         MAKE_ERROR(tefTOO_BIG,                "Transaction affects too many items."),
         MAKE_ERROR(tefNO_TICKET,              "Ticket is not in ledger."),
+        MAKE_ERROR(tefTOO_EARLY,              "The transaction is not valid yet."),
+        MAKE_ERROR(tefTOO_LATE,               "The transaction is no longer valid."),
+
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
@@ -153,6 +156,7 @@ transResults()
         MAKE_ERROR(temCANNOT_PREAUTH_SELF,    "Malformed: An account may not preauthorize itself."),
         MAKE_ERROR(temINVALID_COUNT,          "Malformed: Count field outside valid range."),
         MAKE_ERROR(temSEQ_AND_TICKET,         "Transaction contains a TicketSequence and a non-zero Sequence."),
+        MAKE_ERROR(temBAD_TEMPORAL_VALIDITY,  "Malformed: The specified temporal validity restrictions are invalid."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

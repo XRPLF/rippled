@@ -55,6 +55,8 @@ TxFormats::TxFormats()
             {sfClearFlag, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -65,6 +67,8 @@ TxFormats::TxFormats()
             {sfQualityIn, soeOPTIONAL},
             {sfQualityOut, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -76,6 +80,8 @@ TxFormats::TxFormats()
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -84,6 +90,8 @@ TxFormats::TxFormats()
         {
             {sfOfferSequence, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -92,6 +100,8 @@ TxFormats::TxFormats()
         {
             {sfRegularKey, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -106,6 +116,8 @@ TxFormats::TxFormats()
             {sfDestinationTag, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -119,6 +131,8 @@ TxFormats::TxFormats()
             {sfFinishAfter, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -130,6 +144,8 @@ TxFormats::TxFormats()
             {sfFulfillment, soeOPTIONAL},
             {sfCondition, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -139,6 +155,8 @@ TxFormats::TxFormats()
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -175,6 +193,8 @@ TxFormats::TxFormats()
         {
             {sfTicketCount, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -186,6 +206,8 @@ TxFormats::TxFormats()
             {sfSignerQuorum, soeREQUIRED},
             {sfSignerEntries, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -199,6 +221,8 @@ TxFormats::TxFormats()
             {sfCancelAfter, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -209,6 +233,8 @@ TxFormats::TxFormats()
             {sfAmount, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -221,6 +247,8 @@ TxFormats::TxFormats()
             {sfSignature, soeOPTIONAL},
             {sfPublicKey, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -233,6 +261,8 @@ TxFormats::TxFormats()
             {sfDestinationTag, soeOPTIONAL},
             {sfInvoiceID, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -243,6 +273,8 @@ TxFormats::TxFormats()
             {sfAmount, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -251,6 +283,8 @@ TxFormats::TxFormats()
         {
             {sfCheckID, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -260,6 +294,8 @@ TxFormats::TxFormats()
             {sfDestination, soeREQUIRED},
             {sfDestinationTag, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 
@@ -269,6 +305,8 @@ TxFormats::TxFormats()
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNotValidBefore, soeOPTIONAL},
+            {sfNotValidAfter, soeOPTIONAL},
         },
         commonFields);
 }

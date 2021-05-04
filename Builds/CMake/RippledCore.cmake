@@ -691,6 +691,7 @@ target_sources (rippled PRIVATE
   src/test/app/SetRegularKey_test.cpp
   src/test/app/SetTrust_test.cpp
   src/test/app/Taker_test.cpp
+  src/test/app/TemporalTxValidity_test.cpp
   src/test/app/TheoreticalQuality_test.cpp
   src/test/app/Ticket_test.cpp
   src/test/app/Transaction_ordering_test.cpp
