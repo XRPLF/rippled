@@ -141,7 +141,7 @@ DepositPreauth::doApply()
             describeOwnerDir(account_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
-                         << to_string(slePreauth->key()) << ": "
+                         << to_string(preauthKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)

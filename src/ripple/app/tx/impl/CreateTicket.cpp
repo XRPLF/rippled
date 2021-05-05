@@ -129,7 +129,7 @@ CreateTicket::doApply()
             ticketKeylet,
             describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Creating ticket " << to_string(sleTicket->key())
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key)
                          << ": " << (page ? "success" : "failure");
 
         if (!page)

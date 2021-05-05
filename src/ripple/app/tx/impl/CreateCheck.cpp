@@ -183,7 +183,7 @@ CreateCheck::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
 
-    // Note that we we use the value from the sequence or ticket as the
+    // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqProxy().value();
     Keylet const checkKeylet = keylet::check(account_, seq);
@@ -216,7 +216,7 @@ CreateCheck::doApply()
             describeOwnerDir(dstAccountId));
 
         JLOG(j_.trace()) << "Adding Check to destination directory "
-                         << to_string(sleCheck->key()) << ": "
+                         << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)
@@ -232,7 +232,7 @@ CreateCheck::doApply()
             describeOwnerDir(account_));
 
         JLOG(j_.trace()) << "Adding Check to owner directory "
-                         << to_string(sleCheck->key()) << ": "
+                         << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)
