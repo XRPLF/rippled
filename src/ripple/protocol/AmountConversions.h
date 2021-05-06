@@ -63,11 +63,7 @@ toSTAmount(XRPAmount const& xrp, Issue const& iss)
 
 template <class T>
 T
-toAmount(STAmount const& amt)
-{
-    static_assert(sizeof(T) == -1, "Must use specialized function");
-    return T(0);
-}
+toAmount(STAmount const& amt) = delete;
 
 template <>
 inline STAmount
@@ -104,11 +100,7 @@ toAmount<XRPAmount>(STAmount const& amt)
 
 template <class T>
 T
-toAmount(IOUAmount const& amt)
-{
-    static_assert(sizeof(T) == -1, "Must use specialized function");
-    return T(0);
-}
+toAmount(IOUAmount const& amt) = delete;
 
 template <>
 inline IOUAmount
@@ -119,11 +111,7 @@ toAmount<IOUAmount>(IOUAmount const& amt)
 
 template <class T>
 T
-toAmount(XRPAmount const& amt)
-{
-    static_assert(sizeof(T) == -1, "Must use specialized function");
-    return T(0);
-}
+toAmount(XRPAmount const& amt) = delete;
 
 template <>
 inline XRPAmount

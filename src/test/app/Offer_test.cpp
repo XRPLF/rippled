@@ -331,8 +331,8 @@ public:
         // Carol doesn't quite have enough funds for this offer
         // The amount left after this offer is taken will cause
         // STAmount to incorrectly round to zero when the next offer
-        // (at a good quality) is considered. (when the
-        // stAmountCalcSwitchover2 patch is inactive)
+        // (at a good quality) is considered. (when the now removed
+        // stAmountCalcSwitchover2 patch was inactive)
         env(offer(carol, drops(1), USD(0.99999)));
         // Offer at a quality poor enough so when the input xrp is
         // calculated  in the reverse pass, the amount is not zero.
@@ -343,8 +343,8 @@ public:
         // It is considered after the offer from carol, which leaves a
         // tiny amount left to pay. When calculating the amount of xrp
         // needed for this offer, it will incorrectly compute zero in both
-        // the forward and reverse passes (when the stAmountCalcSwitchover2
-        // is inactive.)
+        // the forward and reverse passes (when the now removed
+        // stAmountCalcSwitchover2 was inactive.)
         env(offer(erin, drops(2), USD(1)));
 
         env(pay(alice, bob, USD(1)),

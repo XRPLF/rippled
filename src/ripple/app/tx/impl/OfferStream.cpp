@@ -193,9 +193,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return ofrAmts;
     }();
 
-    TTakerPays const thresh = TTakerPays::minPositiveAmount();
-
-    if (effectiveAmounts.in > thresh)
+    if (effectiveAmounts.in > TTakerPays::minPositiveAmount())
         return false;
 
     Quality const effectiveQuality{effectiveAmounts};
@@ -305,20 +303,22 @@ TOfferStreamBase<TIn, TOut>::step()
                 // `shouldRmSmallIncreasedQOffer` template will be instantiated
                 // even if it is never used. This can cause compiler errors in
                 // some cases, hence the `if constexpr` guard.
+                // Note that TIn can be XRPAmount or STAmount, and TOut can be
+                // IOUAmount or STAmount.
                 if constexpr (!(std::is_same_v<TIn, IOUAmount> ||
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<XRPAmount, IOUAmount>();
             }
             if (!inIsXRP && outIsXRP)
             {
-                // See comment above for `if constexpr` rational
+                // See comment above for `if constexpr` rationale
                 if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
                                 std::is_same_v<TOut, IOUAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, XRPAmount>();
             }
             if (!inIsXRP && !outIsXRP)
             {
-                // See comment above for `if constexpr` rational
+                // See comment above for `if constexpr` rationale
                 if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();
@@ -346,8 +346,8 @@ TOfferStreamBase<TIn, TOut>::step()
             }
             else
             {
-                JLOG(j_.trace()) << "Removing became tiny offer due to "
-                                    "reduced quality "
+                JLOG(j_.trace()) << "Removing tiny offer that became tiny due "
+                                    "to reduced quality "
                                  << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
