@@ -707,30 +707,45 @@ class Validations_test : public beast::unit_test::suite
         TestHarness harness(h.oracle);
         Node a = harness.makeNode();
 
+        // simple cases
         Ledger ledgerA = h["a"];
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()));
-
-        // Keep the validation from expire
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
-        harness.vals().setSeqToKeep(ledgerA.seq(), ++ledgerA.seq());
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
         harness.vals().expire();
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
-
-        // Allow the validation to expire
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
-        harness.vals().setSeqToKeep(++ledgerA.seq(), ++(++ledgerA.seq()));
         harness.vals().expire();
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 0);
 
-        // Allow the validation with high seq to expire
-        Ledger ledgerB = h["b"];
+        // use setSeqToKeep to keep the validation from expire
+        Ledger ledgerB = h["ab"];
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerB)));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
+        harness.vals().setSeqToKeep(ledgerB.seq(), ++ledgerB.seq());
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
-        harness.vals().setSeqToKeep(--ledgerB.seq(), ledgerB.seq());
         harness.vals().expire();
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
+        // change toKeep
+        harness.vals().setSeqToKeep(++ledgerB.seq(), ++(++ledgerB.seq()));
+        // advance clock slowly
+        int loops = harness.parms().validationSET_EXPIRES /
+                harness.parms().validationFRESHNESS +
+            1;
+        for (int i = 0; i < loops; ++i)
+        {
+            harness.clock().advance(harness.parms().validationFRESHNESS);
+            harness.vals().expire();
+        }
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 0);
+
+        // Allow the validation with high seq to expire
+        Ledger ledgerC = h["abc"];
+        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerC)));
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 1);
+        harness.vals().setSeqToKeep(--ledgerC.seq(), ledgerC.seq());
+        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.vals().expire();
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 0);
     }
 
     void
