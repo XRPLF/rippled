@@ -709,6 +709,15 @@ PeerImp::fail(protocol::TMCloseReason reason)
                               << " failed: " << closeReasonToString(reason);
     }
 
+    // erase all outstanding messages except for the one
+    // currently being executed
+    if (send_queue_.size() > 1)
+    {
+        decltype(send_queue_) q({send_queue_.front()});
+        send_queue_.swap(q);
+    }
+
+    closeOnWriteComplete_ = true;
     protocol::TMGracefulClose tmGC;
     tmGC.set_reason(reason);
     send(std::make_shared<Message>(tmGC, protocol::mtGRACEFUL_CLOSE));
@@ -1001,6 +1010,11 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
     if (!socket_.is_open())
         return;
+    if (closeOnWriteComplete_)
+    {
+        close();
+        return;
+    }
     if (ec == boost::asio::error::operation_aborted)
         return;
     if (ec)

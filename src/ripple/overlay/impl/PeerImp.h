@@ -180,6 +180,8 @@ private:
     bool vpReduceRelayEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
+    // close connection when async write is complete
+    bool closeOnWriteComplete_ = false;
 
     friend class OverlayImpl;
 
