@@ -31,6 +31,13 @@ namespace ripple {
 // Specification:
 //   http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/n4873.html#scopeguard
 
+// This implementation deviates from the spec slightly:
+// The scope_exit and scope_fail constructors taking a functor are not
+// permitted to throw an exception.  This was done because some compilers
+// did not like the superfluous try/catch in the common instantiations
+// where the construction was noexcept.  Instead a static_assert is used
+// to enforce this restriction.
+
 template <class EF>
 class scope_exit
 {
@@ -61,18 +68,12 @@ public:
         EFP&& f,
         std::enable_if_t<
             !std::is_same_v<std::remove_cv_t<EFP>, scope_exit> &&
-            std::is_constructible_v<EF, EFP>>* =
-            0) noexcept(std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
-    try : exit_function_
+            std::is_constructible_v<EF, EFP>>* = 0) noexcept
+        : exit_function_{std::forward<EFP>(f)}
     {
-        std::forward<EFP>(f)
-    }
-    {
-    }
-    catch (...)
-    {
-        f();
-        throw;
+        static_assert(
+            std::
+                is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
 
     void
@@ -118,18 +119,12 @@ public:
         EFP&& f,
         std::enable_if_t<
             !std::is_same_v<std::remove_cv_t<EFP>, scope_fail> &&
-            std::is_constructible_v<EF, EFP>>* =
-            0) noexcept(std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
-    try : exit_function_
+            std::is_constructible_v<EF, EFP>>* = 0) noexcept
+        : exit_function_{std::forward<EFP>(f)}
     {
-        std::forward<EFP>(f)
-    }
-    {
-    }
-    catch (...)
-    {
-        f();
-        throw;
+        static_assert(
+            std::
+                is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
 
     void
