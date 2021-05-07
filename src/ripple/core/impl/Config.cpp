@@ -671,7 +671,7 @@ Config::loadFromString(std::string const& fileContents)
 
         try
         {
-            if (auto val = sec.get<std::string>("max_unknown_time"))
+            if (auto val = sec.get("max_unknown_time"))
                 MAX_UNKNOWN_TIME =
                     seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
         }
@@ -689,7 +689,7 @@ Config::loadFromString(std::string const& fileContents)
 
         try
         {
-            if (auto val = sec.get<std::string>("max_diverged_time"))
+            if (auto val = sec.get("max_diverged_time"))
                 MAX_DIVERGED_TIME =
                     seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
         }

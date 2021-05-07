@@ -100,7 +100,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
-    if (boost::iequals(get<std::string>(section, "type"), "RocksDB"))
+    if (boost::iequals(get(section, "type"), "RocksDB"))
     {
         if (!section.exists("cache_mb"))
         {
@@ -419,7 +419,7 @@ void
 SHAMapStoreImp::dbPaths()
 {
     Section section{app_.config().section(ConfigSection::nodeDatabase())};
-    boost::filesystem::path dbPath = get<std::string>(section, "path");
+    boost::filesystem::path dbPath = get(section, "path");
 
     if (boost::filesystem::exists(dbPath))
     {
@@ -493,7 +493,7 @@ SHAMapStoreImp::dbPaths()
             << "The existing data is in a corrupted state.\n"
             << "To resume operation, remove the files matching "
             << stateDbPathName.string() << " and contents of the directory "
-            << get<std::string>(section, "path") << '\n'
+            << get(section, "path") << '\n'
             << "Optionally, you can move those files to another\n"
             << "location if you wish to analyze or back up the data.\n"
             << "However, there is no guarantee that the data in its\n"
@@ -515,7 +515,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        boost::filesystem::path p = get<std::string>(section, "path");
+        boost::filesystem::path p = get(section, "path");
         p /= dbPrefix_;
         p += ".%%%%";
         newPath = boost::filesystem::unique_path(p);

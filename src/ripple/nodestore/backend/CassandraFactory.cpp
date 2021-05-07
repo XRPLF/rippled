@@ -175,8 +175,7 @@ public:
             Throw<std::runtime_error>(
                 "nodestore:: Failed to create CassCluster");
 
-        std::string secureConnectBundle =
-            get<std::string>(config_, "secure_connect_bundle");
+        std::string secureConnectBundle = get(config_, "secure_connect_bundle");
 
         if (!secureConnectBundle.empty())
         {
@@ -196,8 +195,7 @@ public:
         }
         else
         {
-            std::string contact_points =
-                get<std::string>(config_, "contact_points");
+            std::string contact_points = get(config_, "contact_points");
             if (contact_points.empty())
             {
                 Throw<std::runtime_error>(
@@ -241,16 +239,14 @@ public:
             Throw<std::runtime_error>(ss.str());
         }
 
-        std::string username = get<std::string>(config_, "username");
+        std::string username = get(config_, "username");
         if (username.size())
         {
-            std::cout << "user = " << username.c_str() << " password = "
-                      << get<std::string>(config_, "password").c_str()
+            std::cout << "user = " << username
+                      << " password = " << get(config_, "password")
                       << std::endl;
             cass_cluster_set_credentials(
-                cluster,
-                username.c_str(),
-                get<std::string>(config_, "password").c_str());
+                cluster, username.c_str(), get(config_, "password").c_str());
         }
 
         unsigned int const workers = std::thread::hardware_concurrency();
@@ -280,7 +276,7 @@ public:
             ;
         }
 
-        std::string certfile = get<std::string>(config_, "certfile");
+        std::string certfile = get(config_, "certfile");
         if (certfile.size())
         {
             std::ifstream fileStream(
@@ -318,14 +314,14 @@ public:
             cass_ssl_free(context);
         }
 
-        std::string keyspace = get<std::string>(config_, "keyspace");
+        std::string keyspace = get(config_, "keyspace");
         if (keyspace.empty())
         {
             Throw<std::runtime_error>(
                 "nodestore: Missing keyspace in Cassandra config");
         }
 
-        std::string tableName = get<std::string>(config_, "table_name");
+        std::string tableName = get(config_, "table_name");
         if (tableName.empty())
         {
             Throw<std::runtime_error>(

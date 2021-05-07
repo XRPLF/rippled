@@ -27,6 +27,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
+#include <cctype>
+#include <charconv>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -855,29 +857,26 @@ ReportingETL::ReportingETL(Application& app)
             JLOG(journal_.debug()) << "val is " << v;
             Section source = app_.config().section(v);
 
-            std::pair<std::string, bool> ipPair = source.find("source_ip");
-            if (!ipPair.second)
+            auto optIp = source.get("source_ip");
+            if (!optIp)
                 continue;
 
-            std::pair<std::string, bool> wsPortPair =
-                source.find("source_ws_port");
-            if (!wsPortPair.second)
+            auto optWsPort = source.get("source_ws_port");
+            if (!optWsPort)
                 continue;
 
-            std::pair<std::string, bool> grpcPortPair =
-                source.find("source_grpc_port");
-            if (!grpcPortPair.second)
+            auto optGrpcPort = source.get("source_grpc_port");
+            if (!optGrpcPort)
             {
                 // add source without grpc port
                 // used in read-only mode to detect when new ledgers have
                 // been validated. Used for publishing
                 if (app_.config().reportingReadOnly())
-                    loadBalancer_.add(ipPair.first, wsPortPair.first);
+                    loadBalancer_.add(*optIp, *optWsPort);
                 continue;
             }
 
-            loadBalancer_.add(
-                ipPair.first, wsPortPair.first, grpcPortPair.first);
+            loadBalancer_.add(*optIp, *optWsPort, *optGrpcPort);
         }
 
         // this is true iff --reportingReadOnly was passed via command line
@@ -887,37 +886,65 @@ ReportingETL::ReportingETL(Application& app)
         // file. Command line takes precedence
         if (!readOnly_)
         {
-            std::pair<std::string, bool> ro = section.find("read_only");
-            if (ro.second)
+            auto const optRO = section.get("read_only");
+            if (optRO)
             {
-                readOnly_ = (ro.first == "true" || ro.first == "1");
+                readOnly_ = (*optRO == "true" || *optRO == "1");
                 app_.config().setReportingReadOnly(readOnly_);
             }
         }
 
+        // lambda throws a useful message if string to integer conversion fails
+        auto asciiToIntThrows =
+            [](auto& dest, std::string const& src, char const* onError) {
+                char const* const srcEnd = src.data() + src.size();
+                auto [ptr, err] = std::from_chars(src.data(), srcEnd, dest);
+
+                if (err == std::errc())
+                    // skip whitespace at end of string
+                    while (ptr != srcEnd &&
+                           std::isspace(static_cast<unsigned char>(*ptr)))
+                        ++ptr;
+
+                // throw if
+                //  o conversion error or
+                //  o entire string is not consumed
+                if (err != std::errc() || ptr != srcEnd)
+                    Throw<std::runtime_error>(onError + src);
+            };
+
         // handle command line arguments
         if (app_.config().START_UP == Config::StartUpType::FRESH && !readOnly_)
         {
-            startSequence_ = std::stol(app_.config().START_LEDGER);
+            asciiToIntThrows(
+                *startSequence_,
+                app_.config().START_LEDGER,
+                "Expected integral START_LEDGER command line argument. Got: ");
         }
         // if not passed via command line, check config for start sequence
         if (!startSequence_)
         {
-            std::pair<std::string, bool> start = section.find("start_sequence");
-            if (start.second)
-            {
-                startSequence_ = std::stoi(start.first);
-            }
+            auto const optStartSeq = section.get("start_sequence");
+            if (optStartSeq)
+                asciiToIntThrows(
+                    *startSequence_,
+                    *optStartSeq,
+                    "Expected integral start_sequence config entry. Got: ");
         }
 
-        std::pair<std::string, bool> flushInterval =
-            section.find("flush_interval");
-        if (flushInterval.second)
-            flushInterval_ = std::stoi(flushInterval.first);
+        auto const optFlushInterval = section.get("flush_interval");
+        if (optFlushInterval)
+            asciiToIntThrows(
+                flushInterval_,
+                *optFlushInterval,
+                "Expected integral flush_interval config entry.  Got: ");
 
-        std::pair<std::string, bool> numMarkers = section.find("num_markers");
-        if (numMarkers.second)
-            numMarkers_ = std::stoi(numMarkers.first);
+        auto const optNumMarkers = section.get("num_markers");
+        if (optNumMarkers)
+            asciiToIntThrows(
+                numMarkers_,
+                *optNumMarkers,
+                "Expected integral num_markers config entry.  Got: ");
     }
 }
 

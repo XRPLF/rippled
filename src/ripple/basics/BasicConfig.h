@@ -24,7 +24,6 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
-#include <beast/unit_test/detail/const_container.hpp>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -40,14 +39,16 @@ using IniFileSections = std::map<std::string, std::vector<std::string>>;
 /** Holds a collection of configuration values.
     A configuration file contains zero or more sections.
 */
-class Section : public beast::unit_test::detail::const_container<
-                    std::map<std::string, std::string, boost::beast::iless>>
+class Section
 {
 private:
     std::string name_;
+    std::map<std::string, std::string> lookup_;
     std::vector<std::string> lines_;
     std::vector<std::string> values_;
     bool had_trailing_comments_ = false;
+
+    using const_iterator = decltype(lookup_)::const_iterator;
 
 public:
     /** Create an empty section. */
@@ -132,18 +133,12 @@ public:
     bool
     exists(std::string const& name) const;
 
-    /** Retrieve a key/value pair.
-        @return A pair with bool `true` if the string was found.
-    */
-    std::pair<std::string, bool>
-    find(std::string const& name) const;
-
-    template <class T>
+    template <class T = std::string>
     std::optional<T>
     get(std::string const& name) const
     {
-        auto const iter = cont().find(name);
-        if (iter == cont().end())
+        auto const iter = lookup_.find(name);
+        if (iter == lookup_.end())
             return std::nullopt;
         return boost::lexical_cast<T>(iter->second);
     }
@@ -167,6 +162,48 @@ public:
 
     friend std::ostream&
     operator<<(std::ostream&, Section const& section);
+
+    // Returns `true` if there are no key/value pairs.
+    bool
+    empty() const
+    {
+        return lookup_.empty();
+    }
+
+    // Returns the number of key/value pairs.
+    std::size_t
+    size() const
+    {
+        return lookup_.size();
+    }
+
+    // For iteration of key/value pairs.
+    const_iterator
+    begin() const
+    {
+        return lookup_.cbegin();
+    }
+
+    // For iteration of key/value pairs.
+    const_iterator
+    cbegin() const
+    {
+        return lookup_.cbegin();
+    }
+
+    // For iteration of key/value pairs.
+    const_iterator
+    end() const
+    {
+        return lookup_.cend();
+    }
+
+    // For iteration of key/value pairs.
+    const_iterator
+    cend() const
+    {
+        return lookup_.cend();
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -311,7 +348,7 @@ set(T& target,
             and can be parsed, or else defaultValue.
 */
 // NOTE This routine might be more clumsy than the previous two
-template <class T>
+template <class T = std::string>
 T
 get(Section const& section,
     std::string const& name,
@@ -332,7 +369,7 @@ get(Section const& section, std::string const& name, const char* defaultValue)
 {
     try
     {
-        auto const val = section.get<std::string>(name);
+        auto const val = section.get(name);
         if (val.has_value())
             return *val;
     }

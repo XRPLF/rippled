@@ -31,9 +31,7 @@ Section::Section(std::string const& name) : name_(name)
 void
 Section::set(std::string const& key, std::string const& value)
 {
-    auto const result = cont().emplace(key, value);
-    if (!result.second)
-        result.first->second = value;
+    lookup_.insert_or_assign(key, value);
 }
 
 void
@@ -106,22 +104,13 @@ Section::append(std::vector<std::string> const& lines)
 bool
 Section::exists(std::string const& name) const
 {
-    return cont().find(name) != cont().end();
-}
-
-std::pair<std::string, bool>
-Section::find(std::string const& name) const
-{
-    auto const iter = cont().find(name);
-    if (iter == cont().end())
-        return {{}, false};
-    return {iter->second, true};
+    return lookup_.find(name) != lookup_.end();
 }
 
 std::ostream&
 operator<<(std::ostream& os, Section const& section)
 {
-    for (auto const& [k, v] : section.cont())
+    for (auto const& [k, v] : section.lookup_)
         os << k << "=" << v << "\n";
     return os;
 }
