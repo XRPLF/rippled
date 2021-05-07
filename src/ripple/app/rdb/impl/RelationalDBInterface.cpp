@@ -54,8 +54,7 @@ RelationalDBInterface::init(
         const Section& rdb_section{config.section(SECTION_RELATIONAL_DB)};
         if (!rdb_section.empty())
         {
-            if (boost::iequals(
-                    get<std::string>(rdb_section, "backend"), "sqlite"))
+            if (boost::iequals(get(rdb_section, "backend"), "sqlite"))
             {
                 use_sqlite = true;
             }
@@ -63,7 +62,7 @@ RelationalDBInterface::init(
             {
                 Throw<std::runtime_error>(
                     "Invalid rdb_section backend value: " +
-                    get<std::string>(rdb_section, "backend"));
+                    get(rdb_section, "backend"));
             }
         }
         else

@@ -61,7 +61,7 @@ public:
         : j_(journal)
         , keyBytes_(keyBytes)
         , burstSize_(burstSize)
-        , name_(get<std::string>(keyValues, "path"))
+        , name_(get(keyValues, "path"))
         , deletePath_(false)
         , scheduler_(scheduler)
     {
@@ -80,7 +80,7 @@ public:
         : j_(journal)
         , keyBytes_(keyBytes)
         , burstSize_(burstSize)
-        , name_(get<std::string>(keyValues, "path"))
+        , name_(get(keyValues, "path"))
         , db_(context)
         , deletePath_(false)
         , scheduler_(scheduler)

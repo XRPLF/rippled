@@ -99,7 +99,7 @@ bool
 Shard::init(Scheduler& scheduler, nudb::context& context)
 {
     Section section{app_.config().section(ConfigSection::shardDatabase())};
-    std::string const type{get<std::string>(section, "type", "nudb")};
+    std::string const type{get(section, "type", "nudb")};
     auto const factory{Manager::instance().find(type)};
     if (!factory)
     {

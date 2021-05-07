@@ -347,7 +347,7 @@ PgPool::PgPool(Section const& pgConfig, beast::Journal j) : j_(j)
 
     // The connection object must be freed using the libpq API PQfinish() call.
     pg_connection_type conn(
-        PQconnectdb(get<std::string>(pgConfig, "conninfo").c_str()),
+        PQconnectdb(get(pgConfig, "conninfo").c_str()),
         [](PGconn* conn) { PQfinish(conn); });
     if (!conn)
         Throw<std::runtime_error>("Can't create DB connection.");

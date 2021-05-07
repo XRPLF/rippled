@@ -1300,7 +1300,7 @@ DatabaseShardImp::initConfig(std::lock_guard<std::mutex> const&)
     }
 
     // NuDB is the default and only supported permanent storage backend
-    backendName_ = get<std::string>(section, "type", "nudb");
+    backendName_ = get(section, "type", "nudb");
     if (!boost::iequals(backendName_, "NuDB"))
         return fail("'type' value unsupported");
 
