@@ -20,8 +20,16 @@ else
     if [[ -d "${VCPKG_DIR}" ]] ; then
         rm -rf "${VCPKG_DIR}"
     fi
-    git clone --branch 2021.04.30 https://github.com/Microsoft/vcpkg.git ${VCPKG_DIR}
+    gittag=2021.05.12
+    git clone --branch ${gittag} https://github.com/Microsoft/vcpkg.git ${VCPKG_DIR}
     pushd ${VCPKG_DIR}
+    if git tag -l --contains ${gittag} | grep -v ${gittag}
+    then
+      echo ****************************************************** >&2
+      echo WARNING: Found git tags of vcpkg later than ${gittag}. >&2
+      echo Consider updating to get the latest software versions. >&2
+      echo ****************************************************** >&2
+    fi
     BSARGS=()
     if [[ "$(uname)" == "Darwin" ]] ; then
         BSARGS+=(--allowAppleClang)
