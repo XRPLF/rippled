@@ -41,7 +41,7 @@ struct scope_test : beast::unit_test::suite
         }
         BEAST_EXPECT(i == 1);
         {
-            scope_exit x{[&i]() { i = 3; }};
+            scope_exit x{[&i]() { i += 2; }};
             auto x2 = std::move(x);
         }
         BEAST_EXPECT(i == 3);
@@ -143,7 +143,7 @@ struct scope_test : beast::unit_test::suite
         }
         BEAST_EXPECT(i == 1);
         {
-            scope_success x{[&i]() { i = 3; }};
+            scope_success x{[&i]() { i += 2; }};
             auto x2 = std::move(x);
         }
         BEAST_EXPECT(i == 3);
