@@ -193,12 +193,12 @@ public:
         {
             // Verify a PerfLog creates its file when constructed.
             Fixture fixture{j_};
-            BEAST_EXPECT(!exists(fixture.logDir()));
+            BEAST_EXPECT(!exists(fixture.logFile()));
 
             auto perfLog{fixture.perfLog(WithFile::yes)};
 
             BEAST_EXPECT(fixture.stopSignaled == false);
-            BEAST_EXPECT(exists(fixture.logDir()));
+            BEAST_EXPECT(exists(fixture.logFile()));
         }
         {
             // Create a file where PerfLog wants to put its directory.

@@ -443,7 +443,9 @@ public:
               std::chrono::milliseconds(100),
               get_io_service())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
-        , reportingETL_(std::make_unique<ReportingETL>(*this))
+        , reportingETL_(
+              config_->reporting() ? std::make_unique<ReportingETL>(*this)
+                                   : nullptr)
     {
         add(m_resourceManager.get());
 
@@ -1017,13 +1019,11 @@ public:
         m_inboundTransactions->stop();
         m_inboundLedgers->stop();
         ledgerCleaner_->stop();
-        if (config_->reporting())
-        {
+        if (reportingETL_)
             reportingETL_->stop();
-            dynamic_cast<RelationalDBInterfacePostgres*>(
-                &*mRelationalDBInterface)
-                ->stop();
-        }
+        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
+                &*mRelationalDBInterface))
+            pg->stop();
         m_nodeStore->stop();
         perfLog_->stop();
     }
@@ -1128,10 +1128,9 @@ public:
         cachedSLEs_.expire();
 
 #ifdef RIPPLED_REPORTING
-        if (config().reporting())
-            dynamic_cast<RelationalDBInterfacePostgres*>(
-                &*mRelationalDBInterface)
-                ->sweep();
+        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
+                &*mRelationalDBInterface))
+            pg->sweep();
 #endif
 
         // Set timer to do another sweep later.
@@ -1549,10 +1548,8 @@ ApplicationImp::setup()
 
     validatorSites_->start();
 
-    if (config_->reporting())
-    {
+    if (reportingETL_)
         reportingETL_->start();
-    }
 
     return true;
 }
