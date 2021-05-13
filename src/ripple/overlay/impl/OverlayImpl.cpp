@@ -31,6 +31,7 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
+#include <ripple/overlay/impl/InboundHandoff.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/peerfinder/make_Manager.h>

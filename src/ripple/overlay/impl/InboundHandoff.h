@@ -50,7 +50,7 @@ private:
     http_request_type request_;
 
 public:
-    virtual ~InboundHandoff() = default;
+    virtual ~InboundHandoff() override = default;
 
     InboundHandoff(
         Application& app,
@@ -62,6 +62,11 @@ public:
         Resource::Consumer consumer,
         std::unique_ptr<stream_type>&& stream_ptr,
         OverlayImpl& overlay);
+
+    // This class isn't meant to be copied
+    InboundHandoff(InboundHandoff const&) = delete;
+    InboundHandoff&
+    operator=(InboundHandoff const&) = delete;
 
     /** Start the handshake */
     void

@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/InboundHandoff.h>
+#include <ripple/overlay/impl/PeerImp.h>
 
 #include <boost/beast/core/ostream.hpp>
 
