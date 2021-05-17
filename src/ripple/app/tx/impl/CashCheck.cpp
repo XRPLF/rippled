@@ -21,6 +21,7 @@
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/scope.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STAccount.h>
@@ -89,13 +90,13 @@ CashCheck::preclaim(PreclaimContext const& ctx)
     }
 
     // Only cash a check with this account as the destination.
-    AccountID const dstId{(*sleCheck)[sfDestination]};
+    AccountID const dstId = sleCheck->at(sfDestination);
     if (ctx.tx[sfAccount] != dstId)
     {
         JLOG(ctx.j.warn()) << "Cashing a check with wrong Destination.";
         return tecNO_PERMISSION;
     }
-    AccountID const srcId{(*sleCheck)[sfAccount]};
+    AccountID const srcId = sleCheck->at(sfAccount);
     if (srcId == dstId)
     {
         // They wrote a check to themselves.  This should be caught when
@@ -127,7 +128,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
     {
         using duration = NetClock::duration;
         using timepoint = NetClock::time_point;
-        auto const optExpiry = (*sleCheck)[~sfExpiration];
+        auto const optExpiry = sleCheck->at(~sfExpiration);
 
         // Expiration is defined in terms of the close time of the parent
         // ledger, because we definitively know the time that it closed but
@@ -148,7 +149,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
             return optAmount ? *optAmount : tx[sfDeliverMin];
         }(ctx.tx)};
 
-        STAmount const sendMax{(*sleCheck)[sfSendMax]};
+        STAmount const sendMax = sleCheck->at(sfSendMax);
         Currency const currency{value.getCurrency()};
         if (currency != sendMax.getCurrency())
         {
@@ -172,7 +173,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         {
             STAmount availableFunds{accountFunds(
                 ctx.view,
-                (*sleCheck)[sfAccount],
+                sleCheck->at(sfAccount),
                 value,
                 fhZERO_IF_FROZEN,
                 ctx.j)};
@@ -211,7 +212,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 {
                     // We can only create a trust line if the issuer does not
                     // have requireAuth set.
-                    std::uint32_t const issuerFlags = {(*sleIssuer)[sfFlags]};
+                    std::uint32_t const issuerFlags = {sleIssuer->at(sfFlags)};
                     if (issuerFlags & lsfRequireAuth)
                         return tecNO_AUTH;
                 }
@@ -228,7 +229,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if ((*sleIssuer)[sfFlags] & lsfRequireAuth)
+            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
             {
                 // Entries have a canonical representation, determined by a
                 // lexicographical "greater than" comparison employing strict
@@ -237,7 +238,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
 
                 bool const is_authorized(
                     sleTrustLine &&
-                    ((*sleTrustLine)[sfFlags] &
+                    (sleTrustLine->at(sfFlags) &
                      (canonical_gt ? lsfLowAuth : lsfHighAuth)));
 
                 if (!is_authorized)
@@ -263,34 +264,6 @@ CashCheck::preclaim(PreclaimContext const& ctx)
     }
     return tesSUCCESS;
 }
-
-// A template class that captures a lambda and runs the lambda on destruction.
-//
-// The class is not default constructable, copyable, moveable, or assignable.
-template <typename T>
-class ScopeExit
-{
-    T runsAtDestruction_;
-
-    static_assert(
-        std::is_invocable_r_v<void, T>,
-        "T must be invocable with no arguments and return void.");
-
-public:
-    ScopeExit() = delete;
-    ScopeExit(ScopeExit const&) = delete;
-    ScopeExit&
-    operator=(ScopeExit const&) = delete;
-
-    ScopeExit(T&& lambda) : runsAtDestruction_(std::move(lambda))
-    {
-    }
-
-    ~ScopeExit()
-    {
-        runsAtDestruction_();
-    }
-};
 
 TER
 CashCheck::doApply()
@@ -333,7 +306,7 @@ CashCheck::doApply()
 
     if (srcId != account_)
     {
-        STAmount const sendMax = (*sleCheck)[sfSendMax];
+        STAmount const sendMax = sleCheck->at(sfSendMax);
 
         // Flow() doesn't do XRP to XRP transfers.
         if (sendMax.native())
@@ -411,7 +384,7 @@ CashCheck::doApply()
                 //     b. issuing account (not sending account).
 
                 // Can the account cover the trust line's reserve?
-                if (std::uint32_t const ownerCount = (*sleDst)[sfOwnerCount];
+                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
                     mPriorBalance < psb.fees().accountReserve(ownerCount + 1))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -460,13 +433,13 @@ CashCheck::doApply()
                 return tecNO_LINE;
 
             SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
-            STAmount const savedLimit = (*sleTrustLine)[tweakedLimit];
+            STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            ScopeExit fixup(
+            scope_exit fixup(
                 [&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
                     if (auto const sleTrustLine = psb.peek(trustLineKey))
-                        (*sleTrustLine)[tweakedLimit] = savedLimit;
+                        sleTrustLine->at(tweakedLimit) = savedLimit;
                 });
 
             if (checkCashMakesTrustLine)
@@ -475,7 +448,7 @@ CashCheck::doApply()
                 // while flow runs.
                 STAmount const bigAmount(
                     trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
-                (*sleTrustLine)[tweakedLimit] = bigAmount;
+                sleTrustLine->at(tweakedLimit) = bigAmount;
             }
 
             // Let flow() do the heavy lifting on a check for an IOU.
@@ -523,7 +496,7 @@ CashCheck::doApply()
     // check link from destination directory.
     if (srcId != account_)
     {
-        std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
+        std::uint64_t const page = {sleCheck->at(sfDestinationNode)};
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account_), page, sleCheck->key(), true))
         {
@@ -533,7 +506,7 @@ CashCheck::doApply()
     }
     // Remove check from check owner's directory.
     {
-        std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
+        std::uint64_t const page = {sleCheck->at(sfOwnerNode)};
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
