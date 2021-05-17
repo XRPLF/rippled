@@ -747,8 +747,9 @@ public:
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
-            // RPC errors result in temINVALID
-            envs(noop(alice), fee(none), seq(none), ter(temINVALID))(params);
+            // RPC errors result in telLOCAL_ERROR
+            envs(
+                noop(alice), fee(none), seq(none), ter(telLOCAL_ERROR))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
