@@ -1015,5 +1015,18 @@ if (tests)
     # these two seem to produce conflicts in beast teardown template methods
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/ShardArchiveHandler_test.cpp
+    # These files make the Windows linker run out of memory
+    src/test/server/ServerStatus_test.cpp
+    src/test/basics/Buffer_test.cpp
     PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
 endif () #tests
+if (NOT MSVC)
+  if (tests)
+    # MSVC has no problem with self-assignment, but does have a
+    # problem with this compile flag in some configs.
+    set_source_files_properties(
+        # This file intentionally tests self-assignments
+        src/test/basics/Buffer_test.cpp
+        PROPERTIES COMPILE_OPTIONS -Wno-self-assign-overloaded)
+  endif () #tests
+endif()
