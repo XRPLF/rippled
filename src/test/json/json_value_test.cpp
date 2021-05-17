@@ -29,6 +29,9 @@
 
 namespace ripple {
 
+constexpr Json::StaticString testglobal("A global StaticString");
+constexpr char const* testptrglobal = "A global char const*";
+
 struct json_value_test : beast::unit_test::suite
 {
     void
@@ -54,6 +57,54 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(str != test3);
         BEAST_EXPECT(test2 == str);
         BEAST_EXPECT(test3 != str);
+    }
+
+    void
+    test_StaticStringPtr()
+    {
+        // Some of these tests fail due to an apparent bug in VS2019, but
+        // only debug builds.
+        // The first two blocks are only to confirm that the problem is not
+        // specific to StaticString
+        {
+            constexpr char const* testptrlocal = "A local char const*";
+            static const char* a = testptrlocal;
+            const char* b = testptrlocal;
+            log << "a: " << (void*)a << " " << a << std::endl;
+            log << "b: " << (void*)b << " " << b << std::endl;
+
+            BEAST_EXPECT(strcmp(a, b) == 0);
+            BEAST_EXPECT(a == b);
+        }
+
+        {
+            static const char* a = testptrglobal;
+            const char* b = testptrglobal;
+            log << "a: " << (void*)a << " " << a << std::endl;
+            log << "b: " << (void*)b << " " << b << std::endl;
+
+            BEAST_EXPECT(strcmp(a, b) == 0);
+            BEAST_EXPECT(a == b);  // fails in VS2019 debug
+        }
+
+        {
+            constexpr Json::StaticString testlocal{"A local StaticString"};
+            static const char* a = testlocal.c_str();
+            const char* b = testlocal.c_str();
+            BEAST_EXPECT(a == b);
+            BEAST_EXPECT(a == testlocal.c_str());
+            BEAST_EXPECT(testlocal.c_str() == b);
+            BEAST_EXPECT(testlocal.c_str() == testlocal.c_str());
+        }
+
+        {
+            static const char* a = testglobal.c_str();
+            const char* b = testglobal.c_str();
+            BEAST_EXPECT(a == b);                   // fails in VS2019 debug
+            BEAST_EXPECT(a == testglobal.c_str());  // fails in VS2019 debug
+            BEAST_EXPECT(testglobal.c_str() == b);
+            BEAST_EXPECT(testglobal.c_str() == testglobal.c_str());
+        }
     }
 
     void
@@ -1376,6 +1427,7 @@ struct json_value_test : beast::unit_test::suite
     run() override
     {
         test_StaticString();
+        test_StaticStringPtr();
         test_types();
         test_compare();
         test_bool();
