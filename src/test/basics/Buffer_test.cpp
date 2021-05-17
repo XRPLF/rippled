@@ -99,6 +99,7 @@ struct Buffer_test : beast::unit_test::suite
             BEAST_EXPECT(sane(x));
 #if defined(__clang__) && (!defined(__APPLE__) && (__clang_major__ >= 7)) || \
     (defined(__APPLE__) && (__apple_build_version__ >= 10010043))
+// This can be removed when the minimum required CMake version is >= 3.11
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 #endif
