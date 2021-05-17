@@ -12,6 +12,7 @@ if(reporting)
             add_library(pgcommon SHARED IMPORTED GLOBAL)
             ExternalProject_Add(postgres_src
                 PREFIX ${nih_cache_path}
+                SOURCE_DIR ${nih_src_path}/postgres
                 GIT_REPOSITORY https://github.com/postgres/postgres.git
                 GIT_TAG master
                 CONFIGURE_COMMAND ./configure --without-readline > /dev/null

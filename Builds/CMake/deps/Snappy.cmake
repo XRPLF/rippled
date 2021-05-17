@@ -20,6 +20,7 @@ if(snappy)
 else()
   ExternalProject_Add (snappy
     PREFIX ${nih_cache_path}
+    SOURCE_DIR ${nih_src_path}/snappy
     GIT_REPOSITORY https://github.com/google/snappy.git
     GIT_TAG 1.1.7
     CMAKE_ARGS

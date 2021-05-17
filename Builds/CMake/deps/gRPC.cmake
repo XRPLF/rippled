@@ -90,6 +90,7 @@ else ()
     #]===========================]
     ExternalProject_Add (c-ares_src
       PREFIX ${nih_cache_path}
+      SOURCE_DIR ${nih_src_path}/c-ares
       GIT_REPOSITORY https://github.com/c-ares/c-ares.git
       GIT_TAG cares-1_15_0
       CMAKE_ARGS
@@ -149,6 +150,7 @@ else ()
       endif ()
       ExternalProject_Add (zlib_src
         PREFIX ${nih_cache_path}
+        SOURCE_DIR ${nih_src_path}/zlib
         GIT_REPOSITORY https://github.com/madler/zlib.git
         GIT_TAG v1.2.11
         CMAKE_ARGS
@@ -199,6 +201,7 @@ else ()
     #]===========================]
     ExternalProject_Add (grpc_src
       PREFIX ${nih_cache_path}
+      SOURCE_DIR ${nih_src_path}/grpc
       GIT_REPOSITORY https://github.com/grpc/grpc.git
       GIT_TAG v1.25.0
       CMAKE_ARGS

@@ -10,6 +10,7 @@ if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
   add_library (nudb INTERFACE)
   FetchContent_Declare(
     nudb_src
+    SOURCE_DIR ${nih_src_path}/nudb
     GIT_REPOSITORY https://github.com/CPPAlliance/NuDB.git
     GIT_TAG        2.0.5
   )
