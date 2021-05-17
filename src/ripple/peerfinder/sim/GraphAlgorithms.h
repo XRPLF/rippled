@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_SIM_GRAPHALGORITHMS_H_INCLUDED
 #define RIPPLE_PEERFINDER_SIM_GRAPHALGORITHMS_H_INCLUDED
 
+#include <deque>
+
 namespace ripple {
 namespace PeerFinder {
 namespace Sim {

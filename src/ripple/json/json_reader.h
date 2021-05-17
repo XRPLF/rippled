@@ -25,6 +25,7 @@
 #include <ripple/json/json_forwards.h>
 #include <ripple/json/json_value.h>
 #include <boost/asio/buffer.hpp>
+#include <deque>
 #include <stack>
 
 namespace Json {
