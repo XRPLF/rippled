@@ -743,7 +743,7 @@ public:
                     if (!validationMap.empty())
                     {
                         auto const seq = validationMap.begin()->second.seq();
-                        if (seq >= toKeep_->low_ && seq < toKeep_->high_)
+                        if (toKeep_->low_ <= seq && seq < toKeep_->high_)
                         {
                             byLedger_.touch(i);
                         }
@@ -752,7 +752,7 @@ public:
 
                 for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
                 {
-                    if (i->first >= toKeep_->low_ && i->first < toKeep_->high_)
+                    if (toKeep_->low_ <= i->first && i->first < toKeep_->high_)
                     {
                         bySequence_.touch(i);
                     }
