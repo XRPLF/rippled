@@ -2111,7 +2111,7 @@ PeerImp::onValidatorListMessage(
     }
 
     // Log based on all the results.
-    for (auto const [disp, count] : applyResult.dispositions)
+    for (auto const& [disp, count] : applyResult.dispositions)
     {
         switch (disp)
         {

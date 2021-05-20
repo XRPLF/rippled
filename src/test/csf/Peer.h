@@ -344,7 +344,7 @@ struct Peer
     bool
     trusts(PeerID const& oId)
     {
-        for (auto const& p : trustGraph.trustedPeers(this))
+        for (auto const p : trustGraph.trustedPeers(this))
             if (p->id == oId)
                 return true;
         return false;
@@ -404,7 +404,7 @@ struct Peer
 
         using namespace std::chrono_literals;
         SimDuration minDuration{10s};
-        for (auto const& link : net.links(this))
+        for (auto const link : net.links(this))
         {
             minDuration = std::min(minDuration, link.data.delay);
 
@@ -451,7 +451,7 @@ struct Peer
 
         using namespace std::chrono_literals;
         SimDuration minDuration{10s};
-        for (auto const& link : net.links(this))
+        for (auto const link : net.links(this))
         {
             minDuration = std::min(minDuration, link.data.delay);
             // Send a message to neighbors to find the tx set
@@ -741,7 +741,7 @@ struct Peer
     void
     send(BroadcastMesg<M> const& bm, PeerID from)
     {
-        for (auto const& link : net.links(this))
+        for (auto const link : net.links(this))
         {
             if (link.target->id != from && link.target->id != bm.origin)
             {
@@ -848,7 +848,7 @@ struct Peer
     getQuorumKeys()
     {
         hash_set<NodeKey_t> keys;
-        for (auto const& p : trustGraph.trustedPeers(this))
+        for (auto const p : trustGraph.trustedPeers(this))
             keys.insert(p->key);
         return {quorum, keys};
     }

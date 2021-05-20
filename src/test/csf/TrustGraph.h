@@ -126,7 +126,7 @@ public:
 
         using UNL = std::set<Peer>;
         std::set<UNL> unique;
-        for (Peer const& peer : graph_.outVertices())
+        for (Peer const peer : graph_.outVertices())
         {
             unique.emplace(
                 std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));

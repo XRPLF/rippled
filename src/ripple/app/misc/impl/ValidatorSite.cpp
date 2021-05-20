@@ -408,7 +408,7 @@ ValidatorSite::parseJsonResponse(
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
 
-    for (auto const [disp, count] : applyResult.dispositions)
+    for (auto const& [disp, count] : applyResult.dispositions)
     {
         switch (disp)
         {

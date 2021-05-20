@@ -865,7 +865,7 @@ class Check_test : public beast::unit_test::suite
         // featureMultiSignReserve changes the reserve on a SignerList, so
         // check both before and after.
         FeatureBitset const allSupported{supported_amendments()};
-        for (auto const features :
+        for (auto const& features :
              {allSupported - featureMultiSignReserve,
               allSupported | featureMultiSignReserve})
         {
@@ -1514,7 +1514,7 @@ class Check_test : public beast::unit_test::suite
         // featureMultiSignReserve changes the reserve on a SignerList, so
         // check both before and after.
         FeatureBitset const allSupported{supported_amendments()};
-        for (auto const features :
+        for (auto const& features :
              {allSupported - featureMultiSignReserve,
               allSupported | featureMultiSignReserve})
         {
