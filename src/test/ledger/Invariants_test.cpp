@@ -75,7 +75,7 @@ class Invariants_test : public beast::unit_test::suite
             return;
 
         TER terActual = tesSUCCESS;
-        for (TER const terExpect : ters)
+        for (TER const& terExpect : ters)
         {
             terActual = ac.checkInvariants(terActual, fee);
             BEAST_EXPECT(terExpect == terActual);

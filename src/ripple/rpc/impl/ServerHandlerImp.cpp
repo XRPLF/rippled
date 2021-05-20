@@ -264,7 +264,9 @@ buffers_to_string(ConstBufferSequence const& bs)
     using boost::asio::buffer_size;
     std::string s;
     s.reserve(buffer_size(bs));
-    for (auto const& b : bs)
+    // Use auto&& so the right thing happens whether bs returns a copy or
+    // a reference
+    for (auto&& b : bs)
         s.append(buffer_cast<char const*>(b), buffer_size(b));
     return s;
 }

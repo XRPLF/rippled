@@ -882,7 +882,7 @@ public:
         //
         // fix1578 changes the return code.  Verify expected behavior
         // without and with fix1578.
-        for (auto const tweakedFeatures :
+        for (auto const& tweakedFeatures :
              {features - fix1578, features | fix1578})
         {
             Env env{*this, tweakedFeatures};
