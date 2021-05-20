@@ -293,7 +293,7 @@ ConnectAttempt::processResponse()
         Json::Reader r;
         std::string s;
         s.reserve(boost::asio::buffer_size(response_.body().data()));
-        for (auto const& buffer : response_.body().data())
+        for (auto const buffer : response_.body().data())
             s.append(
                 boost::asio::buffer_cast<char const*>(buffer),
                 boost::asio::buffer_size(buffer));

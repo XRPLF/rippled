@@ -66,7 +66,7 @@ public:
         auto const& buf = sb_.data();
         std::vector<boost::asio::const_buffer> result;
         result.reserve(std::distance(buf.begin(), buf.end()));
-        for (auto const& b : buf)
+        for (auto const b : buf)
             result.push_back(b);
         return result;
     }

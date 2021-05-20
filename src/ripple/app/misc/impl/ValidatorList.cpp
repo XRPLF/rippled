@@ -99,7 +99,7 @@ void
 ValidatorList::PublisherListStats::mergeDispositions(
     PublisherListStats const& src)
 {
-    for (auto const [disp, count] : src.dispositions)
+    for (auto const& [disp, count] : src.dispositions)
     {
         dispositions[disp] += count;
     }
