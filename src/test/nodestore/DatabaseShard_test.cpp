@@ -1119,11 +1119,6 @@ class DatabaseShard_test : public TestBase
 
         using namespace test::jtx;
 
-        std::string const ripemd160Key(
-            "B23490F7830707E8BEEFBFD78D76F437AE9DDE72");
-        std::string const ripemd160Dat(
-            "8DCF2DA184D8DEC0E3D2716D7BF6C56641B6DA3B");
-
         for (int i = 0; i < 2; i++)
         {
             beast::temp_dir shardDir;
@@ -1136,9 +1131,18 @@ class DatabaseShard_test : public TestBase
                 if (!BEAST_EXPECT(data.makeLedgers(env)))
                     return;
 
-                if (createShard(data, *db) < 0)
+                if (!BEAST_EXPECT(createShard(data, *db) != std::nullopt))
                     return;
             }
+
+            boost::filesystem::path path(shardDir.path());
+            path /= "1";
+
+            auto static const ripemd160Key =
+                ripemd160File((path / "nudb.key").string());
+            auto static const ripemd160Dat =
+                ripemd160File((path / "nudb.dat").string());
+
             {
                 Env env{*this, testConfig(shardDir.path())};
                 DatabaseShard* db = env.app().getShardStore();
@@ -1148,14 +1152,13 @@ class DatabaseShard_test : public TestBase
                 if (!BEAST_EXPECT(data.makeLedgers(env)))
                     return;
 
-                waitShard(*db, 1);
+                if (!BEAST_EXPECT(waitShard(*db, 1) != std::nullopt))
+                    return;
 
                 for (std::uint32_t j = 0; j < ledgersPerShard; ++j)
                     checkLedger(data, *db, *data.ledgers_[j]);
             }
 
-            boost::filesystem::path path(shardDir.path());
-            path /= "1";
             BEAST_EXPECT(
                 ripemd160File((path / "nudb.key").string()) == ripemd160Key);
             BEAST_EXPECT(
@@ -1231,6 +1234,7 @@ class DatabaseShard_test : public TestBase
             auto c = testConfig(shardDir.path(), nodeDir.path());
             auto& section = c->section(ConfigSection::nodeDatabase());
             section.set("online_delete", "550");
+            section.set("advisory_delete", "1");
 
             // Adjust the log level to capture relevant output
             c->section(SECTION_RPC_STARTUP)
@@ -1245,10 +1249,14 @@ class DatabaseShard_test : public TestBase
             Database& ndb = env.app().getNodeStore();
             BEAST_EXPECT(db);
 
-            auto const shardCount = 4;
+            // Create some ledgers for the shard store to import
+            auto const shardCount = 5;
             TestData data(seedValue, 4, shardCount);
             if (!BEAST_EXPECT(data.makeLedgers(env)))
                 return;
+
+            auto& store = env.app().getSHAMapStore();
+            auto lastRotated = store.getLastRotated();
 
             // Start the import
             db->importDatabase(ndb);
@@ -1256,11 +1264,11 @@ class DatabaseShard_test : public TestBase
             while (!db->getDatabaseImportSequence())
             {
                 // Wait until the import starts
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
 
-            auto& store = env.app().getSHAMapStore();
-            auto lastRotated = store.getLastRotated();
+            // Enable online deletion now that the import has started
+            store.setCanDelete(std::numeric_limits<std::uint32_t>::max());
 
             auto pauseVerifier = std::thread([lastRotated, &store, db, this] {
                 while (true)
@@ -1272,15 +1280,17 @@ class DatabaseShard_test : public TestBase
                     {
                         // A rotation occurred during shard import. Not
                         // necessarily an error
-                        auto sequence = db->getDatabaseImportSequence();
-                        BEAST_EXPECT(!sequence || sequence >= lastRotated);
+
+                        auto const ledgerSeq = db->getDatabaseImportSequence();
+                        BEAST_EXPECT(!ledgerSeq || ledgerSeq >= lastRotated);
 
                         break;
                     }
                 }
             });
 
-            data = TestData(seedValue * 2, 4, shardCount);
+            // Create more ledgers to trigger online deletion
+            data = TestData(seedValue * 2);
             if (!BEAST_EXPECT(data.makeLedgers(env, shardCount)))
             {
                 pauseVerifier.join();
@@ -1780,7 +1790,7 @@ class DatabaseShard_test : public TestBase
                 a.closeTime == b.closeTime;
         };
 
-        for (auto const ledger : data.ledgers_)
+        for (auto const& ledger : data.ledgers_)
         {
             // Compare each test ledger to the data retrieved
             // from the RelationalDBInterfaceSqlite class
