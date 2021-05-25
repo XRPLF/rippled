@@ -1016,7 +1016,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // alice -> USD/XRP -> bob
             STPath path;
-            path.emplace_back(std::nullopt, USD.currency, USD.account.id());
+            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
 
             auto [ter, strand] = toStrand(
                 *env.current(),
@@ -1029,7 +1029,12 @@ struct PayStrand_test : public beast::unit_test::suite
                 false,
                 false,
                 env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == temBAD_PATH);
+            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(equal(
+                strand,
+                D{alice, gw, usdC},
+                B{USD.issue(), xrpIssue()},
+                XRPS{bob}));
         }
     }
 
