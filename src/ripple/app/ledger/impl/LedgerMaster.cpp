@@ -300,6 +300,25 @@ bool
 LedgerMaster::isCaughtUp(std::string& reason)
 {
     using namespace std::chrono_literals;
+
+#ifdef RIPPLED_REPORTING
+    if (app_.config().reporting())
+    {
+        auto age = PgQuery(app_.getPgPool())("SELECT age()");
+        if (!age || age.isNull())
+        {
+            reason = "No ledgers in database";
+            return false;
+        }
+        if (std::chrono::seconds{age.asInt()} > 3min)
+        {
+            reason = "No recently-published ledger";
+            return false;
+        }
+        return true;
+    }
+#endif
+
     if (getPublishedLedgerAge() > 3min)
     {
         reason = "No recently-published ledger";

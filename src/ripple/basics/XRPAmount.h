@@ -238,6 +238,12 @@ public:
         s >> val.drops_;
         return s;
     }
+
+    static XRPAmount
+    minPositiveAmount()
+    {
+        return XRPAmount{1};
+    }
 };
 
 /** Number of drops per 1 XRP */
