@@ -578,12 +578,6 @@ public:
         return ok;
     }
 
-    bool
-    canFetchBatch() override
-    {
-        return true;
-    }
-
     struct ReadCallbackData
     {
         CassandraBackend& backend;
@@ -815,11 +809,6 @@ public:
     {
     }
 
-    void
-    verify() override
-    {
-    }
-
     int
     fdRequired() const override
     {
@@ -986,18 +975,6 @@ public:
         Section const& keyValues,
         std::size_t burstSize,
         Scheduler& scheduler,
-        beast::Journal journal) override
-    {
-        return std::make_unique<CassandraBackend>(keyBytes, keyValues, journal);
-    }
-
-    std::unique_ptr<Backend>
-    createInstance(
-        size_t keyBytes,
-        Section const& keyValues,
-        std::size_t burstSize,
-        Scheduler& scheduler,
-        nudb::context& context,
         beast::Journal journal) override
     {
         return std::make_unique<CassandraBackend>(keyBytes, keyValues, journal);

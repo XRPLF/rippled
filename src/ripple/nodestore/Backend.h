@@ -120,10 +120,6 @@ public:
     virtual Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
 
-    /** Return `true` if batch fetches are optimized. */
-    virtual bool
-    canFetchBatch() = 0;
-
     /** Fetch a batch synchronously. */
     virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256 const*> const& hashes) = 0;
@@ -164,9 +160,16 @@ public:
     virtual void
     setDeletePath() = 0;
 
-    /** Perform consistency checks on database. */
+    /** Perform consistency checks on database.
+     *
+     * This method is implemented only by NuDBBackend. It is not yet called
+     * anywhere, but it might be a good idea to one day call it at startup to
+     * avert a crash.
+     */
     virtual void
-    verify() = 0;
+    verify()
+    {
+    }
 
     /** Returns the number of file descriptors the backend expects to need. */
     virtual int
@@ -181,13 +184,6 @@ public:
     counters() const
     {
         return std::nullopt;
-    }
-
-    /** Returns true if the backend uses permanent storage. */
-    bool
-    backed() const
-    {
-        return fdRequired();
     }
 };
 

@@ -89,7 +89,6 @@ public:
     MemoryBackend(
         size_t keyBytes,
         Section const& keyValues,
-        Scheduler& scheduler,
         beast::Journal journal)
         : name_(get<std::string>(keyValues, "path")), journal_(journal)
     {
@@ -145,12 +144,6 @@ public:
         }
         *pObject = iter->second;
         return ok;
-    }
-
-    bool
-    canFetchBatch() override
-    {
-        return false;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
@@ -210,11 +203,6 @@ public:
     {
     }
 
-    void
-    verify() override
-    {
-    }
-
     int
     fdRequired() const override
     {
@@ -248,8 +236,7 @@ MemoryFactory::createInstance(
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    return std::make_unique<MemoryBackend>(
-        keyBytes, keyValues, scheduler, journal);
+    return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 
 }  // namespace NodeStore

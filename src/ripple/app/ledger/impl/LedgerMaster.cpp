@@ -580,13 +580,6 @@ LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
     return mHeldTransactions.popAcctTransaction(tx);
 }
 
-LedgerIndex
-LedgerMaster::getBuildingLedger()
-{
-    // The ledger we are currently building, 0 of none
-    return mBuildingLedgerSeq.load();
-}
-
 void
 LedgerMaster::setBuildingLedger(LedgerIndex i)
 {

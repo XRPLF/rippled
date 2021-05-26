@@ -54,15 +54,4 @@ AcceptedLedger::insert(AcceptedLedgerTx::ref at)
     mMap.insert(std::make_pair(at->getIndex(), at));
 }
 
-AcceptedLedgerTx::pointer
-AcceptedLedger::getTxn(int i) const
-{
-    map_t::const_iterator it = mMap.find(i);
-
-    if (it == mMap.end())
-        return AcceptedLedgerTx::pointer();
-
-    return it->second;
-}
-
 }  // namespace ripple

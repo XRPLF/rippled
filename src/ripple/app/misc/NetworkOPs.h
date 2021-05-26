@@ -239,9 +239,6 @@ public:
         std::optional<std::chrono::milliseconds> consensusDelay =
             std::nullopt) = 0;
 
-    virtual uint256
-    getConsensusLCL() = 0;
-
     virtual void
     reportFeeChange() = 0;
 

@@ -585,17 +585,6 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
     try
     {
-        /*
-        TODO MP
-        A lock is required when calling the NuDB verify function. Because
-        this can be a time consuming process, the server may desync.
-        Until this function is modified to work on an open database, we
-        are unable to use it from rippled.
-
-        // Verify backend integrity
-        backend_->verify();
-        */
-
         // Check if a final key has been stored
         if (std::shared_ptr<NodeObject> nodeObject;
             backend_->fetch(finalKey.data(), &nodeObject) == Status::ok)
