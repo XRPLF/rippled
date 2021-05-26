@@ -27,10 +27,8 @@ namespace ripple {
 LedgerReplayer::LedgerReplayer(
     Application& app,
     InboundLedgers& inboundLedgers,
-    std::unique_ptr<PeerSetBuilder> peerSetBuilder,
-    Stoppable& parent)
-    : Stoppable("LedgerReplayer", parent)
-    , app_(app)
+    std::unique_ptr<PeerSetBuilder> peerSetBuilder)
+    : app_(app)
     , inboundLedgers_(inboundLedgers)
     , peerSetBuilder_(std::move(peerSetBuilder))
     , j_(app.journal("LedgerReplayer"))
@@ -61,7 +59,7 @@ LedgerReplayer::replay(
     bool newSkipList = false;
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        if (isStopping())
+        if (app_.isStopping())
             return;
         if (tasks_.size() >= LedgerReplayParameters::MAX_TASKS)
         {
@@ -145,7 +143,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
             bool newDelta = false;
             {
                 std::lock_guard<std::mutex> lock(mtx_);
-                if (isStopping())
+                if (app_.isStopping())
                     return;
                 auto i = deltas_.find(*skipListItem);
                 if (i != deltas_.end())
@@ -256,7 +254,7 @@ LedgerReplayer::sweep()
 }
 
 void
-LedgerReplayer::onStop()
+LedgerReplayer::stop()
 {
     JLOG(j_.info()) << "Stopping...";
     {
@@ -276,7 +274,6 @@ LedgerReplayer::onStop()
         deltas_.clear();
     }
 
-    stopped();
     JLOG(j_.info()) << "Stopped";
 }
 

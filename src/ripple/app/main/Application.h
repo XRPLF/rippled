@@ -64,6 +64,7 @@ class InboundTransactions;
 class AcceptedLedger;
 class Ledger;
 class LedgerMaster;
+class LedgerCleaner;
 class LedgerReplayer;
 class LoadManager;
 class ManifestCache;
@@ -125,17 +126,17 @@ public:
     virtual bool
     setup() = 0;
     virtual void
-    doStart(bool withTimers) = 0;
+    start(bool withTimers) = 0;
     virtual void
     run() = 0;
-    virtual bool
-    isShutdown() = 0;
     virtual void
     signalStop() = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
+    virtual bool
+    isStopping() const = 0;
 
     //
     // ---
@@ -205,6 +206,8 @@ public:
 
     virtual LedgerMaster&
     getLedgerMaster() = 0;
+    virtual LedgerCleaner&
+    getLedgerCleaner() = 0;
     virtual LedgerReplayer&
     getLedgerReplayer() = 0;
     virtual NetworkOPs&

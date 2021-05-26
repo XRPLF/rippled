@@ -47,7 +47,7 @@ if(reporting)
                 GIT_REPOSITORY https://github.com/krb5/krb5.git
                 GIT_TAG master
                 UPDATE_COMMAND ""
-                CONFIGURE_COMMAND autoreconf src && ./src/configure --enable-static --disable-shared > /dev/null
+                CONFIGURE_COMMAND autoreconf src && CFLAGS=-fcommon ./src/configure --enable-static --disable-shared > /dev/null
                 BUILD_IN_SOURCE 1
                 BUILD_COMMAND make
                 INSTALL_COMMAND ""

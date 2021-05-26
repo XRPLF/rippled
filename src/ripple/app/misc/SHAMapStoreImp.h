@@ -25,7 +25,6 @@
 #include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
 #include <chrono>
@@ -36,7 +35,7 @@ namespace ripple {
 
 class NetworkOPs;
 
-class SHAMapStoreImp : public Stoppable, public SHAMapStore
+class SHAMapStoreImp : public SHAMapStore
 {
 private:
     enum Health : std::uint8_t { ok = 0, stopping, unhealthy };
@@ -124,15 +123,8 @@ private:
 public:
     SHAMapStoreImp(
         Application& app,
-        Stoppable& parent,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal);
-
-    ~SHAMapStoreImp()
-    {
-        if (thread_.joinable())
-            thread_.join();
-    }
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
@@ -142,7 +134,7 @@ public:
     }
 
     std::unique_ptr<NodeStore::Database>
-    makeNodeStore(std::string const& name, std::int32_t readThreads) override;
+    makeNodeStore(std::int32_t readThreads) override;
 
     LedgerIndex
     setCanDelete(LedgerIndex seq) override
@@ -241,20 +233,16 @@ private:
     Health
     health();
 
-    //
-    // Stoppable
-    //
+public:
     void
-    onStart() override
+    start() override
     {
         if (deleteInterval_)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 
-    // Called when the application begins shutdown
     void
-    onStop() override;
-    // Called when all child Stoppable objects have stoped
+    stop() override;
 };
 
 }  // namespace ripple

@@ -37,7 +37,7 @@ class ShardArchiveHandler_test;
 namespace RPC {
 
 /** Handles the download and import of one or more shard archives. */
-class ShardArchiveHandler : public Stoppable
+class ShardArchiveHandler
 {
 public:
     using TimerOpCounter =
@@ -48,15 +48,15 @@ public:
     getDownloadDirectory(Config const& config);
 
     static std::unique_ptr<ShardArchiveHandler>
-    makeShardArchiveHandler(Application& app, Stoppable& parent);
+    makeShardArchiveHandler(Application& app);
 
     // Create a ShardArchiveHandler only if
     // the state database is present, indicating
     // that recovery is needed.
     static std::unique_ptr<ShardArchiveHandler>
-    tryMakeRecoveryHandler(Application& app, Stoppable& parent);
+    tryMakeRecoveryHandler(Application& app);
 
-    ShardArchiveHandler(Application& app, Stoppable& parent);
+    ShardArchiveHandler(Application& app);
 
     virtual ~ShardArchiveHandler() = default;
 
@@ -71,6 +71,9 @@ public:
     start();
 
     void
+    stop();
+
+    void
     release();
 
 private:
@@ -83,9 +86,6 @@ private:
 
     [[nodiscard]] bool
     initFromDB(std::lock_guard<std::mutex> const&);
-
-    void
-    onStop() override;
 
     /** Add an archive to be downloaded and imported.
         @param shardIndex the index of the shard to be imported.
@@ -131,6 +131,7 @@ private:
     // destroying sqlDB_.
     /////////////////////////////////////////////////
     std::mutex mutable m_;
+    std::atomic_bool stopping_{false};
     std::shared_ptr<DatabaseDownloader> downloader_;
     std::map<std::uint32_t, parsedURL> archives_;
     bool process_;
@@ -162,7 +163,7 @@ private:
 class RecoveryHandler : public ShardArchiveHandler
 {
 public:
-    RecoveryHandler(Application& app, Stoppable& parent);
+    RecoveryHandler(Application& app);
 };
 
 }  // namespace RPC

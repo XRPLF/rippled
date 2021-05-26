@@ -30,14 +30,11 @@ namespace ripple {
 namespace NodeStore {
 
 Database::Database(
-    std::string name,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
-    : Stoppable(name, parent.getRoot())
-    , j_(journal)
+    : j_(journal)
     , scheduler_(scheduler)
     , earliestLedgerSeq_(
           get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
@@ -52,37 +49,32 @@ Database::Database(
 Database::~Database()
 {
     // NOTE!
-    // Any derived class should call the stopReadThreads() method in its
+    // Any derived class should call the stop() method in its
     // destructor.  Otherwise, occasionally, the derived class may
     // crash during shutdown when its members are accessed by one of
     // these threads after the derived class is destroyed but before
     // this base class is destroyed.
-    stopReadThreads();
+    stop();
+}
+
+bool
+Database::isStopping() const
+{
+    std::lock_guard lock(readLock_);
+    return readStopping_;
 }
 
 void
-Database::onStop()
+Database::stop()
 {
     // After stop time we can no longer use the JobQueue for background
     // reads.  Join the background read threads.
-    stopReadThreads();
-}
-
-void
-Database::onChildrenStopped()
-{
-    stopped();
-}
-
-void
-Database::stopReadThreads()
-{
     {
         std::lock_guard lock(readLock_);
-        if (readShut_)  // Only stop threads once.
+        if (readStopping_)  // Only stop threads once.
             return;
 
-        readShut_ = true;
+        readStopping_ = true;
         readCondVar_.notify_all();
     }
 
@@ -280,12 +272,9 @@ Database::threadEntry()
 
         {
             std::unique_lock<std::mutex> lock(readLock_);
-            while (!readShut_ && read_.empty())
-            {
-                // All work is done
-                readCondVar_.wait(lock);
-            }
-            if (readShut_)
+            readCondVar_.wait(
+                lock, [this] { return readStopping_ || !read_.empty(); });
+            if (readStopping_)
                 break;
 
             // Read in key order to make the back end more efficient

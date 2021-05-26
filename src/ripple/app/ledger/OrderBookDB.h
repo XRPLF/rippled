@@ -28,10 +28,10 @@
 
 namespace ripple {
 
-class OrderBookDB : public Stoppable
+class OrderBookDB
 {
 public:
-    OrderBookDB(Application& app, Stoppable& parent);
+    OrderBookDB(Application& app);
 
     void
     setup(std::shared_ptr<ReadView const> const& ledger);

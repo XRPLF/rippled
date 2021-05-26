@@ -42,11 +42,14 @@ public:
 
     DatabaseShardImp(
         Application& app,
-        Stoppable& parent,
-        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
         beast::Journal j);
+
+    ~DatabaseShardImp()
+    {
+        stop();
+    }
 
     [[nodiscard]] bool
     init() override;
@@ -124,10 +127,7 @@ public:
     }
 
     void
-    onStop() override;
-
-    void
-    onChildrenStopped() override;
+    stop() override;
 
     /** Import the application local node store
 
@@ -204,7 +204,6 @@ private:
     };
 
     Application& app_;
-    Stoppable& parent_;
     mutable std::mutex mutex_;
     bool init_{false};
 
@@ -212,7 +211,7 @@ private:
     std::unique_ptr<nudb::context> ctx_;
 
     // Queue of background tasks to be performed
-    std::unique_ptr<TaskQueue> taskQueue_;
+    TaskQueue taskQueue_;
 
     // Shards held by this server
     std::map<std::uint32_t, std::shared_ptr<Shard>> shards_;

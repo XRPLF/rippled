@@ -21,7 +21,6 @@
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
 #include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/PeerSet.h>
@@ -49,7 +48,7 @@ class context;
 namespace ripple {
 
 /** Manages the set of connected peers. */
-class Overlay : public Stoppable, public beast::PropertyStream::Source
+class Overlay : public beast::PropertyStream::Source
 {
 protected:
     using socket_type = boost::beast::tcp_stream;
@@ -57,10 +56,8 @@ protected:
 
     // VFALCO NOTE The requirement of this constructor is an
     //             unfortunate problem with the API for
-    //             Stoppable and PropertyStream
-    //
-    Overlay(Stoppable& parent)
-        : Stoppable("Overlay", parent), beast::PropertyStream::Source("peers")
+    //             PropertyStream
+    Overlay() : beast::PropertyStream::Source("peers")
     {
     }
 
@@ -82,6 +79,16 @@ public:
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
 
     virtual ~Overlay() = default;
+
+    virtual void
+    start()
+    {
+    }
+
+    virtual void
+    stop()
+    {
+    }
 
     /** Conditionally accept an incoming HTTP request. */
     virtual Handoff

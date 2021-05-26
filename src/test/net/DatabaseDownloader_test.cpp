@@ -95,7 +95,7 @@ class DatabaseDownloader_test : public beast::unit_test::suite
 
         ~Downloader()
         {
-            ptr_->onStop();
+            ptr_->stop();
         }
 
         DatabaseDownloader*

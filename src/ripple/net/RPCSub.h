@@ -21,7 +21,6 @@
 #define RIPPLE_NET_RPCSUB_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/net/InfoSub.h>
 #include <boost/asio/io_service.hpp>
 

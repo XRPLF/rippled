@@ -20,6 +20,7 @@
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/LedgerToJson.h>
@@ -55,7 +56,6 @@
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -91,7 +91,7 @@
 namespace ripple {
 
 // VFALCO TODO Move the function definitions into the class declaration
-class ApplicationImp : public Application, public RootStoppable, public BasicApp
+class ApplicationImp : public Application, public BasicApp
 {
 private:
     class io_latency_sampler
@@ -170,23 +170,21 @@ public:
     // Required by the SHAMapStore
     TransactionMaster m_txMaster;
 
+    std::unique_ptr<CollectorManager> m_collectorManager;
+    std::unique_ptr<JobQueue> m_jobQueue;
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr<SHAMapStore> m_shaMapStore;
     PendingSaves pendingSaves_;
     AccountIDCache accountIDCache_;
     std::optional<OpenLedger> openLedger_;
 
-    // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
-    std::unique_ptr<CollectorManager> m_collectorManager;
     CachedSLEs cachedSLEs_;
     std::pair<PublicKey, SecretKey> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
 
-    // These are Stoppable-related
-    std::unique_ptr<JobQueue> m_jobQueue;
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
     std::unique_ptr<NodeStore::DatabaseShard> shardStore_;
@@ -196,6 +194,7 @@ public:
     OrderBookDB m_orderBookDB;
     std::unique_ptr<PathRequests> m_pathRequests;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
+    std::unique_ptr<LedgerCleaner> ledgerCleaner_;
     std::unique_ptr<InboundLedgers> m_inboundLedgers;
     std::unique_ptr<InboundTransactions> m_inboundTransactions;
     std::unique_ptr<LedgerReplayer> m_ledgerReplayer;
@@ -217,17 +216,15 @@ public:
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
-    bool startTimers_;
 
     std::unique_ptr<RelationalDBInterface> mRelationalDBInterface;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
-    std::vector<std::unique_ptr<Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
 
     std::condition_variable cv_;
-    std::mutex mut_;
+    mutable std::mutex mut_;
     bool isTimeToStop = false;
 
     std::atomic<bool> checkSigs_;
@@ -265,8 +262,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs,
         std::unique_ptr<TimeKeeper> timeKeeper)
-        : RootStoppable("Application")
-        , BasicApp(numberOfThreads(*config))
+        : BasicApp(numberOfThreads(*config))
         , config_(std::move(config))
         , logs_(std::move(logs))
         , timeKeeper_(std::move(timeKeeper))
@@ -277,15 +273,24 @@ public:
               perf::setup_PerfLog(
                   config_->section("perf"),
                   config_->CONFIG_DIR),
-              *this,
               logs_->journal("PerfLog"),
-              [this]() { signalStop(); }))
+              [this] { signalStop(); }))
 
         , m_txMaster(*this)
 
-        , m_nodeStoreScheduler(*this)
+        , m_collectorManager(make_CollectorManager(
+              config_->section(SECTION_INSIGHT),
+              logs_->journal("Collector")))
+
+        , m_jobQueue(std::make_unique<JobQueue>(
+              m_collectorManager->group("jobq"),
+              logs_->journal("JobQueue"),
+              *logs_,
+              *perfLog_))
+
+        , m_nodeStoreScheduler(*m_jobQueue)
+
         , m_shaMapStore(make_SHAMapStore(
-              *this,
               *this,
               m_nodeStoreScheduler,
               logs_->journal("SHAMapStore")))
@@ -299,9 +304,6 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
 
-        , m_collectorManager(CollectorManager::New(
-              config_->section(SECTION_INSIGHT),
-              logs_->journal("Collector")))
         , cachedSLEs_(std::chrono::minutes(1), stopwatch())
         , validatorKeys_(*config_, m_journal)
 
@@ -309,29 +311,18 @@ public:
               m_collectorManager->collector(),
               logs_->journal("Resource")))
 
-        // The JobQueue has to come pretty early since
-        // almost everything is a Stoppable child of the JobQueue.
-        //
-        , m_jobQueue(std::make_unique<JobQueue>(
-              m_collectorManager->group("jobq"),
-              m_nodeStoreScheduler,
-              logs_->journal("JobQueue"),
-              *logs_,
-              *perfLog_))
-
-        , m_nodeStore(m_shaMapStore->makeNodeStore("NodeStore.main", 4))
+        , m_nodeStore(m_shaMapStore->makeNodeStore(4))
 
         , nodeFamily_(*this, *m_collectorManager)
 
         // The shard store is optional and make_ShardStore can return null.
         , shardStore_(make_ShardStore(
               *this,
-              *m_jobQueue,
               m_nodeStoreScheduler,
               4,
               logs_->journal("ShardStore")))
 
-        , m_orderBookDB(*this, *m_jobQueue)
+        , m_orderBookDB(*this)
 
         , m_pathRequests(std::make_unique<PathRequests>(
               *this,
@@ -341,9 +332,11 @@ public:
         , m_ledgerMaster(std::make_unique<LedgerMaster>(
               *this,
               stopwatch(),
-              *m_jobQueue,
               m_collectorManager->collector(),
               logs_->journal("LedgerMaster")))
+
+        , ledgerCleaner_(
+              make_LedgerCleaner(*this, logs_->journal("LedgerCleaner")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
@@ -351,12 +344,10 @@ public:
         , m_inboundLedgers(make_InboundLedgers(
               *this,
               stopwatch(),
-              *m_jobQueue,
               m_collectorManager->collector()))
 
         , m_inboundTransactions(make_InboundTransactions(
               *this,
-              *m_jobQueue,
               m_collectorManager->collector(),
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {
                   gotTXSet(set, fromAcquire);
@@ -365,8 +356,7 @@ public:
         , m_ledgerReplayer(std::make_unique<LedgerReplayer>(
               *this,
               *m_inboundLedgers,
-              make_PeerSetBuilder(*this),
-              *m_jobQueue))
+              make_PeerSetBuilder(*this)))
 
         , m_acceptedLedgerCache(
               "AcceptedLedger",
@@ -383,7 +373,6 @@ public:
               config_->START_VALID,
               *m_jobQueue,
               *m_ledgerMaster,
-              *m_jobQueue,
               validatorKeys_,
               get_io_service(),
               logs_->journal("NetworkOPs"),
@@ -412,7 +401,6 @@ public:
 
         , serverHandler_(make_ServerHandler(
               *this,
-              *m_networkOPs,
               get_io_service(),
               *m_jobQueue,
               *m_networkOPs,
@@ -433,8 +421,7 @@ public:
               *this,
               logs_->journal("Validations"))
 
-        , m_loadManager(
-              make_LoadManager(*this, *this, logs_->journal("LoadManager")))
+        , m_loadManager(make_LoadManager(*this, logs_->journal("LoadManager")))
 
         , txQ_(
               std::make_unique<TxQ>(setup_TxQ(*config_), logs_->journal("TxQ")))
@@ -442,8 +429,6 @@ public:
         , sweepTimer_(get_io_service())
 
         , entropyTimer_(get_io_service())
-
-        , startTimers_(false)
 
         , m_signals(get_io_service())
 
@@ -457,8 +442,10 @@ public:
               logs_->journal("Application"),
               std::chrono::milliseconds(100),
               get_io_service())
-        , grpcServer_(std::make_unique<GRPCServer>(*this, *m_jobQueue))
-        , reportingETL_(std::make_unique<ReportingETL>(*this, *m_ledgerMaster))
+        , grpcServer_(std::make_unique<GRPCServer>(*this))
+        , reportingETL_(
+              config_->reporting() ? std::make_unique<ReportingETL>(*this)
+                                   : nullptr)
     {
         add(m_resourceManager.get());
 
@@ -466,8 +453,8 @@ public:
         // VFALCO - READ THIS!
         //
         //  Do not start threads, open sockets, or do any sort of "real work"
-        //  inside the constructor. Put it in onStart instead. Or if you must,
-        //  put it in setup (but everything in setup should be moved to onStart
+        //  inside the constructor. Put it in start instead. Or if you must,
+        //  put it in setup (but everything in setup should be moved to start
         //  anyway.
         //
         //  The reason is that the unit tests require an Application object to
@@ -477,10 +464,7 @@ public:
         //  started in this constructor.
         //
 
-        // VFALCO HACK
-        m_nodeStoreScheduler.setJobQueue(*m_jobQueue);
-
-        add(m_ledgerMaster->getPropertySource());
+        add(ledgerCleaner_.get());
     }
 
     //--------------------------------------------------------------------------
@@ -488,17 +472,17 @@ public:
     bool
     setup() override;
     void
-    doStart(bool withTimers) override;
+    start(bool withTimers) override;
     void
     run() override;
-    bool
-    isShutdown() override;
     void
     signalStop() override;
     bool
     checkSigs() const override;
     void
     checkSigs(bool) override;
+    bool
+    isStopping() const override;
     int
     fdRequired() const override;
 
@@ -582,6 +566,12 @@ public:
     getLedgerMaster() override
     {
         return *m_ledgerMaster;
+    }
+
+    LedgerCleaner&
+    getLedgerCleaner() override
+    {
+        return *ledgerCleaner_;
     }
 
     LedgerReplayer&
@@ -685,8 +675,8 @@ public:
                 return nullptr;
             }
 
-            auto handler = RPC::ShardArchiveHandler::tryMakeRecoveryHandler(
-                *this, *m_jobQueue);
+            auto handler =
+                RPC::ShardArchiveHandler::tryMakeRecoveryHandler(*this);
 
             if (!initAndSet(std::move(handler)))
                 return nullptr;
@@ -695,8 +685,8 @@ public:
         // Construct the ShardArchiveHandler
         if (shardArchiveHandler_ == nullptr)
         {
-            auto handler = RPC::ShardArchiveHandler::makeShardArchiveHandler(
-                *this, *m_jobQueue);
+            auto handler =
+                RPC::ShardArchiveHandler::makeShardArchiveHandler(*this);
 
             if (!initAndSet(std::move(handler)))
                 return nullptr;
@@ -911,15 +901,12 @@ public:
         {
             auto j = logs_->journal("NodeObject");
             NodeStore::DummyScheduler dummyScheduler;
-            RootStoppable dummyRoot{"DummyRoot"};
             std::unique_ptr<NodeStore::Database> source =
                 NodeStore::Manager::instance().make_Database(
-                    "NodeStore.import",
                     megabytes(config_->getValueFor(
                         SizedItem::burstSize, std::nullopt)),
                     dummyScheduler,
                     0,
-                    dummyRoot,
                     config_->section(ConfigSection::importNodeDatabase()),
                     j);
 
@@ -948,31 +935,10 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    //
-    // Stoppable
-    //
-
-    void
-    onStart() override
-    {
-        JLOG(m_journal.info()) << "Application starting. Version is "
-                               << BuildInfo::getVersionString();
-
-        using namespace std::chrono_literals;
-        if (startTimers_)
-        {
-            setSweepTimer();
-            setEntropyTimer();
-        }
-
-        m_io_latency_sampler.start();
-
-        m_resolver->start();
-    }
 
     // Called to indicate shutdown.
     void
-    onStop() override
+    stop()
     {
         JLOG(m_journal.debug()) << "Application stopping";
 
@@ -1035,7 +1001,31 @@ public:
                 return validators().trustedPublisher(pubKey);
             });
 
-        stopped();
+        // The order of these stop calls is delicate.
+        // Re-ordering them risks undefined behavior.
+        m_loadManager->stop();
+        m_shaMapStore->stop();
+        m_jobQueue->stop();
+        if (shardArchiveHandler_)
+            shardArchiveHandler_->stop();
+        if (overlay_)
+            overlay_->stop();
+        if (shardStore_)
+            shardStore_->stop();
+        grpcServer_->stop();
+        m_networkOPs->stop();
+        serverHandler_->stop();
+        m_ledgerReplayer->stop();
+        m_inboundTransactions->stop();
+        m_inboundLedgers->stop();
+        ledgerCleaner_->stop();
+        if (reportingETL_)
+            reportingETL_->stop();
+        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
+                &*mRelationalDBInterface))
+            pg->stop();
+        m_nodeStore->stop();
+        perfLog_->stop();
     }
 
     //--------------------------------------------------------------------------
@@ -1056,8 +1046,7 @@ public:
         // Only start the timer if waitHandlerCounter_ is not yet joined.
         if (auto optionalCountedHandler = waitHandlerCounter_.wrap(
                 [this](boost::system::error_code const& e) {
-                    if ((e.value() == boost::system::errc::success) &&
-                        (!m_jobQueue->isStopped()))
+                    if (e.value() == boost::system::errc::success)
                     {
                         m_jobQueue->addJob(
                             jtSWEEP, "sweep", [this](Job&) { doSweep(); });
@@ -1139,10 +1128,9 @@ public:
         cachedSLEs_.expire();
 
 #ifdef RIPPLED_REPORTING
-        if (config().reporting())
-            dynamic_cast<RelationalDBInterfacePostgres*>(
-                &*mRelationalDBInterface)
-                ->sweep();
+        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
+                &*mRelationalDBInterface))
+            pg->sweep();
 #endif
 
         // Set timer to do another sweep later.
@@ -1396,7 +1384,6 @@ ApplicationImp::setup()
         overlay_ = make_Overlay(
             *this,
             setup_Overlay(*config_),
-            *m_jobQueue,
             *serverHandler_,
             *m_resourceManager,
             *m_resolver,
@@ -1561,19 +1548,33 @@ ApplicationImp::setup()
 
     validatorSites_->start();
 
-    if (config_->reporting())
-    {
-        reportingETL_->run();
-    }
+    if (reportingETL_)
+        reportingETL_->start();
 
     return true;
 }
 
 void
-ApplicationImp::doStart(bool withTimers)
+ApplicationImp::start(bool withTimers)
 {
-    startTimers_ = withTimers;
-    start();
+    JLOG(m_journal.info()) << "Application starting. Version is "
+                           << BuildInfo::getVersionString();
+
+    if (withTimers)
+    {
+        setSweepTimer();
+        setEntropyTimer();
+    }
+
+    m_io_latency_sampler.start();
+    m_resolver->start();
+    m_loadManager->start();
+    m_shaMapStore->start();
+    if (overlay_)
+        overlay_->start();
+    grpcServer_->start();
+    ledgerCleaner_->start();
+    perfLog_->start();
 }
 
 void
@@ -1593,10 +1594,8 @@ ApplicationImp::run()
         cv_.wait(lk, [this] { return isTimeToStop; });
     }
 
-    // Stop the server. When this returns, all
-    // Stoppable objects should be stopped.
     JLOG(m_journal.info()) << "Received shutdown request";
-    stop(m_journal);
+    stop();
     JLOG(m_journal.info()) << "Done.";
 }
 
@@ -1615,13 +1614,6 @@ ApplicationImp::signalStop()
 }
 
 bool
-ApplicationImp::isShutdown()
-{
-    // from Stoppable mixin
-    return isStopped();
-}
-
-bool
 ApplicationImp::checkSigs() const
 {
     return checkSigs_;
@@ -1631,6 +1623,13 @@ void
 ApplicationImp::checkSigs(bool check)
 {
     checkSigs_ = check;
+}
+
+bool
+ApplicationImp::isStopping() const
+{
+    std::lock_guard lk{mut_};
+    return isTimeToStop;
 }
 
 int
@@ -2045,7 +2044,7 @@ ApplicationImp::serverOkay(std::string& reason)
     if (!config().ELB_SUPPORT)
         return true;
 
-    if (isShutdown())
+    if (isStopping())
     {
         reason = "Server is shutting down";
         return false;

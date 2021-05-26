@@ -24,7 +24,6 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/impl/ServerHandlerImp.h>
 #include <ripple/server/Port.h>
@@ -43,7 +42,6 @@ setup_ServerHandler(Config const& c, std::ostream&& log);
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    Stoppable& parent,
     boost::asio::io_service&,
     JobQueue&,
     NetworkOPs&,

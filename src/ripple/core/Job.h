@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_JOB_H_INCLUDED
 #define RIPPLE_CORE_JOB_H_INCLUDED
 
+#include <ripple/core/ClosureCounter.h>
 #include <ripple/core/LoadMonitor.h>
 #include <functional>
 
@@ -156,6 +157,8 @@ private:
     std::string mName;
     clock_type::time_point m_queue_time;
 };
+
+using JobCounter = ClosureCounter<void, Job&>;
 
 }  // namespace ripple
 

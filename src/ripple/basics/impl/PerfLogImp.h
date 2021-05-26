@@ -23,7 +23,6 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <boost/asio/ip/host_name.hpp>
@@ -67,7 +66,7 @@ struct Locked
 /**
  * Implementation class for PerfLog.
  */
-class PerfLogImp : public PerfLog, Stoppable
+class PerfLogImp : public PerfLog
 {
     /**
      * Track performance counters and currently executing tasks.
@@ -151,7 +150,6 @@ class PerfLogImp : public PerfLog, Stoppable
 public:
     PerfLogImp(
         Setup const& setup,
-        Stoppable& parent,
         beast::Journal journal,
         std::function<void()>&& signalStop);
 
@@ -200,15 +198,11 @@ public:
     void
     rotate() override;
 
-    // Called when application is ready to start threads.
     void
-    onStart() override;
-    // Called when the application begins shutdown.
+    start() override;
+
     void
-    onStop() override;
-    // Called when all child Stoppable objects have stopped.
-    void
-    onChildrenStopped() override;
+    stop() override;
 };
 
 }  // namespace perf

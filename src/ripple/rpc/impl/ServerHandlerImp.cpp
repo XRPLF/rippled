@@ -48,6 +48,7 @@
 #include <boost/regex.hpp>
 #include <boost/type_traits.hpp>
 #include <algorithm>
+#include <mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -102,14 +103,12 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 
 ServerHandlerImp::ServerHandlerImp(
     Application& app,
-    Stoppable& parent,
     boost::asio::io_service& io_service,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
     CollectorManager& cm)
-    : Stoppable("ServerHandler", parent)
-    , app_(app)
+    : app_(app)
     , m_resourceManager(resourceManager)
     , m_journal(app_.journal("Server"))
     , m_networkOPs(networkOPs)
@@ -137,9 +136,13 @@ ServerHandlerImp::setup(Setup const& setup, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 void
-ServerHandlerImp::onStop()
+ServerHandlerImp::stop()
 {
     m_server->close();
+    {
+        std::unique_lock lock(mutex_);
+        condition_.wait(lock, [this] { return stopped_; });
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -149,14 +152,17 @@ ServerHandlerImp::onAccept(
     Session& session,
     boost::asio::ip::tcp::endpoint endpoint)
 {
-    std::lock_guard lock(countlock_);
+    auto const& port = session.port();
 
-    auto const c = ++count_[session.port()];
+    auto const c = [this, &port]() {
+        std::lock_guard lock(mutex_);
+        return ++count_[port];
+    }();
 
-    if (session.port().limit && c >= session.port().limit)
+    if (port.limit && c >= port.limit)
     {
         JLOG(m_journal.trace())
-            << session.port().name << " is full; dropping " << endpoint;
+            << port.name << " is full; dropping " << endpoint;
         return false;
     }
 
@@ -356,14 +362,16 @@ ServerHandlerImp::onWSMessage(
 void
 ServerHandlerImp::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard lock(countlock_);
+    std::lock_guard lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandlerImp::onStopped(Server&)
 {
-    stopped();
+    std::lock_guard lock(mutex_);
+    stopped_ = true;
+    condition_.notify_one();
 }
 
 //------------------------------------------------------------------------------
@@ -1167,7 +1175,6 @@ setup_ServerHandler(Config const& config, std::ostream&& log)
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    Stoppable& parent,
     boost::asio::io_service& io_service,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
@@ -1175,7 +1182,7 @@ make_ServerHandler(
     CollectorManager& cm)
 {
     return std::make_unique<ServerHandlerImp>(
-        app, parent, io_service, jobQueue, networkOPs, resourceManager, cm);
+        app, io_service, jobQueue, networkOPs, resourceManager, cm);
 }
 
 }  // namespace ripple

@@ -81,11 +81,9 @@ SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 
 SHAMapStoreImp::SHAMapStoreImp(
     Application& app,
-    Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal)
-    : Stoppable("SHAMapStore", parent)
-    , app_(app)
+    : app_(app)
     , scheduler_(scheduler)
     , journal_(journal)
     , working_(true)
@@ -166,10 +164,8 @@ SHAMapStoreImp::SHAMapStoreImp(
 }
 
 std::unique_ptr<NodeStore::Database>
-SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
+SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
 {
-    // Anything which calls addJob must be a descendant of the JobQueue.
-    // Therefore Database objects use the JobQueue as Stoppable parent.
     std::unique_ptr<NodeStore::Database> db;
     if (deleteInterval_)
     {
@@ -191,10 +187,8 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
 
         // Create NodeStore with two backends to allow online deletion of data
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
-            name,
             scheduler_,
             readThreads,
-            app_.getJobQueue(),
             std::move(writableBackend),
             std::move(archiveBackend),
             app_.config().section(ConfigSection::nodeDatabase()),
@@ -206,12 +200,10 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
     else
     {
         db = NodeStore::Manager::instance().make_Database(
-            name,
             megabytes(
                 app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
             scheduler_,
             readThreads,
-            app_.getJobQueue(),
             app_.config().section(ConfigSection::nodeDatabase()),
             app_.logs().journal(nodeStoreName_));
         fdRequired_ += db->fdRequired();
@@ -291,7 +283,6 @@ SHAMapStoreImp::run()
             rendezvous_.notify_all();
             if (stop_)
             {
-                stopped();
                 return;
             }
             cond_.wait(lock);
@@ -325,7 +316,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -343,7 +333,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -359,7 +348,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -378,7 +366,6 @@ SHAMapStoreImp::run()
             switch (health())
             {
                 case Health::stopping:
-                    stopped();
                     return;
                 case Health::unhealthy:
                     continue;
@@ -700,23 +687,16 @@ SHAMapStoreImp::health()
 }
 
 void
-SHAMapStoreImp::onStop()
+SHAMapStoreImp::stop()
 {
-    // This is really a check for `if (thread_)`.
-    if (deleteInterval_)
+    if (thread_.joinable())
     {
         {
             std::lock_guard lock(mutex_);
             stop_ = true;
+            cond_.notify_one();
         }
-        cond_.notify_one();
-        // stopped() will be called by the thread_ running run(),
-        // when it reaches the check for stop_.
-    }
-    else
-    {
-        // There is no thread running run(), so we must call stopped().
-        stopped();
+        thread_.join();
     }
 }
 
@@ -735,11 +715,10 @@ SHAMapStoreImp::minimumOnline() const
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore(
     Application& app,
-    Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal)
 {
-    return std::make_unique<SHAMapStoreImp>(app, parent, scheduler, journal);
+    return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }
 
 }  // namespace ripple

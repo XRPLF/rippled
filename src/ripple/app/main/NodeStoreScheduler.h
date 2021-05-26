@@ -21,29 +21,17 @@
 #define RIPPLE_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <atomic>
 
 namespace ripple {
 
-/** A NodeStore::Scheduler which uses the JobQueue and implements the Stoppable
- * API. */
-class NodeStoreScheduler : public NodeStore::Scheduler, public Stoppable
+/** A NodeStore::Scheduler which uses the JobQueue. */
+class NodeStoreScheduler : public NodeStore::Scheduler
 {
 public:
-    NodeStoreScheduler(Stoppable& parent);
+    NodeStoreScheduler(JobQueue& jobQueue);
 
-    // VFALCO NOTE This is a temporary hack to solve the problem
-    //             of circular dependency.
-    //
-    void
-    setJobQueue(JobQueue& jobQueue);
-
-    void
-    onStop() override;
-    void
-    onChildrenStopped() override;
     void
     scheduleTask(NodeStore::Task& task) override;
     void
@@ -52,11 +40,7 @@ public:
     onBatchWrite(NodeStore::BatchWriteReport const& report) override;
 
 private:
-    void
-    doTask(NodeStore::Task& task);
-
-    JobQueue* m_jobQueue{nullptr};
-    std::atomic<int> m_taskCount{0};
+    JobQueue& jobQueue_;
 };
 
 }  // namespace ripple

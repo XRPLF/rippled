@@ -28,7 +28,6 @@
 namespace ripple {
 
 class TransactionMaster;
-class Stoppable;
 
 /**
  * class to create database, launch online delete thread, and
@@ -44,13 +43,19 @@ public:
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
 
     virtual void
+    start() = 0;
+
+    virtual void
     rendezvous() const = 0;
+
+    virtual void
+    stop() = 0;
 
     virtual std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const = 0;
 
     virtual std::unique_ptr<NodeStore::Database>
-    makeNodeStore(std::string const& name, std::int32_t readThreads) = 0;
+    makeNodeStore(std::int32_t readThreads) = 0;
 
     /** Highest ledger that may be deleted. */
     virtual LedgerIndex
@@ -99,7 +104,6 @@ public:
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore(
     Application& app,
-    Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal);
 }  // namespace ripple
