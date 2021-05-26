@@ -81,6 +81,7 @@ private:
     struct Timer : Child, std::enable_shared_from_this<Timer>
     {
         boost::asio::basic_waitable_timer<clock_type> timer_;
+        bool stopping_{false};
 
         explicit Timer(OverlayImpl& overlay);
 
@@ -88,7 +89,7 @@ private:
         stop() override;
 
         void
-        run();
+        async_wait();
 
         void
         on_timer(error_code ec);
@@ -141,7 +142,6 @@ public:
     OverlayImpl(
         Application& app,
         Setup const& setup,
-        Stoppable& parent,
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
@@ -149,11 +149,15 @@ public:
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
-    ~OverlayImpl();
-
     OverlayImpl(OverlayImpl const&) = delete;
     OverlayImpl&
     operator=(OverlayImpl const&) = delete;
+
+    void
+    start() override;
+
+    void
+    stop() override;
 
     PeerFinder::Manager&
     peerFinder()
@@ -501,25 +505,6 @@ private:
     //--------------------------------------------------------------------------
 
     //
-    // Stoppable
-    //
-
-    void
-    checkStopped();
-
-    void
-    onPrepare() override;
-
-    void
-    onStart() override;
-
-    void
-    onStop() override;
-
-    void
-    onChildrenStopped() override;
-
-    //
     // PropertyStream
     //
 
@@ -532,7 +517,7 @@ private:
     remove(Child& child);
 
     void
-    stop();
+    stopChildren();
 
     void
     autoConnect();

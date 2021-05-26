@@ -73,14 +73,16 @@ OverlayImpl::Timer::Timer(OverlayImpl& overlay)
 void
 OverlayImpl::Timer::stop()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    // This method is only ever called from the same strand that calls
+    // Timer::on_timer, ensuring they never execute concurrently.
+    stopping_ = true;
+    timer_.cancel();
 }
 
 void
-OverlayImpl::Timer::run()
+OverlayImpl::Timer::async_wait()
 {
-    timer_.expires_from_now(std::chrono::seconds(1));
+    timer_.expires_after(std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
         &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
 }
@@ -88,7 +90,7 @@ OverlayImpl::Timer::run()
 void
 OverlayImpl::Timer::on_timer(error_code ec)
 {
-    if (ec || overlay_.isStopping())
+    if (ec || stopping_)
     {
         if (ec && ec != boost::asio::error::operation_aborted)
         {
@@ -104,9 +106,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
     if ((++overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
-    timer_.expires_from_now(std::chrono::seconds(1));
-    timer_.async_wait(overlay_.strand_.wrap(std::bind(
-        &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
+    async_wait();
 }
 
 //------------------------------------------------------------------------------
@@ -114,15 +114,13 @@ OverlayImpl::Timer::on_timer(error_code ec)
 OverlayImpl::OverlayImpl(
     Application& app,
     Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_service& io_service,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
-    : Overlay(parent)
-    , app_(app)
+    : app_(app)
     , io_service_(io_service)
     , work_(std::in_place, std::ref(io_service_))
     , strand_(io_service_)
@@ -131,7 +129,6 @@ OverlayImpl::OverlayImpl(
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
     , m_peerFinder(PeerFinder::make_Manager(
-          *this,
           io_service,
           stopwatch(),
           app_.journal("PeerFinder"),
@@ -158,19 +155,6 @@ OverlayImpl::OverlayImpl(
 {
     beast::PropertyStream::Source::add(m_peerFinder.get());
 }
-
-OverlayImpl::~OverlayImpl()
-{
-    stop();
-
-    // Block until dependent objects have been destroyed.
-    // This is just to catch improper use of the Stoppable API.
-    //
-    std::unique_lock<decltype(mutex_)> lock(mutex_);
-    cond_.wait(lock, [this] { return list_.empty(); });
-}
-
-//------------------------------------------------------------------------------
 
 Handoff
 OverlayImpl::onHandoff(
@@ -480,22 +464,8 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
     m_peers.erase(iter);
 }
 
-//------------------------------------------------------------------------------
-//
-// Stoppable
-//
-//------------------------------------------------------------------------------
-
-// Caller must hold the mutex
 void
-OverlayImpl::checkStopped()
-{
-    if (isStopping() && areChildrenStopped() && list_.empty())
-        stopped();
-}
-
-void
-OverlayImpl::onPrepare()
+OverlayImpl::start()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
@@ -504,6 +474,7 @@ OverlayImpl::onPrepare()
         setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
+    m_peerFinder->start();
 
     // Populate our boot cache: if there are no entries in [ips] then we use
     // the entries in [ips_fixed].
@@ -567,29 +538,22 @@ OverlayImpl::onPrepare()
                     m_peerFinder->addFixedPeer(name, ips);
             });
     }
-}
-
-void
-OverlayImpl::onStart()
-{
     auto const timer = std::make_shared<Timer>(*this);
     std::lock_guard lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
-    timer->run();
+    timer->async_wait();
 }
 
 void
-OverlayImpl::onStop()
+OverlayImpl::stop()
 {
-    strand_.dispatch(std::bind(&OverlayImpl::stop, this));
-}
-
-void
-OverlayImpl::onChildrenStopped()
-{
-    std::lock_guard lock(mutex_);
-    checkStopped();
+    strand_.dispatch(std::bind(&OverlayImpl::stopChildren, this));
+    {
+        std::unique_lock<decltype(mutex_)> lock(mutex_);
+        cond_.wait(lock, [this] { return list_.empty(); });
+    }
+    m_peerFinder->stop();
 }
 
 //------------------------------------------------------------------------------
@@ -1299,11 +1263,11 @@ OverlayImpl::remove(Child& child)
     std::lock_guard lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
-        checkStopped();
+        cond_.notify_all();
 }
 
 void
-OverlayImpl::stop()
+OverlayImpl::stopChildren()
 {
     // Calling list_[].second->stop() may cause list_ to be modified
     // (OverlayImpl::remove() may be called on this same thread).  So
@@ -1561,7 +1525,6 @@ std::unique_ptr<Overlay>
 make_Overlay(
     Application& app,
     Overlay::Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
@@ -1572,7 +1535,6 @@ make_Overlay(
     return std::make_unique<OverlayImpl>(
         app,
         setup,
-        parent,
         serverHandler,
         resourceManager,
         resolver,

@@ -224,13 +224,11 @@ public:
         bool start_valid,
         JobQueue& job_queue,
         LedgerMaster& ledgerMaster,
-        Stoppable& parent,
         ValidatorKeys const& validatorKeys,
         boost::asio::io_service& io_svc,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
-        : NetworkOPs(parent)
-        , app_(app)
+        : app_(app)
         , m_clock(clock)
         , m_journal(journal)
         , m_localTX(make_LocalTxs())
@@ -552,12 +550,8 @@ public:
     bool
     tryRemoveRpcSub(std::string const& strUrl) override;
 
-    //--------------------------------------------------------------------------
-    //
-    // Stoppable.
-
     void
-    onStop() override
+    stop() override
     {
         {
             boost::system::error_code ec;
@@ -578,11 +572,9 @@ public:
                     << ec.message();
             }
         }
-        // Make sure that any waitHandlers pending in our timers are done
-        // before we declare ourselves stopped.
+        // Make sure that any waitHandlers pending in our timers are done.
         using namespace std::chrono_literals;
         waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
-        stopped();
     }
 
 private:
@@ -3737,15 +3729,6 @@ NetworkOPsImp::collect_metrics()
         counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
 }
 
-//------------------------------------------------------------------------------
-
-NetworkOPs::NetworkOPs(Stoppable& parent)
-    : InfoSub::Source("NetworkOPs", parent)
-{
-}
-
-//------------------------------------------------------------------------------
-
 void
 NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 {
@@ -3794,7 +3777,6 @@ make_NetworkOPs(
     bool startvalid,
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
-    Stoppable& parent,
     ValidatorKeys const& validatorKeys,
     boost::asio::io_service& io_svc,
     beast::Journal journal,
@@ -3808,7 +3790,6 @@ make_NetworkOPs(
         startvalid,
         job_queue,
         ledgerMaster,
-        parent,
         validatorKeys,
         io_svc,
         journal,

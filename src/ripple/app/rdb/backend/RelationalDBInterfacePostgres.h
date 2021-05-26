@@ -27,6 +27,17 @@ namespace ripple {
 class RelationalDBInterfacePostgres : public RelationalDBInterface
 {
 public:
+    /** There is only one implementation of this interface:
+     * RelationalDBInterfacePostgresImp. It wraps a stoppable object (PgPool)
+     * that does not follow RAII, and it does not go through the effort of
+     * following RAII either. The owner of the only object of that type
+     * (ApplicationImp) holds it by the type of its interface instead of its
+     * implementation, and thus the lifetime management methods need to be
+     * part of the interface.
+     */
+    virtual void
+    stop() = 0;
+
     /**
      * @brief sweep Sweep the database. Method is specific for postgres backend.
      */

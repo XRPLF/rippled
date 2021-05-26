@@ -774,7 +774,7 @@ GRPCServerImpl::start()
 }
 
 void
-GRPCServer::onStart()
+GRPCServer::start()
 {
     // Start the server and setup listeners
     if (running_ = impl_.start(); running_)
@@ -789,7 +789,7 @@ GRPCServer::onStart()
 }
 
 void
-GRPCServer::onStop()
+GRPCServer::stop()
 {
     if (running_)
     {
@@ -797,8 +797,6 @@ GRPCServer::onStop()
         thread_.join();
         running_ = false;
     }
-
-    stopped();
 }
 
 GRPCServer::~GRPCServer()

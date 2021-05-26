@@ -23,7 +23,6 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/STValidation.h>
@@ -86,9 +85,6 @@ enum class OperatingMode {
 */
 class NetworkOPs : public InfoSub::Source
 {
-protected:
-    explicit NetworkOPs(Stoppable& parent);
-
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -101,6 +97,9 @@ public:
 
 public:
     ~NetworkOPs() override = default;
+
+    virtual void
+    stop() = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -282,7 +281,6 @@ make_NetworkOPs(
     bool start_valid,
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
-    Stoppable& parent,
     ValidatorKeys const& validatorKeys,
     boost::asio::io_service& io_svc,
     beast::Journal journal,

@@ -23,7 +23,6 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/Protocol.h>
 #include <boost/lexical_cast.hpp>
 #include <atomic>
@@ -366,7 +365,7 @@ public:
  * This should be stored as a shared pointer so PgQuery objects can safely
  * outlive it.
  */
-class PgPool : public Stoppable
+class PgPool
 {
     friend class PgQuery;
 
@@ -409,9 +408,8 @@ public:
      *
      * @param pgConfig Postgres config.
      * @param j Logger object.
-     * @param parent Stoppable parent.
      */
-    PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j);
+    PgPool(Section const& pgConfig, beast::Journal j);
 
     /** Initiate idle connection timer.
      *
@@ -421,9 +419,9 @@ public:
     void
     setup();
 
-    /** Prepare for process shutdown. (Stoppable) */
+    /** Prepare for process shutdown. */
     void
-    onStop() override;
+    stop();
 
     /** Disconnect idle postgres connections. */
     void
@@ -501,11 +499,10 @@ public:
  *
  * @param pgConfig Configuration for Postgres.
  * @param j Logger object.
- * @param parent Stoppable parent object.
  * @return Postgres connection pool manager
  */
 std::shared_ptr<PgPool>
-make_PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j);
+make_PgPool(Section const& pgConfig, beast::Journal j);
 
 /** Initialize the Postgres schema.
  *

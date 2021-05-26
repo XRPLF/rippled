@@ -43,21 +43,15 @@ namespace NodeStore {
 
 DatabaseShardImp::DatabaseShardImp(
     Application& app,
-    Stoppable& parent,
-    std::string const& name,
     Scheduler& scheduler,
     int readThreads,
     beast::Journal j)
     : DatabaseShard(
-          name,
-          parent,
           scheduler,
           readThreads,
           app.config().section(ConfigSection::shardDatabase()),
           j)
     , app_(app)
-    , parent_(parent)
-    , taskQueue_(std::make_unique<TaskQueue>(*this))
     , earliestShardIndex_(seqToShardIndex(earliestLedgerSeq()))
     , avgShardFileSz_(ledgersPerShard_ * kilobytes(192ull))
     , openFinalLimit_(
@@ -224,7 +218,6 @@ DatabaseShardImp::init()
         }
 
         updateStatus(lock);
-        setParent(parent_);
         init_ = true;
     }
 
@@ -692,45 +685,31 @@ DatabaseShardImp::getCompleteShards()
 }
 
 void
-DatabaseShardImp::onStop()
+DatabaseShardImp::stop()
 {
     // Stop read threads in base before data members are destroyed
-    stopReadThreads();
-
-    std::lock_guard lock(mutex_);
-
-    // Notify shards to stop
-    for (auto const& e : shards_)
-        e.second->stop();
-}
-
-void
-DatabaseShardImp::onChildrenStopped()
-{
+    Database::stop();
     std::vector<std::weak_ptr<Shard>> shards;
     {
         std::lock_guard lock(mutex_);
-
         shards.reserve(shards_.size());
-        for (auto const& e : shards_)
-            shards.push_back(e.second);
+        for (auto const& [_, shard] : shards_)
+        {
+            shards.push_back(shard);
+            shard->stop();
+        }
         shards_.clear();
     }
+    taskQueue_.stop();
 
     // All shards should be expired at this point
-    for (auto const& e : shards)
+    for (auto const& wptr : shards)
     {
-        if (!e.expired())
+        if (auto const shard{wptr.lock()})
         {
-            std::string shardIndex;
-            if (auto const shard{e.lock()}; shard)
-                shardIndex = std::to_string(shard->index());
-
-            JLOG(j_.warn()) << " shard " << shardIndex << " unexpired";
+            JLOG(j_.warn()) << " shard " << shard->index() << " unexpired";
         }
     }
-
-    stopped();
 }
 
 void
@@ -1303,10 +1282,10 @@ DatabaseShardImp::finalizeShard(
     bool writeSQLite,
     std::optional<uint256> const& expectedHash)
 {
-    taskQueue_->addTask([this,
-                         wptr = std::weak_ptr<Shard>(shard),
-                         writeSQLite,
-                         expectedHash]() {
+    taskQueue_.addTask([this,
+                        wptr = std::weak_ptr<Shard>(shard),
+                        writeSQLite,
+                        expectedHash]() {
         if (isStopping())
             return;
 
@@ -2047,7 +2026,6 @@ DatabaseShardImp::iterateTransactionSQLsBack(
 std::unique_ptr<DatabaseShard>
 make_ShardStore(
     Application& app,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     beast::Journal j)
@@ -2058,8 +2036,7 @@ make_ShardStore(
     if (section.empty())
         return nullptr;
 
-    return std::make_unique<DatabaseShardImp>(
-        app, parent, "ShardStore", scheduler, readThreads, j);
+    return std::make_unique<DatabaseShardImp>(app, scheduler, readThreads, j);
 }
 
 }  // namespace NodeStore

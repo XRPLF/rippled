@@ -86,7 +86,7 @@ Env::AppBundle::AppBundle(
     if (!app->setup())
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
-    app->doStart(false /*don't start timers*/);
+    app->start(false /*don't start timers*/);
     thread = std::thread([&]() { app->run(); });
 
     client = makeJSONRPCClient(app->config());

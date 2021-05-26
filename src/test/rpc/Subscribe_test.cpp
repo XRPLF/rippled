@@ -61,7 +61,7 @@ public:
         // first findMsg but BEFORE we unsubscribe, thus causing the final
         // findMsg check to fail since there is one unprocessed ws msg created
         // by the loadmanager
-        env.app().getLoadManager().onStop();
+        env.app().getLoadManager().stop();
         {
             // Raise fee to cause an update
             auto& feeTrack = env.app().getFeeTrack();

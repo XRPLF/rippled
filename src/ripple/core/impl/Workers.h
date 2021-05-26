@@ -34,7 +34,36 @@ namespace perf {
 class PerfLog;
 }
 
-/** A group of threads that process tasks.
+/**
+ * `Workers` is effectively a thread pool. The constructor takes a "callback"
+ * that has a `void processTask(int instance)` method, and a number of
+ * workers. It creates that many Workers and then waits for calls to
+ * `Workers::addTask()`. It holds a semaphore that counts the number of
+ * waiting tasks, and a condition variable for the event when the last worker
+ * pauses itself.
+ *
+ * Creating a `Worker` creates a thread that calls `Worker::run()`. When that
+ * thread enters `Worker::run`, it increments the count of active workers in
+ * the parent `Workers` object and then blocks on the semaphore if there are
+ * no waiting tasks. It will be unblocked whenever the number of waiting tasks
+ * is incremented. That only happens in two circumstances: (1) when
+ * `Workers::addTask` is called and (2) when `Workers` wants to pause some
+ * workers ("pause one worker" is considered one task), which happens when
+ * someone wants to stop the workers or shrink the threadpool. No worker
+ * threads are ever destroyed until `Workers` is destroyed; it merely pauses
+ * workers until then.
+ *
+ * When an idle worker is woken, it checks whether `Workers` is trying to pause
+ * workers. If so, it adds itself to the set of paused workers and blocks on
+ * its own condition variable. If not, then it calls `processTask` on the
+ * "callback" held by `Workers`.
+ *
+ * When a paused worker is woken, it checks whether it should exit. The signal
+ * to exit is only set in the destructor of `Worker`, which unblocks the
+ * paused thread and waits for it to exit. A `Worker::run` thread checks
+ * whether it needs to exit only when it is woken from a pause (not when it is
+ * woken from idle). This is why the destructor for `Workers` pauses all the
+ * workers before destroying them.
  */
 class Workers
 {
@@ -104,7 +133,7 @@ public:
         @note This function is not thread-safe.
     */
     void
-    pauseAllThreadsAndWait();
+    stop();
 
     /** Add a task to be performed.
 

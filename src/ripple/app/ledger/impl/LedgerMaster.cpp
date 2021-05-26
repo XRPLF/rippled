@@ -184,15 +184,11 @@ shouldAcquire(
 LedgerMaster::LedgerMaster(
     Application& app,
     Stopwatch& stopwatch,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal)
-    : Stoppable("LedgerMaster", parent)
-    , app_(app)
+    : app_(app)
     , m_journal(journal)
     , mLedgerHistory(collector, app)
-    , mLedgerCleaner(
-          detail::make_LedgerCleaner(app, *this, app_.journal("LedgerCleaner")))
     , standalone_(app_.config().standalone())
     , fetch_depth_(
           app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
@@ -747,7 +743,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
 
         if (it == ledgerHashes.end())
         {
-            if (app_.isShutdown())
+            if (app_.isStopping())
                 return;
 
             {
@@ -1614,7 +1610,7 @@ LedgerMaster::newPFWork(
     }
     // If we're stopping don't give callers the expectation that their
     // request will be fulfilled, even if it may be serviced.
-    return mPathFindThread > 0 && !isStopping();
+    return mPathFindThread > 0 && !app_.isStopping();
 }
 
 std::recursive_mutex&
@@ -1839,12 +1835,6 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 }
 
 void
-LedgerMaster::doLedgerCleaner(Json::Value const& parameters)
-{
-    mLedgerCleaner->doClean(parameters);
-}
-
-void
 LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 {
     std::lock_guard sl(mCompleteLock);
@@ -1868,12 +1858,6 @@ float
 LedgerMaster::getCacheHitRate()
 {
     return mLedgerHistory.getCacheHitRate();
-}
-
-beast::PropertyStream::Source&
-LedgerMaster::getPropertySource()
-{
-    return *mLedgerCleaner;
 }
 
 void

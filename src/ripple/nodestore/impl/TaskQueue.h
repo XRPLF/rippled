@@ -20,7 +20,6 @@
 #ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
 #define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
 
-#include <ripple/core/Stoppable.h>
 #include <ripple/core/impl/Workers.h>
 
 #include <functional>
@@ -29,13 +28,13 @@
 namespace ripple {
 namespace NodeStore {
 
-class TaskQueue : public Stoppable, private Workers::Callback
+class TaskQueue : private Workers::Callback
 {
 public:
-    explicit TaskQueue(Stoppable& parent);
+    TaskQueue();
 
     void
-    onStop() override;
+    stop();
 
     /** Adds a task to the queue
 

@@ -33,15 +33,6 @@ namespace ripple {
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-//------------------------------------------------------------------------------
-
-InfoSub::Source::Source(char const* name, Stoppable& parent)
-    : Stoppable(name, parent)
-{
-}
-
-//------------------------------------------------------------------------------
-
 InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
 {
 }

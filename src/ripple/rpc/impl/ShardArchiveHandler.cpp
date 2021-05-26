@@ -46,15 +46,13 @@ ShardArchiveHandler::getDownloadDirectory(Config const& config)
 }
 
 std::unique_ptr<ShardArchiveHandler>
-ShardArchiveHandler::makeShardArchiveHandler(
-    Application& app,
-    Stoppable& parent)
+ShardArchiveHandler::makeShardArchiveHandler(Application& app)
 {
-    return std::make_unique<ShardArchiveHandler>(app, parent);
+    return std::make_unique<ShardArchiveHandler>(app);
 }
 
 std::unique_ptr<ShardArchiveHandler>
-ShardArchiveHandler::tryMakeRecoveryHandler(Application& app, Stoppable& parent)
+ShardArchiveHandler::tryMakeRecoveryHandler(Application& app)
 {
     auto const downloadDir(getDownloadDirectory(app.config()));
 
@@ -63,15 +61,14 @@ ShardArchiveHandler::tryMakeRecoveryHandler(Application& app, Stoppable& parent)
     if (exists(downloadDir / stateDBName) &&
         is_regular_file(downloadDir / stateDBName))
     {
-        return std::make_unique<RecoveryHandler>(app, parent);
+        return std::make_unique<RecoveryHandler>(app);
     }
 
     return nullptr;
 }
 
-ShardArchiveHandler::ShardArchiveHandler(Application& app, Stoppable& parent)
-    : Stoppable("ShardArchiveHandler", parent)
-    , process_(false)
+ShardArchiveHandler::ShardArchiveHandler(Application& app)
+    : process_(false)
     , app_(app)
     , j_(app.journal("ShardArchiveHandler"))
     , downloadDir_(getDownloadDirectory(app.config()))
@@ -176,14 +173,15 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
 }
 
 void
-ShardArchiveHandler::onStop()
+ShardArchiveHandler::stop()
 {
+    stopping_ = true;
     {
         std::lock_guard<std::mutex> lock(m_);
 
         if (downloader_)
         {
-            downloader_->onStop();
+            downloader_->stop();
             downloader_.reset();
         }
 
@@ -195,8 +193,6 @@ ShardArchiveHandler::onStop()
 
     timerCounter_.join(
         "ShardArchiveHandler", std::chrono::milliseconds(2000), j_);
-
-    stopped();
 }
 
 bool
@@ -297,7 +293,7 @@ ShardArchiveHandler::release()
 bool
 ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 {
-    if (isStopping())
+    if (stopping_)
         return false;
 
     if (archives_.empty())
@@ -394,7 +390,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 void
 ShardArchiveHandler::complete(path dstPath)
 {
-    if (isStopping())
+    if (stopping_)
         return;
 
     {
@@ -422,7 +418,7 @@ ShardArchiveHandler::complete(path dstPath)
     // Make lambdas mutable captured vars can be moved from
     auto wrapper =
         jobCounter_.wrap([=, dstPath = std::move(dstPath)](Job&) mutable {
-            if (isStopping())
+            if (stopping_)
                 return;
 
             // If not synced then defer and retry
@@ -459,7 +455,7 @@ ShardArchiveHandler::complete(path dstPath)
 
     if (!wrapper)
     {
-        if (isStopping())
+        if (stopping_)
             return;
 
         JLOG(j_.error()) << "failed to wrap closure for process()";
@@ -565,7 +561,7 @@ ShardArchiveHandler::onClosureFailed(
     std::string const& errorMsg,
     std::lock_guard<std::mutex> const& lock)
 {
-    if (isStopping())
+    if (stopping_)
         return false;
 
     JLOG(j_.error()) << errorMsg;
@@ -580,8 +576,7 @@ ShardArchiveHandler::removeAndProceed(std::lock_guard<std::mutex> const& lock)
     return next(lock);
 }
 
-RecoveryHandler::RecoveryHandler(Application& app, Stoppable& parent)
-    : ShardArchiveHandler(app, parent)
+RecoveryHandler::RecoveryHandler(Application& app) : ShardArchiveHandler(app)
 {
 }
 

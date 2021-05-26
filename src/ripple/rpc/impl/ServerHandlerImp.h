@@ -31,6 +31,7 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/string_view.hpp>
+#include <condition_variable>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -43,7 +44,7 @@ operator<(Port const& lhs, Port const& rhs)
     return lhs.name < rhs.name;
 }
 
-class ServerHandlerImp : public Stoppable
+class ServerHandlerImp
 {
 public:
     struct Setup
@@ -98,13 +99,14 @@ private:
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
-    std::mutex countlock_;
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    bool stopped_{false};
     std::map<std::reference_wrapper<Port const>, int> count_;
 
 public:
     ServerHandlerImp(
         Application& app,
-        Stoppable& parent,
         boost::asio::io_service& io_service,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
@@ -124,12 +126,8 @@ public:
         return setup_;
     }
 
-    //
-    // Stoppable
-    //
-
     void
-    onStop() override;
+    stop();
 
     //
     // Handler

@@ -51,10 +51,7 @@ public:
         , j_(app_.journal("PgPool"))
         , pgPool_(
 #ifdef RIPPLED_REPORTING
-              make_PgPool(
-                  config.section("ledger_tx_tables"),
-                  *dynamic_cast<Stoppable*>(&app_),
-                  j_)
+              make_PgPool(config.section("ledger_tx_tables"), j_)
 #endif
           )
     {
@@ -64,6 +61,14 @@ public:
         {
             initSchema(pgPool_);
         }
+#endif
+    }
+
+    void
+    stop() override
+    {
+#ifdef RIPPLED_REPORTING
+        pgPool_->stop();
 #endif
     }
 

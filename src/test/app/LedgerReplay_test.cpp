@@ -169,7 +169,7 @@ public:
     }
 
     virtual void
-    onStop() override
+    stop() override
     {
     }
 
@@ -564,7 +564,6 @@ public:
               inboundBhvr)
         , serverMsgHandler(server.app, server.app.getLedgerReplayer())
         , clientMsgHandler(env.app(), replayer)
-        , stopableParent("replayerStopParent")
         , replayer(
               env.app(),
               inboundLedgers,
@@ -572,8 +571,7 @@ public:
                   clientMsgHandler,
                   serverMsgHandler,
                   behavior,
-                  peerFeature),
-              stopableParent)
+                  peerFeature))
     {
     }
 
@@ -800,7 +798,6 @@ public:
     MagicInboundLedgers inboundLedgers;
     LedgerReplayMsgHandler serverMsgHandler;
     LedgerReplayMsgHandler clientMsgHandler;
-    RootStoppable stopableParent;
     LedgerReplayer replayer;
 };
 
@@ -848,7 +845,7 @@ struct NetworkOfTwo
  * -- replay a range of ledgers and fallback to InboundLedgers because
  *    peers do not support ProtocolFeature::LedgerReplay
  * -- replay a range of ledgers and the network drops or repeats messages
- * -- call onStop() and the tasks and subtasks are removed
+ * -- call stop() and the tasks and subtasks are removed
  * -- process a bad skip list
  * -- process a bad ledger delta
  * -- replay ledger ranges with different overlaps
@@ -1229,9 +1226,9 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     }
 
     void
-    testOnStop()
+    testStop()
     {
-        testcase("onStop before timeout");
+        testcase("stop before timeout");
         int totalReplay = 3;
         NetworkOfTwo net(
             *this,
@@ -1253,9 +1250,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::NotDone,
             deltaStatuses));
 
-        // onStop
         BEAST_EXPECT(net.client.countsAsExpected(1, 1, 0));
-        net.client.replayer.onStop();
+        net.client.replayer.stop();
         BEAST_EXPECT(net.client.countsAsExpected(0, 0, 0));
     }
 
@@ -1441,7 +1437,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         testPeerSetBehavior(PeerSetBehavior::Good);
         testPeerSetBehavior(PeerSetBehavior::Drop50);
         testPeerSetBehavior(PeerSetBehavior::Repeat);
-        testOnStop();
+        testStop();
         testSkipListBadReply();
         testLedgerDeltaBadReply();
         testLedgerReplayOverlap();

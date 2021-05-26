@@ -57,7 +57,7 @@ public:
         bool ssl = true);
 
     void
-    onStop();
+    stop();
 
     virtual ~HTTPDownloader() = default;
 

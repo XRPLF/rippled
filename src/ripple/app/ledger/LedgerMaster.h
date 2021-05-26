@@ -23,7 +23,6 @@
 #include <ripple/app/ledger/AbstractFetchPackContainer.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/app/ledger/LedgerReplay.h>
@@ -31,10 +30,9 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/insight/Collector.h>
-#include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
@@ -69,7 +67,7 @@ public:
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
-class LedgerMaster : public Stoppable, public AbstractFetchPackContainer
+class LedgerMaster : public AbstractFetchPackContainer
 {
 public:
     // Age for last validated ledger if the process has yet to validate.
@@ -79,7 +77,6 @@ public:
     explicit LedgerMaster(
         Application& app,
         Stopwatch& stopwatch,
-        Stoppable& parent,
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal);
 
@@ -259,11 +256,6 @@ public:
 
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
-    void
-    doLedgerCleaner(Json::Value const& parameters);
-
-    beast::PropertyStream::Source&
-    getPropertySource();
 
     void
     clearPriorLedgers(LedgerIndex seq);
@@ -384,8 +376,6 @@ private:
 
     std::recursive_mutex mCompleteLock;
     RangeSet<std::uint32_t> mCompleteLedgers;
-
-    std::unique_ptr<detail::LedgerCleaner> mLedgerCleaner;
 
     // Publish thread is running.
     bool mAdvanceThread{false};

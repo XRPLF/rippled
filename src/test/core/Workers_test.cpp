@@ -156,7 +156,7 @@ public:
         testForThreadCount(tc1);
         testForThreadCount(tc2);
         testForThreadCount(tc3);
-        w.pauseAllThreadsAndWait();
+        w.stop();
 
         // We had better finished all our work!
         BEAST_EXPECT(cb.count == 0);
