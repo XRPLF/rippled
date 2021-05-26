@@ -111,12 +111,6 @@ public:
     void
     addDataCallback(InboundLedger::Reason reason, OnDeltaDataCB&& cb);
 
-    static char const*
-    getCountedObjectName()
-    {
-        return "LedgerDeltaAcquire";
-    }
-
 private:
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;

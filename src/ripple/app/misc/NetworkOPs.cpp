@@ -142,8 +142,6 @@ class NetworkOPsImp final : public NetworkOPs
         std::chrono::system_clock::time_point start_ =
             std::chrono::system_clock::now();
         static std::array<Json::StaticString const, 5> const states_;
-        static Json::StaticString const transitions_;
-        static Json::StaticString const dur_;
 
     public:
         explicit StateAccounting()
@@ -229,7 +227,6 @@ public:
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
         : app_(app)
-        , m_clock(clock)
         , m_journal(journal)
         , m_localTX(make_LocalTxs())
         , mMode(start_valid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
@@ -362,14 +359,6 @@ public:
         std::shared_ptr<STValidation> const& val,
         std::string const& source) override;
 
-    std::shared_ptr<SHAMap>
-    getTXMap(uint256 const& hash);
-    bool
-    hasTXSet(
-        const std::shared_ptr<Peer>& peer,
-        uint256 const& set,
-        protocol::TxSetStatus status);
-
     void
     mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire) override;
 
@@ -440,8 +429,6 @@ public:
     std::uint32_t
     acceptLedger(
         std::optional<std::chrono::milliseconds> consensusDelay) override;
-    uint256
-    getConsensusLCL() override;
     void
     reportFeeChange() override;
     void
@@ -618,7 +605,6 @@ private:
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
 
     Application& app_;
-    clock_type& m_clock;
     beast::Journal m_journal;
 
     std::unique_ptr<LocalTxs> m_localTX;
@@ -1738,12 +1724,6 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
 
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
-}
-
-uint256
-NetworkOPsImp::getConsensusLCL()
-{
-    return mConsensus.prevLedgerID();
 }
 
 bool

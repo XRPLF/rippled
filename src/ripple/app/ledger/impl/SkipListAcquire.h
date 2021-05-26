@@ -109,12 +109,6 @@ public:
     std::shared_ptr<SkipListData const>
     getData() const;
 
-    static char const*
-    getCountedObjectName()
-    {
-        return "SkipListAcquire";
-    }
-
 private:
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;

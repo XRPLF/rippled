@@ -210,12 +210,6 @@ public:
         return status;
     }
 
-    bool
-    canFetchBatch() override
-    {
-        return true;
-    }
-
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256 const*> const& hashes) override
     {
