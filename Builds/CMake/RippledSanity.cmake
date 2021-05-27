@@ -72,26 +72,13 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     "directory from ${CMAKE_CURRENT_SOURCE_DIR} and try building in a separate directory.")
 endif ()
 
-if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio.*2017" AND
-    NOT ("${CMAKE_GENERATOR}" MATCHES .*Win64.*))
-  message (FATAL_ERROR
-    "Visual Studio 32-bit build is not supported. Use -G\"${CMAKE_GENERATOR} Win64\". "
-    "See https://cmake.org/cmake/help/latest/generator/Visual%20Studio%2015%202017.html "
-    "for more information.")
-elseif ("${CMAKE_GENERATOR}" MATCHES "Visual Studio.*2019" AND
-    NOT ("${CMAKE_GENERATOR_PLATFORM}" MATCHES .*x64.*))
-  message (FATAL_ERROR
-    "Visual Studio 32-bit build is not supported. Use -G\"${CMAKE_GENERATOR}\" -Ax64. "
-    "See https://cmake.org/cmake/help/latest/generator/Visual%20Studio%2016%202019.html "
-    "for more information.")
-elseif ("${CMAKE_GENERATOR}" MATCHES "Visual Studio" AND
+if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio" AND
     NOT ("${CMAKE_GENERATOR}" MATCHES .*Win64.*) AND
     NOT ("${CMAKE_GENERATOR_PLATFORM}" MATCHES .*x64.*))
   message (FATAL_ERROR
-    "Visual Studio 32-bit build is not supported. Use -G\"${CMAKE_GENERATOR} Win64\" "
-    "or -G\"${CMAKE_GENERATOR}\" -Ax64. "
+    "Visual Studio 32-bit build is not supported. Use -G\"${CMAKE_GENERATOR}\" -Ax64. "
     "See https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators "
-    "for more information about which options to use.")
+    "for more information.")
 endif ()
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
