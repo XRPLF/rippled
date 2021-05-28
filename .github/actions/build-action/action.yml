@@ -94,13 +94,11 @@ runs:
             # generator from prior builds (ninja vs. makefiles).
             # Post condition: Cache will not be reused with a different
             # generator.
-            if [[ "${NINJA_BUILD}" == "true" && -d "${NIH_CACHE_ROOT}"/unix_makefiles && \
-              $( du -sm "${NIH_CACHE_ROOT}"/unix_makefiles | cut -f1 ) -gt 1000  ]]
+            if [[ "${NINJA_BUILD}" == "true" && -d "${NIH_CACHE_ROOT}"/unix_makefiles ]]
             then
               echo Erasing NIH cache for makefiles
               rm -rf "${NIH_CACHE_ROOT}"/unix_makefiles || true
-            elif [[ "${NINJA_BUILD}" == "false" && -d "${NIH_CACHE_ROOT}"/ninja && \
-              $( du -sm "${NIH_CACHE_ROOT}"/ninja | cut -f1 ) -gt 1000  ]]
+            elif [[ "${NINJA_BUILD}" == "false" && -d "${NIH_CACHE_ROOT}"/ninja ]]
             then
               echo Erasing NIH cache for ninja
               rm -rf "${NIH_CACHE_ROOT}"/ninja || true
@@ -123,8 +121,8 @@ runs:
               export CMAKE_EXTRA_ARGS+=" -Dassert=ON"
           fi
 
-          # Override environment variables that don't work smoothly
-          # using env:
+          # Set and/or override some environment variables based on
+          # inputs to the action.
           if [[ "${{ inputs.PARALLEL_TESTS }}" != "" ]]; then export PARALLEL_TESTS="${{ inputs.PARALLEL_TESTS }}" ; fi
           if [[ "${{ inputs.TARGET }}" != "" ]]; then export TARGET="${{ inputs.TARGET }}" ; fi
           if [[ "${{ inputs.SKIP_TESTS }}" != "" ]]; then export SKIP_TESTS="${{ inputs.SKIP_TESTS }}" ; fi
