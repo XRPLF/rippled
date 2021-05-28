@@ -31,6 +31,9 @@ while read line ; do
       done
       export PATH="${ADDPATH}:${PATH}"
       break
+    else
+      echo "VCINSTALLDIR not found. Complete environment:"
+      echo "${vcenv}"
     fi
   fi
 done <<EOL
