@@ -44,8 +44,14 @@ jobs:
       NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
     steps:
       - name: Cancel Previous Runs
+        # https://github.com/styfle/cancel-workflow-action/tree/0.9.0
+        # Note this will not cancel jobs triggered by a pull request event
+        # when the PR is created from a fork, even if for the same PR.
+        # It works fine within the same fork, and is intended to allow
+        # multiple pushes during development without ending up with a
+        # huge backlog of jobs.
         if: ${{ !contains(github.event.head_commit.message, 'ci_no_cancel') }}
-        uses: styfle/cancel-workflow-action@0.8.0
+        uses: styfle/cancel-workflow-action@0.9.0
         with:
           access_token: ${{ github.token }}
 

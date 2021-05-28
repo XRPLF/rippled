@@ -387,9 +387,6 @@ matrix:
     - <<: *windows
       stage: windep-vcpkg2
       name: prereq-keep-vcpkg2
-      install:
-        - choco upgrade cmake.install
-        - choco install ninja visualstudio2017-workload-vctools -y
       script:
         - df -h
         - env
