@@ -1895,22 +1895,46 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Account const alice{"alice"};
-        Account const bob{"bob"};
-
-        // We use the owner count to track whether trust lines (and other
-        // ledger objects) are created (or not) as expected.  These variables
-        // keep track of the expected owner counts of test participants.
-        std::size_t aliceOwns = 0;
-        std::size_t bobOwns = 0;
-        std::size_t gw1Owns = 0;
-
-        // Macros have a well deserved bad reputation.  But this local macro
-        // prevents copy-and-paste errors where the wrong owner is compared
-        // to the wrong counter.
-#define VERIFY_OWNS(OWNER) BEAST_EXPECT(ownerCount(env, OWNER) == OWNER##Owns)
-
         Env env{*this, features};
+
+        // An account that independently tracks its owner count.
+        struct AccountOwns
+        {
+            beast::unit_test::suite& suite;
+            Env const& env;
+            Account const acct;
+            std::size_t owners;
+
+            void
+            verifyOwners(std::uint32_t line) const
+            {
+                suite.expect(
+                    ownerCount(env, acct) == owners,
+                    "Owner count mismatch",
+                    __FILE__,
+                    line);
+            }
+
+            // Operators to make using the class more convenient.
+            operator Account const() const
+            {
+                return acct;
+            }
+
+            operator ripple::AccountID() const
+            {
+                return acct.id();
+            }
+
+            IOU
+            operator[](std::string const& s) const
+            {
+                return acct[s];
+            }
+        };
+
+        AccountOwns alice{*this, env, "alice", 0};
+        AccountOwns bob{*this, env, "bob", 0};
 
         // Fund with noripple so the accounts do not have any flags set.
         env.fund(XRP(5000), noripple(alice, bob));
@@ -1920,7 +1944,7 @@ class Check_test : public beast::unit_test::suite
         // live, then cashing a check without previously establishing a trust
         // line fails.
         {
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
 
             // Fund gw1 with noripple (even though that's atypical for a
             // gateway) so it does not have any flags set.  We'll set flags
@@ -1952,9 +1976,9 @@ class Check_test : public beast::unit_test::suite
         // Automatic trust line creation should fail if the check destination
         // can't afford the reserve for the trust line.
         {
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             IOU const CK8 = gw1["CK8"];
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             Account const yui{"yui"};
 
@@ -1971,7 +1995,7 @@ class Check_test : public beast::unit_test::suite
             env(check::cash(yui, chkId, CK8(99)),
                 ter(tecNO_LINE_INSUF_RESERVE));
             env.close();
-            VERIFY_OWNS(alice);
+            alice.verifyOwners(__LINE__);
 
             // Give yui enough XRP to meet the trust line's reserve.  Cashing
             // the check succeeds and creates the trust line.
@@ -1984,7 +2008,7 @@ class Check_test : public beast::unit_test::suite
 
             // The automatic trust line does not take a reserve from gw1.
             // Since gw1's check was consumed it has no owners.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
         }
 
         // We'll be looking at the effects of various account root flags.
@@ -2078,7 +2102,7 @@ class Check_test : public beast::unit_test::suite
         {
             // No account root flags on any participant.
             // Automatic trust line from issuer to destination.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
 
             BEAST_EXPECT((*env.le(gw1))[sfFlags] == 0);
             BEAST_EXPECT((*env.le(alice))[sfFlags] == 0);
@@ -2091,17 +2115,16 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw1, alice, OF1.currency)) == nullptr);
             env(offer(alice, OF1(98), XRP(98)));
-            ++aliceOwns;
+            ++alice.owners;
             env.close();
 
             // Both offers should be consumed.
             // Since gw1's offer was consumed and the trust line was not
             // created by gw1, gw1's owner count should be 0.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             // alice's automatically created trust line bumps her owner count.
-            VERIFY_OWNS(alice);
-            ;
+            alice.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK1 = gw1["CK1"];
@@ -2111,17 +2134,17 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw1, alice, CK1.currency)) == nullptr);
             env(check::cash(alice, chkId, CK1(98)));
-            ++aliceOwns;
+            ++alice.owners;
             verifyDeliveredAmount(env, CK1(98));
             env.close();
 
             // gw1's check should be consumed.
             // Since gw1's check was consumed and the trust line was not
             // created by gw1, gw1's owner count should be 0.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             // alice's automatically created trust line bumps her owner count.
-            VERIFY_OWNS(alice);
+            alice.verifyOwners(__LINE__);
 
             cmpTrustLines(gw1, alice, OF1, CK1);
         }
@@ -2134,14 +2157,14 @@ class Check_test : public beast::unit_test::suite
             // Transfer of assets using offers does not require rippling.
             // So bob's offer is successfully crossed which creates the
             // trust line.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             IOU const OF1 = gw1["OF1"];
             env(offer(alice, XRP(97), OF1(97)));
             env.close();
             BEAST_EXPECT(
                 env.le(keylet::line(alice, bob, OF1.currency)) == nullptr);
             env(offer(bob, OF1(97), XRP(97)));
-            ++bobOwns;
+            ++bob.owners;
             env.close();
 
             // Both offers should be consumed.
@@ -2149,9 +2172,9 @@ class Check_test : public beast::unit_test::suite
             env.require(balance(bob, OF1(97)));
 
             // bob now has an owner count of 1 due to the new trust line.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             //
@@ -2178,16 +2201,16 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // No one's owner count should have changed.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
         }
 
         //------------- lsfDefaultRipple, check written by issuer --------------
         {
             // gw1 enables rippling.
             // Automatic trust line from issuer to non-issuer should still work.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfDefaultRipple));
             env.close();
 
@@ -2198,16 +2221,16 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw1, alice, OF2.currency)) == nullptr);
             env(offer(alice, OF2(96), XRP(96)));
-            ++aliceOwns;
+            ++alice.owners;
             env.close();
 
             // Both offers should be consumed.
             // Since gw1's offer was consumed and the trust line was not
             // created by gw1, gw1's owner count should still be 0.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             // alice's automatically created trust line bumps her owner count.
-            VERIFY_OWNS(alice);
+            alice.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK2 = gw1["CK2"];
@@ -2217,17 +2240,17 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw1, alice, CK2.currency)) == nullptr);
             env(check::cash(alice, chkId, CK2(96)));
-            ++aliceOwns;
+            ++alice.owners;
             verifyDeliveredAmount(env, CK2(96));
             env.close();
 
             // gw1's check should be consumed.
             // Since gw1's check was consumed and the trust line was not
             // created by gw1, gw1's owner count should still be 0.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             // alice's automatically created trust line bumps her owner count.
-            VERIFY_OWNS(alice);
+            alice.verifyOwners(__LINE__);
 
             cmpTrustLines(gw1, alice, OF2, CK2);
         }
@@ -2237,20 +2260,20 @@ class Check_test : public beast::unit_test::suite
             // to non-issuer should work.
 
             // Use offers to automatically create the trust line.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             IOU const OF2 = gw1["OF2"];
             env(offer(alice, XRP(95), OF2(95)));
             env.close();
             BEAST_EXPECT(
                 env.le(keylet::line(alice, bob, OF2.currency)) == nullptr);
             env(offer(bob, OF2(95), XRP(95)));
-            ++bobOwns;
+            ++bob.owners;
             env.close();
 
             // bob's owner count should increase due to the new trust line.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK2 = gw1["CK2"];
@@ -2260,14 +2283,14 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(alice, bob, CK2.currency)) == nullptr);
             env(check::cash(bob, chkId, CK2(95)));
-            ++bobOwns;
+            ++bob.owners;
             verifyDeliveredAmount(env, CK2(95));
             env.close();
 
             // bob's owner count should increase due to the new trust line.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             cmpTrustLines(alice, bob, OF2, CK2);
         }
@@ -2280,7 +2303,7 @@ class Check_test : public beast::unit_test::suite
             // change any outcomes.
             //
             // Automatic trust line from issuer to non-issuer should still work.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfDepositAuth));
             env(fset(alice, asfDepositAuth));
             env(fset(bob, asfDepositAuth));
@@ -2293,16 +2316,16 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw1, alice, OF3.currency)) == nullptr);
             env(offer(alice, OF3(94), XRP(94)));
-            ++aliceOwns;
+            ++alice.owners;
             env.close();
 
             // Both offers should be consumed.
             // Since gw1's offer was consumed and the trust line was not
             // created by gw1, gw1's owner count should still be 0.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             // alice's automatically created trust line bumps her owner count.
-            VERIFY_OWNS(alice);
+            alice.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK3 = gw1["CK3"];
@@ -2312,17 +2335,17 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw1, alice, CK3.currency)) == nullptr);
             env(check::cash(alice, chkId, CK3(94)));
-            ++aliceOwns;
+            ++alice.owners;
             verifyDeliveredAmount(env, CK3(94));
             env.close();
 
             // gw1's check should be consumed.
             // Since gw1's check was consumed and the trust line was not
             // created by gw1, gw1's owner count should still be 0.
-            VERIFY_OWNS(gw1);
+            gw1.verifyOwners(__LINE__);
 
             // alice's automatically created trust line bumps her owner count.
-            VERIFY_OWNS(alice);
+            alice.verifyOwners(__LINE__);
 
             cmpTrustLines(gw1, alice, OF3, CK3);
         }
@@ -2332,20 +2355,20 @@ class Check_test : public beast::unit_test::suite
             // automatic trust line creation.
 
             // Use offers to automatically create the trust line.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             IOU const OF3 = gw1["OF3"];
             env(offer(alice, XRP(93), OF3(93)));
             env.close();
             BEAST_EXPECT(
                 env.le(keylet::line(alice, bob, OF3.currency)) == nullptr);
             env(offer(bob, OF3(93), XRP(93)));
-            ++bobOwns;
+            ++bob.owners;
             env.close();
 
             // bob's owner count should increase due to the new trust line.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK3 = gw1["CK3"];
@@ -2355,14 +2378,14 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(alice, bob, CK3.currency)) == nullptr);
             env(check::cash(bob, chkId, CK3(93)));
-            ++bobOwns;
+            ++bob.owners;
             verifyDeliveredAmount(env, CK3(93));
             env.close();
 
             // bob's owner count should increase due to the new trust line.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             cmpTrustLines(alice, bob, OF3, CK3);
         }
@@ -2371,7 +2394,7 @@ class Check_test : public beast::unit_test::suite
         {
             // Set lsfGlobalFreeze on gw1.  That should stop any automatic
             // trust lines from being created.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfGlobalFreeze));
             env.close();
 
@@ -2385,9 +2408,9 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // No one's owner count should have changed.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK4 = gw1["CK4"];
@@ -2400,9 +2423,9 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // No one's owner count should have changed.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Because gw1 has set lsfGlobalFreeze, neither trust line
             // is created.
@@ -2417,7 +2440,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            Account const gw1{"gw1"};
+            AccountOwns gw1{*this, env, "gw1", 0};
             IOU const OF4 = gw1["OF4"];
             env(offer(alice, XRP(91), OF4(91)), ter(tecFROZEN));
             env.close();
@@ -2427,9 +2450,9 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // No one's owner count should have changed.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK4 = gw1["CK4"];
@@ -2442,9 +2465,9 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // No one's owner count should have changed.
-            VERIFY_OWNS(gw1);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw1.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Because gw1 has set lsfGlobalFreeze, neither trust line
             // is created.
@@ -2455,13 +2478,12 @@ class Check_test : public beast::unit_test::suite
         }
 
         //-------------- lsfRequireAuth, check written by issuer ---------------
-        std::size_t gw2Owns = 0;
 
         // We want to test the lsfRequireAuth flag, but we can't set that
         // flag on an account that already has trust lines.  So we'll fund
         // a new gateway and use that.
         {
-            Account const gw2{"gw2"};
+            AccountOwns gw2{*this, env, "gw2", 0};
             env.fund(XRP(5000), gw2);
             env.close();
 
@@ -2474,7 +2496,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF5 = gw2["OF5"];
             std::uint32_t gw2OfferSeq = {env.seq(gw2)};
             env(offer(gw2, XRP(92), OF5(92)));
-            ++gw2Owns;
+            ++gw2.owners;
             env.close();
             BEAST_EXPECT(
                 env.le(keylet::line(gw2, alice, OF5.currency)) == nullptr);
@@ -2483,21 +2505,21 @@ class Check_test : public beast::unit_test::suite
 
             // gw2 should still own the offer, but no one else's owner
             // count should have changed.
-            VERIFY_OWNS(gw2);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw2.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Since we don't need it any more, remove gw2's offer.
             env(offer_cancel(gw2, gw2OfferSeq));
-            --gw2Owns;
+            --gw2.owners;
             env.close();
-            VERIFY_OWNS(gw2);
+            gw2.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK5 = gw2["CK5"];
             uint256 const chkId{getCheckIndex(gw2, env.seq(gw2))};
             env(check::create(gw2, alice, CK5(92)));
-            ++gw2Owns;
+            ++gw2.owners;
             env.close();
             BEAST_EXPECT(
                 env.le(keylet::line(gw2, alice, CK5.currency)) == nullptr);
@@ -2506,9 +2528,9 @@ class Check_test : public beast::unit_test::suite
 
             // gw2 should still own the check, but no one else's owner
             // count should have changed.
-            VERIFY_OWNS(gw2);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw2.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Because gw2 has set lsfRequireAuth, neither trust line
             // is created.
@@ -2519,9 +2541,9 @@ class Check_test : public beast::unit_test::suite
 
             // Since we don't need it any more, remove gw2's check.
             env(check::cancel(gw2, chkId));
-            --gw2Owns;
+            --gw2.owners;
             env.close();
-            VERIFY_OWNS(gw2);
+            gw2.verifyOwners(__LINE__);
         }
         //------------ lsfRequireAuth, check written by non-issuer -------------
         {
@@ -2529,7 +2551,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            Account const gw2{"gw2"};
+            AccountOwns gw2{*this, env, "gw2", 0};
             IOU const OF5 = gw2["OF5"];
             env(offer(alice, XRP(91), OF5(91)), ter(tecUNFUNDED_OFFER));
             env.close();
@@ -2538,9 +2560,9 @@ class Check_test : public beast::unit_test::suite
                 env.le(keylet::line(gw2, bob, OF5.currency)) == nullptr);
             env.close();
 
-            VERIFY_OWNS(gw2);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw2.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Use check cashing to automatically create the trust line.
             IOU const CK5 = gw2["CK5"];
@@ -2557,9 +2579,9 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // No one's owner count should have changed.
-            VERIFY_OWNS(gw2);
-            VERIFY_OWNS(alice);
-            VERIFY_OWNS(bob);
+            gw2.verifyOwners(__LINE__);
+            alice.verifyOwners(__LINE__);
+            bob.verifyOwners(__LINE__);
 
             // Because gw2 has set lsfRequireAuth, neither trust line
             // is created.
@@ -2568,7 +2590,6 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.le(keylet::line(gw2, bob, CK5.currency)) == nullptr);
         }
-#undef VERIFY_OWNS
     }
 
     void
