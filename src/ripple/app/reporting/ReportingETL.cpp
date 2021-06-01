@@ -333,11 +333,11 @@ ReportingETL::publishLedger(uint32_t ledgerSequence, uint32_t maxAttempts)
             continue;
         }
 
-        publishStrand_.post([this, ledger]() {
+        publishStrand_.post([this, ledger, fname = __func__]() {
             app_.getOPs().pubLedger(ledger);
             setLastPublish();
             JLOG(journal_.info())
-                << __func__ << " : "
+                << fname << " : "
                 << "Published ledger. " << detail::toString(ledger->info());
         });
         return true;
