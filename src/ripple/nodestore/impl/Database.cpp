@@ -120,14 +120,14 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
     batch.reserve(batchWritePreallocationSize);
-    auto storeBatch = [&]() {
+    auto storeBatch = [&, fname = __func__]() {
         try
         {
             dstBackend.storeBatch(batch);
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.error()) << "Exception caught in function " << __func__
+            JLOG(j_.error()) << "Exception caught in function " << fname
                              << ". Error: " << e.what();
             return;
         }
@@ -201,7 +201,7 @@ Database::storeLedger(
 
     Batch batch;
     batch.reserve(batchWritePreallocationSize);
-    auto storeBatch = [&]() {
+    auto storeBatch = [&, fname = __func__]() {
         std::uint64_t sz{0};
         for (auto const& nodeObject : batch)
             sz += nodeObject->getData().size();
@@ -213,7 +213,7 @@ Database::storeLedger(
         catch (std::exception const& e)
         {
             fail(
-                std::string("Exception caught in function ") + __func__ +
+                std::string("Exception caught in function ") + fname +
                 ". Error: " + e.what());
             return false;
         }
