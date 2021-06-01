@@ -110,9 +110,9 @@ ETLSource::reconnect(boost::beast::error_code ec)
     size_t waitTime = std::min(pow(2, numFailures_), 30.0);
     numFailures_++;
     timer_.expires_after(boost::asio::chrono::seconds(waitTime));
-    timer_.async_wait([this](auto ec) {
+    timer_.async_wait([this, fname = __func__](auto ec) {
         bool startAgain = (ec != boost::asio::error::operation_aborted);
-        JLOG(journal_.trace()) << __func__ << " async_wait : ec = " << ec;
+        JLOG(journal_.trace()) << fname << " async_wait : ec = " << ec;
         close(startAgain);
     });
 }
@@ -133,11 +133,11 @@ ETLSource::close(bool startAgain)
             closing_ = true;
             ws_->async_close(
                 boost::beast::websocket::close_code::normal,
-                [this, startAgain](auto ec) {
+                [this, startAgain, fname = __func__](auto ec) {
                     if (ec)
                     {
                         JLOG(journal_.error())
-                            << __func__ << " async_close : "
+                            << fname << " async_close : "
                             << "error code = " << ec << " - " << toString();
                     }
                     closing_ = false;

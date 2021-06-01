@@ -495,7 +495,7 @@ DatabaseShardImp::importShard(
     }
     dstDir /= std::to_string(shardIndex);
 
-    auto renameDir = [&](path const& src, path const& dst) {
+    auto renameDir = [&, fname = __func__](path const& src, path const& dst) {
         try
         {
             rename(src, dst);
@@ -503,7 +503,7 @@ DatabaseShardImp::importShard(
         catch (std::exception const& e)
         {
             return fail(
-                std::string(". Exception caught in function ") + __func__ +
+                std::string(". Exception caught in function ") + fname +
                     ". Error: " + e.what(),
                 std::lock_guard(mutex_));
         }
