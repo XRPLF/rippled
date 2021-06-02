@@ -28,9 +28,11 @@ env:
   CXX: cl.exe
   srcdir: ${{ github.workspace }}\rippled
   builddir: ${{ github.workspace }}\rippled\build\ms
+  VCVersion: 'VC2017'
   # 2017 compiler is version 14.16
-  # 2019 compiler is version 14.28
-  vcvarsparams: "-vcvars_ver=14.16"
+  # 2019 compiler is version 14.2x
+  VC2017: '-vcvars_ver=14.16'
+  VC2019: '-vcvars_ver=14.29'
   verbose: ${{ contains(github.event.head_commit.message, 'ci_verbose') }}
 
 jobs:
@@ -103,6 +105,8 @@ jobs:
           env
           set | grep =
 
+          find /c/Program\ Files\ \(x86\)/ -iname 'cl.exe'
+
       - name: Setup cache folders
         if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
         shell: bash
@@ -152,7 +156,7 @@ jobs:
             fi
 
             cd ${srcdir}
-            . ./bin/sh/setup-msvc.sh ${vcvarsparams}
+            . ./bin/sh/setup-msvc.sh ${!VCVersion}
             if [[ "${verbose}" == "true" ]] ; then
               type -a ninja || true
               type -a cl.exe || true
@@ -204,7 +208,7 @@ jobs:
 
             cd ${srcdir}
 
-            ./Builds/containers/shared/install_boost.sh ${vcvarsparams}
+            ./Builds/containers/shared/install_boost.sh ${!VCVersion}
 
       - name: Initialize cmake cache
         if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
@@ -216,7 +220,7 @@ jobs:
               set -x
               choco list | wc
             fi
-            . ${srcdir}/bin/sh/setup-msvc.sh ${vcvarsparams}
+            . ${srcdir}/bin/sh/setup-msvc.sh ${!VCVersion}
             [[ "${verbose}" == "true" ]] && type -a ninja || true
 
             # Download the NIH items
@@ -277,9 +281,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 2017 compiler is version 14.16
-        # 2019 compiler is version 14.28
-        vcvarsparams: [ '-vcvars_ver=14.16', '-vcvars_ver=14.28' ]
+        VCVersion: [ 'VC2017', 'VC2019' ]
         BUILD_TYPE: [ Debug, Release ]
         CMAKE_GENERATOR: [ 'Ninja' ]
         name: [ '' ]
@@ -289,7 +291,7 @@ jobs:
           - # The VS2017 Debug tests with two threads are flaky on
             # Github runners. Limit to one thread.
             name: ''
-            vcvarsparams: '-vcvars_ver=14.16'
+            VCVersion: 'VC2017'
             BUILD_TYPE: Debug
             test_jobs: 1
 
@@ -300,17 +302,17 @@ jobs:
             DESTDIR: '_installed_'
             RUNDIR: '_installed_/Program Files/rippled/bin'
             BUILD_ARGS: '--config ${BUILD_TYPE} --target install'
-            vcvarsparams: '-vcvars_ver=14.16'
+            VCVersion: 'VC2017'
 
 
     # VS 2019 debug builds have a bug handling constexpr char*
     # that causes tests to fail. Skip them unless the windows
     # tests are explicitly requested.
-    continue-on-error: ${{ matrix.BUILD_TYPE == 'Debug' && matrix.vcvarsparams == '-vcvars_ver=14.28' }}
+    continue-on-error: ${{ matrix.BUILD_TYPE == 'Debug' && matrix.VCVersion == 'VC2019' }}
     env:
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
       NUM_PROCESSORS: ${{ needs.windows_cache.outputs.NUM_PROCESSORS }}
-      vcvarsparams: ${{ matrix.vcvarsparams }}
+      VCVersion: ${{ matrix.VCVersion }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -335,11 +337,11 @@ jobs:
         # the previous job.
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
+          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}
             ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions}}
             ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-
 
@@ -367,7 +369,7 @@ jobs:
               popd
             fi
 
-            . ${srcdir}/bin/sh/setup-msvc.sh ${vcvarsparams}
+            . ${srcdir}/bin/sh/setup-msvc.sh ${!VCVersion}
             if [[ "${verbose}" == "true" ]] ; then
               type -a cl.exe || true
               type -a vcpkg
@@ -387,7 +389,7 @@ jobs:
         run: |
             [[ "${verbose}" == "true" ]] && set -x || true
             df -h
-            . ${srcdir}/bin/sh/setup-msvc.sh ${vcvarsparams}
+            . ${srcdir}/bin/sh/setup-msvc.sh ${!VCVersion}
             [[ "${verbose}" == "true" ]] && type -a ninja || true
             mkdir -p $builddir && cd $builddir
             if [ "${CMAKE_BOOST}" != "" ] ; then
@@ -409,7 +411,7 @@ jobs:
         # VS 2019 debug builds have a bug handling constexpr char*
         # that causes tests to fail. Skip them unless the windows
         # tests are explicitly requested.
-        if: ${{ matrix.BUILD_TYPE != 'Debug' || matrix.vcvarsparams != '-vcvars_ver=14.28' || contains(github.event.head_commit.message, 'ci_run_win') }}
+        if: ${{ matrix.BUILD_TYPE != 'Debug' || matrix.VCVersion != 'VC2019' || contains(github.event.head_commit.message, 'ci_run_win') }}
         shell: bash
         run: |
             runparams="--quiet"
@@ -444,7 +446,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.vcvarsparams }}
+          name: debug-output ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -457,7 +459,7 @@ jobs:
         if: ${{ always() }}
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.vcvarsparams }}
+          name: rippled ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
