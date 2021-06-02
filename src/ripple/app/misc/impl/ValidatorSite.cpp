@@ -118,24 +118,32 @@ ValidatorSite::~ValidatorSite()
 }
 
 bool
-ValidatorSite::missingSite()
+ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)
 {
     auto const sites = app_.validators().loadLists();
-    return sites.empty() || load(sites);
+    return sites.empty() || load(sites, lock_sites);
 }
 
 bool
 ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
-    // If no sites are provided, act as if a site failed to load.
-    if (siteURIs.empty())
-    {
-        return missingSite();
-    }
-
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
     std::lock_guard lock{sites_mutex_};
+
+    return load(siteURIs, lock);
+}
+
+bool
+ValidatorSite::load(
+    std::vector<std::string> const& siteURIs,
+    std::lock_guard<std::mutex> const& lock_sites)
+{
+    // If no sites are provided, act as if a site failed to load.
+    if (siteURIs.empty())
+    {
+        return missingSite(lock_sites);
+    }
 
     for (auto const& uri : siteURIs)
     {
@@ -198,7 +206,7 @@ ValidatorSite::stop()
 }
 
 void
-ValidatorSite::setTimer(std::lock_guard<std::mutex>& state_lock)
+ValidatorSite::setTimer(std::lock_guard<std::mutex> const& state_lock)
 {
     std::lock_guard lock{sites_mutex_};
 
@@ -223,7 +231,7 @@ void
 ValidatorSite::makeRequest(
     std::shared_ptr<Site::Resource> resource,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& sites_lock)
+    std::lock_guard<std::mutex> const& sites_lock)
 {
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
@@ -352,7 +360,7 @@ void
 ValidatorSite::parseJsonResponse(
     std::string const& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& sites_lock)
+    std::lock_guard<std::mutex> const& sites_lock)
 {
     Json::Value const body = [&res, siteIdx, this]() {
         Json::Reader r;
@@ -474,7 +482,7 @@ std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
     detail::response_type& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& sites_lock)
+    std::lock_guard<std::mutex> const& sites_lock)
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
@@ -539,7 +547,7 @@ ValidatorSite::onSiteFetch(
 
             // See if there's a copy saved locally from last time we
             // saw the list.
-            missingSite();
+            missingSite(lock_sites);
         };
         if (ec)
         {
