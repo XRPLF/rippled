@@ -117,8 +117,8 @@ class FeatureCollections
         "FlowSortStrands",
         "fixSTAmountCanonicalize",
         "fixRmSmallIncreasedQOffers",
+        "SimplifiedSetSignerList",
     };
-
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
     boost::container::flat_map<std::string, uint256> nameToFeature;
@@ -378,6 +378,7 @@ extern uint256 const featureTicketBatch;
 extern uint256 const featureFlowSortStrands;
 extern uint256 const fixSTAmountCanonicalize;
 extern uint256 const fixRmSmallIncreasedQOffers;
+extern uint256 const featureSimplifiedSetSignerList;
 
 }  // namespace ripple
 

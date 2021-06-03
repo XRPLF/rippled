@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
-#include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
+#include <algorithm>
 #include <test/jtx/multisign.h>
 #include <test/jtx/utility.h>
 
@@ -33,8 +33,15 @@ Json::Value
 signers(
     Account const& account,
     std::uint32_t quorum,
-    std::vector<signer> const& v)
+    std::vector<signer> v,
+    bool sort)
 {
+    if (sort)
+    {
+        std::sort(v.begin(), v.end(), [](signer const& a, signer const& b) {
+            return a.account.id() < b.account.id();
+        });
+    }
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;

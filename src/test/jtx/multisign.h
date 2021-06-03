@@ -46,7 +46,8 @@ Json::Value
 signers(
     Account const& account,
     std::uint32_t quorum,
-    std::vector<signer> const& v);
+    std::vector<signer> v,
+    bool sort = true);
 
 /** Remove a signer list. */
 Json::Value

@@ -122,11 +122,8 @@ public:
         // Add a signer with a weight of zero.  Should fail.
         env(signers(alice, 1, {{bogie, 0}}), ter(temBAD_WEIGHT));
 
-        // Add a signer where the weight is too big.  Should fail since
-        // the weight field is only 16 bits.  The jtx framework can't do
-        // this kind of test, so it's commented out.
-        //      env(signers(alice, 1, { { bogie, 0x10000} }), ter
-        //      (temBAD_WEIGHT));
+        // Add no signer.  Should fail.
+        env(signers(alice, 1, {}), ter(temMALFORMED));
 
         // Add the same signer twice.  Should fail.
         env(signers(
@@ -177,6 +174,25 @@ public:
 
         env.close();
         env.require(owners(alice, 0));
+
+        // If list must be sorted try two ways and when one is wrong other must
+        // be right
+        env(signers(alice, 1, {{spook, 1}, {demon, 1}}, false),
+            ter(std::ignore));
+        auto const res1 = env.ter();
+        env.close();
+
+        env(signers(alice, 1, {{demon, 1}, {spook, 1}}, false),
+            ter(std::ignore));
+        auto const res2 = env.ter();
+        env.close();
+
+        if (features[featureSimplifiedSetSignerList])
+            BEAST_EXPECT(
+                ((res1 == tesSUCCESS) && (res2 == temMALFORMED)) ||
+                ((res1 == temMALFORMED) && (res2 == tesSUCCESS)));
+        else
+            BEAST_EXPECT((res1 == tesSUCCESS) && (res2 == tesSUCCESS));
     }
 
     void
@@ -1396,7 +1412,10 @@ public:
         Account const cheri{"cheri", KeyType::secp256k1};
         Account const daria{"daria", KeyType::ed25519};
 
-        Env env{*this, supported_amendments() - featureMultiSignReserve};
+        Env env{
+            *this,
+            supported_amendments() - featureSimplifiedSetSignerList -
+                featureMultiSignReserve};
         env.fund(XRP(1000), alice, becky, cheri, daria);
         env.close();
 
@@ -1543,12 +1562,21 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
 
-        // The reserve required on a signer list changes based on.
-        // featureMultiSignReserve.  Test both with and without.
-        testAll(all - featureMultiSignReserve);
-        testAll(all | featureMultiSignReserve);
+        auto amendments = supported_amendments() -
+            featureMultiSignReserve - featureSimplifiedSetSignerList;
+
+        amendments = amendments | featureTicketBatch;
+        testAll(amendments);
+
+        amendments = amendments | featureMultiSignReserve;
+        testAll(amendments);
+
+        // featureSimplifiedSetSignerList needs also featureMultiSignReserve:
+        amendments = amendments | featureSimplifiedSetSignerList;
+        amendments = amendments | featureMultiSignReserve;
+        testAll(amendments);
+
         test_amendmentTransition();
     }
 };

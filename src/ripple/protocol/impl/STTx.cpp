@@ -325,7 +325,7 @@ STTx::checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const
     STArray const& signers{getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() < minMultiSigners || signers.size() > maxMultiSigners)
+    if (signers.empty() || signers.size() > maxMultiSigners)
         return {false, "Invalid Signers array size."};
 
     // We can ease the computational load inside the loop a bit by
