@@ -128,6 +128,9 @@ public:
     bool
     transactionDbHasSpace(Config const& config) override;
 
+    bool
+    isCaughtUp(std::string& reason) override;
+
 private:
     Application& app_;
     beast::Journal j_;
@@ -271,6 +274,25 @@ getRelationalDBInterfacePostgres(
 {
     return std::make_unique<RelationalDBInterfacePostgresImp>(
         app, config, jobQueue);
+}
+bool
+RelationalDBInterfacePostgresImp::isCaughtUp(std::string& reason)
+{
+#ifdef RIPPLED_REPORTING
+    using namespace std::chrono_literals;
+    auto age = PgQuery(pgPool_)("SELECT age()");
+    if (!age || age.isNull())
+    {
+        reason = "No ledgers in database";
+        return false;
+    }
+    if (std::chrono::seconds{age.asInt()} > 3min)
+    {
+        reason = "No recently-published ledger";
+        return false;
+    }
+#endif
+    return true;
 }
 
 }  // namespace ripple

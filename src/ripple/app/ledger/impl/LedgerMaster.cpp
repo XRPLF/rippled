@@ -273,7 +273,7 @@ LedgerMaster::getValidatedLedgerAge()
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return dynamic_cast<RelationalDBInterfacePostgres*>(
+        return static_cast<RelationalDBInterfacePostgres*>(
                    &app_.getRelationalDBInterface())
             ->getValidatedLedgerAge();
 #endif
@@ -299,20 +299,9 @@ LedgerMaster::isCaughtUp(std::string& reason)
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-    {
-        auto age = PgQuery(app_.getPgPool())("SELECT age()");
-        if (!age || age.isNull())
-        {
-            reason = "No ledgers in database";
-            return false;
-        }
-        if (std::chrono::seconds{age.asInt()} > 3min)
-        {
-            reason = "No recently-published ledger";
-            return false;
-        }
-        return true;
-    }
+        return static_cast<RelationalDBInterfacePostgres*>(
+                   &app_.getRelationalDBInterface())
+            ->isCaughtUp(reason);
 #endif
 
     if (getPublishedLedgerAge() > 3min)
@@ -1665,7 +1654,7 @@ LedgerMaster::getCompleteLedgers()
 {
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return dynamic_cast<RelationalDBInterfacePostgres*>(
+        return static_cast<RelationalDBInterfacePostgres*>(
                    &app_.getRelationalDBInterface())
             ->getCompleteLedgers();
 #endif

@@ -104,6 +104,18 @@ public:
      */
     virtual Transaction::Locator
     locateTransaction(uint256 const& id) = 0;
+
+    /**
+     * @brief      isCaughtUp returns whether the database is caught up with the
+     *             network
+     * @param[out] reason if the database is not caught up, reason contains a
+     *             helpful message describing why
+     * @return     false if the most recently written
+     *             ledger has a close time over 3 minutes ago, or if there are
+     *             no ledgers in the database. true otherwise
+     */
+    virtual bool
+    isCaughtUp(std::string& reason) = 0;
 };
 
 }  // namespace ripple
