@@ -9,8 +9,6 @@ then
     # troublemakers
     # DetectCrash intentionally fails
     exclude="grep -v -e beast.unit_test.DetectCrash"
-    # DatabaseShard test broke in a 1.8 beta
-    exclude+=" -e ripple.NodeStore.DatabaseShard"
     if [[ ${TRAVIS:-false} == "true" || ${GITHUB_ACTIONS:-false} == "true" ]]
     then
         exclude+=" -e ripple.consensus.ScaleFreeSim \
