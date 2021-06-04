@@ -101,7 +101,7 @@ Classes</h1>
 <div class="line">  /** Starts downloading and importing archives. */</div>
 <div class="line">  bool</div>
 <div class="line">  start();</div>
-</div><!-- fragment --><p>When a client submits a <code>download_shard</code> command via the RPC interface, each of the requested files is registered with the handler via the <code>add</code> method. After all the files have been registered, the handler's <code>start</code> method is invoked, which in turn creates an instance of the <code>HTTPDownloader</code> and begins the first download. When the download is completed, the downloader invokes the handler's <code>complete</code> method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When <code>complete</code> is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application to assist with graceful shutdowns by <code>Stoppable</code>.</p>
+</div><!-- fragment --><p>When a client submits a <code>download_shard</code> command via the RPC interface, each of the requested files is registered with the handler via the <code>add</code> method. After all the files have been registered, the handler's <code>start</code> method is invoked, which in turn creates an instance of the <code>HTTPDownloader</code> and begins the first download. When the download is completed, the downloader invokes the handler's <code>complete</code> method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When <code>complete</code> is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application to assist with graceful shutdowns.</p>
 <ul>
 <li><p class="startli"><code>DatabaseBody</code></p>
 <p class="startli">This class defines a custom message body type, allowing an <code><a href="http::response_parser">http::response_parser</a></code> to write to an SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.</p>
@@ -121,25 +121,25 @@ Member Variables:</h4>
 Graceful Shutdowns</h2>
 <h4><a class="anchor" id="autotoc_md161"></a>
 Thread 1:</h4>
-<p>A graceful shutdown begins when the <code>onStop()</code> method of the <code>ShardArchiveHandler</code> is invoked:</p>
+<p>A graceful shutdown begins when the <code>stop()</code> method of the <code>ShardArchiveHandler</code> is invoked:</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void</div>
-<div class="line">ShardArchiveHandler::onStop()</div>
+<div class="line">ShardArchiveHandler::stop()</div>
 <div class="line">{</div>
 <div class="line">    std::lock_guard&lt;std::mutex&gt; lock(m_);</div>
 <div class="line"> </div>
 <div class="line">    if (downloader_)</div>
 <div class="line">    {</div>
-<div class="line">        downloader_-&gt;onStop();</div>
+<div class="line">        downloader_-&gt;stop();</div>
 <div class="line">        downloader_.reset();</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    stopped();</div>
 <div class="line">}</div>
-</div><!-- fragment --><p>Inside of <code>HTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>stop_</code> member variable is set and the thread waits for the download to stop:</p>
+</div><!-- fragment --><p>Inside of <code>HTTPDownloader::stop()</code>, if a download is currently in progress, the <code>stop_</code> member variable is set and the thread waits for the download to stop:</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void</div>
-<div class="line">HTTPDownloader::onStop()</div>
+<div class="line">HTTPDownloader::stop()</div>
 <div class="line">{</div>
 <div class="line">    std::unique_lock lock(m_);</div>
 <div class="line"> </div>

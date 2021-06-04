@@ -113,11 +113,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3226ecf56a2d2ac47514917082d55204"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#a3226ecf56a2d2ac47514917082d55204">newRound</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq)=0</td></tr>
 <tr class="memdesc:a3226ecf56a2d2ac47514917082d55204"><td class="mdescLeft">&#160;</td><td class="mdescRight">Informs the container if a new consensus round.  <a href="classripple_1_1InboundTransactions.html#a3226ecf56a2d2ac47514917082d55204">More...</a><br /></td></tr>
 <tr class="separator:a3226ecf56a2d2ac47514917082d55204"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1aa456ca7047c1a43eb993d885ddb00e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#a1aa456ca7047c1a43eb993d885ddb00e">stop</a> ()=0</td></tr>
+<tr class="separator:a1aa456ca7047c1a43eb993d885ddb00e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Manages the acquisition and lifetime of transaction sets. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundTransactions_8h_source.html#l00036">36</a> of file <a class="el" href="InboundTransactions_8h_source.html">InboundTransactions.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundTransactions_8h_source.html#l00035">35</a> of file <a class="el" href="InboundTransactions_8h_source.html">InboundTransactions.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a7e983f1242289095a89311b17b72be0b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7e983f1242289095a89311b17b72be0b">&#9670;&nbsp;</a></span>clock_type</h2>
@@ -131,7 +133,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundTransactions_8h_source.html#l00039">39</a> of file <a class="el" href="InboundTransactions_8h_source.html">InboundTransactions.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundTransactions_8h_source.html#l00038">38</a> of file <a class="el" href="InboundTransactions_8h_source.html">InboundTransactions.h</a>.</p>
 
 </div>
 </div>
@@ -337,8 +339,6 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#ac3cf03fa813190019d8ef47edd49a568">ripple::InboundTransactionsImp</a>.</p>
-
 </div>
 </div>
 <a id="aca94ada1bea94330fa6e7b1076d7952b"></a>
@@ -422,6 +422,33 @@ Public Member Functions</h2></td></tr>
 <p>Informs the container if a new consensus round. </p>
 
 <p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#a1707fff4d233251ab6ce2b8747b7e3ad">ripple::InboundTransactionsImp</a>.</p>
+
+</div>
+</div>
+<a id="a1aa456ca7047c1a43eb993d885ddb00e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1aa456ca7047c1a43eb993d885ddb00e">&#9670;&nbsp;</a></span>stop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::InboundTransactions::stop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#a8dc2f561b3b29a2b8b95f62732b6bd9e">ripple::InboundTransactionsImp</a>.</p>
 
 </div>
 </div>

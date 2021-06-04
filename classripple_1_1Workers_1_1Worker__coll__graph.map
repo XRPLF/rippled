@@ -5,7 +5,7 @@
 <area shape="rect" id="node10" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="591,84,805,140"/>
 <area shape="rect" id="node13" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="596,165,800,206"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="295,333,466,360"/>
-<area shape="rect" id="node7" href="$classripple_1_1Workers.html" title="A group of threads that process tasks." alt="" coords="991,395,1111,421"/>
+<area shape="rect" id="node7" href="$classripple_1_1Workers.html" title="Workers is effectively a thread pool." alt="" coords="991,395,1111,421"/>
 <area shape="rect" id="node11" href="$classripple_1_1basic__semaphore.html" title=" " alt="" coords="597,445,799,501"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="335,577,427,604"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="655,639,741,665"/>

@@ -73,7 +73,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Test cases: <a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html" title="Test cases: LedgerReplayer_test: – process TMProofPathRequest and TMProofPathResponse – process TMRep...">LedgerReplayer_test</a>: &ndash; process TMProofPathRequest and TMProofPathResponse &ndash; process TMReplayDeltaRequest and TMReplayDeltaResponse &ndash; update and merge <a class="el" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html">LedgerReplayTask::TaskParameter</a> &ndash; process [ledger_replay] section in config &ndash; peer handshake &ndash; replay a range of ledgers that the local node already has &ndash; replay a range of ledgers and fallback to <a class="el" href="classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers.">InboundLedgers</a> because peers do not support <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">ProtocolFeature::LedgerReplay</a> &ndash; replay a range of ledgers and the network drops or repeats messages &ndash; call onStop() and the tasks and subtasks are removed &ndash; process a bad skip list &ndash; process a bad ledger delta &ndash; replay ledger ranges with different overlaps.  
+<p>Test cases: <a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html" title="Test cases: LedgerReplayer_test: – process TMProofPathRequest and TMProofPathResponse – process TMRep...">LedgerReplayer_test</a>: &ndash; process TMProofPathRequest and TMProofPathResponse &ndash; process TMReplayDeltaRequest and TMReplayDeltaResponse &ndash; update and merge <a class="el" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html">LedgerReplayTask::TaskParameter</a> &ndash; process [ledger_replay] section in config &ndash; peer handshake &ndash; replay a range of ledgers that the local node already has &ndash; replay a range of ledgers and fallback to <a class="el" href="classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers.">InboundLedgers</a> because peers do not support <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">ProtocolFeature::LedgerReplay</a> &ndash; replay a range of ledgers and the network drops or repeats messages &ndash; call stop() and the tasks and subtasks are removed &ndash; process a bad skip list &ndash; process a bad ledger delta &ndash; replay ledger ranges with different overlaps.  
  <a href="structripple_1_1test_1_1LedgerReplayer__test.html#details">More...</a></p>
 <div class="dynheader">
 Inheritance diagram for ripple::test::LedgerReplayer_test:</div>
@@ -112,8 +112,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac313b58a2d0843ab4f8d46ece7fac907"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8bbc2e5217f94c203c1289743e2fbad"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html#ae8bbc2e5217f94c203c1289743e2fbad">testPeerSetBehavior</a> (<a class="el" href="namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1">PeerSetBehavior</a> peerSetBehavior, int totalReplay=4)</td></tr>
 <tr class="separator:ae8bbc2e5217f94c203c1289743e2fbad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4be7827eeb158ac5bb0b23fdea9c7793"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html#a4be7827eeb158ac5bb0b23fdea9c7793">testOnStop</a> ()</td></tr>
-<tr class="separator:a4be7827eeb158ac5bb0b23fdea9c7793"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49d59f193c06056e710a3f6e32772941"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html#a49d59f193c06056e710a3f6e32772941">testStop</a> ()</td></tr>
+<tr class="separator:a49d59f193c06056e710a3f6e32772941"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9e7760a63ff21271107c20f9f690341"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html#ac9e7760a63ff21271107c20f9f690341">testSkipListBadReply</a> ()</td></tr>
 <tr class="separator:ac9e7760a63ff21271107c20f9f690341"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39f6d06844ba0d954784172036b1f760"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html#a39f6d06844ba0d954784172036b1f760">testLedgerDeltaBadReply</a> ()</td></tr>
@@ -124,11 +124,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3f15f2eefbc57687048ac84e5e077c41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Test cases: <a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html" title="Test cases: LedgerReplayer_test: – process TMProofPathRequest and TMProofPathResponse – process TMRep...">LedgerReplayer_test</a>: &ndash; process TMProofPathRequest and TMProofPathResponse &ndash; process TMReplayDeltaRequest and TMReplayDeltaResponse &ndash; update and merge <a class="el" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html">LedgerReplayTask::TaskParameter</a> &ndash; process [ledger_replay] section in config &ndash; peer handshake &ndash; replay a range of ledgers that the local node already has &ndash; replay a range of ledgers and fallback to <a class="el" href="classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers.">InboundLedgers</a> because peers do not support <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">ProtocolFeature::LedgerReplay</a> &ndash; replay a range of ledgers and the network drops or repeats messages &ndash; call onStop() and the tasks and subtasks are removed &ndash; process a bad skip list &ndash; process a bad ledger delta &ndash; replay ledger ranges with different overlaps. </p>
+<div class="textblock"><p>Test cases: <a class="el" href="structripple_1_1test_1_1LedgerReplayer__test.html" title="Test cases: LedgerReplayer_test: – process TMProofPathRequest and TMProofPathResponse – process TMRep...">LedgerReplayer_test</a>: &ndash; process TMProofPathRequest and TMProofPathResponse &ndash; process TMReplayDeltaRequest and TMReplayDeltaResponse &ndash; update and merge <a class="el" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html">LedgerReplayTask::TaskParameter</a> &ndash; process [ledger_replay] section in config &ndash; peer handshake &ndash; replay a range of ledgers that the local node already has &ndash; replay a range of ledgers and fallback to <a class="el" href="classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers.">InboundLedgers</a> because peers do not support <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">ProtocolFeature::LedgerReplay</a> &ndash; replay a range of ledgers and the network drops or repeats messages &ndash; call stop() and the tasks and subtasks are removed &ndash; process a bad skip list &ndash; process a bad ledger delta &ndash; replay ledger ranges with different overlaps. </p>
 <p><a class="el" href="structripple_1_1test_1_1LedgerReplayerTimeout__test.html">LedgerReplayerTimeout_test</a>: &ndash; timeouts of <a class="el" href="classripple_1_1SkipListAcquire.html" title="Manage the retrieval of a skip list in a ledger from the network.">SkipListAcquire</a> &ndash; timeouts of <a class="el" href="classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network.">LedgerDeltaAcquire</a></p>
 <p><a class="el" href="structripple_1_1test_1_1LedgerReplayerLong__test.html">LedgerReplayerLong_test</a>: (MANUAL) &ndash; call replayer.replay() 4 times to replay 1000 ledgers </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00864">864</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00856">856</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a1f6d416bc654487012e5badf4aed903d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1f6d416bc654487012e5badf4aed903d">&#9670;&nbsp;</a></span>testProofPath()</h2>
@@ -145,7 +145,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00867">867</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00859">859</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -164,7 +164,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00931">931</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00923">923</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -183,7 +183,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00984">984</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00976">976</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -202,7 +202,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01037">1037</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01029">1029</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -221,7 +221,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01067">1067</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01059">1059</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -241,7 +241,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01108">1108</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01100">1100</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -261,7 +261,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01150">1150</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01142">1142</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -291,18 +291,18 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01180">1180</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01172">1172</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a4be7827eeb158ac5bb0b23fdea9c7793"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4be7827eeb158ac5bb0b23fdea9c7793">&#9670;&nbsp;</a></span>testOnStop()</h2>
+<a id="a49d59f193c06056e710a3f6e32772941"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49d59f193c06056e710a3f6e32772941">&#9670;&nbsp;</a></span>testStop()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::test::LedgerReplayer_test::testOnStop </td>
+          <td class="memname">void ripple::test::LedgerReplayer_test::testStop </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -310,7 +310,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01232">1232</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01224">1224</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -329,7 +329,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01263">1263</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01254">1254</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -348,7 +348,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01308">1308</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01299">1299</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -367,7 +367,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01343">1343</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01334">1334</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -394,7 +394,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01429">1429</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l01420">1420</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>

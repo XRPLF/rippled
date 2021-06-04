@@ -94,241 +94,236 @@ $(function() {
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/app/consensus/RCLCxPeerPos.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/app/ledger/Ledger.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/core/JobQueue.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/core/Stoppable.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ReadView.h&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/net/InfoSub.h&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STValidation.h&gt;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/messages.h&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;boost/asio.hpp&gt;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/deque.html">deque</a>&gt;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/tuple.html">tuple</a>&gt;</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">// Operations that clients may wish to perform against the network</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">// Master operational handler, server sequencer, network tracker</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">class </span>Peer;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">class </span>LedgerMaster;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">class </span>Transaction;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">class </span>ValidatorKeys;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">// This is the primary interface into the &quot;client&quot; portion of the program.</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">// Code that wants to do normal operations on the network such as</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">// creating and monitoring accounts, creating transactions, and so on</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">// should use this interface. The RPC code will primarily be a light wrapper</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">// over this code.</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">// Eventually, it will check the node&#39;s operating mode (synched, unsynched,</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">// etectera) and defer to the correct means of processing. The current</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">// code assumes this node is synched (and will continue to do so until</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment">// there&#39;s a functional network.</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">   67</a></span>&#160;<span class="keyword">enum class</span> <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a> {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510a99c8ce56e7ab246445d3b134724428f3">DISCONNECTED</a> = 0,  </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510aa5afd6edd5336d91316964e493936858">CONNECTED</a> = 1,     </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510af0be1f77b2d12fe3d6424fbf9eecc109">SYNCING</a> = 2,       </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510a8728801b2a11ad95c8ecf855bfd484e4">TRACKING</a> = 3,      </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510aba7de5bc6888294e5884b024a4c894f1">FULL</a> = 4           </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;};</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html">   87</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;{</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1NetworkOPs.html#a0b77aa7d91266c865e5cdd95d9a094f2">NetworkOPs</a>(<a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>&amp; parent);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html#a52b5e5b8e68aa4430d35deb844418ddb">   93</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classbeast_1_1abstract__clock.html">clock_type</a> = <a class="code" href="classbeast_1_1abstract__clock.html">beast::abstract_clock&lt;std::chrono::steady_clock&gt;</a>;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">   95</a></span>&#160;    <span class="keyword">enum class</span> <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a> : unsigned char { <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aa7fa3b767c460b54a2be4d49030b349c7">no</a>, <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e">yes</a> };</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a></div>
-<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html#a315d515a3143ecb7a40d682aa350324d">   97</a></span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a315d515a3143ecb7a40d682aa350324d">doFailHard</a>(<span class="keywordtype">bool</span> noMeansDont)</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    {</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordflow">return</span> noMeansDont ? <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e">FailHard::yes</a> : <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aa7fa3b767c460b54a2be4d49030b349c7">FailHard::no</a>;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    }</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aaa77545cf954c43f15ddac6729d0ac3e">~NetworkOPs</a>() <span class="keyword">override</span> = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="comment">// Network information</span></div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a41818990c5329f7e3d025d52bcf569b5">getOperatingMode</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad4c27eb535691555917e3b1ae5ab2637">strOperatingMode</a>(<a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a> <span class="keyword">const</span> mode, <span class="keywordtype">bool</span> <span class="keyword">const</span> admin = <span class="keyword">false</span>)</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad4c27eb535691555917e3b1ae5ab2637">strOperatingMode</a>(<span class="keywordtype">bool</span> <span class="keyword">const</span> admin = <span class="keyword">false</span>) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="comment">// Transaction processing</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="comment">// must complete immediately</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a3f4830e6c223790a1691ec36bbf415a6">submitTransaction</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp;) = 0;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a96598c02fccf5bce018154a99c2adacd">processTransaction</a>(</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a>&amp; transaction,</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <span class="keywordtype">bool</span> bUnlimited,</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <span class="keywordtype">bool</span> bLocal,</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a> failType) = 0;</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="comment">// Owner functions</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a2eacb63fdf26723bfd4cb7505f3ea0d8">getOwnerInfo</a>(</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> lpLedger,</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account) = 0;</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="comment">// Book functions</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160; </div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aef72d5d8b2687f3fdbdfba3fa87b2e8f">getBookPage</a>(</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a>&amp; lpLedger,</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <a class="code" href="classripple_1_1Book.html">Book</a> <span class="keyword">const</span>&amp; book,</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; uTakerID,</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <span class="keywordtype">bool</span> <span class="keyword">const</span> bProof,</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> iLimit,</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvMarker,</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvResult) = 0;</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="comment">// ledger proposal/close functions</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aa137da1002861227d3e7b346de52020d">processTrustedProposal</a>(<a class="code" href="classripple_1_1RCLCxPeerPos.html">RCLCxPeerPos</a> peerPos) = 0;</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aa0f61ec21b1c950dc46892cea846faf4">recvValidation</a>(</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STValidation&gt;</a> <span class="keyword">const</span>&amp; val,</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; source) = 0;</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160; </div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a554532c5230a96a9a76b157144a37eb8">mapComplete</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SHAMap&gt;</a> <span class="keyword">const</span>&amp; map, <span class="keywordtype">bool</span> fromAcquire) = 0;</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    <span class="comment">// network state machine</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a55c88f2d5f7a900c212fd87b8715bc01">beginConsensus</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; netLCL) = 0;</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad40d5c74e846c0da9aa21c0957505a2f">endConsensus</a>() = 0;</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a6fe4993dc5d3b89ff38090790d83bfd4">setStandAlone</a>() = 0;</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#afa309faddae30361165a1e79ae888bf1">setStateTimer</a>() = 0;</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a954378c3ec506a306e43038ded881840">setNeedNetworkLedger</a>() = 0;</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a7ebeb2a8f947b729b0a8a1aba97d3b54">clearNeedNetworkLedger</a>() = 0;</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad501185ed756e643261f7079e5ea2eb8">isNeedNetworkLedger</a>() = 0;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ab7b43a2b50805198d0cf84b7790b0ba0">isFull</a>() = 0;</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ac8babe44f84fdd9e56b3f157a1abb007">setMode</a>(<a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a> om) = 0;</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a39a17f676dfe886070778e666ca2d18c">isBlocked</a>() = 0;</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad7b5b97b90da41f318a685276e798d32">isAmendmentBlocked</a>() = 0;</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a591349c566e53de85c2b97fd5dbba0df">setAmendmentBlocked</a>() = 0;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#abbf355fec0f0da558c3231223ea660a8">isAmendmentWarned</a>() = 0;</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a3a1b507c5ec60a6dc64ed8e7fa9cfdcd">setAmendmentWarned</a>() = 0;</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aed88fd077392ff34912bc591065c07ee">clearAmendmentWarned</a>() = 0;</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aff6ba9f57c2439361a7f83eef3e24443">isUNLBlocked</a>() = 0;</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a3b837bd8b8633d45d7e5f26961fab856">setUNLBlocked</a>() = 0;</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ace637a61664a15f70bc362f2ad1101e9">clearUNLBlocked</a>() = 0;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a7223446b10496bd50e12272588996ab0">consensusViewChange</a>() = 0;</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a55b390329b7958248e50ad56c192281a">getConsensusInfo</a>() = 0;</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#af4863a74bd582bd66f43b2e0e82feedd">getServerInfo</a>(<span class="keywordtype">bool</span> human, <span class="keywordtype">bool</span> admin, <span class="keywordtype">bool</span> counters) = 0;</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a7258b6ea09ba8e972747b57c0aab914c">clearLedgerFetch</a>() = 0;</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ae690f8253f39e7377a94e50ae259d05f">getLedgerFetchInfo</a>() = 0;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#adc30e2f12890d9cd5687139edf56b1f9">acceptLedger</a>(</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::chrono::milliseconds&gt;</a> consensusDelay =</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            std::nullopt) = 0;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1base__uint.html">uint256</a></div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ac5abe2b74a0978c2cc6e035710d1df34">getConsensusLCL</a>() = 0;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aac7969fc51e8e561bbd59e94662300ee">reportFeeChange</a>() = 0;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ae818648c14f68b1e31afe0164b850130">updateLocalTx</a>(<a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; newValidLedger) = 0;</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aa9220ccf8382acf85ccd1043f68b9c37">getLocalTxCount</a>() = 0;</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="comment">// Monitoring: publisher side</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#afdcc25285fc9cb83eab4ed36d95be527">pubLedger</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; lpAccepted) = 0;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a1a707bd1efa527ac55091d9652145cde">pubProposedTransaction</a>(</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; lpCurrent,</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; stTxn,</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        <a class="code" href="classripple_1_1TERSubset.html">TER</a> terResult) = 0;</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a5228b52adce7276a83d4d0cf14991589">pubValidation</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STValidation&gt;</a> <span class="keyword">const</span>&amp; val) = 0;</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#af8bc22e121fc8db46ec0cae484d474a2">forwardProposedTransaction</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvObj) = 0;</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a6aa539c0415cfa0f8bb92381906b4a02">forwardProposedAccountTransaction</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvObj) = 0;</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;};</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;NetworkOPs&gt;</a></div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;<a class="code" href="namespaceripple.html#afc0ceee72c1a3f208ff9c0bf24caef2e">make_NetworkOPs</a>(</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    Application&amp; app,</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a52b5e5b8e68aa4430d35deb844418ddb">NetworkOPs::clock_type</a>&amp; clock,</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <span class="keywordtype">bool</span> standalone,</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> minPeerCount,</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="keywordtype">bool</span> start_valid,</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    JobQueue&amp; job_queue,</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    LedgerMaster&amp; ledgerMaster,</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    Stoppable&amp; parent,</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    ValidatorKeys <span class="keyword">const</span>&amp; validatorKeys,</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    boost::asio::io_service&amp; io_svc,</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal,</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ReadView.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/net/InfoSub.h&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STValidation.h&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/messages.h&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;boost/asio.hpp&gt;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/deque.html">deque</a>&gt;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/tuple.html">tuple</a>&gt;</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">// Operations that clients may wish to perform against the network</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">// Master operational handler, server sequencer, network tracker</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">class </span>Peer;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">class </span>LedgerMaster;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">class </span>Transaction;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">class </span>ValidatorKeys;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">// This is the primary interface into the &quot;client&quot; portion of the program.</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">// Code that wants to do normal operations on the network such as</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">// creating and monitoring accounts, creating transactions, and so on</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">// should use this interface. The RPC code will primarily be a light wrapper</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">// over this code.</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">// Eventually, it will check the node&#39;s operating mode (synched, unsynched,</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">// etectera) and defer to the correct means of processing. The current</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">// code assumes this node is synched (and will continue to do so until</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">// there&#39;s a functional network.</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">   66</a></span>&#160;<span class="keyword">enum class</span> <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a> {</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510a99c8ce56e7ab246445d3b134724428f3">DISCONNECTED</a> = 0,  </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510aa5afd6edd5336d91316964e493936858">CONNECTED</a> = 1,     </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510af0be1f77b2d12fe3d6424fbf9eecc109">SYNCING</a> = 2,       </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510a8728801b2a11ad95c8ecf855bfd484e4">TRACKING</a> = 3,      </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510aba7de5bc6888294e5884b024a4c894f1">FULL</a> = 4           </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;};</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html">   86</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;{</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html#a52b5e5b8e68aa4430d35deb844418ddb">   89</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classbeast_1_1abstract__clock.html">clock_type</a> = <a class="code" href="classbeast_1_1abstract__clock.html">beast::abstract_clock&lt;std::chrono::steady_clock&gt;</a>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">   91</a></span>&#160;    <span class="keyword">enum class</span> <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a> : unsigned char { <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aa7fa3b767c460b54a2be4d49030b349c7">no</a>, <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e">yes</a> };</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a></div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classripple_1_1NetworkOPs.html#a315d515a3143ecb7a40d682aa350324d">   93</a></span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a315d515a3143ecb7a40d682aa350324d">doFailHard</a>(<span class="keywordtype">bool</span> noMeansDont)</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    {</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="keywordflow">return</span> noMeansDont ? <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e">FailHard::yes</a> : <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aa7fa3b767c460b54a2be4d49030b349c7">FailHard::no</a>;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aaa77545cf954c43f15ddac6729d0ac3e">~NetworkOPs</a>() <span class="keyword">override</span> = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a5c5a5ed24a2a27be156d553907fba86a">stop</a>() = 0;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="comment">// Network information</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a41818990c5329f7e3d025d52bcf569b5">getOperatingMode</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad4c27eb535691555917e3b1ae5ab2637">strOperatingMode</a>(<a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a> <span class="keyword">const</span> mode, <span class="keywordtype">bool</span> <span class="keyword">const</span> admin = <span class="keyword">false</span>)</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad4c27eb535691555917e3b1ae5ab2637">strOperatingMode</a>(<span class="keywordtype">bool</span> <span class="keyword">const</span> admin = <span class="keyword">false</span>) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="comment">// Transaction processing</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="comment">// must complete immediately</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a3f4830e6c223790a1691ec36bbf415a6">submitTransaction</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp;) = 0;</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a96598c02fccf5bce018154a99c2adacd">processTransaction</a>(</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a>&amp; transaction,</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordtype">bool</span> bUnlimited,</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <span class="keywordtype">bool</span> bLocal,</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <a class="code" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a> failType) = 0;</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="comment">// Owner functions</span></div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a2eacb63fdf26723bfd4cb7505f3ea0d8">getOwnerInfo</a>(</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> lpLedger,</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account) = 0;</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">// Book functions</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aef72d5d8b2687f3fdbdfba3fa87b2e8f">getBookPage</a>(</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a>&amp; lpLedger,</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <a class="code" href="classripple_1_1Book.html">Book</a> <span class="keyword">const</span>&amp; book,</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; uTakerID,</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <span class="keywordtype">bool</span> <span class="keyword">const</span> bProof,</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> iLimit,</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvMarker,</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvResult) = 0;</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160; </div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="comment">// ledger proposal/close functions</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aa137da1002861227d3e7b346de52020d">processTrustedProposal</a>(<a class="code" href="classripple_1_1RCLCxPeerPos.html">RCLCxPeerPos</a> peerPos) = 0;</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aa0f61ec21b1c950dc46892cea846faf4">recvValidation</a>(</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STValidation&gt;</a> <span class="keyword">const</span>&amp; val,</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; source) = 0;</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160; </div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a554532c5230a96a9a76b157144a37eb8">mapComplete</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SHAMap&gt;</a> <span class="keyword">const</span>&amp; map, <span class="keywordtype">bool</span> fromAcquire) = 0;</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    <span class="comment">// network state machine</span></div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a55c88f2d5f7a900c212fd87b8715bc01">beginConsensus</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; netLCL) = 0;</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad40d5c74e846c0da9aa21c0957505a2f">endConsensus</a>() = 0;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a6fe4993dc5d3b89ff38090790d83bfd4">setStandAlone</a>() = 0;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#afa309faddae30361165a1e79ae888bf1">setStateTimer</a>() = 0;</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a954378c3ec506a306e43038ded881840">setNeedNetworkLedger</a>() = 0;</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a7ebeb2a8f947b729b0a8a1aba97d3b54">clearNeedNetworkLedger</a>() = 0;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad501185ed756e643261f7079e5ea2eb8">isNeedNetworkLedger</a>() = 0;</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ab7b43a2b50805198d0cf84b7790b0ba0">isFull</a>() = 0;</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ac8babe44f84fdd9e56b3f157a1abb007">setMode</a>(<a class="code" href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">OperatingMode</a> om) = 0;</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a39a17f676dfe886070778e666ca2d18c">isBlocked</a>() = 0;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ad7b5b97b90da41f318a685276e798d32">isAmendmentBlocked</a>() = 0;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a591349c566e53de85c2b97fd5dbba0df">setAmendmentBlocked</a>() = 0;</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#abbf355fec0f0da558c3231223ea660a8">isAmendmentWarned</a>() = 0;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a3a1b507c5ec60a6dc64ed8e7fa9cfdcd">setAmendmentWarned</a>() = 0;</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aed88fd077392ff34912bc591065c07ee">clearAmendmentWarned</a>() = 0;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aff6ba9f57c2439361a7f83eef3e24443">isUNLBlocked</a>() = 0;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a3b837bd8b8633d45d7e5f26961fab856">setUNLBlocked</a>() = 0;</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ace637a61664a15f70bc362f2ad1101e9">clearUNLBlocked</a>() = 0;</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a7223446b10496bd50e12272588996ab0">consensusViewChange</a>() = 0;</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a55b390329b7958248e50ad56c192281a">getConsensusInfo</a>() = 0;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#af4863a74bd582bd66f43b2e0e82feedd">getServerInfo</a>(<span class="keywordtype">bool</span> human, <span class="keywordtype">bool</span> admin, <span class="keywordtype">bool</span> counters) = 0;</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a7258b6ea09ba8e972747b57c0aab914c">clearLedgerFetch</a>() = 0;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ae690f8253f39e7377a94e50ae259d05f">getLedgerFetchInfo</a>() = 0;</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160; </div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#adc30e2f12890d9cd5687139edf56b1f9">acceptLedger</a>(</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::chrono::milliseconds&gt;</a> consensusDelay =</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            std::nullopt) = 0;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aac7969fc51e8e561bbd59e94662300ee">reportFeeChange</a>() = 0;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#ae818648c14f68b1e31afe0164b850130">updateLocalTx</a>(<a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; newValidLedger) = 0;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#aa9220ccf8382acf85ccd1043f68b9c37">getLocalTxCount</a>() = 0;</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <span class="comment">// Monitoring: publisher side</span></div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#afdcc25285fc9cb83eab4ed36d95be527">pubLedger</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; lpAccepted) = 0;</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a1a707bd1efa527ac55091d9652145cde">pubProposedTransaction</a>(</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; lpCurrent,</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; stTxn,</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        <a class="code" href="classripple_1_1TERSubset.html">TER</a> terResult) = 0;</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a5228b52adce7276a83d4d0cf14991589">pubValidation</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STValidation&gt;</a> <span class="keyword">const</span>&amp; val) = 0;</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#af8bc22e121fc8db46ec0cae484d474a2">forwardProposedTransaction</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvObj) = 0;</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a6aa539c0415cfa0f8bb92381906b4a02">forwardProposedAccountTransaction</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvObj) = 0;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;};</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;NetworkOPs&gt;</a></div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;<a class="code" href="namespaceripple.html#a4f4bee25e37db1f5c9d01baf628791ad">make_NetworkOPs</a>(</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    Application&amp; app,</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <a class="code" href="classripple_1_1NetworkOPs.html#a52b5e5b8e68aa4430d35deb844418ddb">NetworkOPs::clock_type</a>&amp; clock,</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keywordtype">bool</span> standalone,</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> minPeerCount,</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="keywordtype">bool</span> start_valid,</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    JobQueue&amp; job_queue,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    LedgerMaster&amp; ledgerMaster,</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    ValidatorKeys <span class="keyword">const</span>&amp; validatorKeys,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    boost::asio::io_service&amp; io_svc,</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal,</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_afdcc25285fc9cb83eab4ed36d95be527"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#afdcc25285fc9cb83eab4ed36d95be527">ripple::NetworkOPs::pubLedger</a></div><div class="ttdeci">virtual void pubLedger(std::shared_ptr&lt; ReadView const &gt; const &amp;lpAccepted)=0</div></div>
-<div class="ttc" id="aclassripple_1_1NetworkOPs_html"><div class="ttname"><a href="classripple_1_1NetworkOPs.html">ripple::NetworkOPs</a></div><div class="ttdoc">Provides server functionality for clients.</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00087">NetworkOPs.h:87</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetworkOPs_html"><div class="ttname"><a href="classripple_1_1NetworkOPs.html">ripple::NetworkOPs</a></div><div class="ttdoc">Provides server functionality for clients.</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00086">NetworkOPs.h:86</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a6aa539c0415cfa0f8bb92381906b4a02"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a6aa539c0415cfa0f8bb92381906b4a02">ripple::NetworkOPs::forwardProposedAccountTransaction</a></div><div class="ttdeci">virtual void forwardProposedAccountTransaction(Json::Value const &amp;jvObj)=0</div></div>
 <div class="ttc" id="aclassripple_1_1RCLCxPeerPos_html"><div class="ttname"><a href="classripple_1_1RCLCxPeerPos.html">ripple::RCLCxPeerPos</a></div><div class="ttdoc">A peer's signed, proposed position for use in RCLConsensus.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCxPeerPos_8h_source.html#l00042">RCLCxPeerPos.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aa0f61ec21b1c950dc46892cea846faf4"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aa0f61ec21b1c950dc46892cea846faf4">ripple::NetworkOPs::recvValidation</a></div><div class="ttdeci">virtual bool recvValidation(std::shared_ptr&lt; STValidation &gt; const &amp;val, std::string const &amp;source)=0</div></div>
@@ -343,6 +338,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_abbf355fec0f0da558c3231223ea660a8"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#abbf355fec0f0da558c3231223ea660a8">ripple::NetworkOPs::isAmendmentWarned</a></div><div class="ttdeci">virtual bool isAmendmentWarned()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a41818990c5329f7e3d025d52bcf569b5"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a41818990c5329f7e3d025d52bcf569b5">ripple::NetworkOPs::getOperatingMode</a></div><div class="ttdeci">virtual OperatingMode getOperatingMode() const =0</div></div>
 <div class="ttc" id="atuple_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/tuple.html">tuple</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4f4bee25e37db1f5c9d01baf628791ad"><div class="ttname"><a href="namespaceripple.html#a4f4bee25e37db1f5c9d01baf628791ad">ripple::make_NetworkOPs</a></div><div class="ttdeci">std::unique_ptr&lt; NetworkOPs &gt; make_NetworkOPs(Application &amp;app, NetworkOPs::clock_type &amp;clock, bool standalone, std::size_t minPeerCount, bool startvalid, JobQueue &amp;job_queue, LedgerMaster &amp;ledgerMaster, ValidatorKeys const &amp;validatorKeys, boost::asio::io_service &amp;io_svc, beast::Journal journal, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8cpp_source.html#l03768">NetworkOPs.cpp:3768</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aaa77545cf954c43f15ddac6729d0ac3e"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aaa77545cf954c43f15ddac6729d0ac3e">ripple::NetworkOPs::~NetworkOPs</a></div><div class="ttdeci">~NetworkOPs() override=default</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ad7b5b97b90da41f318a685276e798d32"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ad7b5b97b90da41f318a685276e798d32">ripple::NetworkOPs::isAmendmentBlocked</a></div><div class="ttdeci">virtual bool isAmendmentBlocked()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a554532c5230a96a9a76b157144a37eb8"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a554532c5230a96a9a76b157144a37eb8">ripple::NetworkOPs::mapComplete</a></div><div class="ttdeci">virtual void mapComplete(std::shared_ptr&lt; SHAMap &gt; const &amp;map, bool fromAcquire)=0</div></div>
@@ -350,16 +346,13 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a597325d7385ff9c19686e14e5bead510af0be1f77b2d12fe3d6424fbf9eecc109"><div class="ttname"><a href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510af0be1f77b2d12fe3d6424fbf9eecc109">ripple::OperatingMode::SYNCING</a></div><div class="ttdeci">@ SYNCING</div><div class="ttdoc">fallen slightly behind</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a6fe4993dc5d3b89ff38090790d83bfd4"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a6fe4993dc5d3b89ff38090790d83bfd4">ripple::NetworkOPs::setStandAlone</a></div><div class="ttdeci">virtual void setStandAlone()=0</div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;</a></div></div>
-<div class="ttc" id="anamespaceripple_html_afc0ceee72c1a3f208ff9c0bf24caef2e"><div class="ttname"><a href="namespaceripple.html#afc0ceee72c1a3f208ff9c0bf24caef2e">ripple::make_NetworkOPs</a></div><div class="ttdeci">std::unique_ptr&lt; NetworkOPs &gt; make_NetworkOPs(Application &amp;app, NetworkOPs::clock_type &amp;clock, bool standalone, std::size_t minPeerCount, bool startvalid, JobQueue &amp;job_queue, LedgerMaster &amp;ledgerMaster, Stoppable &amp;parent, ValidatorKeys const &amp;validatorKeys, boost::asio::io_service &amp;io_svc, beast::Journal journal, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8cpp_source.html#l03789">NetworkOPs.cpp:3789</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ace637a61664a15f70bc362f2ad1101e9"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ace637a61664a15f70bc362f2ad1101e9">ripple::NetworkOPs::clearUNLBlocked</a></div><div class="ttdeci">virtual void clearUNLBlocked()=0</div></div>
 <div class="ttc" id="anamespaceripple_html_a597325d7385ff9c19686e14e5bead510a99c8ce56e7ab246445d3b134724428f3"><div class="ttname"><a href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510a99c8ce56e7ab246445d3b134724428f3">ripple::OperatingMode::DISCONNECTED</a></div><div class="ttdeci">@ DISCONNECTED</div><div class="ttdoc">not ready to process requests</div></div>
-<div class="ttc" id="aclassripple_1_1Stoppable_html"><div class="ttname"><a href="classripple_1_1Stoppable.html">ripple::Stoppable</a></div><div class="ttdoc">Provides an interface for starting and stopping.</div><div class="ttdef"><b>Definition:</b> <a href="Stoppable_8h_source.html#l00201">Stoppable.h:201</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ad501185ed756e643261f7079e5ea2eb8"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ad501185ed756e643261f7079e5ea2eb8">ripple::NetworkOPs::isNeedNetworkLedger</a></div><div class="ttdeci">virtual bool isNeedNetworkLedger()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a3f4830e6c223790a1691ec36bbf415a6"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a3f4830e6c223790a1691ec36bbf415a6">ripple::NetworkOPs::submitTransaction</a></div><div class="ttdeci">virtual void submitTransaction(std::shared_ptr&lt; STTx const &gt; const &amp;)=0</div></div>
 <div class="ttc" id="anamespaceripple_html_a597325d7385ff9c19686e14e5bead510aa5afd6edd5336d91316964e493936858"><div class="ttname"><a href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510aa5afd6edd5336d91316964e493936858">ripple::OperatingMode::CONNECTED</a></div><div class="ttdeci">@ CONNECTED</div><div class="ttdoc">convinced we are talking to the network</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a2eacb63fdf26723bfd4cb7505f3ea0d8"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a2eacb63fdf26723bfd4cb7505f3ea0d8">ripple::NetworkOPs::getOwnerInfo</a></div><div class="ttdeci">virtual Json::Value getOwnerInfo(std::shared_ptr&lt; ReadView const &gt; lpLedger, AccountID const &amp;account)=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a3a1b507c5ec60a6dc64ed8e7fa9cfdcd"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a3a1b507c5ec60a6dc64ed8e7fa9cfdcd">ripple::NetworkOPs::setAmendmentWarned</a></div><div class="ttdeci">virtual void setAmendmentWarned()=0</div></div>
-<div class="ttc" id="aclassripple_1_1NetworkOPs_html_ac5abe2b74a0978c2cc6e035710d1df34"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ac5abe2b74a0978c2cc6e035710d1df34">ripple::NetworkOPs::getConsensusLCL</a></div><div class="ttdeci">virtual uint256 getConsensusLCL()=0</div></div>
 <div class="ttc" id="anamespaceripple_html_a597325d7385ff9c19686e14e5bead510a8728801b2a11ad95c8ecf855bfd484e4"><div class="ttname"><a href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510a8728801b2a11ad95c8ecf855bfd484e4">ripple::OperatingMode::TRACKING</a></div><div class="ttdeci">@ TRACKING</div><div class="ttdoc">convinced we agree with the network</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ae818648c14f68b1e31afe0164b850130"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ae818648c14f68b1e31afe0164b850130">ripple::NetworkOPs::updateLocalTx</a></div><div class="ttdeci">virtual void updateLocalTx(ReadView const &amp;newValidLedger)=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aef72d5d8b2687f3fdbdfba3fa87b2e8f"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aef72d5d8b2687f3fdbdfba3fa87b2e8f">ripple::NetworkOPs::getBookPage</a></div><div class="ttdeci">virtual void getBookPage(std::shared_ptr&lt; ReadView const &gt; &amp;lpLedger, Book const &amp;book, AccountID const &amp;uTakerID, bool const bProof, unsigned int iLimit, Json::Value const &amp;jvMarker, Json::Value &amp;jvResult)=0</div></div>
@@ -367,7 +360,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aac7969fc51e8e561bbd59e94662300ee"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aac7969fc51e8e561bbd59e94662300ee">ripple::NetworkOPs::reportFeeChange</a></div><div class="ttdeci">virtual void reportFeeChange()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a5228b52adce7276a83d4d0cf14991589"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a5228b52adce7276a83d4d0cf14991589">ripple::NetworkOPs::pubValidation</a></div><div class="ttdeci">virtual void pubValidation(std::shared_ptr&lt; STValidation &gt; const &amp;val)=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a96598c02fccf5bce018154a99c2adacd"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a96598c02fccf5bce018154a99c2adacd">ripple::NetworkOPs::processTransaction</a></div><div class="ttdeci">virtual void processTransaction(std::shared_ptr&lt; Transaction &gt; &amp;transaction, bool bUnlimited, bool bLocal, FailHard failType)=0</div><div class="ttdoc">Process transactions as they arrive from the network or which are submitted by clients.</div></div>
-<div class="ttc" id="aclassripple_1_1InfoSub_1_1Source_html"><div class="ttname"><a href="classripple_1_1InfoSub_1_1Source.html">ripple::InfoSub::Source</a></div><div class="ttdoc">Abstracts the source of subscription data.</div><div class="ttdef"><b>Definition:</b> <a href="InfoSub_8h_source.html#l00056">InfoSub.h:56</a></div></div>
+<div class="ttc" id="aclassripple_1_1InfoSub_1_1Source_html"><div class="ttname"><a href="classripple_1_1InfoSub_1_1Source.html">ripple::InfoSub::Source</a></div><div class="ttdoc">Abstracts the source of subscription data.</div><div class="ttdef"><b>Definition:</b> <a href="InfoSub_8h_source.html#l00055">InfoSub.h:55</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_afa309faddae30361165a1e79ae888bf1"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#afa309faddae30361165a1e79ae888bf1">ripple::NetworkOPs::setStateTimer</a></div><div class="ttdeci">virtual void setStateTimer()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a55b390329b7958248e50ad56c192281a"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a55b390329b7958248e50ad56c192281a">ripple::NetworkOPs::getConsensusInfo</a></div><div class="ttdeci">virtual Json::Value getConsensusInfo()=0</div></div>
 <div class="ttc" id="adeque_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/deque.html">deque</a></div></div>
@@ -376,9 +369,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a3b837bd8b8633d45d7e5f26961fab856"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a3b837bd8b8633d45d7e5f26961fab856">ripple::NetworkOPs::setUNLBlocked</a></div><div class="ttdeci">virtual void setUNLBlocked()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a7ebeb2a8f947b729b0a8a1aba97d3b54"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a7ebeb2a8f947b729b0a8a1aba97d3b54">ripple::NetworkOPs::clearNeedNetworkLedger</a></div><div class="ttdeci">virtual void clearNeedNetworkLedger()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aa9220ccf8382acf85ccd1043f68b9c37"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aa9220ccf8382acf85ccd1043f68b9c37">ripple::NetworkOPs::getLocalTxCount</a></div><div class="ttdeci">virtual std::size_t getLocalTxCount()=0</div></div>
-<div class="ttc" id="aclassripple_1_1NetworkOPs_html_a0b77aa7d91266c865e5cdd95d9a094f2"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a0b77aa7d91266c865e5cdd95d9a094f2">ripple::NetworkOPs::NetworkOPs</a></div><div class="ttdeci">NetworkOPs(Stoppable &amp;parent)</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8cpp_source.html#l03742">NetworkOPs.cpp:3742</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetworkOPs_html_ada325f492d3aa1aa62d4b159e106c37a"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">ripple::NetworkOPs::FailHard</a></div><div class="ttdeci">FailHard</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00095">NetworkOPs.h:95</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetworkOPs_html_a52b5e5b8e68aa4430d35deb844418ddb"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a52b5e5b8e68aa4430d35deb844418ddb">ripple::NetworkOPs::clock_type</a></div><div class="ttdeci">beast::abstract_clock&lt; std::chrono::steady_clock &gt; clock_type</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00093">NetworkOPs.h:93</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetworkOPs_html_ada325f492d3aa1aa62d4b159e106c37a"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">ripple::NetworkOPs::FailHard</a></div><div class="ttdeci">FailHard</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00091">NetworkOPs.h:91</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetworkOPs_html_a52b5e5b8e68aa4430d35deb844418ddb"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a52b5e5b8e68aa4430d35deb844418ddb">ripple::NetworkOPs::clock_type</a></div><div class="ttdeci">beast::abstract_clock&lt; std::chrono::steady_clock &gt; clock_type</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00089">NetworkOPs.h:89</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html"><div class="ttname"><a href="classbeast_1_1abstract__clock.html">beast::abstract_clock&lt; std::chrono::steady_clock &gt;</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aa137da1002861227d3e7b346de52020d"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aa137da1002861227d3e7b346de52020d">ripple::NetworkOPs::processTrustedProposal</a></div><div class="ttdeci">virtual bool processTrustedProposal(RCLCxPeerPos peerPos)=0</div></div>
@@ -387,16 +379,17 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a39a17f676dfe886070778e666ca2d18c"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a39a17f676dfe886070778e666ca2d18c">ripple::NetworkOPs::isBlocked</a></div><div class="ttdeci">virtual bool isBlocked()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_aed88fd077392ff34912bc591065c07ee"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#aed88fd077392ff34912bc591065c07ee">ripple::NetworkOPs::clearAmendmentWarned</a></div><div class="ttdeci">virtual void clearAmendmentWarned()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_adc30e2f12890d9cd5687139edf56b1f9"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#adc30e2f12890d9cd5687139edf56b1f9">ripple::NetworkOPs::acceptLedger</a></div><div class="ttdeci">virtual std::uint32_t acceptLedger(std::optional&lt; std::chrono::milliseconds &gt; consensusDelay=std::nullopt)=0</div><div class="ttdoc">Accepts the current transaction tree, return the new ledger's sequence.</div></div>
+<div class="ttc" id="aclassripple_1_1NetworkOPs_html_a5c5a5ed24a2a27be156d553907fba86a"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a5c5a5ed24a2a27be156d553907fba86a">ripple::NetworkOPs::stop</a></div><div class="ttdeci">virtual void stop()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ab7b43a2b50805198d0cf84b7790b0ba0"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ab7b43a2b50805198d0cf84b7790b0ba0">ripple::NetworkOPs::isFull</a></div><div class="ttdeci">virtual bool isFull()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ad4c27eb535691555917e3b1ae5ab2637"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ad4c27eb535691555917e3b1ae5ab2637">ripple::NetworkOPs::strOperatingMode</a></div><div class="ttdeci">virtual std::string strOperatingMode(OperatingMode const mode, bool const admin=false) const =0</div></div>
-<div class="ttc" id="anamespaceripple_html_a597325d7385ff9c19686e14e5bead510"><div class="ttname"><a href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">ripple::OperatingMode</a></div><div class="ttdeci">OperatingMode</div><div class="ttdoc">Specifies the mode under which the server believes it's operating.</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00067">NetworkOPs.h:67</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a597325d7385ff9c19686e14e5bead510"><div class="ttname"><a href="namespaceripple.html#a597325d7385ff9c19686e14e5bead510">ripple::OperatingMode</a></div><div class="ttdeci">OperatingMode</div><div class="ttdoc">Specifies the mode under which the server believes it's operating.</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00066">NetworkOPs.h:66</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a954378c3ec506a306e43038ded881840"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a954378c3ec506a306e43038ded881840">ripple::NetworkOPs::setNeedNetworkLedger</a></div><div class="ttdeci">virtual void setNeedNetworkLedger()=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ac8babe44f84fdd9e56b3f157a1abb007"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ac8babe44f84fdd9e56b3f157a1abb007">ripple::NetworkOPs::setMode</a></div><div class="ttdeci">virtual void setMode(OperatingMode om)=0</div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt; std::chrono::milliseconds &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e">ripple::NetworkOPs::FailHard::yes</a></div><div class="ttdeci">@ yes</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="aclassripple_1_1Book_html"><div class="ttname"><a href="classripple_1_1Book.html">ripple::Book</a></div><div class="ttdoc">Specifies an order book.</div><div class="ttdef"><b>Definition:</b> <a href="Book_8h_source.html#l00032">Book.h:32</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetworkOPs_html_a315d515a3143ecb7a40d682aa350324d"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a315d515a3143ecb7a40d682aa350324d">ripple::NetworkOPs::doFailHard</a></div><div class="ttdeci">static FailHard doFailHard(bool noMeansDont)</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00097">NetworkOPs.h:97</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetworkOPs_html_a315d515a3143ecb7a40d682aa350324d"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a315d515a3143ecb7a40d682aa350324d">ripple::NetworkOPs::doFailHard</a></div><div class="ttdeci">static FailHard doFailHard(bool noMeansDont)</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8h_source.html#l00093">NetworkOPs.h:93</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_a55c88f2d5f7a900c212fd87b8715bc01"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#a55c88f2d5f7a900c212fd87b8715bc01">ripple::NetworkOPs::beginConsensus</a></div><div class="ttdeci">virtual bool beginConsensus(uint256 const &amp;netLCL)=0</div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_af8bc22e121fc8db46ec0cae484d474a2"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#af8bc22e121fc8db46ec0cae484d474a2">ripple::NetworkOPs::forwardProposedTransaction</a></div><div class="ttdeci">virtual void forwardProposedTransaction(Json::Value const &amp;jvObj)=0</div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>

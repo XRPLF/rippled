@@ -69,7 +69,6 @@ $(function() {
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1PerfLog__test-members.html">List of all members</a>  </div>
@@ -139,7 +138,7 @@ Collaboration diagram for ripple::PerfLog_test:</div>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PerfLog__test_1_1Cur.html">Cur</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html">PerfLogParent</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1PerfLog__test_1_1Fixture.html">Fixture</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -166,19 +165,12 @@ Private Types</h2></td></tr>
 <tr class="memitem:afb0c8cba2f6e47f2fd2696d95a5263fa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PerfLog__test.html#afb0c8cba2f6e47f2fd2696d95a5263fa">path</a> = boost::filesystem::path</td></tr>
 <tr class="separator:afb0c8cba2f6e47f2fd2696d95a5263fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
-<tr class="memitem:aa2804819f9ea53bdfa3cef089f56c4f2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1perf_1_1PerfLog.html">perf::PerfLog</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PerfLog__test.html#aa2804819f9ea53bdfa3cef089f56c4f2">getPerfLog</a> (<a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html">PerfLogParent</a> &amp;parent, <a class="el" href="classripple_1_1PerfLog__test.html#a47194dbb7ad14c946919c6e54ae25f7e">WithFile</a> withFile)</td></tr>
-<tr class="separator:aa2804819f9ea53bdfa3cef089f56c4f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
 <tr class="memitem:a204aad50a8e6454b4435afb7b97473c5"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PerfLog__test.html#a204aad50a8e6454b4435afb7b97473c5">jsonToUint64</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jsonUintAsString)</td></tr>
 <tr class="separator:a204aad50a8e6454b4435afb7b97473c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdff8ffd6fbdbd33ba31d79913f0fef4"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1PerfLog__test_1_1Cur.html">Cur</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PerfLog__test.html#abdff8ffd6fbdbd33ba31d79913f0fef4">getSortedCurrent</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;currentJson)</td></tr>
 <tr class="separator:abdff8ffd6fbdbd33ba31d79913f0fef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29bd4d78f82fd3fbc5db71538320b021"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PerfLog__test.html#a29bd4d78f82fd3fbc5db71538320b021">waitForFileUpdate</a> (<a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html">PerfLogParent</a> const &amp;parent)</td></tr>
-<tr class="separator:a29bd4d78f82fd3fbc5db71538320b021"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -189,7 +181,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00037">37</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00039">39</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="afb0c8cba2f6e47f2fd2696d95a5263fa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afb0c8cba2f6e47f2fd2696d95a5263fa">&#9670;&nbsp;</a></span>path</h2>
@@ -211,7 +203,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00041">41</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00043">43</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -240,49 +232,11 @@ Private Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a47194dbb7ad14c946919c6e54ae25f7eaa6105c0a611b41b08f1209506350279e"></a>yes&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00039">39</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00041">41</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa2804819f9ea53bdfa3cef089f56c4f2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2804819f9ea53bdfa3cef089f56c4f2">&#9670;&nbsp;</a></span>getPerfLog()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1perf_1_1PerfLog.html">perf::PerfLog</a>&gt; ripple::PerfLog_test::getPerfLog </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html">PerfLogParent</a> &amp;&#160;</td>
-          <td class="paramname"><em>parent</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PerfLog__test.html#a47194dbb7ad14c946919c6e54ae25f7e">WithFile</a>&#160;</td>
-          <td class="paramname"><em>withFile</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00167">167</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a204aad50a8e6454b4435afb7b97473c5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a204aad50a8e6454b4435afb7b97473c5">&#9670;&nbsp;</a></span>jsonToUint64()</h2>
 
@@ -307,7 +261,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00180">180</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00140">140</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -335,35 +289,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00204">204</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a29bd4d78f82fd3fbc5db71538320b021"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a29bd4d78f82fd3fbc5db71538320b021">&#9670;&nbsp;</a></span>waitForFileUpdate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void ripple::PerfLog_test::waitForFileUpdate </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html">PerfLogParent</a> const &amp;&#160;</td>
-          <td class="paramname"><em>parent</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00236">236</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00162">162</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -382,7 +308,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00264">264</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00189">189</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -402,7 +328,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00373">373</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00296">296</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -422,7 +348,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00577">577</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00499">499</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -442,7 +368,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00923">923</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00844">844</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -462,7 +388,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l01065">1065</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00985">985</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -489,7 +415,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l01124">1124</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l01041">1041</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -514,7 +440,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00045">45</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00047">47</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -538,7 +464,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00046">46</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog__test_8cpp_source.html#l00048">48</a> of file <a class="el" href="PerfLog__test_8cpp_source.html">PerfLog_test.cpp</a>.</p>
 
 </div>
 </div>

@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1open__ledger__t.html" title="Open ledger construction tag." alt="" coords="5,5,164,32"/>
+<area shape="rect" id="node1" href="$structripple_1_1NodeStore_1_1Task.html" title="Derived classes perform scheduled tasks." alt="" coords="5,13,177,39"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1BatchWriter.html" title="Batch&#45;writing assist logic." alt="" coords="225,5,368,47"/>
 </map>

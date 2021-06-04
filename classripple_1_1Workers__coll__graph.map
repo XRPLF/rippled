@@ -1,5 +1,5 @@
 <map id="ripple::Workers" name="ripple::Workers">
-<area shape="rect" id="node1" title="A group of threads that process tasks." alt="" coords="991,308,1111,335"/>
+<area shape="rect" id="node1" title="Workers is effectively a thread pool." alt="" coords="991,308,1111,335"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="627,44,769,71"/>
 <area shape="rect" id="node3" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="606,95,790,121"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="295,161,466,188"/>

@@ -281,200 +281,199 @@ $(function() {
 <div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;<span class="keyword">        override</span></div>
 <div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        assert(<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        assert(<a class="code" href="classripple_1_1ResolverAsioImpl.html#a20295b6d9ed1a28e5d1a2ffa231d247e">m_stopped</a> == <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        assert(!names.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>());</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        <span class="comment">// TODO NIKB use rvalue references to construct and move</span></div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        <span class="comment">//           reducing cost.</span></div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.dispatch(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">ResolverAsioImpl::do_resolve</a>,</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            <span class="keyword">this</span>,</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            names,</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            handler,</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            CompletionCounter(<span class="keyword">this</span>))));</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    }</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="comment">//-------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="comment">// Resolver</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#aabbcc518951e6b569fdbbe42dacd242c">  236</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1ResolverAsioImpl.html#aabbcc518951e6b569fdbbe42dacd242c">do_stop</a>(CompletionCounter)</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    {</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        assert(<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#a20295b6d9ed1a28e5d1a2ffa231d247e">m_stopped</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic/exchange.html">exchange</a>(<span class="keyword">true</span>) == <span class="keyword">false</span>)</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        {</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.clear();</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#a891f5f5429a918148dfd94f1b7cf81de">m_resolver</a>.cancel();</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            <a class="code" href="classripple_1_1AsyncObject.html#ad926c8b473a993dbef11226430d06bef">removeReference</a>();</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        }</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    }</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00250"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">  250</a></span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">do_finish</a>(</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> name,</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        boost::system::error_code <span class="keyword">const</span>&amp; ec,</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> handler,</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        boost::asio::ip::tcp::resolver::iterator iter,</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        CompletionCounter)</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    {</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="keywordflow">if</span> (ec == boost::asio::error::operation_aborted)</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;beast::IP::Endpoint&gt;</a> addresses;</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <span class="comment">// If we get an error message back, we don&#39;t return any</span></div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        <span class="comment">// results that we may have gotten.</span></div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        <span class="keywordflow">if</span> (!ec)</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        {</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            <span class="keywordflow">while</span> (iter != boost::asio::ip::tcp::resolver::iterator())</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            {</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                addresses.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;                    <a class="code" href="structbeast_1_1IPAddressConversion.html#a5e02e604b7d4a590f7ceb14a26a6947b">beast::IPAddressConversion::from_asio</a>(*iter));</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;                ++iter;</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            }</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        }</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        handler(name, addresses);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.post(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;            &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ResolverAsioImpl::do_work</a>, <span class="keyword">this</span>, CompletionCounter(<span class="keyword">this</span>))));</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    }</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#a982455cfda2dcbf034bff8f1c1fc476d">HostAndPort</a></div>
-<div class="line"><a name="l00281"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">  281</a></span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">parseName</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; str)</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    {</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <span class="comment">// first attempt to parse as an endpoint (IP addr + port).</span></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        <span class="comment">// If that doesn&#39;t succeed, fall back to generic name + port parsing</span></div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code" href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a>(str))</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        {</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            <span class="keywordflow">return</span> make_pair(</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                result-&gt;address().to_string(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(result-&gt;port()));</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        }</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <span class="comment">// generic name/port parsing, which doesn&#39;t work for</span></div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        <span class="comment">// IPv6 addresses in particular because it considers a colon</span></div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        <span class="comment">// a port separator</span></div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        <span class="comment">// Attempt to find the first and last non-whitespace</span></div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> find_whitespace = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            &amp;std::isspace&lt;std::string::value_type&gt;,</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            std::placeholders::_1,</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/locale/locale.html">std::locale</a>());</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="keyword">auto</span> host_first =</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if_not</a>(str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">begin</a>(), str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">end</a>(), find_whitespace);</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        <span class="keyword">auto</span> port_last =</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if_not</a>(str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/rbegin.html">rbegin</a>(), str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/rend.html">rend</a>(), find_whitespace).base();</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160; </div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;        <span class="comment">// This should only happen for all-whitespace strings</span></div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        <span class="keywordflow">if</span> (host_first &gt;= port_last)</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>());</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="comment">// Attempt to find the first and last valid port separators</span></div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> find_port_separator = [](<span class="keywordtype">char</span> <span class="keyword">const</span> c) -&gt; <span class="keywordtype">bool</span> {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <span class="keywordflow">if</span> (std::isspace(<span class="keyword">static_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span><span class="keyword">&gt;</span>(c)))</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            <span class="keywordflow">if</span> (c == <span class="charliteral">&#39;:&#39;</span>)</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        };</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        <span class="keyword">auto</span> host_last =</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if</a>(host_first, port_last, find_port_separator);</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        <span class="keyword">auto</span> port_first =</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if_not</a>(host_last, port_last, find_port_separator);</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160; </div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        <span class="keywordflow">return</span> make_pair(</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(host_first, host_last),</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(port_first, port_last));</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    }</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
-<div class="line"><a name="l00334"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">  334</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">do_work</a>(CompletionCounter)</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    {</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">true</span>)</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <span class="comment">// We don&#39;t have any work to do at this time</span></div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.empty())</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> name(<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().names.back());</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> handler(<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().handler);</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160; </div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().names.pop_back();</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().names.empty())</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.pop_front();</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160; </div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> [host, port] = <a class="code" href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">parseName</a>(name);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <span class="keywordflow">if</span> (host.empty())</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        {</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            JLOG(<a class="code" href="classripple_1_1ResolverAsioImpl.html#a32c01bf9df949d7fd429382d1b586e68">m_journal</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Unable to parse &#39;&quot;</span> &lt;&lt; name &lt;&lt; <span class="stringliteral">&quot;&#39;&quot;</span>;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160; </div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.post(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ResolverAsioImpl::do_work</a>, <span class="keyword">this</span>, CompletionCounter(<span class="keyword">this</span>))));</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        }</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        boost::asio::ip::tcp::resolver::query query(host, port);</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#a891f5f5429a918148dfd94f1b7cf81de">m_resolver</a>.async_resolve(</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            query,</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">ResolverAsioImpl::do_finish</a>,</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;                <span class="keyword">this</span>,</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                name,</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                std::placeholders::_1,</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;                handler,</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;                std::placeholders::_2,</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;                CompletionCounter(<span class="keyword">this</span>)));</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    }</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00378"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">  378</a></span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">do_resolve</a>(</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> <span class="keyword">const</span>&amp; names,</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> <span class="keyword">const</span>&amp; handler,</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        CompletionCounter)</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    {</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        assert(!names.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>());</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">false</span>)</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        {</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.emplace_back(names, handler);</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160; </div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            JLOG(<a class="code" href="classripple_1_1ResolverAsioImpl.html#a32c01bf9df949d7fd429382d1b586e68">m_journal</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>())</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Queued new job with &quot;</span> &lt;&lt; names.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() &lt;&lt; <span class="stringliteral">&quot; tasks. &quot;</span></div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;                &lt;&lt; <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.size() &lt;&lt; <span class="stringliteral">&quot; jobs outstanding.&quot;</span>;</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160; </div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.size() &gt; 0)</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            {</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.post(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                    &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ResolverAsioImpl::do_work</a>,</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                    <span class="keyword">this</span>,</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                    CompletionCounter(<span class="keyword">this</span>))));</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            }</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        }</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    }</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;};</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160; </div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;<span class="comment">//-----------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;ResolverAsio&gt;</a></div>
-<div class="line"><a name="l00407"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">  407</a></span>&#160;<a class="code" href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">ResolverAsio::New</a>(boost::asio::io_service&amp; io_service, <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;{</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;    <span class="keywordflow">return</span> std::make_unique&lt;ResolverAsioImpl&gt;(io_service, journal);</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;}</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160; </div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;<span class="comment">//-----------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;<a class="code" href="classripple_1_1Resolver.html#acbc7e53c855c2a009bcab4d8fc4d64df">Resolver::~Resolver</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        assert(!names.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>());</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="comment">// TODO NIKB use rvalue references to construct and move</span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        <span class="comment">//           reducing cost.</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.dispatch(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">ResolverAsioImpl::do_resolve</a>,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            <span class="keyword">this</span>,</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            names,</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            handler,</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            CompletionCounter(<span class="keyword">this</span>))));</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    }</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="comment">//-------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="comment">// Resolver</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#aabbcc518951e6b569fdbbe42dacd242c">  235</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1ResolverAsioImpl.html#aabbcc518951e6b569fdbbe42dacd242c">do_stop</a>(CompletionCounter)</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    {</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        assert(<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#a20295b6d9ed1a28e5d1a2ffa231d247e">m_stopped</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic/exchange.html">exchange</a>(<span class="keyword">true</span>) == <span class="keyword">false</span>)</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        {</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.clear();</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#a891f5f5429a918148dfd94f1b7cf81de">m_resolver</a>.cancel();</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <a class="code" href="classripple_1_1AsyncObject.html#ad926c8b473a993dbef11226430d06bef">removeReference</a>();</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        }</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    }</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">  249</a></span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">do_finish</a>(</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> name,</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        boost::system::error_code <span class="keyword">const</span>&amp; ec,</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> handler,</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        boost::asio::ip::tcp::resolver::iterator iter,</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        CompletionCounter)</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    {</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        <span class="keywordflow">if</span> (ec == boost::asio::error::operation_aborted)</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;beast::IP::Endpoint&gt;</a> addresses;</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        <span class="comment">// If we get an error message back, we don&#39;t return any</span></div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <span class="comment">// results that we may have gotten.</span></div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        <span class="keywordflow">if</span> (!ec)</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        {</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            <span class="keywordflow">while</span> (iter != boost::asio::ip::tcp::resolver::iterator())</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            {</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                addresses.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                    <a class="code" href="structbeast_1_1IPAddressConversion.html#a5e02e604b7d4a590f7ceb14a26a6947b">beast::IPAddressConversion::from_asio</a>(*iter));</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;                ++iter;</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            }</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        }</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        handler(name, addresses);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.post(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;            &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ResolverAsioImpl::do_work</a>, <span class="keyword">this</span>, CompletionCounter(<span class="keyword">this</span>))));</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    }</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#a982455cfda2dcbf034bff8f1c1fc476d">HostAndPort</a></div>
+<div class="line"><a name="l00280"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">  280</a></span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">parseName</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; str)</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    {</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <span class="comment">// first attempt to parse as an endpoint (IP addr + port).</span></div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <span class="comment">// If that doesn&#39;t succeed, fall back to generic name + port parsing</span></div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code" href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a>(str))</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        {</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            <span class="keywordflow">return</span> make_pair(</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                result-&gt;address().to_string(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(result-&gt;port()));</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        }</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <span class="comment">// generic name/port parsing, which doesn&#39;t work for</span></div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <span class="comment">// IPv6 addresses in particular because it considers a colon</span></div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        <span class="comment">// a port separator</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="comment">// Attempt to find the first and last non-whitespace</span></div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> find_whitespace = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            &amp;std::isspace&lt;std::string::value_type&gt;,</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            std::placeholders::_1,</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/locale/locale.html">std::locale</a>());</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        <span class="keyword">auto</span> host_first =</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if_not</a>(str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">begin</a>(), str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">end</a>(), find_whitespace);</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160; </div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        <span class="keyword">auto</span> port_last =</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if_not</a>(str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/rbegin.html">rbegin</a>(), str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/rend.html">rend</a>(), find_whitespace).base();</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160; </div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        <span class="comment">// This should only happen for all-whitespace strings</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;        <span class="keywordflow">if</span> (host_first &gt;= port_last)</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>());</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <span class="comment">// Attempt to find the first and last valid port separators</span></div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> find_port_separator = [](<span class="keywordtype">char</span> <span class="keyword">const</span> c) -&gt; <span class="keywordtype">bool</span> {</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            <span class="keywordflow">if</span> (std::isspace(<span class="keyword">static_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span><span class="keyword">&gt;</span>(c)))</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160; </div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            <span class="keywordflow">if</span> (c == <span class="charliteral">&#39;:&#39;</span>)</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        };</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160; </div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <span class="keyword">auto</span> host_last =</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if</a>(host_first, port_last, find_port_separator);</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160; </div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        <span class="keyword">auto</span> port_first =</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if_not</a>(host_last, port_last, find_port_separator);</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        <span class="keywordflow">return</span> make_pair(</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(host_first, host_last),</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(port_first, port_last));</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    }</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
+<div class="line"><a name="l00333"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">  333</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">do_work</a>(CompletionCounter)</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    {</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">true</span>)</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160; </div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        <span class="comment">// We don&#39;t have any work to do at this time</span></div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.empty())</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> name(<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().names.back());</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> handler(<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().handler);</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().names.pop_back();</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.front().names.empty())</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.pop_front();</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> [host, port] = <a class="code" href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">parseName</a>(name);</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160; </div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <span class="keywordflow">if</span> (host.empty())</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        {</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            JLOG(<a class="code" href="classripple_1_1ResolverAsioImpl.html#a32c01bf9df949d7fd429382d1b586e68">m_journal</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Unable to parse &#39;&quot;</span> &lt;&lt; name &lt;&lt; <span class="stringliteral">&quot;&#39;&quot;</span>;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.post(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ResolverAsioImpl::do_work</a>, <span class="keyword">this</span>, CompletionCounter(<span class="keyword">this</span>))));</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        }</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160; </div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        boost::asio::ip::tcp::resolver::query query(host, port);</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        <a class="code" href="classripple_1_1ResolverAsioImpl.html#a891f5f5429a918148dfd94f1b7cf81de">m_resolver</a>.async_resolve(</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            query,</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">ResolverAsioImpl::do_finish</a>,</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                <span class="keyword">this</span>,</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;                name,</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                std::placeholders::_1,</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                handler,</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;                std::placeholders::_2,</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;                CompletionCounter(<span class="keyword">this</span>)));</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    }</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160; </div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00377"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">  377</a></span>&#160;    <a class="code" href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">do_resolve</a>(</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> <span class="keyword">const</span>&amp; names,</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> <span class="keyword">const</span>&amp; handler,</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        CompletionCounter)</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    {</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        assert(!names.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>());</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160; </div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#acb9c88f0ec04dd367d3c5262692e9229">m_stop_called</a> == <span class="keyword">false</span>)</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        {</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.emplace_back(names, handler);</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160; </div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            JLOG(<a class="code" href="classripple_1_1ResolverAsioImpl.html#a32c01bf9df949d7fd429382d1b586e68">m_journal</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>())</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Queued new job with &quot;</span> &lt;&lt; names.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() &lt;&lt; <span class="stringliteral">&quot; tasks. &quot;</span></div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;                &lt;&lt; <a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.size() &lt;&lt; <span class="stringliteral">&quot; jobs outstanding.&quot;</span>;</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">m_work</a>.size() &gt; 0)</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            {</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                <a class="code" href="classripple_1_1ResolverAsioImpl.html#a2ee5ae26315972c91992cecea69f2a29">m_io_service</a>.post(<a class="code" href="classripple_1_1ResolverAsioImpl.html#aeb07e15e9caeeaa20a0da7cf033286e9">m_strand</a>.wrap(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                    &amp;<a class="code" href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ResolverAsioImpl::do_work</a>,</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                    <span class="keyword">this</span>,</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                    CompletionCounter(<span class="keyword">this</span>))));</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            }</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        }</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    }</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;};</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160; </div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;<span class="comment">//-----------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160; </div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;ResolverAsio&gt;</a></div>
+<div class="line"><a name="l00406"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">  406</a></span>&#160;<a class="code" href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">ResolverAsio::New</a>(boost::asio::io_service&amp; io_service, <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;{</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    <span class="keywordflow">return</span> std::make_unique&lt;ResolverAsioImpl&gt;(io_service, journal);</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;}</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;<span class="comment">//-----------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;<a class="code" href="classripple_1_1Resolver.html#acbc7e53c855c2a009bcab4d8fc4d64df">Resolver::~Resolver</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1AsyncObject_html_a5c608863a32294d98bcb0180c827fefe"><div class="ttname"><a href="classripple_1_1AsyncObject.html#a5c608863a32294d98bcb0180c827fefe">ripple::AsyncObject::m_pending</a></div><div class="ttdeci">std::atomic&lt; int &gt; m_pending</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00100">ResolverAsio.cpp:100</a></div></div>
 <div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_ab320745257eacb3bea6253fad9c5efa2"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#ab320745257eacb3bea6253fad9c5efa2">ripple::ResolverAsioImpl::m_work</a></div><div class="ttdeci">std::deque&lt; Work &gt; m_work</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00139">ResolverAsio.cpp:139</a></div></div>
@@ -499,10 +498,10 @@ $(function() {
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="aclassripple_1_1AsyncObject_1_1CompletionCounter_html_a0035d01cccee5755cb969554940bb3d4"><div class="ttname"><a href="classripple_1_1AsyncObject_1_1CompletionCounter.html#a0035d01cccee5755cb969554940bb3d4">ripple::AsyncObject::CompletionCounter::CompletionCounter</a></div><div class="ttdeci">CompletionCounter(Derived *owner)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00061">ResolverAsio.cpp:61</a></div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsio_html_a030349688ad23f1b207319ddd6e1e8db"><div class="ttname"><a href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">ripple::ResolverAsio::New</a></div><div class="ttdeci">static std::unique_ptr&lt; ResolverAsio &gt; New(boost::asio::io_service &amp;, beast::Journal)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00407">ResolverAsio.cpp:407</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsio_html_a030349688ad23f1b207319ddd6e1e8db"><div class="ttname"><a href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">ripple::ResolverAsio::New</a></div><div class="ttdeci">static std::unique_ptr&lt; ResolverAsio &gt; New(boost::asio::io_service &amp;, beast::Journal)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00406">ResolverAsio.cpp:406</a></div></div>
 <div class="ttc" id="aclassripple_1_1AsyncObject_1_1CompletionCounter_html_aeebd6654112250849034d12a88d68c0f"><div class="ttname"><a href="classripple_1_1AsyncObject_1_1CompletionCounter.html#aeebd6654112250849034d12a88d68c0f">ripple::AsyncObject::CompletionCounter::operator=</a></div><div class="ttdeci">CompletionCounter &amp; operator=(CompletionCounter const &amp;)=delete</div></div>
 <div class="ttc" id="aclassripple_1_1AsyncObject_1_1CompletionCounter_html_a542bebbea2e13e33ddbfe9d9a1eeac7f"><div class="ttname"><a href="classripple_1_1AsyncObject_1_1CompletionCounter.html#a542bebbea2e13e33ddbfe9d9a1eeac7f">ripple::AsyncObject::CompletionCounter::CompletionCounter</a></div><div class="ttdeci">CompletionCounter(CompletionCounter const &amp;other)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00066">ResolverAsio.cpp:66</a></div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_af03e013ebf5f45e164bc33b96c6745e4"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">ripple::ResolverAsioImpl::parseName</a></div><div class="ttdeci">HostAndPort parseName(std::string const &amp;str)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00281">ResolverAsio.cpp:281</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_af03e013ebf5f45e164bc33b96c6745e4"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#af03e013ebf5f45e164bc33b96c6745e4">ripple::ResolverAsioImpl::parseName</a></div><div class="ttdeci">HostAndPort parseName(std::string const &amp;str)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00280">ResolverAsio.cpp:280</a></div></div>
 <div class="ttc" id="astructripple_1_1ResolverAsioImpl_1_1Work_html_ab3462d9b6d9ea2a4c237cf46184f2e2c"><div class="ttname"><a href="structripple_1_1ResolverAsioImpl_1_1Work.html#ab3462d9b6d9ea2a4c237cf46184f2e2c">ripple::ResolverAsioImpl::Work::handler</a></div><div class="ttdeci">HandlerType handler</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00126">ResolverAsio.cpp:126</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="astructbeast_1_1IPAddressConversion_html_a5e02e604b7d4a590f7ceb14a26a6947b"><div class="ttname"><a href="structbeast_1_1IPAddressConversion.html#a5e02e604b7d4a590f7ceb14a26a6947b">beast::IPAddressConversion::from_asio</a></div><div class="ttdeci">static IP::Endpoint from_asio(boost::asio::ip::address const &amp;address)</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressConversion_8h_source.html#l00063">IPAddressConversion.h:63</a></div></div>
@@ -517,7 +516,7 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1Journal_html_a49b0713e65bb8e2c51b76fbf16252afe"><div class="ttname"><a href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">beast::Journal::error</a></div><div class="ttdeci">Stream error() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00333">Journal.h:333</a></div></div>
 <div class="ttc" id="aclassripple_1_1AsyncObject_html_ad926c8b473a993dbef11226430d06bef"><div class="ttname"><a href="classripple_1_1AsyncObject.html#ad926c8b473a993dbef11226430d06bef">ripple::AsyncObject::removeReference</a></div><div class="ttdeci">void removeReference()</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00092">ResolverAsio.cpp:92</a></div></div>
 <div class="ttc" id="adeque_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/deque.html">deque</a></div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_aed6a1150ca8d15fb9a6774ae7baa19cd"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">ripple::ResolverAsioImpl::do_finish</a></div><div class="ttdeci">void do_finish(std::string name, boost::system::error_code const &amp;ec, HandlerType handler, boost::asio::ip::tcp::resolver::iterator iter, CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00250">ResolverAsio.cpp:250</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_aed6a1150ca8d15fb9a6774ae7baa19cd"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#aed6a1150ca8d15fb9a6774ae7baa19cd">ripple::ResolverAsioImpl::do_finish</a></div><div class="ttdeci">void do_finish(std::string name, boost::system::error_code const &amp;ec, HandlerType handler, boost::asio::ip::tcp::resolver::iterator iter, CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00249">ResolverAsio.cpp:249</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="await_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">std::condition_variable::wait</a></div><div class="ttdeci">T wait(T... args)</div></div>
 <div class="ttc" id="aatomic_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/atomic.html">atomic</a></div></div>
@@ -548,14 +547,14 @@ $(function() {
 <div class="ttc" id="amake_pair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a></div><div class="ttdeci">T make_pair(T... args)</div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">std::string::end</a></div><div class="ttdeci">T end(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1AsyncObject_html"><div class="ttname"><a href="classripple_1_1AsyncObject.html">ripple::AsyncObject</a></div><div class="ttdoc">Mix-in to track when all pending I/O is complete.</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00040">ResolverAsio.cpp:40</a></div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_afeefb38699f11fc6d1d434183f7ee716"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">ripple::ResolverAsioImpl::do_resolve</a></div><div class="ttdeci">void do_resolve(std::vector&lt; std::string &gt; const &amp;names, HandlerType const &amp;handler, CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00378">ResolverAsio.cpp:378</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_afeefb38699f11fc6d1d434183f7ee716"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#afeefb38699f11fc6d1d434183f7ee716">ripple::ResolverAsioImpl::do_resolve</a></div><div class="ttdeci">void do_resolve(std::vector&lt; std::string &gt; const &amp;names, HandlerType const &amp;handler, CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00377">ResolverAsio.cpp:377</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_a2a350fb0e9bc3fc7d779d0760db2c833"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ripple::ResolverAsioImpl::do_work</a></div><div class="ttdeci">void do_work(CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00334">ResolverAsio.cpp:334</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_a2a350fb0e9bc3fc7d779d0760db2c833"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#a2a350fb0e9bc3fc7d779d0760db2c833">ripple::ResolverAsioImpl::do_work</a></div><div class="ttdeci">void do_work(CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00333">ResolverAsio.cpp:333</a></div></div>
 <div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_a891f5f5429a918148dfd94f1b7cf81de"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#a891f5f5429a918148dfd94f1b7cf81de">ripple::ResolverAsioImpl::m_resolver</a></div><div class="ttdeci">boost::asio::ip::tcp::resolver m_resolver</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00113">ResolverAsio.cpp:113</a></div></div>
 <div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html_a0d6ba5509dc00fbf39e8b91e5f267a87"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a></div><div class="ttdeci">static std::optional&lt; Endpoint &gt; from_string_checked(std::string const &amp;s)</div><div class="ttdoc">Create an Endpoint from a string.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8cpp_source.html#l00035">IPEndpoint.cpp:35</a></div></div>
 <div class="ttc" id="anotify_all_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/notify_all.html">std::condition_variable::notify_all</a></div><div class="ttdeci">T notify_all(T... args)</div></div>
 <div class="ttc" id="arbegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/rbegin.html">std::string::rbegin</a></div><div class="ttdeci">T rbegin(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_aabbcc518951e6b569fdbbe42dacd242c"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#aabbcc518951e6b569fdbbe42dacd242c">ripple::ResolverAsioImpl::do_stop</a></div><div class="ttdeci">void do_stop(CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00236">ResolverAsio.cpp:236</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsioImpl_html_aabbcc518951e6b569fdbbe42dacd242c"><div class="ttname"><a href="classripple_1_1ResolverAsioImpl.html#aabbcc518951e6b569fdbbe42dacd242c">ripple::ResolverAsioImpl::do_stop</a></div><div class="ttdeci">void do_stop(CompletionCounter)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00235">ResolverAsio.cpp:235</a></div></div>
 <div class="ttc" id="aclassripple_1_1AsyncObject_html_ae2cfd3064c61d0c627d432dd86bc1d3d"><div class="ttname"><a href="classripple_1_1AsyncObject.html#ae2cfd3064c61d0c627d432dd86bc1d3d">ripple::AsyncObject::~AsyncObject</a></div><div class="ttdeci">~AsyncObject()</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00048">ResolverAsio.cpp:48</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

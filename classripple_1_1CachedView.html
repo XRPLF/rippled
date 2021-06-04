@@ -72,7 +72,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1CachedView-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::CachedView&lt; Base &gt; Class Template Reference</div>  </div>
+<div class="title">ripple::CachedView&lt; Base &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -199,6 +199,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a77c5f58a30877fc28056f58063a01389"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae165ae0cb1f8c8f40043e7fd81e7ab70"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#ae165ae0cb1f8c8f40043e7fd81e7ab70">slesUpperBound</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key) const override</td></tr>
 <tr class="separator:ae165ae0cb1f8c8f40043e7fd81e7ab70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">slesUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const =0</td></tr>
+<tr class="separator:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a245ca68b74f82d291bfb29fbf3d6a5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">txs_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a6a245ca68b74f82d291bfb29fbf3d6a5">txsBegin</a> () const override</td></tr>
 <tr class="separator:a6a245ca68b74f82d291bfb29fbf3d6a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82ccc6fe5d28a3de1621deb839ef20d4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">txs_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a82ccc6fe5d28a3de1621deb839ef20d4">txsEnd</a> () const override</td></tr>
@@ -809,7 +811,7 @@ template&lt;class Base &gt; </div>
 </div>
 </div>
 <a id="ae165ae0cb1f8c8f40043e7fd81e7ab70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae165ae0cb1f8c8f40043e7fd81e7ab70">&#9670;&nbsp;</a></span>slesUpperBound()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae165ae0cb1f8c8f40043e7fd81e7ab70">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -827,14 +829,38 @@ template&lt;class Base &gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">ripple::ReadView</a>.</p>
-
 <p class="definition">Definition at line <a class="el" href="CachedView_8h_source.html#l00112">112</a> of file <a class="el" href="CachedView_8h_source.html">CachedView.h</a>.</p>
+
+</div>
+</div>
+<a id="abccd7f2f0b2ebfaafc8fedd6cc7ad081"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abccd7f2f0b2ebfaafc8fedd6cc7ad081">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a>&gt; ripple::ReadView::slesUpperBound </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
+          <td class="paramname"><em>key</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

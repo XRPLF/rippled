@@ -115,6 +115,9 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a852ba06421812259790135c71d470186"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a852ba06421812259790135c71d470186">stop</a> ()=0</td></tr>
+<tr class="memdesc:a852ba06421812259790135c71d470186"><td class="mdescLeft">&#160;</td><td class="mdescRight">There is only one implementation of this interface: <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html">RelationalDBInterfacePostgresImp</a>.  <a href="classripple_1_1RelationalDBInterfacePostgres.html#a852ba06421812259790135c71d470186">More...</a><br /></td></tr>
+<tr class="separator:a852ba06421812259790135c71d470186"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d1f96460a2d8643a27323dd3196e655"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a3d1f96460a2d8643a27323dd3196e655">sweep</a> ()=0</td></tr>
 <tr class="memdesc:a3d1f96460a2d8643a27323dd3196e655"><td class="mdescLeft">&#160;</td><td class="mdescRight">sweep Sweep the database.  <a href="classripple_1_1RelationalDBInterfacePostgres.html#a3d1f96460a2d8643a27323dd3196e655">More...</a><br /></td></tr>
 <tr class="separator:a3d1f96460a2d8643a27323dd3196e655"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -136,6 +139,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a33ade70d6138cfe3cc647b5f684ca80b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="structripple_1_1Transaction_1_1Locator.html">Transaction::Locator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a33ade70d6138cfe3cc647b5f684ca80b">locateTransaction</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id)=0</td></tr>
 <tr class="memdesc:a33ade70d6138cfe3cc647b5f684ca80b"><td class="mdescLeft">&#160;</td><td class="mdescRight">locateTransaction Returns information used to locate a transaction.  <a href="classripple_1_1RelationalDBInterfacePostgres.html#a33ade70d6138cfe3cc647b5f684ca80b">More...</a><br /></td></tr>
 <tr class="separator:a33ade70d6138cfe3cc647b5f684ca80b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac642a3d80edb6de896ab7bccc620fc6e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#ac642a3d80edb6de896ab7bccc620fc6e">isCaughtUp</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;reason)=0</td></tr>
+<tr class="memdesc:ac642a3d80edb6de896ab7bccc620fc6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">isCaughtUp returns whether the database is caught up with the network  <a href="classripple_1_1RelationalDBInterfacePostgres.html#ac642a3d80edb6de896ab7bccc620fc6e">More...</a><br /></td></tr>
+<tr class="separator:ac642a3d80edb6de896ab7bccc620fc6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f927d304043ce7b7f5499ab1820db49"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterface.html#a3f927d304043ce7b7f5499ab1820db49">getMinLedgerSeq</a> ()=0</td></tr>
 <tr class="memdesc:a3f927d304043ce7b7f5499ab1820db49"><td class="mdescLeft">&#160;</td><td class="mdescRight">getMinLedgerSeq Returns minimum ledger sequence in Ledgers table.  <a href="classripple_1_1RelationalDBInterface.html#a3f927d304043ce7b7f5499ab1820db49">More...</a><br /></td></tr>
 <tr class="separator:a3f927d304043ce7b7f5499ab1820db49"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -373,6 +379,36 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a852ba06421812259790135c71d470186"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a852ba06421812259790135c71d470186">&#9670;&nbsp;</a></span>stop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::RelationalDBInterfacePostgres::stop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>There is only one implementation of this interface: <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html">RelationalDBInterfacePostgresImp</a>. </p>
+<p>It wraps a stoppable object (PgPool) that does not follow RAII, and it does not go through the effort of following RAII either. The owner of the only object of that type (<a class="el" href="classripple_1_1ApplicationImp.html">ApplicationImp</a>) holds it by the type of its interface instead of its implementation, and thus the lifetime management methods need to be part of the interface. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a584939f22b1b13439cf5181c49af8695">ripple::RelationalDBInterfacePostgresImp</a>.</p>
+
+</div>
+</div>
 <a id="a3d1f96460a2d8643a27323dd3196e655"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3d1f96460a2d8643a27323dd3196e655">&#9670;&nbsp;</a></span>sweep()</h2>
 
@@ -624,6 +660,43 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ac642a3d80edb6de896ab7bccc620fc6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac642a3d80edb6de896ab7bccc620fc6e">&#9670;&nbsp;</a></span>isCaughtUp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::RelationalDBInterfacePostgres::isCaughtUp </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;&#160;</td>
+          <td class="paramname"><em>reason</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>isCaughtUp returns whether the database is caught up with the network </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">reason</td><td>if the database is not caught up, reason contains a helpful message describing why </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>false if the most recently written ledger has a close time over 3 minutes ago, or if there are no ledgers in the database. true otherwise </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a4478e1c0d2a405c7540dac8da48a739c">ripple::RelationalDBInterfacePostgresImp</a>.</p>
+
+</div>
+</div>
 <a id="a5f6c90226e70ca887b714090dd661717"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5f6c90226e70ca887b714090dd661717">&#9670;&nbsp;</a></span>init()</h2>
 
@@ -735,7 +808,7 @@ Static Public Member Functions</h2></td></tr>
 <p>getMaxLedgerSeq Returns maximum ledger sequence in Ledgers table. </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence or none if no ledgers exist. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a786e2974423fde7633ae6d3b7e3eecc8">ripple::RelationalDBInterfacePostgresImp</a>, and <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a38c26f4ff2933d92e77ca46d9068bd9e">ripple::RelationalDBInterfaceSqliteImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a38c26f4ff2933d92e77ca46d9068bd9e">ripple::RelationalDBInterfaceSqliteImp</a>, and <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a786e2974423fde7633ae6d3b7e3eecc8">ripple::RelationalDBInterfacePostgresImp</a>.</p>
 
 </div>
 </div>
@@ -838,8 +911,6 @@ Static Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> or none if ledger not found. </dd></dl>
-
-<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a250ab84bbfe947778ec09b0bff6197c4">ripple::RelationalDBInterfaceSqliteImp</a>, and <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#ab1468bdd6d79b4542cc51619d3a1780c">ripple::RelationalDBInterfacePostgresImp</a>.</p>
 
 </div>
 </div>

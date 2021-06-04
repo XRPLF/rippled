@@ -84,14 +84,14 @@ Collaboration diagram for ripple::NetworkOPsImp::StateAccounting:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1NetworkOPsImp_1_1StateAccounting__coll__graph.png" border="0" usemap="#ripple_1_1NetworkOPsImp_1_1StateAccounting_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1NetworkOPsImp_1_1StateAccounting_coll__map" id="ripple_1_1NetworkOPsImp_1_1StateAccounting_coll__map">
-<area shape="rect" title="State accounting records two attributes for each possible server state: 1) Amount of time spent in ea..." alt="" coords="1000,94,1172,135"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="674,63,845,105"/>
-<area shape="rect" href="classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="354,19,486,45"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="635,129,884,185"/>
-<area shape="rect" href="structripple_1_1NetworkOPsImp_1_1StateAccounting_1_1Counters.html" title=" " alt="" coords="319,137,521,178"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="50,119,153,145"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="5,169,197,196"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="713,209,805,236"/>
+<area shape="rect" title="State accounting records two attributes for each possible server state: 1) Amount of time spent in ea..." alt="" coords="1000,79,1172,120"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="674,5,845,47"/>
+<area shape="rect" href="classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="354,13,486,39"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="635,71,884,127"/>
+<area shape="rect" href="structripple_1_1NetworkOPsImp_1_1StateAccounting_1_1Counters.html" title=" " alt="" coords="319,79,521,120"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="50,61,153,87"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="5,111,197,138"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="713,151,805,178"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -136,10 +136,6 @@ Private Attributes</h2></td></tr>
 Static Private Attributes</h2></td></tr>
 <tr class="memitem:a5a54e55f6cf0cacc3395a5fcb9fedfa3"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a> const, 5 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPsImp_1_1StateAccounting.html#a5a54e55f6cf0cacc3395a5fcb9fedfa3">states_</a></td></tr>
 <tr class="separator:a5a54e55f6cf0cacc3395a5fcb9fedfa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70bcff56e0a862046e4a492d7a2d6a54"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPsImp_1_1StateAccounting.html#a70bcff56e0a862046e4a492d7a2d6a54">transitions_</a></td></tr>
-<tr class="separator:a70bcff56e0a862046e4a492d7a2d6a54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acaa34e98c7318791217b849aa185bd91"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPsImp_1_1StateAccounting.html#acaa34e98c7318791217b849aa185bd91">dur_</a></td></tr>
-<tr class="separator:acaa34e98c7318791217b849aa185bd91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>State accounting records two attributes for each possible server state: 1) Amount of time spent in each state (in microseconds). </p>
@@ -147,7 +143,7 @@ Static Private Attributes</h2></td></tr>
 <p>This data can be polled through server_info and represented by monitoring systems similarly to how bandwidth, CPU, and other counter-based metrics are managed.</p>
 <p>State accounting is more accurate than periodic sampling of server state. With periodic sampling, it is very likely that state transitions are missed, and accuracy of time spent in each state is very rough. </p>
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00129">129</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00126">126</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="aa9111c4ab20e24f43b90a28d4afd1f1a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa9111c4ab20e24f43b90a28d4afd1f1a">&#9670;&nbsp;</a></span>StateCountersJson</h2>
@@ -164,7 +160,7 @@ Static Private Attributes</h2></td></tr>
 <p>Json-formatted state accounting data. </p>
 <p>1st member: state accounting object. 2nd member: duration in current state. </p>
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00169">169</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00164">164</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -192,7 +188,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00149">149</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00144">144</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -222,7 +218,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03750">3750</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03729">3729</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -244,7 +240,7 @@ Static Private Attributes</h2></td></tr>
 <p>Output state counters in JSON format. </p>
 <dl class="section return"><dt>Returns</dt><dd>JSON object. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03764">3764</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03743">3743</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -263,7 +259,7 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00187">187</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00182">182</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -288,7 +284,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00139">139</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00136">136</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -312,7 +308,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00140">140</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00137">137</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -336,7 +332,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00141">141</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00138">138</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -362,7 +358,7 @@ Static Private Attributes</h2></td></tr>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00142">142</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00139">139</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -392,61 +388,13 @@ Static Private Attributes</h2></td></tr>
 <div class="line">         <a class="code" href="classJson_1_1StaticString.html">Json::StaticString</a>(<a class="code" href="namespaceripple.html#a7893ea7ee41e5b1dd38b05ce6a5856ef">stateNames</a>[3]),</div>
 <div class="line">         <a class="code" href="classJson_1_1StaticString.html">Json::StaticString</a>(<a class="code" href="namespaceripple.html#a7893ea7ee41e5b1dd38b05ce6a5856ef">stateNames</a>[4])}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00144">144</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a70bcff56e0a862046e4a492d7a2d6a54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70bcff56e0a862046e4a492d7a2d6a54">&#9670;&nbsp;</a></span>transitions_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a> ripple::NetworkOPsImp::StateAccounting::transitions_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00145">145</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
-
-</div>
-</div>
-<a id="acaa34e98c7318791217b849aa185bd91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acaa34e98c7318791217b849aa185bd91">&#9670;&nbsp;</a></span>dur_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a> ripple::NetworkOPsImp::StateAccounting::dur_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00146">146</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00141">141</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 <div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00060">json_value.h:60</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7893ea7ee41e5b1dd38b05ce6a5856ef"><div class="ttname"><a href="namespaceripple.html#a7893ea7ee41e5b1dd38b05ce6a5856ef">ripple::stateNames</a></div><div class="ttdeci">static const std::array&lt; char const  *, 5 &gt; stateNames</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8cpp_source.html#l00753">NetworkOPs.cpp:753</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7893ea7ee41e5b1dd38b05ce6a5856ef"><div class="ttname"><a href="namespaceripple.html#a7893ea7ee41e5b1dd38b05ce6a5856ef">ripple::stateNames</a></div><div class="ttdeci">static const std::array&lt; char const  *, 5 &gt; stateNames</div><div class="ttdef"><b>Definition:</b> <a href="NetworkOPs_8cpp_source.html#l00728">NetworkOPs.cpp:728</a></div></div>
 <div class="ttc" id="anow_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a></div><div class="ttdeci">T now(T... args)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

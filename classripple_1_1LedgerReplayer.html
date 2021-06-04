@@ -67,9 +67,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pro-methods">Protected Member Functions</a> &#124;
-<a href="#pri-types">Private Types</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1LedgerReplayer-members.html">List of all members</a>  </div>
@@ -81,76 +78,67 @@ $(function() {
 <p>Manages the lifetime of ledger replay tasks.  
  <a href="classripple_1_1LedgerReplayer.html#details">More...</a></p>
 <div class="dynheader">
-Inheritance diagram for ripple::LedgerReplayer:</div>
-<div class="dyncontent">
-<div class="center"><img src="classripple_1_1LedgerReplayer__inherit__graph.png" border="0" usemap="#ripple_1_1LedgerReplayer_inherit__map" alt="Inheritance graph"/></div>
-<map name="ripple_1_1LedgerReplayer_inherit__map" id="ripple_1_1LedgerReplayer_inherit__map">
-<area shape="rect" title="Manages the lifetime of ledger replay tasks." alt="" coords="5,80,173,107"/>
-<area shape="rect" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="23,5,155,32"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
 Collaboration diagram for ripple::LedgerReplayer:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1LedgerReplayer__coll__graph.png" border="0" usemap="#ripple_1_1LedgerReplayer_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1LedgerReplayer_coll__map" id="ripple_1_1LedgerReplayer_coll__map">
-<area shape="rect" title="Manages the lifetime of ledger replay tasks." alt="" coords="2822,711,2990,737"/>
-<area shape="rect" href="classripple_1_1LedgerReplayTask.html" title=" " alt="" coords="3152,1003,3336,1029"/>
-<area shape="rect" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="2449,232,2581,259"/>
-<area shape="rect" href="classripple_1_1RootStoppable.html" title=" " alt="" coords="2825,244,2987,271"/>
-<area shape="rect" href="structripple_1_1Stoppable_1_1Child.html" title=" " alt="" coords="2836,22,2976,63"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="2039,111,2193,137"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html" title=" " alt="" coords="2031,251,2201,277"/>
-<area shape="rect" href="classripple_1_1ClosureCounter.html" title=" " alt="" coords="2432,335,2599,377"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="2070,468,2162,495"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="2045,416,2187,443"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="343,364,429,391"/>
-<area shape="rect" href="classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="620,543,788,585"/>
-<area shape="rect" href="classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="1315,267,1493,309"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="1709,257,1899,298"/>
-<area shape="rect" href="classbeast_1_1LockFreeStack.html" title=" " alt="" coords="2037,317,2195,358"/>
-<area shape="rect" href="classripple_1_1Application.html" title=" " alt="" coords="1034,632,1174,659"/>
-<area shape="rect" href="classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="1318,900,1490,927"/>
-<area shape="rect" href="classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1020,557,1188,598"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="307,723,465,749"/>
-<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="293,606,479,647"/>
-<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,599,188,655"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="53,725,141,752"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="1033,802,1175,843"/>
-<area shape="rect" title=" " alt="" coords="631,609,777,636"/>
-<area shape="rect" href="classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers." alt="" coords="1319,664,1489,691"/>
-<area shape="rect" href="classripple_1_1SkipListAcquire.html" title="Manage the retrieval of a skip list in a ledger from the network." alt="" coords="1721,1135,1887,1161"/>
-<area shape="rect" href="classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network." alt="" coords="1707,900,1901,927"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="2432,726,2599,797"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="2421,886,2609,957"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="620,973,788,1014"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="335,1113,437,1140"/>
-<area shape="rect" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html" title=" " alt="" coords="812,1417,996,1458"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html" title=" " alt="" coords="2035,741,2197,782"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="2227,1085,2397,1126"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1049,1229,1159,1256"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="631,1229,777,1256"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1293,1242,1515,1283"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1323,1030,1485,1071"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1294,1161,1514,1217"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="1303,979,1505,1005"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="1319,825,1489,866"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="2430,821,2601,862"/>
-<area shape="rect" href="classripple_1_1PeerSetBuilder.html" title=" " alt="" coords="2035,807,2197,833"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="3715,499,3969,541"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="3431,653,3601,694"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="2787,901,3025,942"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="2821,966,2991,1007"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="2773,1134,3039,1175"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1319,1095,1489,1137"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html" title=" " alt="" coords="2029,909,2203,950"/>
+<area shape="rect" title="Manages the lifetime of ledger replay tasks." alt="" coords="3298,366,3466,393"/>
+<area shape="rect" href="classripple_1_1LedgerReplayTask.html" title=" " alt="" coords="3628,255,3812,282"/>
+<area shape="rect" href="classripple_1_1Application.html" title=" " alt="" coords="1311,218,1451,245"/>
+<area shape="rect" href="classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="1780,326,1952,353"/>
+<area shape="rect" href="classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="889,200,1057,241"/>
+<area shape="rect" href="classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1297,144,1465,185"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="576,258,735,285"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="612,90,699,117"/>
+<area shape="rect" href="structripple_1_1TimeoutCounter_1_1QueueJobParameter.html" title=" " alt="" coords="1087,57,1259,99"/>
+<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="563,184,748,225"/>
+<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="275,177,457,233"/>
+<area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,184,173,225"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="322,355,410,382"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="1311,509,1452,551"/>
+<area shape="rect" title=" " alt="" coords="900,110,1047,137"/>
+<area shape="rect" href="classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers." alt="" coords="1781,275,1951,302"/>
+<area shape="rect" href="classripple_1_1SkipListAcquire.html" title="Manage the retrieval of a skip list in a ledger from the network." alt="" coords="2197,982,2363,1009"/>
+<area shape="rect" href="classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network." alt="" coords="2183,646,2377,673"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="2908,836,3075,907"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="2897,507,3085,577"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="889,668,1057,709"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="604,817,707,843"/>
+<area shape="rect" href="structripple_1_1SkipListAcquire_1_1SkipListData.html" title=" " alt="" coords="890,1124,1057,1165"/>
+<area shape="rect" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html" title=" " alt="" coords="1081,432,1265,473"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="1087,761,1259,817"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html" title=" " alt="" coords="2511,911,2673,952"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="2703,964,2873,1005"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1289,319,1473,346"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1326,375,1437,402"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="900,375,1047,402"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1755,1185,1977,1227"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1785,1005,1947,1047"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1497,1114,1717,1170"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="1765,889,1967,915"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/functional/function.html" title=" " alt="" coords="1330,899,1433,926"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="1781,940,1951,981"/>
+<area shape="rect" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="1323,950,1440,977"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="2906,325,3077,367"/>
+<area shape="rect" href="classripple_1_1PeerSetBuilder.html" title=" " alt="" coords="2511,337,2673,363"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="2945,602,3037,629"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="4191,337,4445,379"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="3907,260,4077,301"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="3263,224,3501,265"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="3297,289,3467,331"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="3249,5,3515,47"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1781,145,1951,187"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html" title=" " alt="" coords="2505,599,2679,640"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1741,605,1991,647"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1776,671,1956,712"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="1775,540,1957,581"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7f95a59bb26eb9aaf2f64265fbeec494"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a7f95a59bb26eb9aaf2f64265fbeec494">LedgerReplayer</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1InboundLedgers.html">InboundLedgers</a> &amp;inboundLedgers, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSetBuilder.html">PeerSetBuilder</a> &gt; peerSetBuilder, <a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
-<tr class="separator:a7f95a59bb26eb9aaf2f64265fbeec494"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64acf661a108792c979d2c3dcd52a97d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a64acf661a108792c979d2c3dcd52a97d">LedgerReplayer</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1InboundLedgers.html">InboundLedgers</a> &amp;inboundLedgers, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSetBuilder.html">PeerSetBuilder</a> &gt; peerSetBuilder)</td></tr>
+<tr class="separator:a64acf661a108792c979d2c3dcd52a97d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab627d07265d6b06c75788bfa6919b610"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#ab627d07265d6b06c75788bfa6919b610">~LedgerReplayer</a> ()</td></tr>
 <tr class="separator:ab627d07265d6b06c75788bfa6919b610"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a889210425eeef3f27953527a5f21520a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a889210425eeef3f27953527a5f21520a">replay</a> (<a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> r, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;finishLedgerHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> totalNumLedgers)</td></tr>
@@ -168,59 +156,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a14d52623cda41f42570ca30239eae356"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a14d52623cda41f42570ca30239eae356">sweep</a> ()</td></tr>
 <tr class="memdesc:a14d52623cda41f42570ca30239eae356"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove completed tasks.  <a href="classripple_1_1LedgerReplayer.html#a14d52623cda41f42570ca30239eae356">More...</a><br /></td></tr>
 <tr class="separator:a14d52623cda41f42570ca30239eae356"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa04ec5a11e6946dce817a4df42324d1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#aa04ec5a11e6946dce817a4df42324d1f">onStop</a> () override</td></tr>
-<tr class="memdesc:aa04ec5a11e6946dce817a4df42324d1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called when the stop notification is issued.  <a href="classripple_1_1LedgerReplayer.html#aa04ec5a11e6946dce817a4df42324d1f">More...</a><br /></td></tr>
-<tr class="separator:aa04ec5a11e6946dce817a4df42324d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
-<tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
-<tr class="memdesc:adea135697761febf430a8628814c7902"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the parent of this <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a>.  <a href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">More...</a><br /></td></tr>
-<tr class="separator:adea135697761febf430a8628814c7902"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a836b8737444ef1133c3596e61010fa80"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a836b8737444ef1133c3596e61010fa80">isStopping</a> () const</td></tr>
-<tr class="memdesc:a836b8737444ef1133c3596e61010fa80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if the stoppable should stop.  <a href="classripple_1_1Stoppable.html#a836b8737444ef1133c3596e61010fa80">More...</a><br /></td></tr>
-<tr class="separator:a836b8737444ef1133c3596e61010fa80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1e1447ecb573d2341c8a71afd3e76da"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#af1e1447ecb573d2341c8a71afd3e76da">isStopped</a> () const</td></tr>
-<tr class="memdesc:af1e1447ecb573d2341c8a71afd3e76da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if the requested stop has completed.  <a href="classripple_1_1Stoppable.html#af1e1447ecb573d2341c8a71afd3e76da">More...</a><br /></td></tr>
-<tr class="separator:af1e1447ecb573d2341c8a71afd3e76da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ec6fda89ff8bc63251a9c3682311e5d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a9ec6fda89ff8bc63251a9c3682311e5d">areChildrenStopped</a> () const</td></tr>
-<tr class="memdesc:a9ec6fda89ff8bc63251a9c3682311e5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if all children have stopped.  <a href="classripple_1_1Stoppable.html#a9ec6fda89ff8bc63251a9c3682311e5d">More...</a><br /></td></tr>
-<tr class="separator:a9ec6fda89ff8bc63251a9c3682311e5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc824cd8bdcffbac3c919c7e6009dea5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adf17c8e58c57ecf0ed6cbc7ee1c2ab22">JobCounter</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">jobCounter</a> ()</td></tr>
-<tr class="separator:acc824cd8bdcffbac3c919c7e6009dea5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca4a925fd0df7e3a3bca51c9593e6a6e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#aca4a925fd0df7e3a3bca51c9593e6a6e">alertable_sleep_until</a> (std::chrono::system_clock::time_point const &amp;t)</td></tr>
-<tr class="memdesc:aca4a925fd0df7e3a3bca51c9593e6a6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sleep or wake up on stop.  <a href="classripple_1_1Stoppable.html#aca4a925fd0df7e3a3bca51c9593e6a6e">More...</a><br /></td></tr>
-<tr class="separator:aca4a925fd0df7e3a3bca51c9593e6a6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
-Protected Member Functions</h2></td></tr>
-<tr class="memitem:a65a95f9c14637491df60d3a07518fa09"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a65a95f9c14637491df60d3a07518fa09">stopped</a> ()</td></tr>
-<tr class="memdesc:a65a95f9c14637491df60d3a07518fa09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by derived classes to indicate that the stoppable has stopped.  <a href="classripple_1_1Stoppable.html#a65a95f9c14637491df60d3a07518fa09">More...</a><br /></td></tr>
-<tr class="separator:a65a95f9c14637491df60d3a07518fa09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
-Private Types</h2></td></tr>
-<tr class="memitem:a43594a8835ccb53d7b80983694d26cad"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a43594a8835ccb53d7b80983694d26cad">Children</a> = <a class="el" href="classbeast_1_1LockFreeStack.html">beast::LockFreeStack</a>&lt; <a class="el" href="structripple_1_1Stoppable_1_1Child.html">Child</a> &gt;</td></tr>
-<tr class="separator:a43594a8835ccb53d7b80983694d26cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
-<tr class="memitem:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">onPrepare</a> ()</td></tr>
-<tr class="memdesc:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called during preparation.  <a href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">More...</a><br /></td></tr>
-<tr class="separator:ab2a5544b4bfc0dccdc6a2a46f6ff5d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f24b7fcb7e8679dfd3783e9ffe3bbde"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a0f24b7fcb7e8679dfd3783e9ffe3bbde">onStart</a> ()</td></tr>
-<tr class="memdesc:a0f24b7fcb7e8679dfd3783e9ffe3bbde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called during start.  <a href="classripple_1_1Stoppable.html#a0f24b7fcb7e8679dfd3783e9ffe3bbde">More...</a><br /></td></tr>
-<tr class="separator:a0f24b7fcb7e8679dfd3783e9ffe3bbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a944a3ffe59dc8f41185fe7b740aa3e8f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a944a3ffe59dc8f41185fe7b740aa3e8f">onChildrenStopped</a> ()</td></tr>
-<tr class="memdesc:a944a3ffe59dc8f41185fe7b740aa3e8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Override called when all children have stopped.  <a href="classripple_1_1Stoppable.html#a944a3ffe59dc8f41185fe7b740aa3e8f">More...</a><br /></td></tr>
-<tr class="separator:a944a3ffe59dc8f41185fe7b740aa3e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a390c62d40a1ca754dfb2de4befa02b0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a390c62d40a1ca754dfb2de4befa02b0d">prepareRecursive</a> ()</td></tr>
-<tr class="separator:a390c62d40a1ca754dfb2de4befa02b0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab53b667e9786bed2c10dd3fcd02b517f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ab53b667e9786bed2c10dd3fcd02b517f">startRecursive</a> ()</td></tr>
-<tr class="separator:ab53b667e9786bed2c10dd3fcd02b517f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34ddbefa8dda0aab52b8ecf493833d62"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a34ddbefa8dda0aab52b8ecf493833d62">stopAsyncRecursive</a> (<a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="separator:a34ddbefa8dda0aab52b8ecf493833d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a294e4d3874e76f53a443cb4df306913f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a294e4d3874e76f53a443cb4df306913f">stopRecursive</a> (<a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="separator:a294e4d3874e76f53a443cb4df306913f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ddb27e3488d9a8546b7d897d25dc4f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a5ddb27e3488d9a8546b7d897d25dc4f1">stop</a> ()</td></tr>
+<tr class="separator:a5ddb27e3488d9a8546b7d897d25dc4f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -240,26 +177,6 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a1cb3a180ec947e7c8c89cf41182c69b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a387edc65f66abef7dca3c076fb271090"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a387edc65f66abef7dca3c076fb271090">j_</a></td></tr>
 <tr class="separator:a387edc65f66abef7dca3c076fb271090"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3bee0684bbf67bc8c2f974cc30523cea"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a3bee0684bbf67bc8c2f974cc30523cea">m_name</a></td></tr>
-<tr class="separator:a3bee0684bbf67bc8c2f974cc30523cea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a889a7b2e1b4c0fd463c51abfaa0ee0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a3a889a7b2e1b4c0fd463c51abfaa0ee0">m_root</a></td></tr>
-<tr class="separator:a3a889a7b2e1b4c0fd463c51abfaa0ee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9ece0159fb3954819b6b6f1672ac2e4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Stoppable_1_1Child.html">Child</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ab9ece0159fb3954819b6b6f1672ac2e4">m_child</a></td></tr>
-<tr class="separator:ab9ece0159fb3954819b6b6f1672ac2e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d39131e97d8faa6beb1d36eab19dc2f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a9d39131e97d8faa6beb1d36eab19dc2f">m_stopped</a> {false}</td></tr>
-<tr class="separator:a9d39131e97d8faa6beb1d36eab19dc2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c1e09326ea6d61009b6630c9e297c89"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a8c1e09326ea6d61009b6630c9e297c89">m_childrenStopped</a> {false}</td></tr>
-<tr class="separator:a8c1e09326ea6d61009b6630c9e297c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc549cdc2b0ebef1878e6d79c496be4d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Stoppable.html#a43594a8835ccb53d7b80983694d26cad">Children</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adc549cdc2b0ebef1878e6d79c496be4d">m_children</a></td></tr>
-<tr class="separator:adc549cdc2b0ebef1878e6d79c496be4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c9a256ee2a1f891a042dda5c89360c0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a3c9a256ee2a1f891a042dda5c89360c0">m_cv</a></td></tr>
-<tr class="separator:a3c9a256ee2a1f891a042dda5c89360c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb1038efa534f43ebbd76db775592aaf"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#afb1038efa534f43ebbd76db775592aaf">m_mut</a></td></tr>
-<tr class="separator:afb1038efa534f43ebbd76db775592aaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12f304b9baab521c4f5f8291485f1391"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a12f304b9baab521c4f5f8291485f1391">m_is_stopping</a> = false</td></tr>
-<tr class="separator:a12f304b9baab521c4f5f8291485f1391"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1538bf3e4636b78efa3d30a5596eddf7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#a1538bf3e4636b78efa3d30a5596eddf7">hasParent_</a> {false}</td></tr>
-<tr class="separator:a1538bf3e4636b78efa3d30a5596eddf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
@@ -269,35 +186,10 @@ Friends</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Manages the lifetime of ledger replay tasks. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00073">73</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a43594a8835ccb53d7b80983694d26cad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43594a8835ccb53d7b80983694d26cad">&#9670;&nbsp;</a></span>Children</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1Stoppable.html#a43594a8835ccb53d7b80983694d26cad">ripple::Stoppable::Children</a> =  <a class="el" href="classbeast_1_1LockFreeStack.html">beast::LockFreeStack</a>&lt;<a class="el" href="structripple_1_1Stoppable_1_1Child.html">Child</a>&gt;</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00319">319</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a7f95a59bb26eb9aaf2f64265fbeec494"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f95a59bb26eb9aaf2f64265fbeec494">&#9670;&nbsp;</a></span>LedgerReplayer()</h2>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00072">72</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a64acf661a108792c979d2c3dcd52a97d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64acf661a108792c979d2c3dcd52a97d">&#9670;&nbsp;</a></span>LedgerReplayer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -318,13 +210,7 @@ Friends</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSetBuilder.html">PeerSetBuilder</a> &gt;&#160;</td>
-          <td class="paramname"><em>peerSetBuilder</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;&#160;</td>
-          <td class="paramname"><em>parent</em>&#160;</td>
+          <td class="paramname"><em>peerSetBuilder</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -353,7 +239,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00040">40</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00038">38</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
@@ -401,7 +287,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>totalNumLedgers must &gt; 0 &amp;&amp; totalNumLedgers must &lt;= 256 </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00047">47</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00045">45</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
@@ -423,7 +309,7 @@ Friends</h2></td></tr>
 
 <p>Create <a class="el" href="classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network.">LedgerDeltaAcquire</a> subtasks for the <a class="el" href="classripple_1_1LedgerReplayTask.html">LedgerReplayTask</a> task. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00114">114</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00112">112</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
@@ -463,7 +349,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>info and data must have been verified against the ledger hash </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00175">175</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00173">173</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
@@ -503,7 +389,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>info and txns must have been verified against the ledger hash </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00198">198</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00196">196</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
@@ -524,482 +410,26 @@ Friends</h2></td></tr>
 
 <p>Remove completed tasks. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00221">221</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00219">219</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aa04ec5a11e6946dce817a4df42324d1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa04ec5a11e6946dce817a4df42324d1f">&#9670;&nbsp;</a></span>onStop()</h2>
+<a id="a5ddb27e3488d9a8546b7d897d25dc4f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ddb27e3488d9a8546b7d897d25dc4f1">&#9670;&nbsp;</a></span>stop()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::LedgerReplayer::onStop </td>
+          <td class="memname">void ripple::LedgerReplayer::stop </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Override called when the stop notification is issued. </p>
-<p>The call is made on an unspecified, implementation-specific thread. onStop and onChildrenStopped will never be called concurrently, across all <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects descended from the same root, inclusive of the root.</p>
-<p>It is safe to call isStopping, isStopped, and areChildrenStopped from within this function; The values returned will always be valid and never change during the callback.</p>
-<p>The default implementation simply calls <a class="el" href="classripple_1_1Stoppable.html#a65a95f9c14637491df60d3a07518fa09" title="Called by derived classes to indicate that the stoppable has stopped.">stopped()</a>. This is applicable when the <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> has a trivial stop operation (or no stop operation), and we are merely using the <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> API to position it as a dependency of some parent service.</p>
-<p>Thread safety: May not block for long periods. Guaranteed only to be called once. Must be safe to call from any thread at any time. </p>
-
-<p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a4278b4c199fbe20a75d69610a8970c03">ripple::Stoppable</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00259">259</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ae9b6cb02b4e1128bd2c4e1a81c9d695c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9b6cb02b4e1128bd2c4e1a81c9d695c">&#9670;&nbsp;</a></span>getRoot()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a>&amp; ripple::Stoppable::getRoot </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00214">214</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="adea135697761febf430a8628814c7902"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adea135697761febf430a8628814c7902">&#9670;&nbsp;</a></span>setParent()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::setParent </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;&#160;</td>
-          <td class="paramname"><em>parent</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set the parent of this <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a>. </p>
-<dl class="section note"><dt>Note</dt><dd>The <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> must not already have a parent. The parent to be set cannot not be stopping. Both roots must match. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00043">43</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a836b8737444ef1133c3596e61010fa80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a836b8737444ef1133c3596e61010fa80">&#9670;&nbsp;</a></span>isStopping()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Stoppable::isStopping </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns <code>true</code> if the stoppable should stop. </p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00054">54</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="af1e1447ecb573d2341c8a71afd3e76da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1e1447ecb573d2341c8a71afd3e76da">&#9670;&nbsp;</a></span>isStopped()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Stoppable::isStopped </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns <code>true</code> if the requested stop has completed. </p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00060">60</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a9ec6fda89ff8bc63251a9c3682311e5d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ec6fda89ff8bc63251a9c3682311e5d">&#9670;&nbsp;</a></span>areChildrenStopped()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Stoppable::areChildrenStopped </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns <code>true</code> if all children have stopped. </p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00066">66</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="acc824cd8bdcffbac3c919c7e6009dea5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc824cd8bdcffbac3c919c7e6009dea5">&#9670;&nbsp;</a></span>jobCounter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#adf17c8e58c57ecf0ed6cbc7ee1c2ab22">JobCounter</a> &amp; ripple::Stoppable::jobCounter </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00420">420</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="aca4a925fd0df7e3a3bca51c9593e6a6e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca4a925fd0df7e3a3bca51c9593e6a6e">&#9670;&nbsp;</a></span>alertable_sleep_until()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Stoppable::alertable_sleep_until </td>
-          <td>(</td>
-          <td class="paramtype">std::chrono::system_clock::time_point const &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Sleep or wake up on stop. </p>
-<dl class="section return"><dt>Returns</dt><dd><code>true</code> if we are stopping </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00440">440</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a65a95f9c14637491df60d3a07518fa09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65a95f9c14637491df60d3a07518fa09">&#9670;&nbsp;</a></span>stopped()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::stopped </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Called by derived classes to indicate that the stoppable has stopped. </p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00072">72</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ab2a5544b4bfc0dccdc6a2a46f6ff5d84"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">&#9670;&nbsp;</a></span>onPrepare()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::onPrepare </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Override called during preparation. </p>
-<p>Since all other <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects in the tree have already been constructed, this provides an opportunity to perform initialization which depends on calling into other <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects. This call is made on the same thread that called prepare(). The default implementation does nothing. Guaranteed to only be called once. </p>
-
-<p>Reimplemented in <a class="el" href="classripple_1_1OverlayImpl.html#addad297874d76d9df9fc2d7c903d7782">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a0419ed3fe1cbaff9a0e7b218ea8c7383">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a27bf534a255be28d9db438c2e650febe">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#a1f3cfa0cbcefd9779a0d6bbb33e929ad">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a3802f8ec07a49c257e7af4d6425c66d3">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#aca211ad8479955c5c3a8ff56c8b80f23">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#acb490a17968f0429b5e98fdab6165de0">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#a9c4f120d3d1257cb1922e6dedc6ebb7c">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a20612412402a342e2acc42a3f19936e7">ripple::PeerFinder::ManagerImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#a65baffca9446b7f05a5c4c561743698f">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#ab0d1bcc2b5c8349c9fedb83c880a0bcb">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#aeae3d11b4b4965ad1e41229b51eb3d10">ripple::test::Stoppable_test::J</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a46116902aa4f8b6f1a5c91a49854e8f0">ripple::PerfLog_test::PerfLogParent</a>, and <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#a247b2d122fe5ebeda596a7f0bff9d79a">ripple::test::Stoppable_test::D</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00080">80</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a0f24b7fcb7e8679dfd3783e9ffe3bbde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f24b7fcb7e8679dfd3783e9ffe3bbde">&#9670;&nbsp;</a></span>onStart()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::onStart </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Override called during start. </p>
-
-<p>Reimplemented in <a class="el" href="classripple_1_1ApplicationImp.html#a21dd55310b1f0a99297b384518d6df25">ripple::ApplicationImp</a>, <a class="el" href="classripple_1_1OverlayImpl.html#a3918e80c1267d4f907730999a4f26008">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#aa42c557911d8e76788e87c2d877750ed">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a5be3e389258ba50a85c06a5af860927e">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#ae470d42add62e9c7f0a80d3ef8cceaf7">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#af411953a02cb2ba6b5694ffd519aed7e">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#ae196a19d259fd57700c35f233c11c026">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1GRPCServer.html#acf26b69bea55fa6a49fb7528cb5e00c6">ripple::GRPCServer</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#ad54103c4f31d04a7f5d6593583028049">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1SHAMapStoreImp.html#a06851331bd59c5b55221845549708a34">ripple::SHAMapStoreImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#a7683aa7a642d9f45973df12e2d50faf4">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a81a7c17c2d7403d410f40266c8dc8a85">ripple::perf::PerfLogImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#aae263a3c2bc022bc75b2506345cbebcd">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#a3a98555a979eb1a3249205d75919f8ad">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#ae2d5a662e72976386d89b013572172d1">ripple::test::Stoppable_test::J</a>, <a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#a363652c7715c7176bff335387f97991f">ripple::detail::LedgerCleanerImp</a>, <a class="el" href="classripple_1_1LoadManager.html#a347fd7fdf32d02e17c676fdd92990cd4">ripple::LoadManager</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a29639c6dcd73b345d6592f25c0138f8e">ripple::PerfLog_test::PerfLogParent</a>, and <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#a279e901b5c96dfffe93a24af57c6dc3c">ripple::test::Stoppable_test::D</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00085">85</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a944a3ffe59dc8f41185fe7b740aa3e8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a944a3ffe59dc8f41185fe7b740aa3e8f">&#9670;&nbsp;</a></span>onChildrenStopped()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::onChildrenStopped </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Override called when all children have stopped. </p>
-<p>The call is made on an unspecified, implementation-specific thread. onStop and onChildrenStopped will never be called concurrently, across all <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> objects descended from the same root, inclusive of the root.</p>
-<p>It is safe to call isStopping, isStopped, and areChildrenStopped from within this function; The values returned will always be valid and never change during the callback.</p>
-<p>The default implementation does nothing.</p>
-<p>Thread safety: May not block for long periods. Guaranteed only to be called once. Must be safe to call from any thread at any time. </p>
-
-<p>Reimplemented in <a class="el" href="classripple_1_1OverlayImpl.html#a3a2a34dcf3647aad5b8860744fc4a324">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a2207576109879034546928ca55b1d700">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a02efcac1ce2652ab65cd909ddb6f836d">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#a0c3fb7cde430461b5ec75375c0ad6c54">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a01878ee5cc7e155ea8c626e7e02312a3">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1JobQueue.html#ae768881eecd962f76f12b290fe991cbe">ripple::JobQueue</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#a5e33be0f2cb72f8f88b874d940f04365">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#a04c59bc636bd73be750c95342d88b939">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#a39e3b1e4e61a89c77f67e1cea7b9ff6f">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1NodeStore_1_1Database.html#ae84b30410af69ec7e7adcdb6265a4af8">ripple::NodeStore::Database</a>, <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a32612bcc8d906ddf25a412d4024b33da">ripple::perf::PerfLogImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#ae935bf8f308a9cf15568e36e5da6338c">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#a990e49f21b4787bb7e318887445cc6b2">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a54438fef32a52fb3c2109a0b01d14d34">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#ad9378ab66db740d19cb2aea688a1647a">ripple::test::Stoppable_test::J</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a8061f5ed2fbbdca8ea5438ea3b6a6c3f">ripple::PerfLog_test::PerfLogParent</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#a28e05fec1dc41788a0616d349f209ce2">ripple::test::Stoppable_test::D</a>, and <a class="el" href="classripple_1_1NodeStoreScheduler.html#a4f4bf5ea195e8d2cf94967e03e6ec375">ripple::NodeStoreScheduler</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00096">96</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a390c62d40a1ca754dfb2de4befa02b0d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a390c62d40a1ca754dfb2de4befa02b0d">&#9670;&nbsp;</a></span>prepareRecursive()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::prepareRecursive </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00103">103</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ab53b667e9786bed2c10dd3fcd02b517f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab53b667e9786bed2c10dd3fcd02b517f">&#9670;&nbsp;</a></span>startRecursive()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::startRecursive </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00113">113</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a34ddbefa8dda0aab52b8ecf493833d62"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34ddbefa8dda0aab52b8ecf493833d62">&#9670;&nbsp;</a></span>stopAsyncRecursive()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::stopAsyncRecursive </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00123">123</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a294e4d3874e76f53a443cb4df306913f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a294e4d3874e76f53a443cb4df306913f">&#9670;&nbsp;</a></span>stopRecursive()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Stoppable::stopRecursive </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00134">134</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8cpp_source.html#l00257">257</a> of file <a class="el" href="LedgerReplayer_8cpp_source.html">LedgerReplayer.cpp</a>.</p>
 
 </div>
 </div>
@@ -1024,7 +454,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00141">141</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00139">139</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1049,7 +479,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00131">131</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00129">129</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +503,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00132">132</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00130">130</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1097,7 +527,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00133">133</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00131">131</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1121,7 +551,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00134">134</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00132">132</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1145,7 +575,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00136">136</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00134">134</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1169,7 +599,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00137">137</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00135">135</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1193,7 +623,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00138">138</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00136">136</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>
@@ -1217,247 +647,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00139">139</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
-
-</div>
-</div>
-<a id="a3bee0684bbf67bc8c2f974cc30523cea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3bee0684bbf67bc8c2f974cc30523cea">&#9670;&nbsp;</a></span>m_name</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::Stoppable::m_name</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00339">339</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a3a889a7b2e1b4c0fd463c51abfaa0ee0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3a889a7b2e1b4c0fd463c51abfaa0ee0">&#9670;&nbsp;</a></span>m_root</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a>&amp; ripple::Stoppable::m_root</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00340">340</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="ab9ece0159fb3954819b6b6f1672ac2e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9ece0159fb3954819b6b6f1672ac2e4">&#9670;&nbsp;</a></span>m_child</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structripple_1_1Stoppable_1_1Child.html">Child</a> ripple::Stoppable::m_child</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00341">341</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a9d39131e97d8faa6beb1d36eab19dc2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9d39131e97d8faa6beb1d36eab19dc2f">&#9670;&nbsp;</a></span>m_stopped</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;bool&gt; ripple::Stoppable::m_stopped {false}</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00343">343</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a8c1e09326ea6d61009b6630c9e297c89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c1e09326ea6d61009b6630c9e297c89">&#9670;&nbsp;</a></span>m_childrenStopped</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;bool&gt; ripple::Stoppable::m_childrenStopped {false}</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00344">344</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="adc549cdc2b0ebef1878e6d79c496be4d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc549cdc2b0ebef1878e6d79c496be4d">&#9670;&nbsp;</a></span>m_children</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Stoppable.html#a43594a8835ccb53d7b80983694d26cad">Children</a> ripple::Stoppable::m_children</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00345">345</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a3c9a256ee2a1f891a042dda5c89360c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c9a256ee2a1f891a042dda5c89360c0">&#9670;&nbsp;</a></span>m_cv</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a> ripple::Stoppable::m_cv</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00346">346</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="afb1038efa534f43ebbd76db775592aaf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb1038efa534f43ebbd76db775592aaf">&#9670;&nbsp;</a></span>m_mut</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> ripple::Stoppable::m_mut</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00347">347</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a12f304b9baab521c4f5f8291485f1391"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a12f304b9baab521c4f5f8291485f1391">&#9670;&nbsp;</a></span>m_is_stopping</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Stoppable::m_is_stopping = false</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00348">348</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
-
-</div>
-</div>
-<a id="a1538bf3e4636b78efa3d30a5596eddf7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1538bf3e4636b78efa3d30a5596eddf7">&#9670;&nbsp;</a></span>hasParent_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Stoppable::hasParent_ {false}</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Stoppable_8h_source.html#l00349">349</a> of file <a class="el" href="Stoppable_8h_source.html">Stoppable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplayer_8h_source.html#l00137">137</a> of file <a class="el" href="LedgerReplayer_8h_source.html">LedgerReplayer.h</a>.</p>
 
 </div>
 </div>

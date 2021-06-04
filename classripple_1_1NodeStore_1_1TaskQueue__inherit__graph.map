@@ -1,5 +1,4 @@
 <map id="ripple::NodeStore::TaskQueue" name="ripple::NodeStore::TaskQueue">
-<area shape="rect" id="node1" title=" " alt="" coords="91,80,233,121"/>
-<area shape="rect" id="node2" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="5,5,137,32"/>
-<area shape="rect" id="node3" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="162,5,346,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="26,80,169,121"/>
+<area shape="rect" id="node2" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="5,5,189,32"/>
 </map>

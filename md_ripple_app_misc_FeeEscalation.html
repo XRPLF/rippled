@@ -157,7 +157,7 @@ Other Constants</h2>
 <h2><a class="anchor" id="autotoc_md116"></a>
 &lt;tt&gt;fee&lt;/tt&gt; command</h2>
 <p><b>The <code>fee</code> RPC and WebSocket command is still experimental, and may change without warning.</b></p>
-<p><code>fee</code> takes no parameters, and returns information about the current local <a href="#fee-escalation">fee escalation</a> and <a href="#transaction-queue">transaction queue</a> state as both fee levels and drops. The drop values assume a single-singed reference transaction. It is up to the user to compute the neccessary fees for other types of transactions. (E.g. multiply all drop values by 5 for a multi-signed transaction with 4 signatures.)</p>
+<p><code>fee</code> takes no parameters, and returns information about the current local <a href="#fee-escalation">fee escalation</a> and <a href="#transaction-queue">transaction queue</a> state as both fee levels and drops. The drop values assume a single-singed reference transaction. It is up to the user to compute the necessary fees for other types of transactions. (E.g. multiply all drop values by 5 for a multi-signed transaction with 4 signatures.)</p>
 <p>The <code>fee</code> result is always instantanteous, and relates to the open ledger. It includes the sequence number of the current open ledger, but may not make sense if rippled is not synced to the network.</p>
 <p>Result format: </p><div class="fragment"><div class="line">{</div>
 <div class="line">   &quot;result&quot; : {</div>

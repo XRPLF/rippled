@@ -128,102 +128,100 @@ $(function() {
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
 <div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7d24946b15c0dd06b8ddaa12a6946cf8">   99</a></span>&#160;<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a> <span class="keyword">const</span>&amp; rs)</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;{</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">using</span> <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a>;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordflow">if</span> (rs.empty())</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;empty&quot;</span>;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> res = <span class="stringliteral">&quot;&quot;</span>;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; interval : rs)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    {</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">if</span> (!res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            res += <span class="stringliteral">&quot;,&quot;</span>;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        res += <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(interval);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    }</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordflow">return</span> res;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;}</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno"><a class="line" href="namespaceripple.html#a84ef8b46b58f794955c6b2b108aa5dba">  126</a></span>&#160;<a class="code" href="namespaceripple.html#a84ef8b46b58f794955c6b2b108aa5dba">from_string</a>(<a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a>&amp; rs, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;{</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> intervals;</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> tokens;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keywordtype">bool</span> result{<span class="keyword">true</span>};</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    boost::split(tokens, s, boost::algorithm::is_any_of(<span class="stringliteral">&quot;,&quot;</span>));</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; t : tokens)</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    {</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        boost::split(intervals, t, boost::algorithm::is_any_of(<span class="stringliteral">&quot;-&quot;</span>));</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        <span class="keywordflow">switch</span> (intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>())</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        {</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="keywordflow">case</span> 1: {</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                T front;</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(front, intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/front.html">front</a>()))</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                    result = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                    rs.insert(front);</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            }</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="keywordflow">case</span> 2: {</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                T front;</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(front, intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/front.html">front</a>()))</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    result = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                {</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    T back;</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(back, intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()))</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                        result = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                        rs.insert(<a class="code" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>(front, back));</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                }</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            }</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                result = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        }</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160; </div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keywordflow">if</span> (!result)</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/clear.html">clear</a>();</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    }</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="keywordflow">if</span> (!result)</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;        rs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/clear.html">clear</a>();</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;}</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;T&gt;</a></div>
-<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="namespaceripple.html#abf25e8e52e0c680162f6397149f02150">  184</a></span>&#160;<a class="code" href="namespaceripple.html#abf25e8e52e0c680162f6397149f02150">prevMissing</a>(<a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a> <span class="keyword">const</span>&amp; rs, T t, T minVal = 0)</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;{</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keywordflow">if</span> (rs.empty() || t == minVal)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a> tgt{<a class="code" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval&lt;T&gt;</a>{minVal, t - 1}};</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    tgt -= rs;</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">if</span> (tgt.empty())</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <span class="keywordflow">return</span> boost::icl::last(tgt);</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;}</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">if</span> (rs.empty())</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;empty&quot;</span>;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; interval : rs)</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        s += <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a>(interval) + <span class="stringliteral">&quot;,&quot;</span>;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/pop_back.html">pop_back</a>();</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordflow">return</span> s;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;}</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;[[nodiscard]] <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno"><a class="line" href="namespaceripple.html#a84ef8b46b58f794955c6b2b108aa5dba">  123</a></span>&#160;<a class="code" href="namespaceripple.html#a84ef8b46b58f794955c6b2b108aa5dba">from_string</a>(<a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a>&amp; rs, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;{</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> intervals;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> tokens;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keywordtype">bool</span> result{<span class="keyword">true</span>};</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    rs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/clear.html">clear</a>();</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    boost::split(tokens, s, boost::algorithm::is_any_of(<span class="stringliteral">&quot;,&quot;</span>));</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; t : tokens)</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    {</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        boost::split(intervals, t, boost::algorithm::is_any_of(<span class="stringliteral">&quot;-&quot;</span>));</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <span class="keywordflow">switch</span> (intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>())</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <span class="keywordflow">case</span> 1: {</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                T front;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(front, intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/front.html">front</a>()))</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                    result = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                    rs.insert(front);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            }</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            <span class="keywordflow">case</span> 2: {</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                T front;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(front, intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/front.html">front</a>()))</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    result = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                {</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    T back;</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(back, intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()))</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                        result = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                        rs.insert(<a class="code" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>(front, back));</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                }</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            }</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                result = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        }</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <span class="keywordflow">if</span> (!result)</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        intervals.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/clear.html">clear</a>();</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    }</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160; </div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keywordflow">if</span> (!result)</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        rs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/clear.html">clear</a>();</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;}</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;T&gt;</a></div>
+<div class="line"><a name="l00182"></a><span class="lineno"><a class="line" href="namespaceripple.html#abf25e8e52e0c680162f6397149f02150">  182</a></span>&#160;<a class="code" href="namespaceripple.html#abf25e8e52e0c680162f6397149f02150">prevMissing</a>(<a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a> <span class="keyword">const</span>&amp; rs, T t, T minVal = 0)</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;{</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordflow">if</span> (rs.empty() || t == minVal)</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="code" href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">RangeSet&lt;T&gt;</a> tgt{<a class="code" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval&lt;T&gt;</a>{minVal, t - 1}};</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    tgt -= rs;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keywordflow">if</span> (tgt.empty())</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">return</span> boost::icl::last(tgt);</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;}</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt; std::string &gt;</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a84ef8b46b58f794955c6b2b108aa5dba"><div class="ttname"><a href="namespaceripple.html#a84ef8b46b58f794955c6b2b108aa5dba">ripple::from_string</a></div><div class="ttdeci">bool from_string(RangeSet&lt; T &gt; &amp;rs, std::string const &amp;s)</div><div class="ttdoc">Convert the given styled string to a RangeSet.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00126">RangeSet.h:126</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a84ef8b46b58f794955c6b2b108aa5dba"><div class="ttname"><a href="namespaceripple.html#a84ef8b46b58f794955c6b2b108aa5dba">ripple::from_string</a></div><div class="ttdeci">bool from_string(RangeSet&lt; T &gt; &amp;rs, std::string const &amp;s)</div><div class="ttdoc">Convert the given styled string to a RangeSet.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00123">RangeSet.h:123</a></div></div>
 <div class="ttc" id="aback_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/back.html">std::vector::back</a></div><div class="ttdeci">T back(T... args)</div></div>
 <div class="ttc" id="afront_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/front.html">std::vector::front</a></div><div class="ttdeci">T front(T... args)</div></div>
 <div class="ttc" id="aclear_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/clear.html">std::vector::clear</a></div><div class="ttdeci">T clear(T... args)</div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
+<div class="ttc" id="apop_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/pop_back.html">std::string::pop_back</a></div><div class="ttdeci">T pop_back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a718d6c3cd459b4d24d7bc790905c57f2"><div class="ttname"><a href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">ripple::range</a></div><div class="ttdeci">ClosedInterval&lt; T &gt; range(T low, T high)</div><div class="ttdoc">Create a closed range interval.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00053">RangeSet.h:53</a></div></div>
-<div class="ttc" id="anamespaceripple_html_abf25e8e52e0c680162f6397149f02150"><div class="ttname"><a href="namespaceripple.html#abf25e8e52e0c680162f6397149f02150">ripple::prevMissing</a></div><div class="ttdeci">std::optional&lt; T &gt; prevMissing(RangeSet&lt; T &gt; const &amp;rs, T t, T minVal=0)</div><div class="ttdoc">Find the largest value not in the set that is less than a given value.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00184">RangeSet.h:184</a></div></div>
+<div class="ttc" id="anamespaceripple_html_abf25e8e52e0c680162f6397149f02150"><div class="ttname"><a href="namespaceripple.html#abf25e8e52e0c680162f6397149f02150">ripple::prevMissing</a></div><div class="ttdeci">std::optional&lt; T &gt; prevMissing(RangeSet&lt; T &gt; const &amp;rs, T t, T minVal=0)</div><div class="ttdoc">Find the largest value not in the set that is less than a given value.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00182">RangeSet.h:182</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespacebeast_html_aeb241ed2f4422ea57283956ca58c5d42"><div class="ttname"><a href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a></div><div class="ttdeci">bool lexicalCastChecked(Out &amp;out, In in)</div><div class="ttdoc">Intelligently convert from one type to another.</div><div class="ttdef"><b>Definition:</b> <a href="LexicalCast_8h_source.html#l00266">LexicalCast.h:266</a></div></div>
-<div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00040">app/misc/impl/Manifest.cpp:40</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00039">app/misc/impl/Manifest.cpp:39</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8c2adee26b605bf80bdd122435bc40bb"><div class="ttname"><a href="namespaceripple.html#a8c2adee26b605bf80bdd122435bc40bb">ripple::RangeSet</a></div><div class="ttdeci">boost::icl::interval_set&lt; T, std::less, ClosedInterval&lt; T &gt; &gt; RangeSet</div><div class="ttdoc">A set of closed intervals over the domain T.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00069">RangeSet.h:69</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a79dcedfb918a7b371ab7797ae9d9bf23"><div class="ttname"><a href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ripple::ClosedInterval</a></div><div class="ttdeci">boost::icl::closed_interval&lt; T &gt; ClosedInterval</div><div class="ttdoc">A closed interval over the domain T.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00044">RangeSet.h:44</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>

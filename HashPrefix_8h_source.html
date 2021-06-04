@@ -130,19 +130,21 @@ $(function() {
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">manifest</a> = <a class="code" href="namespaceripple_1_1detail.html#a3266bff106a961696ef3397134178cac">detail::make_hash_prefix</a>(<span class="charliteral">&#39;M&#39;</span>, <span class="charliteral">&#39;A&#39;</span>, <span class="charliteral">&#39;N&#39;</span>),</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdae9474a9e64b014ac43be92e69750cfc2">paymentChannelClaim</a> = <a class="code" href="namespaceripple_1_1detail.html#a3266bff106a961696ef3397134178cac">detail::make_hash_prefix</a>(<span class="charliteral">&#39;C&#39;</span>, <span class="charliteral">&#39;L&#39;</span>, <span class="charliteral">&#39;M&#39;</span>),</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;};</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Hasher&gt;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="namespaceripple.html#a51a6fc5662dc2d364f352e28610c5813">   91</a></span>&#160;<a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a>(Hasher&amp; h, <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bd">HashPrefix</a> <span class="keyword">const</span>&amp; hp) noexcept</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;{</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keyword">using</span> <a class="code" href="namespacebeast.html#a4a9eebb8b68941c49b07763d7a95d456">beast::hash_append</a>;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a>(h, <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a><span class="keyword">&gt;</span>(hp));</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;}</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad21e12ce372b7212ed1e0cd5f375b962">shardInfo</a> = <a class="code" href="namespaceripple_1_1detail.html#a3266bff106a961696ef3397134178cac">detail::make_hash_prefix</a>(<span class="charliteral">&#39;S&#39;</span>, <span class="charliteral">&#39;H&#39;</span>, <span class="charliteral">&#39;D&#39;</span>),</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;};</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Hasher&gt;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="namespaceripple.html#a51a6fc5662dc2d364f352e28610c5813">   94</a></span>&#160;<a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a>(Hasher&amp; h, <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bd">HashPrefix</a> <span class="keyword">const</span>&amp; hp) noexcept</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">using</span> <a class="code" href="namespacebeast.html#a4a9eebb8b68941c49b07763d7a95d456">beast::hash_append</a>;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <a class="code" href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">hash_append</a>(h, <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a><span class="keyword">&gt;</span>(hp));</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ripple::HashPrefix::ledgerMaster</a></div><div class="ttdeci">@ ledgerMaster</div><div class="ttdoc">ledger master data for signing</div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bda555f976fd82d9e7e487770c44c7980bf"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda555f976fd82d9e7e487770c44c7980bf">ripple::HashPrefix::txNode</a></div><div class="ttdeci">@ txNode</div><div class="ttdoc">transaction plus metadata</div></div>
@@ -162,6 +164,7 @@ $(function() {
 <div class="ttc" id="anamespacebeast_html_a4a9eebb8b68941c49b07763d7a95d456"><div class="ttname"><a href="namespacebeast.html#a4a9eebb8b68941c49b07763d7a95d456">beast::hash_append</a></div><div class="ttdeci">std::enable_if_t&lt; is_contiguously_hashable&lt; T, Hasher &gt;::value &gt; hash_append(Hasher &amp;h, T const &amp;t) noexcept</div><div class="ttdoc">Logically concatenate input data to a Hasher.</div><div class="ttdef"><b>Definition:</b> <a href="hash__append_8h_source.html#l00236">hash_append.h:236</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bda2e941487d3c2b2204488c5cf3a9d7a28"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda2e941487d3c2b2204488c5cf3a9d7a28">ripple::HashPrefix::txSign</a></div><div class="ttdeci">@ txSign</div><div class="ttdoc">inner transaction to sign</div></div>
 <div class="ttc" id="anamespaceripple_html_a9c3a01178261b6e8a98c0ea99f01d154"><div class="ttname"><a href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">ripple::hash_append</a></div><div class="ttdeci">void hash_append(Hasher &amp;h, ValidatorBlobInfo const &amp;blobInfo)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8h_source.html#l00897">ValidatorList.h:897</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bdad21e12ce372b7212ed1e0cd5f375b962"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad21e12ce372b7212ed1e0cd5f375b962">ripple::HashPrefix::shardInfo</a></div><div class="ttdeci">@ shardInfo</div><div class="ttdoc">shard info for signing</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

@@ -187,6 +187,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a43004c453409f2ea4701bf6fea6add20"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a43004c453409f2ea4701bf6fea6add20">getKBUsedTransaction</a> ()=0</td></tr>
 <tr class="memdesc:a43004c453409f2ea4701bf6fea6add20"><td class="mdescLeft">&#160;</td><td class="mdescRight">getKBUsedTransaction Returns space used by transaction database.  <a href="classripple_1_1RelationalDBInterfaceSqlite.html#a43004c453409f2ea4701bf6fea6add20">More...</a><br /></td></tr>
 <tr class="separator:a43004c453409f2ea4701bf6fea6add20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f740aec1f490b1109aefdba62d38334"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a2f740aec1f490b1109aefdba62d38334">closeLedgerDB</a> ()=0</td></tr>
+<tr class="memdesc:a2f740aec1f490b1109aefdba62d38334"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the ledger database.  <a href="classripple_1_1RelationalDBInterfaceSqlite.html#a2f740aec1f490b1109aefdba62d38334">More...</a><br /></td></tr>
+<tr class="separator:a2f740aec1f490b1109aefdba62d38334"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8cf31e34f4fc754ce2a2dea10b9d586"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#ad8cf31e34f4fc754ce2a2dea10b9d586">closeTransactionDB</a> ()=0</td></tr>
+<tr class="memdesc:ad8cf31e34f4fc754ce2a2dea10b9d586"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the transaction database.  <a href="classripple_1_1RelationalDBInterfaceSqlite.html#ad8cf31e34f4fc754ce2a2dea10b9d586">More...</a><br /></td></tr>
+<tr class="separator:ad8cf31e34f4fc754ce2a2dea10b9d586"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f927d304043ce7b7f5499ab1820db49"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterface.html#a3f927d304043ce7b7f5499ab1820db49">getMinLedgerSeq</a> ()=0</td></tr>
 <tr class="memdesc:a3f927d304043ce7b7f5499ab1820db49"><td class="mdescLeft">&#160;</td><td class="mdescRight">getMinLedgerSeq Returns minimum ledger sequence in Ledgers table.  <a href="classripple_1_1RelationalDBInterface.html#a3f927d304043ce7b7f5499ab1820db49">More...</a><br /></td></tr>
 <tr class="separator:a3f927d304043ce7b7f5499ab1820db49"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1187,8 +1193,6 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Transaction.html">Transaction</a> and its metadata if found, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">TxSearched::all</a> if range given and all ledgers from range are present in the database, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">TxSearched::some</a> if range given and not all ledgers are present, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaad921d60486366258809553a3db49a4a">TxSearched::unknown</a> if range not given or deserializing error occured. In the last case error code returned via ec link parameter, in other cases default error code not changed. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#aa307d6986422e99c2f4cd690d8484a2f">ripple::RelationalDBInterfaceSqliteImp</a>.</p>
-
 </div>
 </div>
 <a id="a2d211b3da998b7b95cf132393359dc64"></a>
@@ -1278,6 +1282,64 @@ Static Public Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>Space in kilobytes. </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#abadd06345e0dd296f52d66bdf4a29cc9">ripple::RelationalDBInterfaceSqliteImp</a>.</p>
+
+</div>
+</div>
+<a id="a2f740aec1f490b1109aefdba62d38334"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f740aec1f490b1109aefdba62d38334">&#9670;&nbsp;</a></span>closeLedgerDB()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::RelationalDBInterfaceSqlite::closeLedgerDB </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Closes the ledger database. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a3876fee03fc2c3144ead04fe234c001a">ripple::RelationalDBInterfaceSqliteImp</a>.</p>
+
+</div>
+</div>
+<a id="ad8cf31e34f4fc754ce2a2dea10b9d586"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8cf31e34f4fc754ce2a2dea10b9d586">&#9670;&nbsp;</a></span>closeTransactionDB()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::RelationalDBInterfaceSqlite::closeTransactionDB </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Closes the transaction database. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#add590bd1c5c1cdb8e8f9adbd846455b9">ripple::RelationalDBInterfaceSqliteImp</a>.</p>
 
 </div>
 </div>
@@ -1392,7 +1454,7 @@ Static Public Member Functions</h2></td></tr>
 <p>getMaxLedgerSeq Returns maximum ledger sequence in Ledgers table. </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence or none if no ledgers exist. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a786e2974423fde7633ae6d3b7e3eecc8">ripple::RelationalDBInterfacePostgresImp</a>, and <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a38c26f4ff2933d92e77ca46d9068bd9e">ripple::RelationalDBInterfaceSqliteImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a38c26f4ff2933d92e77ca46d9068bd9e">ripple::RelationalDBInterfaceSqliteImp</a>, and <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a786e2974423fde7633ae6d3b7e3eecc8">ripple::RelationalDBInterfacePostgresImp</a>.</p>
 
 </div>
 </div>
@@ -1495,8 +1557,6 @@ Static Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> or none if ledger not found. </dd></dl>
-
-<p>Implemented in <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a250ab84bbfe947778ec09b0bff6197c4">ripple::RelationalDBInterfaceSqliteImp</a>, and <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#ab1468bdd6d79b4542cc51619d3a1780c">ripple::RelationalDBInterfacePostgresImp</a>.</p>
 
 </div>
 </div>

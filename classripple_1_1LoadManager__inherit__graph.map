@@ -1,4 +1,0 @@
-<map id="ripple::LoadManager" name="ripple::LoadManager">
-<area shape="rect" id="node1" title="Manages load sources." alt="" coords="5,80,160,107"/>
-<area shape="rect" id="node2" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="17,5,149,32"/>
-</map>

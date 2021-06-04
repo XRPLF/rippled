@@ -1,5 +1,5 @@
 <map id="ripple::test::jtx::JTx" name="ripple::test::jtx::JTx">
-<area shape="rect" id="node1" title="Execution context for applying a JSON transaction." alt="" coords="2299,369,2444,396"/>
+<area shape="rect" id="node1" title="Execution context for applying a JSON transaction." alt="" coords="2292,369,2437,396"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="2015,164,2193,191"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="1738,157,1885,198"/>
 <area shape="rect" id="node4" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="2057,253,2151,280"/>

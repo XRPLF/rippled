@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1IOUAmount-members.html">List of all members</a>  </div>
@@ -133,6 +134,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4123b52991469e91f146e23382f49d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7569b6462cf1abb6018ccfbe8428bfab"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1IOUAmount.html#a7569b6462cf1abb6018ccfbe8428bfab">mantissa</a> () const noexcept</td></tr>
 <tr class="separator:a7569b6462cf1abb6018ccfbe8428bfab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:adab2635959eab5a38bd62200a538d908"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1IOUAmount.html#adab2635959eab5a38bd62200a538d908">minPositiveAmount</a> ()</td></tr>
+<tr class="separator:adab2635959eab5a38bd62200a538d908"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -282,7 +288,7 @@ Private Attributes</h2></td></tr>
 <p>Adjusts the mantissa and exponent to the proper range. </p>
 <p>This can throw if the amount cannot be normalized, or is larger than the largest value that can be represented as an IOU amount. Amounts that are too small to be represented normalize to 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00038">38</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00044">44</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -348,7 +354,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00080">80</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00086">86</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -427,7 +433,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00122">122</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00128">128</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -540,6 +546,33 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00128">128</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="adab2635959eab5a38bd62200a538d908"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adab2635959eab5a38bd62200a538d908">&#9670;&nbsp;</a></span>minPositiveAmount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> ripple::IOUAmount::minPositiveAmount </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00038">38</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>

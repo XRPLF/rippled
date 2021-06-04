@@ -1,5 +1,4 @@
 <map id="ripple::RPC::RecoveryHandler" name="ripple::RPC::RecoveryHandler">
-<area shape="rect" id="node1" title=" " alt="" coords="5,169,217,196"/>
-<area shape="rect" id="node2" href="$classripple_1_1RPC_1_1ShardArchiveHandler.html" title="Handles the download and import of one or more shard archives." alt="" coords="18,80,205,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="45,5,177,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,95,217,121"/>
+<area shape="rect" id="node2" href="$classripple_1_1RPC_1_1ShardArchiveHandler.html" title="Handles the download and import of one or more shard archives." alt="" coords="18,5,205,47"/>
 </map>

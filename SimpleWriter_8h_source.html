@@ -136,7 +136,7 @@ $(function() {
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; buf = <a class="code" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">sb_</a>.data();</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a> result;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(buf.begin(), buf.end()));</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; b : buf)</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span> b : buf)</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(b);</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">return</span> result;</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>

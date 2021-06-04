@@ -564,13 +564,13 @@ Functions</h2></td></tr>
 <tr class="memitem:ae0d0792f80460f6f25b8583807647b31"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:ae0d0792f80460f6f25b8583807647b31"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ae0d0792f80460f6f25b8583807647b31">convert</a> (T &amp;to, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;from)</td></tr>
 <tr class="separator:ae0d0792f80460f6f25b8583807647b31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6744f28487e67b2cfb2ca85611d553e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Handler.html">Handler</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#af6744f28487e67b2cfb2ca85611d553e">getHandler</a> (unsigned version, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)</td></tr>
-<tr class="separator:af6744f28487e67b2cfb2ca85611d553e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a467920f61f6755c5aeb30f4567555897"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Handler.html">Handler</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">getHandler</a> (unsigned version, bool betaEnabled, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)</td></tr>
+<tr class="separator:a467920f61f6755c5aeb30f4567555897"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc3fb87e5048e2ed8e9ce87ee4a0adb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; char const  * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">getHandlerNames</a> ()</td></tr>
 <tr class="memdesc:a2dc3fb87e5048e2ed8e9ce87ee4a0adb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return names of all methods.  <a href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">More...</a><br /></td></tr>
 <tr class="separator:a2dc3fb87e5048e2ed8e9ce87ee4a0adb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a79ba46afb35cfbb1cf4a329b048e8d5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Handler.html">Handler</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a79ba46afb35cfbb1cf4a329b048e8d5e">getHandler</a> (unsigned int version, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;)</td></tr>
-<tr class="separator:a79ba46afb35cfbb1cf4a329b048e8d5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a072e33201126623285b72ff4e3a0ff87"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Handler.html">Handler</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a072e33201126623285b72ff4e3a0ff87">getHandler</a> (unsigned int version, bool betaEnabled, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;)</td></tr>
+<tr class="separator:a072e33201126623285b72ff4e3a0ff87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e628867fe5111cabdf253dc2ed8f165"><td class="memTemplParams" colspan="2">template&lt;class Value &gt; </td></tr>
 <tr class="memitem:a4e628867fe5111cabdf253dc2ed8f165"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a4e628867fe5111cabdf253dc2ed8f165">makeObjectValue</a> (Value const &amp;value, <a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a> const &amp;field=jss::message)</td></tr>
 <tr class="memdesc:a4e628867fe5111cabdf253dc2ed8f165"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a> with a single entry.  <a href="namespaceripple_1_1RPC.html#a4e628867fe5111cabdf253dc2ed8f165">More...</a><br /></td></tr>
@@ -583,8 +583,8 @@ Functions</h2></td></tr>
 <tr class="memitem:a84827a1d9b56ad8201671ff77c2ddf2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a84827a1d9b56ad8201671ff77c2ddf2e">doCommand</a> (<a class="el" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;)</td></tr>
 <tr class="memdesc:a84827a1d9b56ad8201671ff77c2ddf2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Execute an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command and store the results in a <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a>.  <a href="namespaceripple_1_1RPC.html#a84827a1d9b56ad8201671ff77c2ddf2e">More...</a><br /></td></tr>
 <tr class="separator:a84827a1d9b56ad8201671ff77c2ddf2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad29cb759c5b76c1ac2664cf416509f5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ad29cb759c5b76c1ac2664cf416509f5a">roleRequired</a> (unsigned int version, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;method)</td></tr>
-<tr class="separator:ad29cb759c5b76c1ac2664cf416509f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cdc6dbc802b0d0ceaa59f95e3e6cfbd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2cdc6dbc802b0d0ceaa59f95e3e6cfbd">roleRequired</a> (unsigned int version, bool betaEnabled, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;method)</td></tr>
+<tr class="separator:a2cdc6dbc802b0d0ceaa59f95e3e6cfbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab296c114ef59099643a10df577e71a30"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab296c114ef59099643a10df577e71a30">accountFromStringStrict</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;)</td></tr>
 <tr class="memdesc:ab296c114ef59099643a10df577e71a30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an AccountID from an account ID or public key.  <a href="namespaceripple_1_1RPC.html#ab296c114ef59099643a10df577e71a30">More...</a><br /></td></tr>
 <tr class="separator:ab296c114ef59099643a10df577e71a30"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -652,14 +652,14 @@ Functions</h2></td></tr>
 <tr class="separator:a9bccc1b478a5bda71c12c100373780f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75647cbae9e0bae5c52d8b8288d78028"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a>, <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a75647cbae9e0bae5c52d8b8288d78028">chooseLedgerEntryType</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params)</td></tr>
 <tr class="separator:a75647cbae9e0bae5c52d8b8288d78028"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a127e746f3d4890e5f28e09439cdaffbb"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a127e746f3d4890e5f28e09439cdaffbb">getAPIVersionNumber</a> (const <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;value)</td></tr>
-<tr class="memdesc:a127e746f3d4890e5f28e09439cdaffbb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the api version number from the json value.  <a href="namespaceripple_1_1RPC.html#a127e746f3d4890e5f28e09439cdaffbb">More...</a><br /></td></tr>
-<tr class="separator:a127e746f3d4890e5f28e09439cdaffbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1913cdcfd25a883affb49c4f40174cd6"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">getAPIVersionNumber</a> (const <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;value, bool betaEnabled)</td></tr>
+<tr class="memdesc:a1913cdcfd25a883affb49c4f40174cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the api version number from the json value.  <a href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">More...</a><br /></td></tr>
+<tr class="separator:a1913cdcfd25a883affb49c4f40174cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0d8f7023aadd4a6fd6a24af152f856f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#af0d8f7023aadd4a6fd6a24af152f856f">isHexTxID</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;txid)</td></tr>
 <tr class="separator:af0d8f7023aadd4a6fd6a24af152f856f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5da4f7a6ff327a616006493ea395dafa"><td class="memTemplParams" colspan="2">template&lt;class Object &gt; </td></tr>
-<tr class="memitem:a5da4f7a6ff327a616006493ea395dafa"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a5da4f7a6ff327a616006493ea395dafa">setVersion</a> (Object &amp;parent)</td></tr>
-<tr class="separator:a5da4f7a6ff327a616006493ea395dafa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a952d28abf431af0330afa7db13e7253d"><td class="memTemplParams" colspan="2">template&lt;class Object &gt; </td></tr>
+<tr class="memitem:a952d28abf431af0330afa7db13e7253d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a952d28abf431af0330afa7db13e7253d">setVersion</a> (Object &amp;parent, unsigned int apiVersion, bool betaEnabled)</td></tr>
+<tr class="separator:a952d28abf431af0330afa7db13e7253d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf952f7ca5d0d26e982a92acce6bf937"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#adf952f7ca5d0d26e982a92acce6bf937">checkFee</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;request, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> const role, bool doAutoFill, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classripple_1_1LoadFeeTrack.html">LoadFeeTrack</a> const  &amp;feeTrack, <a class="el" href="classripple_1_1TxQ.html">TxQ</a> const  &amp;txQ, <a class="el" href="classripple_1_1Application.html">Application</a> const  &amp;app)</td></tr>
 <tr class="memdesc:adf952f7ca5d0d26e982a92acce6bf937"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill in the fee on behalf of the client.  <a href="namespaceripple_1_1RPC.html#adf952f7ca5d0d26e982a92acce6bf937">More...</a><br /></td></tr>
 <tr class="separator:adf952f7ca5d0d26e982a92acce6bf937"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -701,17 +701,17 @@ Variables</h2></td></tr>
 <tr class="separator:ac1d9d20ea6b595fb35f270ec0ab40cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07abc3b8700dae7a1f047634b3461dac"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbeast_1_1SemanticVersion.html">beast::SemanticVersion</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a07abc3b8700dae7a1f047634b3461dac">lastVersion</a> (&quot;1.0.0&quot;)</td></tr>
 <tr class="separator:a07abc3b8700dae7a1f047634b3461dac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4b906ec0b22a85e9ca14149eafe9077"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#af4b906ec0b22a85e9ca14149eafe9077">APIInvalidVersion</a> = 0</td></tr>
-<tr class="memdesc:af4b906ec0b22a85e9ca14149eafe9077"><td class="mdescLeft">&#160;</td><td class="mdescRight">API version numbers used in later API versions.  <a href="namespaceripple_1_1RPC.html#af4b906ec0b22a85e9ca14149eafe9077">More...</a><br /></td></tr>
-<tr class="separator:af4b906ec0b22a85e9ca14149eafe9077"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe1aa3bca25a389af165a90a38d90c6b"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#abe1aa3bca25a389af165a90a38d90c6b">APIVersionIfUnspecified</a> = 1</td></tr>
-<tr class="separator:abe1aa3bca25a389af165a90a38d90c6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad541f36347409391d286ab117b8e6659"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ApiMinimumSupportedVersion</a> = 1</td></tr>
-<tr class="separator:ad541f36347409391d286ab117b8e6659"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:affbc9e6f947124dd7e2f7fec4bd95d80"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ApiMaximumSupportedVersion</a> = 1</td></tr>
-<tr class="separator:affbc9e6f947124dd7e2f7fec4bd95d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e2ccb38ace32c70838404175b96431b"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a8e2ccb38ace32c70838404175b96431b">APINumberVersionSupported</a></td></tr>
-<tr class="separator:a8e2ccb38ace32c70838404175b96431b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82767cee46ed28bee125cbe98b3f735b"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a82767cee46ed28bee125cbe98b3f735b">apiInvalidVersion</a> = 0</td></tr>
+<tr class="memdesc:a82767cee46ed28bee125cbe98b3f735b"><td class="mdescLeft">&#160;</td><td class="mdescRight">API version numbers used in later API versions.  <a href="namespaceripple_1_1RPC.html#a82767cee46ed28bee125cbe98b3f735b">More...</a><br /></td></tr>
+<tr class="separator:a82767cee46ed28bee125cbe98b3f735b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ae9f90d85f342bfefe3b37140c2cc71"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a8ae9f90d85f342bfefe3b37140c2cc71">apiVersionIfUnspecified</a> = 1</td></tr>
+<tr class="separator:a8ae9f90d85f342bfefe3b37140c2cc71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86a3780c8662fae3e2a81382afe4d51b"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a86a3780c8662fae3e2a81382afe4d51b">apiMinimumSupportedVersion</a> = 1</td></tr>
+<tr class="separator:a86a3780c8662fae3e2a81382afe4d51b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c4c4528421d724a8a82db708b1a761b"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">apiMaximumSupportedVersion</a> = 1</td></tr>
+<tr class="separator:a8c4c4528421d724a8a82db708b1a761b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1359badd82538ee3d5a05bfd744f2d80"><td class="memItemLeft" align="right" valign="top">constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a1359badd82538ee3d5a05bfd744f2d80">apiBetaVersion</a> = 2</td></tr>
+<tr class="separator:a1359badd82538ee3d5a05bfd744f2d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf971399318eaf92481b10636259a929"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="structripple_1_1RPC_1_1TxnTestData.html">TxnTestData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#acf971399318eaf92481b10636259a929">txnTestArray</a> []</td></tr>
 <tr class="separator:acf971399318eaf92481b10636259a929"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4ad4f10ce47581de9d1c2442fb4b77a"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="structripple_1_1RPC_1_1key__strings.html">key_strings</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#af4ad4f10ce47581de9d1c2442fb4b77a">secp256k1_strings</a></td></tr>
@@ -6259,8 +6259,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="af6744f28487e67b2cfb2ca85611d553e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6744f28487e67b2cfb2ca85611d553e">&#9670;&nbsp;</a></span>getHandler() <span class="overload">[1/2]</span></h2>
+<a id="a467920f61f6755c5aeb30f4567555897"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a467920f61f6755c5aeb30f4567555897">&#9670;&nbsp;</a></span>getHandler() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6270,6 +6270,12 @@ template&lt;class T &gt; </div>
           <td>(</td>
           <td class="paramtype">unsigned&#160;</td>
           <td class="paramname"><em>version</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>betaEnabled</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -6285,7 +6291,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00254">254</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00236">236</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
 
 </div>
 </div>
@@ -6306,12 +6312,12 @@ template&lt;class T &gt; </div>
 
 <p>Return names of all methods. </p>
 
-<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00260">260</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00242">242</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a79ba46afb35cfbb1cf4a329b048e8d5e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a79ba46afb35cfbb1cf4a329b048e8d5e">&#9670;&nbsp;</a></span>getHandler() <span class="overload">[2/2]</span></h2>
+<a id="a072e33201126623285b72ff4e3a0ff87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a072e33201126623285b72ff4e3a0ff87">&#9670;&nbsp;</a></span>getHandler() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6321,6 +6327,12 @@ template&lt;class T &gt; </div>
           <td>(</td>
           <td class="paramtype">unsigned int&#160;</td>
           <td class="paramname"><em>version</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>betaEnabled</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -6430,7 +6442,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00225">225</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00226">226</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -6462,12 +6474,12 @@ template&lt;class T &gt; </div>
 
 <p>Execute an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command and store the results in a <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00245">245</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00246">246</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ad29cb759c5b76c1ac2664cf416509f5a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad29cb759c5b76c1ac2664cf416509f5a">&#9670;&nbsp;</a></span>roleRequired()</h2>
+<a id="a2cdc6dbc802b0d0ceaa59f95e3e6cfbd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cdc6dbc802b0d0ceaa59f95e3e6cfbd">&#9670;&nbsp;</a></span>roleRequired()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6477,6 +6489,12 @@ template&lt;class T &gt; </div>
           <td>(</td>
           <td class="paramtype">unsigned int&#160;</td>
           <td class="paramname"><em>version</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>betaEnabled</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -6492,7 +6510,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00292">292</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00293">293</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -7381,8 +7399,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a127e746f3d4890e5f28e09439cdaffbb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a127e746f3d4890e5f28e09439cdaffbb">&#9670;&nbsp;</a></span>getAPIVersionNumber()</h2>
+<a id="a1913cdcfd25a883affb49c4f40174cd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1913cdcfd25a883affb49c4f40174cd6">&#9670;&nbsp;</a></span>getAPIVersionNumber()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -7391,8 +7409,18 @@ template&lt;class T &gt; </div>
           <td class="memname">unsigned int ripple::RPC::getAPIVersionNumber </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
-          <td class="paramname"><em>value</em></td><td>)</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>betaEnabled</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -7402,6 +7430,7 @@ template&lt;class T &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>a <a class="el" href="namespaceJson.html" title="JSON (JavaScript Object Notation).">Json</a> value that may or may not specifies the api version number </td></tr>
+    <tr><td class="paramname">betaEnabled</td><td>if the beta API version is enabled </td></tr>
   </table>
   </dd>
 </dl>
@@ -7429,8 +7458,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a5da4f7a6ff327a616006493ea395dafa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5da4f7a6ff327a616006493ea395dafa">&#9670;&nbsp;</a></span>setVersion()</h2>
+<a id="a952d28abf431af0330afa7db13e7253d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a952d28abf431af0330afa7db13e7253d">&#9670;&nbsp;</a></span>setVersion()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -7441,13 +7470,29 @@ template&lt;class Object &gt; </div>
           <td class="memname">void ripple::RPC::setVersion </td>
           <td>(</td>
           <td class="paramtype">Object &amp;&#160;</td>
-          <td class="paramname"><em>parent</em></td><td>)</td>
+          <td class="paramname"><em>parent</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>betaEnabled</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00229">229</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00233">233</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -8033,8 +8078,8 @@ template&lt;class Object &gt; </div>
 
 </div>
 </div>
-<a id="af4b906ec0b22a85e9ca14149eafe9077"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4b906ec0b22a85e9ca14149eafe9077">&#9670;&nbsp;</a></span>APIInvalidVersion</h2>
+<a id="a82767cee46ed28bee125cbe98b3f735b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82767cee46ed28bee125cbe98b3f735b">&#9670;&nbsp;</a></span>apiInvalidVersion</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -8043,7 +8088,7 @@ template&lt;class Object &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr unsigned int ripple::RPC::APIInvalidVersion = 0</td>
+          <td class="memname">constexpr unsigned int ripple::RPC::apiInvalidVersion = 0</td>
         </tr>
       </table>
   </td>
@@ -8054,109 +8099,108 @@ template&lt;class Object &gt; </div>
 </div><div class="memdoc">
 
 <p>API version numbers used in later API versions. </p>
-<p>Requests with a version number in the range [ApiMinimumSupportedVersion, ApiMaximumSupportedVersion] are supported.</p>
-<p>Network Requests without explicit version numbers use APIVersionIfUnspecified. APIVersionIfUnspecified is 1, because all the <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> requests with a version &gt;= 2 must explicitly specify the version in the requests. Note that APIVersionIfUnspecified will be lower than ApiMinimumSupportedVersion when we stop supporting API version 1.</p>
-<p>Command line Requests use ApiMaximumSupportedVersion. </p>
+<p>Requests with a version number in the range [apiMinimumSupportedVersion, apiMaximumSupportedVersion] are supported.</p>
+<p>If [beta_rpc_api] is enabled in config, the version numbers in the range [apiMinimumSupportedVersion, apiBetaVersion] are supported.</p>
+<p>Network Requests without explicit version numbers use apiVersionIfUnspecified. apiVersionIfUnspecified is 1, because all the <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> requests with a version &gt;= 2 must explicitly specify the version in the requests. Note that apiVersionIfUnspecified will be lower than apiMinimumSupportedVersion when we stop supporting API version 1.</p>
+<p>Command line Requests use apiMaximumSupportedVersion. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00217">217</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
-
-</div>
-</div>
-<a id="abe1aa3bca25a389af165a90a38d90c6b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe1aa3bca25a389af165a90a38d90c6b">&#9670;&nbsp;</a></span>APIVersionIfUnspecified</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr unsigned int ripple::RPC::APIVersionIfUnspecified = 1</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00218">218</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
-
-</div>
-</div>
-<a id="ad541f36347409391d286ab117b8e6659"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad541f36347409391d286ab117b8e6659">&#9670;&nbsp;</a></span>ApiMinimumSupportedVersion</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr unsigned int ripple::RPC::ApiMinimumSupportedVersion = 1</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00219">219</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
-
-</div>
-</div>
-<a id="affbc9e6f947124dd7e2f7fec4bd95d80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#affbc9e6f947124dd7e2f7fec4bd95d80">&#9670;&nbsp;</a></span>ApiMaximumSupportedVersion</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr unsigned int ripple::RPC::ApiMaximumSupportedVersion = 1</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00220">220</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
-
-</div>
-</div>
-<a id="a8e2ccb38ace32c70838404175b96431b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e2ccb38ace32c70838404175b96431b">&#9670;&nbsp;</a></span>APINumberVersionSupported</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr unsigned int ripple::RPC::APINumberVersionSupported</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">    <a class="code" href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ApiMaximumSupportedVersion</a> - <a class="code" href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ApiMinimumSupportedVersion</a> + 1</div>
-</div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00221">221</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+
+</div>
+</div>
+<a id="a8ae9f90d85f342bfefe3b37140c2cc71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ae9f90d85f342bfefe3b37140c2cc71">&#9670;&nbsp;</a></span>apiVersionIfUnspecified</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned int ripple::RPC::apiVersionIfUnspecified = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00222">222</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+
+</div>
+</div>
+<a id="a86a3780c8662fae3e2a81382afe4d51b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86a3780c8662fae3e2a81382afe4d51b">&#9670;&nbsp;</a></span>apiMinimumSupportedVersion</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned int ripple::RPC::apiMinimumSupportedVersion = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00223">223</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+
+</div>
+</div>
+<a id="a8c4c4528421d724a8a82db708b1a761b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c4c4528421d724a8a82db708b1a761b">&#9670;&nbsp;</a></span>apiMaximumSupportedVersion</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned int ripple::RPC::apiMaximumSupportedVersion = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00224">224</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+
+</div>
+</div>
+<a id="a1359badd82538ee3d5a05bfd744f2d80"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1359badd82538ee3d5a05bfd744f2d80">&#9670;&nbsp;</a></span>apiBetaVersion</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned int ripple::RPC::apiBetaVersion = 2</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00225">225</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -8296,8 +8340,6 @@ template&lt;class Object &gt; </div>
 </div>
 </div>
 </div><!-- contents -->
-<div class="ttc" id="anamespaceripple_1_1RPC_html_ad541f36347409391d286ab117b8e6659"><div class="ttname"><a href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ripple::RPC::ApiMinimumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int ApiMinimumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00219">RPCHelpers.h:219</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_affbc9e6f947124dd7e2f7fec4bd95d80"><div class="ttname"><a href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ripple::RPC::ApiMaximumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int ApiMaximumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00220">RPCHelpers.h:220</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

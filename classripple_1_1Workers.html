@@ -76,14 +76,14 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>A group of threads that process tasks.  
+<p><code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> is effectively a thread pool.  
  <a href="classripple_1_1Workers.html#details">More...</a></p>
 <div class="dynheader">
 Collaboration diagram for ripple::Workers:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Workers__coll__graph.png" border="0" usemap="#ripple_1_1Workers_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1Workers_coll__map" id="ripple_1_1Workers_coll__map">
-<area shape="rect" title="A group of threads that process tasks." alt="" coords="991,308,1111,335"/>
+<area shape="rect" title="Workers is effectively a thread pool." alt="" coords="991,308,1111,335"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="627,44,769,71"/>
 <area shape="rect" href="structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="606,95,790,121"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html" title=" " alt="" coords="295,161,466,188"/>
@@ -122,9 +122,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aeb667770c498316bc4611932c768141d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Workers.html#aeb667770c498316bc4611932c768141d">setNumberOfThreads</a> (int numberOfThreads)</td></tr>
 <tr class="memdesc:aeb667770c498316bc4611932c768141d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the desired number of threads.  <a href="classripple_1_1Workers.html#aeb667770c498316bc4611932c768141d">More...</a><br /></td></tr>
 <tr class="separator:aeb667770c498316bc4611932c768141d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57ae4066b756be97dd589a72aebc5020"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Workers.html#a57ae4066b756be97dd589a72aebc5020">pauseAllThreadsAndWait</a> ()</td></tr>
-<tr class="memdesc:a57ae4066b756be97dd589a72aebc5020"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pause all threads and wait until they are paused.  <a href="classripple_1_1Workers.html#a57ae4066b756be97dd589a72aebc5020">More...</a><br /></td></tr>
-<tr class="separator:a57ae4066b756be97dd589a72aebc5020"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc599a454f17df95852e20139e98eea8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Workers.html#adc599a454f17df95852e20139e98eea8">stop</a> ()</td></tr>
+<tr class="memdesc:adc599a454f17df95852e20139e98eea8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pause all threads and wait until they are paused.  <a href="classripple_1_1Workers.html#adc599a454f17df95852e20139e98eea8">More...</a><br /></td></tr>
+<tr class="separator:adc599a454f17df95852e20139e98eea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa65a05362bb7c77d7679cefce91a1514"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Workers.html#aa65a05362bb7c77d7679cefce91a1514">addTask</a> ()</td></tr>
 <tr class="memdesc:aa65a05362bb7c77d7679cefce91a1514"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a task to be performed.  <a href="classripple_1_1Workers.html#aa65a05362bb7c77d7679cefce91a1514">More...</a><br /></td></tr>
 <tr class="separator:aa65a05362bb7c77d7679cefce91a1514"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -167,9 +167,13 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a7a1ec32f737f520240f0c07ac235cbb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A group of threads that process tasks. </p>
+<div class="textblock"><p><code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> is effectively a thread pool. </p>
+<p>The constructor takes a "callback" that has a <code>void processTask(int instance)</code> method, and a number of workers. It creates that many <a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a> and then waits for calls to <code><a class="el" href="classripple_1_1Workers.html#aa65a05362bb7c77d7679cefce91a1514" title="Add a task to be performed.">Workers::addTask()</a></code>. It holds a semaphore that counts the number of waiting tasks, and a condition variable for the event when the last worker pauses itself.</p>
+<p>Creating a <code><a class="el" href="classripple_1_1Workers_1_1Worker.html">Worker</a></code> creates a thread that calls <code><a class="el" href="classripple_1_1Workers_1_1Worker.html#af22df5d3827a478181be99171dc05e45">Worker::run()</a></code>. When that thread enters <code><a class="el" href="classripple_1_1Workers_1_1Worker.html#af22df5d3827a478181be99171dc05e45">Worker::run</a></code>, it increments the count of active workers in the parent <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> object and then blocks on the semaphore if there are no waiting tasks. It will be unblocked whenever the number of waiting tasks is incremented. That only happens in two circumstances: (1) when <code><a class="el" href="classripple_1_1Workers.html#aa65a05362bb7c77d7679cefce91a1514" title="Add a task to be performed.">Workers::addTask</a></code> is called and (2) when <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> wants to pause some workers ("pause one worker" is considered one task), which happens when someone wants to stop the workers or shrink the threadpool. No worker threads are ever destroyed until <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> is destroyed; it merely pauses workers until then.</p>
+<p>When an idle worker is woken, it checks whether <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> is trying to pause workers. If so, it adds itself to the set of paused workers and blocks on its own condition variable. If not, then it calls <code>processTask</code> on the "callback" held by <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code>.</p>
+<p>When a paused worker is woken, it checks whether it should exit. The signal to exit is only set in the destructor of <code><a class="el" href="classripple_1_1Workers_1_1Worker.html">Worker</a></code>, which unblocks the paused thread and waits for it to exit. A <code><a class="el" href="classripple_1_1Workers_1_1Worker.html#af22df5d3827a478181be99171dc05e45">Worker::run</a></code> thread checks whether it needs to exit only when it is woken from a pause (not when it is woken from idle). This is why the destructor for <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> pauses all the workers before destroying them. </p>
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00039">39</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00068">68</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2b7128de479945e72fca6f1fb069466f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2b7128de479945e72fca6f1fb069466f">&#9670;&nbsp;</a></span>Workers()</h2>
@@ -304,14 +308,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a57ae4066b756be97dd589a72aebc5020"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a57ae4066b756be97dd589a72aebc5020">&#9670;&nbsp;</a></span>pauseAllThreadsAndWait()</h2>
+<a id="adc599a454f17df95852e20139e98eea8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc599a454f17df95852e20139e98eea8">&#9670;&nbsp;</a></span>stop()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::Workers::pauseAllThreadsAndWait </td>
+          <td class="memname">void ripple::Workers::stop </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -343,7 +347,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Add a task to be performed. </p>
-<p>Every call to addTask will eventually result in a call to <a class="el" href="structripple_1_1Workers_1_1Callback.html#aaf9d435c1413c9a7ac8f662518e16312" title="Perform a task.">Callback::processTask</a> unless the <a class="el" href="classripple_1_1Workers.html" title="A group of threads that process tasks.">Workers</a> object is destroyed or the number of threads is never set above zero.</p>
+<p>Every call to addTask will eventually result in a call to <a class="el" href="structripple_1_1Workers_1_1Callback.html#aaf9d435c1413c9a7ac8f662518e16312" title="Perform a task.">Callback::processTask</a> unless the <a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a> object is destroyed or the number of threads is never set above zero.</p>
 <dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="Workers_8cpp_source.html#l00126">126</a> of file <a class="el" href="Workers_8cpp_source.html">Workers.cpp</a>.</p>
@@ -429,7 +433,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00178">178</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00207">207</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -453,7 +457,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00179">179</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00208">208</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -477,7 +481,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00180">180</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00209">209</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -501,7 +505,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00181">181</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00210">210</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -525,7 +529,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00182">182</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00211">211</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -549,7 +553,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00183">183</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00212">212</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -573,7 +577,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00184">184</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00213">213</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -597,7 +601,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00185">185</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00214">214</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -621,7 +625,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00186">186</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00215">215</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -645,7 +649,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00187">187</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00216">216</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -669,7 +673,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00189">189</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00218">218</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -693,7 +697,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00190">190</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00219">219</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -717,7 +721,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00192">192</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00221">221</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>

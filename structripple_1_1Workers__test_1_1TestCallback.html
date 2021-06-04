@@ -138,7 +138,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Perform a task. </p>
-<p>The call is made on a thread owned by <a class="el" href="classripple_1_1Workers.html" title="A group of threads that process tasks.">Workers</a>. It is important that you only process one task from inside your callback. Each call to addTask will result in exactly one call to processTask.</p>
+<p>The call is made on a thread owned by <a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a>. It is important that you only process one task from inside your callback. Each call to addTask will result in exactly one call to processTask.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">instance</td><td>The worker thread instance.</td></tr>

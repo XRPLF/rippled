@@ -1,5 +1,4 @@
 <map id="ripple::SHAMapStoreImp" name="ripple::SHAMapStoreImp">
-<area shape="rect" id="node1" title=" " alt="" coords="65,80,245,107"/>
-<area shape="rect" id="node2" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="5,5,137,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1SHAMapStore.html" title="class to create database, launch online delete thread, and related SQLite database" alt="" coords="162,5,317,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,80,185,107"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapStore.html" title="class to create database, launch online delete thread, and related SQLite database" alt="" coords="18,5,173,32"/>
 </map>

@@ -1,6 +1,5 @@
 <map id="ripple::NodeStore::DatabaseRotating" name="ripple::NodeStore::DatabaseRotating">
-<area shape="rect" id="node1" title=" " alt="" coords="15,169,158,211"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1DatabaseRotatingImp.html" title=" " alt="" coords="5,259,168,300"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Database.html" title="Persistency layer for NodeObject." alt="" coords="15,80,158,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="21,5,153,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="15,95,158,136"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1DatabaseRotatingImp.html" title=" " alt="" coords="5,184,168,225"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Database.html" title="Persistency layer for NodeObject." alt="" coords="15,5,158,47"/>
 </map>

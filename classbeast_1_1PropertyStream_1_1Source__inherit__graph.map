@@ -1,13 +1,13 @@
 <map id="beast::PropertyStream::Source" name="beast::PropertyStream::Source">
 <area shape="rect" id="node1" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,99,173,141"/>
-<area shape="rect" id="node2" href="$classripple_1_1Application.html" title=" " alt="" coords="255,5,395,32"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1LedgerCleaner.html" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="221,56,428,83"/>
-<area shape="rect" id="node6" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="265,107,384,133"/>
-<area shape="rect" id="node8" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="257,158,392,199"/>
-<area shape="rect" id="node10" href="$classripple_1_1Resource_1_1Manager.html" title="Tracks load and resource consumption." alt="" coords="229,224,420,251"/>
-<area shape="rect" id="node3" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="509,5,674,32"/>
-<area shape="rect" id="node5" href="$classripple_1_1detail_1_1LedgerCleanerImp.html" title=" " alt="" coords="476,56,707,83"/>
-<area shape="rect" id="node7" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="518,107,665,133"/>
-<area shape="rect" id="node9" href="$classripple_1_1PeerFinder_1_1ManagerImp.html" title=" " alt="" coords="524,158,659,199"/>
-<area shape="rect" id="node11" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="484,224,699,251"/>
+<area shape="rect" id="node2" href="$classripple_1_1Application.html" title=" " alt="" coords="247,5,387,32"/>
+<area shape="rect" id="node4" href="$classripple_1_1LedgerCleaner.html" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="236,56,397,83"/>
+<area shape="rect" id="node6" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="257,107,376,133"/>
+<area shape="rect" id="node8" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="249,158,384,199"/>
+<area shape="rect" id="node10" href="$classripple_1_1Resource_1_1Manager.html" title="Tracks load and resource consumption." alt="" coords="221,224,412,251"/>
+<area shape="rect" id="node3" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="485,5,650,32"/>
+<area shape="rect" id="node5" href="$classripple_1_1LedgerCleanerImp.html" title=" " alt="" coords="474,56,661,83"/>
+<area shape="rect" id="node7" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="494,107,641,133"/>
+<area shape="rect" id="node9" href="$classripple_1_1PeerFinder_1_1ManagerImp.html" title=" " alt="" coords="500,158,635,199"/>
+<area shape="rect" id="node11" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="460,224,675,251"/>
 </map>

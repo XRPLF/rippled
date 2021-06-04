@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1RPC_1_1VersionHandler-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::RPC::VersionHandler Class Reference</div>  </div>
@@ -76,8 +77,8 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad887ac730acf10d6953501dbf8c36983"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1VersionHandler.html#ad887ac730acf10d6953501dbf8c36983">VersionHandler</a> (<a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> &amp;)</td></tr>
-<tr class="separator:ad887ac730acf10d6953501dbf8c36983"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa46e00de0835c6b2f833782d0209a97"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1VersionHandler.html#afa46e00de0835c6b2f833782d0209a97">VersionHandler</a> (<a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> &amp;c)</td></tr>
+<tr class="separator:afa46e00de0835c6b2f833782d0209a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc9fdd5ec7cf4382d4f80b2c424833ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1VersionHandler.html#afc9fdd5ec7cf4382d4f80b2c424833ca">check</a> ()</td></tr>
 <tr class="separator:afc9fdd5ec7cf4382d4f80b2c424833ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a173f654776af77eac50f134ac89a8677"><td class="memTemplParams" colspan="2">template&lt;class Object &gt; </td></tr>
@@ -92,13 +93,20 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:ad3d6218fa87c3b2525c773cf8ce9776d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0898d515327fa6c410caf5eda56b6708"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782">Condition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1VersionHandler.html#a0898d515327fa6c410caf5eda56b6708">condition</a> ()</td></tr>
 <tr class="separator:a0898d515327fa6c410caf5eda56b6708"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a2bfb0117ad2ff16b1faefd1f10ae1c61"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1VersionHandler.html#a2bfb0117ad2ff16b1faefd1f10ae1c61">apiVersion_</a></td></tr>
+<tr class="separator:a2bfb0117ad2ff16b1faefd1f10ae1c61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a450fc5cbe1937a95c47fd0166efca5ca"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1VersionHandler.html#a450fc5cbe1937a95c47fd0166efca5ca">betaEnabled_</a></td></tr>
+<tr class="separator:a450fc5cbe1937a95c47fd0166efca5ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00028">28</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ad887ac730acf10d6953501dbf8c36983"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad887ac730acf10d6953501dbf8c36983">&#9670;&nbsp;</a></span>VersionHandler()</h2>
+<a id="afa46e00de0835c6b2f833782d0209a97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa46e00de0835c6b2f833782d0209a97">&#9670;&nbsp;</a></span>VersionHandler()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -110,7 +118,7 @@ Static Public Member Functions</h2></td></tr>
           <td class="memname">ripple::RPC::VersionHandler::VersionHandler </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> &amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>c</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -141,7 +149,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00036">36</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00037">37</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
 
 </div>
 </div>
@@ -163,7 +171,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00043">43</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00044">44</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
 
 </div>
 </div>
@@ -190,7 +198,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00049">49</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00050">50</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
 
 </div>
 </div>
@@ -217,7 +225,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00055">55</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00056">56</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
 
 </div>
 </div>
@@ -244,7 +252,56 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00061">61</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00062">62</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2bfb0117ad2ff16b1faefd1f10ae1c61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2bfb0117ad2ff16b1faefd1f10ae1c61">&#9670;&nbsp;</a></span>apiVersion_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int ripple::RPC::VersionHandler::apiVersion_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00068">68</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
+
+</div>
+</div>
+<a id="a450fc5cbe1937a95c47fd0166efca5ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a450fc5cbe1937a95c47fd0166efca5ca">&#9670;&nbsp;</a></span>betaEnabled_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::RPC::VersionHandler::betaEnabled_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Version_8h_source.html#l00069">69</a> of file <a class="el" href="Version_8h_source.html">Version.h</a>.</p>
 
 </div>
 </div>

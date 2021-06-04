@@ -73,7 +73,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1RelationalDBInterfacePostgresImp-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::RelationalDBInterfacePostgresImp Class Reference</div>  </div>
+<div class="title">ripple::RelationalDBInterfacePostgresImp Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -133,6 +133,9 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a11fa57bae4dfde01825ce01536f16596"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a11fa57bae4dfde01825ce01536f16596">RelationalDBInterfacePostgresImp</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;jobQueue)</td></tr>
 <tr class="separator:a11fa57bae4dfde01825ce01536f16596"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a584939f22b1b13439cf5181c49af8695"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a584939f22b1b13439cf5181c49af8695">stop</a> () override</td></tr>
+<tr class="memdesc:a584939f22b1b13439cf5181c49af8695"><td class="mdescLeft">&#160;</td><td class="mdescRight">There is only one implementation of this interface: <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html">RelationalDBInterfacePostgresImp</a>.  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#a584939f22b1b13439cf5181c49af8695">More...</a><br /></td></tr>
+<tr class="separator:a584939f22b1b13439cf5181c49af8695"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9912af85022cdd4403ddaf59b6f45d39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a9912af85022cdd4403ddaf59b6f45d39">sweep</a> () override</td></tr>
 <tr class="memdesc:a9912af85022cdd4403ddaf59b6f45d39"><td class="mdescLeft">&#160;</td><td class="mdescRight">sweep Sweep the database.  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#a9912af85022cdd4403ddaf59b6f45d39">More...</a><br /></td></tr>
 <tr class="separator:a9912af85022cdd4403ddaf59b6f45d39"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,7 +161,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a441d130a2fcc6e23895772fd16a88cad"><td class="mdescLeft">&#160;</td><td class="mdescRight">getNewestLedgerInfo Returns info of newest saved ledger.  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#a441d130a2fcc6e23895772fd16a88cad">More...</a><br /></td></tr>
 <tr class="separator:a441d130a2fcc6e23895772fd16a88cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1468bdd6d79b4542cc51619d3a1780c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#ab1468bdd6d79b4542cc51619d3a1780c">getLedgerInfoByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash) override</td></tr>
-<tr class="memdesc:ab1468bdd6d79b4542cc51619d3a1780c"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfoByHash Returns info of ledger with given hash.  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#ab1468bdd6d79b4542cc51619d3a1780c">More...</a><br /></td></tr>
 <tr class="separator:ab1468bdd6d79b4542cc51619d3a1780c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b69cc3308db657ec39145b49e05548e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a8b69cc3308db657ec39145b49e05548e">getHashByIndex</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex) override</td></tr>
 <tr class="memdesc:a8b69cc3308db657ec39145b49e05548e"><td class="mdescLeft">&#160;</td><td class="mdescRight">getHashByIndex Returns hash of ledger with given sequence.  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#a8b69cc3308db657ec39145b49e05548e">More...</a><br /></td></tr>
@@ -187,6 +189,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6cc31e51144cc1d4a4ae0a35240eeb5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a6cc31e51144cc1d4a4ae0a35240eeb5b">transactionDbHasSpace</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config) override</td></tr>
 <tr class="memdesc:a6cc31e51144cc1d4a4ae0a35240eeb5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">transactionDbHasSpace Checks if transaction database has available space.  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#a6cc31e51144cc1d4a4ae0a35240eeb5b">More...</a><br /></td></tr>
 <tr class="separator:a6cc31e51144cc1d4a4ae0a35240eeb5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4478e1c0d2a405c7540dac8da48a739c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html#a4478e1c0d2a405c7540dac8da48a739c">isCaughtUp</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;reason) override</td></tr>
+<tr class="memdesc:a4478e1c0d2a405c7540dac8da48a739c"><td class="mdescLeft">&#160;</td><td class="mdescRight">isCaughtUp returns whether the database is caught up with the network  <a href="classripple_1_1RelationalDBInterfacePostgresImp.html#a4478e1c0d2a405c7540dac8da48a739c">More...</a><br /></td></tr>
+<tr class="separator:a4478e1c0d2a405c7540dac8da48a739c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2591b2d99a0dcce5e980eb99b1de2a7"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterface.html#aa2591b2d99a0dcce5e980eb99b1de2a7">getLedgerInfoByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash)=0</td></tr>
+<tr class="memdesc:aa2591b2d99a0dcce5e980eb99b1de2a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfoByHash Returns info of ledger with given hash.  <a href="classripple_1_1RelationalDBInterface.html#aa2591b2d99a0dcce5e980eb99b1de2a7">More...</a><br /></td></tr>
+<tr class="separator:aa2591b2d99a0dcce5e980eb99b1de2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -442,6 +450,38 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a584939f22b1b13439cf5181c49af8695"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a584939f22b1b13439cf5181c49af8695">&#9670;&nbsp;</a></span>stop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::RelationalDBInterfacePostgresImp::stop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>There is only one implementation of this interface: <a class="el" href="classripple_1_1RelationalDBInterfacePostgresImp.html">RelationalDBInterfacePostgresImp</a>. </p>
+<p>It wraps a stoppable object (PgPool) that does not follow RAII, and it does not go through the effort of following RAII either. The owner of the only object of that type (<a class="el" href="classripple_1_1ApplicationImp.html">ApplicationImp</a>) holds it by the type of its interface instead of its implementation, and thus the lifetime management methods need to be part of the interface. </p>
+
+<p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a852ba06421812259790135c71d470186">ripple::RelationalDBInterfacePostgres</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00068">68</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a9912af85022cdd4403ddaf59b6f45d39"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9912af85022cdd4403ddaf59b6f45d39">&#9670;&nbsp;</a></span>sweep()</h2>
 
@@ -470,7 +510,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a3d1f96460a2d8643a27323dd3196e655">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00136">136</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00144">144</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -502,7 +542,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a3f927d304043ce7b7f5499ab1820db49">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00144">144</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00152">152</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -534,7 +574,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#aa4ec3fcac75481ae862805f34289e80e">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00150">150</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00158">158</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -566,7 +606,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a430b80d54f2856756dffab5687b1bdba">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00156">156</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00164">164</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -598,7 +638,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a5c5c9c34672b3e84bfef0ce594cc89c0">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00162">162</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00170">170</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -648,7 +688,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a4aa35a5356d6e39b4c0537903735c3db">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00168">168</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00176">176</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -687,7 +727,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a1704b3edfa1eebb97e2772a1362ef781">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00176">176</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00184">184</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -719,12 +759,12 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a1cf137dce25e130bffe96e816ab67408">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00182">182</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00190">190</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
 <a id="ab1468bdd6d79b4542cc51619d3a1780c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab1468bdd6d79b4542cc51619d3a1780c">&#9670;&nbsp;</a></span>getLedgerInfoByHash()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1468bdd6d79b4542cc51619d3a1780c">&#9670;&nbsp;</a></span>getLedgerInfoByHash() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -742,23 +782,12 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>getLedgerInfoByHash Returns info of ledger with given hash. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">ledgerHash</td><td>Hash of the ledger. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> or none if ledger not found. </dd></dl>
-
-<p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#aa2591b2d99a0dcce5e980eb99b1de2a7">ripple::RelationalDBInterface</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00188">188</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00196">196</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -797,7 +826,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#ae99d6906c4f05898cf938bb4a701686e">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00194">194</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00202">202</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -836,7 +865,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a21bc1426669349600fc43a631f4d624d">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00200">200</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00208">208</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -886,7 +915,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#ad24ab2dbf3df1b3c413fb7974261d903">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00210">210</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00218">218</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -925,7 +954,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a036cc5d42b0fc04e058668bee4af5867">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00218">218</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00226">226</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -964,7 +993,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a3eab4bbd8ddad6e25c276c23145a47d7">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00224">224</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00232">232</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1005,7 +1034,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a6e042293537ef62fb20e0a06f55746d2">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00230">230</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00238">238</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1044,7 +1073,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#a33ade70d6138cfe3cc647b5f684ca80b">ripple::RelationalDBInterfacePostgres</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00236">236</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00244">244</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1083,7 +1112,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a732cc66fd22621337d40ac1f9ad8fd03">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00250">250</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00258">258</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1122,7 +1151,46 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#ae82bbbaf83168411afc4e866d6c895e5">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00256">256</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00264">264</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4478e1c0d2a405c7540dac8da48a739c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4478e1c0d2a405c7540dac8da48a739c">&#9670;&nbsp;</a></span>isCaughtUp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::RelationalDBInterfacePostgresImp::isCaughtUp </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;&#160;</td>
+          <td class="paramname"><em>reason</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>isCaughtUp returns whether the database is caught up with the network </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">reason</td><td>if the database is not caught up, reason contains a helpful message describing why </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>false if the most recently written ledger has a close time over 3 minutes ago, or if there are no ledgers in the database. true otherwise </dd></dl>
+
+<p>Implements <a class="el" href="classripple_1_1RelationalDBInterfacePostgres.html#ac642a3d80edb6de896ab7bccc620fc6e">ripple::RelationalDBInterfacePostgres</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00279">279</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1150,7 +1218,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00242">242</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00250">250</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1209,6 +1277,41 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="aa2591b2d99a0dcce5e980eb99b1de2a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2591b2d99a0dcce5e980eb99b1de2a7">&#9670;&nbsp;</a></span>getLedgerInfoByHash() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&gt; ripple::RelationalDBInterface::getLedgerInfoByHash </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ledgerHash</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>getLedgerInfoByHash Returns info of ledger with given hash. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ledgerHash</td><td>Hash of the ledger. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> or none if ledger not found. </dd></dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a1b5f1ca497d0216672a3c6fb7839364b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1b5f1ca497d0216672a3c6fb7839364b">&#9670;&nbsp;</a></span>app_</h2>
@@ -1230,7 +1333,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00127">127</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00135">135</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1254,7 +1357,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00128">128</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00136">136</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>
@@ -1278,7 +1381,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00129">129</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html#l00137">137</a> of file <a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a>.</p>
 
 </div>
 </div>

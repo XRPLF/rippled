@@ -115,6 +115,10 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aff5ca80daa8b3d7b31b5e7174d64e716"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1perf_1_1PerfLog.html#aff5ca80daa8b3d7b31b5e7174d64e716">~PerfLog</a> ()=default</td></tr>
 <tr class="separator:aff5ca80daa8b3d7b31b5e7174d64e716"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8907f70472b89026b1f26dd34623697"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1perf_1_1PerfLog.html#aa8907f70472b89026b1f26dd34623697">start</a> ()</td></tr>
+<tr class="separator:aa8907f70472b89026b1f26dd34623697"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3239a984155d8ed7f665f5652d4aaac7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1perf_1_1PerfLog.html#a3239a984155d8ed7f665f5652d4aaac7">stop</a> ()</td></tr>
+<tr class="separator:a3239a984155d8ed7f665f5652d4aaac7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82a1159ee502f9ede502e9825c3460e2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1perf_1_1PerfLog.html#a82a1159ee502f9ede502e9825c3460e2">rpcStart</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;method, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> requestId)=0</td></tr>
 <tr class="memdesc:a82a1159ee502f9ede502e9825c3460e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log start of <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> call.  <a href="classripple_1_1perf_1_1PerfLog.html#a82a1159ee502f9ede502e9825c3460e2">More...</a><br /></td></tr>
 <tr class="separator:a82a1159ee502f9ede502e9825c3460e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -150,7 +154,7 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><p>Singleton class that maintains performance counters and optionally writes Json-formatted data to a distinct log. </p>
 <p>It should exist prior to other objects launched by <a class="el" href="classripple_1_1Application.html">Application</a> to make it accessible for performance logging. </p>
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00046">46</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00047">47</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a1af2c1e16d0728749cef25a26551c83f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1af2c1e16d0728749cef25a26551c83f">&#9670;&nbsp;</a></span>steady_clock</h2>
@@ -164,7 +168,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00049">49</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00050">50</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -180,7 +184,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00050">50</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00051">51</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -196,7 +200,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00051">51</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00052">52</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -212,7 +216,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00052">52</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00053">53</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -228,7 +232,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00053">53</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00054">54</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -244,7 +248,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00054">54</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00055">55</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -260,7 +264,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00055">55</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00056">56</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
 
 </div>
 </div>
@@ -291,6 +295,64 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa8907f70472b89026b1f26dd34623697"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8907f70472b89026b1f26dd34623697">&#9670;&nbsp;</a></span>start()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::perf::PerfLog::start </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#aaf753116ce7d16f627a2e6a2acacdf6f">ripple::perf::PerfLogImp</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00071">71</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+
+</div>
+</div>
+<a id="a3239a984155d8ed7f665f5652d4aaac7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3239a984155d8ed7f665f5652d4aaac7">&#9670;&nbsp;</a></span>stop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::perf::PerfLog::stop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a8e96e40c590fb7d220c384e45922a3c3">ripple::perf::PerfLogImp</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="PerfLog_8h_source.html#l00076">76</a> of file <a class="el" href="PerfLog_8h_source.html">PerfLog.h</a>.</p>
+
+</div>
+</div>
 <a id="a82a1159ee502f9ede502e9825c3460e2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a82a1159ee502f9ede502e9825c3460e2">&#9670;&nbsp;</a></span>rpcStart()</h2>
 

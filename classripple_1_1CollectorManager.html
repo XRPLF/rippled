@@ -67,7 +67,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="classripple_1_1CollectorManager-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::CollectorManager Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
@@ -88,25 +87,20 @@ Inheritance diagram for ripple::CollectorManager:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:abfa785bf00f1a91c6e0176935406d111"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CollectorManager.html#abfa785bf00f1a91c6e0176935406d111">~CollectorManager</a> ()=0</td></tr>
-<tr class="separator:abfa785bf00f1a91c6e0176935406d111"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a745006ff90305028b1f82bf3600eb882"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CollectorManager.html#a745006ff90305028b1f82bf3600eb882">~CollectorManager</a> ()=default</td></tr>
+<tr class="separator:a745006ff90305028b1f82bf3600eb882"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71bb61ba70b78df3776f4cc40b47c68d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CollectorManager.html#a71bb61ba70b78df3776f4cc40b47c68d">collector</a> ()=0</td></tr>
 <tr class="separator:a71bb61ba70b78df3776f4cc40b47c68d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f94c050333714bcb4eaed94a5f04b71"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbeast_1_1insight_1_1Group.html#a96f5c2259fc02b018922e3bcd1bc4a63">beast::insight::Group::ptr</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CollectorManager.html#a5f94c050333714bcb4eaed94a5f04b71">group</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)=0</td></tr>
 <tr class="separator:a5f94c050333714bcb4eaed94a5f04b71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:aa20b71451fa56cfcce0d45c57ea7c937"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1CollectorManager.html">CollectorManager</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CollectorManager.html#aa20b71451fa56cfcce0d45c57ea7c937">New</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;params, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="separator:aa20b71451fa56cfcce0d45c57ea7c937"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Provides the <a class="el" href="classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics.">beast::insight::Collector</a> service. </p>
 
 <p class="definition">Definition at line <a class="el" href="CollectorManager_8h_source.html#l00029">29</a> of file <a class="el" href="CollectorManager_8h_source.html">CollectorManager.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="abfa785bf00f1a91c6e0176935406d111"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abfa785bf00f1a91c6e0176935406d111">&#9670;&nbsp;</a></span>~CollectorManager()</h2>
+<a id="a745006ff90305028b1f82bf3600eb882"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a745006ff90305028b1f82bf3600eb882">&#9670;&nbsp;</a></span>~CollectorManager()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -115,7 +109,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">ripple::CollectorManager::~CollectorManager </td>
+          <td class="memname">virtual ripple::CollectorManager::~CollectorManager </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -123,7 +117,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">default</span></span>  </td>
+<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">default</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -131,44 +125,6 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa20b71451fa56cfcce0d45c57ea7c937"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa20b71451fa56cfcce0d45c57ea7c937">&#9670;&nbsp;</a></span>New()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1CollectorManager.html">CollectorManager</a> &gt; ripple::CollectorManager::New </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Section.html">Section</a> const &amp;&#160;</td>
-          <td class="paramname"><em>params</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>journal</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CollectorManager_8cpp_source.html#l00074">74</a> of file <a class="el" href="CollectorManager_8cpp_source.html">CollectorManager.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a71bb61ba70b78df3776f4cc40b47c68d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a71bb61ba70b78df3776f4cc40b47c68d">&#9670;&nbsp;</a></span>collector()</h2>
 

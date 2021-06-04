@@ -110,11 +110,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1is__contiguous__container_3_01Container_00_01std_1_1void__t_3_01declty5b72e96ce5f7645bf11da72bb5b4c85a.html">is_contiguous_container&lt; Container, std::void_t&lt; decltype(std::declval&lt; Container const &gt;().size()), decltype(std::declval&lt; Container const &gt;().data()), typename Container::value_type &gt; &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1LedgerCleaner.html">LedgerCleaner</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check the ledger/transaction databases to make sure they have continuity.  <a href="classripple_1_1detail_1_1LedgerCleaner.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html">LedgerCleanerImp</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1LocalValues.html">LocalValues</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a></td></tr>
@@ -178,8 +173,6 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a13e3b5df6825dae43e6b04262ea9275b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1LedgerCleaner.html">LedgerCleaner</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a13e3b5df6825dae43e6b04262ea9275b">make_LedgerCleaner</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="separator:a13e3b5df6825dae43e6b04262ea9275b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09fb4bb46d61698f0d5479f403da7ff8"><td class="memItemLeft" align="right" valign="top">constexpr static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; bool, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a09fb4bb46d61698f0d5479f403da7ff8">sumOfFirstSquares</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> xIn)</td></tr>
 <tr class="separator:a09fb4bb46d61698f0d5479f403da7ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9769881a083fcc3aba7e9ddaaa7ece28">toString</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info)</td></tr>
@@ -387,42 +380,6 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a13e3b5df6825dae43e6b04262ea9275b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13e3b5df6825dae43e6b04262ea9275b">&#9670;&nbsp;</a></span>make_LedgerCleaner()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1LedgerCleaner.html">LedgerCleaner</a> &gt; ripple::detail::make_LedgerCleaner </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
-          <td class="paramname"><em>app</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;&#160;</td>
-          <td class="paramname"><em>parent</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>journal</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="LedgerCleaner_8cpp_source.html#l00490">490</a> of file <a class="el" href="LedgerCleaner_8cpp_source.html">LedgerCleaner.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a09fb4bb46d61698f0d5479f403da7ff8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a09fb4bb46d61698f0d5479f403da7ff8">&#9670;&nbsp;</a></span>sumOfFirstSquares()</h2>
 

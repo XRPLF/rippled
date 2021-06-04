@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1PreflightResult.html" title="Describes the results of the preflight check." alt="" coords="5,5,167,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1perf_1_1PerfLog.html" title="Singleton class that maintains performance counters and optionally writes Json&#45;formatted data to a di..." alt="" coords="5,31,156,57"/>
+<area shape="rect" id="node2" href="$classripple_1_1perf_1_1PerfLogImp.html" title="Implementation class for PerfLog." alt="" coords="205,5,379,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1perf_1_1PerfLogTest.html" title=" " alt="" coords="204,56,380,83"/>
 </map>

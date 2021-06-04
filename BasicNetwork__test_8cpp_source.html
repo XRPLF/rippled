@@ -120,7 +120,7 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="keyword">auto</span> t = scheduler.<a class="code" href="classripple_1_1test_1_1csf_1_1Scheduler.html#afd75fc9d632c78cbcded7cd26f781ef7">in</a>(1s, [&amp;] { <a class="code" href="structripple_1_1test_1_1BasicNetwork__test_1_1Peer.html#a4b90bcc4053ce8acf29489eccf49f456">set</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/set/insert.html">insert</a>(0); });</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="keywordflow">if</span> (<span class="keywordtype">id</span> == 0)</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; link : net.links(<span class="keyword">this</span>))</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span> link : net.links(<span class="keyword">this</span>))</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                    net.send(<span class="keyword">this</span>, link.target, [&amp;, to = link.target] {</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                        to-&gt;receive(net, this, 1);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                    });</div>
@@ -139,7 +139,7 @@ $(function() {
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            ++m;</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="keywordflow">if</span> (m &lt; 5)</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            {</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; link : net.links(<span class="keyword">this</span>))</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span> link : net.links(<span class="keyword">this</span>))</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                    net.send(<span class="keyword">this</span>, link.target, [&amp;, mm = m, to = link.target] {</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                        to-&gt;receive(net, this, mm);</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    });</div>

@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Rpc.html" title="RPC performance counters." alt="" coords="5,5,180,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="5,56,123,83"/>
+<area shape="rect" id="node2" href="$classripple_1_1DummyPeerSet.html" title=" " alt="" coords="174,5,343,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1PeerSetImpl.html" title=" " alt="" coords="185,56,332,83"/>
+<area shape="rect" id="node4" href="$structripple_1_1test_1_1TestPeerSet.html" title="Simulate a peerSet that supplies peers to ledger replay subtasks." alt="" coords="171,107,347,133"/>
 </map>

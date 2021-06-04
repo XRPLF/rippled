@@ -100,492 +100,422 @@ $(function() {
 <div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl.html">   29</a></span>&#160;<span class="keyword">namespace </span>openssl {</div>
 <div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html">   30</a></span>&#160;<span class="keyword">namespace </span>detail {</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">// We limit the ciphers we request and allow to ensure that weak</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">// ciphers aren&#39;t used. While this isn&#39;t strictly necessary for</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">// the rippled server-server use case, where we only need MITM</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">// detection/prevention, we also have websocket and rpc scenarios</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">// and want to ensure weak ciphers can&#39;t be used.</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">   37</a></span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">defaultCipherList</a> =</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="stringliteral">&quot;HIGH:MEDIUM:!aNULL:!MD5:!DSS:!3DES:!RC4:!EXPORT&quot;</span>;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span>&gt;</div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">   41</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html">   44</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;RSA&gt;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;{</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">   46</a></span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">defaultCipherList</a> = <span class="stringliteral">&quot;TLSv1.2:!DSS:!PSK:!eNULL:!aNULL&quot;</span>;</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html#ade01c3e3966798c9f6c50f0e029690d2">   49</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html#ade01c3e3966798c9f6c50f0e029690d2">operator()</a>(RSA* rsa)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        RSA_free(rsa);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html">   56</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;EVP_PKEY&gt;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;{</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html#adab8a495c675462d6fac4cd1966a0264">   61</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html#adab8a495c675462d6fac4cd1966a0264">operator()</a>(EVP_PKEY* evp_pkey)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        EVP_PKEY_free(evp_pkey);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    }</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;};</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html">   68</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;X509&gt;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;{</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html#a98a5135b5e0b2c90735c61002212f410">   73</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html#a98a5135b5e0b2c90735c61002212f410">operator()</a>(X509* x509)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        X509_free(x509);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;};</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html">   80</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;DH&gt;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;{</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html#a25f8f206a00a0fffeea05a720d7846d9">   85</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html#a25f8f206a00a0fffeea05a720d7846d9">operator()</a>(DH* dh)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        DH_free(dh);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;};</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a4e89e6d4a2944cc905f7c8621ca53f9d">   92</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;T, custom_delete&lt;T&gt;</a>&gt;;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="comment">// RSA</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aaf9eaa2814ed9cd4e5547d8575a7db96">   96</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">rsa_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;RSA&gt;</a>;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">rsa_ptr</a></div>
-<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">   99</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">rsa_generate_key</a>(<span class="keywordtype">int</span> n_bits)</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;{</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="preprocessor">#if OPENSSL_VERSION_NUMBER &gt;= 0x00908000L</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    BIGNUM* bn = BN_new();</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    BN_set_word(bn, RSA_F4);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    RSA* rsa = RSA_new();</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">if</span> (RSA_generate_key_ex(rsa, n_bits, bn, <span class="keyword">nullptr</span>) != 1)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    {</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        RSA_free(rsa);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        rsa = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    }</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    BN_free(bn);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    RSA* rsa = RSA_generate_key(n_bits, RSA_F4, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordflow">if</span> (rsa == <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;RSA_generate_key failed&quot;</span>);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span>&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">   49</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html">   52</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;RSA&gt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;{</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html#ade01c3e3966798c9f6c50f0e029690d2">   57</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html#ade01c3e3966798c9f6c50f0e029690d2">operator()</a>(RSA* rsa)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        RSA_free(rsa);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;};</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html">   64</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;EVP_PKEY&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;{</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html#adab8a495c675462d6fac4cd1966a0264">   69</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html#adab8a495c675462d6fac4cd1966a0264">operator()</a>(EVP_PKEY* evp_pkey)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        EVP_PKEY_free(evp_pkey);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;};</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html">   76</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;X509&gt;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;{</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html#a98a5135b5e0b2c90735c61002212f410">   81</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html#a98a5135b5e0b2c90735c61002212f410">operator()</a>(X509* x509)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        X509_free(x509);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    }</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;};</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html">   88</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>&lt;DH&gt;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;{</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">custom_delete</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html#a25f8f206a00a0fffeea05a720d7846d9">   93</a></span>&#160;    <a class="code" href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html#a25f8f206a00a0fffeea05a720d7846d9">operator()</a>(DH* dh)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        DH_free(dh);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;};</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a4e89e6d4a2944cc905f7c8621ca53f9d">  100</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;T, custom_delete&lt;T&gt;</a>&gt;;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="comment">// RSA</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aaf9eaa2814ed9cd4e5547d8575a7db96">  104</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">rsa_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;RSA&gt;</a>;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">rsa_ptr</a></div>
+<div class="line"><a name="l00107"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">  107</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">rsa_generate_key</a>(<span class="keywordtype">int</span> n_bits)</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;{</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="preprocessor">#if OPENSSL_VERSION_NUMBER &gt;= 0x00908000L</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    BIGNUM* bn = BN_new();</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    BN_set_word(bn, RSA_F4);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    RSA* rsa = RSA_new();</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">if</span> (RSA_generate_key_ex(rsa, n_bits, bn, <span class="keyword">nullptr</span>) != 1)</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    {</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        RSA_free(rsa);</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        rsa = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    }</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aaf9eaa2814ed9cd4e5547d8575a7db96">rsa_ptr</a>(rsa);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;}</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="comment">// EVP_PKEY</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    BN_free(bn);</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    RSA* rsa = RSA_generate_key(n_bits, RSA_F4, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a123058afafe8e8f5b75e68cb456b0ba0">  125</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;EVP_PKEY&gt;</a>;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a></div>
-<div class="line"><a name="l00128"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">  128</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">evp_pkey_new</a>()</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;{</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    EVP_PKEY* evp_pkey = EVP_PKEY_new();</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keywordflow">if</span> (evp_pkey == <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;EVP_PKEY_new failed&quot;</span>);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordflow">if</span> (rsa == <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;RSA_generate_key failed&quot;</span>);</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aaf9eaa2814ed9cd4e5547d8575a7db96">rsa_ptr</a>(rsa);</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="comment">// EVP_PKEY</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a123058afafe8e8f5b75e68cb456b0ba0">  133</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;EVP_PKEY&gt;</a>;</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a123058afafe8e8f5b75e68cb456b0ba0">evp_pkey_ptr</a>(evp_pkey);</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;}</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">  139</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">evp_pkey_assign_rsa</a>(EVP_PKEY* evp_pkey, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">rsa_ptr</a> rsa)</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;{</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <span class="keywordflow">if</span> (!EVP_PKEY_assign_RSA(evp_pkey, rsa.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>()))</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;EVP_PKEY_assign_RSA failed&quot;</span>);</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160; </div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    rsa.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/release.html">release</a>();</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;}</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;<span class="comment">// X509</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
-<div class="line"><a name="l00149"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3">  149</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;X509&gt;</a>;</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a></div>
-<div class="line"><a name="l00152"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">  152</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">x509_new</a>()</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;{</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    X509* x509 = X509_new();</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="keywordflow">if</span> (x509 == <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;X509_new failed&quot;</span>);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a></div>
+<div class="line"><a name="l00136"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">  136</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">evp_pkey_new</a>()</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;{</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    EVP_PKEY* evp_pkey = EVP_PKEY_new();</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">if</span> (evp_pkey == <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;EVP_PKEY_new failed&quot;</span>);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a123058afafe8e8f5b75e68cb456b0ba0">evp_pkey_ptr</a>(evp_pkey);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;}</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00147"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">  147</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">evp_pkey_assign_rsa</a>(EVP_PKEY* evp_pkey, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">rsa_ptr</a> rsa)</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;{</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="keywordflow">if</span> (!EVP_PKEY_assign_RSA(evp_pkey, rsa.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>()))</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;EVP_PKEY_assign_RSA failed&quot;</span>);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    rsa.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/release.html">release</a>();</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="comment">// X509</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3">  157</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;X509&gt;</a>;</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    X509_set_version(x509, NID_X509);</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <span class="keywordtype">int</span> <span class="keyword">const</span> margin = 60 * 60;                     <span class="comment">//      3600, one hour</span></div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="keywordtype">int</span> <span class="keyword">const</span> length = 10 * 365.25 * 24 * 60 * 60;  <span class="comment">// 315576000, ten years</span></div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a></div>
+<div class="line"><a name="l00160"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">  160</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">x509_new</a>()</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;{</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    X509* x509 = X509_new();</div>
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160; </div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    X509_gmtime_adj(X509_get_notBefore(x509), -margin);</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    X509_gmtime_adj(X509_get_notAfter(x509), length);</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="keywordflow">if</span> (x509 == <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;X509_new failed&quot;</span>);</div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160; </div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3">x509_ptr</a>(x509);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;}</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">  171</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">x509_set_pubkey</a>(X509* x509, EVP_PKEY* evp_pkey)</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;{</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    X509_set_pubkey(x509, evp_pkey);</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00177"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">  177</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">x509_sign</a>(X509* x509, EVP_PKEY* evp_pkey)</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;{</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keywordflow">if</span> (!X509_sign(x509, evp_pkey, EVP_sha1()))</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;X509_sign failed&quot;</span>);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;}</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">  184</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">ssl_ctx_use_certificate</a>(SSL_CTX* <span class="keyword">const</span> ctx, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a> cert)</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;{</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_use_certificate(ctx, cert.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>()) &lt;= 0)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_use_certificate failed&quot;</span>);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;}</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">  191</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">ssl_ctx_use_privatekey</a>(SSL_CTX* <span class="keyword">const</span> ctx, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a> key)</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;{</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_use_PrivateKey(ctx, key.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>()) &lt;= 0)</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_use_PrivateKey failed&quot;</span>);</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;}</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="preprocessor">#ifdef SSL_FLAGS_NO_RENEGOTIATE_CIPHERS</span></div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;<span class="keyword">static</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;disallowRenegotiation(SSL <span class="keyword">const</span>* ssl, <span class="keywordtype">bool</span> isNew)</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    X509_set_version(x509, NID_X509);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="keywordtype">int</span> <span class="keyword">const</span> margin = 60 * 60;                     <span class="comment">//      3600, one hour</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keywordtype">int</span> <span class="keyword">const</span> length = 10 * 365.25 * 24 * 60 * 60;  <span class="comment">// 315576000, ten years</span></div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    X509_gmtime_adj(X509_get_notBefore(x509), -margin);</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    X509_gmtime_adj(X509_get_notAfter(x509), length);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3">x509_ptr</a>(x509);</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;}</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160; </div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">  179</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">x509_set_pubkey</a>(X509* x509, EVP_PKEY* evp_pkey)</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;{</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    X509_set_pubkey(x509, evp_pkey);</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;}</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00185"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">  185</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">x509_sign</a>(X509* x509, EVP_PKEY* evp_pkey)</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;{</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keywordflow">if</span> (!X509_sign(x509, evp_pkey, EVP_sha1()))</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;X509_sign failed&quot;</span>);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">  192</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">ssl_ctx_use_certificate</a>(SSL_CTX* <span class="keyword">const</span> ctx, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a> cert)</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;{</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_use_certificate(ctx, cert.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>()) &lt;= 0)</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_use_certificate failed&quot;</span>);</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;}</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">  199</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">ssl_ctx_use_privatekey</a>(SSL_CTX* <span class="keyword">const</span> ctx, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a> key)</div>
 <div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;{</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="comment">// Track when SSL connections have last negotiated and</span></div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    <span class="comment">// do not allow a connection to renegotiate more than</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <span class="comment">// once every 4 minutes</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keyword">struct </span>StaticData</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    {</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> lock;</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        <a class="code" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::aged_unordered_set&lt;SSL const*&gt;</a> <a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160; </div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        StaticData() : <a class="code" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>(<a class="code" href="namespaceripple.html">ripple</a>::<a class="code" href="namespaceripple.html#ac70521ab6e1277870a9e400e7a08e937">stopwatch</a>())</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        {</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        }</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    };</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keyword">static</span> StaticData sd;</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(sd.lock);</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> expired(sd.set.clock().now() - <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>(4));</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_use_PrivateKey(ctx, key.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>()) &lt;= 0)</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_use_PrivateKey failed&quot;</span>);</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;}</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00206"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">  206</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; what, boost::system::error_code <span class="keyword">const</span>&amp; ec)</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;{</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    ss &lt;&lt; what &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message() &lt;&lt; <span class="stringliteral">&quot; (&quot;</span> &lt;&lt; ec.value() &lt;&lt; <span class="stringliteral">&quot;)&quot;</span>;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keywordflow">return</span> ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;}</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00214"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">  214</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">initAnonymous</a>(boost::asio::ssl::context&amp; context)</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;{</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keyword">using namespace </span>openssl;</div>
 <div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="comment">// Remove expired entries</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> iter(sd.set.chronological.begin());</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;         (iter != sd.set.chronological.end()) &amp;&amp; (iter.when() &lt;= expired);</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;         iter = sd.set.chronological.begin())</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    {</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        sd.set.erase(iter);</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    }</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <span class="keyword">auto</span> iter = sd.set.find(ssl);</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keywordflow">if</span> (iter != sd.set.end())</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    {</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="keywordflow">if</span> (!isNew)</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        {</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            <span class="comment">// This is a renegotiation and the last negotiation was recent</span></div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        }</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        sd.set.touch(iter);</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    }</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    {</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        sd.set.emplace(ssl);</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    }</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;}</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a> pkey = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">evp_pkey_new</a>();</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">evp_pkey_assign_rsa</a>(pkey.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>(), <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">rsa_generate_key</a>(2048));</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a> cert = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">x509_new</a>();</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">x509_set_pubkey</a>(cert.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>(), pkey.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>());</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">x509_sign</a>(cert.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>(), pkey.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>());</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    SSL_CTX* <span class="keyword">const</span> ctx = context.native_handle();</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">ssl_ctx_use_certificate</a>(ctx, std::move(cert));</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">ssl_ctx_use_privatekey</a>(ctx, std::move(pkey));</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;}</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">  231</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">initAuthenticated</a>(</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    boost::asio::ssl::context&amp; context,</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; key_file,</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cert_file,</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; chain_file)</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;{</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    SSL_CTX* <span class="keyword">const</span> ssl = context.native_handle();</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keywordtype">bool</span> cert_set = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    <span class="keywordflow">if</span> (!cert_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    {</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        boost::system::error_code ec;</div>
 <div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;info_handler(SSL <span class="keyword">const</span>* ssl, <span class="keywordtype">int</span> event, <span class="keywordtype">int</span>)</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;{</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="preprocessor">#if OPENSSL_VERSION_NUMBER &lt; 0x10100000L</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">if</span> ((ssl-&gt;s3) &amp;&amp; (event &amp; SSL_CB_HANDSHAKE_START))</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    {</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <span class="keywordflow">if</span> (disallowRenegotiation(ssl, SSL_in_before(ssl)))</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            ssl-&gt;s3-&gt;flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    }</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="comment">// empty, flag removed in OpenSSL 1.1</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;}</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00261"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">  261</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; what, boost::system::error_code <span class="keyword">const</span>&amp; ec)</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;{</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    ss &lt;&lt; what &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message() &lt;&lt; <span class="stringliteral">&quot; (&quot;</span> &lt;&lt; ec.value() &lt;&lt; <span class="stringliteral">&quot;)&quot;</span>;</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <span class="keywordflow">return</span> ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;}</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00269"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">  269</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">initAnonymous</a>(boost::asio::ssl::context&amp; context)</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;{</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keyword">using namespace </span>openssl;</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">evp_pkey_ptr</a> pkey = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">evp_pkey_new</a>();</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">evp_pkey_assign_rsa</a>(pkey.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>(), <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">rsa_generate_key</a>(2048));</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">x509_ptr</a> cert = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">x509_new</a>();</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">x509_set_pubkey</a>(cert.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>(), pkey.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>());</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">x509_sign</a>(cert.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>(), pkey.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">get</a>());</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        context.use_certificate_file(</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            cert_file, boost::asio::ssl::context::pem, ec);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        {</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(<span class="stringliteral">&quot;Problem with SSL certificate file.&quot;</span>, ec)</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                           .c_str());</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        cert_set = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    }</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="keywordflow">if</span> (!chain_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    {</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <span class="comment">// VFALCO Replace fopen() with RAII</span></div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        FILE* f = fopen(chain_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">c_str</a>(), <span class="stringliteral">&quot;r&quot;</span>);</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <span class="keywordflow">if</span> (!f)</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        {</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                           <span class="stringliteral">&quot;Problem opening SSL chain file.&quot;</span>,</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                           boost::system::error_code(</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                               errno, boost::system::generic_category()))</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                           .c_str());</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        }</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        {</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            <span class="keywordflow">for</span> (;;)</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            {</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                X509* <span class="keyword">const</span> x = PEM_read_X509(f, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                <span class="keywordflow">if</span> (x == <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;                    <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    SSL_CTX* <span class="keyword">const</span> ctx = context.native_handle();</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">ssl_ctx_use_certificate</a>(ctx, std::move(cert));</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">ssl_ctx_use_privatekey</a>(ctx, std::move(pkey));</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;}</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00286"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">  286</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">initAuthenticated</a>(</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    boost::asio::ssl::context&amp; context,</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; key_file,</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cert_file,</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; chain_file)</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;{</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    SSL_CTX* <span class="keyword">const</span> ssl = context.native_handle();</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="keywordtype">bool</span> cert_set = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                <span class="keywordflow">if</span> (!cert_set)</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                {</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                    <span class="keywordflow">if</span> (SSL_CTX_use_certificate(ssl, x) != 1)</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                            <span class="stringliteral">&quot;Problem retrieving SSL certificate from chain &quot;</span></div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                            <span class="stringliteral">&quot;file.&quot;</span>);</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                    cert_set = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                }</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (SSL_CTX_add_extra_chain_cert(ssl, x) != 1)</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                {</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;                    X509_free(x);</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;                    <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Problem adding SSL chain certificate.&quot;</span>);</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                }</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            }</div>
 <div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="keywordflow">if</span> (!cert_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    {</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        boost::system::error_code ec;</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160; </div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        context.use_certificate_file(</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;            cert_file, boost::asio::ssl::context::pem, ec);</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        {</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(<span class="stringliteral">&quot;Problem with SSL certificate file.&quot;</span>, ec)</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                           .c_str());</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        }</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            fclose(f);</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        }</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        {</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            fclose(f);</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Reading the SSL chain file generated an exception.&quot;</span>);</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        }</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    }</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">if</span> (!key_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    {</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        boost::system::error_code ec;</div>
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160; </div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        cert_set = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    }</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        context.use_private_key_file(</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            key_file, boost::asio::ssl::context::pem, ec);</div>
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="keywordflow">if</span> (!chain_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <span class="comment">// VFALCO Replace fopen() with RAII</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        FILE* f = fopen(chain_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">c_str</a>(), <span class="stringliteral">&quot;r&quot;</span>);</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keywordflow">if</span> (!f)</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        {</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                           <span class="stringliteral">&quot;Problem opening SSL chain file.&quot;</span>,</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                           boost::system::error_code(</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                               errno, boost::system::generic_category()))</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                           .c_str());</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        }</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        {</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(<span class="stringliteral">&quot;Problem using the SSL private key file.&quot;</span>, ec)</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                    .c_str());</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    }</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_check_private_key(ssl) != 1)</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    {</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Invalid key in SSL private key file.&quot;</span>);</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    }</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;}</div>
 <div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        {</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            <span class="keywordflow">for</span> (;;)</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            {</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                X509* <span class="keyword">const</span> x = PEM_read_X509(f, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
+<div class="line"><a name="l00327"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">  327</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">get_context</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;{</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keyword">auto</span> c = std::make_shared&lt;boost::asio::ssl::context&gt;(</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        boost::asio::ssl::context::sslv23);</div>
 <div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                <span class="keywordflow">if</span> (x == <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160; </div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                <span class="keywordflow">if</span> (!cert_set)</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                {</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                    <span class="keywordflow">if</span> (SSL_CTX_use_certificate(ssl, x) != 1)</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                            <span class="stringliteral">&quot;Problem retrieving SSL certificate from chain &quot;</span></div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                            <span class="stringliteral">&quot;file.&quot;</span>);</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                    cert_set = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                }</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (SSL_CTX_add_extra_chain_cert(ssl, x) != 1)</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                {</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                    X509_free(x);</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                    <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Problem adding SSL chain certificate.&quot;</span>);</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                }</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            }</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160; </div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            fclose(f);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        }</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        {</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            fclose(f);</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Reading the SSL chain file generated an exception.&quot;</span>);</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        }</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    }</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keywordflow">if</span> (!key_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    {</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        boost::system::error_code ec;</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        context.use_private_key_file(</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            key_file, boost::asio::ssl::context::pem, ec);</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        {</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">error_message</a>(<span class="stringliteral">&quot;Problem using the SSL private key file.&quot;</span>, ec)</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                    .c_str());</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        }</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    }</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160; </div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_check_private_key(ssl) != 1)</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    {</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Invalid key in SSL private key file.&quot;</span>);</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    }</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;}</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160; </div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
-<div class="line"><a name="l00382"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">  382</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">get_context</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;{</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    <span class="keyword">auto</span> c = std::make_shared&lt;boost::asio::ssl::context&gt;(</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        boost::asio::ssl::context::sslv23);</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160; </div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    c-&gt;set_options(</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        boost::asio::ssl::context::default_workarounds |</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        boost::asio::ssl::context::no_sslv2 |</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        boost::asio::ssl::context::no_sslv3 |</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        boost::asio::ssl::context::single_dh_use);</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160; </div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    {</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; l = !cipherList.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>() ? cipherList : <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">defaultCipherList</a>;</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        <span class="keyword">auto</span> result = SSL_CTX_set_cipher_list(c-&gt;native_handle(), l.c_str());</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        <span class="keywordflow">if</span> (result != 1)</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_set_cipher_list failed&quot;</span>);</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    }</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160; </div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    <span class="comment">// These are the raw DH parameters that Ripple Labs has</span></div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    <span class="comment">// chosen for Ripple, in the binary format needed by</span></div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    <span class="comment">// d2i_DHparams.</span></div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> <span class="keyword">const</span> params[] = {</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        0x30, 0x82, 0x01, 0x08, 0x02, 0x82, 0x01, 0x01, 0x00, 0x8f, 0xca, 0x66,</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        0x85, 0x33, 0xcb, 0xcf, 0x36, 0x27, 0xb2, 0x4c, 0xb8, 0x50, 0xb8, 0xf9,</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        0x53, 0xf8, 0xb9, 0x2d, 0x1c, 0xa2, 0xad, 0x86, 0x58, 0x29, 0x3b, 0x88,</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        0x3e, 0xf5, 0x65, 0xb8, 0xda, 0x22, 0xf4, 0x8b, 0x21, 0x12, 0x18, 0xf7,</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        0x16, 0xcd, 0x7c, 0xc7, 0x3a, 0x2d, 0x61, 0xb7, 0x11, 0xf6, 0xb0, 0x65,</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;        0xa0, 0x5b, 0xa4, 0x06, 0x95, 0x28, 0xa4, 0x4f, 0x76, 0xc0, 0xeb, 0xfa,</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;        0x95, 0xdf, 0xbf, 0x19, 0x90, 0x64, 0x8f, 0x60, 0xd5, 0x36, 0xba, 0xab,</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;        0x0d, 0x5a, 0x5c, 0x94, 0xd5, 0xf7, 0x32, 0xd6, 0x2a, 0x76, 0x77, 0x83,</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        0x10, 0xc4, 0x2f, 0x10, 0x96, 0x3e, 0x37, 0x84, 0x45, 0x9c, 0xef, 0x33,</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        0xf6, 0xd0, 0x2a, 0xa7, 0xce, 0x0a, 0xce, 0x0d, 0xa1, 0xa7, 0x44, 0x5d,</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;        0x18, 0x3f, 0x4f, 0xa4, 0x23, 0x9c, 0x5d, 0x74, 0x4f, 0xee, 0xdf, 0xaa,</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;        0x0d, 0x0a, 0x52, 0x57, 0x73, 0xb1, 0xe4, 0xc5, 0x72, 0x93, 0x9d, 0x03,</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;        0xe9, 0xf5, 0x48, 0x8c, 0xd1, 0xe6, 0x7c, 0x21, 0x65, 0x4e, 0x16, 0x51,</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        0xa3, 0x16, 0x51, 0x10, 0x75, 0x60, 0x37, 0x93, 0xb8, 0x15, 0xd6, 0x14,</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;        0x41, 0x4a, 0x61, 0xc9, 0x1a, 0x4e, 0x9f, 0x38, 0xd8, 0x2c, 0xa5, 0x31,</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        0xe1, 0x87, 0xda, 0x1f, 0xa4, 0x31, 0xa2, 0xa4, 0x42, 0x1e, 0xe0, 0x30,</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        0xea, 0x2f, 0x9b, 0x77, 0x91, 0x59, 0x3e, 0xd5, 0xd0, 0xc5, 0x84, 0x45,</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;        0x17, 0x19, 0x74, 0x8b, 0x18, 0xb0, 0xc1, 0xe0, 0xfc, 0x1c, 0xaf, 0xe6,</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        0x2a, 0xef, 0x4e, 0x0e, 0x8a, 0x5c, 0xc2, 0x91, 0xb9, 0x2b, 0xf8, 0x17,</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;        0x8d, 0xed, 0x44, 0xaa, 0x47, 0xaa, 0x52, 0xa2, 0xdb, 0xb6, 0xf5, 0xa1,</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        0x88, 0x85, 0xa1, 0xd5, 0x87, 0xb8, 0x07, 0xd3, 0x97, 0xbe, 0x37, 0x74,</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;        0x72, 0xf1, 0xa8, 0x29, 0xf1, 0xa7, 0x7d, 0x19, 0xc3, 0x27, 0x09, 0xcf,</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;        0x23, 0x02, 0x01, 0x02};</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160; </div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* data = &amp;params[0];</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160; </div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;DH&gt;</a> <span class="keyword">const</span> dh{</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;        d2i_DHparams(<span class="keyword">nullptr</span>, &amp;data, <span class="keyword">sizeof</span>(params))};</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    <span class="keywordflow">if</span> (!dh)</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;d2i_DHparams returned nullptr.&quot;</span>);</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160; </div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    SSL_CTX_set_tmp_dh(c-&gt;native_handle(), dh.get());</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160; </div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;<span class="preprocessor">#ifdef SSL_FLAGS_NO_RENEGOTIATE_CIPHERS</span></div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;    SSL_CTX_set_info_callback(c-&gt;native_handle(), info_handler);</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160; </div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <span class="keywordflow">return</span> c;</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;}</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160; </div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;}  <span class="comment">// namespace detail</span></div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;}  <span class="comment">// namespace openssl</span></div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160; </div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
-<div class="line"><a name="l00450"></a><span class="lineno"><a class="line" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">  450</a></span>&#160;<a class="code" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">make_SSLContext</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;{</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">openssl::detail::get_context</a>(cipherList);</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">openssl::detail::initAnonymous</a>(*context);</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;    <span class="comment">// VFALCO NOTE, It seems the WebSocket context never has</span></div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    <span class="comment">// set_verify_mode called, for either setting of WEBSOCKET_SECURE</span></div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    context-&gt;set_verify_mode(boost::asio::ssl::verify_none);</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;    <span class="keywordflow">return</span> context;</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;}</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160; </div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
-<div class="line"><a name="l00461"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">  461</a></span>&#160;<a class="code" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">make_SSLContextAuthed</a>(</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; keyFile,</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; certFile,</div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; chainFile,</div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;{</div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">openssl::detail::get_context</a>(cipherList);</div>
-<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">openssl::detail::initAuthenticated</a>(*context, keyFile, certFile, chainFile);</div>
-<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;    <span class="keywordflow">return</span> context;</div>
-<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;}</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160; </div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    c-&gt;set_options(</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        boost::asio::ssl::context::default_workarounds |</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        boost::asio::ssl::context::no_sslv2 |</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        boost::asio::ssl::context::no_sslv3 |</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        boost::asio::ssl::context::no_tlsv1 |</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        boost::asio::ssl::context::no_tlsv1_1 |</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        boost::asio::ssl::context::single_dh_use |</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        boost::asio::ssl::context::no_compression);</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160; </div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    {</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; l = !cipherList.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>() ? cipherList : <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">defaultCipherList</a>;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <span class="keyword">auto</span> result = SSL_CTX_set_cipher_list(c-&gt;native_handle(), l.c_str());</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="keywordflow">if</span> (result != 1)</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_set_cipher_list failed&quot;</span>);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    }</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="comment">// These are the raw DH parameters that Ripple Labs has</span></div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    <span class="comment">// chosen for Ripple, in the binary format needed by</span></div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    <span class="comment">// d2i_DHparams.</span></div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> <span class="keyword">const</span> params[] = {</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        0x30, 0x82, 0x01, 0x08, 0x02, 0x82, 0x01, 0x01, 0x00, 0x8f, 0xca, 0x66,</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        0x85, 0x33, 0xcb, 0xcf, 0x36, 0x27, 0xb2, 0x4c, 0xb8, 0x50, 0xb8, 0xf9,</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        0x53, 0xf8, 0xb9, 0x2d, 0x1c, 0xa2, 0xad, 0x86, 0x58, 0x29, 0x3b, 0x88,</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        0x3e, 0xf5, 0x65, 0xb8, 0xda, 0x22, 0xf4, 0x8b, 0x21, 0x12, 0x18, 0xf7,</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        0x16, 0xcd, 0x7c, 0xc7, 0x3a, 0x2d, 0x61, 0xb7, 0x11, 0xf6, 0xb0, 0x65,</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        0xa0, 0x5b, 0xa4, 0x06, 0x95, 0x28, 0xa4, 0x4f, 0x76, 0xc0, 0xeb, 0xfa,</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        0x95, 0xdf, 0xbf, 0x19, 0x90, 0x64, 0x8f, 0x60, 0xd5, 0x36, 0xba, 0xab,</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        0x0d, 0x5a, 0x5c, 0x94, 0xd5, 0xf7, 0x32, 0xd6, 0x2a, 0x76, 0x77, 0x83,</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        0x10, 0xc4, 0x2f, 0x10, 0x96, 0x3e, 0x37, 0x84, 0x45, 0x9c, 0xef, 0x33,</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        0xf6, 0xd0, 0x2a, 0xa7, 0xce, 0x0a, 0xce, 0x0d, 0xa1, 0xa7, 0x44, 0x5d,</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        0x18, 0x3f, 0x4f, 0xa4, 0x23, 0x9c, 0x5d, 0x74, 0x4f, 0xee, 0xdf, 0xaa,</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        0x0d, 0x0a, 0x52, 0x57, 0x73, 0xb1, 0xe4, 0xc5, 0x72, 0x93, 0x9d, 0x03,</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        0xe9, 0xf5, 0x48, 0x8c, 0xd1, 0xe6, 0x7c, 0x21, 0x65, 0x4e, 0x16, 0x51,</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        0xa3, 0x16, 0x51, 0x10, 0x75, 0x60, 0x37, 0x93, 0xb8, 0x15, 0xd6, 0x14,</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        0x41, 0x4a, 0x61, 0xc9, 0x1a, 0x4e, 0x9f, 0x38, 0xd8, 0x2c, 0xa5, 0x31,</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        0xe1, 0x87, 0xda, 0x1f, 0xa4, 0x31, 0xa2, 0xa4, 0x42, 0x1e, 0xe0, 0x30,</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        0xea, 0x2f, 0x9b, 0x77, 0x91, 0x59, 0x3e, 0xd5, 0xd0, 0xc5, 0x84, 0x45,</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        0x17, 0x19, 0x74, 0x8b, 0x18, 0xb0, 0xc1, 0xe0, 0xfc, 0x1c, 0xaf, 0xe6,</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        0x2a, 0xef, 0x4e, 0x0e, 0x8a, 0x5c, 0xc2, 0x91, 0xb9, 0x2b, 0xf8, 0x17,</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        0x8d, 0xed, 0x44, 0xaa, 0x47, 0xaa, 0x52, 0xa2, 0xdb, 0xb6, 0xf5, 0xa1,</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        0x88, 0x85, 0xa1, 0xd5, 0x87, 0xb8, 0x07, 0xd3, 0x97, 0xbe, 0x37, 0x74,</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        0x72, 0xf1, 0xa8, 0x29, 0xf1, 0xa7, 0x7d, 0x19, 0xc3, 0x27, 0x09, 0xcf,</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        0x23, 0x02, 0x01, 0x02};</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* data = &amp;params[0];</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">custom_delete_unique_ptr&lt;DH&gt;</a> <span class="keyword">const</span> dh{</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        d2i_DHparams(<span class="keyword">nullptr</span>, &amp;data, <span class="keyword">sizeof</span>(params))};</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keywordflow">if</span> (!dh)</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;d2i_DHparams returned nullptr.&quot;</span>);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160; </div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    SSL_CTX_set_tmp_dh(c-&gt;native_handle(), dh.get());</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    <span class="comment">// Disable all renegotiation support in TLS v1.2. This can help prevent</span></div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <span class="comment">// exploitation of the bug described in CVE-2021-3499 (for details see</span></div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <span class="comment">// https://www.openssl.org/news/secadv/20210325.txt) when linking against</span></div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    <span class="comment">// OpenSSL versions prior to 1.1.1k.</span></div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    SSL_CTX_set_options(c-&gt;native_handle(), SSL_OP_NO_RENEGOTIATION);</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <span class="keywordflow">return</span> c;</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;}</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;}  <span class="comment">// namespace openssl</span></div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
+<div class="line"><a name="l00400"></a><span class="lineno"><a class="line" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">  400</a></span>&#160;<a class="code" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">make_SSLContext</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;{</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">openssl::detail::get_context</a>(cipherList);</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">openssl::detail::initAnonymous</a>(*context);</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    <span class="comment">// VFALCO NOTE, It seems the WebSocket context never has</span></div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;    <span class="comment">// set_verify_mode called, for either setting of WEBSOCKET_SECURE</span></div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    context-&gt;set_verify_mode(boost::asio::ssl::verify_none);</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    <span class="keywordflow">return</span> context;</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;}</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160; </div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
+<div class="line"><a name="l00411"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">  411</a></span>&#160;<a class="code" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">make_SSLContextAuthed</a>(</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; keyFile,</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; certFile,</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; chainFile,</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;{</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">openssl::detail::get_context</a>(cipherList);</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">openssl::detail::initAuthenticated</a>(*context, keyFile, certFile, chainFile);</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    <span class="keywordflow">return</span> context;</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;}</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160; </div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="asstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/sstream.html">sstream</a></div></div>
-<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4_html_ade01c3e3966798c9f6c50f0e029690d2"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html#ade01c3e3966798c9f6c50f0e029690d2">ripple::openssl::detail::custom_delete&lt; RSA &gt;::operator()</a></div><div class="ttdeci">void operator()(RSA *rsa) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00049">make_SSLContext.cpp:49</a></div></div>
+<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4_html_ade01c3e3966798c9f6c50f0e029690d2"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01RSA_01_4.html#ade01c3e3966798c9f6c50f0e029690d2">ripple::openssl::detail::custom_delete&lt; RSA &gt;::operator()</a></div><div class="ttdeci">void operator()(RSA *rsa) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00057">make_SSLContext.cpp:57</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; boost::asio::ssl::context &gt;</a></div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a626f9d4252b4849da511e507938955d6"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">ripple::openssl::detail::get_context</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; get_context(std::string const &amp;cipherList)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00382">make_SSLContext.cpp:382</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a123058afafe8e8f5b75e68cb456b0ba0"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a123058afafe8e8f5b75e68cb456b0ba0">ripple::openssl::detail::evp_pkey_ptr</a></div><div class="ttdeci">custom_delete_unique_ptr&lt; EVP_PKEY &gt; evp_pkey_ptr</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00125">make_SSLContext.cpp:125</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a2e63280706f62e0c926855f2f2301c67"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">ripple::openssl::detail::ssl_ctx_use_certificate</a></div><div class="ttdeci">static void ssl_ctx_use_certificate(SSL_CTX *const ctx, x509_ptr cert)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00184">make_SSLContext.cpp:184</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a4d435c32e5733f8d57bf0562c25e0f3b"><div class="ttname"><a href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">ripple::make_SSLContext</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContext(std::string const &amp;cipherList)</div><div class="ttdoc">Create a self-signed SSL context that allows anonymous Diffie Hellman.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00450">make_SSLContext.cpp:450</a></div></div>
-<div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a07f6e634c7dd32f515fc5383ed577c58"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">ripple::openssl::detail::error_message</a></div><div class="ttdeci">static std::string error_message(std::string const &amp;what, boost::system::error_code const &amp;ec)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00261">make_SSLContext.cpp:261</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a1779f378ad1cc4ac9010a3a33364fb52"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">ripple::openssl::detail::ssl_ctx_use_privatekey</a></div><div class="ttdeci">static void ssl_ctx_use_privatekey(SSL_CTX *const ctx, evp_pkey_ptr key)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00191">make_SSLContext.cpp:191</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a626f9d4252b4849da511e507938955d6"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a626f9d4252b4849da511e507938955d6">ripple::openssl::detail::get_context</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; get_context(std::string const &amp;cipherList)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00327">make_SSLContext.cpp:327</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a123058afafe8e8f5b75e68cb456b0ba0"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a123058afafe8e8f5b75e68cb456b0ba0">ripple::openssl::detail::evp_pkey_ptr</a></div><div class="ttdeci">custom_delete_unique_ptr&lt; EVP_PKEY &gt; evp_pkey_ptr</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00133">make_SSLContext.cpp:133</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a2e63280706f62e0c926855f2f2301c67"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a2e63280706f62e0c926855f2f2301c67">ripple::openssl::detail::ssl_ctx_use_certificate</a></div><div class="ttdeci">static void ssl_ctx_use_certificate(SSL_CTX *const ctx, x509_ptr cert)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00192">make_SSLContext.cpp:192</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4d435c32e5733f8d57bf0562c25e0f3b"><div class="ttname"><a href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">ripple::make_SSLContext</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContext(std::string const &amp;cipherList)</div><div class="ttdoc">Create a self-signed SSL context that allows anonymous Diffie Hellman.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00400">make_SSLContext.cpp:400</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a07f6e634c7dd32f515fc5383ed577c58"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a07f6e634c7dd32f515fc5383ed577c58">ripple::openssl::detail::error_message</a></div><div class="ttdeci">static std::string error_message(std::string const &amp;what, boost::system::error_code const &amp;ec)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00206">make_SSLContext.cpp:206</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a1779f378ad1cc4ac9010a3a33364fb52"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a1779f378ad1cc4ac9010a3a33364fb52">ripple::openssl::detail::ssl_ctx_use_privatekey</a></div><div class="ttdeci">static void ssl_ctx_use_privatekey(SSL_CTX *const ctx, evp_pkey_ptr key)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00199">make_SSLContext.cpp:199</a></div></div>
 <div class="ttc" id="abasic_stringstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aget_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr/get.html">std::unique_ptr::get</a></div><div class="ttdeci">T get(T... args)</div></div>
-<div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a5424207e5a700ac59ea8b9ab1e2b9397"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">ripple::openssl::detail::initAnonymous</a></div><div class="ttdeci">static void initAnonymous(boost::asio::ssl::context &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00269">make_SSLContext.cpp:269</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a5424207e5a700ac59ea8b9ab1e2b9397"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">ripple::openssl::detail::initAnonymous</a></div><div class="ttdeci">static void initAnonymous(boost::asio::ssl::context &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00214">make_SSLContext.cpp:214</a></div></div>
 <div class="ttc" id="arelease_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr/release.html">std::unique_ptr::release</a></div><div class="ttdeci">T release(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_ac70521ab6e1277870a9e400e7a08e937"><div class="ttname"><a href="namespaceripple.html#ac70521ab6e1277870a9e400e7a08e937">ripple::stopwatch</a></div><div class="ttdeci">Stopwatch &amp; stopwatch()</div><div class="ttdoc">Returns an instance of a wall clock.</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00088">chrono.h:88</a></div></div>
-<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4_html_adab8a495c675462d6fac4cd1966a0264"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html#adab8a495c675462d6fac4cd1966a0264">ripple::openssl::detail::custom_delete&lt; EVP_PKEY &gt;::operator()</a></div><div class="ttdeci">void operator()(EVP_PKEY *evp_pkey) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00061">make_SSLContext.cpp:61</a></div></div>
-<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4_html_a25f8f206a00a0fffeea05a720d7846d9"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html#a25f8f206a00a0fffeea05a720d7846d9">ripple::openssl::detail::custom_delete&lt; DH &gt;::operator()</a></div><div class="ttdeci">void operator()(DH *dh) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00085">make_SSLContext.cpp:85</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae8b021ae4b350b66b5e9e39f4a32c844"><div class="ttname"><a href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">ripple::make_SSLContextAuthed</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContextAuthed(std::string const &amp;keyFile, std::string const &amp;certFile, std::string const &amp;chainFile, std::string const &amp;cipherList)</div><div class="ttdoc">Create an authenticated SSL context using the specified files.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00461">make_SSLContext.cpp:461</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aad232b4e5ba55646b1c05dc19250b8ad"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">ripple::openssl::detail::defaultCipherList</a></div><div class="ttdeci">const std::string defaultCipherList</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00037">make_SSLContext.cpp:37</a></div></div>
+<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4_html_adab8a495c675462d6fac4cd1966a0264"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01EVP__PKEY_01_4.html#adab8a495c675462d6fac4cd1966a0264">ripple::openssl::detail::custom_delete&lt; EVP_PKEY &gt;::operator()</a></div><div class="ttdeci">void operator()(EVP_PKEY *evp_pkey) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00069">make_SSLContext.cpp:69</a></div></div>
+<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4_html_a25f8f206a00a0fffeea05a720d7846d9"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01DH_01_4.html#a25f8f206a00a0fffeea05a720d7846d9">ripple::openssl::detail::custom_delete&lt; DH &gt;::operator()</a></div><div class="ttdeci">void operator()(DH *dh) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00093">make_SSLContext.cpp:93</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae8b021ae4b350b66b5e9e39f4a32c844"><div class="ttname"><a href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">ripple::make_SSLContextAuthed</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContextAuthed(std::string const &amp;keyFile, std::string const &amp;certFile, std::string const &amp;chainFile, std::string const &amp;cipherList)</div><div class="ttdoc">Create an authenticated SSL context using the specified files.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00411">make_SSLContext.cpp:411</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aad232b4e5ba55646b1c05dc19250b8ad"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">ripple::openssl::detail::defaultCipherList</a></div><div class="ttdeci">const std::string defaultCipherList</div><div class="ttdoc">The default list of ciphers we accept over TLS.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00046">make_SSLContext.cpp:46</a></div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_ad536d870b6ec8bae51effb86c6defcd4"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">ripple::openssl::detail::evp_pkey_assign_rsa</a></div><div class="ttdeci">static void evp_pkey_assign_rsa(EVP_PKEY *evp_pkey, rsa_ptr rsa)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00139">make_SSLContext.cpp:139</a></div></div>
-<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_html"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">ripple::openssl::detail::custom_delete</a></div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00041">make_SSLContext.cpp:41</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_ad536d870b6ec8bae51effb86c6defcd4"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#ad536d870b6ec8bae51effb86c6defcd4">ripple::openssl::detail::evp_pkey_assign_rsa</a></div><div class="ttdeci">static void evp_pkey_assign_rsa(EVP_PKEY *evp_pkey, rsa_ptr rsa)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00147">make_SSLContext.cpp:147</a></div></div>
+<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_html"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete.html">ripple::openssl::detail::custom_delete</a></div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00049">make_SSLContext.cpp:49</a></div></div>
 <div class="ttc" id="ac_str_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">std::string::c_str</a></div><div class="ttdeci">T c_str(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a53f80df10254751781250aa20704e98f"><div class="ttname"><a href="namespaceripple.html#a53f80df10254751781250aa20704e98f">ripple::set</a></div><div class="ttdeci">bool set(T &amp;target, std::string const &amp;name, Section const &amp;section)</div><div class="ttdoc">Set a value from a configuration Section If the named value is not found or doesn't parse as a T,...</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00276">BasicConfig.h:276</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a></div><div class="ttdoc">Associative container where each element is also indexed by time.</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l00085">aged_unordered_container.h:85</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4_html_a98a5135b5e0b2c90735c61002212f410"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html#a98a5135b5e0b2c90735c61002212f410">ripple::openssl::detail::custom_delete&lt; X509 &gt;::operator()</a></div><div class="ttdeci">void operator()(X509 *x509) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00073">make_SSLContext.cpp:73</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_abfa5623dad369e7932a5ce55e32cb3bf"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">ripple::openssl::detail::evp_pkey_new</a></div><div class="ttdeci">static evp_pkey_ptr evp_pkey_new()</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00128">make_SSLContext.cpp:128</a></div></div>
+<div class="ttc" id="astructripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4_html_a98a5135b5e0b2c90735c61002212f410"><div class="ttname"><a href="structripple_1_1openssl_1_1detail_1_1custom__delete_3_01X509_01_4.html#a98a5135b5e0b2c90735c61002212f410">ripple::openssl::detail::custom_delete&lt; X509 &gt;::operator()</a></div><div class="ttdeci">void operator()(X509 *x509) const</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00081">make_SSLContext.cpp:81</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_abfa5623dad369e7932a5ce55e32cb3bf"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#abfa5623dad369e7932a5ce55e32cb3bf">ripple::openssl::detail::evp_pkey_new</a></div><div class="ttdeci">static evp_pkey_ptr evp_pkey_new()</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00136">make_SSLContext.cpp:136</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00048">contract.cpp:48</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_ae2d29f79e03cddf63e1c4d4b9d0c0db3"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3">ripple::openssl::detail::x509_ptr</a></div><div class="ttdeci">custom_delete_unique_ptr&lt; X509 &gt; x509_ptr</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00149">make_SSLContext.cpp:149</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a66a57746695d60a6f1f4bc3947af2408"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">ripple::openssl::detail::x509_new</a></div><div class="ttdeci">static x509_ptr x509_new()</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00152">make_SSLContext.cpp:152</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aaf9eaa2814ed9cd4e5547d8575a7db96"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aaf9eaa2814ed9cd4e5547d8575a7db96">ripple::openssl::detail::rsa_ptr</a></div><div class="ttdeci">custom_delete_unique_ptr&lt; RSA &gt; rsa_ptr</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00096">make_SSLContext.cpp:96</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_ae2d29f79e03cddf63e1c4d4b9d0c0db3"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3">ripple::openssl::detail::x509_ptr</a></div><div class="ttdeci">custom_delete_unique_ptr&lt; X509 &gt; x509_ptr</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00157">make_SSLContext.cpp:157</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a66a57746695d60a6f1f4bc3947af2408"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a66a57746695d60a6f1f4bc3947af2408">ripple::openssl::detail::x509_new</a></div><div class="ttdeci">static x509_ptr x509_new()</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00160">make_SSLContext.cpp:160</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aaf9eaa2814ed9cd4e5547d8575a7db96"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aaf9eaa2814ed9cd4e5547d8575a7db96">ripple::openssl::detail::rsa_ptr</a></div><div class="ttdeci">custom_delete_unique_ptr&lt; RSA &gt; rsa_ptr</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00104">make_SSLContext.cpp:104</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
-<div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">std::stringstream::str</a></div><div class="ttdeci">T str(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_abb617bff910d2048c529faaac094c48c"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">ripple::openssl::detail::x509_set_pubkey</a></div><div class="ttdeci">static void x509_set_pubkey(X509 *x509, EVP_PKEY *evp_pkey)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00171">make_SSLContext.cpp:171</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_abb617bff910d2048c529faaac094c48c"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#abb617bff910d2048c529faaac094c48c">ripple::openssl::detail::x509_set_pubkey</a></div><div class="ttdeci">static void x509_set_pubkey(X509 *x509, EVP_PKEY *evp_pkey)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00179">make_SSLContext.cpp:179</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a70f3d81f87a75113774c421267a670b7"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">ripple::openssl::detail::initAuthenticated</a></div><div class="ttdeci">static void initAuthenticated(boost::asio::ssl::context &amp;context, std::string const &amp;key_file, std::string const &amp;cert_file, std::string const &amp;chain_file)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00286">make_SSLContext.cpp:286</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_afe690bae645d6073e4439d7d58774390"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">ripple::openssl::detail::rsa_generate_key</a></div><div class="ttdeci">static rsa_ptr rsa_generate_key(int n_bits)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00099">make_SSLContext.cpp:99</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aac5589b9199eabe436098831445adbf6"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">ripple::openssl::detail::x509_sign</a></div><div class="ttdeci">static void x509_sign(X509 *x509, EVP_PKEY *evp_pkey)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00177">make_SSLContext.cpp:177</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a70f3d81f87a75113774c421267a670b7"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">ripple::openssl::detail::initAuthenticated</a></div><div class="ttdeci">static void initAuthenticated(boost::asio::ssl::context &amp;context, std::string const &amp;key_file, std::string const &amp;cert_file, std::string const &amp;chain_file)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00231">make_SSLContext.cpp:231</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_afe690bae645d6073e4439d7d58774390"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#afe690bae645d6073e4439d7d58774390">ripple::openssl::detail::rsa_generate_key</a></div><div class="ttdeci">static rsa_ptr rsa_generate_key(int n_bits)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00107">make_SSLContext.cpp:107</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aac5589b9199eabe436098831445adbf6"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aac5589b9199eabe436098831445adbf6">ripple::openssl::detail::x509_sign</a></div><div class="ttdeci">static void x509_sign(X509 *x509, EVP_PKEY *evp_pkey)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00185">make_SSLContext.cpp:185</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

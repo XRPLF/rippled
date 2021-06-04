@@ -1,5 +1,5 @@
 <map id="ripple::ClosureCounter&lt; Ret_t, Args_t &gt;" name="ripple::ClosureCounter&lt; Ret_t, Args_t &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="175,95,341,136"/>
+<area shape="rect" id="node1" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c..." alt="" coords="175,95,341,136"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="5,5,148,32"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="173,5,343,32"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="393,5,485,32"/>

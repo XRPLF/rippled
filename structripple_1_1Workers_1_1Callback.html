@@ -104,7 +104,7 @@ Public Member Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Called to perform tasks as needed. </p>
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00043">43</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00072">72</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a71388dd2ec03bdbae91be386b27a32e1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a71388dd2ec03bdbae91be386b27a32e1">&#9670;&nbsp;</a></span>~Callback()</h2>
@@ -234,7 +234,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Perform a task. </p>
-<p>The call is made on a thread owned by <a class="el" href="classripple_1_1Workers.html" title="A group of threads that process tasks.">Workers</a>. It is important that you only process one task from inside your callback. Each call to addTask will result in exactly one call to processTask.</p>
+<p>The call is made on a thread owned by <a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a>. It is important that you only process one task from inside your callback. Each call to addTask will result in exactly one call to processTask.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">instance</td><td>The worker thread instance.</td></tr>

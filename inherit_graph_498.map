@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1Resource_1_1Gossip.html" title="Data format for exchanging consumption information across peers." alt="" coords="5,5,184,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1RelationalDBInterface.html" title=" " alt="" coords="5,46,215,73"/>
+<area shape="rect" id="node2" href="$classripple_1_1RelationalDBInterfacePostgres.html" title=" " alt="" coords="263,5,472,47"/>
+<area shape="rect" id="node4" href="$classripple_1_1RelationalDBInterfaceSqlite.html" title=" " alt="" coords="263,71,472,112"/>
+<area shape="rect" id="node3" href="$classripple_1_1RelationalDBInterfacePostgresImp.html" title=" " alt="" coords="520,5,729,47"/>
+<area shape="rect" id="node5" href="$classripple_1_1RelationalDBInterfaceSqliteImp.html" title=" " alt="" coords="520,71,729,112"/>
 </map>

@@ -1,10 +1,10 @@
 <map id="ripple::NetworkOPsImp::StateAccounting" name="ripple::NetworkOPsImp::StateAccounting">
-<area shape="rect" id="node1" title="State accounting records two attributes for each possible server state: 1) Amount of time spent in ea..." alt="" coords="1000,94,1172,135"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="674,63,845,105"/>
-<area shape="rect" id="node3" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="354,19,486,45"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="635,129,884,185"/>
-<area shape="rect" id="node5" href="$structripple_1_1NetworkOPsImp_1_1StateAccounting_1_1Counters.html" title=" " alt="" coords="319,137,521,178"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="50,119,153,145"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,169,197,196"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="713,209,805,236"/>
+<area shape="rect" id="node1" title="State accounting records two attributes for each possible server state: 1) Amount of time spent in ea..." alt="" coords="1000,79,1172,120"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="674,5,845,47"/>
+<area shape="rect" id="node3" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="354,13,486,39"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="635,71,884,127"/>
+<area shape="rect" id="node5" href="$structripple_1_1NetworkOPsImp_1_1StateAccounting_1_1Counters.html" title=" " alt="" coords="319,79,521,120"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="50,61,153,87"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,111,197,138"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="713,151,805,178"/>
 </map>
