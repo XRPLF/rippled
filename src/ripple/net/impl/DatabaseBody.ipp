@@ -43,7 +43,7 @@ DatabaseBody::value_type::close()
 
 inline void
 DatabaseBody::value_type::open(
-    boost::filesystem::path path,
+    boost::filesystem::path const& path,
     Config const& config,
     boost::asio::io_service& io_service,
     boost::system::error_code& ec)
@@ -156,7 +156,7 @@ DatabaseBody::reader::put(
 }
 
 inline void
-DatabaseBody::reader::do_put(std::string data)
+DatabaseBody::reader::do_put(std::string const& data)
 {
     using namespace boost::asio;
 

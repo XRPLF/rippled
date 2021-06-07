@@ -266,7 +266,7 @@ private:
         ThreadSafeQueue<std::shared_ptr<SLE>>& writeQueue);
 
 public:
-    ReportingETL(Application& app);
+    explicit ReportingETL(Application& app);
 
     ~ReportingETL()
     {

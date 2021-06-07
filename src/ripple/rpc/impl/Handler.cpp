@@ -191,7 +191,8 @@ public:
     }
 
     Handler const*
-    getHandler(unsigned version, bool betaEnabled, std::string name) const
+    getHandler(unsigned version, bool betaEnabled, std::string const& name)
+        const
     {
         if (version < RPC::apiMinimumSupportedVersion ||
             version > (betaEnabled ? RPC::apiBetaVersion

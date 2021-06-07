@@ -1193,7 +1193,7 @@ class DatabaseShard_test : public TestBase
             for (std::uint32_t i = 1; i <= 2; ++i)
                 waitShard(*db, i);
 
-            auto const finalShards{std::move(db->getShardInfo()->finalized())};
+            auto const finalShards{db->getShardInfo()->finalized()};
             for (std::uint32_t shardIndex : {1, 2})
                 BEAST_EXPECT(boost::icl::contains(finalShards, shardIndex));
         }
@@ -1209,7 +1209,7 @@ class DatabaseShard_test : public TestBase
             for (std::uint32_t i = 1; i <= 2; ++i)
                 waitShard(*db, i);
 
-            auto const finalShards{std::move(db->getShardInfo()->finalized())};
+            auto const finalShards{db->getShardInfo()->finalized()};
             for (std::uint32_t shardIndex : {1, 2})
                 BEAST_EXPECT(boost::icl::contains(finalShards, shardIndex));
 
@@ -1358,7 +1358,7 @@ class DatabaseShard_test : public TestBase
             for (std::uint32_t i = 1; i <= shardCount; ++i)
                 waitShard(*db, i);
 
-            auto const final{std::move(db->getShardInfo()->finalized())};
+            auto const final{db->getShardInfo()->finalized()};
             for (std::uint32_t shardIndex : {1, 2, 3, 4})
                 BEAST_EXPECT(boost::icl::contains(final, shardIndex));
 
@@ -1417,7 +1417,7 @@ class DatabaseShard_test : public TestBase
             for (std::uint32_t i = 1; i <= shardCount; ++i)
                 waitShard(*db, i);
 
-            auto const finalShards{std::move(db->getShardInfo()->finalized())};
+            auto const finalShards{db->getShardInfo()->finalized()};
             for (std::uint32_t shardIndex : {1, 2, 3, 4})
                 BEAST_EXPECT(boost::icl::contains(finalShards, shardIndex));
 

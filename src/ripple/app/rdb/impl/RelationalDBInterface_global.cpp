@@ -104,7 +104,7 @@ void
 saveManifests(
     soci::session& session,
     std::string const& dbTable,
-    std::function<bool(PublicKey const&)> isTrusted,
+    std::function<bool(PublicKey const&)> const& isTrusted,
     hash_map<PublicKey, Manifest> const& map,
     beast::Journal j)
 {
@@ -410,7 +410,7 @@ setLastRotated(soci::session& session, LedgerIndex seq)
 std::pair<std::unique_ptr<DatabaseCon>, std::optional<std::uint64_t>>
 openDatabaseBodyDb(
     DatabaseCon::Setup const& setup,
-    boost::filesystem::path path)
+    boost::filesystem::path const& path)
 {
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> pathFromDb;

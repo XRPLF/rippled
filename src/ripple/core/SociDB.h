@@ -57,7 +57,7 @@ class BasicConfig;
 class DBConfig
 {
     std::string connectionString_;
-    DBConfig(std::string const& dbPath);
+    explicit DBConfig(std::string const& dbPath);
 
 public:
     DBConfig(BasicConfig const& config, std::string const& dbName);

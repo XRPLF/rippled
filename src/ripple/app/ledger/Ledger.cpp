@@ -141,7 +141,7 @@ public:
     txs_iter_impl(txs_iter_impl const&) = default;
 
     txs_iter_impl(bool metadata, SHAMap::const_iterator iter)
-        : metadata_(metadata), iter_(iter)
+        : metadata_(metadata), iter_(std::move(iter))
     {
     }
 

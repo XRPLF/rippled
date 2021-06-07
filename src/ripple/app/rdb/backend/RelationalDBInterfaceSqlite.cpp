@@ -174,13 +174,13 @@ public:
     bool
     transactionDbHasSpace(Config const& config) override;
 
-    int
+    std::uint64_t
     getKBUsedAll() override;
 
-    int
+    std::uint64_t
     getKBUsedLedger() override;
 
-    int
+    std::uint64_t
     getKBUsedTransaction() override;
 
     void
@@ -1473,7 +1473,7 @@ RelationalDBInterfaceSqliteImp::transactionDbHasSpace(Config const& config)
         });
 }
 
-int
+std::uint64_t
 RelationalDBInterfaceSqliteImp::getKBUsedAll()
 {
     /* if database exists, use it */
@@ -1483,7 +1483,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedAll()
     }
 
     /* else use shard databases */
-    int sum = 0;
+    std::uint64_t sum = 0;
     iterateLedgerBack(
         {}, [&](soci::session& session, std::uint32_t shardIndex) {
             sum += ripple::getKBUsedAll(session);
@@ -1492,7 +1492,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedAll()
     return sum;
 }
 
-int
+std::uint64_t
 RelationalDBInterfaceSqliteImp::getKBUsedLedger()
 {
     /* if database exists, use it */
@@ -1502,7 +1502,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedLedger()
     }
 
     /* else use shard databases */
-    int sum = 0;
+    std::uint64_t sum = 0;
     iterateLedgerBack(
         {}, [&](soci::session& session, std::uint32_t shardIndex) {
             sum += ripple::getKBUsedDB(session);
@@ -1511,7 +1511,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedLedger()
     return sum;
 }
 
-int
+std::uint64_t
 RelationalDBInterfaceSqliteImp::getKBUsedTransaction()
 {
     /* if database exists, use it */
@@ -1521,7 +1521,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedTransaction()
     }
 
     /* else use shard databases */
-    int sum = 0;
+    std::uint64_t sum = 0;
     iterateTransactionBack(
         {}, [&](soci::session& session, std::uint32_t shardIndex) {
             sum += ripple::getKBUsedDB(session);

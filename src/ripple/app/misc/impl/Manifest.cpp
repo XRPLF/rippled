@@ -542,7 +542,7 @@ void
 ManifestCache::save(
     DatabaseCon& dbCon,
     std::string const& dbTable,
-    std::function<bool(PublicKey const&)> isTrusted)
+    std::function<bool(PublicKey const&)> const& isTrusted)
 {
     std::lock_guard lock{apply_mutex_};
     auto db = dbCon.checkoutDb();

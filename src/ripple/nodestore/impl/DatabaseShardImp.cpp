@@ -970,7 +970,8 @@ DatabaseShardImp::doImportDatabase()
             if (isStopping())
                 return;
 
-            auto const ledger{loadByIndex(*ledgerSeq, app_, false)};
+            // Not const so it may be moved later
+            auto ledger{loadByIndex(*ledgerSeq, app_, false)};
             if (!ledger || ledger->info().seq != ledgerSeq)
                 break;
 
