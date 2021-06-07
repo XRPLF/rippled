@@ -75,9 +75,9 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (!app.config().reporting() && app.config().useTxTables())
     {
-        int dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                       &app.getRelationalDBInterface())
-                       ->getKBUsedAll();
+        auto dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                        &app.getRelationalDBInterface())
+                        ->getKBUsedAll();
 
         if (dbKB > 0)
             ret[jss::dbKBTotal] = dbKB;

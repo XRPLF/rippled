@@ -122,14 +122,14 @@ public:
         uint256 nodestoreHash;
 
         AccountTransactionsData(
-            TxMeta& meta,
-            uint256&& nodestoreHash,
-            beast::Journal& j)
+            TxMeta const& meta,
+            uint256 const& nodestoreHash,
+            beast::Journal j)
             : accounts(meta.getAffectedAccounts(j))
             , ledgerSequence(meta.getLgrSeq())
             , transactionIndex(meta.getIndex())
             , txHash(meta.getTxID())
-            , nodestoreHash(std::move(nodestoreHash))
+            , nodestoreHash(nodestoreHash)
         {
         }
     };

@@ -52,7 +52,7 @@ class PerfLog_test : public beast::unit_test::suite
         beast::Journal j_;
         bool stopSignaled{false};
 
-        Fixture(beast::Journal const& j) : j_(j)
+        explicit Fixture(beast::Journal j) : j_(j)
         {
         }
 

@@ -266,14 +266,14 @@ public:
      * @brief getKBUsedAll Returns space used by all databases.
      * @return Space in kilobytes.
      */
-    virtual int
+    virtual uint32_t
     getKBUsedAll() = 0;
 
     /**
      * @brief getKBUsedLedger Returns space used by ledger database.
      * @return Space in kilobytes.
      */
-    virtual int
+    virtual uint32_t
     getKBUsedLedger() = 0;
 
     /**
@@ -281,7 +281,7 @@ public:
      *        database.
      * @return Space in kilobytes.
      */
-    virtual int
+    virtual uint32_t
     getKBUsedTransaction() = 0;
 
     /**

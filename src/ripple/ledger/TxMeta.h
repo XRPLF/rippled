@@ -50,7 +50,7 @@ public:
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
     uint256 const&
-    getTxID()
+    getTxID() const
     {
         return mTransactionID;
     }

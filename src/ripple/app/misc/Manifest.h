@@ -374,7 +374,7 @@ public:
     save(
         DatabaseCon& dbCon,
         std::string const& dbTable,
-        std::function<bool(PublicKey const&)> isTrusted);
+        std::function<bool(PublicKey const&)> const& isTrusted);
 
     /** Invokes the callback once for every populated manifest.
 

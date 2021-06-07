@@ -31,7 +31,7 @@ namespace ripple {
 class OrderBookDB
 {
 public:
-    OrderBookDB(Application& app);
+    explicit OrderBookDB(Application& app);
 
     void
     setup(std::shared_ptr<ReadView const> const& ledger);

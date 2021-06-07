@@ -1218,18 +1218,18 @@ Shard::Count
 Shard::makeBackendCount()
 {
     if (stop_ || busy_)
-        return {nullptr};
+        return Shard::Count{nullptr};
 
     std::lock_guard lock(mutex_);
     if (!backend_)
     {
         JLOG(j_.error()) << "shard " << index_ << " not initialized";
-        return {nullptr};
+        return Shard::Count{nullptr};
     }
     if (!backend_->isOpen())
     {
         if (!open(lock))
-            return {nullptr};
+            return Shard::Count{nullptr};
     }
     else if (state_ == ShardState::finalized)
         lastAccess_ = std::chrono::steady_clock::now();

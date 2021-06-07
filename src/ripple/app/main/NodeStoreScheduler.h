@@ -30,7 +30,7 @@ namespace ripple {
 class NodeStoreScheduler : public NodeStore::Scheduler
 {
 public:
-    NodeStoreScheduler(JobQueue& jobQueue);
+    explicit NodeStoreScheduler(JobQueue& jobQueue);
 
     void
     scheduleTask(NodeStore::Task& task) override;

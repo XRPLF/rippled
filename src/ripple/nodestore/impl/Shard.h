@@ -262,7 +262,8 @@ private:
             other.counter_ = nullptr;
         }
 
-        Count(std::atomic<std::uint32_t>* counter) noexcept : counter_(counter)
+        explicit Count(std::atomic<std::uint32_t>* counter) noexcept
+            : counter_(counter)
         {
             if (counter_)
                 ++(*counter_);
@@ -274,7 +275,7 @@ private:
                 --(*counter_);
         }
 
-        operator bool() const noexcept
+        explicit operator bool() const noexcept
         {
             return counter_ != nullptr;
         }

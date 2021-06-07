@@ -212,7 +212,7 @@ private:
     void
     clearSql(
         LedgerIndex lastRotated,
-        const std::string TableName,
+        std::string const& TableName,
         std::function<std::optional<LedgerIndex>()> const& getMinSeq,
         std::function<void(LedgerIndex)> const& deleteBeforeSeq);
     void

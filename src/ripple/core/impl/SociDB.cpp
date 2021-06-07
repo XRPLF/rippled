@@ -126,7 +126,7 @@ getConnection(soci::session& s)
     return result;
 }
 
-size_t
+std::uint32_t
 getKBUsedAll(soci::session& s)
 {
     if (!getConnection(s))
@@ -135,7 +135,7 @@ getKBUsedAll(soci::session& s)
         sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
 
-size_t
+std::uint32_t
 getKBUsedDB(soci::session& s)
 {
     // This function will have to be customized when other backends are added
