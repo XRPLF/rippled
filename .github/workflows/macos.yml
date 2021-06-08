@@ -225,18 +225,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        BLD_CONFIG: [ "Debug", "Release" ]
+        build:
+          - BLD_CONFIG: "Debug"
 
-        include:
-            # Special cases which add to the cases in the
-            # matrix.
-            #
-            - # Build Release with asserts
-              BLD_CONFIG: "Release"
-              CMAKE_ADD: "-Dassert=ON"
+          - BLD_CONFIG: "Release"
+            # Build Release with asserts
+            CMAKE_ADD: "-Dassert=ON"
+
     env:
-      BLD_CONFIG: ${{ matrix.BLD_CONFIG }}
-      TEST_EXTRA_ARGS: ${{ matrix.TEST_EXTRA_ARGS }}
+      BLD_CONFIG: ${{ matrix.build.BLD_CONFIG }}
+      CMAKE_ADD: ${{ matrix.build.CMAKE_ADD }}
       CC: ${{ needs.macos_cache.outputs.CC }}
       CXX: ${{ needs.macos_cache.outputs.CXX }}
       NUM_PROCESSORS: ${{ needs.macos_cache.outputs.NUM_PROCESSORS }}
@@ -280,11 +278,11 @@ jobs:
         # found, with a special case for the NIH built in the previous job
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}-${{ needs.macos_cache.outputs.source }}-${{ needs.macos_cache.outputs.instructions }}
+          key: ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ env.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}-${{ needs.macos_cache.outputs.source }}-${{ needs.macos_cache.outputs.instructions }}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}-${{ needs.macos_cache.outputs.source }}
-            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}
-            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}
+            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ env.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}-${{ needs.macos_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ env.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ env.BLD_CONFIG }}
             ${{ runner.os }}-nih-${{ needs.macos_cache.outputs.brewinfo }}-${{ needs.macos_cache.outputs.cmakeconfig }}
 
       - name: Dump environment
@@ -312,7 +310,9 @@ jobs:
           [[ "${verbose}" == "true" ]] && set -x || true
           $CC --version
           $CXX --version
-          if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_ARGS+=" ${CMAKE_ADD}"; fi
+          if [ "${CMAKE_ADD}" != "" ] ; then
+            export CMAKE_ARGS+=" ${CMAKE_ADD}"
+          fi
           if [[ ${USE_CCACHE:-} == true ]] && type -a ccache; then
               echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
               CMAKE_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
@@ -345,7 +345,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.BLD_CONFIG }}
+          name: debug-output ${{ env.BLD_CONFIG }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -357,7 +357,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.BLD_CONFIG }}
+          name: rippled ${{ env.BLD_CONFIG }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -371,19 +371,16 @@ jobs:
     timeout-minutes: 720
     strategy:
       fail-fast: false
-      matrix:
-        name: [ "IPv6 tests" ]
-        BLD_CONFIG: [ "Debug" ]
-        TEST_EXTRA_ARGS: [ "--unittest-ipv6" ]
     env:
-      BLD_CONFIG: ${{ matrix.BLD_CONFIG }}
-      TEST_EXTRA_ARGS: ${{ matrix.TEST_EXTRA_ARGS }}
+      name: "IPv6 tests"
+      BLD_CONFIG: "Debug"
+      TEST_EXTRA_ARGS: "--unittest-ipv6"
       NUM_PROCESSORS: ${{ needs.macos_cache.outputs.NUM_PROCESSORS }}
     steps:
       - name: Download rippled artifact
         uses: actions/download-artifact@v2
         with:
-          name: rippled ${{ matrix.BLD_CONFIG }}
+          name: rippled ${{ env.BLD_CONFIG }}
 
       - name: Install Homebrew packages
         run: |

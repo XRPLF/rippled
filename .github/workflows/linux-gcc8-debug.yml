@@ -6,6 +6,12 @@ on: [push, pull_request]
 # to keep them in sync.
 
 env:
+  CC: "gcc-8"
+  CXX: "g++-8"
+  BUILD_TYPE: Debug
+  unity: "ON"
+  # Need this image because it has the coverage tools
+  image: "rippled-ci-builder:2020-01-08"
   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
   NINJA_BUILD: true
   CACHE_DIR: ${{ github.workspace }}/_cache
@@ -18,7 +24,7 @@ env:
 
 jobs:
   linux_gcc_8_debug_unity:
-    name: Linux
+    name: Linux, gcc-8, debug, unity
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
@@ -29,19 +35,14 @@ jobs:
       instructions: ${{ steps.cachekeys.outputs.instructions }}
     strategy:
       fail-fast: false
-      matrix:
-        CC: [ "gcc-8" ]
-        BUILD_TYPE: [ Debug ]
-        unity: [ "ON" ]
-        image: [ "rippled-ci-builder:2020-01-08" ]
-        name: [ "base" ]
     container:
-      image: rippleci/${{ matrix.image }}
+      # The env object is not accessible from here, so specify directly
+      image: rippleci/rippled-ci-builder:2020-01-08
     env:
-      CC: ${{ matrix.CC }}
-      BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-      CMAKE_ADD: "-Dunity=${{ matrix.unity }} ${{ matrix.CMAKE_ADD }}"
-      NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
+      # The higher-level env is not accessible from here, so specify
+      # unity directly
+      CMAKE_ADD: "-Dunity=ON"
+      name: "base"
     steps:
       - name: Cancel Previous Runs
         # https://github.com/styfle/cancel-workflow-action/tree/0.9.0
@@ -90,12 +91,12 @@ jobs:
         # the "linux-general.yml" workflow
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}-${{ steps.cachekeys.outputs.instructions }}
+          key: ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}-${{ steps.cachekeys.outputs.instructions }}
           restore-keys: |
-            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}
-            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}-${{ steps.cachekeys.outputs.headers }}
-            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}
-            ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ matrix.image }}
+            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}
+            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}
+            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}
+            ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.image }}
 
       - name: Dump-environment
         run: |
@@ -124,8 +125,6 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
-        with:
-          image: ${{ matrix.image }}
 
       - name: Disk space after
         shell: bash
@@ -146,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.name }} ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.UNITY }}
+          name: debug-output ${{ env.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -157,7 +156,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.name }} ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.UNITY }}
+          name: rippled ${{ env.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -181,71 +180,40 @@ jobs:
             #
             - # Coverage builds
               name: "Coverage gcc-8"
-              CC: "gcc-8"
               TARGET: coverage_report
-              BUILD_TYPE: "Debug"
               SKIP_TESTS: true
-              unity: "ON"
               CMAKE_ADD: "-Dcoverage=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
-              # Need this image because it has the coverage tools
-              image: "rippled-ci-builder:2020-01-08"
-              canfail: false
 
             - # dynamic lib builds
               name: "non-static gcc-8"
               CMAKE_ADD: "-Dstatic=OFF"
-              CC: "gcc-8"
-              BUILD_TYPE: Debug
-              unity: "ON"
-              image: "rippled-ci-builder:2020-01-08"
-              canfail: false
 
             - name: "non-static BUILD_SHARED_LIBS gcc-8"
               CMAKE_ADD: "-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
-              CC: "gcc-8"
-              BUILD_TYPE: Debug
-              unity: "ON"
-              image: "rippled-ci-builder:2020-01-08"
-              canfail: false
 
             - # makefile
               name: "makefile generator gcc-8"
               NINJA_BUILD: false
-              CC: "gcc-8"
-              BUILD_TYPE: Debug
-              unity: "ON"
-              image: "rippled-ci-builder:2020-01-08"
-              canfail: false
 
             - # verify build with min version of cmake
               name: "min cmake version"
               CMAKE_EXE: /opt/local/cmake-3.9/bin/cmake
-              CC: "gcc-8"
-              BUILD_TYPE: Debug
               SKIP_TESTS: true
-              unity: "ON"
-              image: "rippled-ci-builder:2020-01-08"
-              canfail: false
 
             - # validator keys project as subproj of rippled
               name: "validator-keys"
               TARGET: validator-keys
-              CC: "gcc-8"
-              BUILD_TYPE: Debug
               CMAKE_ADD: "-Dvalidator_keys=ON"
-              unity: "ON"
-              image: "rippled-ci-builder:2020-01-08"
-              canfail: false
 
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
-    continue-on-error: ${{ matrix.canfail }}
+    continue-on-error: false
     container:
-      image: rippleci/${{ matrix.image }}
+      # The env object is not accessible from here, so specify directly
+      image: rippleci/rippled-ci-builder:2020-01-08
     env:
-      CC: ${{ matrix.CC }}
-      BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-      CMAKE_ADD: "-Dunity=${{ matrix.unity }} ${{ matrix.CMAKE_ADD }}"
-      NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
+      # The higher-level env is not accessible from here, so specify
+      # unity directly
+      CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -268,10 +236,10 @@ jobs:
         # the NIH built as a fallback, but that should never happen.
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.name }}-${{ needs.linux_gcc_8_debug_unity.outputs.headers }}-${{ needs.linux_gcc_8_debug_unity.outputs.source }}-${{ needs.linux_gcc_8_debug_unity.outputs.instructions }}
+          key: ${{ runner.os }}-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ matrix.name }}-${{ needs.linux_gcc_8_debug_unity.outputs.headers }}-${{ needs.linux_gcc_8_debug_unity.outputs.source }}-${{ needs.linux_gcc_8_debug_unity.outputs.instructions }}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-base-${{ needs.linux_gcc_8_debug_unity.outputs.headers }}-${{ needs.linux_gcc_8_debug_unity.outputs.source }}-${{ needs.linux_gcc_8_debug_unity.outputs.instructions }}
-            ${{ runner.os }}-nih-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ matrix.image }}
+            ${{ runner.os }}-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-base-${{ needs.linux_gcc_8_debug_unity.outputs.headers }}-${{ needs.linux_gcc_8_debug_unity.outputs.source }}-${{ needs.linux_gcc_8_debug_unity.outputs.instructions }}
+            ${{ runner.os }}-nih-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ env.image }}
 
       - name: Reset ccache stats
         shell: bash
@@ -297,8 +265,6 @@ jobs:
       - name: Build and test
         uses: ./.github/actions/build-action
         with:
-          image: ${{ matrix.image }}
-          PARALLEL_TESTS: ${{ matrix.PARALLEL_TESTS }}
           TARGET: ${{ matrix.TARGET }}
           SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
           NINJA_BUILD: ${{ matrix.NINJA_BUILD }}
@@ -324,7 +290,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.name }} ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.unity }}
+          name: debug-output ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -336,7 +302,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.name }} ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.unity }}
+          name: rippled ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -358,20 +324,12 @@ jobs:
             !build/**/cmake*
 
   linux_gcc_8_debug_unity_runner:
-    name: Linux
+    name: Linux, Manual tests, gcc-8, debug
     needs: linux_gcc_8_debug_unity
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     strategy:
       fail-fast: false
-      matrix:
-        name: [ "Manual tests" ]
-        MANUAL_TESTS: [ "true" ]
-        CC: [ "gcc-8" ]
-        BUILD_TYPE: [ Debug ]
-        unity: [ "ON" ]
-    env:
-      NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -379,7 +337,7 @@ jobs:
       - name: Download rippled artifact
         uses: actions/download-artifact@v2
         with:
-          name: rippled base ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.UNITY }}
+          name: rippled base ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
 
       - name: Run manual tests
         shell: bash
