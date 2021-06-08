@@ -64,7 +64,7 @@ if version_ge $CMAKE_VER "3.12.0" ; then
     BUILDARGS+=" --parallel"
 fi
 
-if [[ ${NINJA_BUILD:-} == false ]]; then
+if [[ ${NINJA_BUILD:-} != true ]]; then
     if version_ge $CMAKE_VER "3.12.0" ; then
         BUILDARGS+=" ${JOBS}"
     else
@@ -77,7 +77,7 @@ if [[ ${VERBOSE_BUILD:-} == true ]]; then
     if version_ge $CMAKE_VER "3.14.0" ; then
         BUILDARGS+=" --verbose"
     else
-        if [[ ${NINJA_BUILD:-} == false ]]; then
+        if [[ ${NINJA_BUILD:-} != true ]]; then
             BUILDTOOLARGS+=" verbose=1"
         else
             BUILDTOOLARGS+=" -v"
@@ -167,7 +167,7 @@ else
     else
         APP_ARGS+=" --unittest --quiet --unittest-log"
     fi
-    if [[ ${coverage} == false && ${PARALLEL_TESTS:-} == true ]]; then
+    if [[ ${coverage} != true && ${PARALLEL_TESTS:-} == true ]]; then
         APP_ARGS+=" --unittest-jobs ${JOBS}"
     fi
 
