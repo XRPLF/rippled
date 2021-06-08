@@ -83,11 +83,12 @@ public:
 class TxConsequences;
 struct PreflightResult;
 
+/** Represents the entry in a singer list */
+using SignerEntry = std::pair<AccountID, std::uint16_t>;
+
 class Transactor
 {
 protected:
-    using SignerEntry = std::pair<AccountID, std::uint16_t>;
-
     /** Deserialize the array of signer entries.
 
         @param obj the object containing the signer list as sfSignerEntries

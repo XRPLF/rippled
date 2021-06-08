@@ -141,14 +141,13 @@ Transactor::deserializeSignerList(STObject const& obj)
     std::vector<SignerEntry> signers;
     signers.reserve(STTx::maxMultiSigners);
 
-    for (STObject const& sEntry : obj.getFieldArray(sfSignerEntries))
+    for (STObject const& e : obj.getFieldArray(sfSignerEntries))
     {
-        if (sEntry.getFName() != sfSignerEntry)
+        if (e.getFName() != sfSignerEntry)
             return {};
 
         signers.emplace_back(
-            sEntry.getAccountID(sfAccount),
-            sEntry.getFieldU16(sfSignerWeight));
+            e.getAccountID(sfAccount), e.getFieldU16(sfSignerWeight));
     }
 
     return signers;

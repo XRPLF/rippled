@@ -1563,8 +1563,8 @@ public:
     {
         using namespace jtx;
 
-        auto amendments = supported_amendments() -
-            featureMultiSignReserve - featureSimplifiedSetSignerList;
+        auto amendments = supported_amendments() - featureMultiSignReserve -
+            featureSimplifiedSetSignerList;
 
         amendments = amendments | featureTicketBatch;
         testAll(amendments);
@@ -1572,9 +1572,7 @@ public:
         amendments = amendments | featureMultiSignReserve;
         testAll(amendments);
 
-        // featureSimplifiedSetSignerList needs also featureMultiSignReserve:
         amendments = amendments | featureSimplifiedSetSignerList;
-        amendments = amendments | featureMultiSignReserve;
         testAll(amendments);
 
         test_amendmentTransition();
