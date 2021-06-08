@@ -47,6 +47,7 @@ jobs:
           - ninja_ccs: "clang-10"
             ninja_types: "Debug Release"
             image: "rippled-ci-builder:2944b78d22db"
+            CMAKE_ADD: " -DBoost_NO_BOOST_CMAKE=ON"
             make_ccs: ""
             make_types: ""
     container:
@@ -56,6 +57,8 @@ jobs:
       headers: ${{ steps.cachekeys.outputs.headers }}
       source: ${{ steps.cachekeys.outputs.source }}
       instructions: ${{ steps.cachekeys.outputs.instructions }}
+    env:
+      CMAKE_ADD: ${{ matrix.CMAKE_ADD }}
     steps:
       - name: Cancel Previous Runs
         # https://github.com/styfle/cancel-workflow-action/tree/0.9.0
@@ -105,9 +108,8 @@ jobs:
 
             cmake --version
 
-            if [ "${{ matrix.image }}" == "rippled-ci-builder:2944b78d22db" ]
-            then
-                export CMAKE_EXTRA_ARGS+=" -DBoost_NO_BOOST_CMAKE=ON"
+            if [ "${CMAKE_ADD}" != "" ]; then
+                export CMAKE_EXTRA_ARGS+="${CMAKE_ADD}"
             fi
 
             # Builds that use unix-makefiles
@@ -116,14 +118,18 @@ jobs:
                 for BUILD_TYPE in ${{ matrix.make_types }}
                 do
                     export CC BUILD_TYPE
+                    # Set CXX to the C++ complier corresponding to CC
+                    # It's a little hacky, but keeps this job's matrix
+                    #  a little simpler
                     export CXX=${CC/gcc/g++}
                     export CXX=${CXX/clang/clang++}
+
                     ${CC} --version
                     ${CXX} --version
                     dir="build/$( basename ${CXX} ).${BUILD_TYPE}.makefile"
-                    mkdir -pv "${dir}"
+                    mkdir "-pv" "${dir}"
                     pushd "${dir}"
-                    set -x
+                    set "-x"
                     # Verbose or not, it's good to see the right params
                     # are being used
                     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -140,14 +146,18 @@ jobs:
                 for BUILD_TYPE in ${{ matrix.ninja_types }}
                 do
                     export CC BUILD_TYPE
+                    # Set CXX to the C++ complier corresponding to CC
+                    # It's a little hacky, but keeps this job's matrix
+                    #  a little simpler
                     export CXX=${CC/gcc/g++}
                     export CXX=${CXX/clang/clang++}
+
                     ${CC} --version
                     ${CXX} --version
                     dir="build/$( basename ${CXX} ).${BUILD_TYPE}"
-                    mkdir -pv "${dir}"
+                    mkdir "-pv" "${dir}"
                     pushd "${dir}"
-                    set -x
+                    set "-x"
                     # Verbose or not, it's good to see the right params
                     # are being used
                     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -192,39 +202,48 @@ jobs:
         # Current travis: gcc-8 clang-8 gcc-9 clang-9
         # testing image (2020-01-08) has clang 7,8,9 & gcc 6,7,8,9
         # packaging image (2944b78d22db) has clang 10 & gcc 8
-        CC: [ "gcc-8", "gcc-9", "clang-8", "clang-9", "clang-10" ]
-        BUILD_TYPE: [ Debug, Release ]
+        compiler:
+          - # Both images have gcc-8, but Coverage build needs 2020-01-08
+            # so use that one on all gcc-8 builds, so the cache will
+            # always work
+            CC: 'gcc-8'
+            CXX: 'g++-8'
+            image: 'rippled-ci-builder:2020-01-08'
+
+          - CC: 'gcc-9'
+            CXX: 'g++-9'
+            image: 'rippled-ci-builder:2020-01-08'
+
+          - CC: 'clang-8'
+            CXX: 'clang++-8'
+            image: 'rippled-ci-builder:2020-01-08'
+
+          - CC: 'clang-9'
+            CXX: 'clang++-9'
+            image: 'rippled-ci-builder:2020-01-08'
+
+          - # The 2020-01-08 image doesn't have clang-10
+            CC: 'clang-10'
+            CXX: 'clang++-10'
+            image: 'rippled-ci-builder:2944b78d22db'
+            CMAKE_ADD: " -DBoost_NO_BOOST_CMAKE=ON"
+
+        BUILD_TYPE: [ "Debug", "Release" ]
         unity: [ "OFF", "ON" ]
-        image: [ "rippled-ci-builder:2020-01-08", "rippled-ci-builder:2944b78d22db" ]
         name: [ "base" ]
 
         exclude:
-            - # The 2020-01-08 image doesn't have clang-10
-              image: "rippled-ci-builder:2020-01-08"
-              CC: "clang-10"
-
-            - # Both images have gcc-8, but Coverage build needs 2020-01-08
-              # so use that one on all gcc-8 builds, so the cache will
-              # always work
-              image: "rippled-ci-builder:2944b78d22db"
-              CC: "gcc-8"
-
-            - # The 2944b78d22db image doesn't have the other compilers, so
-              # use 2020-01-08
-              image: "rippled-ci-builder:2944b78d22db"
-              CC: "gcc-9"
-
-            - image: "rippled-ci-builder:2944b78d22db"
-              CC: "clang-8"
-
-            - image: "rippled-ci-builder:2944b78d22db"
-              CC: "clang-9"
-
             - # These combos are covered by the individual builds
-              CC: "clang-8"
+              compiler:
+                CC: 'clang-8'
+                CXX: 'clang++-8'
+                image: 'rippled-ci-builder:2020-01-08'
               unity: "ON"
 
-            - CC: "gcc-8"
+            - compiler:
+                CC: "gcc-8"
+                CXX: 'g++-8'
+                image: 'rippled-ci-builder:2020-01-08'
               unity: "ON"
 
         include:
@@ -233,18 +252,21 @@ jobs:
             #
             - # gcc Release unity builds run out of memory, so build smaller
               # unity files.
-              CC: "gcc-9"
+              compiler:
+                CC: "gcc-9"
+                CXX: 'g++-9'
+                image: 'rippled-ci-builder:2020-01-08'
               BUILD_TYPE: Release
               unity: "ON"
               CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
 
     container:
-      image: rippleci/${{ matrix.image }}
+      image: rippleci/${{ matrix.compiler.image }}
     env:
-      CC: ${{ matrix.CC }}
+      CC: ${{ matrix.compiler.CC }}
+      CXX: ${{ matrix.compiler.CXX }}
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-      CMAKE_ADD: "-Dunity=${{ matrix.unity }} ${{ matrix.CMAKE_ADD }}"
-      NUM_PROCESSORS: ${{ matrix.NUM_PROCESSORS }}
+      CMAKE_ADD: "-Dunity=${{ matrix.unity }} ${{ matrix.compiler.CMAKE_ADD}} ${{ matrix.CMAKE_ADD }}"
       # Try to ensure at least 2Gb of space is free to run tests
       MINTESTAVAIL: 2000000
     steps:
@@ -269,12 +291,12 @@ jobs:
         # found, with a special case for the NIH built in the previous job
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+          key: ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.compiler.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}
-            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}
-            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.UNITY }}-${{ matrix.name }}
-            ${{ runner.os }}-nih-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.image }}
+            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.compiler.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.compiler.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.compiler.CC }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.name }}
+            ${{ runner.os }}-nih-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ matrix.compiler.image }}
 
       - name: Dump environment
         run: |
@@ -303,8 +325,6 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
-        with:
-          image: ${{ matrix.image }}
 
       - name: Disk space after
         shell: bash
@@ -325,7 +345,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.name }} ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.UNITY }}
+          name: debug-output ${{ matrix.name }} ${{ matrix.compiler.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -336,7 +356,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.name }} ${{ matrix.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.UNITY }}
+          name: rippled ${{ matrix.name }} ${{ matrix.compiler.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |

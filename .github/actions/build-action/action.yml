@@ -4,9 +4,6 @@ description: 'Build and Test rippled or an alternate target'
 # build variables set
 # WARNING: This cache cannot be used to build with a different compiler.
 inputs:
-  image:
-    description: 'Name of docker image the job is running under'
-    required: true
   PARALLEL_TESTS:
     description: 'Boolean: Run tests in parallel'
     required: false
@@ -105,14 +102,8 @@ runs:
     - name: Build and test
       shell: bash
       run: |
-          export CXX=${CC/gcc/g++}
-          export CXX=${CXX/clang/clang++}
           export NUM_PROCESSORS=${NUM_PROCESSORS:-$( nproc )}
           echo NUM_PROCESSORS is ${NUM_PROCESSORS}
-          if [ "${{ inputs.image }}" == "rippled-ci-builder:2944b78d22db" ]
-          then
-              export CMAKE_EXTRA_ARGS+=" -DBoost_NO_BOOST_CMAKE=ON"
-          fi
           if [ "${BUILD_TYPE}" == "Release" ]
           then
               export CMAKE_EXTRA_ARGS+=" -Dassert=ON"

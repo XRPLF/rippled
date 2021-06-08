@@ -303,6 +303,9 @@ jobs:
             RUNDIR: '_installed_/Program Files/rippled/bin'
             BUILD_ARGS: '--config ${BUILD_TYPE} --target install'
             VCVersion: 'VC2017'
+            # The VS2017 Debug tests with two threads are flaky on
+            # Github runners. Limit to one thread.
+            test_jobs: 1
 
 
     # VS 2019 debug builds have a bug handling constexpr char*
