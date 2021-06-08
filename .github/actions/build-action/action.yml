@@ -2,8 +2,7 @@ name: 'Build and Test'
 description: 'Build and Test rippled or an alternate target'
 # Pre-condition: The environment has all the necessary base
 # build variables set
-# Post-condition: The cache will not be reused to build with
-# a different compiler
+# WARNING: This cache cannot be used to build with a different compiler.
 inputs:
   image:
     description: 'Name of docker image the job is running under'
@@ -79,8 +78,7 @@ runs:
         then
             find ${NIH_CACHE_ROOT} -maxdepth 3 \( -iname src -prune -o \
               -type d -exec du -sh {} \; \)
-            # Post-condition: The cache will not be reused to build with a
-            # different compiler
+            # WARNING: This cache cannot be used to build with a different compiler.
             if [[ "${CC}" =~ "gcc" ]]
             then
               echo Erasing NIH cache for clang
@@ -92,13 +90,12 @@ runs:
             fi
             # Free up space if the cache is being reused with a different
             # generator from prior builds (ninja vs. makefiles).
-            # Post condition: Cache will not be reused with a different
-            # generator.
+            # WARNING: This cache cannot be used to build with a different compiler.
             if [[ "${NINJA_BUILD}" == "true" && -d "${NIH_CACHE_ROOT}"/unix_makefiles ]]
             then
               echo Erasing NIH cache for makefiles
               rm -rf "${NIH_CACHE_ROOT}"/unix_makefiles || true
-            elif [[ "${NINJA_BUILD}" == "false" && -d "${NIH_CACHE_ROOT}"/ninja ]]
+            elif [[ "${NINJA_BUILD}" != "true" && -d "${NIH_CACHE_ROOT}"/ninja ]]
             then
               echo Erasing NIH cache for ninja
               rm -rf "${NIH_CACHE_ROOT}"/ninja || true
