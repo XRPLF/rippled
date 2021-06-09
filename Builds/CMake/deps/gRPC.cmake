@@ -211,6 +211,7 @@ else ()
         -DCMAKE_DEBUG_POSTFIX=_d
         $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
         -DgRPC_BUILD_TESTS=OFF
+        -DgRPC_BENCHMARK_PROVIDER=""
         -DgRPC_BUILD_CSHARP_EXT=OFF
         -DgRPC_MSVC_STATIC_RUNTIME=ON
         -DgRPC_INSTALL=OFF
