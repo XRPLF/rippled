@@ -39,11 +39,17 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
         buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
         bytes -= sizeof(v);
     }
+#ifdef __GNUC__
+    // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
     if (bytes > 0)
     {
         auto const v = g();
         std::memcpy(buffer, &v, bytes);
     }
+#pragma GCC diagnostic pop
+#endif
 }
 
 template <
