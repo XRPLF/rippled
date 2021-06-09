@@ -5,6 +5,7 @@ if (POLICY CMP0074)
 endif ()
 
 project (rippled)
+set (CMAKE_CXX_STANDARD 17)
 
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
