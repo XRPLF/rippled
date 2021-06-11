@@ -732,6 +732,35 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, alice) == 2);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
+            if (cashCheckMakesTrustLine)
+            {
+                // Automatic trust lines are enabled.  But one aspect of
+                // automatic trust lines is that they allow the account
+                // cashing a check to exceed their trust line limit.  Show
+                // that at work.
+                //
+                // bob's trust line limit is currently USD(10.5).  Show that
+                // a payment to bob cannot exceed that trust line, but cashing
+                // a check can.
+
+                // Payment of 20 USD fails.
+                env(pay(gw, bob, USD(20)), ter(tecPATH_PARTIAL));
+                env.close();
+
+                uint256 const chkId20{getCheckIndex(gw, env.seq(gw))};
+                env(check::create(gw, bob, USD(20)));
+                env.close();
+
+                // However cashing a check for 20 USD succeeds.
+                env(check::cash(bob, chkId20, USD(20)));
+                env.close();
+                env.require(balance(bob, USD(30)));
+
+                // Clean up this most recent experiment so the rest of the
+                // tests work.
+                env(pay(bob, gw, USD(20)));
+            }
+
             // ... so bob cancels alice's remaining check.
             env(check::cancel(bob, chkId3));
             env.close();
@@ -1889,8 +1918,10 @@ class Check_test : public beast::unit_test::suite
         // Explore automatic trust line creation when a check is cashed.
         //
         // This capability is enabled by the featureCheckCashMakesTrustLine
-        // amendment.  So most of this test executes only when that amendment
-        // is active.
+        // amendment.  So this test executes only when that amendment is
+        // active.
+        assert(features[featureCheckCashMakesTrustLine]);
+
         testcase("Trust Line Creation");
 
         using namespace test::jtx;
@@ -1940,9 +1971,8 @@ class Check_test : public beast::unit_test::suite
         env.fund(XRP(5000), noripple(alice, bob));
         env.close();
 
-        // First a sanity check.  If featureCheckCashMakesTrustLine is not
-        // live, then cashing a check without previously establishing a trust
-        // line fails.
+        // Automatic trust line creation should fail if the check destination
+        // can't afford the reserve for the trust line.
         {
             AccountOwns gw1{*this, env, "gw1", 0};
 
@@ -1952,31 +1982,6 @@ class Check_test : public beast::unit_test::suite
             env.fund(XRP(5000), noripple(gw1));
             env.close();
 
-            IOU const CK9 = gw1["CK9"];
-
-            Account const zoe{"zoe"};
-            env.fund(XRP(5000), zoe);
-            env.close();
-
-            uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
-            env(check::create(gw1, zoe, CK9(100)));
-            env.close();
-
-            env(check::cash(zoe, chkId, CK9(100)),
-                ter(features[featureCheckCashMakesTrustLine]
-                        ? TER(tesSUCCESS)
-                        : TER(tecNO_LINE)));
-            env.close();
-        }
-
-        // All remaining tests require featureCheckCashMakesTrustLine.
-        if (!features[featureCheckCashMakesTrustLine])
-            return;
-
-        // Automatic trust line creation should fail if the check destination
-        // can't afford the reserve for the trust line.
-        {
-            AccountOwns gw1{*this, env, "gw1", 0};
             IOU const CK8 = gw1["CK8"];
             gw1.verifyOwners(__LINE__);
 
@@ -2607,7 +2612,6 @@ class Check_test : public beast::unit_test::suite
         testCancelInvalid(features);
         testFix1623Enable(features);
         testWithTickets(features);
-        testTrustLineCreation(features);
     }
 
 public:
@@ -2618,6 +2622,8 @@ public:
         auto const sa = supported_amendments();
         testWithFeats(sa - featureCheckCashMakesTrustLine);
         testWithFeats(sa);
+
+        testTrustLineCreation(sa);  // Test with featureCheckCashMakesTrustLine
     }
 };
 
