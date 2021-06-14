@@ -365,7 +365,7 @@ jobs:
             !rippled/build/**/_INSTALLED_/**
 
   macos_runner:
-    name: MacOS
+    name: MacOS IPv6 test runner
     needs: [ macos_cache, macos ]
     runs-on: "macos-latest"
     timeout-minutes: 720
