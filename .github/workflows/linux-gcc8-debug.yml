@@ -13,7 +13,6 @@ env:
   # Need this image because it has the coverage tools
   image: "rippled-ci-builder:2020-01-08"
   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
-  NINJA_BUILD: true
   CACHE_DIR: ${{ github.workspace }}/_cache
   NIH_CACHE_ROOT: ${{ github.workspace }}/_cache/nih_c
   PARALLEL_TESTS: true
@@ -182,13 +181,16 @@ jobs:
               name: "Coverage gcc-8"
               TARGET: coverage_report
               SKIP_TESTS: true
+              NINJA_BUILD: true
               CMAKE_ADD: "-Dcoverage=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
 
             - # dynamic lib builds
               name: "non-static gcc-8"
+              NINJA_BUILD: true
               CMAKE_ADD: "-Dstatic=OFF"
 
             - name: "non-static BUILD_SHARED_LIBS gcc-8"
+              NINJA_BUILD: true
               CMAKE_ADD: "-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
 
             - # makefile
@@ -197,11 +199,13 @@ jobs:
 
             - # verify build with min version of cmake
               name: "min cmake version"
+              NINJA_BUILD: true
               CMAKE_EXE: /opt/local/cmake-3.9/bin/cmake
               SKIP_TESTS: true
 
             - # validator keys project as subproj of rippled
               name: "validator-keys"
+              NINJA_BUILD: true
               TARGET: validator-keys
               CMAKE_ADD: "-Dvalidator_keys=ON"
 
@@ -214,6 +218,10 @@ jobs:
       # The higher-level env is not accessible from here, so specify
       # unity directly
       CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
+      TARGET: ${{ matrix.TARGET }}
+      SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
+      NINJA_BUILD: ${{ matrix.NINJA_BUILD }}
+      CMAKE_EXE: ${{ matrix.CMAKE_EXE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -264,11 +272,6 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
-        with:
-          TARGET: ${{ matrix.TARGET }}
-          SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
-          NINJA_BUILD: ${{ matrix.NINJA_BUILD }}
-          CMAKE_EXE: ${{ matrix.CMAKE_EXE }}
 
       - name: Disk space after
         shell: bash

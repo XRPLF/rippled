@@ -193,6 +193,8 @@ jobs:
       # The higher-level env is not accessible from here, so specify
       # unity directly
       CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
+      TARGET: ${{ matrix.TARGET }}
+      SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -243,11 +245,6 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
-        with:
-          PARALLEL_TESTS: ${{ env.PARALLEL_TESTS }}
-          TARGET: ${{ matrix.TARGET }}
-          SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
-          NINJA_BUILD: ${{ env.NINJA_BUILD }}
 
       - name: Disk space after
         shell: bash
