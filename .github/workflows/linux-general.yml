@@ -258,7 +258,7 @@ jobs:
                 image: 'rippled-ci-builder:2020-01-08'
               BUILD_TYPE: Release
               unity: "ON"
-              CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
+              CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=6"
 
     container:
       image: rippleci/${{ matrix.compiler.image }}
