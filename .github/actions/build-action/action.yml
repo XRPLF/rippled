@@ -3,38 +3,6 @@ description: 'Build and Test rippled or an alternate target'
 # Pre-condition: The environment has all the necessary base
 # build variables set
 # WARNING: This cache cannot be used to build with a different compiler.
-inputs:
-  PARALLEL_TESTS:
-    description: 'Boolean: Run tests in parallel'
-    required: false
-  TARGET:
-    description: 'CMake target to build and run'
-    required: false
-  SKIP_TESTS:
-    description: 'Boolean: Skip tests after building'
-    required: false
-  MANUAL_TESTS:
-    description: 'Boolean: Run selected manual tests only'
-    required: false
-  ASAN_OPTIONS:
-    description: 'Options to use in asan builds'
-    required: false
-  UBSAN_OPTIONS:
-    description: 'Options to use in ubsan builds'
-    required: false
-  TSAN_OPTIONS:
-    description: 'Options to use in tsan builds'
-    required: false
-  NINJA_BUILD:
-    description: 'Boolean: Build with Ninja'
-    required: false
-  CMAKE_EXE:
-    description: 'Use a specific instance of CMake'
-    required: false
-outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-id }}
 runs:
   using: "composite"
   steps:
@@ -111,15 +79,6 @@ runs:
 
           # Set and/or override some environment variables based on
           # inputs to the action.
-          if [[ "${{ inputs.PARALLEL_TESTS }}" != "" ]]; then export PARALLEL_TESTS="${{ inputs.PARALLEL_TESTS }}" ; fi
-          if [[ "${{ inputs.TARGET }}" != "" ]]; then export TARGET="${{ inputs.TARGET }}" ; fi
-          if [[ "${{ inputs.SKIP_TESTS }}" != "" ]]; then export SKIP_TESTS="${{ inputs.SKIP_TESTS }}" ; fi
-          if [[ "${{ inputs.MANUAL_TESTS }}" != "" ]]; then export MANUAL_TESTS="${{ inputs.MANUAL_TESTS }}" ; fi
-          if [[ "${{ inputs.ASAN_OPTIONS }}" != "" ]]; then export ASAN_OPTIONS="${{ inputs.ASAN_OPTIONS }}" ; fi
-          if [[ "${{ inputs.UBSAN_OPTIONS }}" != "" ]]; then export UBSAN_OPTIONS="${{ inputs.UBSAN_OPTIONS }}" ; fi
-          if [[ "${{ inputs.TSAN_OPTIONS }}" != "" ]]; then export TSAN_OPTIONS="${{ inputs.TSAN_OPTIONS }}" ; fi
-          if [[ "${{ inputs.NINJA_BUILD }}" != "" ]]; then export NINJA_BUILD="${{ inputs.NINJA_BUILD }}" ; fi
-          if [[ "${{ inputs.CMAKE_EXE }}" != "" ]]; then export CMAKE_EXE="${{ inputs.CMAKE_EXE }}" ; fi
           if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS+=" ${CMAKE_ADD}"; fi
           # Do the build
           bin/ci/ubuntu/build-and-test.sh

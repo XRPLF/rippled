@@ -181,13 +181,11 @@ jobs:
               name: "asan clang-8"
               ASAN_OPTIONS: "print_stats=true:atexit=true"
               CMAKE_ADD: "-Dsan=address"
-              PARALLEL_TESTS: false
               canfail: false
             - # ubsan
               name: "ubsan clang-8"
               UBSAN_OPTIONS: "print_stacktrace=1:report_error_type=1"
               CMAKE_ADD: "-Dsan=undefined"
-              PARALLEL_TESTS: false
               canfail: false
             #- # tsan
             #  # current tsan failure *might* be related to:
@@ -196,7 +194,6 @@ jobs:
             #  name: "tsan clang-8"
             #  TSAN_OPTIONS: "history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
             #  CMAKE_ADD: "-Dsan=thread"
-            #  PARALLEL_TESTS: false
             #  canfail: true
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     continue-on-error: ${{ matrix.canfail }}
@@ -207,6 +204,10 @@ jobs:
       # The higher-level env is not accessible from here, so specify
       # unity directly
       CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
+      PARALLEL_TESTS: false
+      ASAN_OPTIONS: ${{ matrix.ASAN_OPTIONS }}
+      UBSAN_OPTIONS: ${{ matrix.UBSAN_OPTIONS }}
+      TSAN_OPTIONS: ${{ matrix.TSAN_OPTIONS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -245,11 +246,6 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
-        with:
-          PARALLEL_TESTS: ${{ matrix.PARALLEL_TESTS }}
-          ASAN_OPTIONS: ${{ matrix.ASAN_OPTIONS }}
-          UBSAN_OPTIONS: ${{ matrix.UBSAN_OPTIONS }}
-          TSAN_OPTIONS: ${{ matrix.TSAN_OPTIONS }}
 
       - name: Disk space after
         shell: bash
