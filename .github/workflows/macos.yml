@@ -326,7 +326,8 @@ jobs:
         shell: bash
         run: |
           [[ "${verbose}" == "true" ]] && set -x || true
-          ${builddir}/rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+          # Always run single threaded
+          ${builddir}/rippled --unittest
 
       - name: Disk space after
         shell: bash
@@ -402,7 +403,8 @@ jobs:
             [[ "${verbose}" == "true" ]] && set -x || true
 
             : ${APP_ARGS:=}
-            APP_ARGS+=" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}"
+            # Always run single threaded
+            APP_ARGS+=" --unittest ${TEST_EXTRA_ARGS}"
 
             find . -name rippled -ls
             # There can be only one
