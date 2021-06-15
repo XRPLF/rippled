@@ -34,9 +34,8 @@ jobs:
       image: rippleci/rippled-ci-builder:2020-01-08
     env:
       # The higher-level env is not accessible from here, so specify
-      # unity directly. gcc Release unity builds run out of memory,
-      # so build smaller unity files.
-      CMAKE_ADD: "-Dunity=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=6"
+      # unity directly.
+      CMAKE_ADD: "-Dunity=ON"
       name: "base"
     steps:
       - name: Cancel Previous Runs
@@ -120,6 +119,15 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
 
       - name: Disk space after
         shell: bash
