@@ -127,6 +127,15 @@ jobs:
       - name: Build and test
         uses: ./.github/actions/build-action
 
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+
       - name: Disk space after
         shell: bash
         if: always()
@@ -245,6 +254,15 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
 
       - name: Disk space after
         shell: bash

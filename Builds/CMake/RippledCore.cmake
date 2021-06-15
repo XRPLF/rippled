@@ -1015,9 +1015,13 @@ if (tests)
     # these two seem to produce conflicts in beast teardown template methods
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/ShardArchiveHandler_test.cpp
-    # These files make the Windows linker run out of memory
+    # These files cause OOM under some configurations
     src/test/server/ServerStatus_test.cpp
     src/test/basics/Buffer_test.cpp
+    src/test/protocol/SecretKey_test.cpp
+    src/test/rpc/RPCCall_test.cpp
+    src/test/nodestore/DatabaseShard_test.cpp
+    src/test/rpc/Tx_test.cpp
     PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
 endif () #tests
 if (NOT MSVC)

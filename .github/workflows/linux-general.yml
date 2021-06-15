@@ -246,20 +246,6 @@ jobs:
                 image: 'rippled-ci-builder:2020-01-08'
               unity: "ON"
 
-        include:
-            # Special cases which add to or override the cases in the
-            # matrix.
-            #
-            - # gcc Release unity builds run out of memory, so build smaller
-              # unity files.
-              compiler:
-                CC: "gcc-9"
-                CXX: 'g++-9'
-                image: 'rippled-ci-builder:2020-01-08'
-              BUILD_TYPE: Release
-              unity: "ON"
-              CMAKE_ADD: "-DCMAKE_UNITY_BUILD_BATCH_SIZE=7"
-
     container:
       image: rippleci/${{ matrix.compiler.image }}
     env:
@@ -325,6 +311,15 @@ jobs:
 
       - name: Build and test
         uses: ./.github/actions/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
 
       - name: Disk space after
         shell: bash

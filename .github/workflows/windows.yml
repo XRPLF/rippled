@@ -437,6 +437,15 @@ jobs:
             "${RUNDIR}/rippled.exe" --unittest --unittest-log \
               --unittest-jobs ${NUM_PROCESSORS} ${runparams}
 
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+
       - name: Disk space after
         shell: bash
         if: always()
