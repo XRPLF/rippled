@@ -105,7 +105,8 @@ jobs:
           env
           set | grep =
 
-          find /c/Program\ Files\ \(x86\)/ -iname 'cl.exe'
+          [[ "${verbose}" == "true" ]] && \
+            time find /c/Program\ Files\ \(x86\)/ -iname 'cl.exe' || true
 
       - name: Setup cache folders
         if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
@@ -274,7 +275,7 @@ jobs:
             /C/ProgramData/chocolatey/logs/chocolatey.log
 
   windows_everything_else:
-    name: Windows
+    name: Windows ${{ matrix.name }} ${{ matrix.VCVersion }}, ${{ matrix.BUILD_TYPE }}, ${{ matrix.CMAKE_GENERATOR }} ${{ matrix.note }}
     needs: windows_cache
     runs-on: windows-latest
     timeout-minutes: 720
@@ -285,7 +286,6 @@ jobs:
         BUILD_TYPE: [ Debug, Release ]
         CMAKE_GENERATOR: [ 'Ninja' ]
         name: [ '' ]
-        CMAKE_ADD: [ '-DCMAKE_BUILD_TYPE=${BUILD_TYPE}' ]
 
         include:
           - # The VS2017 Debug tests with two threads are flaky on
@@ -294,6 +294,15 @@ jobs:
             VCVersion: 'VC2017'
             BUILD_TYPE: Debug
             test_jobs: 1
+
+          - # VS 2019 debug builds have a bug handling constexpr char*
+            # that causes tests to fail. Skip them unless the windows
+            # tests are explicitly requested.
+            name: ''
+            VCVersion: 'VC2019'
+            BUILD_TYPE: Debug
+            note: '(No tests by default)'
+            skip_tests: ${{ ! contains(github.event.head_commit.message, 'ci_run_win') }}
 
           - name: 'visual studio debug'
             BUILD_TYPE: Debug
@@ -308,14 +317,12 @@ jobs:
             test_jobs: 1
 
 
-    # VS 2019 debug builds have a bug handling constexpr char*
-    # that causes tests to fail. Skip them unless the windows
-    # tests are explicitly requested.
-    continue-on-error: ${{ matrix.BUILD_TYPE == 'Debug' && matrix.VCVersion == 'VC2019' }}
     env:
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
       NUM_PROCESSORS: ${{ needs.windows_cache.outputs.NUM_PROCESSORS }}
       VCVersion: ${{ matrix.VCVersion }}
+      # Not used in env, but this puts it in the output for job debugging
+      skip_tests: ${{ matrix.skip_tests }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -395,6 +402,7 @@ jobs:
             . ${srcdir}/bin/sh/setup-msvc.sh ${!VCVersion}
             [[ "${verbose}" == "true" ]] && type -a ninja || true
             mkdir -p $builddir && cd $builddir
+            export CMAKE_EXTRA_ARGS+=" -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
             if [ "${CMAKE_BOOST}" != "" ] ; then
                 export CMAKE_EXTRA_ARGS+=" $( eval echo ${CMAKE_BOOST} )"
             fi
@@ -414,15 +422,10 @@ jobs:
         # VS 2019 debug builds have a bug handling constexpr char*
         # that causes tests to fail. Skip them unless the windows
         # tests are explicitly requested.
-        if: ${{ matrix.BUILD_TYPE != 'Debug' || matrix.VCVersion != 'VC2019' || contains(github.event.head_commit.message, 'ci_run_win') }}
+        if: ${{ ! matrix.skip_tests }}
         shell: bash
         run: |
-            runparams="--quiet"
-            if [[ "${verbose}" == "true" ]]
-            then
-              set -x
-              runparams=""
-            fi
+            [[ "${verbose}" == "true" ]] && set -x || true
             export RUNDIR="${builddir}"
             if [ "${{ matrix.RUNDIR }}" != "" ] ; then
               export RUNDIR+="/${{ matrix.RUNDIR }}"
@@ -434,8 +437,9 @@ jobs:
               echo Override NUM_PROCESSORS to ${NUM_PROCESSORS}
             fi
             "${RUNDIR}/rippled.exe" --version
+            # No need to save space. Always include the full test output.
             "${RUNDIR}/rippled.exe" --unittest --unittest-log \
-              --unittest-jobs ${NUM_PROCESSORS} ${runparams}
+              --unittest-jobs ${NUM_PROCESSORS}
 
       - name: Unity files
         if: failure()
