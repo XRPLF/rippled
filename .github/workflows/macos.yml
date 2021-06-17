@@ -218,7 +218,7 @@ jobs:
     # the debug, but it doesn't seem worth the duplication at this
     # time, since it's only one extra job (as opposed to a dozen),
     # and the jobs appear to be pretty reliable so far.
-    name: MacOS
+    name: MacOS ${{ matrix.build.BLD_CONFIG }}
     needs: macos_cache
     runs-on: "macos-latest"
     timeout-minutes: 720
@@ -366,7 +366,8 @@ jobs:
             !rippled/build/**/_INSTALLED_/**
 
   macos_runner:
-    name: MacOS IPv6 test runner
+    # Can't access env in the name, so hard code
+    name: MacOS IPv6 test runner Debug
     needs: [ macos_cache, macos ]
     runs-on: "macos-latest"
     timeout-minutes: 720

@@ -23,7 +23,8 @@ env:
 
 jobs:
   linux_gcc_8_debug_unity:
-    name: Linux, gcc-8, debug, unity
+    # Can't access env in the name, so hard code
+    name: Linux gcc-8, Debug, unity, base
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
@@ -172,7 +173,8 @@ jobs:
             !build/**/_INSTALLED_/**
 
   linux_gcc_8_debug_unity_derived:
-    name: Linux
+    # Can't access env in the name, so hard code
+    name: Linux ${{ matrix.name }}, gcc-8, Debug, unity
     needs: [ linux_gcc_8_debug_unity ]
     runs-on: ubuntu-18.04
     timeout-minutes: 720
@@ -187,23 +189,23 @@ jobs:
             # contain commas (',').
             #
             - # Coverage builds
-              name: "Coverage gcc-8"
+              name: "Coverage"
               TARGET: coverage_report
               SKIP_TESTS: true
               NINJA_BUILD: true
               CMAKE_ADD: "-Dcoverage=ON"
 
             - # dynamic lib builds
-              name: "non-static gcc-8"
+              name: "non-static"
               NINJA_BUILD: true
               CMAKE_ADD: "-Dstatic=OFF"
 
-            - name: "non-static BUILD_SHARED_LIBS gcc-8"
+            - name: "non-static BUILD_SHARED_LIBS"
               NINJA_BUILD: true
               CMAKE_ADD: "-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
 
             - # makefile
-              name: "makefile generator gcc-8"
+              name: "makefile generator"
               NINJA_BUILD: false
 
             - # verify build with min version of cmake
@@ -345,7 +347,8 @@ jobs:
             !build/**/cmake*
 
   linux_gcc_8_debug_unity_runner:
-    name: Linux, Manual tests, gcc-8, debug
+    # Can't access env in the name, so hard code
+    name: Linux manual tests gcc-8, Debug, unity
     needs: linux_gcc_8_debug_unity
     runs-on: ubuntu-18.04
     timeout-minutes: 720
