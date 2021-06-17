@@ -23,7 +23,8 @@ env:
 
 jobs:
   linux_gcc_8_release_unity:
-    name: Linux, gcc-8, release, unity
+    # Can't access env in the name, so hard code
+    name: Linux gcc-8, Release, unity, base
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
@@ -167,7 +168,8 @@ jobs:
             !build/**/_INSTALLED_/**
 
   linux_gcc_8_release_unity_runner:
-    name: Linux, Manual tests, gcc-8, release
+    # Can't access env in the name, so hard code
+    name: Linux manual tests gcc-8, Release, unity
     needs: linux_gcc_8_release_unity
     runs-on: ubuntu-18.04
     timeout-minutes: 720

@@ -23,7 +23,8 @@ env:
 
 jobs:
   linux_clang_8_release_unity:
-    name: Linux, clang-8, release, unity
+    # Can't access env in the name, so hard code
+    name: Linux clang-8, Release, unity, base
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
@@ -172,7 +173,8 @@ jobs:
             !build/**/_INSTALLED_/**
 
   linux_clang_8_release_unity_derived:
-    name: Linux
+    # Can't access env in the name, so hard code
+    name: Linux ${{ matrix.name }}, clang-8, Release, unity
     needs: [ linux_clang_8_release_unity ]
     runs-on: ubuntu-18.04
     timeout-minutes: 720
@@ -187,12 +189,12 @@ jobs:
             # contain commas (',').
             #
             - # asan
-              name: "asan clang-8"
+              name: "asan"
               ASAN_OPTIONS: "print_stats=true:atexit=true"
               CMAKE_ADD: "-Dsan=address"
               canfail: false
             - # ubsan
-              name: "ubsan clang-8"
+              name: "ubsan"
               UBSAN_OPTIONS: "print_stacktrace=1:report_error_type=1"
               CMAKE_ADD: "-Dsan=undefined"
               canfail: false
@@ -200,7 +202,7 @@ jobs:
             #  # current tsan failure *might* be related to:
             #  # https://github.com/google/sanitizers/issues/1104
             #  # but we can't get it to run, so leave it disabled for now
-            #  name: "tsan clang-8"
+            #  name: "tsan"
             #  TSAN_OPTIONS: "history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
             #  CMAKE_ADD: "-Dsan=thread"
             #  canfail: true

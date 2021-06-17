@@ -18,7 +18,7 @@ env:
 
 jobs:
   linux_cache:
-    name: Seed linux NIH cache
+    name: Seed linux NIH cache ${{ matrix.ninja_ccs }}
     # The NIH setup puts all the dependency source code in a single,
     # shared directory. Run cmake across all of the compiler combos,
     # then put all the NIH code in the cache. This accomplishes:
@@ -192,7 +192,7 @@ jobs:
             build/**/CMakeError.log
 
   linux_everything_else:
-    name: Linux
+    name: Linux ${{ matrix.compiler.CC }}, ${{ matrix.BUILD_TYPE }}, unity ${{ matrix.unity }}, ${{ matrix.name }}
     needs: linux_cache
     runs-on: ubuntu-18.04
     timeout-minutes: 720
