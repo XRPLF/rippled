@@ -134,6 +134,8 @@ private:
     std::optional<std::uint32_t> manifestListSeq_;
     // Protects the message and the sequence list of manifests
     std::mutex manifestLock_;
+    bool evicting_{false};
+    std::mutex evictingMutex_;
 
     //--------------------------------------------------------------------------
 
@@ -522,6 +524,14 @@ private:
      * and if slots stopped receiving messages from the validator */
     void
     deleteIdlePeers();
+
+    /** Try to evict inbound non-fixed and non-reserved slots. Exclude 8
+     * peers with smallest latency, 4 peers with recently received validations
+     * or proposals, 4 peers from net groups, and 50% with longest connection
+     * @return true if evicted at least one peer
+     */
+    bool
+    tryToEvict();
 
 private:
     struct TrafficGauges

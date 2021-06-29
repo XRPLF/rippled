@@ -70,27 +70,11 @@ handout(
     SeqFwdIter seq_first,
     SeqFwdIter seq_last)
 {
-    for (;;)
+    for (auto ti = first; ti != last; ++ti)
     {
-        std::size_t n(0);
-        for (auto si = seq_first; si != seq_last; ++si)
-        {
-            auto c = *si;
-            bool all_full(true);
-            for (auto ti = first; ti != last; ++ti)
-            {
-                auto& t = *ti;
-                if (!t.full())
-                {
-                    n += detail::handout_one(t, c);
-                    all_full = false;
-                }
-            }
-            if (all_full)
-                return;
-        }
-        if (!n)
-            break;
+        std::shuffle(seq_first, seq_last, default_prng());
+        for (auto si = seq_first; !ti->full() && si != seq_last; ++si)
+            ti->try_insert(*si);
     }
 }
 
@@ -107,7 +91,7 @@ public:
 
     template <class = void>
     bool
-    try_insert(Endpoint const& ep);
+    try_insert(beast::IP::Endpoint const& ep);
 
     bool
     full() const
@@ -121,13 +105,13 @@ public:
         return slot_;
     }
 
-    std::vector<Endpoint>&
+    std::vector<beast::IP::Endpoint>&
     list()
     {
         return list_;
     }
 
-    std::vector<Endpoint> const&
+    std::vector<beast::IP::Endpoint> const&
     list() const
     {
         return list_;
@@ -135,7 +119,7 @@ public:
 
 private:
     SlotImp::ptr slot_;
-    std::vector<Endpoint> list_;
+    std::vector<beast::IP::Endpoint> list_;
 };
 
 template <class>
@@ -146,36 +130,35 @@ RedirectHandouts::RedirectHandouts(SlotImp::ptr const& slot) : slot_(slot)
 
 template <class>
 bool
-RedirectHandouts::try_insert(Endpoint const& ep)
+RedirectHandouts::try_insert(beast::IP::Endpoint const& ep)
 {
     if (full())
         return false;
 
-    // VFALCO NOTE This check can be removed when we provide the
-    //             addresses in a peer HTTP handshake instead of
-    //             the tmENDPOINTS message.
-    //
-    if (ep.hops > Tuning::maxHops)
-        return false;
-
-    // Don't send them our address
-    if (ep.hops == 0)
-        return false;
+    // Note that this node's address is not sent because
+    // the livecache doesn't store it. The only way
+    // the node's address to be stored in the cache is if
+    // the address bounces back in the endpoints message.
+    // But a peer sending the endpoints to the node excludes
+    // the node's address. See SlotHandouts::try_insert().
 
     // Don't send them their own address
-    if (slot_->remote_endpoint().address() == ep.address.address())
+    if (slot_->remote_endpoint().address() == ep.address())
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
-            // Ignore port for security reasons
-            return other.address.address() == ep.address.address();
-        }))
+    if (std::any_of(
+            list_.begin(),
+            list_.end(),
+            [&ep](beast::IP::Endpoint const& other) {
+                // Ignore port for security reasons
+                return other.address() == ep.address();
+            }))
     {
         return false;
     }
 
-    list_.emplace_back(ep.address, ep.hops);
+    list_.emplace_back(ep);
 
     return true;
 }
@@ -191,7 +174,7 @@ public:
 
     template <class = void>
     bool
-    try_insert(Endpoint const& ep);
+    try_insert(std::pair<beast::IP::Endpoint, std::uint32_t> const&);
 
     bool
     full() const
@@ -200,9 +183,9 @@ public:
     }
 
     void
-    insert(Endpoint const& ep)
+    insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
     {
-        list_.push_back(ep);
+        list_.emplace_back(ep, hops);
     }
 
     SlotImp::ptr const&
@@ -211,7 +194,7 @@ public:
         return slot_;
     }
 
-    std::vector<Endpoint> const&
+    std::vector<std::pair<beast::IP::Endpoint, std::uint32_t>> const&
     list() const
     {
         return list_;
@@ -219,7 +202,7 @@ public:
 
 private:
     SlotImp::ptr slot_;
-    std::vector<Endpoint> list_;
+    std::vector<std::pair<beast::IP::Endpoint, std::uint32_t>> list_;
 };
 
 template <class>
@@ -230,36 +213,37 @@ SlotHandouts::SlotHandouts(SlotImp::ptr const& slot) : slot_(slot)
 
 template <class>
 bool
-SlotHandouts::try_insert(Endpoint const& ep)
+SlotHandouts::try_insert(
+    std::pair<beast::IP::Endpoint, std::uint32_t> const& ep)
 {
     if (full())
         return false;
 
-    if (ep.hops > Tuning::maxHops)
-        return false;
-
-    if (slot_->recent.filter(ep.address, ep.hops))
+    if (slot_->recent.filter(ep.first, ep.second))
         return false;
 
     // Don't send them their own address
-    if (slot_->remote_endpoint().address() == ep.address.address())
+    if (slot_->remote_endpoint().address() == ep.first.address())
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
-            // Ignore port for security reasons
-            return other.address.address() == ep.address.address();
-        }))
+    if (std::any_of(
+            list_.begin(),
+            list_.end(),
+            [&ep](std::pair<beast::IP::Endpoint, std::uint32_t> const& other) {
+                // Ignore port for security reasons
+                return other.first.address() == ep.first.address();
+            }))
         return false;
 
-    list_.emplace_back(ep.address, ep.hops);
+    list_.emplace_back(ep.first, ep.second);
 
     // Insert into this slot's recent table. Although the endpoint
     // didn't come from the slot, adding it to the slot's table
     // prevents us from sending it again until it has expired from
     // the other end's cache.
     //
-    slot_->recent.insert(ep.address, ep.hops);
+    slot_->recent.insert(ep.first, ep.second);
 
     return true;
 }
@@ -299,12 +283,6 @@ public:
     full() const
     {
         return m_list.size() >= m_needed;
-    }
-
-    bool
-    try_insert(Endpoint const& endpoint)
-    {
-        return try_insert(endpoint.address);
     }
 
     list_type&

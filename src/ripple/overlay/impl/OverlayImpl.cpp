@@ -32,12 +32,14 @@
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/peerfinder/impl/Tuning.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <ripple/rpc/handlers/GetCounts.h>
 #include <ripple/rpc/json_body.h>
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/sort/sort.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
@@ -156,6 +158,122 @@ OverlayImpl::OverlayImpl(
     beast::PropertyStream::Source::add(m_peerFinder.get());
 }
 
+struct EvictionCandidate
+{
+    PeerImp::Tracking tracking;
+    std::uint32_t latency;
+    std::uint32_t uptime;
+    std::uint64_t netGroup;
+    std::uint64_t lastValProp;
+    std::weak_ptr<PeerImp> peer;
+};
+
+template <typename Cmp>
+void
+eraseFirstN(
+    std::vector<EvictionCandidate>& candidates,
+    std::size_t N,
+    Cmp&& cmp)
+{
+    boost::sort::flat_stable_sort(candidates.begin(), candidates.end(), cmp);
+    auto size = std::min(N, candidates.size());
+    candidates.erase(candidates.begin(), candidates.begin() + size);
+}
+
+bool
+OverlayImpl::tryToEvict()
+{
+    std::vector<EvictionCandidate> candidates;
+    candidates.reserve(m_peerFinder->config().inPeers);
+    {
+        {
+            std::lock_guard l(evictingMutex_);
+            if (evicting_)
+            {
+                JLOG(journal_.trace()) << "tryToEvict: in eviction";
+                return false;
+            }
+            evicting_ = true;
+        };
+        using namespace std::chrono;
+        std::lock_guard lock(mutex_);
+        for (auto it : ids_)
+        {
+            if (auto peer = it.second.lock())
+            {
+                auto res = peer->canEvict();
+                // we are in the process of evicting
+                if (res.first)
+                {
+                    evicting_ = false;
+                    JLOG(journal_.trace())
+                        << "tryToEvict: being evicted "
+                        << peer->getRemoteAddress().to_string();
+                    return false;
+                }
+                if (res.second)
+                    candidates.push_back(
+                        {peer->tracking(),
+                         peer->latency(),
+                         static_cast<std::uint32_t>(
+                             duration_cast<seconds>(peer->uptime()).count()),
+                         peer->netGroup(),
+                         peer->lastValProp(),
+                         it.second});
+            }
+        }
+    }
+    // 8 latency, 4 validation and proposal, 4 net groups,
+    // and 50% longest connected
+    if (candidates.size() < (8 + 4 + 4 + 2))
+    {
+        evicting_ = false;
+        return false;
+    }
+
+    // exclude 4 peers from the network groups
+    eraseFirstN(candidates, 4, [](auto const& c1, auto const& c2) {
+        return (c1.tracking >= c2.tracking) && (c1.netGroup >= c2.netGroup);
+    });  // descending, converged first
+    // exclude 8 peers with smallest latency
+    eraseFirstN(candidates, 8, [](auto const& c1, auto const& c2) {
+        return (c1.tracking >= c2.tracking) && (c1.latency < c2.latency);
+    });  // ascending, converged first
+    // exclude 4 peers that we recently got the validations and proposals from
+    eraseFirstN(candidates, 4, [](auto const& c1, auto const& c2) {
+        return (c1.tracking >= c2.tracking) &&
+            (c1.lastValProp >= c2.lastValProp);
+    });  // descending, converged first
+    // exclude 50% of peers that have been connected the longest
+    eraseFirstN(
+        candidates, candidates.size() / 2, [](auto const& c1, auto const& c2) {
+            return (c1.tracking >= c2.tracking) && (c1.uptime >= c2.uptime);
+        });  // descending, converged first
+
+    bool evicted = false;
+    if (!candidates.empty())
+    {
+        auto toEvict = ripple::PeerFinder::Tuning::percentToEvict *
+            m_peerFinder->config().inPeers / 100;
+        std::shuffle(candidates.begin(), candidates.end(), default_prng());
+        for (auto it = candidates.begin();
+             it != candidates.end() && toEvict > 0;
+             ++it, --toEvict)
+        {
+            if (auto peer = it->peer.lock())
+            {
+                evicted = true;
+                peer->stop();
+                JLOG(journal_.trace()) << "tryToEvict: evicting "
+                                       << peer->getRemoteAddress().to_string();
+            }
+        }
+    }
+    evicting_ = false;
+    return evicted;
+}
+
+//------------------------------------------------------------------------------
 Handoff
 OverlayImpl::onHandoff(
     std::unique_ptr<stream_type>&& stream_ptr,
@@ -263,7 +381,8 @@ OverlayImpl::onHandoff(
                 app_.peerReservations().contains(publicKey);
             auto const result =
                 m_peerFinder->activate(slot, publicKey, reserved);
-            if (result != PeerFinder::Result::success)
+            if ((result == PeerFinder::Result::conditional && !tryToEvict()) ||
+                result != PeerFinder::Result::success)
             {
                 m_peerFinder->on_closed(slot);
                 JLOG(journal.debug())
@@ -356,8 +475,8 @@ OverlayImpl::makeRedirectResponse(
     msg.body() = Json::objectValue;
     {
         Json::Value& ips = (msg.body()["peer-ips"] = Json::arrayValue);
-        for (auto const& _ : m_peerFinder->redirect(slot))
-            ips.append(_.address.to_string());
+        for (auto const& e : m_peerFinder->redirect(slot))
+            ips.append(e.to_string());
     }
     msg.prepare_payload();
     return std::make_shared<SimpleWriter>(msg);

@@ -500,7 +500,7 @@ Config::loadFromString(std::string const& fileContents)
         if (getSingleSection(secConfig, SECTION_PEERS_OUT_MAX, strTemp, j_))
         {
             peers_out_max = beast::lexicalCastThrow<std::size_t>(strTemp);
-            if (*peers_out_max < 10 || *peers_out_max > 1000)
+            if (*peers_out_max < 5 || *peers_out_max > 1000)
                 Throw<std::runtime_error>(
                     "Invalid value specified in [" SECTION_PEERS_OUT_MAX
                     "] section; the value must be in range 10-1000");
@@ -520,6 +520,9 @@ Config::loadFromString(std::string const& fileContents)
             PEERS_OUT_MAX = *peers_out_max;
         }
     }
+
+    if (getSingleSection(secConfig, SECTION_EVICT_PEERS, strTemp, j_))
+        EVICT_PEERS = beast::lexicalCastThrow<bool>(strTemp);
 
     if (getSingleSection(secConfig, SECTION_NODE_SIZE, strTemp, j_))
     {

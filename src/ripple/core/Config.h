@@ -159,6 +159,8 @@ public:
     std::size_t PEERS_MAX = 0;
     std::size_t PEERS_OUT_MAX = 0;
     std::size_t PEERS_IN_MAX = 0;
+    // evict peers when a number of input slots caps out - experimental feature
+    bool EVICT_PEERS = false;
 
     // Path searching
     int PATH_SEARCH_OLD = 7;

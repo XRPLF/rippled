@@ -31,6 +31,7 @@ Config::Config()
     , autoConnect(true)
     , listeningPort(0)
     , ipLimit(0)
+    , evictPeers(false)
 {
 }
 
@@ -72,6 +73,7 @@ Config::onWrite(beast::PropertyStream::Map& map)
     map["port"] = listeningPort;
     map["features"] = features;
     map["ip_limit"] = ipLimit;
+    map["evict_peers"] = evictPeers;
 }
 
 Config
@@ -84,6 +86,7 @@ Config::makeConfig(
     PeerFinder::Config config;
 
     config.peerPrivate = cfg.PEER_PRIVATE;
+    config.evictPeers = cfg.EVICT_PEERS;
 
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);

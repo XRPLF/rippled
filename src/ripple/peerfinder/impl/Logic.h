@@ -386,6 +386,8 @@ public:
             << beast::leftw(18) << "Logic handshake " << slot->remote_endpoint()
             << " with " << (reserved ? "reserved " : "") << "key " << key;
 
+        Result res = Result::success;
+
         std::lock_guard _(lock_);
 
         // The object must exist in our table
@@ -407,9 +409,19 @@ public:
         // See if we have an open space for this slot
         if (!counts_.can_activate(*slot))
         {
-            if (!slot->inbound())
+            if (slot->inbound())
+            {
+                // if eviction is enabled then set conditional success,
+                // pending peer eviction logic
+                if (config_.evictPeers &&
+                    counts_.inboundSlots() >=
+                        PeerFinder::Tuning::minEvictionThreshold)
+                    res = Result::conditional;
+            }
+            else
                 bootcache_.on_success(slot->remote_endpoint());
-            return Result::full;
+            if (res != Result::conditional)
+                return Result::full;
         }
 
         // Set the key right before adding to the map, otherwise we might
@@ -440,20 +452,32 @@ public:
                                     << slot->remote_endpoint() << " success";
         }
 
-        return Result::success;
+        return res;
+    }
+
+    template <typename T, typename I, typename TargetFwdIter>
+    void
+    handoutEndpoints(TargetFwdIter first, TargetFwdIter last, I&& inserter)
+    {
+        std::vector<T> endpoints;
+        for (auto it = livecache_.cbegin(); it != livecache_.cend(); ++it)
+            inserter(endpoints, it);
+        handout(first, last, endpoints.begin(), endpoints.end());
     }
 
     /** Return a list of addresses suitable for redirection.
         This is a legacy function, redirects should be returned in
         the HTTP handshake and not via TMEndpoints.
     */
-    std::vector<Endpoint>
+    std::vector<beast::IP::Endpoint>
     redirect(SlotImp::ptr const& slot)
     {
         std::lock_guard _(lock_);
         RedirectHandouts h(slot);
-        livecache_.hops.shuffle();
-        handout(&h, (&h) + 1, livecache_.hops.begin(), livecache_.hops.end());
+        handoutEndpoints<std::reference_wrapper<const beast::IP::Endpoint>>(
+            &h, (&h) + 1, [&](auto& endpoints, auto it) {
+                endpoints.push_back(it->first);
+            });
         return std::move(h.list());
     }
 
@@ -523,9 +547,10 @@ public:
         //    Any outbound attempts are in progress
         //
         {
-            livecache_.hops.shuffle();
-            handout(
-                &h, (&h) + 1, livecache_.hops.rbegin(), livecache_.hops.rend());
+            handoutEndpoints<std::reference_wrapper<const beast::IP::Endpoint>>(
+                &h, (&h) + 1, [&](auto& endpoints, auto it) {
+                    endpoints.push_back(it->first);
+                });
             if (!h.list().empty())
             {
                 JLOG(m_journal.debug())
@@ -577,10 +602,14 @@ public:
         return none;
     }
 
-    std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
+    std::vector<std::pair<
+        std::shared_ptr<Slot>,
+        std::vector<std::pair<beast::IP::Endpoint, std::uint32_t>>>>
     buildEndpointsForPeers()
     {
-        std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
+        std::vector<std::pair<
+            std::shared_ptr<Slot>,
+            std::vector<std::pair<beast::IP::Endpoint, std::uint32_t>>>>
             result;
 
         std::lock_guard _(lock_);
@@ -613,13 +642,6 @@ public:
                     });
             }
 
-            /* VFALCO NOTE
-                This is a temporary measure. Once we know our own IP
-                address, the correct solution is to put it into the Livecache
-                at hops 0, and go through the regular handout path. This way
-                we avoid handing our address out too frequenty, which this code
-                suffers from.
-            */
             // Add an entry for ourselves if:
             // 1. We want incoming
             // 2. We have slots
@@ -627,28 +649,24 @@ public:
             //
             if (config_.wantIncoming && counts_.inboundSlots() > 0)
             {
-                Endpoint ep;
-                ep.hops = 0;
-                // we use the unspecified (0) address here because the value is
-                // irrelevant to recipients. When peers receive an endpoint
-                // with 0 hops, they use the socket remote_addr instead of the
+                // When peers receive an endpoint with null address,
+                // they use the socket remote_addr instead of the
                 // value in the message. Furthermore, since the address value
                 // is ignored, the type/version (ipv4 vs ipv6) doesn't matter
                 // either. ipv6 has a slightly more compact string
                 // representation of 0, so use that for self entries.
-                ep.address = beast::IP::Endpoint(beast::IP::AddressV6())
-                                 .at_port(config_.listeningPort);
+                auto ep{beast::IP::Endpoint(beast::IP::AddressV6())
+                            .at_port(config_.listeningPort)};
                 for (auto& t : targets)
-                    t.insert(ep);
+                    t.insert(ep, 0);
             }
 
-            // build sequence of endpoints by hops
-            livecache_.hops.shuffle();
-            handout(
-                targets.begin(),
-                targets.end(),
-                livecache_.hops.begin(),
-                livecache_.hops.end());
+            handoutEndpoints<std::pair<
+                std::reference_wrapper<const beast::IP::Endpoint>,
+                std::uint32_t>>(
+                targets.begin(), targets.end(), [&](auto& endpoints, auto it) {
+                    endpoints.emplace_back(it->first, it->second);
+                });
 
             // broadcast
             for (auto const& t : targets)
@@ -695,32 +713,21 @@ public:
         bool neighbor(false);
         for (auto iter = list.begin(); iter != list.end();)
         {
-            Endpoint& ep(*iter);
-
-            // Enforce hop limit
-            if (ep.hops > Tuning::maxHops)
-            {
-                JLOG(m_journal.debug())
-                    << beast::leftw(18) << "Endpoints drop " << ep.address
-                    << " for excess hops " << ep.hops;
-                iter = list.erase(iter);
-                continue;
-            }
+            auto& ep(*iter);
 
             // See if we are directly connected
-            if (ep.hops == 0)
+            if (ep.first.address().is_unspecified())
             {
                 if (!neighbor)
                 {
                     // Fill in our neighbors remote address
                     neighbor = true;
-                    ep.address =
-                        slot->remote_endpoint().at_port(ep.address.port());
+                    ep.first = slot->remote_endpoint().at_port(ep.first.port());
                 }
                 else
                 {
                     JLOG(m_journal.debug())
-                        << beast::leftw(18) << "Endpoints drop " << ep.address
+                        << beast::leftw(18) << "Endpoints drop " << ep.first
                         << " for extra self";
                     iter = list.erase(iter);
                     continue;
@@ -728,10 +735,10 @@ public:
             }
 
             // Discard invalid addresses
-            if (!is_valid_address(ep.address))
+            if (!is_valid_address(ep.first))
             {
                 JLOG(m_journal.debug()) << beast::leftw(18) << "Endpoints drop "
-                                        << ep.address << " as invalid";
+                                        << ep.first << " as invalid";
                 iter = list.erase(iter);
                 continue;
             }
@@ -741,19 +748,19 @@ public:
                     list.begin(),
                     iter,
                     [ep](Endpoints::value_type const& other) {
-                        return ep.address == other.address;
+                        return ep.first == other.first;
                     }))
             {
                 JLOG(m_journal.debug()) << beast::leftw(18) << "Endpoints drop "
-                                        << ep.address << " as duplicate";
+                                        << ep.first << " as duplicate";
                 iter = list.erase(iter);
                 continue;
             }
 
-            // Increment hop count on the incoming message, so
-            // we store it at the hop count we will send it at.
-            //
-            ++ep.hops;
+            // Increment hop count on the incoming message.
+            // Hops is stored for backward compatability with
+            // older protocols.
+            ++ep.second;
 
             ++iter;
         }
@@ -781,19 +788,16 @@ public:
 
         for (auto const& ep : list)
         {
-            assert(ep.hops != 0);
+            slot->recent.insert(ep.first, ep.second);
 
-            slot->recent.insert(ep.address, ep.hops);
-
-            // Note hops has been incremented, so 1
-            // means a directly connected neighbor.
-            //
-            if (ep.hops == 1)
+            // directly connected neighbor
+            if (ep.first.address() ==
+                slot->remote_endpoint().at_port(ep.first.port()).address())
             {
                 if (slot->connectivityCheckInProgress)
                 {
                     JLOG(m_journal.debug())
-                        << beast::leftw(18) << "Logic testing " << ep.address
+                        << beast::leftw(18) << "Logic testing " << ep.first
                         << " already in progress";
                     continue;
                 }
@@ -807,12 +811,12 @@ public:
                     // adding it to the livecache for the first time.
                     //
                     m_checker.async_connect(
-                        ep.address,
+                        ep.first,
                         std::bind(
                             &Logic::checkComplete,
                             this,
                             slot->remote_endpoint(),
-                            ep.address,
+                            ep.first,
                             std::placeholders::_1));
 
                     // Note that we simply discard the first Endpoint
@@ -832,8 +836,8 @@ public:
             // listening test, else we silently drop neighbor endpoint
             // since their listening port is misconfigured.
             //
-            livecache_.insert(ep);
-            bootcache_.insert(ep.address);
+            livecache_.insert(ep.first, ep.second);
+            bootcache_.insert(ep.first);
         }
 
         slot->whenAcceptEndpoints = now + Tuning::secondsPerMessage;

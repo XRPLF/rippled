@@ -56,11 +56,11 @@ enum {
         can use any settings it wants.
     */
     ,
-    minOutCount = 10
+    minOutCount = 5
 
     /** The default value of Config::maxPeers. */
     ,
-    defaultMaxPeers = 21
+    defaultMaxPeers = 11
 
     /** Max redirects we will accept from one connection.
         Redirects are limited for security purposes, to prevent
@@ -68,6 +68,16 @@ enum {
     */
     ,
     maxRedirects = 30
+
+    /** Min inbound slots configured to make a node eligible for
+     * eviction when a number of inbound connections caps out.
+     */
+    ,
+    minEvictionThreshold = 100
+
+    /** Percent of inbound slots to evict. */
+    ,
+    percentToEvict = 5
 };
 
 //------------------------------------------------------------------------------

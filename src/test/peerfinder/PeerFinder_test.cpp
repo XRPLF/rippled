@@ -206,27 +206,27 @@ public:
                 config.ipLimit == expectIpLimit);
         };
 
-        // if max_peers == 0 => maxPeers = 21,
-        //   else if max_peers < 10 => maxPeers = 10 else maxPeers = max_peers
-        // expectOut => if legacy => max(0.15 * maxPeers, 10),
+        // if max_peers == 0 => maxPeers = 11,
+        //   else if max_peers < 5 => maxPeers = 5 else maxPeers = max_peers
+        // expectOut => if legacy => max(0.15 * maxPeers, 5),
         //   if legacy && !wantIncoming => maxPeers else max_out_peers
         // expectIn => if legacy && wantIncoming => maxPeers - outPeers
         //   else if !wantIncoming => 0 else max_in_peers
-        // ipLimit => if expectIn <= 21 => 2 else 2 + min(5, expectIn/21)
+        // ipLimit => if expectIn <= 11 => 2 else 2 + min(5, expectIn/11)
         // ipLimit = max(1, min(ipLimit, expectIn/2))
 
         // legacy test with max_peers
-        run("legacy no config", {}, {}, {}, 4000, 10, 11, 2);
-        run("legacy max_peers 0", 0, 100, 10, 4000, 10, 11, 2);
-        run("legacy max_peers 5", 5, 100, 10, 4000, 10, 0, 1);
-        run("legacy max_peers 20", 20, 100, 10, 4000, 10, 10, 2);
-        run("legacy max_peers 100", 100, 100, 10, 4000, 15, 85, 6);
+        run("legacy no config", {}, {}, {}, 4000, 5, 6, 2);
+        run("legacy max_peers 0", 0, 100, 10, 4000, 5, 6, 2);
+        run("legacy max_peers 5", 5, 100, 10, 4000, 5, 0, 1);
+        run("legacy max_peers 20", 20, 100, 10, 4000, 5, 15, 3);
+        run("legacy max_peers 100", 100, 100, 10, 4000, 15, 85, 7);
         run("legacy max_peers 20, private", 20, 100, 10, 0, 20, 0, 1);
 
         // test with max_in_peers and max_out_peers
-        run("new in 100/out 10", {}, 100, 10, 4000, 10, 100, 6);
+        run("new in 100/out 10", {}, 100, 10, 4000, 10, 100, 7);
         run("new in 0/out 10", {}, 0, 10, 4000, 10, 0, 1);
-        run("new in 100/out 10, private", {}, 100, 10, 0, 10, 0, 6);
+        run("new in 100/out 10, private", {}, 100, 10, 0, 10, 0, 7);
     }
 
     void
@@ -258,7 +258,7 @@ public:
 [peers_in_max]
 100
 [peers_out_max]
-5
+4
 )rippleConfig");
         run(R"rippleConfig(
 [peers_in_max]
@@ -275,12 +275,62 @@ public:
     }
 
     void
+    test_evict()
+    {
+        testcase("evict");
+
+        auto test = [&](auto inPeers, auto res1) {
+            TestStore store;
+            TestChecker checker;
+            TestStopwatch clock;
+            Logic<TestChecker> logic(clock, store, checker, journal_);
+            Config c;
+            c.inPeers = inPeers;
+            c.outPeers = 5;
+            c.maxPeers = 0;
+            c.evictPeers = false;
+            logic.config(c);
+            auto local(beast::IP::Endpoint::from_string("172.0.0.0"));
+            // create/activate max inbound slots
+            for (int i = 1; i <= c.inPeers; i++)
+            {
+                std::stringstream str;
+                str << "172.0.0." << i;
+                auto slot = logic.new_inbound_slot(
+                    local, beast::IP::Endpoint::from_string(str.str()));
+                BEAST_EXPECT(slot);
+                PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
+                BEAST_EXPECT(
+                    logic.activate(slot, pk, false) == Result::success);
+            }
+            std::stringstream str;
+            str << "172.0.0." << (inPeers + 1);
+            auto ep(beast::IP::Endpoint::from_string(str.str()));
+            auto slot = logic.new_inbound_slot(local, ep);
+            PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
+            // activate new slot above threshold. should always get Result::full
+            // because the evict peers feature is disabled
+            BEAST_EXPECT(logic.activate(slot, pk, false) == Result::full);
+            c.evictPeers = true;
+            logic.config(c);
+            // activate new slot above threshold. should get Result::full
+            // if the number of inPeers is less than
+            // Tuning::minEvictionThreshold (100) and should get
+            // Result::conditional otherwise
+            BEAST_EXPECT(logic.activate(slot, pk, false) == res1);
+        };
+        test(99, Result::full);
+        test(101, Result::conditional);
+    }
+
+    void
     run() override
     {
         test_backoff1();
         test_backoff2();
         test_config();
         test_invalid_config();
+        test_evict();
     }
 };
 

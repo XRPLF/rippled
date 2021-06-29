@@ -186,7 +186,6 @@ public:
         {
             auto ep = endpoints->add_endpoints_v2();
             ep->set_endpoint(std::string("10.0.1.") + std::to_string(i));
-            ep->set_hops(i);
         }
         endpoints->set_version(2);
 

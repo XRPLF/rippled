@@ -75,6 +75,9 @@ struct Config
     /** Limit how many incoming connections we allow per IP */
     int ipLimit;
 
+    /** Evict peers when a number of input slots caps out */
+    bool evictPeers;
+
     //--------------------------------------------------------------------------
 
     /** Create a configuration with default values. */
@@ -109,27 +112,16 @@ struct Config
 
 //------------------------------------------------------------------------------
 
-/** Describes a connectible peer address along with some metadata. */
-struct Endpoint
-{
-    Endpoint();
-
-    Endpoint(beast::IP::Endpoint const& ep, int hops_);
-
-    int hops;
-    beast::IP::Endpoint address;
-};
-
 bool
-operator<(Endpoint const& lhs, Endpoint const& rhs);
+operator<(beast::IP::Endpoint const& lhs, beast::IP::Endpoint const& rhs);
 
 /** A set of Endpoint used for connecting. */
-using Endpoints = std::vector<Endpoint>;
+using Endpoints = std::vector<std::pair<beast::IP::Endpoint, std::uint32_t>>;
 
 //------------------------------------------------------------------------------
 
 /** Possible results from activating a slot. */
-enum class Result { duplicate, full, success };
+enum class Result { duplicate, full, success, conditional };
 
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager : public beast::PropertyStream::Source
@@ -254,14 +246,16 @@ public:
         bool reserved) = 0;
 
     /** Returns a set of endpoints suitable for redirection. */
-    virtual std::vector<Endpoint>
+    virtual std::vector<beast::IP::Endpoint>
     redirect(std::shared_ptr<Slot> const& slot) = 0;
 
     /** Return a set of addresses we should connect to. */
     virtual std::vector<beast::IP::Endpoint>
     autoconnect() = 0;
 
-    virtual std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
+    virtual std::vector<std::pair<
+        std::shared_ptr<Slot>,
+        std::vector<std::pair<beast::IP::Endpoint, std::uint32_t>>>>
     buildEndpointsForPeers() = 0;
 
     /** Perform periodic activity.
