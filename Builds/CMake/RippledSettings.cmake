@@ -6,6 +6,8 @@ option (assert "Enables asserts, even in release builds" OFF)
 
 option (reporting "Build rippled with reporting mode enabled" OFF)
 
+option (tests "Build tests" ON)
+
 option (unity "Creates a build using UNITY support in cmake. This is the default" ON)
 if (unity)
   if (CMAKE_VERSION VERSION_LESS 3.16)
