@@ -34,8 +34,10 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
 
+#ifdef ENABLE_TESTS
 #include <beast/unit_test/match.hpp>
 #include <test/unit_test/multi_runner.h>
+#endif  // ENABLE_TESTS
 
 #include <google/protobuf/stubs/common.h>
 
@@ -184,6 +186,7 @@ printHelp(const po::options_description& desc)
 
 //------------------------------------------------------------------------------
 
+#ifdef ENABLE_TESTS
 /* simple unit test selector that allows a comma separated list
  * of selectors
  */
@@ -335,6 +338,7 @@ runUnitTests(
     }
 }
 
+#endif  // ENABLE_TESTS
 //------------------------------------------------------------------------------
 
 int
@@ -405,6 +409,7 @@ run(int argc, char** argv)
         "DEPRECATED: include with rpc_ip instead. "
         "Specify the port number for RPC command.");
 
+#ifdef ENABLE_TESTS
     po::options_description test("Unit Test Options");
     test.add_options()(
         "quiet,q",
@@ -433,6 +438,7 @@ run(int argc, char** argv)
         "unittest-jobs",
         po::value<std::size_t>(),
         "Number of unittest jobs to run in parallel (child processes).");
+#endif  // ENABLE_TESTS
 
     // These are hidden options, not intended to be shown in the usage/help
     // message
@@ -443,20 +449,37 @@ run(int argc, char** argv)
         "Specify rpc command and parameters. This option must be repeated "
         "for each command/param. Positional parameters also serve this "
         "purpose, "
-        "so this option is not needed for users")(
-        "unittest-child",
-        "For internal use only when spawning child unit test processes.")(
-        "fg", "Deprecated: server always in foreground mode.");
+        "so this option is not needed for users")
+#ifdef ENABLE_TESTS
+        ("unittest-child",
+         "For internal use only when spawning child unit test processes.")
+#else
+        ("unittest", "Disabled in this build.")(
+            "unittest-child", "Disabled in this build.")
+#endif  // ENABLE_TESTS
+            ("fg", "Deprecated: server always in foreground mode.");
 
     // Interpret positional arguments as --parameters.
     po::positional_options_description p;
     p.add("parameters", -1);
 
     po::options_description all;
-    all.add(gen).add(rpc).add(data).add(test).add(hidden);
+    all.add(gen)
+        .add(rpc)
+        .add(data)
+#ifdef ENABLE_TESTS
+        .add(test)
+#endif  // ENABLE_TESTS
+        .add(hidden);
 
     po::options_description desc;
-    desc.add(gen).add(rpc).add(data).add(test);
+    desc.add(gen)
+        .add(rpc)
+        .add(data)
+#ifdef ENABLE_TESTS
+        .add(test)
+#endif  // ENABLE_TESTS
+        ;
 
     // Parse options, if no error.
     try
@@ -489,6 +512,14 @@ run(int argc, char** argv)
         return 0;
     }
 
+#ifndef ENABLE_TESTS
+    if (vm.count("unittest") || vm.count("unittest-child"))
+    {
+        std::cerr << "rippled: Tests disabled in this build." << std::endl;
+        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        return 1;
+    }
+#else
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
@@ -528,6 +559,7 @@ run(int argc, char** argv)
             return 1;
         }
     }
+#endif  // ENABLE_TESTS
 
     auto config = std::make_unique<Config>();
 

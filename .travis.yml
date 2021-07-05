@@ -123,6 +123,25 @@ matrix:
         - CMAKE_ADD="-Dcoverage=ON"
         - TARGET=coverage_report
         - SKIP_TESTS=true
+    # test-free builds
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: gcc-8
+      name: no-tests-unity, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dtests=OFF"
+        - SKIP_TESTS=true
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: clang-8
+      name: no-tests-non-unity, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dtests=OFF -Dunity=OFF"
+        - SKIP_TESTS=true
     # nounity
     - <<: *linux
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_nounity/
