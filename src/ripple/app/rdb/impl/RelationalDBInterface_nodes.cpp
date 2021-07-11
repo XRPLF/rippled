@@ -800,7 +800,7 @@ transactionsSQL(
  *         sorted in given order by account sequence.
  *         Also the number of transactions processed or skipped.
  *         If this number is >= 0, then it means number of transactions
- *         processed, if it is < 0, then ~number means number of transactions
+ *         processed, if it is < 0, then -number means number of transactions
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
@@ -891,7 +891,7 @@ getAccountTxs(
 
             session << sql1, soci::into(total);
 
-            total = ~total;
+            total = -total;
         }
     }
 
@@ -943,7 +943,7 @@ getNewestAccountTxs(
  *         account sequences sorted in given order by account
  *         sequence. Also number of transactions processed or skipped.
  *         If this number is >= 0, then it means number of transactions
- *         processed, if it is < 0, then ~number means number of transactions
+ *         processed, if it is < 0, then -number means number of transactions
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
@@ -1012,7 +1012,7 @@ getAccountTxsB(
 
             session << sql1, soci::into(total);
 
-            total = ~total;
+            total = -total;
         }
     }
 
