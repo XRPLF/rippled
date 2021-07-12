@@ -310,7 +310,7 @@ jobs:
             -type d -exec du -sh {} \; \) || true
 
       - name: Build and test
-        uses: ./.github/actions/build-action
+        uses: ./.github/build-action
 
       - name: Unity files
         if: failure()
