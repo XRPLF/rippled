@@ -232,9 +232,9 @@ jobs:
         run: |
             [[ "${verbose}" == "true" ]] && set -x || true
 
-            if [[ "${verbose}" == "true" ]] ; then
-              ls -l "${BOOST_FILE}" || true
-              ls -l "${BOOST_CACHE_DIR}" || true
+            if [[ "${verbose}" == true ]] ; then
+              ls -l ${BOOST_FILE} || true
+              ls -l ${BOOST_CACHE_DIR} || true
             fi
 
             cd ${srcdir}
@@ -307,7 +307,7 @@ jobs:
             /C/ProgramData/chocolatey/logs/chocolatey.log
 
   windows_everything_else:
-    name: Windows ${{ matrix.VCVersion }}, ${{ matrix.BUILD_TYPE }}, ${{ matrix.cmake.CMAKE_GENERATOR }} ${{ matrix.note }} unity=${{ matrix.unity }}
+    name: Windows ${{ matrix.VCVersion }}, ${{ matrix.BUILD_TYPE }}, ${{ matrix.cmake.CMAKE_GENERATOR }} ${{ matrix.note }} unity=${{ matrix.cmake.unity }}
     needs: windows_cache
     runs-on: windows-latest
     timeout-minutes: 720
@@ -318,13 +318,14 @@ jobs:
         BUILD_TYPE: [ Debug, Release ]
         cmake:
           - CMAKE_GENERATOR: 'Ninja'
+            unity: 'ON'
 
           - CMAKE_GENERATOR: 'Visual Studio 16 2019'
             CMAKE_ADD: '-DCMAKE_GENERATOR_TOOLSET=v141,host=x64 -Ax64'
             DESTDIR: '_installed_'
             RUNDIR: '_installed_/Program Files/rippled/bin'
             BUILD_ARGS: '--config ${BUILD_TYPE} --target install'
-        unity: [ "OFF", "ON" ]
+            unity: 'OFF'
 
         include:
           - # The VS2017 Debug tests with two threads are flaky on
@@ -342,19 +343,9 @@ jobs:
             skip_tests: ${{ ! contains(github.event.head_commit.message, 'ci_run_win') }}
 
         exclude:
-            # Limit to 6 jobs (Ninja, debug & release, VC17 & 19, unity on,
-            #  and Visual Studio, debug, VC 17, unity off,
-            #  and Visual Studio, release, VC 19, unity off)
-            # TODO: Figure out an elegant way to allow all 16 combinations
-            #  to run using the ci_run_win tag in the commit message.
-          - cmake:
-              CMAKE_GENERATOR: 'Ninja'
-            unity: 'OFF'
-
-          - cmake:
-              CMAKE_GENERATOR: 'Visual Studio 16 2019'
-            unity: 'ON'
-
+            # Limit Visual Studio jobs to one per VCVersion
+            # VC 17: only run debug
+            # VC 19: only run release
           - cmake:
               CMAKE_GENERATOR: 'Visual Studio 16 2019'
             BUILD_TYPE: 'Release'
@@ -396,11 +387,11 @@ jobs:
         # the previous job.
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
+          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}
             ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions}}
             ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-
 
@@ -467,7 +458,7 @@ jobs:
             [[ "${verbose}" == "true" ]] && type -a ninja || true
             mkdir -p $builddir && cd $builddir
             export CMAKE_EXTRA_ARGS+=" -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
-            export CMAKE_EXTRA_ARGS+=" -Dunity=${{ matrix.unity }}"
+            export CMAKE_EXTRA_ARGS+=" -Dunity=${{ matrix.cmake.unity }}"
             if [ "${CMAKE_BOOST}" != "" ] ; then
                 export CMAKE_EXTRA_ARGS+=" $( eval echo ${CMAKE_BOOST} )"
             fi
@@ -531,7 +522,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }} unity=${{ matrix.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
+          name: debug-output ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }} unity=${{ matrix.cmake.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -544,7 +535,7 @@ jobs:
         if: ${{ always() }}
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }} unity=${{ matrix.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
+          name: rippled ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }} unity=${{ matrix.cmake.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
