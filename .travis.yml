@@ -36,7 +36,7 @@ env:
     - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
     - PARALLEL_TESTS=true
     # this is NOT used by linux container based builds (which already have boost installed)
-    - BOOST_URL='https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2'
+    - BOOST_URL='https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz'
     # Alternate dowload location
     - BOOST_URL2='https://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
     # Travis downloader doesn't seem to have updated certs. Using this option
@@ -439,4 +439,3 @@ cache:
 
 notifications:
   email: false
-
