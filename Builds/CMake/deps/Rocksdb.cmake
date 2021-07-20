@@ -63,7 +63,7 @@ if (local_rocksdb)
     GIT_TAG v6.7.3
     PATCH_COMMAND
       # only used by windows build
-      ${CMAKE_COMMAND} -E copy
+      ${CMAKE_COMMAND} -E copy_if_different
       ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/rocks_thirdparty.inc
       <SOURCE_DIR>/thirdparty.inc
     COMMAND
