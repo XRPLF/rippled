@@ -64,7 +64,7 @@ Boost 1.70 or later is required.
 
 We want to compile boost with clang/libc++
 
-Download [a release](https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2)
+Download [a release](https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz)
 
 Extract it to a folder, making note of where, open a terminal, then:
 
@@ -227,5 +227,3 @@ Several other infrequently used options are available - run `ccmake` or
 `rippled` builds a set of unit tests into the server executable. To run these unit
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit with summary info after running the unit tests.
-
-

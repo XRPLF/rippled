@@ -36,9 +36,8 @@ protobuf will give errors.
 Boost 1.70 or later is required. We recommend downloading and compiling boost
 with the following process: After changing to the directory where
 you wish to download and compile boost, run
-
 ``` 
-$ wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz
+$ wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz
 $ tar -xzf boost_1_70_0.tar.gz
 $ cd boost_1_70_0
 $ ./bootstrap.sh
@@ -240,5 +239,3 @@ change the `/opt/local` module path above to match your chosen installation pref
 `rippled` builds a set of unit tests into the server executable. To run these unit
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit with summary info after running the unit tests.
-
-

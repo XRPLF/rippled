@@ -9,7 +9,7 @@ function build_boost()
     mkdir -p /opt/local
     cd /opt/local
     BOOST_ROOT=/opt/local/boost_${boost_path}
-    BOOST_URL="https://dl.bintray.com/boostorg/release/${boost_ver}/source/boost_${boost_path}.tar.bz2"
+    BOOST_URL="https://boostorg.jfrog.io/artifactory/main/release/${boost_ver}/source/boost_${boost_path}.tar.gz"
     BOOST_BUILD_ALL=true
     . /tmp/install_boost.sh
     if [ "$do_link" = true ] ; then
@@ -145,4 +145,3 @@ if [ "${CI_USE}" = true ] ; then
     pip install requests
     pip install https://github.com/codecov/codecov-python/archive/master.zip
 fi
-
