@@ -255,7 +255,7 @@ CashCheck::doApply()
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
 
-    auto const sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
+    auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
@@ -263,10 +263,8 @@ CashCheck::doApply()
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    auto const sleSrc = psb.peek(keylet::account(srcId));
-    auto const sleDst = psb.peek(keylet::account(account_));
-
-    if (!sleSrc || !sleDst)
+    if (!psb.exists(keylet::account(srcId)) ||
+        !psb.exists(keylet::account(account_)))
     {
         JLOG(ctx_.journal.fatal())
             << "Precheck did not verify source or destination's existence.";
@@ -285,7 +283,7 @@ CashCheck::doApply()
     // work to do...
     auto viewJ = ctx_.app.journal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
-    bool const doFix1623{ctx_.view().rules().enabled(fix1623)};
+    bool const doFix1623{psb.rules().enabled(fix1623)};
     if (srcId != account_)
     {
         STAmount const sendMax{sleCheck->getFieldAmount(sfSendMax)};
@@ -293,7 +291,7 @@ CashCheck::doApply()
         // Flow() doesn't do XRP to XRP transfers.
         if (sendMax.native())
         {
-            // Here we need to calculate the amount of XRP sleSrc can send.
+            // Here we need to calculate the amount of XRP src can send.
             // The amount they have available is their balance minus their
             // reserve.
             //
@@ -380,6 +378,7 @@ CashCheck::doApply()
                     // Set the delivered_amount metadata.
                     ctx_.deliver(result.actualAmountOut);
             }
+            sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
         }
     }
 
@@ -388,7 +387,7 @@ CashCheck::doApply()
     if (srcId != account_)
     {
         std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
-        if (!ctx_.view().dirRemove(
+        if (!psb.dirRemove(
                 keylet::ownerDir(account_), page, sleCheck->key(), true))
         {
             JLOG(j_.fatal()) << "Unable to delete check from destination.";
@@ -398,7 +397,7 @@ CashCheck::doApply()
     // Remove check from check owner's directory.
     {
         std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
-        if (!ctx_.view().dirRemove(
+        if (!psb.dirRemove(
                 keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
             JLOG(j_.fatal()) << "Unable to delete check from owner.";
@@ -406,7 +405,7 @@ CashCheck::doApply()
         }
     }
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, sleSrc, -1, viewJ);
+    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);
