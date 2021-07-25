@@ -44,7 +44,7 @@ uint32_t static ReadBE32(const unsigned char* ptr)
 {
     std::uint32_t x;
     std::memcpy((char*)&x, ptr, 4);
-    return ntohl(x); // be32toh()
+    return ntohl(x);  // be32toh()
 }
 
 NetGroup::NetGroup(beast::IP::Endpoint const& ep)
