@@ -24,7 +24,11 @@
 #include <ripple/peerfinder/impl/CSipHasher.h>
 #include <ripple/peerfinder/impl/NetGroup.h>
 
-#include <endian.h>
+#ifdef _WIN32
+#include <winsock.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 namespace ripple {
 
@@ -40,7 +44,7 @@ uint32_t static ReadBE32(const unsigned char* ptr)
 {
     std::uint32_t x;
     std::memcpy((char*)&x, ptr, 4);
-    return be32toh(x);
+    return ntohl(x); // be32toh()
 }
 
 NetGroup::NetGroup(beast::IP::Endpoint const& ep)

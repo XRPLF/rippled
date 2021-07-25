@@ -23,6 +23,7 @@
 #ifndef RIPPLE_PEERFINDER_CSIPHASHER_H
 #define RIPPLE_PEERFINDER_CSIPHASHER_H
 
+#include <cstddef>
 #include <cstdint>
 
 namespace ripple {
