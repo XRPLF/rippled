@@ -39,7 +39,6 @@
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/sort/sort.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
@@ -175,7 +174,7 @@ eraseFirstN(
     std::size_t N,
     Cmp&& cmp)
 {
-    boost::sort::flat_stable_sort(candidates.begin(), candidates.end(), cmp);
+    std::sort(candidates.begin(), candidates.end(), cmp);
     auto size = std::min(N, candidates.size());
     candidates.erase(candidates.begin(), candidates.begin() + size);
 }
