@@ -80,6 +80,10 @@ public:
 
     virtual ~Overlay() = default;
 
+    //--------------------------------------------------------------------------
+    // Peer-2-peer layer
+    //--------------------------------------------------------------------------
+
     virtual void
     start()
     {
@@ -115,23 +119,11 @@ public:
     virtual std::size_t
     size() const = 0;
 
-    /** Return diagnostics on the status of all peers.
-        @deprecated This is superceded by PropertyStream
-    */
-    virtual Json::Value
-    json() = 0;
-
     /** Returns a sequence representing the current list of peers.
         The snapshot is made at the time of the call.
     */
     virtual PeerSequence
     getActivePeers() const = 0;
-
-    /** Calls the checkTracking function on each peer
-        @param index the value to pass to the peer's checkTracking function
-    */
-    virtual void
-    checkTracking(std::uint32_t index) = 0;
 
     /** Returns the peer with the matching short id, or null. */
     virtual std::shared_ptr<Peer>
@@ -140,6 +132,48 @@ public:
     /** Returns the peer with the matching public key, or null. */
     virtual std::shared_ptr<Peer>
     findPeerByPublicKey(PublicKey const& pubKey) = 0;
+
+    /** Visit every active peer.
+     *
+     * The visitor must be invocable as:
+     *     Function(std::shared_ptr<Peer> const& peer);
+     *
+     * @param f the invocable to call with every peer
+     */
+    template <class Function>
+    void
+    foreach(Function f) const
+    {
+        for (auto const& p : getActivePeers())
+            f(p);
+    }
+
+    /** Returns the ID of the network this server is configured for, if any.
+
+        The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to
+        identify the mainnet, the testnet and the devnet respectively.
+
+        @return The numerical identifier configured by the administrator of the
+                server. An unseated optional, otherwise.
+    */
+    virtual std::optional<std::uint32_t>
+    networkID() const = 0;
+
+    //--------------------------------------------------------------------------
+    // Application layer
+    //--------------------------------------------------------------------------
+
+    /** Return diagnostics on the status of all peers.
+        @deprecated This is superceded by PropertyStream
+    */
+    virtual Json::Value
+    json() = 0;
+
+    /** Calls the checkTracking function on each peer
+        @param index the value to pass to the peer's checkTracking function
+    */
+    virtual void
+    checkTracking(std::uint32_t index) = 0;
 
     /** Broadcast a proposal. */
     virtual void
@@ -173,21 +207,6 @@ public:
         uint256 const& uid,
         PublicKey const& validator) = 0;
 
-    /** Visit every active peer.
-     *
-     * The visitor must be invocable as:
-     *     Function(std::shared_ptr<Peer> const& peer);
-     *
-     * @param f the invocable to call with every peer
-     */
-    template <class Function>
-    void
-    foreach(Function f) const
-    {
-        for (auto const& p : getActivePeers())
-            f(p);
-    }
-
     /** Increment and retrieve counter for transaction job queue overflows. */
     virtual void
     incJqTransOverflow() = 0;
@@ -214,17 +233,6 @@ public:
     */
     virtual Json::Value
     crawlShards(bool includePublicKey, std::uint32_t hops) = 0;
-
-    /** Returns the ID of the network this server is configured for, if any.
-
-        The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to
-        identify the mainnet, the testnet and the devnet respectively.
-
-        @return The numerical identifier configured by the administrator of the
-                server. An unseated optional, otherwise.
-    */
-    virtual std::optional<std::uint32_t>
-    networkID() const = 0;
 };
 
 }  // namespace ripple

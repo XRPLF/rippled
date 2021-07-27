@@ -27,6 +27,7 @@
 #include <ripple/app/ledger/impl/SkipListAcquire.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/overlay/PeerSet.h>
+#include <ripple/overlay/impl/P2PConfigImpl.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
@@ -1073,6 +1074,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 boost::asio::ip::address::from_string("172.1.1.100");
             jtx::Env serverEnv(*this);
             serverEnv.app().config().LEDGER_REPLAY = server;
+            P2PConfigImpl p2pConfig(serverEnv.app());
             auto http_resp = ripple::makeResponse(
                 true,
                 http_request,
@@ -1081,7 +1083,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 uint256{1},
                 1,
                 {1, 0},
-                serverEnv.app());
+                p2pConfig);
             auto const clientResult =
                 peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
             if (clientResult != expecting)

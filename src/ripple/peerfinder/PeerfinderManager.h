@@ -269,6 +269,12 @@ public:
     */
     virtual void
     once_per_second() = 0;
+
+    virtual std::size_t
+    livecacheSize() const = 0;
+
+    virtual std::size_t
+    bootcacheSize() const = 0;
 };
 
 }  // namespace PeerFinder

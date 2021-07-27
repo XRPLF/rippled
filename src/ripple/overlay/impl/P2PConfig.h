@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2021 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,33 +17,48 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
-#define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
+#ifndef RIPPLE_OVERLAY_P2PCONFIG_H_INCLUDED
+#define RIPPLE_OVERLAY_P2PCONFIG_H_INCLUDED
 
-#include <ripple/basics/Resolver.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/resource/ResourceManager.h>
-#include <ripple/rpc/ServerHandler.h>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/ssl/context.hpp>
+#include <ripple/basics/base_uint.h>
+#include <ripple/basics/chrono.h>
+
+#include <optional>
+#include <string>
+#include <utility>
 
 namespace ripple {
 
-Overlay::Setup
-setup_Overlay(BasicConfig const& config);
+class Config;
+class Logs;
+class PublicKey;
+class SecretKey;
 
-/** Creates the implementation of Overlay. */
-std::unique_ptr<Overlay>
-make_Overlay(
-    Application& app,
-    Overlay::Setup const& setup,
-    std::uint16_t overlayPort,
-    Resource::Manager& resourceManager,
-    Resolver& resolver,
-    boost::asio::io_service& io_service,
-    BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector);
+/** P2P required configuration properties.
+ */
+class P2PConfig
+{
+public:
+    P2PConfig() = default;
+    virtual ~P2PConfig() = default;
+    virtual Config const&
+    config() const = 0;
+    virtual Logs&
+    logs() const = 0;
+    virtual bool
+    isValidator() const = 0;
+    virtual std::pair<PublicKey, SecretKey> const&
+    identity() const = 0;
+    virtual std::optional<std::string>
+    clusterMember(PublicKey const& key) const = 0;
+    virtual bool
+    reservedPeer(PublicKey const& key) const = 0;
+    virtual std::optional<std::pair<uint256, uint256>>
+    clHashes() const = 0;
+    virtual NetClock::time_point
+    now() const = 0;
+};
 
 }  // namespace ripple
 
-#endif
+#endif  // RIPPLE_OVERLAY_P2PCONFIG_H_INCLUDED

@@ -22,6 +22,7 @@
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/Slot.h>
 #include <ripple/overlay/impl/Handshake.h>
+#include <ripple/overlay/impl/P2PConfigImpl.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple.pb.h>
 #include <test/jtx/Env.h>
@@ -1509,6 +1510,7 @@ vp_squelched=1
                 BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
                 setEnv(inboundEnable);
+                P2PConfigImpl p2pConfig(env_.app());
                 auto http_resp = ripple::makeResponse(
                     true,
                     http_request,
@@ -1517,7 +1519,7 @@ vp_squelched=1
                     uint256{1},
                     1,
                     {1, 0},
-                    env_.app());
+                    p2pConfig);
                 // outbound is enabled if the response's header has the feature
                 // enabled and the peer's configuration is enabled
                 auto const outboundEnabled =
@@ -1573,8 +1575,8 @@ class reduce_relay_simulate_test : public reduce_relay_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(reduce_relay, ripple_data, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(reduce_relay, overlay, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, overlay, ripple);
 
 }  // namespace test
 

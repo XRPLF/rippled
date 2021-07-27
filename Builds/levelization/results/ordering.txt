@@ -164,6 +164,7 @@ test.overlay > ripple.beast
 test.overlay > ripple.core
 test.overlay > ripple.overlay
 test.overlay > ripple.protocol
+test.overlay > ripple.server
 test.overlay > ripple.shamap
 test.overlay > test.jtx
 test.overlay > test.unit_test

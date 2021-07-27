@@ -20,99 +20,28 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/Resolver.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/core/Job.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Slot.h>
-#include <ripple/overlay/impl/Handshake.h>
+#include <ripple/overlay/impl/P2PConfigImpl.h>
+#include <ripple/overlay/impl/P2POverlayImpl.h>
 #include <ripple/overlay/impl/TrafficCount.h>
-#include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/resource/ResourceManager.h>
-#include <ripple/rpc/ServerHandler.h>
-#include <ripple/server/Handoff.h>
-#include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl/context.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/container/flat_map.hpp>
-#include <atomic>
-#include <cassert>
-#include <chrono>
-#include <condition_variable>
-#include <cstdint>
-#include <memory>
-#include <mutex>
-#include <optional>
-#include <unordered_map>
 
 namespace ripple {
 
 class PeerImp;
 class BasicConfig;
 
-class OverlayImpl : public Overlay, public reduce_relay::SquelchHandler
+/** Represents application layer overlay. Application layer
+ * overlay is also p2p overlay and has access to some members of P2POverlayImpl.
+ * It implements application methods declared in Overlay and other application
+ * methods such as metrics collection and message squelching management.
+ */
+class OverlayImpl : public P2POverlayImpl<PeerImp>,
+                    public reduce_relay::SquelchHandler
 {
-public:
-    class Child
-    {
-    protected:
-        OverlayImpl& overlay_;
-
-        explicit Child(OverlayImpl& overlay);
-
-        virtual ~Child();
-
-    public:
-        virtual void
-        stop() = 0;
-    };
-
 private:
-    using clock_type = std::chrono::steady_clock;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using address_type = boost::asio::ip::address;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using error_code = boost::system::error_code;
-
-    struct Timer : Child, std::enable_shared_from_this<Timer>
-    {
-        boost::asio::basic_waitable_timer<clock_type> timer_;
-        bool stopping_{false};
-
-        explicit Timer(OverlayImpl& overlay);
-
-        void
-        stop() override;
-
-        void
-        async_wait();
-
-        void
-        on_timer(error_code ec);
-    };
-
     Application& app_;
-    boost::asio::io_service& io_service_;
-    std::optional<boost::asio::io_service::work> work_;
-    boost::asio::io_service::strand strand_;
-    mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
-    std::condition_variable_any cond_;
-    std::weak_ptr<Timer> timer_;
-    boost::container::flat_map<Child*, std::weak_ptr<Child>> list_;
-    Setup setup_;
-    beast::Journal const journal_;
-    ServerHandler& serverHandler_;
-    Resource::Manager& m_resourceManager;
-    std::unique_ptr<PeerFinder::Manager> m_peerFinder;
     TrafficCount m_traffic;
-    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> m_peers;
-    hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
-    Resolver& m_resolver;
-    std::atomic<Peer::id_t> next_id_;
     int timer_count_;
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
@@ -123,8 +52,6 @@ private:
     std::condition_variable csCV_;
     // Peer IDs expecting to receive a last link notification
     std::set<std::uint32_t> csIDs_;
-
-    std::optional<std::uint32_t> networkID_;
 
     reduce_relay::Slots<UptimeClock> slots_;
 
@@ -141,7 +68,7 @@ public:
     OverlayImpl(
         Application& app,
         Setup const& setup,
-        ServerHandler& serverHandler,
+        std::uint16_t overlayPort,
         Resource::Manager& resourceManager,
         Resolver& resolver,
         boost::asio::io_service& io_service,
@@ -158,52 +85,10 @@ public:
     void
     stop() override;
 
-    PeerFinder::Manager&
-    peerFinder()
-    {
-        return *m_peerFinder;
-    }
-
-    Resource::Manager&
-    resourceManager()
-    {
-        return m_resourceManager;
-    }
-
-    Setup const&
-    setup() const
-    {
-        return setup_;
-    }
-
-    Handoff
-    onHandoff(
-        std::unique_ptr<stream_type>&& bundle,
-        http_request_type&& request,
-        endpoint_type remote_endpoint) override;
-
-    void
-    connect(beast::IP::Endpoint const& remote_endpoint) override;
-
-    int
-    limit() override;
-
-    std::size_t
-    size() const override;
-
     Json::Value
     json() override;
 
-    PeerSequence
-    getActivePeers() const override;
-
     void checkTracking(std::uint32_t) override;
-
-    std::shared_ptr<Peer>
-    findPeerByShortID(Peer::id_t const& id) const override;
-
-    std::shared_ptr<Peer>
-    findPeerByPublicKey(PublicKey const& pubKey) override;
 
     void
     broadcast(protocol::TMProposeSet& m) override;
@@ -231,97 +116,11 @@ public:
     // OverlayImpl
     //
 
-    void
-    add_active(std::shared_ptr<PeerImp> const& peer);
-
-    void
-    remove(std::shared_ptr<PeerFinder::Slot> const& slot);
-
-    /** Called when a peer has connected successfully
-        This is called after the peer handshake has been completed and during
-        peer activation. At this point, the peer address and the public key
-        are known.
-    */
-    void
-    activate(std::shared_ptr<PeerImp> const& peer);
-
-    // Called when an active peer is destroyed.
-    void
-    onPeerDeactivate(Peer::id_t id);
-
-    // UnaryFunc will be called as
-    //  void(std::shared_ptr<PeerImp>&&)
-    //
-    template <class UnaryFunc>
-    void
-    for_each(UnaryFunc&& f) const
-    {
-        std::vector<std::weak_ptr<PeerImp>> wp;
-        {
-            std::lock_guard lock(mutex_);
-
-            // Iterate over a copy of the peer list because peer
-            // destruction can invalidate iterators.
-            wp.reserve(ids_.size());
-
-            for (auto& x : ids_)
-                wp.push_back(x.second);
-        }
-
-        for (auto& w : wp)
-        {
-            if (auto p = w.lock())
-                f(std::move(p));
-        }
-    }
-
-    // Called when TMManifests is received from a peer
+    /** Called when TMManifests is received from a peer */
     void
     onManifests(
         std::shared_ptr<protocol::TMManifests> const& m,
         std::shared_ptr<PeerImp> const& from);
-
-    static bool
-    isPeerUpgrade(http_request_type const& request);
-
-    template <class Body>
-    static bool
-    isPeerUpgrade(boost::beast::http::response<Body> const& response)
-    {
-        if (!is_upgrade(response))
-            return false;
-        return response.result() ==
-            boost::beast::http::status::switching_protocols;
-    }
-
-    template <class Fields>
-    static bool
-    is_upgrade(boost::beast::http::header<true, Fields> const& req)
-    {
-        if (req.version() < 11)
-            return false;
-        if (req.method() != boost::beast::http::verb::get)
-            return false;
-        if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade"))
-            return false;
-        return true;
-    }
-
-    template <class Fields>
-    static bool
-    is_upgrade(boost::beast::http::header<false, Fields> const& req)
-    {
-        if (req.version() < 11)
-            return false;
-        if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade"))
-            return false;
-        return true;
-    }
-
-    static std::string
-    makePrefix(std::uint32_t id);
 
     void
     reportTraffic(TrafficCount::category cat, bool isInbound, int bytes);
@@ -360,12 +159,6 @@ public:
     getPeerDisconnectCharges() const override
     {
         return peerDisconnectsCharges_;
-    }
-
-    std::optional<std::uint32_t>
-    networkID() const override
-    {
-        return networkID_;
     }
 
     Json::Value
@@ -421,19 +214,6 @@ private:
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
 
-    std::shared_ptr<Writer>
-    makeRedirectResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
-        http_request_type const& request,
-        address_type remote_address);
-
-    std::shared_ptr<Writer>
-    makeErrorResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
-        http_request_type const& request,
-        address_type remote_address,
-        std::string msg);
-
     /** Handles crawl requests. Crawl returns information about the
         node and its peers so crawlers can map the network.
 
@@ -459,13 +239,6 @@ private:
     */
     bool
     processHealth(http_request_type const& req, Handoff& handoff);
-
-    /** Handles non-peer protocol requests.
-
-        @return true if the request was handled.
-    */
-    bool
-    processRequest(http_request_type const& req, Handoff& handoff);
 
     /** Returns information about peers on the overlay network.
         Reported through the /crawl API
@@ -500,23 +273,8 @@ private:
     //
     // PropertyStream
     //
-
     void
     onWrite(beast::PropertyStream::Map& stream) override;
-
-    //--------------------------------------------------------------------------
-
-    void
-    remove(Child& child);
-
-    void
-    stopChildren();
-
-    void
-    autoConnect();
-
-    void
-    sendEndpoints();
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */
@@ -580,6 +338,39 @@ private:
         }
         m_stats.peerDisconnects = getPeerDisconnect();
     }
+
+private:
+    /** Implementation of delegated event handling from the p2p layer */
+    bool
+    onEvtProcessRequest(http_request_type const& req, Handoff& handoff)
+        override;
+
+    /** Instantiate inbound application layer peer implementation */
+    std::shared_ptr<PeerImp>
+    mkInboundPeer(
+        Peer::id_t id,
+        std::shared_ptr<PeerFinder::Slot> const& slot,
+        http_request_type&& request,
+        PublicKey const& publicKey,
+        ProtocolVersion protocol,
+        Resource::Consumer consumer,
+        std::unique_ptr<stream_type>&& stream_ptr) override;
+
+    /** Instantiate outbound application layer peer implementation */
+    std::shared_ptr<PeerImp>
+    mkOutboundPeer(
+        std::unique_ptr<stream_type>&& stream_ptr,
+        boost::beast::multi_buffer const& buffers,
+        std::shared_ptr<PeerFinder::Slot>&& slot,
+        http_response_type&& response,
+        Resource::Consumer usage,
+        PublicKey const& publicKey,
+        ProtocolVersion protocol,
+        Peer::id_t id) override;
+
+    /** Check if idle peers should be removed from squelching */
+    void
+    onEvtTimer() override;
 };
 
 }  // namespace ripple

@@ -1160,6 +1160,17 @@ public:
         }
     }
 
+    std::size_t
+    livecacheSize() const
+    {
+        return livecache_.size();
+    }
+
+    std::size_t
+    bootcacheSize() const
+    {
+        return bootcache_.size();
+    }
     //--------------------------------------------------------------------------
     //
     // Diagnostics

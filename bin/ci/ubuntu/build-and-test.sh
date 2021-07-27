@@ -160,7 +160,7 @@ else
     # ORDER matters here...sorted in approximately
     # descending execution time (longest running tests at top)
     declare -a manual_tests=(
-        'ripple.ripple_data.reduce_relay_simulate'
+        'ripple.overlay.reduce_relay_simulate'
         'ripple.tx.Offer_manual'
         'ripple.tx.CrossingLimits'
         'ripple.tx.PlumpBook'
@@ -168,7 +168,7 @@ else
         'ripple.tx.OversizeMeta'
         'ripple.consensus.DistributedValidators'
         'ripple.app.NoRippleCheckLimits'
-        'ripple.ripple_data.compression'
+        'ripple.overlay.compression'
         'ripple.NodeStore.Timing'
         'ripple.consensus.ByzantineFailureSim'
         'beast.chrono.abstract_clock'

@@ -56,6 +56,10 @@ public:
 
     virtual ~Peer() = default;
 
+    //--------------------------------------------------------------------------
+    // Peer-2-peer layer
+    //--------------------------------------------------------------------------
+
     //
     // Network
     //
@@ -66,16 +70,23 @@ public:
     virtual beast::IP::Endpoint
     getRemoteAddress() const = 0;
 
+    // Identity
+    virtual id_t
+    id() const = 0;
+
+    virtual PublicKey const&
+    getNodePublic() const = 0;
+
+    virtual bool
+    compressionEnabled() const = 0;
+
+    //--------------------------------------------------------------------------
+    // Application layer
+    //--------------------------------------------------------------------------
+
     /** Adjust this peer's load balance based on the type of load imposed. */
     virtual void
     charge(Resource::Charge const& fee) = 0;
-
-    //
-    // Identity
-    //
-
-    virtual id_t
-    id() const = 0;
 
     /** Returns `true` if this connection is a member of the cluster. */
     virtual bool
@@ -86,9 +97,6 @@ public:
 
     virtual int
     getScore(bool) const = 0;
-
-    virtual PublicKey const&
-    getNodePublic() const = 0;
 
     virtual Json::Value
     json() = 0;
@@ -118,9 +126,6 @@ public:
     cycleStatus() = 0;
     virtual bool
     hasRange(std::uint32_t uMin, std::uint32_t uMax) = 0;
-
-    virtual bool
-    compressionEnabled() const = 0;
 };
 
 }  // namespace ripple

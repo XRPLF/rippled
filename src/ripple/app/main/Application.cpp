@@ -1374,6 +1374,26 @@ ApplicationImp::setup()
     //
     //----------------------------------------------------------------------
 
+    {
+        try
+        {
+            auto setup = setup_ServerHandler(
+                *config_, beast::logstream{m_journal.error()});
+            setup.makeContexts();
+            serverHandler_->setup(setup, m_journal);
+        }
+        catch (std::exception const& e)
+        {
+            if (auto stream = m_journal.fatal())
+            {
+                stream << "Unable to setup server handler";
+                if (std::strlen(e.what()) > 0)
+                    stream << ": " << e.what();
+            }
+            return false;
+        }
+    }
+
     // VFALCO NOTE Unfortunately, in stand-alone mode some code still
     //             foolishly calls overlay(). When this is fixed we can
     //             move the instantiation inside a conditional:
@@ -1384,7 +1404,7 @@ ApplicationImp::setup()
         overlay_ = make_Overlay(
             *this,
             setup_Overlay(*config_),
-            *serverHandler_,
+            serverHandler_->setup().overlay.port,
             *m_resourceManager,
             *m_resolver,
             get_io_service(),
@@ -1407,26 +1427,6 @@ ApplicationImp::setup()
     {
         JLOG(m_journal.fatal()) << "Unable to start consensus";
         return false;
-    }
-
-    {
-        try
-        {
-            auto setup = setup_ServerHandler(
-                *config_, beast::logstream{m_journal.error()});
-            setup.makeContexts();
-            serverHandler_->setup(setup, m_journal);
-        }
-        catch (std::exception const& e)
-        {
-            if (auto stream = m_journal.fatal())
-            {
-                stream << "Unable to setup server handler";
-                if (std::strlen(e.what()) > 0)
-                    stream << ": " << e.what();
-            }
-            return false;
-        }
     }
 
     // Begin connecting to network.

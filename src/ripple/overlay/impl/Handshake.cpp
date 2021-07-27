@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -174,7 +173,7 @@ buildHandshake(
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
-    Application& app)
+    P2PConfig const& p2pConfig)
 {
     if (networkID)
     {
@@ -186,20 +185,22 @@ buildHandshake(
 
     h.insert(
         "Network-Time",
-        std::to_string(app.timeKeeper().now().time_since_epoch().count()));
+        std::to_string(p2pConfig.now().time_since_epoch().count()));
 
     h.insert(
         "Public-Key",
-        toBase58(TokenType::NodePublic, app.nodeIdentity().first));
+        toBase58(TokenType::NodePublic, p2pConfig.identity().first));
 
     {
         auto const sig = signDigest(
-            app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
+            p2pConfig.identity().first,
+            p2pConfig.identity().second,
+            sharedValue);
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
-    if (!app.config().SERVER_DOMAIN.empty())
-        h.insert("Server-Domain", app.config().SERVER_DOMAIN);
+    if (!p2pConfig.config().SERVER_DOMAIN.empty())
+        h.insert("Server-Domain", p2pConfig.config().SERVER_DOMAIN);
 
     if (beast::IP::is_public(remote_ip))
         h.insert("Remote-IP", remote_ip.to_string());
@@ -207,16 +208,15 @@ buildHandshake(
     if (!public_ip.is_unspecified())
         h.insert("Local-IP", public_ip.to_string());
 
-    if (auto const cl = app.getLedgerMaster().getClosedLedger())
+    if (auto const cl = p2pConfig.clHashes())
     {
         // TODO: Use hex for these
         h.insert(
             "Closed-Ledger",
-            base64_encode(cl->info().hash.begin(), cl->info().hash.size()));
+            base64_encode(cl->first.begin(), cl->first.size()));
         h.insert(
             "Previous-Ledger",
-            base64_encode(
-                cl->info().parentHash.begin(), cl->info().parentHash.size()));
+            base64_encode(cl->second.begin(), cl->second.size()));
     }
 }
 
@@ -227,7 +227,7 @@ verifyHandshake(
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
-    Application& app)
+    P2PConfig const& p2pConfig)
 {
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
@@ -262,7 +262,7 @@ verifyHandshake(
 
         using namespace std::chrono;
 
-        auto const ourTime = app.timeKeeper().now();
+        auto const ourTime = p2pConfig.now();
         auto const tolerance = 20s;
 
         // We can't blindly "return a-b;" because TimeKeeper::time_point
@@ -299,7 +299,7 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
-    if (publicKey == app.nodeIdentity().first)
+    if (publicKey == p2pConfig.identity().first)
         throw std::runtime_error("Self connection");
 
     // This check gets two birds with one stone:
@@ -391,7 +391,7 @@ makeResponse(
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
-    Application& app)
+    P2PConfig const& p2pConfig)
 {
     http_response_type resp;
     resp.result(boost::beast::http::status::switching_protocols);
@@ -405,11 +405,12 @@ makeResponse(
         "X-Protocol-Ctl",
         makeFeaturesResponseHeader(
             req,
-            app.config().COMPRESSION,
-            app.config().VP_REDUCE_RELAY_ENABLE,
-            app.config().LEDGER_REPLAY));
+            p2pConfig.config().COMPRESSION,
+            p2pConfig.config().VP_REDUCE_RELAY_ENABLE,
+            p2pConfig.config().LEDGER_REPLAY));
 
-    buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
+    buildHandshake(
+        resp, sharedValue, networkID, public_ip, remote_ip, p2pConfig);
 
     return resp;
 }

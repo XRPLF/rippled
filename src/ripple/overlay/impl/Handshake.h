@@ -20,8 +20,9 @@
 #ifndef RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
 #define RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
+#include <ripple/beast/net/IPAddress.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/overlay/impl/P2PConfig.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <boost/asio/ip/tcp.hpp>
@@ -69,7 +70,7 @@ buildHandshake(
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
-    Application& app);
+    P2PConfig const& p2pConfig);
 
 /** Validate header fields necessary for upgrading the link to the peer
    protocol.
@@ -89,7 +90,7 @@ verifyHandshake(
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
-    Application& app);
+    P2PConfig const& p2pConfig);
 
 /** Make outbound http request
 
@@ -115,7 +116,7 @@ makeRequest(
    @param sharedValue shared value based on the SSL connection state
    @param networkID specifies what network we intend to connect to
    @param version supported protocol version
-   @param app Application's reference to access some common properties
+   @param p2pConfig P2PConfig's reference to access some common properties
    @return http response
  */
 http_response_type
@@ -127,7 +128,7 @@ makeResponse(
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion version,
-    Application& app);
+    P2PConfig const& p2pConfig);
 
 // Protocol features negotiated via HTTP handshake.
 // The format is:

@@ -231,6 +231,18 @@ public:
         m_logic.onWrite(map);
     }
 
+    std::size_t
+    livecacheSize() const override
+    {
+        return m_logic.livecacheSize();
+    }
+
+    std::size_t
+    bootcacheSize() const override
+    {
+        return m_logic.livecacheSize();
+    }
+
 private:
     struct Stats
     {

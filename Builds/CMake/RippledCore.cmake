@@ -527,7 +527,6 @@ target_sources (rippled PRIVATE
        subdir: overlay
   #]===============================]
   src/ripple/overlay/impl/Cluster.cpp
-  src/ripple/overlay/impl/ConnectAttempt.cpp
   src/ripple/overlay/impl/Handshake.cpp
   src/ripple/overlay/impl/Message.cpp
   src/ripple/overlay/impl/OverlayImpl.cpp
@@ -864,6 +863,7 @@ target_sources (rippled PRIVATE
   src/test/overlay/cluster_test.cpp
   src/test/overlay/short_read_test.cpp
   src/test/overlay/compression_test.cpp
+  src/test/overlay/overlay_test.cpp
   src/test/overlay/reduce_relay_test.cpp
   src/test/overlay/handshake_test.cpp
   #[===============================[

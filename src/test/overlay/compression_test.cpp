@@ -26,6 +26,7 @@
 #include <ripple/overlay/Compression.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/Handshake.h>
+#include <ripple/overlay/impl/P2PConfigImpl.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -504,6 +505,7 @@ public:
 
             env.reset();
             env = getEnv(inboundEnable);
+            P2PConfigImpl p2pConfig(env->app());
             auto http_resp = ripple::makeResponse(
                 true,
                 http_request,
@@ -512,7 +514,7 @@ public:
                 uint256{1},
                 1,
                 {1, 0},
-                env->app());
+                p2pConfig);
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled = peerFeatureEnabled(
@@ -533,7 +535,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(compression, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, ripple);
 
 }  // namespace test
 }  // namespace ripple
