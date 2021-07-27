@@ -36,8 +36,9 @@ private:
     using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
+    using id_t = Peer::id_t;
     Application& app_;
-    std::uint32_t const id_;
+    id_t const id_;
     beast::WrappedSink sink_;
     beast::Journal const journal_;
     std::unique_ptr<stream_type> stream_ptr_;
