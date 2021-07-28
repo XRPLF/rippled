@@ -199,8 +199,8 @@ else ()
     #]===========================]
     ExternalProject_Add (grpc_src
       PREFIX ${nih_cache_path}
-      GIT_REPOSITORY https://github.com/grpc/grpc.git
-      GIT_TAG v1.25.0
+      GIT_REPOSITORY https://github.com/thejohnfreeman/grpc.git
+      GIT_TAG protobuf-redirect
       CMAKE_ARGS
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
