@@ -110,30 +110,36 @@ $(function() {
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        buffer = <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(buffer) + <span class="keyword">sizeof</span>(v);</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        bytes -= <span class="keyword">sizeof</span>(v);</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordflow">if</span> (bytes &gt; 0)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    {</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> v = g();</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(buffer, &amp;v, bytes);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">template</span> &lt;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">class </span>Generator,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> N,</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">class </span>= <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;N % <span class="keyword">sizeof</span>(<span class="keyword">typename</span> Generator::result_type) == 0&gt;&gt;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="namespacebeast.html#a3c2683b0fd77fcae6b6ef91fb90e5cbc">   54</a></span>&#160;<a class="code" href="namespacebeast.html#a6894f6dcd09bceda3986ebb1ea7a3eed">rngfill</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint8_t, N&gt;</a>&amp; a, Generator&amp; g)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;{</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">using</span> result_type = <span class="keyword">typename</span> Generator::result_type;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">auto</span> i = N / <span class="keyword">sizeof</span>(result_type);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    result_type* p = <span class="keyword">reinterpret_cast&lt;</span>result_type*<span class="keyword">&gt;</span>(a.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>());</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">while</span> (i--)</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        *p++ = g();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}  <span class="comment">// namespace beast</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#ifdef __GNUC__</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="comment">// gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#pragma GCC diagnostic push</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#pragma GCC diagnostic ignored &quot;-Warray-bounds&quot;</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> (bytes &gt; 0)</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    {</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> v = g();</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(buffer, &amp;v, bytes);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#pragma GCC diagnostic pop</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">template</span> &lt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">class </span>Generator,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> N,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">class </span>= <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;N % <span class="keyword">sizeof</span>(<span class="keyword">typename</span> Generator::result_type) == 0&gt;&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespacebeast.html#a3c2683b0fd77fcae6b6ef91fb90e5cbc">   60</a></span>&#160;<a class="code" href="namespacebeast.html#a6894f6dcd09bceda3986ebb1ea7a3eed">rngfill</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint8_t, N&gt;</a>&amp; a, Generator&amp; g)</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">using</span> result_type = <span class="keyword">typename</span> Generator::result_type;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">auto</span> i = N / <span class="keyword">sizeof</span>(result_type);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    result_type* p = <span class="keyword">reinterpret_cast&lt;</span>result_type*<span class="keyword">&gt;</span>(a.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>());</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">while</span> (i--)</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        *p++ = g();</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;}</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="acstring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a></div></div>
 <div class="ttc" id="aenable_if_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div></div>

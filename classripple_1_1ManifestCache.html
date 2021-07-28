@@ -131,9 +131,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aba96a3ca5f51243e21c858537ef16722"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#aba96a3ca5f51243e21c858537ef16722">load</a> (<a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;dbCon, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbTable)</td></tr>
 <tr class="memdesc:aba96a3ca5f51243e21c858537ef16722"><td class="mdescLeft">&#160;</td><td class="mdescRight">Populate manifest cache with manifests in database.  <a href="classripple_1_1ManifestCache.html#aba96a3ca5f51243e21c858537ef16722">More...</a><br /></td></tr>
 <tr class="separator:aba96a3ca5f51243e21c858537ef16722"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d4b35387926db7d7481fb0d04938260"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#a4d4b35387926db7d7481fb0d04938260">save</a> (<a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;dbCon, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbTable, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;)&gt; isTrusted)</td></tr>
-<tr class="memdesc:a4d4b35387926db7d7481fb0d04938260"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save cached manifests to database.  <a href="classripple_1_1ManifestCache.html#a4d4b35387926db7d7481fb0d04938260">More...</a><br /></td></tr>
-<tr class="separator:a4d4b35387926db7d7481fb0d04938260"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad38243694bc875ac8bff27e7370ef307"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#ad38243694bc875ac8bff27e7370ef307">save</a> (<a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;dbCon, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbTable, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;)&gt; const &amp;isTrusted)</td></tr>
+<tr class="memdesc:ad38243694bc875ac8bff27e7370ef307"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save cached manifests to database.  <a href="classripple_1_1ManifestCache.html#ad38243694bc875ac8bff27e7370ef307">More...</a><br /></td></tr>
+<tr class="separator:ad38243694bc875ac8bff27e7370ef307"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f05c967613f99e5f05af017673c6765"><td class="memTemplParams" colspan="2">template&lt;class Function &gt; </td></tr>
 <tr class="memitem:a7f05c967613f99e5f05af017673c6765"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#a7f05c967613f99e5f05af017673c6765">for_each_manifest</a> (Function &amp;&amp;f) const</td></tr>
 <tr class="memdesc:a7f05c967613f99e5f05af017673c6765"><td class="mdescLeft">&#160;</td><td class="mdescRight">Invokes the callback once for every populated manifest.  <a href="classripple_1_1ManifestCache.html#a7f05c967613f99e5f05af017673c6765">More...</a><br /></td></tr>
@@ -503,8 +503,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a4d4b35387926db7d7481fb0d04938260"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d4b35387926db7d7481fb0d04938260">&#9670;&nbsp;</a></span>save()</h2>
+<a id="ad38243694bc875ac8bff27e7370ef307"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad38243694bc875ac8bff27e7370ef307">&#9670;&nbsp;</a></span>save()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -524,7 +524,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;)&gt;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;)&gt; const &amp;&#160;</td>
           <td class="paramname"><em>isTrusted</em>&#160;</td>
         </tr>
         <tr>

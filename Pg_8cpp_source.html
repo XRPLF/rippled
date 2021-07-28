@@ -416,7 +416,7 @@ $(function() {
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="comment">// The connection object must be freed using the libpq API PQfinish() call.</span></div>
 <div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    pg_connection_type conn(</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        PQconnectdb(get&lt;std::string&gt;(pgConfig, <span class="stringliteral">&quot;conninfo&quot;</span>).c_str()),</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        PQconnectdb(<a class="code" href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">get</a>(pgConfig, <span class="stringliteral">&quot;conninfo&quot;</span>).c_str()),</div>
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        [](PGconn* conn) { PQfinish(conn); });</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    <span class="keywordflow">if</span> (!conn)</div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Can&#39;t create DB connection.&quot;</span>);</div>
@@ -1416,7 +1416,7 @@ $(function() {
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="areset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr/reset.html">std::unique_ptr::reset</a></div><div class="ttdeci">T reset(T... args)</div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a55f440d44d3b98aa990fadd4ebb7c87e"><div class="ttname"><a href="namespaceripple.html#a55f440d44d3b98aa990fadd4ebb7c87e">ripple::get_if_exists</a></div><div class="ttdeci">bool get_if_exists(Section const &amp;section, std::string const &amp;name, T &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00347">BasicConfig.h:347</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a55f440d44d3b98aa990fadd4ebb7c87e"><div class="ttname"><a href="namespaceripple.html#a55f440d44d3b98aa990fadd4ebb7c87e">ripple::get_if_exists</a></div><div class="ttdeci">bool get_if_exists(Section const &amp;section, std::string const &amp;name, T &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00384">BasicConfig.h:384</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
 <div class="ttc" id="athread_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/thread.html">thread</a></div></div>

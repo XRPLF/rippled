@@ -134,7 +134,7 @@ $(function() {
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        obj[<span class="stringliteral">&quot;used_postgres&quot;</span>] = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> t : trans)</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; t : trans)</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        txs.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(t-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>));</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">return</span> obj;</div>

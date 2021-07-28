@@ -174,7 +174,7 @@ $(function() {
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">private</span>:</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="comment">// This has the same representation as STAmount, see the comment on the</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="comment">// STAmount. However, this class does not alway use the canonical</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="comment">// STAmount. However, this class does not always use the canonical</span></div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="comment">// representation. In particular, the increment and decrement operators may</span></div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="comment">// cause a non-canonical representation.</span></div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    value_type m_value;</div>
@@ -187,7 +187,7 @@ $(function() {
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">explicit</span> Quality(Amounts <span class="keyword">const</span>&amp; amount);</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> In, <span class="keyword">class</span> Out&gt;</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    Quality(TAmounts&lt;In, Out&gt; <span class="keyword">const</span>&amp; amount)</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="keyword">explicit</span> Quality(TAmounts&lt;In, Out&gt; <span class="keyword">const</span>&amp; amount)</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        : Quality(Amounts(<a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(amount.<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>), <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(amount.<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>)))</div>
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    {</div>
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    }</div>

@@ -125,39 +125,38 @@ $(function() {
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keyword">const</span> <a class="code" href="classripple_1_1Section.html">Section</a>&amp; rdb_section{config.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_RELATIONAL_DB)};</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordflow">if</span> (!rdb_section.empty())</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="keywordflow">if</span> (boost::iequals(</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                    get&lt;std::string&gt;(rdb_section, <span class="stringliteral">&quot;backend&quot;</span>), <span class="stringliteral">&quot;sqlite&quot;</span>))</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                use_sqlite = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            }</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            {</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                    <span class="stringliteral">&quot;Invalid rdb_section backend value: &quot;</span> +</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                    get&lt;std::string&gt;(rdb_section, <span class="stringliteral">&quot;backend&quot;</span>));</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        }</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        {</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            use_sqlite = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        }</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">if</span> (use_sqlite)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#adab2343a52dacb16856da7b586a6438e">getRelationalDBInterfaceSqlite</a>(app, config, jobQueue);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    }</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (use_postgres)</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    {</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32e5172d572cc89e78a9f42aff5b1b19">getRelationalDBInterfacePostgres</a>(app, config, jobQueue);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    }</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;RelationalDBInterface&gt;</a>();</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="keywordflow">if</span> (boost::iequals(<a class="code" href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">get</a>(rdb_section, <span class="stringliteral">&quot;backend&quot;</span>), <span class="stringliteral">&quot;sqlite&quot;</span>))</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                use_sqlite = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            {</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                    <span class="stringliteral">&quot;Invalid rdb_section backend value: &quot;</span> +</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                    <a class="code" href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">get</a>(rdb_section, <span class="stringliteral">&quot;backend&quot;</span>));</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        }</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        {</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            use_sqlite = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        }</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordflow">if</span> (use_sqlite)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#adab2343a52dacb16856da7b586a6438e">getRelationalDBInterfaceSqlite</a>(app, config, jobQueue);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    }</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (use_postgres)</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    {</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32e5172d572cc89e78a9f42aff5b1b19">getRelationalDBInterfacePostgres</a>(app, config, jobQueue);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;RelationalDBInterface&gt;</a>();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1Section_html"><div class="ttname"><a href="classripple_1_1Section.html">ripple::Section</a></div><div class="ttdoc">Holds a collection of configuration values.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00043">BasicConfig.h:43</a></div></div>
+<div class="ttc" id="aclassripple_1_1Section_html"><div class="ttname"><a href="classripple_1_1Section.html">ripple::Section</a></div><div class="ttdoc">Holds a collection of configuration values.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00042">BasicConfig.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00103">Application.h:103</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adab2343a52dacb16856da7b586a6438e"><div class="ttname"><a href="namespaceripple.html#adab2343a52dacb16856da7b586a6438e">ripple::getRelationalDBInterfaceSqlite</a></div><div class="ttdeci">std::unique_ptr&lt; RelationalDBInterface &gt; getRelationalDBInterfaceSqlite(Application &amp;app, Config const &amp;config, JobQueue &amp;jobQueue)</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDBInterfaceSqlite_8cpp_source.html#l01546">RelationalDBInterfaceSqlite.cpp:1546</a></div></div>
 <div class="ttc" id="aclassripple_1_1RelationalDBInterface_html_a5f6c90226e70ca887b714090dd661717"><div class="ttname"><a href="classripple_1_1RelationalDBInterface.html#a5f6c90226e70ca887b714090dd661717">ripple::RelationalDBInterface::init</a></div><div class="ttdeci">static std::unique_ptr&lt; RelationalDBInterface &gt; init(Application &amp;app, Config const &amp;config, JobQueue &amp;jobQueue)</div><div class="ttdoc">init Creates and returns appropriate interface based on config.</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDBInterface_8cpp_source.html#l00040">RelationalDBInterface.cpp:40</a></div></div>
@@ -167,7 +166,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1JobQueue_html"><div class="ttname"><a href="classripple_1_1JobQueue.html">ripple::JobQueue</a></div><div class="ttdoc">A pool of threads to perform work.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00055">JobQueue.h:55</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1BasicConfig_html_a60aca585d76b1121dd4f72b358729456"><div class="ttname"><a href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">ripple::BasicConfig::section</a></div><div class="ttdeci">Section &amp; section(std::string const &amp;name)</div><div class="ttdoc">Returns the section with the given name.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00138">BasicConfig.cpp:138</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a104985c6e3067babe99aca6bbc51ba5d"><div class="ttname"><a href="namespaceripple.html#a104985c6e3067babe99aca6bbc51ba5d">ripple::get</a></div><div class="ttdeci">T &amp; get(EitherAmount &amp;amt)</div><div class="ttdef"><b>Definition:</b> <a href="AmountSpec_8h_source.html#l00118">AmountSpec.h:118</a></div></div>
+<div class="ttc" id="aclassripple_1_1BasicConfig_html_a60aca585d76b1121dd4f72b358729456"><div class="ttname"><a href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">ripple::BasicConfig::section</a></div><div class="ttdeci">Section &amp; section(std::string const &amp;name)</div><div class="ttdoc">Returns the section with the given name.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00127">BasicConfig.cpp:127</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

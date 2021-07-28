@@ -206,9 +206,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a07149340d3c13d6f1a0caca63cc944c0"><td class="memTemplParams" colspan="2">template&lt;class CacheInstance &gt; </td></tr>
 <tr class="memitem:a07149340d3c13d6f1a0caca63cc944c0"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a07149340d3c13d6f1a0caca63cc944c0">freshenCache</a> (CacheInstance &amp;cache)</td></tr>
 <tr class="separator:a07149340d3c13d6f1a0caca63cc944c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab207499cfb88a3681ae4160fb459f96d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#ab207499cfb88a3681ae4160fb459f96d">clearSql</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> lastRotated, const <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> TableName, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;()&gt; const &amp;getMinSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>)&gt; const &amp;deleteBeforeSeq)</td></tr>
-<tr class="memdesc:ab207499cfb88a3681ae4160fb459f96d"><td class="mdescLeft">&#160;</td><td class="mdescRight">delete from sqlite table in batches to not lock the db excessively.  <a href="classripple_1_1SHAMapStoreImp.html#ab207499cfb88a3681ae4160fb459f96d">More...</a><br /></td></tr>
-<tr class="separator:ab207499cfb88a3681ae4160fb459f96d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1aae9a0a0f673d00e327ea121872694d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a1aae9a0a0f673d00e327ea121872694d">clearSql</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> lastRotated, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;TableName, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;()&gt; const &amp;getMinSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>)&gt; const &amp;deleteBeforeSeq)</td></tr>
+<tr class="memdesc:a1aae9a0a0f673d00e327ea121872694d"><td class="mdescLeft">&#160;</td><td class="mdescRight">delete from sqlite table in batches to not lock the db excessively.  <a href="classripple_1_1SHAMapStoreImp.html#a1aae9a0a0f673d00e327ea121872694d">More...</a><br /></td></tr>
+<tr class="separator:a1aae9a0a0f673d00e327ea121872694d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af823965870aa9d05f14c8591c771a74a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#af823965870aa9d05f14c8591c771a74a">clearCaches</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> validatedSeq)</td></tr>
 <tr class="separator:af823965870aa9d05f14c8591c771a74a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad486e43fe6ea6c304d7cf119fb009894"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#ad486e43fe6ea6c304d7cf119fb009894">freshenCaches</a> ()</td></tr>
@@ -821,8 +821,8 @@ template&lt;class CacheInstance &gt; </div>
 
 </div>
 </div>
-<a id="ab207499cfb88a3681ae4160fb459f96d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab207499cfb88a3681ae4160fb459f96d">&#9670;&nbsp;</a></span>clearSql()</h2>
+<a id="a1aae9a0a0f673d00e327ea121872694d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1aae9a0a0f673d00e327ea121872694d">&#9670;&nbsp;</a></span>clearSql()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -839,7 +839,7 @@ template&lt;class CacheInstance &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>TableName</em>, </td>
         </tr>
         <tr>

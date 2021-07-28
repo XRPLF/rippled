@@ -261,61 +261,62 @@ $(function() {
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    }</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    Handler <span class="keyword">const</span>*</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">getHandler</a>(<span class="keywordtype">unsigned</span> version, <span class="keywordtype">bool</span> betaEnabled, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> name)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <span class="keywordflow">if</span> (version &lt; <a class="code" href="namespaceripple_1_1RPC.html#a86a3780c8662fae3e2a81382afe4d51b">RPC::apiMinimumSupportedVersion</a> ||</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            version &gt; (betaEnabled ? <a class="code" href="namespaceripple_1_1RPC.html#a1359badd82538ee3d5a05bfd744f2d80">RPC::apiBetaVersion</a></div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                                   : <a class="code" href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">RPC::apiMaximumSupportedVersion</a>))</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        <span class="keyword">auto</span> i = table_.find(name);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keywordflow">return</span> i == table_.end() ? nullptr : &amp;i-&gt;second;</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    }</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char const*&gt;</a></div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">getHandlerNames</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char const*&gt;</a> ret;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        ret.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(table_.size());</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : table_)</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            ret.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(i.second.name_);</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    }</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;std::string, Handler&gt;</a> table_;</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> HandlerImpl&gt;</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    addHandler()</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    {</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        assert(table_.find(HandlerImpl::name()) == table_.end());</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        Handler h;</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        h.name_ = HandlerImpl::name();</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        h.valueMethod_ = &amp;handle&lt;Json::Value, HandlerImpl&gt;;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        h.role_ = HandlerImpl::role();</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        h.condition_ = HandlerImpl::condition();</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        table_[HandlerImpl::name()] = h;</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    }</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;};</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;}  <span class="comment">// namespace</span></div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;Handler <span class="keyword">const</span>*</div>
-<div class="line"><a name="l00236"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">  236</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">getHandler</a>(<span class="keywordtype">unsigned</span> version, <span class="keywordtype">bool</span> betaEnabled, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name)</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;{</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="keywordflow">return</span> HandlerTable::instance().getHandler(version, betaEnabled, name);</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;}</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char const*&gt;</a></div>
-<div class="line"><a name="l00242"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">  242</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">getHandlerNames</a>()</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;{</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keywordflow">return</span> HandlerTable::instance().getHandlerNames();</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;};</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;}  <span class="comment">// namespace RPC</span></div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">getHandler</a>(<span class="keywordtype">unsigned</span> version, <span class="keywordtype">bool</span> betaEnabled, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name)<span class="keyword"></span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;<span class="keyword">        const</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <span class="keywordflow">if</span> (version &lt; <a class="code" href="namespaceripple_1_1RPC.html#a86a3780c8662fae3e2a81382afe4d51b">RPC::apiMinimumSupportedVersion</a> ||</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            version &gt; (betaEnabled ? <a class="code" href="namespaceripple_1_1RPC.html#a1359badd82538ee3d5a05bfd744f2d80">RPC::apiBetaVersion</a></div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                                   : <a class="code" href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">RPC::apiMaximumSupportedVersion</a>))</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keyword">auto</span> i = table_.find(name);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="keywordflow">return</span> i == table_.end() ? nullptr : &amp;i-&gt;second;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    }</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char const*&gt;</a></div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">getHandlerNames</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char const*&gt;</a> ret;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        ret.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(table_.size());</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : table_)</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;            ret.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(i.second.name_);</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    }</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;std::string, Handler&gt;</a> table_;</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> HandlerImpl&gt;</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    addHandler()</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    {</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        assert(table_.find(HandlerImpl::name()) == table_.end());</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        Handler h;</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        h.name_ = HandlerImpl::name();</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        h.valueMethod_ = &amp;handle&lt;Json::Value, HandlerImpl&gt;;</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        h.role_ = HandlerImpl::role();</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        h.condition_ = HandlerImpl::condition();</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        table_[HandlerImpl::name()] = h;</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    }</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;};</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;}  <span class="comment">// namespace</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;Handler <span class="keyword">const</span>*</div>
+<div class="line"><a name="l00237"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">  237</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">getHandler</a>(<span class="keywordtype">unsigned</span> version, <span class="keywordtype">bool</span> betaEnabled, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name)</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;{</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keywordflow">return</span> HandlerTable::instance().getHandler(version, betaEnabled, name);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;}</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char const*&gt;</a></div>
+<div class="line"><a name="l00243"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">  243</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">getHandlerNames</a>()</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;{</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keywordflow">return</span> HandlerTable::instance().getHandlerNames();</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;};</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;}  <span class="comment">// namespace RPC</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a7e45064237d4d038b191bf0d0279b086"><div class="ttname"><a href="namespaceripple.html#a7e45064237d4d038b191bf0d0279b086">ripple::doFeature</a></div><div class="ttdeci">Json::Value doFeature(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Feature1_8cpp_source.html#l00035">Feature1.cpp:35</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a07dd67952f9aad3b87dd9c774c954f32"><div class="ttname"><a href="namespaceripple.html#a07dd67952f9aad3b87dd9c774c954f32">ripple::doLedgerAccept</a></div><div class="ttdeci">Json::Value doLedgerAccept(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerAccept_8cpp_source.html#l00035">LedgerAccept.cpp:35</a></div></div>
@@ -332,7 +333,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_ad3181666a917aca45f4f288e690e9305"><div class="ttname"><a href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">ripple::doAccountInfo</a></div><div class="ttdeci">Json::Value doAccountInfo(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountInfo_8cpp_source.html#l00053">AccountInfo.cpp:53</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac53eb9de6770041d54f506751262950e"><div class="ttname"><a href="namespaceripple.html#ac53eb9de6770041d54f506751262950e">ripple::doRipplePathFind</a></div><div class="ttdeci">Json::Value doRipplePathFind(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="RipplePathFind_8cpp_source.html#l00032">RipplePathFind.cpp:32</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aaba4d3edae9ee48090b3af7660997c17"><div class="ttname"><a href="namespaceripple.html#aaba4d3edae9ee48090b3af7660997c17">ripple::doSignFor</a></div><div class="ttdeci">Json::Value doSignFor(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="SignFor_8cpp_source.html#l00035">SignFor.cpp:35</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a467920f61f6755c5aeb30f4567555897"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">ripple::RPC::getHandler</a></div><div class="ttdeci">Handler const  * getHandler(unsigned version, bool betaEnabled, std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="Handler_8cpp_source.html#l00236">Handler.cpp:236</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a467920f61f6755c5aeb30f4567555897"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a467920f61f6755c5aeb30f4567555897">ripple::RPC::getHandler</a></div><div class="ttdeci">Handler const  * getHandler(unsigned version, bool betaEnabled, std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="Handler_8cpp_source.html#l00237">Handler.cpp:237</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7d200c98fa51fb8c3ccdf22757b55cf4"><div class="ttname"><a href="namespaceripple.html#a7d200c98fa51fb8c3ccdf22757b55cf4">ripple::doAccountObjects</a></div><div class="ttdeci">Json::Value doAccountObjects(RPC::JsonContext &amp;context)</div><div class="ttdoc">General RPC command that can retrieve objects in the account root.</div><div class="ttdef"><b>Definition:</b> <a href="AccountObjects_8cpp_source.html#l00050">AccountObjects.cpp:50</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
@@ -396,7 +397,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a13d00a1ee9c8799c97a1c5d2307248ae"><div class="ttname"><a href="namespaceripple.html#a13d00a1ee9c8799c97a1c5d2307248ae">ripple::doServerState</a></div><div class="ttdeci">Json::Value doServerState(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="ServerState_8cpp_source.html#l00031">ServerState.cpp:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a67a87922d5a842580f8e9aacb11c7a95"><div class="ttname"><a href="namespaceripple.html#a67a87922d5a842580f8e9aacb11c7a95">ripple::doConnect</a></div><div class="ttdeci">Json::Value doConnect(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Connect_8cpp_source.html#l00038">Connect.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a43d0c3ebbdbaa2241db22f80662ad337"><div class="ttname"><a href="namespaceripple.html#a43d0c3ebbdbaa2241db22f80662ad337">ripple::doLedgerCleaner</a></div><div class="ttdeci">Json::Value doLedgerCleaner(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerCleanerHandler_8cpp_source.html#l00029">LedgerCleanerHandler.cpp:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a2dc3fb87e5048e2ed8e9ce87ee4a0adb"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">ripple::RPC::getHandlerNames</a></div><div class="ttdeci">std::vector&lt; char const  * &gt; getHandlerNames()</div><div class="ttdoc">Return names of all methods.</div><div class="ttdef"><b>Definition:</b> <a href="Handler_8cpp_source.html#l00242">Handler.cpp:242</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a2dc3fb87e5048e2ed8e9ce87ee4a0adb"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a2dc3fb87e5048e2ed8e9ce87ee4a0adb">ripple::RPC::getHandlerNames</a></div><div class="ttdeci">std::vector&lt; char const  * &gt; getHandlerNames()</div><div class="ttdoc">Return names of all methods.</div><div class="ttdef"><b>Definition:</b> <a href="Handler_8cpp_source.html#l00243">Handler.cpp:243</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a6b6a06a6583007835014f79ba609ba3d"><div class="ttname"><a href="namespaceripple.html#a6b6a06a6583007835014f79ba609ba3d">ripple::doDepositAuthorized</a></div><div class="ttdeci">Json::Value doDepositAuthorized(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="DepositAuthorized_8cpp_source.html#l00037">DepositAuthorized.cpp:37</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a3e75231bf728826d2d265055321f6f92"><div class="ttname"><a href="namespaceripple.html#a3e75231bf728826d2d265055321f6f92">ripple::doPeerReservationsAdd</a></div><div class="ttdeci">Json::Value doPeerReservationsAdd(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="Reservations_8cpp_source.html#l00035">Reservations.cpp:35</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a496795c52b4dceae972964022a450b92"><div class="ttname"><a href="namespaceripple.html#a496795c52b4dceae972964022a450b92">ripple::doAccountLines</a></div><div class="ttdeci">Json::Value doAccountLines(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountLines_8cpp_source.html#l00083">AccountLines.cpp:83</a></div></div>

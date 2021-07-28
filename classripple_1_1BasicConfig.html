@@ -92,12 +92,12 @@ Collaboration diagram for ripple::BasicConfig:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1BasicConfig__coll__graph.png" border="0" usemap="#ripple_1_1BasicConfig_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1BasicConfig_coll__map" id="ripple_1_1BasicConfig_coll__map">
-<area shape="rect" title="Holds unparsed configuration information." alt="" coords="1007,55,1149,81"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="755,40,917,96"/>
-<area shape="rect" href="classripple_1_1Section.html" title="Holds a collection of configuration values." alt="" coords="527,123,641,149"/>
-<area shape="rect" title=" " alt="" coords="205,70,428,141"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="5,165,92,192"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="223,165,410,192"/>
+<area shape="rect" title="Holds unparsed configuration information." alt="" coords="15,436,158,463"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="5,317,168,373"/>
+<area shape="rect" href="classripple_1_1Section.html" title="Holds a collection of configuration values." alt="" coords="108,228,223,255"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="200,109,363,151"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="105,5,191,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="387,117,573,143"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -140,7 +140,7 @@ Friends</h2></td></tr>
 <div class="textblock"><p>Holds unparsed configuration information. </p>
 <p>The raw data sections are processed with intermediate parsers specific to each module instead of being all parsed in a central location. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00178">178</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00215">215</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a09b31b8ed3c769b4c23b040c3d4798ed"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a09b31b8ed3c769b4c23b040c3d4798ed">&#9670;&nbsp;</a></span>exists()</h2>
@@ -160,7 +160,7 @@ Friends</h2></td></tr>
 
 <p>Returns <code>true</code> if a section with the given name exists. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00132">132</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00121">121</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -183,7 +183,7 @@ Friends</h2></td></tr>
 <p>Returns the section with the given name. </p>
 <p>If the section does not exist, an empty section is returned. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00138">138</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00127">127</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -203,7 +203,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00144">144</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00133">133</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -223,7 +223,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00199">199</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00236">236</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -243,7 +243,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00205">205</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00242">242</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -282,7 +282,7 @@ Friends</h2></td></tr>
 <p>Overwrite a key/value pair with a command line argument If the section does not exist it is created. </p>
 <p>The previous value, if any, is overwritten. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00154">154</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00143">143</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -304,7 +304,7 @@ Friends</h2></td></tr>
 
 <p>Remove all the key/value pairs from the section. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00167">167</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00156">156</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -344,7 +344,7 @@ Friends</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00175">175</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00164">164</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -374,7 +374,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Contents of the legacy value. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00181">181</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00170">170</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -393,7 +393,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00255">255</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00292">292</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -421,7 +421,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00187">187</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00176">176</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -460,7 +460,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00200">200</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00189">189</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -485,7 +485,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00181">181</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00218">218</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>

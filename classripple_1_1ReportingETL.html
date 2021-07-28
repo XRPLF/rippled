@@ -238,6 +238,9 @@ Private Attributes</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">ripple::ReportingETL::ReportingETL </td>
@@ -247,9 +250,14 @@ Private Attributes</h2></td></tr>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00829">829</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00831">831</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +368,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The ledger downloaded, with a full transaction and account state map </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00105">105</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00107">107</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -398,7 +406,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the last ledger written to the database, if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00460">460</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00462">462</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -428,7 +436,7 @@ Private Attributes</h2></td></tr>
 <p>Monitor the network for newly validated ledgers. </p>
 <p>Also monitor the database to see if any process is writing those ledgers. This function is called when the application starts, and will only return when the application is shutting down. If the software detects the database is empty, this function will call <a class="el" href="classripple_1_1ReportingETL.html#a99f99fa676db643dc5144e8e445a1c50" title="Download a ledger with specified sequence in full, via GetLedgerData, and write the data to the datab...">loadInitialLedger()</a>. If the software detects ledgers are not being written, this function calls <a class="el" href="classripple_1_1ReportingETL.html#a2ca1423e114e2ffe04197c9f0fa48e57" title="Run ETL.">runETLPipeline()</a>. Otherwise, this function publishes ledgers as they are written to the database. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00680">680</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00682">682</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -458,7 +466,7 @@ Private Attributes</h2></td></tr>
 <p>Monitor the database for newly written ledgers. </p>
 <p>Similar to the <a class="el" href="classripple_1_1ReportingETL.html#a8d4c5283fb672759378e44b8a3d0f04d" title="Monitor the network for newly validated ledgers.">monitor()</a>, except this function will never call <a class="el" href="classripple_1_1ReportingETL.html#a2ca1423e114e2ffe04197c9f0fa48e57" title="Run ETL.">runETLPipeline()</a> or <a class="el" href="classripple_1_1ReportingETL.html#a99f99fa676db643dc5144e8e445a1c50" title="Download a ledger with specified sequence in full, via GetLedgerData, and write the data to the datab...">loadInitialLedger()</a>. This function only publishes ledgers as they are written to the database. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00800">800</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00802">802</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -495,7 +503,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>ledger header and transaction+metadata blobs. Empty optional if the server is shutting down </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00349">349</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00351">351</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -532,7 +540,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>ledger header, transaction+metadata blobs, and all ledger objects created, modified or deleted between this ledger and the parent. Empty optional if the server is shutting down </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00363">363</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00365">365</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -580,7 +588,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>struct that contains the neccessary info to write to the transctions and account_transactions tables in Postgres (mostly transaction hashes, corresponding nodestore hashes and affected accounts) </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00074">74</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00076">76</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -629,7 +637,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the newly built ledger and data to write to Postgres </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00377">377</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00379">379</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -665,7 +673,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00181">181</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00183">183</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -713,7 +721,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether the ledger was found in the database and published </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00282">282</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00284">284</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -749,7 +757,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00274">274</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00276">276</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -796,7 +804,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00052">52</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00054">54</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -999,7 +1007,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00818">818</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00820">820</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>

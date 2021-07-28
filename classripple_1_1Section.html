@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1Section-members.html">List of all members</a>  </div>
@@ -78,23 +79,14 @@ $(function() {
 <p>Holds a collection of configuration values.  
  <a href="classripple_1_1Section.html#details">More...</a></p>
 <div class="dynheader">
-Inheritance diagram for ripple::Section:</div>
-<div class="dyncontent">
-<div class="center"><img src="classripple_1_1Section__inherit__graph.png" border="0" usemap="#ripple_1_1Section_inherit__map" alt="Inheritance graph"/></div>
-<map name="ripple_1_1Section_inherit__map" id="ripple_1_1Section_inherit__map">
-<area shape="rect" title="Holds a collection of configuration values." alt="" coords="276,27,391,54"/>
-<area shape="rect" title=" " alt="" coords="5,5,228,76"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
 Collaboration diagram for ripple::Section:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Section__coll__graph.png" border="0" usemap="#ripple_1_1Section_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1Section_coll__map" id="ripple_1_1Section_coll__map">
-<area shape="rect" title="Holds a collection of configuration values." alt="" coords="527,102,641,129"/>
-<area shape="rect" title=" " alt="" coords="205,5,428,76"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="5,133,92,159"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="223,163,410,190"/>
+<area shape="rect" title="Holds a collection of configuration values." alt="" coords="97,228,212,255"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="73,109,236,151"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="111,5,198,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="260,117,446,143"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -130,10 +122,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a68dc91d903f564ac4090787bd35d8983"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a68dc91d903f564ac4090787bd35d8983">exists</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="classripple_1_1Section.html#ac7ccf48372a2b0078eaef244c7dfebd0">name</a>) const</td></tr>
 <tr class="memdesc:a68dc91d903f564ac4090787bd35d8983"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a key with the given name exists.  <a href="classripple_1_1Section.html#a68dc91d903f564ac4090787bd35d8983">More...</a><br /></td></tr>
 <tr class="separator:a68dc91d903f564ac4090787bd35d8983"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8949f7fa21d6705604b2cf3eacae60b2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a8949f7fa21d6705604b2cf3eacae60b2">find</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="classripple_1_1Section.html#ac7ccf48372a2b0078eaef244c7dfebd0">name</a>) const</td></tr>
-<tr class="memdesc:a8949f7fa21d6705604b2cf3eacae60b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve a key/value pair.  <a href="classripple_1_1Section.html#a8949f7fa21d6705604b2cf3eacae60b2">More...</a><br /></td></tr>
-<tr class="separator:a8949f7fa21d6705604b2cf3eacae60b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ef3a8f0a6f47e26003e0b2f93f49921"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a5ef3a8f0a6f47e26003e0b2f93f49921"><td class="memTemplParams" colspan="2">template&lt;class T  = std::string&gt; </td></tr>
 <tr class="memitem:a5ef3a8f0a6f47e26003e0b2f93f49921"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a5ef3a8f0a6f47e26003e0b2f93f49921">get</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="classripple_1_1Section.html#ac7ccf48372a2b0078eaef244c7dfebd0">name</a>) const</td></tr>
 <tr class="separator:a5ef3a8f0a6f47e26003e0b2f93f49921"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5817ae755a9bb7fbe8f4a5dd016a2024"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
@@ -142,11 +131,30 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5817ae755a9bb7fbe8f4a5dd016a2024"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a2e736c824d6b3341eba2e2bae38825"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a4a2e736c824d6b3341eba2e2bae38825">had_trailing_comments</a> () const</td></tr>
 <tr class="separator:a4a2e736c824d6b3341eba2e2bae38825"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afde251cbb3face940ccce3295ce2b5e9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#afde251cbb3face940ccce3295ce2b5e9">empty</a> () const</td></tr>
+<tr class="separator:afde251cbb3face940ccce3295ce2b5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11d3476431b571b4a9a6b7b597dccc13"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a11d3476431b571b4a9a6b7b597dccc13">size</a> () const</td></tr>
+<tr class="separator:a11d3476431b571b4a9a6b7b597dccc13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a431fc823903388bd5f52b5a2c70b2e10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a431fc823903388bd5f52b5a2c70b2e10">begin</a> () const</td></tr>
+<tr class="separator:a431fc823903388bd5f52b5a2c70b2e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88ca1a9596da50ea3593b5cc34d01940"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a88ca1a9596da50ea3593b5cc34d01940">cbegin</a> () const</td></tr>
+<tr class="separator:a88ca1a9596da50ea3593b5cc34d01940"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af12d91829f6660753c3bce76259df5b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#af12d91829f6660753c3bce76259df5b6">end</a> () const</td></tr>
+<tr class="separator:af12d91829f6660753c3bce76259df5b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4906292d5ca9524e9abfb42c01c697b2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a4906292d5ca9524e9abfb42c01c697b2">cend</a> () const</td></tr>
+<tr class="separator:a4906292d5ca9524e9abfb42c01c697b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a48266e943bf130730aa6e9cbe1616b94"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a> = decltype(<a class="el" href="classripple_1_1Section.html#ae797694584d7017a53a8ea316ec1959e">lookup_</a>)::<a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a></td></tr>
+<tr class="separator:a48266e943bf130730aa6e9cbe1616b94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:acbc7555009808b3970ab3271fe8f1985"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#acbc7555009808b3970ab3271fe8f1985">name_</a></td></tr>
 <tr class="separator:acbc7555009808b3970ab3271fe8f1985"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae797694584d7017a53a8ea316ec1959e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#ae797694584d7017a53a8ea316ec1959e">lookup_</a></td></tr>
+<tr class="separator:ae797694584d7017a53a8ea316ec1959e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3726b29bb65967f0665853c36f1949bc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#a3726b29bb65967f0665853c36f1949bc">lines_</a></td></tr>
 <tr class="separator:a3726b29bb65967f0665853c36f1949bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae80d9b9b1b9f3b7298828524c9041f3f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Section.html#ae80d9b9b1b9f3b7298828524c9041f3f">values_</a></td></tr>
@@ -163,8 +171,33 @@ Friends</h2></td></tr>
 <div class="textblock"><p>Holds a collection of configuration values. </p>
 <p>A configuration file contains zero or more sections. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00043">43</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00042">42</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a48266e943bf130730aa6e9cbe1616b94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48266e943bf130730aa6e9cbe1616b94">&#9670;&nbsp;</a></span>const_iterator</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">ripple::Section::const_iterator</a> =  decltype(<a class="el" href="classripple_1_1Section.html#ae797694584d7017a53a8ea316ec1959e">lookup_</a>)::<a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00051">51</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aba87cd76e347f224526bc1f7e6641dfe"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aba87cd76e347f224526bc1f7e6641dfe">&#9670;&nbsp;</a></span>Section()</h2>
 
@@ -213,7 +246,7 @@ Friends</h2></td></tr>
 
 <p>Returns the name of this section. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00058">58</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00059">59</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -235,7 +268,7 @@ Friends</h2></td></tr>
 <p>Returns all the lines in the section. </p>
 <p>This includes everything. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00067">67</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00068">68</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -257,7 +290,7 @@ Friends</h2></td></tr>
 <p>Returns all the values in the section. </p>
 <p>Values are non-empty lines which are not key/value pairs. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00076">76</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00077">77</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -279,7 +312,7 @@ Friends</h2></td></tr>
 
 <p>Set the legacy value for this section. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00085">85</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00086">86</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -301,7 +334,7 @@ Friends</h2></td></tr>
 <p>Get the legacy value for this section. </p>
 <dl class="section return"><dt>Returns</dt><dd>The retrieved value. A section with an empty legacy value returns an empty string. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00100">100</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00101">101</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -357,7 +390,7 @@ Friends</h2></td></tr>
 <p>Append a set of lines to this section. </p>
 <p>Lines containing key/value pairs are added to the map, else they are added to the values list. Everything is added to the lines list. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00040">40</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00038">38</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -379,7 +412,7 @@ Friends</h2></td></tr>
 
 <p>Append a line to this section. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00126">126</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00127">127</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -401,30 +434,7 @@ Friends</h2></td></tr>
 
 <p>Returns <code>true</code> if a key with the given name exists. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00107">107</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a8949f7fa21d6705604b2cf3eacae60b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8949f7fa21d6705604b2cf3eacae60b2">&#9670;&nbsp;</a></span>find()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, bool &gt; ripple::Section::find </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Retrieve a key/value pair. </p>
-<dl class="section return"><dt>Returns</dt><dd>A pair with bool <code>true</code> if the string was found. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00113">113</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00105">105</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -434,7 +444,7 @@ Friends</h2></td></tr>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T &gt; </div>
+template&lt;class T  = std::string&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;T&gt; ripple::Section::get </td>
@@ -446,7 +456,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00143">143</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00138">138</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -480,7 +490,7 @@ template&lt;class T &gt; </div>
 
 <p>Returns a value if present, else another value. </p>
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00154">154</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00149">149</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -499,7 +509,121 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00163">163</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00158">158</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="afde251cbb3face940ccce3295ce2b5e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afde251cbb3face940ccce3295ce2b5e9">&#9670;&nbsp;</a></span>empty()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::Section::empty </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00168">168</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a11d3476431b571b4a9a6b7b597dccc13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11d3476431b571b4a9a6b7b597dccc13">&#9670;&nbsp;</a></span>size()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::Section::size </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00175">175</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a431fc823903388bd5f52b5a2c70b2e10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a431fc823903388bd5f52b5a2c70b2e10">&#9670;&nbsp;</a></span>begin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a> ripple::Section::begin </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00182">182</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a88ca1a9596da50ea3593b5cc34d01940"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a88ca1a9596da50ea3593b5cc34d01940">&#9670;&nbsp;</a></span>cbegin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a> ripple::Section::cbegin </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00189">189</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="af12d91829f6660753c3bce76259df5b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af12d91829f6660753c3bce76259df5b6">&#9670;&nbsp;</a></span>end()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a> ripple::Section::end </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00196">196</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="a4906292d5ca9524e9abfb42c01c697b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4906292d5ca9524e9abfb42c01c697b2">&#9670;&nbsp;</a></span>cend()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Section.html#a48266e943bf130730aa6e9cbe1616b94">const_iterator</a> ripple::Section::cend </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00203">203</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -538,7 +662,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00122">122</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8cpp_source.html#l00111">111</a> of file <a class="el" href="BasicConfig_8cpp_source.html">BasicConfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -563,7 +687,31 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00047">47</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00045">45</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ae797694584d7017a53a8ea316ec1959e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae797694584d7017a53a8ea316ec1959e">&#9670;&nbsp;</a></span>lookup_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt; ripple::Section::lookup_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00046">46</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -587,7 +735,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00048">48</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00047">47</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -611,7 +759,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00049">49</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00048">48</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
@@ -635,7 +783,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00050">50</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicConfig_8h_source.html#l00049">49</a> of file <a class="el" href="BasicConfig_8h_source.html">BasicConfig.h</a>.</p>
 
 </div>
 </div>
