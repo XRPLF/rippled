@@ -2996,9 +2996,9 @@ PeerImp::onStartProtocol()
         send(m);
 
     // Request shard info from peer
-    protocol::TMGetPeerShardInfo tmGPS;
-    tmGPS.set_hops(0);
-    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
+    protocol::TMGetPeerShardInfoV2 tmGPS;
+    tmGPS.set_relays(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2));
 }
 
 void
