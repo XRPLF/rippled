@@ -478,7 +478,6 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/BookDirs.cpp
   src/ripple/ledger/impl/CachedSLEs.cpp
   src/ripple/ledger/impl/CachedView.cpp
-  src/ripple/ledger/impl/CashDiff.cpp
   src/ripple/ledger/impl/Directory.cpp
   src/ripple/ledger/impl/OpenView.cpp
   src/ripple/ledger/impl/PaymentSandbox.cpp
@@ -833,7 +832,6 @@ target_sources (rippled PRIVATE
        subdir: ledger
   #]===============================]
   src/test/ledger/BookDirs_test.cpp
-  src/test/ledger/CashDiff_test.cpp
   src/test/ledger/Directory_test.cpp
   src/test/ledger/Invariants_test.cpp
   src/test/ledger/PaymentSandbox_test.cpp

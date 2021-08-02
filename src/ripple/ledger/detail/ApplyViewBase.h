@@ -22,7 +22,6 @@
 
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/ledger/ApplyView.h>
-#include <ripple/ledger/CashDiff.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
@@ -119,13 +118,6 @@ public:
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;
-
-    friend CashDiff
-    cashFlowDiff(
-        CashFilter lhsFilter,
-        ApplyViewBase const& lhs,
-        CashFilter rhsFilter,
-        ApplyViewBase const& rhs);
 
 protected:
     ApplyFlags flags_;

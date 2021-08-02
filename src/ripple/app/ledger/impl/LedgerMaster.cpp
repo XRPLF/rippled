@@ -638,11 +638,11 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
             }
             return true;
         }
-        catch (std::exception&)
+        catch (std::exception const& e)
         {
-            JLOG(m_journal.error())
-                << __func__ << " : "
-                << "Error parsing result of getCompleteLedgers()";
+            JLOG(m_journal.error()) << "LedgerMaster::getValidatedRange: "
+                                       "exception parsing complete ledgers: "
+                                    << e.what();
             return false;
         }
     }

@@ -166,7 +166,6 @@ bitsetIndexToFeature(size_t i)
 uint256 const
     featureOwnerPaysFee             = *getRegisteredFeature("OwnerPaysFee"),
     featureFlow                     = *getRegisteredFeature("Flow"),
-    featureCompareTakerFlowCross    = *getRegisteredFeature("CompareTakerFlowCross"),
     featureFlowCross                = *getRegisteredFeature("FlowCross"),
     featureCryptoConditionsSuite    = *getRegisteredFeature("CryptoConditionsSuite"),
     fix1513                         = *getRegisteredFeature("fix1513"),
