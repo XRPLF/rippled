@@ -222,8 +222,7 @@ OpenLedger::apply(
     {
         try
         {
-            // Dereferencing the iterator can
-            // throw since it may be transformed.
+            // Dereferencing the iterator can throw since it may be transformed.
             auto const tx = *iter;
             auto const txId = tx->getTransactionID();
             if (check.txExists(txId))
@@ -233,9 +232,10 @@ OpenLedger::apply(
             if (result == Result::retry)
                 retries.insert(tx);
         }
-        catch (std::exception const&)
+        catch (std::exception const& e)
         {
-            JLOG(j.error()) << "Caught exception";
+            JLOG(j.error())
+                << "OpenLedger::apply: Caught exception: " << e.what();
         }
     }
     bool retry = true;
