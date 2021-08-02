@@ -120,7 +120,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
     if (saTakerPays.native() != !uPaysIssuerID ||
         saTakerGets.native() != !uGetsIssuerID)
     {
-        JLOG(j.warn()) << "Malformed offer: bad issuer";
+        JLOG(j.debug()) << "Malformed offer: bad issuer";
         return temBAD_ISSUER;
     }
 
@@ -153,26 +153,24 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     if (isGlobalFrozen(ctx.view, uPaysIssuerID) ||
         isGlobalFrozen(ctx.view, uGetsIssuerID))
     {
-        JLOG(ctx.j.info()) << "Offer involves frozen asset";
-
+        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
         return tecFROZEN;
     }
-    else if (
-        accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, viewJ) <=
+
+    if (accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, viewJ) <=
         beast::zero)
     {
         JLOG(ctx.j.debug())
             << "delay: Offers must be at least partially funded.";
-
         return tecUNFUNDED_OFFER;
     }
+
     // This can probably be simplified to make sure that you cancel sequences
     // before the transaction sequence number.
-    else if (cancelSequence && (uAccountSequence <= *cancelSequence))
+    if (cancelSequence && (uAccountSequence <= *cancelSequence))
     {
         JLOG(ctx.j.debug()) << "uAccountSequenceNext=" << uAccountSequence
                             << " uOfferSequence=" << *cancelSequence;
-
         return temBAD_SEQUENCE;
     }
 
@@ -188,8 +186,9 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         // Note that this will get checked again in applyGuts, but it saves
         // us a call to checkAcceptAsset and possible false negative.
         //
-        // The return code change is attached to featureChecks as a convenience.
-        // The change is not big enough to deserve its own amendment.
+        // The return code change is attached to featureDepositPreauth as a
+        // convenience, as the change is not big enough to deserve its own
+        // amendment.
         return ctx.view.rules().enabled(featureDepositPreauth)
             ? TER{tecEXPIRED}
             : TER{tesSUCCESS};
@@ -226,8 +225,9 @@ CreateOffer::checkAcceptAsset(
 
     if (!issuerAccount)
     {
-        JLOG(j.warn()) << "delay: can't receive IOUs from non-existent issuer: "
-                       << to_string(issue.account);
+        JLOG(j.debug())
+            << "delay: can't receive IOUs from non-existent issuer: "
+            << to_string(issue.account);
 
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
@@ -861,248 +861,25 @@ CreateOffer::flowCross(
     return {tecINTERNAL, takerAmount};
 }
 
-enum class SBoxCmp { same, dustDiff, offerDelDiff, xrpRound, diff };
-
-static std::string
-to_string(SBoxCmp c)
-{
-    switch (c)
-    {
-        case SBoxCmp::same:
-            return "same";
-        case SBoxCmp::dustDiff:
-            return "dust diffs";
-        case SBoxCmp::offerDelDiff:
-            return "offer del diffs";
-        case SBoxCmp::xrpRound:
-            return "XRP round to zero";
-        case SBoxCmp::diff:
-            return "different";
-    }
-    return {};
-}
-
-static SBoxCmp
-compareSandboxes(
-    char const* name,
-    ApplyContext const& ctx,
-    detail::ApplyViewBase const& viewTaker,
-    detail::ApplyViewBase const& viewFlow,
-    beast::Journal j)
-{
-    SBoxCmp c = SBoxCmp::same;
-    CashDiff diff = cashFlowDiff(
-        CashFilter::treatZeroOfferAsDeletion,
-        viewTaker,
-        CashFilter::none,
-        viewFlow);
-
-    if (diff.hasDiff())
-    {
-        using namespace beast::severities;
-        // There is a special case of an offer with XRP on one side where
-        // the XRP gets rounded to zero.  It mostly looks like dust-level
-        // differences.  It is easier to detect if we look for it before
-        // removing the dust differences.
-        if (int const side = diff.xrpRoundToZero())
-        {
-            char const* const whichSide = side > 0 ? "; Flow" : "; Taker";
-            j.stream(kWarning)
-                << "FlowCross: " << name << " different" << whichSide
-                << " XRP rounded to zero.  tx: " << ctx.tx.getTransactionID();
-            return SBoxCmp::xrpRound;
-        }
-
-        c = SBoxCmp::dustDiff;
-        Severity s = kInfo;
-        std::string diffDesc = ", but only dust.";
-        diff.rmDust();
-        if (diff.hasDiff())
-        {
-            // From here on we want to note the transaction ID of differences.
-            std::stringstream txIdSs;
-            txIdSs << ".  tx: " << ctx.tx.getTransactionID();
-            auto txID = txIdSs.str();
-
-            // Sometimes one version deletes offers that the other doesn't
-            // delete.  That's okay, but keep track of it.
-            c = SBoxCmp::offerDelDiff;
-            s = kWarning;
-            int sides = diff.rmLhsDeletedOffers() ? 1 : 0;
-            sides |= diff.rmRhsDeletedOffers() ? 2 : 0;
-            if (!diff.hasDiff())
-            {
-                char const* t = "";
-                switch (sides)
-                {
-                    case 1:
-                        t = "; Taker deleted more offers";
-                        break;
-                    case 2:
-                        t = "; Flow deleted more offers";
-                        break;
-                    case 3:
-                        t = "; Taker and Flow deleted different offers";
-                        break;
-                    default:
-                        break;
-                }
-                diffDesc = std::string(t) + txID;
-            }
-            else
-            {
-                // A difference without a broad classification...
-                c = SBoxCmp::diff;
-                std::stringstream ss;
-                ss << "; common entries: " << diff.commonCount()
-                   << "; Taker unique: " << diff.lhsOnlyCount()
-                   << "; Flow unique: " << diff.rhsOnlyCount() << txID;
-                diffDesc = ss.str();
-            }
-        }
-        j.stream(s) << "FlowCross: " << name << " different" << diffDesc;
-    }
-    return c;
-}
-
 std::pair<TER, Amounts>
 CreateOffer::cross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount)
 {
-    using beast::zero;
-
-    // There are features for Flow offer crossing and for comparing results
-    // between Taker and Flow offer crossing.  Turn those into bools.
-    bool const useFlowCross{sb.rules().enabled(featureFlowCross)};
-    bool const doCompare{sb.rules().enabled(featureCompareTakerFlowCross)};
+    if (sb.rules().enabled(featureFlowCross))
+    {
+        PaymentSandbox psbFlow{&sb};
+        PaymentSandbox psbCancelFlow{&sbCancel};
+        auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount);
+        psbFlow.apply(sb);
+        psbCancelFlow.apply(sbCancel);
+        return ret;
+    }
 
     Sandbox sbTaker{&sb};
     Sandbox sbCancelTaker{&sbCancel};
-    auto const takerR = (!useFlowCross || doCompare)
-        ? takerCross(sbTaker, sbCancelTaker, takerAmount)
-        : std::make_pair(tecINTERNAL, takerAmount);
-
-    PaymentSandbox psbFlow{&sb};
-    PaymentSandbox psbCancelFlow{&sbCancel};
-    auto const flowR = (useFlowCross || doCompare)
-        ? flowCross(psbFlow, psbCancelFlow, takerAmount)
-        : std::make_pair(tecINTERNAL, takerAmount);
-
-    if (doCompare)
-    {
-        SBoxCmp c = SBoxCmp::same;
-        if (takerR.first != flowR.first)
-        {
-            c = SBoxCmp::diff;
-            j_.warn() << "FlowCross: Offer cross tec codes different.  tx: "
-                      << ctx_.tx.getTransactionID();
-        }
-        else if (
-            (takerR.second.in == zero && flowR.second.in == zero) ||
-            (takerR.second.out == zero && flowR.second.out == zero))
-        {
-            c = compareSandboxes(
-                "Both Taker and Flow fully crossed",
-                ctx_,
-                sbTaker,
-                psbFlow,
-                j_);
-        }
-        else if (takerR.second.in == zero && takerR.second.out == zero)
-        {
-            char const* crossType =
-                "Taker fully crossed, Flow partially crossed";
-            if (flowR.second.in == takerAmount.in &&
-                flowR.second.out == takerAmount.out)
-                crossType = "Taker fully crossed, Flow not crossed";
-
-            c = compareSandboxes(crossType, ctx_, sbTaker, psbFlow, j_);
-        }
-        else if (flowR.second.in == zero && flowR.second.out == zero)
-        {
-            char const* crossType =
-                "Taker partially crossed, Flow fully crossed";
-            if (takerR.second.in == takerAmount.in &&
-                takerR.second.out == takerAmount.out)
-                crossType = "Taker not crossed, Flow fully crossed";
-
-            c = compareSandboxes(crossType, ctx_, sbTaker, psbFlow, j_);
-        }
-        else if (ctx_.tx.getFlags() & tfFillOrKill)
-        {
-            c = compareSandboxes(
-                "FillOrKill offer", ctx_, sbCancelTaker, psbCancelFlow, j_);
-        }
-        else if (
-            takerR.second.in == takerAmount.in &&
-            flowR.second.in == takerAmount.in &&
-            takerR.second.out == takerAmount.out &&
-            flowR.second.out == takerAmount.out)
-        {
-            char const* crossType = "Neither Taker nor Flow crossed";
-            c = compareSandboxes(crossType, ctx_, sbTaker, psbFlow, j_);
-        }
-        else if (
-            takerR.second.in == takerAmount.in &&
-            takerR.second.out == takerAmount.out)
-        {
-            char const* crossType = "Taker not crossed, Flow partially crossed";
-            c = compareSandboxes(crossType, ctx_, sbTaker, psbFlow, j_);
-        }
-        else if (
-            flowR.second.in == takerAmount.in &&
-            flowR.second.out == takerAmount.out)
-        {
-            char const* crossType = "Taker partially crossed, Flow not crossed";
-            c = compareSandboxes(crossType, ctx_, sbTaker, psbFlow, j_);
-        }
-        else
-        {
-            c = compareSandboxes(
-                "Partial cross offer", ctx_, sbTaker, psbFlow, j_);
-
-            // If we've gotten this far then the returned amounts matter.
-            if (c <= SBoxCmp::dustDiff && takerR.second != flowR.second)
-            {
-                c = SBoxCmp::dustDiff;
-                using namespace beast::severities;
-                Severity s = kInfo;
-                std::string onlyDust = ", but only dust.";
-                if (!diffIsDust(takerR.second.in, flowR.second.in) ||
-                    (!diffIsDust(takerR.second.out, flowR.second.out)))
-                {
-                    char const* outSame = "";
-                    if (takerR.second.out == flowR.second.out)
-                        outSame = " but outs same";
-
-                    c = SBoxCmp::diff;
-                    s = kWarning;
-                    std::stringstream ss;
-                    ss << outSame
-                       << ".  Taker in: " << takerR.second.in.getText()
-                       << "; Taker out: " << takerR.second.out.getText()
-                       << "; Flow in: " << flowR.second.in.getText()
-                       << "; Flow out: " << flowR.second.out.getText()
-                       << ".  tx: " << ctx_.tx.getTransactionID();
-                    onlyDust = ss.str();
-                }
-                j_.stream(s)
-                    << "FlowCross: Partial cross amounts different" << onlyDust;
-            }
-        }
-        j_.error() << "FlowCross cmp result: " << to_string(c);
-    }
-
-    // Return one result or the other based on amendment.
-    if (useFlowCross)
-    {
-        psbFlow.apply(sb);
-        psbCancelFlow.apply(sbCancel);
-        return flowR;
-    }
-
+    auto const ret = takerCross(sbTaker, sbCancelTaker, takerAmount);
     sbTaker.apply(sb);
     sbCancelTaker.apply(sbCancel);
-    return takerR;
+    return ret;
 }
 
 std::string
