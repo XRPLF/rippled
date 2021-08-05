@@ -137,42 +137,49 @@ doLedgerDataGrpc(
     grpc::Status status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (RPC::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        grpc::Status errorStatus;
+        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        {
+            errorStatus = grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+        }
+        else
+        {
+            errorStatus =
+                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+        }
         return {response, errorStatus};
     }
 
-    ReadView::key_type key = ReadView::key_type();
-    if (request.marker().size() != 0)
+    uint256 startKey;
+    if (auto key = uint256::fromVoidChecked(request.marker()))
     {
-        key = uint256::fromVoid(request.marker().data());
-        if (key.size() != request.marker().size())
-        {
-            grpc::Status errorStatus{
-                grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
-            return {response, errorStatus};
-        }
+        startKey = *key;
+    }
+    else if (request.marker().size() != 0)
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
+        return {response, errorStatus};
     }
 
     auto e = ledger->sles.end();
-    ReadView::key_type stopKey = ReadView::key_type();
-    if (request.end_marker().size() != 0)
+    if (auto key = uint256::fromVoidChecked(request.end_marker()))
     {
-        stopKey = uint256::fromVoid(request.end_marker().data());
-        if (stopKey.size() != request.marker().size())
-        {
-            grpc::Status errorStatus{
-                grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
-            return {response, errorStatus};
-        }
-        e = ledger->sles.upper_bound(stopKey);
+        e = ledger->sles.upper_bound(*key);
+    }
+    else if (request.end_marker().size() != 0)
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
+        return {response, errorStatus};
     }
 
     int maxLimit = RPC::Tuning::pageLength(true);
 
-    for (auto i = ledger->sles.upper_bound(key); i != e; ++i)
+    for (auto i = ledger->sles.upper_bound(startKey); i != e; ++i)
     {
         auto sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)

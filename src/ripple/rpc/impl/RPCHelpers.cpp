@@ -294,8 +294,11 @@ ledgerFromSpecifier(
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            uint256 ledgerHash = uint256::fromVoid(specifier.hash().data());
-            return getLedger(ledger, ledgerHash, context);
+            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            {
+                return getLedger(ledger, *hash, context);
+            }
+            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         }
         case LedgerCase::kSequence:
             return getLedger(ledger, specifier.sequence(), context);
