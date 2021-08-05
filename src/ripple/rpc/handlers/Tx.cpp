@@ -457,13 +457,13 @@ doTxGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest>& context)
     TxArgs args;
 
     std::string const& hashBytes = request.hash();
-    args.hash = uint256::fromVoid(hashBytes.data());
-    if (args.hash.size() != hashBytes.size())
+    if (hashBytes.size() != uint256::size())
     {
         grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "ledger hash malformed"};
+            grpc::StatusCode::INVALID_ARGUMENT, "tx hash malformed"};
         return {response, errorStatus};
     }
+    args.hash = uint256::fromVoid(hashBytes.data());
 
     args.binary = request.binary();
 

@@ -495,6 +495,9 @@ public:
 
         for (auto& obj : cur_->ledger_objects().objects())
         {
+            if (obj.key().size() != uint256::size())
+                throw std::runtime_error("Received malformed object ID");
+
             auto key = uint256::fromVoid(obj.key().data());
             auto& data = obj.data();
 

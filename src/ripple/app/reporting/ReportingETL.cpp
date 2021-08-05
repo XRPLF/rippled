@@ -405,6 +405,9 @@ ReportingETL::buildNextLedger(
 
     for (auto& obj : rawData.ledger_objects().objects())
     {
+        if (obj.key().size() != uint256::size())
+            throw std::runtime_error("Recevied malformed object ID");
+
         auto key = uint256::fromVoid(obj.key().data());
         auto& data = obj.data();
 

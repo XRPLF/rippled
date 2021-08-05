@@ -137,36 +137,45 @@ doLedgerDataGrpc(
     grpc::Status status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (RPC::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        grpc::Status errorStatus;
+        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        {
+            errorStatus = grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+        }
+        else
+        {
+            errorStatus =
+                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+        }
         return {response, errorStatus};
     }
 
     ReadView::key_type key = ReadView::key_type();
     if (request.marker().size() != 0)
     {
-        key = uint256::fromVoid(request.marker().data());
-        if (key.size() != request.marker().size())
+        if (request.marker().size() != uint256::size())
         {
             grpc::Status errorStatus{
                 grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
             return {response, errorStatus};
         }
+        key = uint256::fromVoid(request.marker().data());
     }
 
     auto e = ledger->sles.end();
     ReadView::key_type stopKey = ReadView::key_type();
     if (request.end_marker().size() != 0)
     {
-        stopKey = uint256::fromVoid(request.end_marker().data());
-        if (stopKey.size() != request.marker().size())
+        if (request.end_marker().size() != uint256::size())
         {
             grpc::Status errorStatus{
                 grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
             return {response, errorStatus};
         }
+        stopKey = uint256::fromVoid(request.end_marker().data());
         e = ledger->sles.upper_bound(stopKey);
     }
 
