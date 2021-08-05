@@ -419,6 +419,14 @@ class ReportingETL_test : public beast::unit_test::suite
             }
         }
 
+        {
+            auto [status, reply] =
+                grpcLedgerData(env.closed()->seq(), "bad marker");
+            BEAST_EXPECT(!status.ok());
+            BEAST_EXPECT(
+                status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        }
+
         num_accounts = 3000;
 
         for (auto i = 0; i < num_accounts; i++)

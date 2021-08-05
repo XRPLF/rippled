@@ -97,14 +97,17 @@ parseLedgerArgs(
         }
         else if (ledgerCase == LedgerCase::kHash)
         {
-            if (uint256::size() != specifier.hash().size())
+            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            {
+                ledger = *hash;
+            }
+            else
             {
                 grpc::Status errorStatus{
                     grpc::StatusCode::INVALID_ARGUMENT,
                     "ledger hash malformed"};
                 return errorStatus;
             }
-            ledger = uint256::fromVoid(specifier.hash().data());
         }
         return ledger;
     }
