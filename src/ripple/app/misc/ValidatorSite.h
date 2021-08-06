@@ -117,7 +117,7 @@ private:
     Application& app_;
     beast::Journal const j_;
 
-    // If both mutex are to be locked at the same time, `sites_mutes_` must be
+    // If both mutex are to be locked at the same time, `sites_mutex_` must be
     // locked before `state_mutex_` or we may deadlock.
     std::mutex mutable sites_mutex_;
     std::mutex mutable state_mutex_;
