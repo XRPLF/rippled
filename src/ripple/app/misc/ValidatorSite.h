@@ -117,6 +117,8 @@ private:
     Application& app_;
     beast::Journal const j_;
 
+    // If both mutex are to be locked at the same time, `sites_mutex_` must be
+    // locked before `state_mutex_` or we may deadlock.
     std::mutex mutable sites_mutex_;
     std::mutex mutable state_mutex_;
 
@@ -201,9 +203,11 @@ private:
         std::lock_guard<std::mutex> const&);
 
     /// Queue next site to be fetched
-    /// lock over state_mutex_ required
+    /// lock over site_mutex_ and state_mutex_ required
     void
-    setTimer(std::lock_guard<std::mutex> const&);
+    setTimer(
+        std::lock_guard<std::mutex> const&,
+        std::lock_guard<std::mutex> const&);
 
     /// request took too long
     void
