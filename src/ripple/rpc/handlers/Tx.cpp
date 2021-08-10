@@ -456,14 +456,16 @@ doTxGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest>& context)
 
     TxArgs args;
 
-    std::string const& hashBytes = request.hash();
-    if (hashBytes.size() != uint256::size())
+    if (auto hash = uint256::fromVoidChecked(request.hash()))
+    {
+        args.hash = *hash;
+    }
+    else
     {
         grpc::Status errorStatus{
             grpc::StatusCode::INVALID_ARGUMENT, "tx hash malformed"};
         return {response, errorStatus};
     }
-    args.hash = uint256::fromVoid(hashBytes.data());
 
     args.binary = request.binary();
 

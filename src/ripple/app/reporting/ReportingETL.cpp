@@ -405,35 +405,35 @@ ReportingETL::buildNextLedger(
 
     for (auto& obj : rawData.ledger_objects().objects())
     {
-        if (obj.key().size() != uint256::size())
+        auto key = uint256::fromVoidChecked(obj.key());
+        if (!key)
             throw std::runtime_error("Recevied malformed object ID");
 
-        auto key = uint256::fromVoid(obj.key().data());
         auto& data = obj.data();
 
         // indicates object was deleted
         if (data.size() == 0)
         {
             JLOG(journal_.trace()) << __func__ << " : "
-                                   << "Erasing object = " << key;
-            if (next->exists(key))
-                next->rawErase(key);
+                                   << "Erasing object = " << *key;
+            if (next->exists(*key))
+                next->rawErase(*key);
         }
         else
         {
             SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, key);
+            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
 
-            if (next->exists(key))
+            if (next->exists(*key))
             {
                 JLOG(journal_.trace()) << __func__ << " : "
-                                       << "Replacing object = " << key;
+                                       << "Replacing object = " << *key;
                 next->rawReplace(sle);
             }
             else
             {
                 JLOG(journal_.trace()) << __func__ << " : "
-                                       << "Inserting object = " << key;
+                                       << "Inserting object = " << *key;
                 next->rawInsert(sle);
             }
         }

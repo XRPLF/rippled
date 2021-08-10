@@ -393,16 +393,15 @@ doLedgerEntryGrpc(
         return {response, errorStatus};
     }
 
-    std::string const& keyBytes = request.key();
-    if (keyBytes.size() != uint256::size())
+    auto key = uint256::fromVoidChecked(request.key());
+    if (!key)
     {
         grpc::Status errorStatus{
             grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
         return {response, errorStatus};
     }
-    auto key = uint256::fromVoid(keyBytes.data());
 
-    auto const sleNode = ledger->read(keylet::unchecked(key));
+    auto const sleNode = ledger->read(keylet::unchecked(*key));
     if (!sleNode)
     {
         grpc::Status errorStatus{

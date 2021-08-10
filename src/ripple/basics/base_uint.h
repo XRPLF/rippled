@@ -313,6 +313,15 @@ public:
         return base_uint(data, VoidHelper());
     }
 
+    template <class T>
+    static std::optional<base_uint>
+    fromVoidChecked(T const& from)
+    {
+        if (from.size() != size())
+            return {};
+        return fromVoid(from.data());
+    }
+
     constexpr int
     signum() const
     {

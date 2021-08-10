@@ -495,14 +495,14 @@ public:
 
         for (auto& obj : cur_->ledger_objects().objects())
         {
-            if (obj.key().size() != uint256::size())
+            auto key = uint256::fromVoidChecked(obj.key());
+            if (!key)
                 throw std::runtime_error("Received malformed object ID");
 
-            auto key = uint256::fromVoid(obj.key().data());
             auto& data = obj.data();
 
             SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, key);
+            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
 
             queue.push(sle);
         }
