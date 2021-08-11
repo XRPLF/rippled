@@ -40,7 +40,6 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/digest.h>
 
-#include <boost/algorithm/clamp.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
@@ -1825,7 +1824,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     // Preliminary check for the validity of the signature: A DER encoded
     // signature can't be longer than 72 bytes.
-    if ((boost::algorithm::clamp(sig.size(), 64, 72) != sig.size()) ||
+    if ((std::clamp<std::size_t>(sig.size(), 64, 72) != sig.size()) ||
         (publicKeyType(makeSlice(set.nodepubkey())) != KeyType::secp256k1))
     {
         JLOG(p_journal_.warn()) << "Proposal: malformed";

@@ -28,7 +28,6 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
-#include <boost/algorithm/clamp.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <numeric>
 #include <stdexcept>
