@@ -26,7 +26,6 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
-#include <boost/algorithm/clamp.hpp>
 #include <algorithm>
 #include <limits>
 #include <numeric>
@@ -111,11 +110,11 @@ TxQ::FeeMetrics::update(
         // Ledgers are taking to long to process,
         // so clamp down on limits.
         auto const cutPct = 100 - setup.slowConsensusDecreasePercent;
-        // upperLimit must be >= minimumTxnCount_ or boost::clamp can give
+        // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
             mulDiv(txnsExpected_, cutPct, 100).second, minimumTxnCount_);
-        txnsExpected_ = boost::algorithm::clamp(
+        txnsExpected_ = std::clamp<std::uint64_t>(
             mulDiv(size, cutPct, 100).second, minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
@@ -1885,7 +1884,7 @@ setup_TxQ(Config const& config)
         "normal_consensus_increase_percent",
         section);
     setup.normalConsensusIncreasePercent =
-        boost::algorithm::clamp(setup.normalConsensusIncreasePercent, 0, 1000);
+        std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
     /* If this percentage is outside of the 0-100 range, the results
        are nonsensical (uint overflows happen, so the limit grows
@@ -1895,7 +1894,7 @@ setup_TxQ(Config const& config)
         "slow_consensus_decrease_percent",
         section);
     setup.slowConsensusDecreasePercent =
-        boost::algorithm::clamp(setup.slowConsensusDecreasePercent, 0, 100);
+        std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
     set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
     set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);

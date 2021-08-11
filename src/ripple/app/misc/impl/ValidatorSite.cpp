@@ -27,7 +27,6 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
-#include <boost/algorithm/clamp.hpp>
 #include <algorithm>
 
 namespace ripple {
@@ -469,10 +468,10 @@ ValidatorSite::parseJsonResponse(
         body[jss::refresh_interval].isNumeric())
     {
         using namespace std::chrono_literals;
-        std::chrono::minutes const refresh = boost::algorithm::clamp(
+        std::chrono::minutes const refresh = std::clamp(
             std::chrono::minutes{body[jss::refresh_interval].asUInt()},
             1min,
-            24h);
+            std::chrono::minutes{24h});
         sites_[siteIdx].refreshInterval = refresh;
         sites_[siteIdx].nextRefresh =
             clock_type::now() + sites_[siteIdx].refreshInterval;
