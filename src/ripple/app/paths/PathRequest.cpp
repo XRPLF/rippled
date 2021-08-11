@@ -33,7 +33,6 @@
 #include <ripple/protocol/UintTypes.h>
 
 #include <ripple/rpc/impl/Tuning.h>
-#include <boost/algorithm/clamp.hpp>
 #include <optional>
 
 #include <tuple>
@@ -624,8 +623,7 @@ PathRequest::findPaths(
         after four source currencies, 50 - (4 * 4) = 34.
     */
     int const size = sourceCurrencies.size();
-    consumer_.charge(
-        {boost::algorithm::clamp(size * size + 34, 50, 400), "path update"});
+    consumer_.charge({std::clamp(size * size + 34, 50, 400), "path update"});
     return true;
 }
 
