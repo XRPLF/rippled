@@ -33,6 +33,7 @@
 #include <atomic>
 #include <chrono>
 #include <numeric>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <unordered_set>
