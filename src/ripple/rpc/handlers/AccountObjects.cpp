@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
@@ -45,6 +46,103 @@ namespace ripple {
       marker: <opaque> // optional, resume previous query
     }
 */
+
+Json::Value
+doAccountNFTs(RPC::JsonContext& context)
+{
+    auto const& params = context.params;
+    if (!params.isMember(jss::account))
+        return RPC::missing_field_error(jss::account);
+
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger(ledger, context);
+    if (ledger == nullptr)
+        return result;
+
+    AccountID accountID;
+    {
+        auto const strIdent = params[jss::account].asString();
+        if (auto jv = RPC::accountFromString(accountID, strIdent))
+        {
+            for (auto it = jv.begin(); it != jv.end(); ++it)
+                result[it.memberName()] = *it;
+
+            return result;
+        }
+    }
+
+    if (!ledger->exists(keylet::account(accountID)))
+        return rpcError(rpcACT_NOT_FOUND);
+
+    unsigned int limit;
+    if (auto err = readLimitField(limit, RPC::Tuning::accountNFTokens, context))
+        return *err;
+
+    uint256 marker;
+
+    if (params.isMember(jss::marker))
+    {
+        auto const& m = params[jss::marker];
+        if (!m.isString())
+            return RPC::expected_field_error(jss::marker, "string");
+
+        if (!marker.parseHex(m.asString()))
+            return RPC::invalid_field_error(jss::marker);
+    }
+
+    auto const first = keylet::nftpage(keylet::nftpage_min(accountID), marker);
+    auto const last = keylet::nftpage_max(accountID);
+
+    auto cp = ledger->read(Keylet(
+        ltNFTOKEN_PAGE,
+        ledger->succ(first.key, last.key.next()).value_or(last.key)));
+
+    std::uint32_t cnt = 0;
+    auto& nfts = (result[jss::account_nfts] = Json::arrayValue);
+
+    // Continue iteration from the current page:
+
+    while (cp)
+    {
+        auto arr = cp->getFieldArray(sfNFTokens);
+
+        for (auto const& o : arr)
+        {
+            if (o.getFieldH256(sfNFTokenID) <= marker)
+                continue;
+
+            {
+                Json::Value& obj = nfts.append(o.getJson(JsonOptions::none));
+
+                // Pull out the components of the nft ID.
+                uint256 const nftokenID = o[sfNFTokenID];
+                obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
+                obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
+                obj[sfNFTokenTaxon.jsonName] =
+                    nft::toUInt32(nft::getTaxon(nftokenID));
+                obj[jss::nft_serial] = nft::getSerial(nftokenID);
+                if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
+                    obj[sfTransferFee.jsonName] = xferFee;
+            }
+
+            if (++cnt == limit)
+            {
+                result[jss::limit] = limit;
+                result[jss::marker] = to_string(o.getFieldH256(sfNFTokenID));
+                return result;
+            }
+        }
+
+        if (auto npm = (*cp)[~sfNextPageMin])
+            cp = ledger->read(Keylet(ltNFTOKEN_PAGE, *npm));
+        else
+            cp = nullptr;
+    }
+
+    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    context.loadType = Resource::feeMediumBurdenRPC;
+    return result;
+}
 
 Json::Value
 doAccountObjects(RPC::JsonContext& context)

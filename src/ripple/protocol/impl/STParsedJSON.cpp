@@ -425,7 +425,7 @@ parseLeaf(
 
             break;
 
-        case STI_HASH128: {
+        case STI_UINT128: {
             if (!value.isString())
             {
                 error = bad_type(json_name, fieldName);
@@ -445,11 +445,11 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STHash128>(field, num);
+            ret = detail::make_stvar<STUInt128>(field, num);
             break;
         }
 
-        case STI_HASH160: {
+        case STI_UINT160: {
             if (!value.isString())
             {
                 error = bad_type(json_name, fieldName);
@@ -469,11 +469,11 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STHash160>(field, num);
+            ret = detail::make_stvar<STUInt160>(field, num);
             break;
         }
 
-        case STI_HASH256: {
+        case STI_UINT256: {
             if (!value.isString())
             {
                 error = bad_type(json_name, fieldName);
@@ -493,7 +493,7 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STHash256>(field, num);
+            ret = detail::make_stvar<STUInt256>(field, num);
             break;
         }
 
@@ -860,8 +860,9 @@ parseObject(
 
         return data;
     }
-    catch (STObject::FieldErr const&)
+    catch (STObject::FieldErr const& e)
     {
+        std::cerr << "template_mismatch: " << e.what() << "\n";
         error = template_mismatch(inName);
     }
     catch (std::exception const&)

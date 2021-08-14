@@ -75,6 +75,13 @@ public:
                     // elsewhere.
                     continue;
                 }
+                if (flag == asfAuthorizedNFTokenMinter)
+                {
+                    // The asfAuthorizedNFTokenMinter flag requires the
+                    // presence or absence of the sfNFTokenMinter field in
+                    // the transaction.  It is tested elsewhere.
+                    continue;
+                }
                 else if (
                     std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())
@@ -397,6 +404,18 @@ public:
             // the acceptable value with an out-of-bounds value.
             env(rate(gw, 2.0));
             env.close();
+
+            // Because we're hacking the ledger we need the account to have
+            // non-zero sfMintedNFTokens and sfBurnedNFTokens fields.  This
+            // prevents an exception when the AccountRoot template is applied.
+            {
+                uint256 const nftId0{token::getNextID(env, gw, 0u)};
+                env(token::mint(gw, 0u));
+                env.close();
+
+                env(token::burn(gw, nftId0));
+                env.close();
+            }
 
             // Note that we're bypassing almost all of the ledger's safety
             // checks with this modify() call.  If you call close() between

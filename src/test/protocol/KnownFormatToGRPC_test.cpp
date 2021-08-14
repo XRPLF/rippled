@@ -235,72 +235,77 @@ private:
         // We'll be running through two sets of pbuf::Descriptors: the ones in
         // the OneOf and the common fields.  Here is a lambda that factors out
         // the common checking code for these two cases.
-        auto checkFieldDesc =
-            [this, &sFields, &knownFormatName](
-                pbuf::FieldDescriptor const* const fieldDesc) {
-                // gRPC has different handling for repeated vs non-repeated
-                // types.  So we need to do that too.
-                std::string name;
-                if (fieldDesc->is_repeated())
+        auto checkFieldDesc = [this, &sFields, &knownFormatName](
+                                  pbuf::FieldDescriptor const* const
+                                      fieldDesc) {
+            // gRPC has different handling for repeated vs non-repeated
+            // types.  So we need to do that too.
+            std::string name;
+            if (fieldDesc->is_repeated())
+            {
+                // Repeated-type handling.
+
+                // Munge the fieldDescriptor name so it looks like the
+                // name in sFields.
+                name = fieldDesc->camelcase_name();
+                name[0] = toupper(name[0]);
+
+                // The ledger gives UNL all caps.  Adapt to that.
+                if (size_t const i = name.find("Unl"); i != std::string::npos)
                 {
-                    // Repeated-type handling.
-
-                    // Munge the fieldDescriptor name so it looks like the
-                    // name in sFields.
-                    name = fieldDesc->camelcase_name();
-                    name[0] = toupper(name[0]);
-
-                    // The ledger gives UNL all caps.  Adapt to that.
-                    if (size_t const i = name.find("Unl");
-                        i != std::string::npos)
-                    {
-                        name[i + 1] = 'N';
-                        name[i + 2] = 'L';
-                    }
-
-                    if (!sFields.count(name))
-                    {
-                        fail(
-                            std::string("Repeated Protobuf Descriptor '") +
-                                name + "' expected in KnownFormat '" +
-                                knownFormatName + "' and not found",
-                            __FILE__,
-                            __LINE__);
-                        return;
-                    }
-                    pass();
-
-                    validateRepeatedField(fieldDesc, sFields.at(name));
+                    name[i + 1] = 'N';
+                    name[i + 2] = 'L';
                 }
-                else
+
+                // The ledger gives the NFT part of NFToken all caps.
+                // Adapt to that.
+                if (size_t const i = name.find("Nft"); i != std::string::npos)
                 {
-                    // Non-repeated handling.
-                    pbuf::Descriptor const* const entryDesc =
-                        fieldDesc->message_type();
-                    if (entryDesc == nullptr)
-                        return;
-
-                    name = entryDesc->name();
-                    if (!sFields.count(name))
-                    {
-                        fail(
-                            std::string("Protobuf Descriptor '") +
-                                entryDesc->name() +
-                                "' expected in KnownFormat '" +
-                                knownFormatName + "' and not found",
-                            __FILE__,
-                            __LINE__);
-                        return;
-                    }
-                    pass();
-
-                    validateDescriptor(
-                        entryDesc, sFields.at(entryDesc->name()));
+                    name[i + 1] = 'F';
+                    name[i + 2] = 'T';
                 }
-                // Remove the validated field from the map so we can tell if
-                // there are left over fields at the end of all comparisons.
-                sFields.erase(name);
-            };
+
+                if (!sFields.count(name))
+                {
+                    fail(
+                        std::string("Repeated Protobuf Descriptor '") + name +
+                            "' expected in KnownFormat '" + knownFormatName +
+                            "' and not found",
+                        __FILE__,
+                        __LINE__);
+                    return;
+                }
+                pass();
+
+                validateRepeatedField(fieldDesc, sFields.at(name));
+            }
+            else
+            {
+                // Non-repeated handling.
+                pbuf::Descriptor const* const entryDesc =
+                    fieldDesc->message_type();
+                if (entryDesc == nullptr)
+                    return;
+
+                name = entryDesc->name();
+                if (!sFields.count(name))
+                {
+                    fail(
+                        std::string("Protobuf Descriptor '") +
+                            entryDesc->name() + "' expected in KnownFormat '" +
+                            knownFormatName + "' and not found",
+                        __FILE__,
+                        __LINE__);
+                    return;
+                }
+                pass();
+
+                validateDescriptor(entryDesc, sFields.at(entryDesc->name()));
+            }
+            // Remove the validated field from the map so we can tell if
+            // there are left over fields at the end of all comparisons.
+            sFields.erase(name);
+        };
 
         // Compare the SFields to the FieldDescriptor->Descriptors.
         for (int i = 0; i < pbufDescriptor->field_count(); ++i)
@@ -453,7 +458,7 @@ private:
             // clang-format off
             static const std::array specialEntries{
                 SpecialEntry{
-                    "Currency", STI_HASH160,
+                    "Currency", STI_UINT160,
                     {
                         {"name", fieldTYPE_STRING},
                         {"code", fieldTYPE_BYTES}
@@ -581,9 +586,9 @@ private:
                 {STI_ACCOUNT, fieldTYPE_STRING},
 
                 {STI_AMOUNT,  fieldTYPE_BYTES},
-                {STI_HASH128, fieldTYPE_BYTES},
-                {STI_HASH160, fieldTYPE_BYTES},
-                {STI_HASH256, fieldTYPE_BYTES},
+                {STI_UINT128, fieldTYPE_BYTES},
+                {STI_UINT160, fieldTYPE_BYTES},
+                {STI_UINT256, fieldTYPE_BYTES},
                 {STI_VL,      fieldTYPE_BYTES},
             };
         //clang-format on
@@ -601,7 +606,8 @@ private:
         static const std::map<int, pbuf::FieldDescriptor::Type>
             sFieldCodeToFieldDescType{
                 {sfDomain.fieldCode, fieldTYPE_STRING},
-                {sfFee.fieldCode,    fieldTYPE_UINT64}};
+                {sfFee.fieldCode,    fieldTYPE_UINT64},
+                {sfURI.fieldCode,    fieldTYPE_STRING}};
 
         if (auto const iter = sFieldCodeToFieldDescType.find(sField->fieldCode);
             iter != sFieldCodeToFieldDescType.end() &&
@@ -703,7 +709,9 @@ private:
         // The following repeated types provide no further structure for their
         // in-ledger representation.  We just have to trust that the gRPC
         // representation is reasonable for what the ledger implements.
-        static const std::set<std::string> noFurtherDetail{{sfPaths.getName()}};
+        static const std::set<std::string> noFurtherDetail{
+            {sfPaths.getName()},
+        };
 
         if (noFurtherDetail.count(sField->getName()))
         {
@@ -721,8 +729,10 @@ private:
             {sfIndexes.getName(), &sfLedgerIndex},
             {sfMajorities.getName(), &sfMajority},
             {sfMemos.getName(), &sfMemo},
+            {sfNFTokens.getName(), &sfNFToken},
             {sfSignerEntries.getName(), &sfSignerEntry},
-            {sfSigners.getName(), &sfSigner}};
+            {sfSigners.getName(), &sfSigner},
+            {sfNFTokenOffers.getName(), &sfLedgerIndex}};
 
         if (!repeatsWhat.count(sField->getName()))
         {

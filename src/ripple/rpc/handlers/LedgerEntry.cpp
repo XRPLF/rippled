@@ -328,9 +328,38 @@ doLedgerEntry(RPC::JsonContext& context)
                     *id, context.params[jss::ticket][jss::ticket_seq].asUInt());
         }
     }
+    else if (context.params.isMember(jss::nft_page))
+    {
+        expectedType = ltNFTOKEN_PAGE;
+
+        if (context.params[jss::nft_page].isString())
+        {
+            if (!uNodeIndex.parseHex(context.params[jss::nft_page].asString()))
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else
+        {
+            jvResult[jss::error] = "malformedRequest";
+        }
+    }
     else
     {
-        jvResult[jss::error] = "unknownOption";
+        if (context.params.isMember("params") &&
+            context.params["params"].isArray() &&
+            context.params["params"].size() == 1 &&
+            context.params["params"][0u].isString())
+        {
+            if (!uNodeIndex.parseHex(context.params["params"][0u].asString()))
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else
+            jvResult[jss::error] = "unknownOption";
     }
 
     if (uNodeIndex.isNonZero())
@@ -347,7 +376,7 @@ doLedgerEntry(RPC::JsonContext& context)
         else if (
             (expectedType != ltANY) && (expectedType != sleNode->getType()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            jvResult[jss::error] = "unexpectedLedgerType";
         }
         else if (bNodeBinary)
         {

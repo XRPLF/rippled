@@ -48,6 +48,30 @@ namespace ripple {
 //
 //------------------------------------------------------------------------------
 
+/** Determines whether the given expiration time has passed.
+
+    In the XRP Ledger, expiration times are defined as the number of whole
+    seconds after the "Ripple Epoch" which, for historical reasons, is set
+    to January 1, 2000 (00:00 UTC).
+
+    This is like the way the Unix epoch works, except the Ripple Epoch is
+    precisely 946,684,800 seconds after the Unix Epoch.
+
+    See https://xrpl.org/basic-data-types.html#specifying-time
+
+    Expiration is defined in terms of the close time of the parent ledger,
+    because we definitively know the time that it closed (since consensus
+    agrees on time) but we do not know the closing time of the ledger that
+    is under construction.
+
+    @param view The ledger whose parent time is used as the clock.
+    @param exp The optional expiration time we want to check.
+
+    @returns `true` if `exp` is in the past; `false` otherwise.
+ */
+[[nodiscard]] bool
+hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
+
 /** Controls the treatment of frozen account balances */
 enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 
@@ -94,14 +118,14 @@ xrpLiquid(
     std::int32_t ownerCountAdj,
     beast::Journal j);
 
-/** Iterate all items in an account's owner directory. */
+/** Iterate all items in the given directory. */
 void
 forEachItem(
     ReadView const& view,
-    AccountID const& id,
-    std::function<void(std::shared_ptr<SLE const> const&)> f);
+    Keylet const& root,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f);
 
-/** Iterate all items after an item in an owner directory.
+/** Iterate all items after an item in the given directory.
     @param after The key of the item to start after
     @param hint The directory page containing `after`
     @param limit The maximum number of items to return
@@ -110,11 +134,39 @@ forEachItem(
 bool
 forEachItemAfter(
     ReadView const& view,
+    Keylet const& root,
+    uint256 const& after,
+    std::uint64_t const hint,
+    unsigned int limit,
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f);
+
+/** Iterate all items in an account's owner directory. */
+inline void
+forEachItem(
+    ReadView const& view,
+    AccountID const& id,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
+{
+    return forEachItem(view, keylet::ownerDir(id), f);
+}
+
+/** Iterate all items after an item in an owner directory.
+    @param after The key of the item to start after
+    @param hint The directory page containing `after`
+    @param limit The maximum number of items to return
+    @return `false` if the iteration failed
+*/
+inline bool
+forEachItemAfter(
+    ReadView const& view,
     AccountID const& id,
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> f);
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
+{
+    return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
+}
 
 [[nodiscard]] Rate
 transferRate(ReadView const& view, AccountID const& issuer);

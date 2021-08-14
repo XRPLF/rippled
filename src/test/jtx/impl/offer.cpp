@@ -27,14 +27,14 @@ namespace jtx {
 Json::Value
 offer(
     Account const& account,
-    STAmount const& in,
-    STAmount const& out,
+    STAmount const& takerPays,
+    STAmount const& takerGets,
     std::uint32_t flags)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TakerPays] = in.getJson(JsonOptions::none);
-    jv[jss::TakerGets] = out.getJson(JsonOptions::none);
+    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::none);
+    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::none);
     if (flags)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;

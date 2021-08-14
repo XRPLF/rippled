@@ -75,9 +75,9 @@ private:
     friend class detail::STVar;
 };
 
-using STHash128 = STBitString<128>;
-using STHash160 = STBitString<160>;
-using STHash256 = STBitString<256>;
+using STUInt128 = STBitString<128>;
+using STUInt160 = STBitString<160>;
+using STUInt256 = STBitString<256>;
 
 template <std::size_t Bits>
 inline STBitString<Bits>::STBitString(SField const& n) : STBase(n)
@@ -117,23 +117,23 @@ STBitString<Bits>::move(std::size_t n, void* buf)
 
 template <>
 inline SerializedTypeID
-STHash128::getSType() const
+STUInt128::getSType() const
 {
-    return STI_HASH128;
+    return STI_UINT128;
 }
 
 template <>
 inline SerializedTypeID
-STHash160::getSType() const
+STUInt160::getSType() const
 {
-    return STI_HASH160;
+    return STI_UINT160;
 }
 
 template <>
 inline SerializedTypeID
-STHash256::getSType() const
+STUInt256::getSType() const
 {
-    return STI_HASH256;
+    return STI_UINT256;
 }
 
 template <std::size_t Bits>

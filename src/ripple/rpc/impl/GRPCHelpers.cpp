@@ -117,7 +117,7 @@ void
 populateProtoCurrency(
     T const& getProto,
     STObject const& from,
-    SF_HASH160 const& field)
+    SF_UINT160 const& field)
 {
     if (from.isFieldPresent(field))
     {
@@ -772,6 +772,14 @@ populateIndexes(T& to, STObject const& from)
 
 template <class T>
 void
+populateNFTokenOffers(T& to, STObject const& from)
+{
+    populateProtoVec256(
+        [&to]() { return to.add_nftoken_offers(); }, from, sfNFTokenOffers);
+}
+
+template <class T>
+void
 populateRootIndex(T& to, STObject const& from)
 {
     populateProtoPrimitive(
@@ -860,6 +868,121 @@ populateReferenceFeeUnits(T& to, STObject const& from)
         [&to]() { return to.mutable_reference_fee_units(); },
         from,
         sfReferenceFeeUnits);
+}
+
+template <class T>
+void
+populatePreviousPageMin(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_previous_page_min(); },
+        from,
+        sfPreviousPageMin);
+}
+
+template <class T>
+void
+populateNextPageMin(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_next_page_min(); }, from, sfNextPageMin);
+}
+
+template <class T>
+void
+populateNFTokenID(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_nftoken_id(); }, from, sfNFTokenID);
+}
+
+template <class T>
+void
+populateURI(T& to, STObject const& from)
+{
+    populateProtoVLasString([&to]() { return to.mutable_uri(); }, from, sfURI);
+}
+
+template <class T>
+void
+populateBurnedNFTokens(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_burned_nftokens(); },
+        from,
+        sfBurnedNFTokens);
+}
+
+template <class T>
+void
+populateMintedNFTokens(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_minted_nftokens(); },
+        from,
+        sfMintedNFTokens);
+}
+
+template <class T>
+void
+populateNFTokenMinter(T& to, STObject const& from)
+{
+    populateProtoAccount(
+        [&to]() { return to.mutable_nftoken_minter(); }, from, sfNFTokenMinter);
+}
+
+template <class T>
+void
+populateNFTokenBrokerFee(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_nftoken_broker_fee(); },
+        from,
+        sfNFTokenBrokerFee);
+}
+
+template <class T>
+void
+populateNFTokenBuyOffer(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_nftoken_buy_offer(); },
+        from,
+        sfNFTokenBuyOffer);
+}
+
+template <class T>
+void
+populateNFTokenSellOffer(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_nftoken_sell_offer(); },
+        from,
+        sfNFTokenSellOffer);
+}
+
+template <class T>
+void
+populateIssuer(T& to, STObject const& from)
+{
+    populateProtoAccount(
+        [&to]() { return to.mutable_issuer(); }, from, sfIssuer);
+}
+
+template <class T>
+void
+populateNFTokenTaxon(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_nftoken_taxon(); }, from, sfNFTokenTaxon);
+}
+
+template <class T>
+void
+populateTransferFee(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_transfer_fee(); }, from, sfTransferFee);
 }
 
 template <class T>
@@ -957,6 +1080,21 @@ populateMajorities(T& to, STObject const& from)
         sfMajority);
 }
 
+template <class T>
+void
+populateNFTokens(T& to, STObject const& from)
+{
+    populateProtoArray(
+        [&to]() { return to.add_nftokens(); },
+        [](auto innerObj, auto innerProto) {
+            populateNFTokenID(innerProto, innerObj);
+            populateURI(innerProto, innerObj);
+        },
+        from,
+        sfNFTokens,
+        sfNFToken);
+}
+
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1002,6 +1140,8 @@ convert(org::xrpl::rpc::v1::AccountSet& to, STObject const& from)
     populateEmailHash(to, from);
 
     populateMessageKey(to, from);
+
+    populateNFTokenMinter(to, from);
 
     populateSetFlag(to, from);
 
@@ -1106,6 +1246,56 @@ convert(org::xrpl::rpc::v1::EscrowFinish& to, STObject const& from)
     populateCondition(to, from);
 
     populateFulfillment(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::NFTokenAcceptOffer& to, STObject const& from)
+{
+    populateNFTokenBrokerFee(to, from);
+
+    populateNFTokenBuyOffer(to, from);
+
+    populateNFTokenSellOffer(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::NFTokenBurn& to, STObject const& from)
+{
+    populateOwner(to, from);
+
+    populateNFTokenID(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::NFTokenCancelOffer& to, STObject const& from)
+{
+    populateNFTokenOffers(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::NFTokenCreateOffer& to, STObject const& from)
+{
+    populateAmount(to, from);
+
+    populateDestination(to, from);
+
+    populateExpiration(to, from);
+
+    populateOwner(to, from);
+
+    populateNFTokenID(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::NFTokenMint& to, STObject const& from)
+{
+    populateIssuer(to, from);
+
+    populateNFTokenTaxon(to, from);
+
+    populateTransferFee(to, from);
+
+    populateURI(to, from);
 }
 
 void
@@ -1265,6 +1455,12 @@ convert(org::xrpl::rpc::v1::AccountRoot& to, STObject const& from)
     populateTickSize(to, from);
 
     populateTransferRate(to, from);
+
+    populateBurnedNFTokens(to, from);
+
+    populateMintedNFTokens(to, from);
+
+    populateNFTokenMinter(to, from);
 }
 
 void
@@ -1427,6 +1623,8 @@ convert(org::xrpl::rpc::v1::DirectoryNode& to, STObject const& from)
     populateTakerGetsCurrency(to, from);
 
     populateTakerGetsIssuer(to, from);
+
+    populateNFTokenID(to, from);
 }
 
 void
@@ -1518,6 +1716,44 @@ convert(org::xrpl::rpc::v1::TicketObject& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::NFTokenOffer& to, STObject const& from)
+{
+    populateFlags(to, from);
+
+    populateOwner(to, from);
+
+    populateNFTokenID(to, from);
+
+    populateAmount(to, from);
+
+    populateOwnerNode(to, from);
+
+    populateDestination(to, from);
+
+    populateExpiration(to, from);
+
+    populatePreviousTransactionID(to, from);
+
+    populatePreviousTransactionLedgerSequence(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::NFTokenPage& to, STObject const& from)
+{
+    populateFlags(to, from);
+
+    populatePreviousPageMin(to, from);
+
+    populateNextPageMin(to, from);
+
+    populateNFTokens(to, from);
+
+    populatePreviousTransactionID(to, from);
+
+    populatePreviousTransactionLedgerSequence(to, from);
+}
+
+void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -1580,6 +1816,14 @@ setLedgerEntryType(
             proto.set_ledger_entry_type(
                 org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_TICKET);
             break;
+        case ltNFTOKEN_OFFER:
+            proto.set_ledger_entry_type(
+                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NFTOKEN_OFFER);
+            break;
+        case ltNFTOKEN_PAGE:
+            proto.set_ledger_entry_type(
+                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NFTOKEN_PAGE);
+            break;
     }
 }
 
@@ -1630,6 +1874,12 @@ convert(T& to, STObject& from, std::uint16_t type)
             break;
         case ltTICKET:
             RPC::convert(*to.mutable_ticket(), from);
+            break;
+        case ltNFTOKEN_OFFER:
+            RPC::convert(*to.mutable_nftoken_offer(), from);
+            break;
+        case ltNFTOKEN_PAGE:
+            RPC::convert(*to.mutable_nftoken_page(), from);
             break;
     }
 }
@@ -1908,6 +2158,21 @@ convert(
             break;
         case TxType::ttTICKET_CREATE:
             convert(*to.mutable_ticket_create(), fromObj);
+            break;
+        case TxType::ttNFTOKEN_MINT:
+            convert(*to.mutable_nftoken_mint(), fromObj);
+            break;
+        case TxType::ttNFTOKEN_BURN:
+            convert(*to.mutable_nftoken_burn(), fromObj);
+            break;
+        case TxType::ttNFTOKEN_CREATE_OFFER:
+            convert(*to.mutable_nftoken_create_offer(), fromObj);
+            break;
+        case TxType::ttNFTOKEN_CANCEL_OFFER:
+            convert(*to.mutable_nftoken_cancel_offer(), fromObj);
+            break;
+        case TxType::ttNFTOKEN_ACCEPT_OFFER:
+            convert(*to.mutable_nftoken_accept_offer(), fromObj);
             break;
         default:
             break;
