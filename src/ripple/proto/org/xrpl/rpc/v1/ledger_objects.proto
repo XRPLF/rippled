@@ -6,7 +6,7 @@ option java_multiple_files = true;
 
 import "org/xrpl/rpc/v1/common.proto";
 
-// Next field: 15
+// Next field: 17
 message LedgerObject
 {
     oneof object
@@ -19,6 +19,8 @@ message LedgerObject
         Escrow escrow = 6;
         FeeSettings fee_settings = 7;
         LedgerHashes ledger_hashes = 8;
+        NFTokenOffer nftoken_offer = 15;
+        NFTokenPage nftoken_page = 16;
         Offer offer = 9;
         PayChannel pay_channel = 10;
         RippleState ripple_state = 11;
@@ -46,14 +48,18 @@ enum LedgerEntryType
     LEDGER_ENTRY_TYPE_SIGNER_LIST     = 12;
     LEDGER_ENTRY_TYPE_NEGATIVE_UNL    = 13;
     LEDGER_ENTRY_TYPE_TICKET          = 14;
+    LEDGER_ENTRY_TYPE_NFTOKEN_OFFER   = 15;
+    LEDGER_ENTRY_TYPE_NFTOKEN_PAGE    = 16;
 }
 
-// Next field: 16
+// Next field: 19
 message AccountRoot
 {
     Account account = 1;
 
     Balance balance = 2;
+
+    BurnedNFTokens burned_nftokens = 16;
 
     Sequence sequence = 3;
 
@@ -73,13 +79,17 @@ message AccountRoot
 
     MessageKey message_key = 11;
 
+    MintedNFTokens minted_nftokens = 17;
+
+    NFTokenMinter nftoken_minter = 18;
+
     RegularKey regular_key = 12;
 
     TickSize tick_size = 13;
 
-    TransferRate transfer_rate = 14;
-
     TicketCount ticket_count = 15;
+
+    TransferRate transfer_rate = 14;
 }
 
 // Next field: 4
@@ -153,7 +163,7 @@ message DepositPreauthObject
     PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 6;
 }
 
-// Next field: 11
+// Next field: 12
 message DirectoryNode
 {
     Flags flags = 1;
@@ -175,6 +185,8 @@ message DirectoryNode
     TakerGetsCurreny taker_gets_currency = 9;
 
     TakerGetsIssuer taker_gets_issuer = 10;
+
+    NFTokenID nftoken_id = 11;
 }
 
 // Next field: 14
@@ -255,6 +267,46 @@ message Offer
     PreviousTransactionID previous_transaction_id = 10;
 
     PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 11;
+}
+
+// Next field: 11
+message NFTokenOffer
+{
+    Flags flags = 1;
+
+    Owner owner = 2;
+
+    NFTokenID nftoken_id = 3;
+
+    Amount amount = 4;
+
+    OwnerNode owner_node = 5;
+
+    NFTokenOfferNode nftoken_offer_node = 6;
+
+    Destination destination = 7;
+
+    Expiration expiration = 8;
+
+    PreviousTransactionID previous_transaction_id = 9;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 10;
+}
+
+// Next field: 7
+message NFTokenPage
+{
+    Flags flags = 1;
+
+    PreviousPageMin previous_page_min = 2;
+
+    NextPageMin next_page_min = 3;
+
+    repeated NFToken nftokens = 4;
+
+    PreviousTransactionID previous_transaction_id = 5;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 6;
 }
 
 // Next field: 13

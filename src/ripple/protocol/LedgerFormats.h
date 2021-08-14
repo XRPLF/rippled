@@ -149,6 +149,18 @@ enum LedgerEntryType : std::uint16_t
      */
     ltNEGATIVE_UNL = 0x004e,
 
+    /** A ledger object which contains a list of NFTs
+
+        \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
+     */
+    ltNFTOKEN_PAGE = 0x0050,
+
+    /** A ledger object which identifies an offer to buy or sell an NFT.
+
+        \sa keylet::nftoffer
+     */
+    ltNFTOKEN_OFFER = 0x0037,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -237,6 +249,13 @@ enum LedgerSpecificFlags {
 
     // ltSIGNER_LIST
     lsfOneOwnerCount = 0x00010000,  // True, uses only one OwnerCount
+
+    // ltDIR_NODE
+    lsfNFTokenBuyOffers = 0x00000001,
+    lsfNFTokenSellOffers = 0x00000002,
+
+    // ltNFTOKEN_OFFER
+    lsfSellNFToken = 0x00000001,
 };
 
 //------------------------------------------------------------------------------

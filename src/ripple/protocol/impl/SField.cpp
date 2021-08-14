@@ -71,8 +71,8 @@ static SField::private_access_tag_t access;
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1);
 SField const sfGeneric(access, 0);
-SField const sfHash(access, STI_HASH256, 257, "hash");
-SField const sfIndex(access, STI_HASH256, 258, "index");
+SField const sfHash(access, STI_UINT256, 257, "hash");
+SField const sfIndex(access, STI_UINT256, 258, "index");
 
 // Untyped SFields
 CONSTRUCT_UNTYPED_SFIELD(sfLedgerEntry,         "LedgerEntry",          LEDGERENTRY, 257);
@@ -94,6 +94,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookResult,            "HookResult",           UINT8,  
 CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16,     1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16,     2);
 CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
+CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16,     4);
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
@@ -144,10 +145,13 @@ CONSTRUCT_TYPED_SFIELD(sfSignerListID,          "SignerListID",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfSettleDelay,           "SettleDelay",          UINT32,    39);
 CONSTRUCT_TYPED_SFIELD(sfTicketCount,           "TicketCount",          UINT32,    40);
 CONSTRUCT_TYPED_SFIELD(sfTicketSequence,        "TicketSequence",       UINT32,    41);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenTaxon,          "NFTokenTaxon",         UINT32,    42);
+CONSTRUCT_TYPED_SFIELD(sfMintedNFTokens,        "MintedNFTokens",       UINT32,    43);
+CONSTRUCT_TYPED_SFIELD(sfBurnedNFTokens,        "BurnedNFTokens",       UINT32,    44);
 CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32,    45);
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
 
-// 64-bit integers
+// 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
 CONSTRUCT_TYPED_SFIELD(sfIndexPrevious,         "IndexPrevious",        UINT64,     2);
 CONSTRUCT_TYPED_SFIELD(sfBookNode,              "BookNode",             UINT64,     3);
@@ -159,50 +163,58 @@ CONSTRUCT_TYPED_SFIELD(sfHighNode,              "HighNode",             UINT64, 
 CONSTRUCT_TYPED_SFIELD(sfDestinationNode,       "DestinationNode",      UINT64,     9);
 CONSTRUCT_TYPED_SFIELD(sfCookie,                "Cookie",               UINT64,    10);
 CONSTRUCT_TYPED_SFIELD(sfServerVersion,         "ServerVersion",        UINT64,    11);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenOfferNode,      "NFTokenOfferNode",     UINT64,    12);
 CONSTRUCT_TYPED_SFIELD(sfEmitBurden,            "EmitBurden",           UINT64,    13);
+
+// 64-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHookOn,                "HookOn",               UINT64,    16);
 CONSTRUCT_TYPED_SFIELD(sfHookInstructionCount,  "HookInstructionCount", UINT64,    17);
 CONSTRUCT_TYPED_SFIELD(sfHookReturnCode,        "HookReturnCode",       UINT64,    18);
 CONSTRUCT_TYPED_SFIELD(sfReferenceCount,        "ReferenceCount",       UINT64,    19);
 
 // 128-bit
-CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            HASH128,    1);
+CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
 
 // 160-bit (common)
-CONSTRUCT_TYPED_SFIELD(sfTakerPaysCurrency,     "TakerPaysCurrency",    HASH160,    1);
-CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      HASH160,    2);
-CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    HASH160,    3);
-CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      HASH160,    4);
+CONSTRUCT_TYPED_SFIELD(sfTakerPaysCurrency,     "TakerPaysCurrency",    UINT160,    1);
+CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      UINT160,    2);
+CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    UINT160,    3);
+CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      UINT160,    4);
 
 // 256-bit (common)
-CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           HASH256,    1);
-CONSTRUCT_TYPED_SFIELD(sfParentHash,            "ParentHash",           HASH256,    2);
-CONSTRUCT_TYPED_SFIELD(sfTransactionHash,       "TransactionHash",      HASH256,    3);
-CONSTRUCT_TYPED_SFIELD(sfAccountHash,           "AccountHash",          HASH256,    4);
-CONSTRUCT_TYPED_SFIELD(sfPreviousTxnID,         "PreviousTxnID",        HASH256,    5, SField::sMD_DeleteFinal);
-CONSTRUCT_TYPED_SFIELD(sfLedgerIndex,           "LedgerIndex",          HASH256,    6);
-CONSTRUCT_TYPED_SFIELD(sfWalletLocator,         "WalletLocator",        HASH256,    7);
-CONSTRUCT_TYPED_SFIELD(sfRootIndex,             "RootIndex",            HASH256,    8, SField::sMD_Always);
-CONSTRUCT_TYPED_SFIELD(sfAccountTxnID,          "AccountTxnID",         HASH256,    9);
-CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      HASH256,   11);
-CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            HASH256,   12);
-CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         HASH256,   13);
+CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           UINT256,    1);
+CONSTRUCT_TYPED_SFIELD(sfParentHash,            "ParentHash",           UINT256,    2);
+CONSTRUCT_TYPED_SFIELD(sfTransactionHash,       "TransactionHash",      UINT256,    3);
+CONSTRUCT_TYPED_SFIELD(sfAccountHash,           "AccountHash",          UINT256,    4);
+CONSTRUCT_TYPED_SFIELD(sfPreviousTxnID,         "PreviousTxnID",        UINT256,    5, SField::sMD_DeleteFinal);
+CONSTRUCT_TYPED_SFIELD(sfLedgerIndex,           "LedgerIndex",          UINT256,    6);
+CONSTRUCT_TYPED_SFIELD(sfWalletLocator,         "WalletLocator",        UINT256,    7);
+CONSTRUCT_TYPED_SFIELD(sfRootIndex,             "RootIndex",            UINT256,    8, SField::sMD_Always);
+CONSTRUCT_TYPED_SFIELD(sfAccountTxnID,          "AccountTxnID",         UINT256,    9);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenID,             "NFTokenID",            UINT256,   10);
+CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      UINT256,   11);
+CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            UINT256,   12);
+CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         UINT256,   13);
 
 // 256-bit (uncommon)
-CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        HASH256,   16);
-CONSTRUCT_TYPED_SFIELD(sfInvoiceID,             "InvoiceID",            HASH256,   17);
-CONSTRUCT_TYPED_SFIELD(sfNickname,              "Nickname",             HASH256,   18);
-CONSTRUCT_TYPED_SFIELD(sfAmendment,             "Amendment",            HASH256,   19);
+CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        UINT256,   16);
+CONSTRUCT_TYPED_SFIELD(sfInvoiceID,             "InvoiceID",            UINT256,   17);
+CONSTRUCT_TYPED_SFIELD(sfNickname,              "Nickname",             UINT256,   18);
+CONSTRUCT_TYPED_SFIELD(sfAmendment,             "Amendment",            UINT256,   19);
 //                                                                                 20 is currently unused
-CONSTRUCT_TYPED_SFIELD(sfDigest,                "Digest",               HASH256,   21);
-CONSTRUCT_TYPED_SFIELD(sfChannel,               "Channel",              HASH256,   22);
-CONSTRUCT_TYPED_SFIELD(sfConsensusHash,         "ConsensusHash",        HASH256,   23);
-CONSTRUCT_TYPED_SFIELD(sfCheckID,               "CheckID",              HASH256,   24);
-CONSTRUCT_TYPED_SFIELD(sfValidatedHash,         "ValidatedHash",        HASH256,   25);
-CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         HASH256,   30);
-CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             HASH256,   31);
-CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        HASH256,   32);
-CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         HASH256,   33);
+CONSTRUCT_TYPED_SFIELD(sfDigest,                "Digest",               UINT256,   21);
+CONSTRUCT_TYPED_SFIELD(sfChannel,               "Channel",              UINT256,   22);
+CONSTRUCT_TYPED_SFIELD(sfConsensusHash,         "ConsensusHash",        UINT256,   23);
+CONSTRUCT_TYPED_SFIELD(sfCheckID,               "CheckID",              UINT256,   24);
+CONSTRUCT_TYPED_SFIELD(sfValidatedHash,         "ValidatedHash",        UINT256,   25);
+CONSTRUCT_TYPED_SFIELD(sfPreviousPageMin,       "PreviousPageMin",      UINT256,   26);
+CONSTRUCT_TYPED_SFIELD(sfNextPageMin,           "NextPageMin",          UINT256,   27);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenBuyOffer,       "NFTokenBuyOffer",      UINT256,   28);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenSellOffer,      "NFTokenSellOffer",     UINT256,   29);
+CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,   30);
+CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
+CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
+CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
@@ -220,13 +232,14 @@ CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
 CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
 CONSTRUCT_TYPED_SFIELD(sfMessageKey,            "MessageKey",           VL,         2);
 CONSTRUCT_TYPED_SFIELD(sfSigningPubKey,         "SigningPubKey",        VL,         3);
 CONSTRUCT_TYPED_SFIELD(sfTxnSignature,          "TxnSignature",         VL,         4, SField::sMD_Default, SField::notSigning);
-//                                                                              Was 5 used and then obsoleted?
+CONSTRUCT_TYPED_SFIELD(sfURI,                   "URI",                  VL,         5);
 CONSTRUCT_TYPED_SFIELD(sfSignature,             "Signature",            VL,         6, SField::sMD_Default, SField::notSigning);
 CONSTRUCT_TYPED_SFIELD(sfDomain,                "Domain",               VL,         7);
 CONSTRUCT_TYPED_SFIELD(sfFundCode,              "FundCode",             VL,         8);
@@ -258,7 +271,8 @@ CONSTRUCT_TYPED_SFIELD(sfAuthorize,             "Authorize",            ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfUnauthorize,           "Unauthorize",          ACCOUNT,    6);
 //                                                                                  7 is currently unused
 CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,    8);
-CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,    10);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenMinter,         "NFTokenMinter",        ACCOUNT,    9);
+CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,   10);
 
 // account (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,   16);
@@ -267,6 +281,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
+CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR256,  4);
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
@@ -283,6 +298,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfNewFields,           "NewFields",            OBJECT, 
 CONSTRUCT_UNTYPED_SFIELD(sfTemplateEntry,       "TemplateEntry",        OBJECT,     9);
 CONSTRUCT_UNTYPED_SFIELD(sfMemo,                "Memo",                 OBJECT,    10);
 CONSTRUCT_UNTYPED_SFIELD(sfSignerEntry,         "SignerEntry",          OBJECT,    11);
+CONSTRUCT_UNTYPED_SFIELD(sfNFToken,             "NFToken",              OBJECT,    12);
 CONSTRUCT_UNTYPED_SFIELD(sfEmitDetails,         "EmitDetails",          OBJECT,    13);
 CONSTRUCT_UNTYPED_SFIELD(sfHook,                "Hook",                 OBJECT,    14);
 
@@ -307,6 +323,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfNecessary,           "Necessary",            ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfSufficient,          "Sufficient",           ARRAY,      7);
 CONSTRUCT_UNTYPED_SFIELD(sfAffectedNodes,       "AffectedNodes",        ARRAY,      8);
 CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,      9);
+CONSTRUCT_UNTYPED_SFIELD(sfNFTokens,            "NFTokens",             ARRAY,     10);
 CONSTRUCT_UNTYPED_SFIELD(sfHooks,               "Hooks",                ARRAY,     11);
 
 // array of objects (uncommon)

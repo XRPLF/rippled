@@ -46,14 +46,25 @@ Account::Account(
 }
 
 Account
-Account::fromCache(std::string name, KeyType type)
+Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 {
     auto p = std::make_pair(name, type);  // non-const so it can be moved from
     auto const iter = cache_.find(p);
     if (iter != cache_.end())
         return iter->second;
 
-    auto const keys = generateKeyPair(type, generateSeed(name));
+    auto const keys = [stringType, &name, type]() {
+        // Special handling for base58Seeds.
+        if (stringType == base58Seed)
+        {
+            std::optional<Seed> const seed = parseBase58<Seed>(name);
+            if (!seed.has_value())
+                Throw<std::runtime_error>("Account:: invalid base58 seed");
+
+            return generateKeyPair(type, *seed);
+        }
+        return generateKeyPair(type, generateSeed(name));
+    }();
     auto r = cache_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(std::move(p)),
@@ -62,7 +73,15 @@ Account::fromCache(std::string name, KeyType type)
 }
 
 Account::Account(std::string name, KeyType type)
-    : Account(fromCache(std::move(name), type))
+    : Account(fromCache(Account::other, std::move(name), type))
+{
+}
+
+Account::Account(AcctStringType stringType, std::string base58SeedStr)
+    : Account(fromCache(
+          Account::base58Seed,
+          std::move(base58SeedStr),
+          KeyType::secp256k1))
 {
 }
 

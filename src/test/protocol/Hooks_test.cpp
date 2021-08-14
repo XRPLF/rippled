@@ -133,7 +133,7 @@ class Hooks_test : public beast::unit_test::suite
                     break;
                 }
 
-                case STI_HASH256: {
+                case STI_UINT256: {
                     uint256 u = uint256::fromVoid(
                         "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBE"
                         "EFDEADBEEF");

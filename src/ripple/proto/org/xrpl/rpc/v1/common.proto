@@ -15,6 +15,11 @@ import "org/xrpl/rpc/v1/account.proto";
 
 // *** Messages wrapping uint32 ***
 
+message BurnedNFTokens
+{
+    uint32 value = 1;
+}
+
 message CancelAfter
 {
     // time in seconds since Ripple epoch
@@ -86,6 +91,11 @@ message LowQualityIn
 }
 
 message LowQualityOut
+{
+    uint32 value = 1;
+}
+
+message MintedNFTokens
 {
     uint32 value = 1;
 }
@@ -189,6 +199,17 @@ message TicketSequence
     uint32 value = 1;
 }
 
+message NFTokenTaxon
+{
+    uint32 value = 1;
+}
+
+message TransferFee
+{
+    // is actually uint16
+    uint32 value = 1;
+}
+
 message TransferRate
 {
     uint32 value = 1;
@@ -233,6 +254,11 @@ message LowNode
     uint64 value = 1 [jstype=JS_STRING];
 }
 
+message NFTokenOfferNode
+{
+    uint64 value = 1 [jstype=JS_STRING];
+}
+
 message OwnerNode
 {
     uint64 value = 1 [jstype=JS_STRING];
@@ -242,6 +268,11 @@ message OwnerNode
 // *** Messages wrapping 16 bytes ***
 
 message EmailHash
+{
+    bytes value = 1;
+}
+
+message NFTokenID
 {
     bytes value = 1;
 }
@@ -301,6 +332,30 @@ message Index
 }
 
 message InvoiceID
+{
+    // 32 bytes
+    bytes value = 1;
+}
+
+message NextPageMin
+{
+    // 32 bytes
+    bytes value = 1;
+}
+
+message NFTokenBuyOffer
+{
+    // 32 bytes
+    bytes value = 1;
+}
+
+message NFTokenSellOffer
+{
+    // 32 bytes
+    bytes value = 1;
+}
+
+message PreviousPageMin
 {
     // 32 bytes
     bytes value = 1;
@@ -413,6 +468,11 @@ message Balance
     CurrencyAmount value = 1;
 }
 
+message NFTokenBrokerFee
+{
+    CurrencyAmount value = 1;
+}
+
 message DeliverMin
 {
     CurrencyAmount value = 1;
@@ -471,6 +531,16 @@ message Destination
     AccountAddress value = 1;
 }
 
+message Issuer
+{
+    AccountAddress value = 1;
+}
+
+message NFTokenMinter
+{
+    AccountAddress value = 1;
+}
+
 message Owner
 {
     AccountAddress value = 1;
@@ -494,8 +564,21 @@ message Domain
     string value = 1;
 }
 
+message URI
+{
+    string value = 1;
+}
+
 
 // *** Aggregate type messages
+
+// Next field: 3
+message NFToken
+{
+    NFTokenID nftoken_id = 1;
+
+    URI uri = 2;
+}
 
 // Next field: 3
 message SignerEntry

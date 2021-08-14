@@ -50,8 +50,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();

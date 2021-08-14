@@ -31,14 +31,6 @@ class DeleteAccount : public Transactor
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
-    // Set a reasonable upper limit on the number of deletable directory
-    // entries an account may have before we decide the account can't be
-    // deleted.
-    //
-    // A limit is useful because if we go much past this limit the
-    // transaction will fail anyway due to too much metadata (tecOVERSIZE).
-    static constexpr std::int32_t maxDeletableDirEntries{1000};
-
     explicit DeleteAccount(ApplyContext& ctx) : Transactor(ctx)
     {
     }

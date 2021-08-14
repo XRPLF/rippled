@@ -34,6 +34,15 @@ as_amount(Rate const& rate)
 
 }  // namespace detail
 
+namespace nft {
+Rate
+transferFeeAsRate(std::uint16_t fee)
+{
+    return Rate{static_cast<std::uint32_t>(fee) * 10000};
+}
+
+}  // namespace nft
+
 STAmount
 multiply(STAmount const& amount, Rate const& rate)
 {

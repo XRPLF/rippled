@@ -42,8 +42,7 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateOffer::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
@@ -173,14 +172,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
-    auto const expiration = ctx.tx[~sfExpiration];
-
-    // Expiration is defined in terms of the close time of the parent ledger,
-    // because we definitively know the time that it closed but we do not
-    // know the closing time of the ledger that is under construction.
-    if (expiration && (ctx.view.parentCloseTime() >= tp{d{*expiration}}))
+    if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
     {
         // Note that this will get checked again in applyGuts, but it saves
         // us a call to checkAcceptAsset and possible false negative.
@@ -951,13 +943,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     auto const expiration = ctx_.tx[~sfExpiration];
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
 
-    // Expiration is defined in terms of the close time of the parent ledger,
-    // because we definitively know the time that it closed but we do not
-    // know the closing time of the ledger that is under construction.
-    if (expiration && (sb.parentCloseTime() >= tp{d{*expiration}}))
+    if (hasExpired(sb, expiration))
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.

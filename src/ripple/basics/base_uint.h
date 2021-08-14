@@ -332,7 +332,7 @@ public:
         return *this == beast::zero;
     }
 
-    const base_uint
+    constexpr base_uint
     operator~() const
     {
         base_uint ret;
@@ -435,6 +435,20 @@ public:
         --(*this);
 
         return ret;
+    }
+
+    base_uint
+    next() const
+    {
+        auto ret = *this;
+        return ++ret;
+    }
+
+    base_uint
+    prev() const
+    {
+        auto ret = *this;
+        return --ret;
     }
 
     base_uint&

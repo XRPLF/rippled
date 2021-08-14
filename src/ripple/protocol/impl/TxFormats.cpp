@@ -55,6 +55,7 @@ TxFormats::TxFormats()
             {sfClearFlag, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+            {sfNFTokenMinter, soeOPTIONAL},
         },
         commonFields);
 
@@ -268,6 +269,56 @@ TxFormats::TxFormats()
         {
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::NFTokenMint,
+        ttNFTOKEN_MINT,
+        {
+            {sfNFTokenTaxon, soeREQUIRED},
+            {sfTransferFee, soeOPTIONAL},
+            {sfIssuer, soeOPTIONAL},
+            {sfURI, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::NFTokenBurn,
+        ttNFTOKEN_BURN,
+        {
+            {sfNFTokenID, soeREQUIRED},
+            {sfOwner, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::NFTokenCreateOffer,
+        ttNFTOKEN_CREATE_OFFER,
+        {
+            {sfNFTokenID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfDestination, soeOPTIONAL},
+            {sfOwner, soeOPTIONAL},
+            {sfExpiration, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::NFTokenCancelOffer,
+        ttNFTOKEN_CANCEL_OFFER,
+        {
+            {sfNFTokenOffers, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::NFTokenAcceptOffer,
+        ttNFTOKEN_ACCEPT_OFFER,
+        {
+            {sfNFTokenBuyOffer, soeOPTIONAL},
+            {sfNFTokenSellOffer, soeOPTIONAL},
+            {sfNFTokenBrokerFee, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
