@@ -21,6 +21,7 @@
 #define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>  // NotTEC
+#include <ripple/basics/Expected.h>         //
 #include <ripple/beast/utility/Journal.h>   // beast::Journal
 #include <ripple/protocol/STTx.h>           // STTx::maxMultiSigners
 #include <ripple/protocol/TER.h>            // temMALFORMED
@@ -62,7 +63,7 @@ public:
     };
 
     // Deserialize a SignerEntries array from the network or from the ledger.
-    static std::pair<std::vector<SignerEntry>, NotTEC>
+    static Expected<std::vector<SignerEntry>, NotTEC>
     deserialize(
         STObject const& obj,
         beast::Journal journal,

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STTX_H_INCLUDED
 #define RIPPLE_PROTOCOL_STTX_H_INCLUDED
 
+#include <ripple/basics/Expected.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/SecretKey.h>
@@ -131,7 +132,7 @@ public:
         @return `true` if valid signature. If invalid, the error message string.
     */
     enum class RequireFullyCanonicalSig : bool { no, yes };
-    std::pair<bool, std::string>
+    Expected<void, std::string>
     checkSign(RequireFullyCanonicalSig requireCanonicalSig) const;
 
     // SQL Functions with metadata.
@@ -150,10 +151,10 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    std::pair<bool, std::string>
+    Expected<void, std::string>
     checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const;
 
-    std::pair<bool, std::string>
+    Expected<void, std::string>
     checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const;
 
     uint256 tid_;
