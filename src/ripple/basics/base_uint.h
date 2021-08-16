@@ -25,6 +25,7 @@
 #ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
+#include <ripple/basics/Expected.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/strHex.h>
@@ -185,7 +186,7 @@ private:
         badChar,
     };
 
-    constexpr std::pair<ParseResult, decltype(data_)>
+    constexpr Expected<decltype(data_), ParseResult>
     parseFromStringView(std::string_view sv) noexcept
     {
         // Local lambda that converts a single hex char to four bits and
@@ -212,7 +213,7 @@ private:
             return ParseResult::okay;
         };
 
-        std::pair<ParseResult, decltype(data_)> ret{ParseResult::okay, {}};
+        decltype(data_) ret{};
 
         if (sv == "0")
         {
@@ -220,15 +221,10 @@ private:
         }
 
         if (sv.size() != size() * 2)
-        {
-            ret.first = ParseResult::badLength;
-            return ret;
-        }
+            return Unexpected(ParseResult::badLength);
 
-        auto out = ret.second.data();
-
+        std::size_t i = 0u;
         auto in = sv.begin();
-
         while (in != sv.end())
         {
             std::uint32_t accum = {};
@@ -236,12 +232,9 @@ private:
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::okay)
-                {
-                    ret.first = result;
-                    return ret;
-                }
+                    return Unexpected(result);
             }
-            *out++ = accum;
+            ret[i++] = accum;
         }
         return ret;
     }
@@ -250,13 +243,14 @@ private:
     parseFromStringViewThrows(std::string_view sv) noexcept(false)
     {
         auto const result = parseFromStringView(sv);
-        if (result.first == ParseResult::badLength)
-            Throw<std::invalid_argument>("invalid length for hex string");
+        if (!result)
+        {
+            if (result.error() == ParseResult::badLength)
+                Throw<std::invalid_argument>("invalid length for hex string");
 
-        if (result.first == ParseResult::badChar)
             Throw<std::range_error>("invalid hex character");
-
-        return result.second;
+        }
+        return *result;
     }
 
 public:
@@ -472,10 +466,10 @@ public:
     parseHex(std::string_view sv)
     {
         auto const result = parseFromStringView(sv);
-        if (result.first != ParseResult::okay)
+        if (!result)
             return false;
 
-        data_ = result.second;
+        data_ = *result;
         return true;
     }
 

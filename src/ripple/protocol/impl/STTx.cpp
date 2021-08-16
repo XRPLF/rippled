@@ -186,24 +186,22 @@ STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-std::pair<bool, std::string>
+Expected<void, std::string>
 STTx::checkSign(RequireFullyCanonicalSig requireCanonicalSig) const
 {
-    std::pair<bool, std::string> ret{false, ""};
     try
     {
         // Determine whether we're single- or multi-signing by looking
         // at the SigningPubKey.  If it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
         Blob const& signingPubKey = getFieldVL(sfSigningPubKey);
-        ret = signingPubKey.empty() ? checkMultiSign(requireCanonicalSig)
-                                    : checkSingleSign(requireCanonicalSig);
+        return signingPubKey.empty() ? checkMultiSign(requireCanonicalSig)
+                                     : checkSingleSign(requireCanonicalSig);
     }
     catch (std::exception const&)
     {
-        ret = {false, "Internal signature check failure."};
     }
-    return ret;
+    return Unexpected("Internal signature check failure.");
 }
 
 Json::Value STTx::getJson(JsonOptions) const
@@ -269,14 +267,14 @@ STTx::getMetaSQL(
         getFieldU32(sfSequence) % inLedger % status % rTxn % escapedMetaData);
 }
 
-std::pair<bool, std::string>
+Expected<void, std::string>
 STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
     // fields are present the signature is invalid.
     if (isFieldPresent(sfSigners))
-        return {false, "Cannot both single- and multi-sign."};
+        return Unexpected("Cannot both single- and multi-sign.");
 
     bool validSig = false;
     try
@@ -304,29 +302,29 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
         validSig = false;
     }
     if (validSig == false)
-        return {false, "Invalid signature."};
-
-    return {true, ""};
+        return Unexpected("Invalid signature.");
+    // Signature was verified.
+    return {};
 }
 
-std::pair<bool, std::string>
+Expected<void, std::string>
 STTx::checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
     if (!isFieldPresent(sfSigners))
-        return {false, "Empty SigningPubKey."};
+        return Unexpected("Empty SigningPubKey.");
 
     // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
     // being present would indicate that the transaction is signed both ways.
     if (isFieldPresent(sfTxnSignature))
-        return {false, "Cannot both single- and multi-sign."};
+        return Unexpected("Cannot both single- and multi-sign.");
 
     STArray const& signers{getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
     if (signers.size() < minMultiSigners || signers.size() > maxMultiSigners)
-        return {false, "Invalid Signers array size."};
+        return Unexpected("Invalid Signers array size.");
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -349,15 +347,15 @@ STTx::checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const
 
         // The account owner may not multisign for themselves.
         if (accountID == txnAccountID)
-            return {false, "Invalid multisigner."};
+            return Unexpected("Invalid multisigner.");
 
         // No duplicate signers allowed.
         if (lastAccountID == accountID)
-            return {false, "Duplicate Signers not allowed."};
+            return Unexpected("Duplicate Signers not allowed.");
 
         // Accounts must be in order by account ID.  No duplicates allowed.
         if (lastAccountID > accountID)
-            return {false, "Unsorted Signers array."};
+            return Unexpected("Unsorted Signers array.");
 
         // The next signature must be greater than this one.
         lastAccountID = accountID;
@@ -388,14 +386,12 @@ STTx::checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const
             validSig = false;
         }
         if (!validSig)
-            return {
-                false,
+            return Unexpected(
                 std::string("Invalid signature on account ") +
-                    toBase58(accountID) + "."};
+                toBase58(accountID) + ".");
     }
-
     // All signatures verified.
-    return {true, ""};
+    return {};
 }
 
 //------------------------------------------------------------------------------
