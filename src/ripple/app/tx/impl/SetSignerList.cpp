@@ -58,13 +58,13 @@ SetSignerList::determineOperation(
     {
         auto signers = SignerEntries::deserialize(tx, j, "transaction");
 
-        if (signers.second != tesSUCCESS)
-            return std::make_tuple(signers.second, quorum, sign, op);
+        if (!signers)
+            return std::make_tuple(signers.error(), quorum, sign, op);
 
-        std::sort(signers.first.begin(), signers.first.end());
+        std::sort(signers->begin(), signers->end());
 
         // Save deserialized list for later.
-        sign = std::move(signers.first);
+        sign = std::move(*signers);
         op = set;
     }
     else if ((quorum == 0) && !hasSignerEntries)

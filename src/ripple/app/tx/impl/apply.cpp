@@ -55,10 +55,10 @@ checkValidity(
             : STTx::RequireFullyCanonicalSig::no;
 
         auto const sigVerify = tx.checkSign(requireCanonicalSig);
-        if (!sigVerify.first)
+        if (!sigVerify)
         {
             router.setFlags(id, SF_SIGBAD);
-            return {Validity::SigBad, sigVerify.second};
+            return {Validity::SigBad, sigVerify.error()};
         }
         router.setFlags(id, SF_SIGGOOD);
     }

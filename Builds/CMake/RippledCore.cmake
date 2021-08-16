@@ -708,6 +708,7 @@ target_sources (rippled PRIVATE
   #]===============================]
   src/test/basics/Buffer_test.cpp
   src/test/basics/DetectCrash_test.cpp
+  src/test/basics/Expected_test.cpp
   src/test/basics/FileUtilities_test.cpp
   src/test/basics/IOUAmount_test.cpp
   src/test/basics/KeyCache_test.cpp
