@@ -261,6 +261,10 @@ ETLSource::onHandshake(boost::beast::error_code ec)
         jv["streams"].append(ledgerStream);
         Json::Value txnStream("transactions_proposed");
         jv["streams"].append(txnStream);
+        Json::Value validationStream("validations");
+        jv["streams"].append(validationStream);
+        Json::Value manifestStream("manifests");
+        jv["streams"].append(manifestStream);
         Json::FastWriter fastWriter;
 
         JLOG(journal_.trace()) << "Sending subscribe stream message";
@@ -352,15 +356,28 @@ ETLSource::handleMessage()
         }
         else
         {
-            if (response.isMember(jss::transaction))
+            if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
             {
-                if (etl_.getETLLoadBalancer().shouldPropagateTxnStream(this))
+                if (response.isMember(jss::transaction))
                 {
                     etl_.getApplication().getOPs().forwardProposedTransaction(
                         response);
                 }
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "validationReceived")
+                {
+                    etl_.getApplication().getOPs().forwardValidation(response);
+                }
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "manifestReceived")
+                {
+                    etl_.getApplication().getOPs().forwardManifest(response);
+                }
             }
-            else
+
+            if (response.isMember("type") && response["type"] == "ledgerClosed")
             {
                 JLOG(journal_.debug())
                     << __func__ << " : "

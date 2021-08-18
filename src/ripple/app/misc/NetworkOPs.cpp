@@ -450,6 +450,10 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) override;
 
     void
+    forwardValidation(Json::Value const& jvObj) override;
+    void
+    forwardManifest(Json::Value const& jvObj) override;
+    void
     forwardProposedTransaction(Json::Value const& jvObj) override;
     void
     forwardProposedAccountTransaction(Json::Value const& jvObj) override;
@@ -2586,6 +2590,46 @@ NetworkOPsImp::forwardProposedTransaction(Json::Value const& jvObj)
     }
 
     forwardProposedAccountTransaction(jvObj);
+}
+
+void
+NetworkOPsImp::forwardValidation(Json::Value const& jvObj)
+{
+    std::lock_guard sl(mSubLock);
+
+    for (auto i = mStreamMaps[sValidations].begin();
+         i != mStreamMaps[sValidations].end();)
+    {
+        if (auto p = i->second.lock())
+        {
+            p->send(jvObj, true);
+            ++i;
+        }
+        else
+        {
+            i = mStreamMaps[sValidations].erase(i);
+        }
+    }
+}
+
+void
+NetworkOPsImp::forwardManifest(Json::Value const& jvObj)
+{
+    std::lock_guard sl(mSubLock);
+
+    for (auto i = mStreamMaps[sManifests].begin();
+         i != mStreamMaps[sManifests].end();)
+    {
+        if (auto p = i->second.lock())
+        {
+            p->send(jvObj, true);
+            ++i;
+        }
+        else
+        {
+            i = mStreamMaps[sManifests].erase(i);
+        }
+    }
 }
 
 static void

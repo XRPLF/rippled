@@ -370,7 +370,7 @@ public:
                 continue;
             }
 
-            query = {};
+            query.str("");
             query << "SELECT * FROM " << tableName << " LIMIT 1";
             statement = makeStatement(query.str().c_str(), 0);
             fut = cass_session_execute(session_.get(), statement);
@@ -433,7 +433,7 @@ public:
              */
             cass_future_free(prepare_future);
 
-            query = {};
+            query.str("");
             query << "SELECT object FROM " << tableName << " WHERE hash = ?";
             prepare_future =
                 cass_session_prepare(session_.get(), query.str().c_str());
