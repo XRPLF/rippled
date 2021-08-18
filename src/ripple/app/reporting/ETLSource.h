@@ -374,7 +374,7 @@ public:
     /// @param in ETLSource in question
     /// @return true if messages should be forwarded
     bool
-    shouldPropagateTxnStream(ETLSource* in) const
+    shouldPropagateStream(ETLSource* in) const
     {
         for (auto& src : sources_)
         {

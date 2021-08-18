@@ -262,6 +262,10 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
     virtual void
+    forwardValidation(Json::Value const& jvObj) = 0;
+    virtual void
+    forwardManifest(Json::Value const& jvObj) = 0;
+    virtual void
     forwardProposedTransaction(Json::Value const& jvObj) = 0;
     virtual void
     forwardProposedAccountTransaction(Json::Value const& jvObj) = 0;
