@@ -41,6 +41,9 @@ class P2PConfig
 public:
     P2PConfig() = default;
     virtual ~P2PConfig() = default;
+    P2PConfig(P2PConfig const&) = delete;
+    P2PConfig&
+    operator=(P2PConfig const&) = delete;
     virtual Config const&
     config() const = 0;
     virtual Logs&

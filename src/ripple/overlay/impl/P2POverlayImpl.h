@@ -127,6 +127,10 @@ public:
      */
     class Child
     {
+        Child(Child const&) = delete;
+        Child&
+        operator=(Child const&) = delete;
+
     protected:
         P2POverlayImpl<PeerImp_t>& overlay_;
 
@@ -147,6 +151,10 @@ private:
         bool stopping_{false};
 
         explicit Timer(P2POverlayImpl<PeerImp_t>& overlay);
+
+        Timer(Timer const&) = delete;
+        Timer&
+        operator=(Timer const&) = delete;
 
         void
         stop() override;

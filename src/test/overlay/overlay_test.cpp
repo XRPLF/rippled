@@ -59,11 +59,15 @@ using bimap = boost::bimap<set_of, set_of>;
  * matrix. The matrix format is ip1,ip2,[in|out]. Where ip1 and ip2 are IP
  * addresses of two connected nodes and [in|out] describe whether ip2 is
  * an incoming or outgoing connection. The matrix adjacency-xrpl.txt is
- * included in the repo. The overlay simulation can be run as:
+ * included in the repo. The overlay net simulation can be run as:
+ * ./rippled --unittest overlay_net
+ * The overlay xrpl simulation can be run as:
  * ./rippled --unittest overlay_xrpl --unittest-arg
- *     <path>/rippled/src/test/overlay/adjacency-xrpl.txt
+ *     <path>/rippled/src/test/overlay/adjacency-xrpl.txt,resolve
  * where <path> is rippled folder location. At the end of the test
  * the adjacency matrix of created overlay is generated into network.out file.
+ * 800 ip addresses starting with 172.0.0.0 have to be preconfigured. See
+ * `overlay_xrpl_test` below for configuration instructions.
  */
 
 static std::string
@@ -232,7 +236,7 @@ protected:
     // map of global ip to local ip (172.0.x.x)
     bimap ip2Local_;
     std::string baseIp_ = "172.0";
-    std::uint16_t static constexpr maxSubaddr_ = 255;
+    std::uint16_t static constexpr maxSubaddr_ = 254;
 
 public:
     virtual ~VirtualNetwork() = default;
@@ -947,7 +951,7 @@ class overlay_net_test : public VirtualNetwork
 protected:
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> overlayTimer_;
     std::uint16_t duration_ = 3600;
-    bool resolve_ = false;
+    bool resolve_ = true;
     std::uint16_t timeLapse_;
 
 public:
@@ -982,6 +986,7 @@ public:
             mkIp(".0.2"),
             mkIp(".0.3"),
             mkIp(".0.4")};
+        checkIPConfig(nodes.size());
         setTimer();
         startNodes(nodes);
         std::cout << "peers " << Counts::inPeersCnt << " "
@@ -1021,6 +1026,66 @@ public:
     {
         testOverlay();
     }
+
+    /** Check if IP's are preconfigured
+     * @param maxIps - max number of ip's that must be configured
+     *      starting with 172.0.0.0
+     * @return
+     */
+    bool
+    checkIPConfig(std::uint16_t maxIps)
+    {
+        using namespace boost::asio::ip;
+        bool res = true;
+        auto check = [&](int i) -> bool {
+            tcp::socket s(io_service_);
+            s.open(tcp::v4());
+            std::stringstream str;
+            str << baseIp_ << "." << (i / (maxSubaddr_ + 1)) << "."
+                << (i % (maxSubaddr_ + 1));
+            auto addr = address::from_string(str.str());
+            auto ep = tcp::endpoint(addr, 0);
+            boost::system::error_code ec;
+            try
+            {
+                s.bind(ep, ec);
+                res = !ec;
+            }
+            catch (...)
+            {
+                res = false;
+            }
+            s.close();
+            return res;
+        };
+        for (int i = 0; i < maxIps; i++)
+            if (!check(i))
+                break;
+        if (!res)
+        {
+            std::stringstream str;
+            str << "IP addresses in the range 172.0.0.0-172.0."
+                << (maxIps / (maxSubaddr_ + 1)) << "."
+                << (maxIps % (maxSubaddr_ + 1))
+                << " must be "
+                   "configured\n"
+                   "On Ubuntu 20.20:\n"
+                   "\tlink add dummy1 type dummy\n"
+                   "\tip address add 172.0.0.0/255.255.255.0 dev dummy1\n"
+                   "On MAC OSX:"
+                   "\tifconfig lo0 -alias 172.0.0.0\n"
+                   "On Windows:"
+                   "\tnetsh interface ip add address Ethernet 172.0.0.0 "
+                   "255.255.255.0\n"
+                   "On Linux and MAC the number of open files must be "
+                   "increased "
+                   "to 65535\n"
+                   "\tulimit -n 65535\n";
+            fail(str.str());
+            res = false;
+        }
+        return res;
+    }
 };
 
 /** Test of the Overlay network. Network configuration - adjacency matrix
@@ -1030,9 +1095,9 @@ public:
  * must pre-configured in the system. On Ubuntu 20.20 (tested system)
  * ip's can be configured as:
  *    ip link add dummy1 type dummy
- *    ip address add 172.0.0.1/255.255.255.0 dev dummy1
- * On MAX OSX ip's can be configured as:
- *    ifconfig lo0 -alias 172.0.0.1
+ *    ip address add 172.0.0.0/255.255.255.0 dev dummy0
+ * On MAC OSX ip's can be configured as:
+ *    ifconfig lo0 -alias 172.0.0.0
  * In addition, the number of open files must be increased to 65535
  * (On Ubuntu 20.20/MAX OSX: ulimit -n 65535. On Ubuntu may also need to update
  * /etc/security/limits.conf, /etc/sysctl.conf, /etc/pam.d/common-session,
@@ -1186,8 +1251,8 @@ public:
                 log_ = false;
             else if ((*it).substr(0, 9) == "duration:")
                 duration_ = std::stoi((*it).substr(9));
-            else if (*it == "resolve")
-                resolve_ = true;
+            else if (*it == "no-resolve")
+                resolve_ = false;
             else
             {
                 std::cout << "invalid argument " << *it << std::endl;
@@ -1201,15 +1266,11 @@ public:
     testXRPLOverlay()
     {
         testcase("XRPLOverlay");
-        if (!parseArg())
-        {
-            fail("adjacency matrix must be provided");
-            return;
-        }
 
         std::remove("stop");
 
         getNetConfig();
+        checkIPConfig(netConfig_.size());
         startNodes();
         BEAST_EXPECT(Counts::deactivated());
         BEAST_EXPECT(
@@ -1391,6 +1452,11 @@ public:
     void
     run() override
     {
+        if (!parseArg())
+            fail(
+                "adjacency matrix must be provided in --unittest-arg\n"
+                "default matrix is located in "
+                "rippled/src/test/overlay/adjacency-xrpl.txt");
         testXRPLOverlay();
     }
 };

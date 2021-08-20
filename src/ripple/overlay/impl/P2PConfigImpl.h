@@ -39,6 +39,10 @@ public:
     {
     }
 
+    P2PConfigImpl(P2PConfigImpl const&) = delete;
+    P2PConfigImpl&
+    operator=(P2PConfigImpl const&) = delete;
+
     Config const&
     config() const override
     {
