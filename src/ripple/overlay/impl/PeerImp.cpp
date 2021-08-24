@@ -1570,7 +1570,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (m->has_ledgerseq())
     {
         auto const ledgerSeq{m->ledgerseq()};
-        if (ledgerSeq < app_.getNodeStore().earliestLedgerSeq())
+        if (app_.getShardStore() &&
+            ledgerSeq < app_.getNodeStore().earliestLedgerSeq())
         {
             return badData(
                 "Invalid ledger sequence " + std::to_string(ledgerSeq));
@@ -1744,7 +1745,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         }
         else
         {
-            if (ledgerSeq < app_.getNodeStore().earliestLedgerSeq())
+            if (app_.getShardStore() &&
+                ledgerSeq < app_.getNodeStore().earliestLedgerSeq())
             {
                 return badData(
                     "Invalid ledger sequence " + std::to_string(ledgerSeq));
