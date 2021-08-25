@@ -108,7 +108,7 @@ doLedgerData(RPC::JsonContext& context)
             break;
         }
 
-        if (type == ltINVALID || sle->getType() == type)
+        if (type == ltANY || sle->getType() == type)
         {
             if (isBinary)
             {

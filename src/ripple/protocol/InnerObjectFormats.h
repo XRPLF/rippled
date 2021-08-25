@@ -26,7 +26,7 @@ namespace ripple {
 
 /** Manages the list of known inner object formats.
  */
-class InnerObjectFormats : public KnownFormats<int>
+class InnerObjectFormats : public KnownFormats<int, InnerObjectFormats>
 {
 private:
     /** Create the object.
