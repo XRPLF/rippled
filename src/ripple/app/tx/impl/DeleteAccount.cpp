@@ -208,8 +208,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        Keylet const itemKeylet{ltCHILD, dirEntry};
-        auto sleItem = ctx.view.read(itemKeylet);
+        auto sleItem = ctx.view.read(keylet::child(dirEntry));
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
@@ -261,8 +260,7 @@ DeleteAccount::doApply()
         do
         {
             // Choose the right way to delete each directory node.
-            Keylet const itemKeylet{ltCHILD, dirEntry};
-            auto sleItem = view().peek(itemKeylet);
+            auto sleItem = view().peek(keylet::child(dirEntry));
             if (!sleItem)
             {
                 // Directory node has an invalid index.  Bail out.
