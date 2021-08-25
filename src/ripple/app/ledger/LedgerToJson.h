@@ -37,7 +37,7 @@ struct LedgerFill
         RPC::Context* ctx,
         int o = 0,
         std::vector<TxQ::TxDetails> q = {},
-        LedgerEntryType t = ltINVALID)
+        LedgerEntryType t = ltANY)
         : ledger(l), options(o), txQueue(std::move(q)), type(t), context(ctx)
     {
     }

@@ -27,8 +27,6 @@ Keylet::check(SLE const& sle) const
 {
     if (type == ltANY)
         return true;
-    if (type == ltINVALID)
-        return false;
     if (type == ltCHILD)
     {
         assert(sle.getType() != ltDIR_NODE);

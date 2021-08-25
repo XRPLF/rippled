@@ -38,15 +38,13 @@ enum LedgerEntryType {
         This is used when the type in the Keylet is unknown,
         such as when building metadata.
     */
-    ltANY = -3,
+    ltANY = -2,
 
     /** Special type, anything not a directory
         This is used when the type in the Keylet is unknown,
         such as when iterating
     */
-    ltCHILD = -2,
-
-    ltINVALID = -1,
+    ltCHILD = -1,
 
     //---------------------------------------------------------------------------
 
