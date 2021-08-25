@@ -768,12 +768,13 @@ private:
     }
 
     // Compare a protobuf descriptor to a KnownFormat::Item
-    template <typename FmtType>
+    template <typename FmtType, typename FmtName>
     void
     validateFields(
         google::protobuf::Descriptor const* const pbufDescriptor,
         google::protobuf::Descriptor const* const commonFields,
-        typename KnownFormats<FmtType>::Item const* const knownFormatItem)
+        typename KnownFormats<FmtType, FmtName>::Item const* const
+            knownFormatItem)
     {
         // Create namespace aliases for shorter names.
         namespace pbuf = google::protobuf;
@@ -806,10 +807,10 @@ private:
             std::move(sFields));
     }
 
-    template <typename FmtType>
+    template <typename FmtType, typename FmtName>
     void
     testKnownFormats(
-        KnownFormats<FmtType> const& knownFormat,
+        KnownFormats<FmtType, FmtName> const& knownFormat,
         std::string const& knownFormatName,
         google::protobuf::Descriptor const* const commonFields,
         google::protobuf::OneofDescriptor const* const oneOfDesc)
@@ -822,7 +823,9 @@ private:
             return;
 
         // Get corresponding names for all KnownFormat Items.
-        std::map<std::string, typename KnownFormats<FmtType>::Item const*>
+        std::map<
+            std::string,
+            typename KnownFormats<FmtType, FmtName>::Item const*>
             formatTypes;
 
         for (auto const& item : knownFormat)
@@ -897,7 +900,7 @@ private:
             }
 
             // Validate that the gRPC and KnownFormat fields align.
-            validateFields<FmtType>(
+            validateFields<FmtType, FmtName>(
                 fieldDesc->message_type(), commonFields, fmtIter->second);
 
             // Remove the checked KnownFormat from the map.  This way we

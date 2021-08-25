@@ -24,6 +24,7 @@
 #include <ripple/protocol/SOTemplate.h>
 #include <boost/container/flat_map.hpp>
 #include <algorithm>
+#include <beast/type_name.h>
 #include <forward_list>
 
 namespace ripple {
@@ -35,7 +36,7 @@ namespace ripple {
 
     @tparam KeyType The type of key identifying the format.
 */
-template <class KeyType>
+template <class KeyType, class Derived>
 class KnownFormats
 {
 public:
@@ -90,7 +91,9 @@ public:
 
         Derived classes will load the object with all the known formats.
     */
-    KnownFormats() = default;
+    KnownFormats() : name_(beast::type_name<Derived>())
+    {
+    }
 
     /** Destroy the known formats object.
 
@@ -111,12 +114,11 @@ public:
     KeyType
     findTypeByName(std::string const& name) const
     {
-        Item const* const result = findByName(name);
-
-        if (result != nullptr)
+        if (auto const result = findByName(name))
             return result->getType();
-        Throw<std::runtime_error>("Unknown format name");
-        return {};  // Silence compiler warning.
+        Throw<std::runtime_error>(
+            name_ + ": Unknown format name '" +
+            name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
     }
 
     /** Retrieve a format based on its type.
@@ -170,6 +172,13 @@ protected:
         std::initializer_list<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {})
     {
+        if (auto const item = findByType(type))
+        {
+            LogicError(
+                std::string("Duplicate key for item '") + name +
+                "': already maps to " + item->getName());
+        }
+
         formats_.emplace_front(name, type, uniqueFields, commonFields);
         Item const& item{formats_.front()};
 
@@ -180,6 +189,8 @@ protected:
     }
 
 private:
+    std::string name_;
+
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
