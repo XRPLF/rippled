@@ -1045,15 +1045,16 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto info = getServerInfo();
 
     int last_validated_ledger_age = -1;
-    if (info.isMember("validated_ledger"))
-        last_validated_ledger_age = info["validated_ledger"]["age"].asInt();
+    if (info.isMember(jss::validated_ledger))
+        last_validated_ledger_age =
+            info[jss::validated_ledger][jss::age].asInt();
     bool amendment_blocked = false;
-    if (info.isMember("amendment_blocked"))
+    if (info.isMember(jss::amendment_blocked))
         amendment_blocked = true;
-    int number_peers = info["peers"].asInt();
-    std::string server_state = info["server_state"].asString();
-    auto load_factor =
-        info["load_factor"].asDouble() / info["load_base"].asDouble();
+    int number_peers = info[jss::peers].asInt();
+    std::string server_state = info[jss::server_state].asString();
+    auto load_factor = info[jss::load_factor_server].asDouble() /
+        info[jss::load_base].asDouble();
 
     enum { healthy, warning, critical };
     int health = healthy;
@@ -1065,7 +1066,8 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     msg.body()[jss::info] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
-        msg.body()[jss::info]["validated_ledger"] = last_validated_ledger_age;
+        msg.body()[jss::info][jss::validated_ledger] =
+            last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
             set_health(warning);
         else
@@ -1074,13 +1076,13 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (amendment_blocked)
     {
-        msg.body()[jss::info]["amendment_blocked"] = true;
+        msg.body()[jss::info][jss::amendment_blocked] = true;
         set_health(critical);
     }
 
     if (number_peers <= 7)
     {
-        msg.body()[jss::info]["peers"] = number_peers;
+        msg.body()[jss::info][jss::peers] = number_peers;
         if (number_peers != 0)
             set_health(warning);
         else
@@ -1090,7 +1092,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     if (!(server_state == "full" || server_state == "validating" ||
           server_state == "proposing"))
     {
-        msg.body()[jss::info]["server_state"] = server_state;
+        msg.body()[jss::info][jss::server_state] = server_state;
         if (server_state == "syncing" || server_state == "tracking" ||
             server_state == "connected")
         {
@@ -1102,7 +1104,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (load_factor > 100)
     {
-        msg.body()[jss::info]["load_factor"] = load_factor;
+        msg.body()[jss::info][jss::load_factor] = load_factor;
         if (load_factor < 1000)
             set_health(warning);
         else
