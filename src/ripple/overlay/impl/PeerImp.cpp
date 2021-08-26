@@ -1570,6 +1570,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (m->has_ledgerseq())
     {
         auto const ledgerSeq{m->ledgerseq()};
+        // Verifying the network's earliest ledger only pertains to shards.
         if (app_.getShardStore() &&
             ledgerSeq < app_.getNodeStore().earliestLedgerSeq())
         {
@@ -1745,6 +1746,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         }
         else
         {
+            // Verifying the network's earliest ledger only pertains to shards.
             if (app_.getShardStore() &&
                 ledgerSeq < app_.getNodeStore().earliestLedgerSeq())
             {
