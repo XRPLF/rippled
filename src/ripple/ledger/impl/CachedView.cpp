@@ -25,13 +25,13 @@ namespace ripple {
 namespace detail {
 
 bool
-CachedViewImpl::exists(Keylet const& k) const
+CachedViewImpl::exists(KeyletBase const& k) const
 {
     return read(k) != nullptr;
 }
 
 std::shared_ptr<SLE const>
-CachedViewImpl::read(Keylet const& k) const
+CachedViewImpl::read(KeyletBase const& k) const
 {
     {
         std::lock_guard lock(mutex_);

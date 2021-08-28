@@ -171,7 +171,7 @@ public:
         @return `nullptr` if the key is not present
     */
     virtual std::shared_ptr<SLE>
-    peek(Keylet const& k) = 0;
+    peek(KeyletBase const& k) = 0;
 
     /** Remove a peeked SLE.
 

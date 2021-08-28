@@ -66,7 +66,7 @@ public:
     apply(RawView& to) const;
 
     bool
-    exists(ReadView const& base, Keylet const& k) const;
+    exists(ReadView const& base, KeyletBase const& k) const;
 
     std::optional<key_type>
     succ(
@@ -84,7 +84,7 @@ public:
     replace(std::shared_ptr<SLE> const& sle);
 
     std::shared_ptr<SLE const>
-    read(ReadView const& base, Keylet const& k) const;
+    read(ReadView const& base, KeyletBase const& k) const;
 
     void
     destroyXRP(XRPAmount const& fee);

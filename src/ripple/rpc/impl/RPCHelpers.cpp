@@ -244,7 +244,7 @@ getAccountObjects(
         found = true;
     }
 
-    auto dir = ledger.read({ltDIR_NODE, dirIndex});
+    auto dir = ledger.read(Keylet(ltDIR_NODE, dirIndex));
     if (!dir)
     {
         // it's possible the user had nftoken pages but no
@@ -306,7 +306,7 @@ getAccountObjects(
             return true;
 
         dirIndex = keylet::page(root, nodeIndex).key;
-        dir = ledger.read({ltDIR_NODE, dirIndex});
+        dir = ledger.read(Keylet(ltDIR_NODE, dirIndex));
         if (!dir)
             return true;
 

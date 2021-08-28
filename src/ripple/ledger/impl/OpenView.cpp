@@ -155,7 +155,7 @@ OpenView::rules() const
 }
 
 bool
-OpenView::exists(Keylet const& k) const
+OpenView::exists(KeyletBase const& k) const
 {
     return items_.exists(*base_, k);
 }
@@ -168,7 +168,7 @@ OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
 }
 
 std::shared_ptr<SLE const>
-OpenView::read(Keylet const& k) const
+OpenView::read(KeyletBase const& k) const
 {
     return items_.read(*base_, k);
 }

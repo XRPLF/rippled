@@ -265,7 +265,7 @@ ApplyStateTable::apply(
 //---
 
 bool
-ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
+ApplyStateTable::exists(ReadView const& base, KeyletBase const& k) const
 {
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
@@ -322,7 +322,7 @@ ApplyStateTable::succ(
 }
 
 std::shared_ptr<SLE const>
-ApplyStateTable::read(ReadView const& base, Keylet const& k) const
+ApplyStateTable::read(ReadView const& base, KeyletBase const& k) const
 {
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
@@ -344,7 +344,7 @@ ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 }
 
 std::shared_ptr<SLE>
-ApplyStateTable::peek(ReadView const& base, Keylet const& k)
+ApplyStateTable::peek(ReadView const& base, KeyletBase const& k)
 {
     auto iter = items_.lower_bound(k.key);
     if (iter == items_.end() || iter->first != k.key)

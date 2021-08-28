@@ -23,7 +23,7 @@
 namespace ripple {
 
 bool
-Keylet::check(STLedgerEntry const& sle) const
+KeyletBase::check(STLedgerEntry const& sle) const
 {
     assert(sle.getType() != ltANY || sle.getType() != ltCHILD);
 

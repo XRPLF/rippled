@@ -177,7 +177,7 @@ RawStateTable::apply(RawView& to) const
 }
 
 bool
-RawStateTable::exists(ReadView const& base, Keylet const& k) const
+RawStateTable::exists(ReadView const& base, KeyletBase const& k) const
 {
     assert(k.key.isNonZero());
     auto const iter = items_.find(k.key);
@@ -304,7 +304,7 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 }
 
 std::shared_ptr<SLE const>
-RawStateTable::read(ReadView const& base, Keylet const& k) const
+RawStateTable::read(ReadView const& base, KeyletBase const& k) const
 {
     auto const iter = items_.find(k.key);
     if (iter == items_.end())

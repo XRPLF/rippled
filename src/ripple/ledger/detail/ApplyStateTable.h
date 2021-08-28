@@ -73,7 +73,7 @@ public:
         beast::Journal j);
 
     bool
-    exists(ReadView const& base, Keylet const& k) const;
+    exists(ReadView const& base, KeyletBase const& k) const;
 
     std::optional<key_type>
     succ(
@@ -82,10 +82,10 @@ public:
         std::optional<key_type> const& last) const;
 
     std::shared_ptr<SLE const>
-    read(ReadView const& base, Keylet const& k) const;
+    read(ReadView const& base, KeyletBase const& k) const;
 
     std::shared_ptr<SLE>
-    peek(ReadView const& base, Keylet const& k);
+    peek(ReadView const& base, KeyletBase const& k);
 
     std::size_t
     size() const;

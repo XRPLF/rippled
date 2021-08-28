@@ -72,7 +72,7 @@ struct PayChan_test : public beast::unit_test::suite
     static STAmount
     channelBalance(ReadView const& view, uint256 const& chan)
     {
-        auto const slep = view.read({ltPAYCHAN, chan});
+        auto const slep = view.read(Keylet(ltPAYCHAN, chan));
         if (!slep)
             return XRPAmount{-1};
         return (*slep)[sfBalance];
@@ -81,14 +81,14 @@ struct PayChan_test : public beast::unit_test::suite
     static bool
     channelExists(ReadView const& view, uint256 const& chan)
     {
-        auto const slep = view.read({ltPAYCHAN, chan});
+        auto const slep = view.read(Keylet(ltPAYCHAN, chan));
         return bool(slep);
     }
 
     static STAmount
     channelAmount(ReadView const& view, uint256 const& chan)
     {
-        auto const slep = view.read({ltPAYCHAN, chan});
+        auto const slep = view.read(Keylet(ltPAYCHAN, chan));
         if (!slep)
             return XRPAmount{-1};
         return (*slep)[sfAmount];
@@ -97,7 +97,7 @@ struct PayChan_test : public beast::unit_test::suite
     static std::optional<std::int64_t>
     channelExpiration(ReadView const& view, uint256 const& chan)
     {
-        auto const slep = view.read({ltPAYCHAN, chan});
+        auto const slep = view.read(Keylet(ltPAYCHAN, chan));
         if (!slep)
             return std::nullopt;
         if (auto const r = (*slep)[~sfExpiration])

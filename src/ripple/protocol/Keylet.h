@@ -29,25 +29,70 @@ class STLedgerEntry;
 
 /** A pair of SHAMap key and LedgerEntryType.
 
-    A Keylet identifies both a key in the state map
-    and its ledger entry type.
+    A Keylet identifies both a key in the state map and its ledger entry type.
 
-    @note Keylet is a portmanteau of the words key
-          and LET, an acronym for LedgerEntryType.
+    @note Keylet is a portmanteau of the words key and LET, an acronym for
+          LedgerEntryType.
 */
-struct Keylet
+struct KeyletBase
 {
-    uint256 key;
     LedgerEntryType type;
+    uint256 key;
 
-    Keylet(LedgerEntryType type_, uint256 const& key_) : key(key_), type(type_)
+protected:
+    // Only derived classes should be able to construct a KeyletBase.
+    KeyletBase(LedgerEntryType type_, uint256 const& key_)
+        : type(type_), key(key_)
     {
     }
 
+    // You should be able to copy construct derived classes.
+    KeyletBase(KeyletBase const&) = default;
+    KeyletBase(KeyletBase&&) = default;
+
+    // You should be able to assign derived classes.
+    KeyletBase&
+    operator=(KeyletBase const&) = default;
+    KeyletBase&
+    operator=(KeyletBase&&) = default;
+
+    // The destructor is protected so derived classes cannot be destroyed
+    // through a pointer to the base.  It also allows us to do derivation
+    // without needing a virtual table.
+    ~KeyletBase() = default;
+
+public:
     /** Returns true if the SLE matches the type */
     bool
     check(STLedgerEntry const&) const;
 };
+
+#ifndef __INTELLISENSE__
+static_assert(not std::is_default_constructible_v<KeyletBase>);
+static_assert(not std::is_copy_constructible_v<KeyletBase>);
+static_assert(not std::is_move_constructible_v<KeyletBase>);
+static_assert(not std::is_copy_assignable_v<KeyletBase>);
+static_assert(not std::is_move_assignable_v<KeyletBase>);
+static_assert(not std::is_nothrow_destructible_v<KeyletBase>);
+#endif
+
+struct Keylet final : public KeyletBase
+{
+    Keylet(LedgerEntryType type, uint256 const& key) : KeyletBase(type, key)
+    {
+    }
+
+    using KeyletBase::check;
+};
+
+#ifndef __INTELLISENSE__
+static_assert(not std::is_default_constructible_v<Keylet>);
+static_assert(std::is_copy_constructible_v<Keylet>);
+static_assert(std::is_move_constructible_v<Keylet>);
+static_assert(std::is_copy_assignable_v<Keylet>);
+static_assert(std::is_move_assignable_v<Keylet>);
+static_assert(std::is_nothrow_destructible_v<Keylet>);
+#endif
 
 }  // namespace ripple
 

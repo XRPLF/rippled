@@ -57,7 +57,7 @@ public:
     rules() const override;
 
     bool
-    exists(Keylet const& k) const override;
+    exists(KeyletBase const& k) const override;
 
     std::optional<key_type>
     succ(
@@ -65,7 +65,7 @@ public:
         std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
-    read(Keylet const& k) const override;
+    read(KeyletBase const& k) const override;
 
     std::unique_ptr<sles_type::iter_base>
     slesBegin() const override;
@@ -94,7 +94,7 @@ public:
     flags() const override;
 
     std::shared_ptr<SLE>
-    peek(Keylet const& k) override;
+    peek(KeyletBase const& k) override;
 
     void
     erase(std::shared_ptr<SLE> const& sle) override;

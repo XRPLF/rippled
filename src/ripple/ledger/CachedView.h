@@ -59,10 +59,10 @@ public:
     //
 
     bool
-    exists(Keylet const& k) const override;
+    exists(KeyletBase const& k) const override;
 
     std::shared_ptr<SLE const>
-    read(Keylet const& k) const override;
+    read(KeyletBase const& k) const override;
 
     bool
     open() const override

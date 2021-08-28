@@ -37,7 +37,7 @@ public:
     using ref = const std::shared_ptr<STLedgerEntry>&;
 
     /** Create an empty object with the given key and type. */
-    explicit STLedgerEntry(Keylet const& k);
+    explicit STLedgerEntry(KeyletBase const& k);
     STLedgerEntry(LedgerEntryType type, uint256 const& key);
     STLedgerEntry(SerialIter& sit, uint256 const& index);
     STLedgerEntry(SerialIter&& sit, uint256 const& index);

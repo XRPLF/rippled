@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-STLedgerEntry::STLedgerEntry(Keylet const& k)
+STLedgerEntry::STLedgerEntry(KeyletBase const& k)
     : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
 {
     auto const format = LedgerFormats::getInstance().findByType(type_);
