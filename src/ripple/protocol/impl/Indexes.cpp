@@ -129,10 +129,10 @@ getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 
 namespace keylet {
 
-Keylet
+AccountRootKeylet
 account(AccountID const& id) noexcept
 {
-    return Keylet{ltACCOUNT_ROOT, indexHash(LedgerNameSpace::ACCOUNT, id)};
+    return {indexHash(LedgerNameSpace::ACCOUNT, id)};
 }
 
 Keylet

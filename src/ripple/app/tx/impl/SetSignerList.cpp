@@ -180,7 +180,7 @@ static TER
 removeSignersFromLedger(
     Application& app,
     ApplyView& view,
-    Keylet const& accountKeylet,
+    AccountRootKeylet const& accountKeylet,
     Keylet const& ownerDirKeylet,
     Keylet const& signerListKeylet,
     beast::Journal j)
@@ -214,11 +214,8 @@ removeSignersFromLedger(
         return tefBAD_LEDGER;
     }
 
-    adjustOwnerCount(
-        view,
-        view.peekSLE(accountKeylet),
-        removeFromOwnerCount,
-        app.journal("View"));
+    auto acctRoot = view.peek(accountKeylet);
+    adjustOwnerCount(view, acctRoot, removeFromOwnerCount, app.journal("View"));
 
     view.erase(signers);
 
@@ -328,12 +325,12 @@ SetSignerList::replaceSignerList()
             j_))
         return ter;
 
-    auto const sle = view().peekSLE(accountKeylet);
-    if (!sle)
+    auto acctRoot = view().peek(accountKeylet);
+    if (!acctRoot)
         return tefINTERNAL;
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
+    std::uint32_t const oldOwnerCount{acctRoot->ownerCount()};
 
     // The required reserve changes based on featureMultiSignReserve...
     int addedOwnerCount{1};
@@ -374,7 +371,7 @@ SetSignerList::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    adjustOwnerCount(view(), acctRoot, addedOwnerCount, viewJ);
     return tesSUCCESS;
 }
 
@@ -384,12 +381,11 @@ SetSignerList::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peekSLE(accountKeylet);
-    if (!ledgerEntry)
+    auto acctRoot = view().peek(accountKeylet);
+    if (!acctRoot)
         return tefINTERNAL;
 
-    if ((ledgerEntry->isFlag(lsfDisableMaster)) &&
-        (!ledgerEntry->isFieldPresent(sfRegularKey)))
+    if ((acctRoot->isFlag(lsfDisableMaster)) && (!acctRoot->regularKey()))
         return tecNO_ALTERNATIVE_KEY;
 
     auto const ownerDirKeylet = keylet::ownerDir(account_);

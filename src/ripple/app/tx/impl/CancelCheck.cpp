@@ -123,8 +123,8 @@ CancelCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sleSrc = view().peekSLE(keylet::account(srcId));
-    adjustOwnerCount(view(), sleSrc, -1, viewJ);
+    auto srcAcctRoot = view().peek(keylet::account(srcId));
+    adjustOwnerCount(view(), srcAcctRoot, -1, viewJ);
 
     // Remove check from ledger.
     view().erase(sleCheck);

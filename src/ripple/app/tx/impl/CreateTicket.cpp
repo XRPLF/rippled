@@ -57,14 +57,13 @@ TER
 CreateTicket::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
-    auto const sleAccountRoot = ctx.view.readSLE(keylet::account(id));
-    if (!sleAccountRoot)
+    auto const acctRoot = ctx.view.read(keylet::account(id));
+    if (!acctRoot)
         return terNO_ACCOUNT;
 
     // Make sure the TicketCreate would not cause the account to own
     // too many tickets.
-    std::uint32_t const curTicketCount =
-        (*sleAccountRoot)[~sfTicketCount].value_or(0u);
+    std::uint32_t const curTicketCount = acctRoot->ticketCount().value_or(0u);
     std::uint32_t const addedTickets = ctx.tx[sfTicketCount];
     std::uint32_t const consumedTickets =
         ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
@@ -84,9 +83,8 @@ CreateTicket::preclaim(PreclaimContext const& ctx)
 TER
 CreateTicket::doApply()
 {
-    SLE::pointer const sleAccountRoot =
-        view().peekSLE(keylet::account(account_));
-    if (!sleAccountRoot)
+    auto acctRoot = view().peek(keylet::account(account_));
+    if (!acctRoot)
         return tefINTERNAL;
 
     // Each ticket counts against the reserve of the issuing account, but we
@@ -94,8 +92,8 @@ CreateTicket::doApply()
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     {
-        XRPAmount const reserve = view().fees().accountReserve(
-            sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
+        XRPAmount const reserve =
+            view().fees().accountReserve(acctRoot->ownerCount() + ticketCount);
 
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -107,7 +105,7 @@ CreateTicket::doApply()
     // root sequence.  Before we got here to doApply(), the transaction
     // machinery already incremented the account root sequence if that
     // was appropriate.
-    std::uint32_t const firstTicketSeq = (*sleAccountRoot)[sfSequence];
+    std::uint32_t const firstTicketSeq = acctRoot->sequence();
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
@@ -140,17 +138,15 @@ CreateTicket::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount =
-        (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
-
-    sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
+    std::uint32_t const oldTicketCount = acctRoot->ticketCount().value_or(0u);
+    acctRoot->setTicketCount(oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+    adjustOwnerCount(view(), acctRoot, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.
-    sleAccountRoot->setFieldU32(sfSequence, firstTicketSeq + ticketCount);
+    acctRoot->setSequence(firstTicketSeq + ticketCount);
 
     return tesSUCCESS;
 }

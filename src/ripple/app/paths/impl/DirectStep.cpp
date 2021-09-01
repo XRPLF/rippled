@@ -262,8 +262,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc)
-        const;
+    check(StrandContext const& ctx, AcctRootRd const& acctRootSrc) const;
 
     std::string
     logString() const override
@@ -313,8 +312,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc)
-        const;
+    check(StrandContext const& ctx, AcctRootRd const& acctRootSrc) const;
 
     std::string
     logString() const override
@@ -403,7 +401,7 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired)
 TER
 DirectIPaymentStep::check(
     StrandContext const& ctx,
-    std::shared_ptr<const SLE> const& sleSrc) const
+    AcctRootRd const& acctRootSrc) const
 {
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
@@ -418,7 +416,7 @@ DirectIPaymentStep::check(
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (((*sleSrc)[sfFlags] & lsfRequireAuth) &&
+        if (acctRootSrc.isFlag(lsfRequireAuth) &&
             !((*sleLine)[sfFlags] & authField) &&
             (*sleLine)[sfBalance] == beast::zero)
         {
@@ -458,9 +456,7 @@ DirectIPaymentStep::check(
 }
 
 TER
-DirectIOfferCrossingStep::check(
-    StrandContext const&,
-    std::shared_ptr<const SLE> const&) const
+DirectIOfferCrossingStep::check(StrandContext const&, AcctRootRd const&) const
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not
@@ -888,8 +884,8 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto const sleSrc = ctx.view.readSLE(keylet::account(src_));
-    if (!sleSrc)
+    auto const acctRootSrc = ctx.view.read(keylet::account(src_));
+    if (!acctRootSrc)
     {
         JLOG(j_.warn())
             << "DirectStepI: can't receive IOUs from non-existent issuer: "
@@ -948,7 +944,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         }
     }
 
-    return static_cast<TDerived const*>(this)->check(ctx, sleSrc);
+    return static_cast<TDerived const*>(this)->check(ctx, *acctRootSrc);
 }
 
 //------------------------------------------------------------------------------

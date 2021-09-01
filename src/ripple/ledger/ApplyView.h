@@ -173,6 +173,19 @@ public:
     virtual std::shared_ptr<SLE>
     peekSLE(KeyletBase const& k) = 0;
 
+    template <
+        class TKeylet,
+        typename Wrapped = typename TKeylet::template TWrapped<true>>
+    auto
+    peek(TKeylet const& keylet) -> std::optional<Wrapped>
+    {
+        if (auto sle = peekSLE(keylet))
+        {
+            return Wrapped(std::move(sle));
+        }
+        return {};
+    }
+
     /** Remove a peeked SLE.
 
         Requirements:
@@ -186,6 +199,19 @@ public:
     */
     virtual void
     erase(std::shared_ptr<SLE> const& sle) = 0;
+
+    template <class T>
+    void
+    erase(std::optional<T>& wrapper)
+    {
+        static_assert(
+            std::is_convertible_v<
+                decltype(std::declval<T>().slePtr()),
+                std::shared_ptr<SLE> const&>,
+            "Parameter must be std::optional with slePtr() method");
+        if (wrapper)
+            erase(wrapper->slePtr());
+    }
 
     /** Insert a new state SLE
 
@@ -226,6 +252,19 @@ public:
     /** @{ */
     virtual void
     update(std::shared_ptr<SLE> const& sle) = 0;
+
+    template <class T>
+    void
+    update(std::optional<T>& wrapper)
+    {
+        static_assert(
+            std::is_convertible_v<
+                decltype(std::declval<T>().slePtr()),
+                std::shared_ptr<SLE> const&>,
+            "Parameter must be std::optional with slePtr() method");
+        if (wrapper)
+            update(wrapper->slePtr());
+    }
 
     //--------------------------------------------------------------------------
 

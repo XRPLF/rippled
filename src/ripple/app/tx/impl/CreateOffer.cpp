@@ -140,11 +140,11 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
 
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
-    auto const sleCreator = ctx.view.readSLE(keylet::account(id));
-    if (!sleCreator)
+    auto const creatorAcctRoot = ctx.view.read(keylet::account(id));
+    if (!creatorAcctRoot)
         return terNO_ACCOUNT;
 
-    std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
+    std::uint32_t const uAccountSequence = creatorAcctRoot->sequence();
 
     auto viewJ = ctx.app.journal("View");
 
@@ -212,9 +212,9 @@ CreateOffer::checkAcceptAsset(
     // Only valid for custom currencies
     assert(!isXRP(issue.currency));
 
-    auto const issuerAccount = view.readSLE(keylet::account(issue.account));
+    auto const issuerAcctRoot = view.read(keylet::account(issue.account));
 
-    if (!issuerAccount)
+    if (!issuerAcctRoot)
     {
         JLOG(j.debug())
             << "delay: can't receive IOUs from non-existent issuer: "
@@ -230,7 +230,7 @@ CreateOffer::checkAcceptAsset(
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
-    if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
+    if (issuerAcctRoot->isFlag(lsfRequireAuth))
     {
         auto const trustLine =
             view.readSLE(keylet::line(id, issue.account, issue.currency));
@@ -969,15 +969,17 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         std::uint8_t uTickSize = Quality::maxTickSize;
         if (!isXRP(uPaysIssuerID))
         {
-            auto const sle = sb.readSLE(keylet::account(uPaysIssuerID));
-            if (sle && sle->isFieldPresent(sfTickSize))
-                uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
+            if (auto const issuerAcctRoot =
+                    sb.read(keylet::account(uPaysIssuerID)))
+                if (auto const issuerTickSize = issuerAcctRoot->tickSize())
+                    uTickSize = std::min(uTickSize, *issuerTickSize);
         }
         if (!isXRP(uGetsIssuerID))
         {
-            auto const sle = sb.readSLE(keylet::account(uGetsIssuerID));
-            if (sle && sle->isFieldPresent(sfTickSize))
-                uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
+            if (auto const issuerAcctRoot =
+                    sb.read(keylet::account(uGetsIssuerID)))
+                if (auto const issuerTickSize = issuerAcctRoot->tickSize())
+                    uTickSize = std::min(uTickSize, *issuerTickSize);
         }
         if (uTickSize < Quality::maxTickSize)
         {
@@ -1116,13 +1118,13 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    auto const sleCreator = sb.peekSLE(keylet::account(account_));
-    if (!sleCreator)
+    auto creatorAcctRoot = sb.peek(keylet::account(account_));
+    if (!creatorAcctRoot)
         return {tefINTERNAL, false};
 
     {
         XRPAmount reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
+            sb.fees().accountReserve(creatorAcctRoot->ownerCount() + 1);
 
         if (mPriorBalance < reserve)
         {
@@ -1156,7 +1158,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    adjustOwnerCount(sb, creatorAcctRoot, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
                      << " : " << to_string(saTakerGets.issue());

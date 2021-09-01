@@ -83,14 +83,14 @@ TER
 CreateCheck::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
-    auto const sleDst = ctx.view.readSLE(keylet::account(dstId));
-    if (!sleDst)
+    auto const dstAcctRoot = ctx.view.read(keylet::account(dstId));
+    if (!dstAcctRoot)
     {
         JLOG(ctx.j.warn()) << "Destination account does not exist.";
         return tecNO_DST;
     }
 
-    auto const flags = sleDst->getFlags();
+    auto const flags = dstAcctRoot->flags();
 
     // Check if the destination has disallowed incoming checks
     if (ctx.view.rules().enabled(featureDisallowIncoming) &&
@@ -163,8 +163,8 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
 TER
 CreateCheck::doApply()
 {
-    auto const sle = view().peekSLE(keylet::account(account_));
-    if (!sle)
+    auto acctRoot = view().peek(keylet::account(account_));
+    if (!acctRoot)
         return tefINTERNAL;
 
     // A check counts against the reserve of the issuing account, but we
@@ -172,7 +172,7 @@ CreateCheck::doApply()
     // reserve to pay fees.
     {
         STAmount const reserve{
-            view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
+            view().fees().accountReserve(acctRoot->ownerCount() + 1)};
 
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -236,7 +236,7 @@ CreateCheck::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+    adjustOwnerCount(view(), acctRoot, 1, viewJ);
     return tesSUCCESS;
 }
 

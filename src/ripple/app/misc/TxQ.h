@@ -306,7 +306,7 @@ public:
 
     /** Return the next sequence that would go in the TxQ for an account. */
     SeqProxy
-    nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const;
+    nextQueuableSeq(std::optional<AcctRootRd const> const& acctRoot) const;
 
     /** Returns fee metrics in reference fee level units.
      */
@@ -363,7 +363,7 @@ private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
     SeqProxy
     nextQueuableSeqImpl(
-        std::shared_ptr<SLE const> const& sleAccount,
+        std::optional<AcctRootRd const> const& acctRoot,
         std::lock_guard<std::mutex> const&) const;
 
     /**
@@ -812,7 +812,7 @@ private:
         STTx const&,
         ApplyFlags const,
         OpenView const&,
-        std::shared_ptr<SLE const> const& sleAccount,
+        std::optional<AcctRootRd const> const& acctRoot,
         AccountMap::iterator const&,
         std::optional<TxQAccount::TxMap::iterator> const&,
         std::lock_guard<std::mutex> const& lock);

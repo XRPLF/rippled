@@ -99,8 +99,8 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    auto const sleAccepted = ledger->readSLE(keylet::account(accountID));
-    if (sleAccepted)
+    auto const acctRootAccepted = ledger->read(keylet::account(accountID));
+    if (acctRootAccepted)
     {
         auto const queue =
             params.isMember(jss::queue) && params[jss::queue].asBool();
@@ -113,17 +113,18 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
-        RPC::injectSLE(jvAccepted, *sleAccepted);
+        RPC::injectSLE(jvAccepted, *acctRootAccepted->slePtr());
         result[jss::account_data] = jvAccepted;
 
         Json::Value acctFlags{Json::objectValue};
         for (auto const& lsf : lsFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+            acctFlags[lsf.first.data()] = acctRootAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureDisallowIncoming))
         {
             for (auto const& lsf : disallowIncomingFlags)
-                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+                acctFlags[lsf.first.data()] =
+                    acctRootAccepted->isFlag(lsf.second);
         }
         result[jss::account_flags] = std::move(acctFlags);
 

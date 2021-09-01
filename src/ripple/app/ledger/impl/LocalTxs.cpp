@@ -156,13 +156,12 @@ public:
                 return true;
 
             AccountID const acctID = txn.getAccount();
-            auto const sleAcct = view.readSLE(keylet::account(acctID));
+            auto const acctRoot = view.read(keylet::account(acctID));
 
-            if (!sleAcct)
+            if (!acctRoot)
                 return false;
 
-            SeqProxy const acctSeq =
-                SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
+            SeqProxy const acctSeq = SeqProxy::sequence(acctRoot->sequence());
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())

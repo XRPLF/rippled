@@ -56,11 +56,11 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
-    auto const sle = ctx.view.readSLE(keylet::account(id));
-    if (!sle)
+    auto const acctRoot = ctx.view.read(keylet::account(id));
+    if (!acctRoot)
         return terNO_ACCOUNT;
 
-    if ((*sle)[sfSequence] <= offerSequence)
+    if (acctRoot->sequence() <= offerSequence)
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                             << "Sequence " << offerSequence << " is invalid.";
@@ -77,8 +77,7 @@ CancelOffer::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().readSLE(keylet::account(account_));
-    if (!sle)
+    if (!view().read(keylet::account(account_)))
         return tefINTERNAL;
 
     if (auto sleOffer = view().peekSLE(keylet::offer(account_, offerSequence)))

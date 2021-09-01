@@ -6133,7 +6133,7 @@ class NFToken_test : public beast::unit_test::suite
             incLgrSeqForAcctDel(env, alice);
 
             // alice's account is deleted
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            auto const aliceAcctKey{keylet::account(alice.id())};
             auto const acctDelFee{drops(env.current()->fees().increment)};
             env(acctdelete(alice, becky), fee(acctDelFee));
             env.close();
@@ -6207,7 +6207,7 @@ class NFToken_test : public beast::unit_test::suite
             incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            auto const aliceAcctKey{keylet::account(alice.id())};
             BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
@@ -6350,7 +6350,7 @@ class NFToken_test : public beast::unit_test::suite
             incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            auto const aliceAcctKey{keylet::account(alice.id())};
             BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
@@ -6507,7 +6507,7 @@ class NFToken_test : public beast::unit_test::suite
             incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            auto const aliceAcctKey{keylet::account(alice.id())};
             BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 

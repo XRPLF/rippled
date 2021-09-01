@@ -431,7 +431,7 @@ public:
         @return empty if the ledger entry does not exist
     */
     std::shared_ptr<SLE const>
-    le(Keylet const& k) const;
+    le(KeyletBase const& k) const;
 
     /** Create a JTx from parameters. */
     template <class JsonValue, class... FN>

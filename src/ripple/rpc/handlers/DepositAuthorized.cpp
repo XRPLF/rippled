@@ -85,8 +85,8 @@ doDepositAuthorized(RPC::JsonContext& context)
     }
 
     // If destination account is not in the ledger you can't deposit to it, eh?
-    auto const sleDest = ledger->readSLE(keylet::account(dstAcct));
-    if (!sleDest)
+    auto const destAcctRoot = ledger->read(keylet::account(dstAcct));
+    if (!destAcctRoot)
     {
         RPC::inject_error(rpcDST_ACT_NOT_FOUND, result);
         return result;
@@ -98,7 +98,7 @@ doDepositAuthorized(RPC::JsonContext& context)
     {
         // Check destination for the DepositAuth flag.  If that flag is
         // not set then a deposit should be just fine.
-        if (sleDest->getFlags() & lsfDepositAuth)
+        if (destAcctRoot->isFlag(lsfDepositAuth))
         {
             // See if a preauthorization entry is in the ledger.
             auto const sleDepositAuth =

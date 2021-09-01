@@ -105,9 +105,9 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;
     }
     {
-        auto const sleSrc = ctx.view.readSLE(keylet::account(srcId));
-        auto const sleDst = ctx.view.readSLE(keylet::account(dstId));
-        if (!sleSrc || !sleDst)
+        auto const srcAcctRoot = ctx.view.read(keylet::account(srcId));
+        auto const dstAcctRoot = ctx.view.read(keylet::account(dstId));
+        if (!srcAcctRoot || !dstAcctRoot)
         {
             // If the check exists this should never occur.
             JLOG(ctx.j.warn())
@@ -115,7 +115,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) &&
+        if (dstAcctRoot->isFlag(lsfRequireDestTag) &&
             !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
@@ -198,8 +198,9 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 return tecNO_LINE;
             }
 
-            auto const sleIssuer = ctx.view.readSLE(keylet::account(issuerId));
-            if (!sleIssuer)
+            auto const issuerAcctRoot =
+                ctx.view.read(keylet::account(issuerId));
+            if (!issuerAcctRoot)
             {
                 JLOG(ctx.j.warn())
                     << "Can't receive IOUs from non-existent issuer: "
@@ -207,7 +208,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if (issuerAcctRoot->isFlag(lsfRequireAuth))
             {
                 if (!sleTrustLine)
                 {
@@ -365,10 +366,10 @@ CashCheck::doApply()
                 //     a. this (destination) account and
                 //     b. issuing account (not sending account).
 
-                auto const sleDst = psb.peekSLE(keylet::account(account_));
+                auto dstAcctRoot = psb.peek(keylet::account(account_));
 
                 // Can the account cover the trust line's reserve?
-                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
+                if (std::uint32_t const ownerCount = dstAcctRoot->ownerCount();
                     mPriorBalance < psb.fees().accountReserve(ownerCount + 1))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -388,9 +389,9 @@ CashCheck::doApply()
                         issuer,                         // source
                         account_,                       // destination
                         trustLineKey.key,               // ledger index
-                        sleDst,                         // Account to add to
+                        dstAcctRoot,                    // account to add to
                         false,                          // authorize account
-                        (sleDst->getFlags() & lsfDefaultRipple) == 0,
+                        !dstAcctRoot->isFlag(lsfDefaultRipple),
                         false,                          // freeze trust line
                         initialBalance,                 // zero initial balance
                         Issue(currency, account_),      // limit of zero
@@ -403,7 +404,7 @@ CashCheck::doApply()
                 }
                 // clang-format on
 
-                psb.update(sleDst);
+                psb.update(dstAcctRoot);
 
                 // Note that we _don't_ need to be careful about destroying
                 // the trust line if the check cashing fails.  The transaction
@@ -506,7 +507,8 @@ CashCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peekSLE(keylet::account(srcId)), -1, viewJ);
+    auto srcAcctRoot = psb.peek(keylet::account(srcId));
+    adjustOwnerCount(psb, srcAcctRoot, -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

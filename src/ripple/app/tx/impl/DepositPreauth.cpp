@@ -85,7 +85,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Authorize account is present in the ledger.
         AccountID const auth{ctx.tx[sfAuthorize]};
-        if (!ctx.view.exists(keylet::account(auth)))
+        if (!ctx.view.read(keylet::account(auth)))
             return tecNO_TARGET;
 
         // Verify that the Preauth entry they asked to add is not already
@@ -108,16 +108,16 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peekSLE(keylet::account(account_));
-        if (!sleOwner)
+        auto ownerAcctRoot = view().peek(keylet::account(account_));
+        if (!ownerAcctRoot)
             return {tefINTERNAL};
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         {
-            STAmount const reserve{view().fees().accountReserve(
-                sleOwner->getFieldU32(sfOwnerCount) + 1)};
+            STAmount const reserve{
+                view().fees().accountReserve(ownerAcctRoot->ownerCount() + 1)};
 
             if (mPriorBalance < reserve)
                 return tecINSUFFICIENT_RESERVE;
@@ -149,7 +149,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, 1, viewJ);
+        adjustOwnerCount(view(), ownerAcctRoot, 1, viewJ);
     }
     else
     {
@@ -188,11 +188,11 @@ DepositPreauth::removeFromLedger(
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    auto const sleOwner = view.peekSLE(keylet::account(account));
-    if (!sleOwner)
+    auto ownerAcctRoot = view.peek(keylet::account(account));
+    if (!ownerAcctRoot)
         return tefINTERNAL;
 
-    adjustOwnerCount(view, sleOwner, -1, app.journal("View"));
+    adjustOwnerCount(view, ownerAcctRoot, -1, app.journal("View"));
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

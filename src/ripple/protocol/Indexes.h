@@ -50,7 +50,7 @@ class SeqProxy;
 namespace keylet {
 
 /** AccountID root */
-Keylet
+AccountRootKeylet
 account(AccountID const& id) noexcept;
 
 /** The index of the amendment table */

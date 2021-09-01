@@ -215,11 +215,11 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return tesSUCCESS;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const sle = ctx.view.readSLE(keylet::account(id));
-    if (!sle)
+    auto const acctRoot = ctx.view.read(keylet::account(id));
+    if (!acctRoot)
         return terNO_ACCOUNT;
 
-    auto const balance = (*sle)[sfBalance].xrp();
+    auto const balance = acctRoot->balance().xrp();
 
     if (balance < feePaid)
     {
@@ -244,15 +244,15 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    auto const sle = view().peekSLE(keylet::account(account_));
-    if (!sle)
+    auto acctRoot = view().peek(keylet::account(account_));
+    if (!acctRoot)
         return tefINTERNAL;
 
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
 
     mSourceBalance -= feePaid;
-    sle->setFieldAmount(sfBalance, mSourceBalance);
+    acctRoot->setBalance(mSourceBalance);
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
 
@@ -267,9 +267,9 @@ Transactor::checkSeqProxy(
 {
     auto const id = tx.getAccountID(sfAccount);
 
-    auto const sle = view.readSLE(keylet::account(id));
+    auto const acctRoot = view.read(keylet::account(id));
 
-    if (!sle)
+    if (!acctRoot)
     {
         JLOG(j.trace())
             << "applyTransaction: delay: source account does not exist "
@@ -278,7 +278,7 @@ Transactor::checkSeqProxy(
     }
 
     SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const a_seq = SeqProxy::sequence(acctRoot->sequence());
 
     if (t_seqProx.isSeq())
     {
@@ -336,9 +336,9 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
 
-    auto const sle = ctx.view.readSLE(keylet::account(id));
+    auto const acctRoot = ctx.view.read(keylet::account(id));
 
-    if (!sle)
+    if (!acctRoot)
     {
         JLOG(ctx.j.trace())
             << "applyTransaction: delay: source account does not exist "
@@ -347,8 +347,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
     }
 
     if (ctx.tx.isFieldPresent(sfAccountTxnID) &&
-        (sle->getFieldH256(sfAccountTxnID) !=
-         ctx.tx.getFieldH256(sfAccountTxnID)))
+        (acctRoot->accountTxnID() != ctx.tx.getFieldH256(sfAccountTxnID)))
         return tefWRONG_PRIOR;
 
     if (ctx.tx.isFieldPresent(sfLastLedgerSequence) &&
@@ -362,16 +361,15 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 }
 
 TER
-Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
+Transactor::consumeSeqProxy(AcctRoot& acctRoot)
 {
-    assert(sleAccount);
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
-        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+        acctRoot.setSequence(seqProx.value() + 1);
         return tesSUCCESS;
     }
     return ticketDelete(
@@ -404,19 +402,19 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peekSLE(keylet::account(account));
-    if (!sleAccount)
+    auto acctRoot = view.peek(keylet::account(account));
+    if (!acctRoot)
     {
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
         return tefBAD_LEDGER;
     }
 
-    if (auto ticketCount = (*sleAccount)[~sfTicketCount])
+    if (auto const ticketCount = acctRoot->ticketCount())
     {
         if (*ticketCount == 1)
-            sleAccount->makeFieldAbsent(sfTicketCount);
+            acctRoot->clearTicketCount();
         else
-            ticketCount = *ticketCount - 1;
+            acctRoot->setTicketCount(*ticketCount - 1);
     }
     else
     {
@@ -425,7 +423,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    adjustOwnerCount(view, sleAccount, -1, j);
+    adjustOwnerCount(view, acctRoot, -1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
@@ -446,18 +444,18 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peekSLE(keylet::account(account_));
+    auto acctRoot = view().peek(keylet::account(account_));
 
-    // sle must exist except for transactions
+    // acctRoot must exist except for transactions
     // that allow zero account.
-    assert(sle != nullptr || account_ == beast::zero);
+    assert(acctRoot || account_ == beast::zero);
 
-    if (sle)
+    if (acctRoot)
     {
-        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
+        mPriorBalance = acctRoot->balance().xrp();
         mSourceBalance = mPriorBalance;
 
-        TER result = consumeSeqProxy(sle);
+        TER result = consumeSeqProxy(*acctRoot);
         if (result != tesSUCCESS)
             return result;
 
@@ -465,10 +463,10 @@ Transactor::apply()
         if (result != tesSUCCESS)
             return result;
 
-        if (sle->isFieldPresent(sfAccountTxnID))
-            sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
+        if (acctRoot->accountTxnID())
+            acctRoot->setAccountTxnID(ctx_.tx.getTransactionID());
 
-        view().update(sle);
+        view().update(acctRoot);
     }
 
     return doApply();
@@ -499,16 +497,17 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     // Look up the account.
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
-    auto const sleAccount = ctx.view.readSLE(keylet::account(idAccount));
-    if (!sleAccount)
+    auto const acctRoot = ctx.view.read(keylet::account(idAccount));
+    if (!acctRoot)
         return terNO_ACCOUNT;
 
-    bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
+    auto const regKey = acctRoot->regularKey();
+    bool const isMasterDisabled = acctRoot->isFlag(lsfDisableMaster);
 
     if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
     {
         // Signed with regular key.
-        if ((*sleAccount)[~sfRegularKey] == idSigner)
+        if (regKey == idSigner)
         {
             return tesSUCCESS;
         }
@@ -535,11 +534,11 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
         if (isMasterDisabled)
             return tefMASTER_DISABLED;
     }
-    else if ((*sleAccount)[~sfRegularKey] == idSigner)
+    else if (regKey == idSigner)
     {
         // Signing with the regular key. Continue.
     }
-    else if (sleAccount->isFieldPresent(sfRegularKey))
+    else if (regKey)
     {
         // Signing key does not match master or regular key.
         JLOG(ctx.j.trace())
@@ -656,19 +655,16 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        auto sleTxSignerRoot =
-            ctx.view.readSLE(keylet::account(txSignerAcctID));
+        auto const txSignerAcctRoot =
+            ctx.view.read(keylet::account(txSignerAcctID));
 
         if (signingAcctIDFromPubKey == txSignerAcctID)
         {
             // Either Phantom or Master.  Phantoms automatically pass.
-            if (sleTxSignerRoot)
+            if (txSignerAcctRoot)
             {
                 // Master Key.  Account may not have asfDisableMaster set.
-                std::uint32_t const signerAccountFlags =
-                    sleTxSignerRoot->getFieldU32(sfFlags);
-
-                if (signerAccountFlags & lsfDisableMaster)
+                if (txSignerAcctRoot->isFlag(lsfDisableMaster))
                 {
                     JLOG(ctx.j.trace())
                         << "applyTransaction: Signer:Account lsfDisableMaster.";
@@ -680,21 +676,21 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         {
             // May be a Regular Key.  Let's find out.
             // Public key must hash to the account's regular key.
-            if (!sleTxSignerRoot)
+            if (!txSignerAcctRoot)
             {
                 JLOG(ctx.j.trace()) << "applyTransaction: Non-phantom signer "
                                        "lacks account root.";
                 return tefBAD_SIGNATURE;
             }
 
-            if (!sleTxSignerRoot->isFieldPresent(sfRegularKey))
+            auto const regKey = txSignerAcctRoot->regularKey();
+            if (!regKey)
             {
                 JLOG(ctx.j.trace())
                     << "applyTransaction: Account lacks RegularKey.";
                 return tefBAD_SIGNATURE;
             }
-            if (signingAcctIDFromPubKey !=
-                sleTxSignerRoot->getAccountID(sfRegularKey))
+            if (signingAcctIDFromPubKey != *regKey)
             {
                 JLOG(ctx.j.trace())
                     << "applyTransaction: Account doesn't match RegularKey.";
@@ -764,14 +760,14 @@ Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
 
-    auto const txnAcct =
-        view().peekSLE(keylet::account(ctx_.tx.getAccountID(sfAccount)));
-    if (!txnAcct)
+    auto txnAcctRoot =
+        view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+    if (!txnAcctRoot)
         // The account should never be missing from the ledger.  But if it
         // is missing then we can't very well charge it a fee, can we?
         return {tefINTERNAL, beast::zero};
 
-    auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
+    auto const balance = txnAcctRoot->balance().xrp();
 
     // balance should have already been checked in checkFee / preFlight.
     assert(balance != beast::zero && (!view().open() || balance >= fee));
@@ -787,12 +783,12 @@ Transactor::reset(XRPAmount fee)
     // If for some reason we are unable to consume the ticket or sequence
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
-    txnAcct->setFieldAmount(sfBalance, balance - fee);
-    TER const ter{consumeSeqProxy(txnAcct)};
+    txnAcctRoot->setBalance(balance - fee);
+    TER const ter = consumeSeqProxy(*txnAcctRoot);
     assert(isTesSuccess(ter));
 
     if (isTesSuccess(ter))
-        view().update(txnAcct);
+        view().update(txnAcctRoot);
 
     return {ter, fee};
 }

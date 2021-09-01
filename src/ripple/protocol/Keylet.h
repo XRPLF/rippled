@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_KEYLET_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/protocol/AcctRoot.h>
 #include <ripple/protocol/LedgerFormats.h>
 
 namespace ripple {
@@ -92,6 +93,30 @@ static_assert(std::is_move_constructible_v<Keylet>);
 static_assert(std::is_copy_assignable_v<Keylet>);
 static_assert(std::is_move_assignable_v<Keylet>);
 static_assert(std::is_nothrow_destructible_v<Keylet>);
+#endif
+
+template <bool>
+class AcctRootImpl;
+
+struct AccountRootKeylet final : public KeyletBase
+{
+    template <bool Writable>
+    using TWrapped = AcctRootImpl<Writable>;
+
+    using KeyletBase::check;
+
+    AccountRootKeylet(uint256 const& key) : KeyletBase(ltACCOUNT_ROOT, key)
+    {
+    }
+};
+
+#ifndef __INTELLISENSE__
+static_assert(not std::is_default_constructible_v<AccountRootKeylet>);
+static_assert(std::is_copy_constructible_v<AccountRootKeylet>);
+static_assert(std::is_move_constructible_v<AccountRootKeylet>);
+static_assert(std::is_copy_assignable_v<AccountRootKeylet>);
+static_assert(std::is_move_assignable_v<AccountRootKeylet>);
+static_assert(std::is_nothrow_destructible_v<AccountRootKeylet>);
 #endif
 
 }  // namespace ripple

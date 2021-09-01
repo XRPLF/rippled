@@ -3742,9 +3742,9 @@ NetworkOPsImp::subAccountHistoryStart(
     }
     if (accountId == genesisAccountId)
     {
-        if (auto const sleAcct = ledger->readSLE(accountKeylet); sleAcct)
+        if (auto const acctRoot = ledger->read(accountKeylet))
         {
-            if (sleAcct->getFieldU32(sfSequence) == 1)
+            if (acctRoot->sequence() == 1)
             {
                 JLOG(m_journal.debug())
                     << "subAccountHistoryStart, genesis account "

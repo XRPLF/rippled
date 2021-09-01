@@ -68,9 +68,9 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]);
             issuer != account)
         {
-            if (auto const sle = ctx.view.readSLE(keylet::account(issuer)); sle)
+            if (auto const acctRoot = ctx.view.read(keylet::account(issuer)))
             {
-                if (auto const minter = (*sle)[~sfNFTokenMinter];
+                if (auto const minter = acctRoot->NFTokenMinter();
                     minter != account)
                     return tecNO_PERMISSION;
             }
@@ -101,12 +101,12 @@ NFTokenBurn::doApply()
     if (!isTesSuccess(ret))
         return ret;
 
-    if (auto issuer = view().peekSLE(
-            keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
+    if (auto issuerAcctRoot =
+            view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
     {
-        (*issuer)[~sfBurnedNFTokens] =
-            (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
-        view().update(issuer);
+        issuerAcctRoot->setBurnedNFTokens(
+            issuerAcctRoot->burnedNFTokens().value_or(0) + 1);
+        view().update(issuerAcctRoot);
     }
 
     if (ctx_.view().rules().enabled(fixNonFungibleTokensV1_2))

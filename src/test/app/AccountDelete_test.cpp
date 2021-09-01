@@ -488,7 +488,7 @@ public:
         env.close();
 
         // Verify that becky's account root is present.
-        Keylet const beckyAcctKey{keylet::account(becky.id())};
+        AccountRootKeylet const beckyAcctKey{keylet::account(becky.id())};
         BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
 
         using namespace std::chrono_literals;
@@ -567,7 +567,7 @@ public:
         incLgrSeqForAccDel(env, alice);
 
         // Verify that alice's account root is present.
-        Keylet const aliceAcctKey{keylet::account(alice.id())};
+        AccountRootKeylet const aliceAcctKey{keylet::account(alice.id())};
         BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
 
         auto const alicePreDelBal{env.balance(alice)};

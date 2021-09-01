@@ -189,8 +189,8 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
         return false;
-    if (auto const sle = view.readSLE(keylet::account(issuer)))
-        return sle->isFlag(lsfGlobalFreeze);
+    if (auto const acctRoot = view.read(keylet::account(issuer)))
+        return acctRoot->isFlag(lsfGlobalFreeze);
     return false;
 }
 
@@ -205,13 +205,13 @@ isFrozen(
 {
     if (isXRP(currency))
         return false;
-    auto sle = view.readSLE(keylet::account(issuer));
-    if (sle && sle->isFlag(lsfGlobalFreeze))
+    if (auto const acctRoot = view.read(keylet::account(issuer));
+        acctRoot && acctRoot->isFlag(lsfGlobalFreeze))
         return true;
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.readSLE(keylet::line(account, issuer, currency));
+        auto const sle = view.readSLE(keylet::line(account, issuer, currency));
         if (sle &&
             sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
@@ -334,17 +334,17 @@ xrpLiquid(
     std::int32_t ownerCountAdj,
     beast::Journal j)
 {
-    auto const sle = view.readSLE(keylet::account(id));
-    if (sle == nullptr)
+    auto const acctRoot = view.read(keylet::account(id));
+    if (!acctRoot)
         return beast::zero;
 
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
-        view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
+        view.ownerCountHook(id, acctRoot->ownerCount()), ownerCountAdj);
 
     auto const reserve = view.fees().accountReserve(ownerCount);
 
-    auto const fullBalance = sle->getFieldAmount(sfBalance);
+    auto const fullBalance = acctRoot->balance();
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
@@ -470,10 +470,11 @@ forEachItemAfter(
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
-    auto const sle = view.readSLE(keylet::account(issuer));
+    auto const acctRoot = view.read(keylet::account(issuer));
 
-    if (sle && sle->isFieldPresent(sfTransferRate))
-        return Rate{sle->getFieldU32(sfTransferRate)};
+    if (acctRoot)
+        if (auto const transferRate = acctRoot->transferRate())
+            return Rate{*transferRate};
 
     return parityRate;
 }
@@ -712,19 +713,19 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    std::optional<AcctRoot>& acctRoot,
     std::int32_t amount,
     beast::Journal j)
 {
-    if (!sle)
+    if (!acctRoot)
         return;
     assert(amount != 0);
-    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*sle)[sfAccount];
+    std::uint32_t const current = acctRoot->ownerCount();
+    AccountID const id = acctRoot->accountID();
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);
-    sle->setFieldU32(sfOwnerCount, adjusted);
-    view.update(sle);
+    acctRoot->setOwnerCount(adjusted);
+    view.update(acctRoot);
 }
 
 std::function<void(SLE::ref)>
@@ -741,15 +742,15 @@ trustCreate(
     const bool bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
+    uint256 const& uIndex,              // --> ripple state entry
+    std::optional<AcctRoot>& acctRoot,  // --> the account being set.
+    const bool bAuth,                   // --> authorize account.
+    const bool bNoRipple,               // --> others cannot ripple through
+    const bool bFreeze,                 // --> funds cannot leave
+    STAmount const& saBalance,          // --> balance of account being set.
+                                        // Issuer should be noAccount()
+    STAmount const& saLimit,            // --> limit for account being set.
+                                        // Issuer should be account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j)
@@ -783,16 +784,15 @@ trustCreate(
     const bool bSetDst = saLimit.getIssuer() == uDstAccountID;
     const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-    assert(sleAccount);
-    if (!sleAccount)
+    assert(acctRoot);
+    if (!acctRoot)
         return tefINTERNAL;
 
     assert(
-        sleAccount->getAccountID(sfAccount) ==
-        (bSetHigh ? uHighAccountID : uLowAccountID));
-    auto const slePeer = view.peekSLE(
-        keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
-    if (!slePeer)
+        acctRoot->accountID() == (bSetHigh ? uHighAccountID : uLowAccountID));
+    auto acctRootPeer =
+        view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
+    if (!acctRootPeer)
         return tecNO_TARGET;
 
     // Remember deletion hints.
@@ -830,14 +830,14 @@ trustCreate(
         uFlags |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
     }
 
-    if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
+    if (!acctRootPeer->isFlag(lsfDefaultRipple))
     {
         // The other side's default is no rippling
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(view, sleAccount, 1, j);
+    adjustOwnerCount(view, acctRoot, 1, j);
 
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(
@@ -918,7 +918,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         return tefBAD_LEDGER;
     }
 
-    adjustOwnerCount(view, view.peekSLE(keylet::account(owner)), -1, j);
+    auto ownerAcctRoot = view.peek(keylet::account(owner));
+    adjustOwnerCount(view, ownerAcctRoot, -1, j);
 
     view.erase(sle);
 
@@ -988,9 +989,8 @@ rippleCredit(
             &&
             static_cast<bool>(
                 uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(
-                    view.readSLE(keylet::account(uSenderID))->getFlags() &
-                    lsfDefaultRipple) &&
+                static_cast<bool>(view.read(keylet::account(uSenderID))
+                                      ->isFlag(lsfDefaultRipple)) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
             !sleRippleState->getFieldAmount(
                 !bSenderHigh ? sfLowLimit : sfHighLimit)
@@ -1003,8 +1003,8 @@ rippleCredit(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            adjustOwnerCount(
-                view, view.peekSLE(keylet::account(uSenderID)), -1, j);
+            auto ownerAcctRoot = view.peek(keylet::account(uSenderID));
+            adjustOwnerCount(view, ownerAcctRoot, -1, j);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -1048,11 +1048,11 @@ rippleCredit(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID)
                     << " : " << saAmount.getFullText();
 
-    auto const sleAccount = view.peekSLE(keylet::account(uReceiverID));
-    if (!sleAccount)
+    auto acctRoot = view.peek(keylet::account(uReceiverID));
+    if (!acctRoot)
         return tefINTERNAL;
 
-    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !acctRoot->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -1060,7 +1060,7 @@ rippleCredit(
         uSenderID,
         uReceiverID,
         index.key,
-        sleAccount,
+        acctRoot,
         false,
         noRipple,
         false,
@@ -1152,32 +1152,32 @@ accountSend(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer sender = uSenderID != beast::zero
-        ? view.peekSLE(keylet::account(uSenderID))
-        : SLE::pointer();
-    SLE::pointer receiver = uReceiverID != beast::zero
-        ? view.peekSLE(keylet::account(uReceiverID))
-        : SLE::pointer();
+    auto senderAcctRoot = uSenderID != beast::zero
+        ? view.peek(keylet::account(uSenderID))
+        : std::nullopt;
+    auto receiverAcctRoot = uReceiverID != beast::zero
+        ? view.peek(keylet::account(uReceiverID))
+        : std::nullopt;
 
     if (auto stream = j.trace())
     {
         std::string sender_bal("-");
         std::string receiver_bal("-");
 
-        if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+        if (senderAcctRoot)
+            sender_bal = senderAcctRoot->balance().getFullText();
 
-        if (receiver)
-            receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+        if (receiverAcctRoot)
+            receiver_bal = receiverAcctRoot->balance().getFullText();
 
         stream << "accountSend> " << to_string(uSenderID) << " (" << sender_bal
                << ") -> " << to_string(uReceiverID) << " (" << receiver_bal
                << ") : " << saAmount.getFullText();
     }
 
-    if (sender)
+    if (senderAcctRoot)
     {
-        if (sender->getFieldAmount(sfBalance) < saAmount)
+        if (senderAcctRoot->balance() < saAmount)
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
@@ -1186,23 +1186,23 @@ accountSend(
         }
         else
         {
-            auto const sndBal = sender->getFieldAmount(sfBalance);
+            auto const sndBal = senderAcctRoot->balance();
             view.creditHook(uSenderID, xrpAccount(), saAmount, sndBal);
 
             // Decrement XRP balance.
-            sender->setFieldAmount(sfBalance, sndBal - saAmount);
-            view.update(sender);
+            senderAcctRoot->setBalance(sndBal - saAmount);
+            view.update(senderAcctRoot);
         }
     }
 
-    if (tesSUCCESS == terResult && receiver)
+    if (tesSUCCESS == terResult && receiverAcctRoot)
     {
         // Increment XRP balance.
-        auto const rcvBal = receiver->getFieldAmount(sfBalance);
-        receiver->setFieldAmount(sfBalance, rcvBal + saAmount);
+        auto const rcvBal = receiverAcctRoot->balance();
+        receiverAcctRoot->setBalance(rcvBal + saAmount);
         view.creditHook(xrpAccount(), uReceiverID, saAmount, -rcvBal);
 
-        view.update(receiver);
+        view.update(receiverAcctRoot);
     }
 
     if (auto stream = j.trace())
@@ -1210,11 +1210,11 @@ accountSend(
         std::string sender_bal("-");
         std::string receiver_bal("-");
 
-        if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+        if (senderAcctRoot)
+            sender_bal = senderAcctRoot->balance().getFullText();
 
-        if (receiver)
-            receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+        if (receiverAcctRoot)
+            receiver_bal = receiverAcctRoot->balance().getFullText();
 
         stream << "accountSend< " << to_string(uSenderID) << " (" << sender_bal
                << ") -> " << to_string(uReceiverID) << " (" << receiver_bal
@@ -1238,8 +1238,8 @@ updateTrustLine(
         return false;
     std::uint32_t const flags(state->getFieldU32(sfFlags));
 
-    auto sle = view.peekSLE(keylet::account(sender));
-    if (!sle)
+    auto senderAcctRoot = view.peek(keylet::account(sender));
+    if (!senderAcctRoot)
         return false;
 
     // YYY Could skip this if rippling in reverse.
@@ -1251,7 +1251,7 @@ updateTrustLine(
         // Sender reserve is set.
         && static_cast<bool>(
                flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
+            senderAcctRoot->isFlag(lsfDefaultRipple) &&
         !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
@@ -1263,7 +1263,7 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        adjustOwnerCount(view, sle, -1, j);
+        adjustOwnerCount(view, senderAcctRoot, -1, j);
 
         // Clear reserve flag.
         state->setFieldU32(
@@ -1350,11 +1350,11 @@ issueIOU(
 
     final_balance.setIssuer(noAccount());
 
-    auto const receiverAccount = view.peekSLE(keylet::account(account));
-    if (!receiverAccount)
+    auto receiverAcctRoot = view.peek(keylet::account(account));
+    if (!receiverAcctRoot)
         return tefINTERNAL;
 
-    bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool noRipple = !receiverAcctRoot->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -1362,7 +1362,7 @@ issueIOU(
         issue.account,
         account,
         index.key,
-        receiverAccount,
+        receiverAcctRoot,
         false,
         noRipple,
         false,
@@ -1456,15 +1456,15 @@ transferXRP(
     assert(from != to);
     assert(amount.native());
 
-    SLE::pointer const sender = view.peekSLE(keylet::account(from));
-    SLE::pointer const receiver = view.peekSLE(keylet::account(to));
-    if (!sender || !receiver)
+    auto senderAcctRoot = view.peek(keylet::account(from));
+    auto receiverAcctRoot = view.peek(keylet::account(to));
+    if (!senderAcctRoot || !receiverAcctRoot)
         return tefINTERNAL;
 
     JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> "
                     << to_string(to) << ") : " << amount.getFullText();
 
-    if (sender->getFieldAmount(sfBalance) < amount)
+    if (senderAcctRoot->balance() < amount)
     {
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
@@ -1474,13 +1474,11 @@ transferXRP(
     }
 
     // Decrement XRP balance.
-    sender->setFieldAmount(
-        sfBalance, sender->getFieldAmount(sfBalance) - amount);
-    view.update(sender);
+    senderAcctRoot->setBalance(senderAcctRoot->balance() - amount);
+    view.update(senderAcctRoot);
 
-    receiver->setFieldAmount(
-        sfBalance, receiver->getFieldAmount(sfBalance) + amount);
-    view.update(receiver);
+    receiverAcctRoot->setBalance(receiverAcctRoot->balance() + amount);
+    view.update(receiverAcctRoot);
 
     return tesSUCCESS;
 }

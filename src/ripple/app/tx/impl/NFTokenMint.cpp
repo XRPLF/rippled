@@ -136,12 +136,12 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
     // transaction. Check that and verify that this is allowed:
     if (auto issuer = ctx.tx[~sfIssuer])
     {
-        auto const sle = ctx.view.readSLE(keylet::account(*issuer));
+        auto const acctRoot = ctx.view.read(keylet::account(*issuer));
 
-        if (!sle)
+        if (!acctRoot)
             return tecNO_ISSUER;
 
-        if (auto const minter = (*sle)[~sfNFTokenMinter];
+        if (auto const minter = acctRoot->NFTokenMinter();
             minter != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
     }
@@ -155,8 +155,8 @@ NFTokenMint::doApply()
     auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
 
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
-        auto const root = view().peekSLE(keylet::account(issuer));
-        if (root == nullptr)
+        auto issuerAcctRoot = view().peek(keylet::account(issuer));
+        if (!issuerAcctRoot)
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
@@ -164,15 +164,15 @@ NFTokenMint::doApply()
         {
             // Get the unique sequence number for this token:
             std::uint32_t const tokenSeq =
-                (*root)[~sfMintedNFTokens].value_or(0);
+                issuerAcctRoot->mintedNFTokens().value_or(0);
             {
                 std::uint32_t const nextTokenSeq = tokenSeq + 1;
                 if (nextTokenSeq < tokenSeq)
                     return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-                (*root)[sfMintedNFTokens] = nextTokenSeq;
+                issuerAcctRoot->setMintedNFTokens(nextTokenSeq);
             }
-            ctx_.view().update(root);
+            ctx_.view().update(issuerAcctRoot);
             return tokenSeq;
         }
 
@@ -193,42 +193,47 @@ NFTokenMint::doApply()
         //  o The first token is being minted by an authorized minter.  In
         //    this case the issuer's Sequence field has been left untouched.
         //    We use the issuer's Sequence value as is.
-        if (!root->isFieldPresent(sfFirstNFTokenSequence))
+        if (!issuerAcctRoot->firstNFTokenSequence())
         {
-            std::uint32_t const acctSeq = root->at(sfSequence);
+            std::uint32_t const acctSeq = issuerAcctRoot->sequence();
 
-            root->at(sfFirstNFTokenSequence) =
+            issuerAcctRoot->setFirstNFTokenSequence(
                 ctx_.tx.isFieldPresent(sfIssuer) ||
-                    ctx_.tx.getSeqProxy().isTicket()
-                ? acctSeq
-                : acctSeq - 1;
+                        ctx_.tx.getSeqProxy().isTicket()
+                    ? acctSeq
+                    : acctSeq - 1);
         }
 
         std::uint32_t const mintedNftCnt =
-            (*root)[~sfMintedNFTokens].value_or(0u);
+            issuerAcctRoot->mintedNFTokens().value_or(0u);
 
-        (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
-        if ((*root)[sfMintedNFTokens] == 0u)
+        issuerAcctRoot->setMintedNFTokens(mintedNftCnt + 1u);
+        if (issuerAcctRoot->mintedNFTokens() == 0u)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
 
         // Get the unique sequence number of this token by
         // sfFirstNFTokenSequence + sfMintedNFTokens
-        std::uint32_t const offset = (*root)[sfFirstNFTokenSequence];
+        std::uint32_t const offset =
+            issuerAcctRoot->firstNFTokenSequence().value();
         std::uint32_t const tokenSeq = offset + mintedNftCnt;
 
         // Check for more overflow cases
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-        ctx_.view().update(root);
+        ctx_.view().update(issuerAcctRoot);
         return tokenSeq;
     }();
 
     if (!tokenSeq.has_value())
         return (tokenSeq.error());
 
-    std::uint32_t const ownerCountBefore =
-        view().readSLE(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    auto const acctRoot = view().read(keylet::account(account_));
+    if (!acctRoot)
+        // should never happen.
+        return tecINTERNAL;
+
+    std::uint32_t const ownerCountBefore = acctRoot->ownerCount();
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -264,9 +269,7 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page is added.
-    if (auto const ownerCountAfter = view()
-                                         .readSLE(keylet::account(account_))
-                                         ->getFieldU32(sfOwnerCount);
+    if (auto const ownerCountAfter = acctRoot->ownerCount();
         ownerCountAfter > ownerCountBefore)
     {
         if (auto const reserve = view().fees().accountReserve(ownerCountAfter);

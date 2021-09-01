@@ -244,6 +244,19 @@ public:
     virtual std::shared_ptr<SLE const>
     readSLE(KeyletBase const& k) const = 0;
 
+    template <
+        class TKeylet,
+        typename Wrapped = typename TKeylet::template TWrapped<false>>
+    auto
+    read(TKeylet const& keylet) const -> std::optional<Wrapped>
+    {
+        if (auto sle = readSLE(keylet))
+        {
+            return Wrapped(std::move(sle));
+        }
+        return {};
+    }
+
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count
     // changes that accounts make during a payment. `balanceHook` adjusts

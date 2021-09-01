@@ -251,7 +251,7 @@ areCompatible(
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    std::optional<AcctRoot>& acctRoot,
     std::int32_t amount,
     beast::Journal j);
 
@@ -335,15 +335,15 @@ trustCreate(
     const bool bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
+    uint256 const& uIndex,              // --> ripple state entry
+    std::optional<AcctRoot>& acctRoot,  // --> the account being set.
+    const bool bAuth,                   // --> authorize account.
+    const bool bNoRipple,               // --> others cannot ripple through
+    const bool bFreeze,                 // --> funds cannot leave
+    STAmount const& saBalance,          // --> balance of account being set.
+                                        // Issuer should be noAccount()
+    STAmount const& saLimit,            // --> limit for account being set.
+                                        // Issuer should be account being set.
     std::uint32_t uSrcQualityIn,
     std::uint32_t uSrcQualityOut,
     beast::Journal j);

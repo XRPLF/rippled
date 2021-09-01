@@ -216,9 +216,9 @@ Payment::preclaim(PreclaimContext const& ctx)
     STAmount const saDstAmount(ctx.tx[sfAmount]);
 
     auto const k = keylet::account(uDstAccountID);
-    auto const sleDst = ctx.view.readSLE(k);
+    auto const acctRootDst = ctx.view.read(k);
 
-    if (!sleDst)
+    if (!acctRootDst)
     {
         // Destination account does not exist.
         if (!saDstAmount.native())
@@ -256,7 +256,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
     else if (
-        (sleDst->getFlags() & lsfRequireDestTag) &&
+        acctRootDst->isFlag(lsfRequireDestTag) &&
         !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
@@ -329,31 +329,35 @@ Payment::doApply()
 
     // Open a ledger for editing.
     auto const k = keylet::account(uDstAccountID);
-    SLE::pointer sleDst = view().peekSLE(k);
+    auto acctRootDst = view().peek(k);
 
-    if (!sleDst)
+    if (!acctRootDst)
     {
         std::uint32_t const seqno{
             view().rules().enabled(featureDeletableAccounts) ? view().seq()
                                                              : 1};
 
         // Create the account.
-        sleDst = std::make_shared<SLE>(k);
+        SLE::pointer sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, uDstAccountID);
         sleDst->setFieldU32(sfSequence, seqno);
 
         view().insert(sleDst);
+        acctRootDst = view().peek(k);
+        if (!acctRootDst)
+            // Should never happen.
+            return tefINTERNAL;
     }
     else
     {
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        view().update(sleDst);
+        view().update(acctRootDst);
     }
 
     // Determine whether the destination requires deposit authorization.
-    bool const reqDepositAuth = sleDst->getFlags() & lsfDepositAuth &&
+    bool const reqDepositAuth = acctRootDst->isFlag(lsfDepositAuth) &&
         view().rules().enabled(featureDepositAuth);
 
     bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
@@ -438,13 +442,13 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peekSLE(keylet::account(account_));
-    if (!sleSrc)
+    auto acctRootSrc = view().peek(keylet::account(account_));
+    if (!acctRootSrc)
         return tefINTERNAL;
 
     // uOwnerCount is the number of entries in this ledger for this
     // account that require a reserve.
-    auto const uOwnerCount = sleSrc->getFieldU32(sfOwnerCount);
+    auto const uOwnerCount = acctRootSrc->ownerCount();
 
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(uOwnerCount);
@@ -496,20 +500,19 @@ Payment::doApply()
                 XRPAmount const dstReserve{view().fees().accountReserve(0)};
 
                 if (saDstAmount > dstReserve ||
-                    sleDst->getFieldAmount(sfBalance) > dstReserve)
+                    acctRootDst->balance() > dstReserve)
                     return tecNO_PERMISSION;
             }
         }
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
-    sleSrc->setFieldAmount(sfBalance, mSourceBalance - saDstAmount);
-    sleDst->setFieldAmount(
-        sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
+    acctRootSrc->setBalance(mSourceBalance - saDstAmount);
+    acctRootDst->setBalance(acctRootDst->balance() + saDstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent))
-        sleDst->clearFlag(lsfPasswordSpent);
+    if (acctRootDst->isFlag(lsfPasswordSpent))
+        acctRootDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;
 }

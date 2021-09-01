@@ -133,10 +133,10 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 
     if (issuer != ctx.tx[sfAccount] && !(nftFlags & nft::flagTransferable))
     {
-        auto const root = ctx.view.readSLE(keylet::account(issuer));
-        assert(root);
+        auto const acctRoot = ctx.view.read(keylet::account(issuer));
+        assert(acctRoot);
 
-        if (auto minter = (*root)[~sfNFTokenMinter];
+        if (auto const minter = acctRoot->NFTokenMinter();
             minter != ctx.tx[sfAccount])
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
@@ -221,8 +221,9 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenCreateOffer::doApply()
 {
-    if (auto const acct = view().readSLE(keylet::account(ctx_.tx[sfAccount]));
-        mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
+    auto acctRoot = view().peek(keylet::account(ctx_.tx[sfAccount]));
+    if (mPriorBalance <
+        view().fees().accountReserve(acctRoot->ownerCount() + 1))
         return tecINSUFFICIENT_RESERVE;
 
     auto const nftokenID = ctx_.tx[sfNFTokenID];
@@ -279,7 +280,7 @@ NFTokenCreateOffer::doApply()
     }
 
     // Update owner count.
-    adjustOwnerCount(view(), view().peekSLE(keylet::account(account_)), 1, j_);
+    adjustOwnerCount(view(), acctRoot, 1, j_);
 
     return tesSUCCESS;
 }

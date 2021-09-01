@@ -99,11 +99,17 @@ public:
     void
     erase(std::shared_ptr<SLE> const& sle) override;
 
+    // Avoid name hiding of non-virtual erase functions.
+    using ApplyView::erase;
+
     void
     insert(std::shared_ptr<SLE> const& sle) override;
 
     void
     update(std::shared_ptr<SLE> const& sle) override;
+
+    // Avoid name hiding of non-virtual update functions.
+    using ApplyView::update;
 
     // RawView
 

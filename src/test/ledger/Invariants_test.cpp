@@ -421,7 +421,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Insert a new account root created by a non-payment into
                 // the view.
                 const Account A3{"A3"};
-                Keylet const acctKeylet = keylet::account(A3);
+                AccountRootKeylet const acctKeylet = keylet::account(A3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 ac.view().insert(sleNew);
                 return true;
@@ -433,13 +433,13 @@ class Invariants_test : public beast::unit_test::suite
                 // Insert two new account roots into the view.
                 {
                     const Account A3{"A3"};
-                    Keylet const acctKeylet = keylet::account(A3);
+                    AccountRootKeylet const acctKeylet = keylet::account(A3);
                     auto const sleA3 = std::make_shared<SLE>(acctKeylet);
                     ac.view().insert(sleA3);
                 }
                 {
                     const Account A4{"A4"};
-                    Keylet const acctKeylet = keylet::account(A4);
+                    AccountRootKeylet const acctKeylet = keylet::account(A4);
                     auto const sleA4 = std::make_shared<SLE>(acctKeylet);
                     ac.view().insert(sleA4);
                 }
@@ -451,7 +451,7 @@ class Invariants_test : public beast::unit_test::suite
             [](Account const&, Account const&, ApplyContext& ac) {
                 // Insert a new account root with the wrong starting sequence.
                 const Account A3{"A3"};
-                Keylet const acctKeylet = keylet::account(A3);
+                AccountRootKeylet const acctKeylet = keylet::account(A3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, ac.view().seq() + 1);
                 ac.view().insert(sleNew);

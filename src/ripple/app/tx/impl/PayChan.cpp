@@ -145,15 +145,15 @@ closeChannel(
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peekSLE(keylet::account(src));
-    if (!sle)
+    auto acctRoot = view.peek(keylet::account(src));
+    if (!acctRoot)
         return tefINTERNAL;
 
     assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
-    (*sle)[sfBalance] =
-        (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle, -1, j);
-    view.update(sle);
+    acctRoot->setBalance(
+        acctRoot->balance() + (*slep)[sfAmount] - (*slep)[sfBalance]);
+    adjustOwnerCount(view, acctRoot, -1, j);
+    view.update(acctRoot);
 
     // Remove PayChan from ledger
     view.erase(slep);
@@ -192,16 +192,16 @@ PayChanCreate::preflight(PreflightContext const& ctx)
 TER
 PayChanCreate::preclaim(PreclaimContext const& ctx)
 {
-    auto const account = ctx.tx[sfAccount];
-    auto const sle = ctx.view.readSLE(keylet::account(account));
-    if (!sle)
-        return terNO_ACCOUNT;
-
     // Check reserve and funds availability
     {
-        auto const balance = (*sle)[sfBalance];
+        auto const account = ctx.tx[sfAccount];
+        auto const acctRoot = ctx.view.read(keylet::account(account));
+        if (!acctRoot)
+            return terNO_ACCOUNT;
+
+        auto const balance = acctRoot->balance();
         auto const reserve =
-            ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
+            ctx.view.fees().accountReserve(acctRoot->ownerCount() + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -214,11 +214,11 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 
     {
         // Check destination account
-        auto const sled = ctx.view.readSLE(keylet::account(dst));
-        if (!sled)
+        auto const destAcctRoot = ctx.view.read(keylet::account(dst));
+        if (!destAcctRoot)
             return tecNO_DST;
 
-        auto const flags = sled->getFlags();
+        auto const flags = destAcctRoot->flags();
 
         // Check if they have disallowed incoming payment channels
         if (ctx.view.rules().enabled(featureDisallowIncoming) &&
@@ -242,8 +242,8 @@ TER
 PayChanCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peekSLE(keylet::account(account));
-    if (!sle)
+    auto acctRoot = ctx_.view().peek(keylet::account(account));
+    if (!acctRoot)
         return tefINTERNAL;
 
     auto const dst = ctx_.tx[sfDestination];
@@ -292,9 +292,9 @@ PayChanCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
-    ctx_.view().update(sle);
+    acctRoot->setBalance(acctRoot->balance() - ctx_.tx[sfAmount]);
+    adjustOwnerCount(ctx_.view(), acctRoot, 1, ctx_.journal);
+    ctx_.view().update(acctRoot);
 
     return tesSUCCESS;
 }
@@ -362,15 +362,15 @@ PayChanFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peekSLE(keylet::account(txAccount));
-    if (!sle)
+    auto acctRoot = ctx_.view().peek(keylet::account(txAccount));
+    if (!acctRoot)
         return tefINTERNAL;
 
     {
         // Check reserve and funds availability
-        auto const balance = (*sle)[sfBalance];
+        auto const balance = acctRoot->balance();
         auto const reserve =
-            ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
+            ctx_.view().fees().accountReserve(acctRoot->ownerCount());
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -381,7 +381,7 @@ PayChanFund::doApply()
 
     // do not allow adding funds if dst does not exist
     if (AccountID const dst = (*slep)[sfDestination];
-        !ctx_.view().readSLE(keylet::account(dst)))
+        !ctx_.view().read(keylet::account(dst)))
     {
         return tecNO_DST;
     }
@@ -389,8 +389,8 @@ PayChanFund::doApply()
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
     ctx_.view().update(slep);
 
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    ctx_.view().update(sle);
+    acctRoot->setBalance(acctRoot->balance() - ctx_.tx[sfAmount]);
+    ctx_.view().update(acctRoot);
 
     return tesSUCCESS;
 }
@@ -502,19 +502,19 @@ PayChanClaim::doApply()
             // nothing requested
             return tecUNFUNDED_PAYMENT;
 
-        auto const sled = ctx_.view().peekSLE(keylet::account(dst));
-        if (!sled)
+        auto destAcctRoot = ctx_.view().peek(keylet::account(dst));
+        if (!destAcctRoot)
             return tecNO_DST;
 
         // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
         bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
-        if (!depositAuth &&
-            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
+        if (!depositAuth && txAccount == src &&
+            destAcctRoot->isFlag(lsfDisallowXRP))
             return tecNO_TARGET;
 
         // Check whether the destination account requires deposit authorization.
-        if (depositAuth && (sled->getFlags() & lsfDepositAuth))
+        if (depositAuth && destAcctRoot->isFlag(lsfDepositAuth))
         {
             // A destination account that requires authorization has two
             // ways to get a Payment Channel Claim into the account:
@@ -530,8 +530,8 @@ PayChanClaim::doApply()
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         assert(reqDelta >= beast::zero);
-        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        ctx_.view().update(sled);
+        destAcctRoot->setBalance(destAcctRoot->balance() + reqDelta);
+        ctx_.view().update(destAcctRoot);
         ctx_.view().update(slep);
     }
 

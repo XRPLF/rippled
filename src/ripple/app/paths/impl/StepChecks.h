@@ -38,12 +38,10 @@ checkFreeze(
     assert(src != dst);
 
     // check freeze
-    if (auto sle = view.readSLE(keylet::account(dst)))
+    if (auto const acctRoot = view.read(keylet::account(dst));
+        acctRoot && acctRoot->isFlag(lsfGlobalFreeze))
     {
-        if (sle->isFlag(lsfGlobalFreeze))
-        {
-            return terNO_LINE;
-        }
+        return terNO_LINE;
     }
 
     if (auto sle = view.readSLE(keylet::line(src, dst, currency)))

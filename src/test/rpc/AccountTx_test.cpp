@@ -473,7 +473,7 @@ class AccountTx_test : public beast::unit_test::suite
         env.close();
 
         // Verify that becky's account root is present.
-        Keylet const beckyAcctKey{keylet::account(becky.id())};
+        AccountRootKeylet const beckyAcctKey{keylet::account(becky.id())};
         BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
 
         // becky does an AccountSet .

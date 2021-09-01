@@ -252,9 +252,10 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
         owner,
         nft[sfNFTokenID],
         [](ApplyView& view, AccountID const& owner) {
+            auto ownerAcctRoot = view.peek(keylet::account(owner));
             adjustOwnerCount(
                 view,
-                view.peekSLE(keylet::account(owner)),
+                ownerAcctRoot,
                 1,
                 beast::Journal{beast::Journal::getNullSink()});
         });
@@ -418,10 +419,11 @@ removeToken(
         if (next && mergePages(view, curr, next))
             cnt--;
 
+        auto ownerAcctRoot = view.peek(keylet::account(owner));
         if (cnt != 0)
             adjustOwnerCount(
                 view,
-                view.peekSLE(keylet::account(owner)),
+                ownerAcctRoot,
                 cnt,
                 beast::Journal{beast::Journal::getNullSink()});
 
@@ -470,9 +472,10 @@ removeToken(
             view.peekSLE(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
+    auto ownerAcctRoot = view.peek(keylet::account(owner));
     adjustOwnerCount(
         view,
-        view.peekSLE(keylet::account(owner)),
+        ownerAcctRoot,
         -1 * cnt,
         beast::Journal{beast::Journal::getNullSink()});
 
@@ -627,11 +630,9 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
+    auto ownerAcctRoot = view.peek(keylet::account(owner));
     adjustOwnerCount(
-        view,
-        view.peekSLE(keylet::account(owner)),
-        -1,
-        beast::Journal{beast::Journal::getNullSink()});
+        view, ownerAcctRoot, -1, beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
     return true;

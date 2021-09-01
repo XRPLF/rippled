@@ -120,7 +120,7 @@ public:
 
 static error_code_i
 acctMatchesPubKey(
-    std::shared_ptr<SLE const> accountState,
+    std::optional<AcctRootRd> const& acctRoot,
     AccountID const& accountID,
     PublicKey const& publicKey)
 {
@@ -129,7 +129,7 @@ acctMatchesPubKey(
 
     // If we can't get the accountRoot, but the accountIDs match, that's
     // good enough.
-    if (!accountState)
+    if (!acctRoot)
     {
         if (isMasterKey)
             return rpcSUCCESS;
@@ -137,17 +137,15 @@ acctMatchesPubKey(
     }
 
     // If we *can* get to the accountRoot, check for MASTER_DISABLED.
-    auto const& sle = *accountState;
     if (isMasterKey)
     {
-        if (sle.isFlag(lsfDisableMaster))
+        if (acctRoot->isFlag(lsfDisableMaster))
             return rpcMASTER_DISABLED;
         return rpcSUCCESS;
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) &&
-        (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if (acctRoot->regularKey() == publicKeyAcctID)
     {
         return rpcSUCCESS;
     }
@@ -400,12 +398,15 @@ transactionPreProcessImpl(
     if (!verify && !tx_json.isMember(jss::Sequence))
         return RPC::missing_field_error("tx_json.Sequence");
 
-    std::shared_ptr<SLE const> sle;
+    std::optional<AcctRootRd> acctRoot;
     if (verify)
-        sle =
-            app.openLedger().current()->readSLE(keylet::account(srcAddressID));
+    {
+        std::optional<AcctRootRd> temp =
+            app.openLedger().current()->read(keylet::account(srcAddressID));
+        acctRoot.swap(temp);
+    }
 
-    if (verify && !sle)
+    if (verify && !acctRoot)
     {
         // If not offline and did not find account, error.
         JLOG(j.debug()) << "transactionSign: Failed to find source account "
@@ -445,7 +446,7 @@ transactionPreProcessImpl(
         {
             bool const hasTicketSeq =
                 tx_json.isMember(sfTicketSequence.jsonName);
-            if (!hasTicketSeq && !sle)
+            if (!hasTicketSeq && !acctRoot)
             {
                 JLOG(j.debug())
                     << "transactionSign: Failed to find source account "
@@ -453,8 +454,9 @@ transactionPreProcessImpl(
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] =
-                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
+            tx_json[jss::Sequence] = hasTicketSeq
+                ? 0
+                : app.getTxQ().nextQueuableSeq(acctRoot).value();
         }
 
         if (!tx_json.isMember(jss::Flags))
@@ -478,7 +480,7 @@ transactionPreProcessImpl(
 
     if (verify)
     {
-        if (!sle)
+        if (!acctRoot)
             // XXX Ignore transactions for accounts not created.
             return rpcError(rpcSRC_ACT_NOT_FOUND);
 
@@ -490,7 +492,7 @@ transactionPreProcessImpl(
         if (!signingArgs.isMultiSigning())
         {
             // Make sure the account and secret belong together.
-            auto const err = acctMatchesPubKey(sle, srcAddressID, pk);
+            auto const err = acctMatchesPubKey(acctRoot, srcAddressID, pk);
 
             if (err != rpcSUCCESS)
                 return rpcError(err);
@@ -989,11 +991,11 @@ transactionSignFor(
         return preprocResult.first;
 
     {
-        std::shared_ptr<SLE const> account_state =
-            ledger->readSLE(keylet::account(*signerAccountID));
+        std::optional<AcctRootRd> const acctRoot =
+            ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
         auto const err =
-            acctMatchesPubKey(account_state, *signerAccountID, multiSignPubKey);
+            acctMatchesPubKey(acctRoot, *signerAccountID, multiSignPubKey);
 
         if (err != rpcSUCCESS)
             return rpcError(err);
@@ -1068,10 +1070,7 @@ transactionSubmitMultiSigned(
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
 
-    std::shared_ptr<SLE const> sle =
-        ledger->readSLE(keylet::account(srcAddressID));
-
-    if (!sle)
+    if (!ledger->read(keylet::account(srcAddressID)))
     {
         // If did not find account, error.
         JLOG(j.debug())

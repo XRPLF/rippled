@@ -190,12 +190,12 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
         return false;
     }
 
-    auto const sleDest = lrLedger->readSLE(keylet::account(*raDstAccount));
+    auto const destAcctRoot = lrLedger->read(keylet::account(*raDstAccount));
 
     Json::Value& jvDestCur =
         (jvStatus[jss::destination_currencies] = Json::arrayValue);
 
-    if (!sleDest)
+    if (!destAcctRoot)
     {
         jvDestCur.append(Json::Value(systemCurrencyCode()));
         if (!saDstAmount.native())
@@ -215,7 +215,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP(destAcctRoot->isFlag(lsfDisallowXRP));
 
         auto usDestCurrID =
             accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
@@ -223,7 +223,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
         for (auto const& currency : usDestCurrID)
             jvDestCur.append(to_string(currency));
         jvStatus[jss::destination_tag] =
-            (sleDest->getFlags() & lsfRequireDestTag);
+            destAcctRoot->isFlag(lsfRequireDestTag);
     }
 
     jvStatus[jss::ledger_hash] = to_string(lrLedger->info().hash);

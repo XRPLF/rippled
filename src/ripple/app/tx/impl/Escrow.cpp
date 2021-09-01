@@ -194,15 +194,15 @@ EscrowCreate::doApply()
     }
 
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peekSLE(keylet::account(account));
-    if (!sle)
+    auto acctRoot = ctx_.view().peek(keylet::account(account));
+    if (!acctRoot)
         return tefINTERNAL;
 
     // Check reserve and funds availability
     {
-        auto const balance = STAmount((*sle)[sfBalance]).xrp();
+        auto const balance = acctRoot->balance().xrp();
         auto const reserve =
-            ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+            ctx_.view().fees().accountReserve(acctRoot->ownerCount() + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -213,18 +213,18 @@ EscrowCreate::doApply()
 
     // Check destination account
     {
-        auto const sled =
-            ctx_.view().readSLE(keylet::account(ctx_.tx[sfDestination]));
-        if (!sled)
+        auto const destAcctRoot =
+            ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+        if (!destAcctRoot)
             return tecNO_DST;
-        if (((*sled)[sfFlags] & lsfRequireDestTag) &&
+        if (destAcctRoot->isFlag(lsfRequireDestTag) &&
             !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Obeying the lsfDissalowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
         if (!ctx_.view().rules().enabled(featureDepositAuth) &&
-            ((*sled)[sfFlags] & lsfDisallowXRP))
+            destAcctRoot->isFlag(lsfDisallowXRP))
             return tecNO_TARGET;
     }
 
@@ -264,9 +264,9 @@ EscrowCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
-    ctx_.view().update(sle);
+    acctRoot->setBalance(acctRoot->balance() - ctx_.tx[sfAmount]);
+    adjustOwnerCount(ctx_.view(), acctRoot, 1, ctx_.journal);
+    ctx_.view().update(acctRoot);
 
     return tesSUCCESS;
 }
@@ -438,14 +438,14 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peekSLE(keylet::account(destID));
-    if (!sled)
+    auto destAcctRoot = ctx_.view().peek(keylet::account(destID));
+    if (!destAcctRoot)
         return tecNO_DST;
 
     if (ctx_.view().rules().enabled(featureDepositAuth))
     {
         // Is EscrowFinished authorized?
-        if (sled->getFlags() & lsfDepositAuth)
+        if (destAcctRoot->isFlag(lsfDepositAuth))
         {
             // A destination account that requires authorization has two
             // ways to get an EscrowFinished into the account:
@@ -484,13 +484,13 @@ EscrowFinish::doApply()
     }
 
     // Transfer amount to destination
-    (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];
-    ctx_.view().update(sled);
+    destAcctRoot->setBalance(destAcctRoot->balance() + (*slep)[sfAmount]);
+    ctx_.view().update(destAcctRoot);
 
     // Adjust source owner count
-    auto const sle = ctx_.view().peekSLE(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    auto acctRoot = ctx_.view().peek(keylet::account(account));
+    adjustOwnerCount(ctx_.view(), acctRoot, -1, ctx_.journal);
+    ctx_.view().update(acctRoot);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
@@ -569,10 +569,10 @@ EscrowCancel::doApply()
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = ctx_.view().peekSLE(keylet::account(account));
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    auto acctRoot = ctx_.view().peek(keylet::account(account));
+    acctRoot->setBalance(acctRoot->balance() + (*slep)[sfAmount]);
+    adjustOwnerCount(ctx_.view(), acctRoot, -1, ctx_.journal);
+    ctx_.view().update(acctRoot);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

@@ -85,15 +85,15 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.readSLE(keylet::account(id));
-    if (!sle)
+    auto const acctRoot = ctx.view.read(keylet::account(id));
+    if (!acctRoot)
         return terNO_ACCOUNT;
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
 
-    if (bSetAuth && !(sle->getFieldU32(sfFlags) & lsfRequireAuth))
+    if (bSetAuth && !acctRoot->isFlag(lsfRequireAuth))
     {
         JLOG(ctx.j.trace()) << "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
@@ -160,11 +160,11 @@ SetTrust::doApply()
     // true, iff current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
-    auto const sle = view().peekSLE(keylet::account(account_));
-    if (!sle)
+    auto acctRoot = view().peek(keylet::account(account_));
+    if (!acctRoot)
         return tefINTERNAL;
 
-    std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
+    std::uint32_t const uOwnerCount = acctRoot->ownerCount();
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
@@ -220,9 +220,9 @@ SetTrust::doApply()
             viewJ);
     }
 
-    SLE::pointer sleDst = view().peekSLE(keylet::account(uDstAccountID));
+    auto destAcctRoot = view().peek(keylet::account(uDstAccountID));
 
-    if (!sleDst)
+    if (!destAcctRoot)
     {
         JLOG(j_.trace())
             << "Delay transaction: Destination account does not exist.";
@@ -247,8 +247,8 @@ SetTrust::doApply()
         std::uint32_t uHighQualityOut;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        std::optional<AcctRoot>& lowAcctRoot = !bHigh ? acctRoot : destAcctRoot;
+        std::optional<AcctRoot>& highAcctRoot = bHigh ? acctRoot : destAcctRoot;
 
         //
         // Balances
@@ -368,7 +368,7 @@ SetTrust::doApply()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
-        if (bSetFreeze && !bClearFreeze && !sle->isFlag(lsfNoFreeze))
+        if (bSetFreeze && !bClearFreeze && !acctRoot->isFlag(lsfNoFreeze))
         {
             uFlagsOut |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
         }
@@ -383,9 +383,8 @@ SetTrust::doApply()
         if (QUALITY_ONE == uHighQualityOut)
             uHighQualityOut = 0;
 
-        bool const bLowDefRipple = sleLowAccount->getFlags() & lsfDefaultRipple;
-        bool const bHighDefRipple =
-            sleHighAccount->getFlags() & lsfDefaultRipple;
+        bool const bLowDefRipple = lowAcctRoot->isFlag(lsfDefaultRipple);
+        bool const bHighDefRipple = highAcctRoot->isFlag(lsfDefaultRipple);
 
         bool const bLowReserveSet = uLowQualityIn || uLowQualityOut ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
@@ -414,7 +413,7 @@ SetTrust::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
+            adjustOwnerCount(view(), lowAcctRoot, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -424,14 +423,14 @@ SetTrust::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
+            adjustOwnerCount(view(), lowAcctRoot, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
+            adjustOwnerCount(view(), highAcctRoot, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -441,7 +440,7 @@ SetTrust::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
+            adjustOwnerCount(view(), highAcctRoot, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
 
@@ -511,7 +510,7 @@ SetTrust::doApply()
             account_,
             uDstAccountID,
             k.key,
-            sle,
+            acctRoot,
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,

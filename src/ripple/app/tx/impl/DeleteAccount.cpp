@@ -164,33 +164,32 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = ctx.view.readSLE(keylet::account(dst));
+    auto const dstAcctRoot = ctx.view.read(keylet::account(dst));
 
-    if (!sleDst)
+    if (!dstAcctRoot)
         return tecNO_DST;
 
-    if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+    if (dstAcctRoot->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // Check whether the destination account requires deposit authorization.
     if (ctx.view.rules().enabled(featureDepositAuth) &&
-        (sleDst->getFlags() & lsfDepositAuth))
+        dstAcctRoot->isFlag(lsfDepositAuth))
     {
         if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
             return tecNO_PERMISSION;
     }
 
-    auto sleAccount = ctx.view.readSLE(keylet::account(account));
-    assert(sleAccount);
-    if (!sleAccount)
+    auto const srcAcctRoot = ctx.view.read(keylet::account(account));
+    assert(srcAcctRoot);
+    if (!srcAcctRoot)
         return terNO_ACCOUNT;
 
     if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
     {
         // If an issuer has any issued NFTs resident in the ledger then it
         // cannot be deleted.
-        if ((*sleAccount)[~sfMintedNFTokens] !=
-            (*sleAccount)[~sfBurnedNFTokens])
+        if (srcAcctRoot->mintedNFTokens() != srcAcctRoot->burnedNFTokens())
             return tecHAS_OBLIGATIONS;
 
         // If the account owns any NFTs it cannot be deleted.
@@ -211,7 +210,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
     constexpr std::uint32_t seqDelta{255};
-    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+    if (srcAcctRoot->sequence() + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
     // When fixNFTokenRemint is enabled, we don't allow an account to be
@@ -226,8 +225,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
     if (ctx.view.rules().enabled(fixNFTokenRemint) &&
-        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+        (srcAcctRoot->firstNFTokenSequence().value_or(0) +
+             srcAcctRoot->mintedNFTokens().value_or(0) + seqDelta >
          ctx.view.seq()))
         return tecTOO_SOON;
 
@@ -283,13 +282,13 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 TER
 DeleteAccount::doApply()
 {
-    auto src = view().peekSLE(keylet::account(account_));
-    assert(src);
+    auto srcAcctRoot = view().peek(keylet::account(account_));
+    assert(srcAcctRoot);
 
-    auto dst = view().peekSLE(keylet::account(ctx_.tx[sfDestination]));
-    assert(dst);
+    auto dstAcctRoot = view().peek(keylet::account(ctx_.tx[sfDestination]));
+    assert(dstAcctRoot);
 
-    if (!src || !dst)
+    if (!srcAcctRoot || !dstAcctRoot)
         return tefBAD_LEDGER;
 
     // Delete all of the entries in the account directory.
@@ -364,11 +363,11 @@ DeleteAccount::doApply()
     }
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
-    (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
+    dstAcctRoot->setBalance(dstAcctRoot->balance() + mSourceBalance);
+    srcAcctRoot->setBalance(srcAcctRoot->balance() - mSourceBalance);
     ctx_.deliver(mSourceBalance);
 
-    assert((*src)[sfBalance] == XRPAmount(0));
+    assert(srcAcctRoot->balance() == XRPAmount(0));
 
     // If there's still an owner directory associated with the source account
     // delete it.
@@ -380,11 +379,11 @@ DeleteAccount::doApply()
     }
 
     // Re-arm the password change fee if we can and need to.
-    if (mSourceBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
-        dst->clearFlag(lsfPasswordSpent);
+    if (mSourceBalance > XRPAmount(0) && dstAcctRoot->isFlag(lsfPasswordSpent))
+        dstAcctRoot->clearFlag(lsfPasswordSpent);
 
-    view().update(dst);
-    view().erase(src);
+    view().update(dstAcctRoot);
+    view().erase(srcAcctRoot);
 
     return tesSUCCESS;
 }

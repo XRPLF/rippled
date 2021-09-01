@@ -28,7 +28,7 @@ bool
 checkIssuers(ReadView const& view, Book const& book)
 {
     auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.readSLE(keylet::account(iss.account));
+        return isXRP(iss.account) || view.read(keylet::account(iss.account));
     };
     return issuerExists(view, book.in) && issuerExists(view, book.out);
 }

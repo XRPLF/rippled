@@ -721,12 +721,12 @@ Pathfinder::getPathsOut(
     if (!inserted)
         return it->second;
 
-    auto sleAccount = mLedger->readSLE(keylet::account(account));
+    auto const acctRoot = mLedger->read(keylet::account(account));
 
-    if (!sleAccount)
+    if (!acctRoot)
         return 0;
 
-    int aFlags = sleAccount->getFieldU32(sfFlags);
+    int aFlags = acctRoot->flags();
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
     bool const bFrozen = ((aFlags & lsfGlobalFreeze) != 0);
 
@@ -970,12 +970,12 @@ Pathfinder::addLink(
         else
         {
             // search for accounts to add
-            auto const sleEnd = mLedger->readSLE(keylet::account(uEndAccount));
+            auto const endAcctRoot =
+                mLedger->read(keylet::account(uEndAccount));
 
-            if (sleEnd)
+            if (endAcctRoot)
             {
-                bool const bRequireAuth(
-                    sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bRequireAuth(endAcctRoot->isFlag(lsfRequireAuth));
                 bool const bIsEndCurrency(
                     uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));

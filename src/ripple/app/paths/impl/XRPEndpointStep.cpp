@@ -343,8 +343,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto sleAcc = ctx.view.readSLE(keylet::account(acc_));
-    if (!sleAcc)
+    if (!ctx.view.read(keylet::account(acc_)))
     {
         JLOG(j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "
                            "non-existent account: "

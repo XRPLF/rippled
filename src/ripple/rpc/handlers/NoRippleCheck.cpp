@@ -103,15 +103,15 @@ doNoRippleCheck(RPC::JsonContext& context)
         return result;
     }
 
-    auto const sle = ledger->readSLE(keylet::account(accountID));
-    if (!sle)
+    auto const acctRoot = ledger->read(keylet::account(accountID));
+    if (!acctRoot)
         return rpcError(rpcACT_NOT_FOUND);
 
-    std::uint32_t seq = sle->getFieldU32(sfSequence);
+    std::uint32_t seq = acctRoot->sequence();
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = sle->getFieldU32(sfFlags) & lsfDefaultRipple;
+    bool bDefaultRipple = acctRoot->isFlag(lsfDefaultRipple);
 
     if (bDefaultRipple & !roleGateway)
     {
