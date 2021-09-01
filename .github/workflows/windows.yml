@@ -6,6 +6,7 @@ env:
   NINJA_BUILD: true
   CACHE_DIR: ${{ github.workspace }}\_cache
   NIH_CACHE_ROOT: ${{ github.workspace }}\_cache\nih_c
+  NIH_SRC_PATH: ${{ github.workspace }}/_srccache
   PARALLEL_TESTS: true
   BOOST_TOOLSET: msvc-14.1
   BOOST_URL: 'https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2'
@@ -88,16 +89,18 @@ jobs:
           echo "NUM PROC is ${NUM_PROCESSORS}"
           echo "::set-output name=NUM_PROCESSORS::${NUM_PROCESSORS}"
 
-      - name: Build cache
-        id: cache
+      - name: Source cache
+        id: srccache
         continue-on-error: true
         uses: actions/cache@v2
         with:
-          path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ steps.cachekeys.outputs.instructions }}
-          restore-keys: ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-
+          path: ${{ env.NIH_SRC_PATH}}
+          key: ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ steps.cachekeys.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-
 
       - name: Boost cache
+        id: boostcache
         uses: actions/cache@v2
         with:
           path: ${{ env.BOOST_CACHE_DIR }}
@@ -137,13 +140,12 @@ jobs:
             time find /c/Program\ Files\ \(x86\)/ -iname 'cl.exe' || true
 
       - name: Setup cache folders
-        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
         shell: bash
         env:
           NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
         run: |
             mkdir -pv ${CACHE_DIR} ${NIH_CACHE_ROOT} ${BOOST_CACHE_DIR} \
-                ${VCPKG_CACHE_DIR}
+                ${VCPKG_CACHE_DIR} ${NIH_SRC_PATH}
 
       - name: Download Boost
         # Do this step early so that if the download fails, the job fails fast
@@ -166,7 +168,7 @@ jobs:
                 ls "$Dest"
             }
       - name: Initialize vcpkg cache
-        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+        if: steps.vcpkgcache.outputs.cache-hit != 'true'
         shell: bash
         env:
           NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
@@ -224,7 +226,7 @@ jobs:
                 ${VCPKG_CACHE_DIR}
 
       - name: Build Boost
-        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+        if: steps.boostcache.outputs.cache-hit != 'true'
         shell: bash
         env:
           NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
@@ -241,8 +243,8 @@ jobs:
 
             ./Builds/containers/shared/install_boost.sh ${!VCVersion}
 
-      - name: Initialize cmake cache
-        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+      - name: Download CMake dependencies
+        if: steps.srccache.outputs.cache-hit != 'true'
         shell: bash
         env:
           NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
@@ -255,21 +257,59 @@ jobs:
             [[ "${verbose}" == "true" ]] && type -a ninja || true
 
             # Download the NIH items
-            mkdir -p $builddir && cd $builddir
             if [ "${CMAKE_BOOST}" != "" ] ; then
                 export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} $( eval echo ${CMAKE_BOOST} )"
             fi
             if [ "${CMAKE_ADD}" != "" ] ; then
                 export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} $( eval echo ${CMAKE_ADD} )"
             fi
-            # TODO: Loop over all the build types
-            cmake -G Ninja ${CMAKE_EXTRA_ARGS} ${srcdir}
+
+            cmake --version
+
+            export BUILD_TYPE=Debug
+            if [ "${CMAKE_ADD}" != "" ]; then
+                export CMAKE_EXTRA_ARGS+="${CMAKE_ADD}"
+            fi
+
+            mkdir "-pv" "${builddir}"
+            pushd "${builddir}"
+            # Verbose or not, it's good to see the right params
+            # are being used
+            set "-x"
+            # rm is called if the first cmake fails, because the most
+            # likely cause is cache mismatch or corruption. If that happens
+            # reset the cache and try again.
+
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+                ${CMAKE_EXTRA_ARGS} ${srcdir} || \
+                ( rm -rf ${{ env.CACHE_DIR }} ${{ env.NIH_SRC_PATH }}; \
+                  cmake -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+                    ${CMAKE_EXTRA_ARGS} ${srcdir} )
+
+            alldeps=( $( \
+                cmake --build . --target help | \
+                grep phony | sed 's/[A-Z]:\/.*\/CMakeFiles\///' | \
+                sed 's/: phony//' | \
+                grep -v -e '\/' -e '^all' -e install -e clean \
+                -e depend -e cache -e docs -e rippled \
+                -e xrpl_core -e container -e '^rpm' -e '^dpkg'
+                ) )
+            echo "Building dependencies to force downloads: ${alldeps[@]}"
+
+            for dep in help "${alldeps[@]}"
+            do
+                echo Building $dep
+                cmake --build . --target $dep --parallel
+            done
+            set +x
 
             if [[ "${verbose}" == "true" ]] ; then
               ls -l || true
               grep vcpkg CMakeCache.txt || true
               grep _cache CMakeCache.txt || true
             fi
+
+            popd
 
       - name: Cache sizes
         shell: bash
@@ -280,11 +320,11 @@ jobs:
             du -sh ${CACHE_DIR} || true
             cd ${CACHE_DIR}
             du -sh * || true
-            find ${NIH_CACHE_ROOT} -maxdepth 1 -type d -exec du -sh {} \;
+            find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+              -type d -exec du -sh {} \; || true
 
       - name: Debug output
-        # if: ${{ ! steps.cache.outputs.cache-hit || failure() }}
-        if: ${{ always() }}
+        if: steps.srccache.outputs.cache-hit != 'true'
         shell: bash
         continue-on-error: true
         run: |
@@ -293,8 +333,7 @@ jobs:
           [ -e /C/ProgramData/chocolatey/logs/chocolatey.log ] && cat /C/ProgramData/chocolatey/logs/chocolatey.log || true
 
       - name: Debug output artifacts
-        # if: ${{ ! steps.cache.outputs.cache-hit || failure() }}
-        if: ${{ always() }}
+        if: steps.srccache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
@@ -397,8 +436,14 @@ jobs:
             ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
             ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}
             ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}
-            ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions}}
-            ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          key: ${{ runner.os }}-nihsrc-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions }}
 
       - name: Boost cache
         uses: actions/cache@v2
@@ -425,7 +470,8 @@ jobs:
           df -h
           du -sh ${VCPKG_CACHE_DIR} || true
           du -sh ${BOOST_CACHE_DIR} || true
-          find ${CACHE_DIR} -maxdepth 2 -type d -exec du -sh {} \; || true
+          find ${CACHE_DIR} ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
 
       - name: Get vcpkg libs from cache
         shell: bash
@@ -529,7 +575,8 @@ jobs:
           df -h
           du -sh ${VCPKG_CACHE_DIR} || true
           du -sh ${BOOST_CACHE_DIR} || true
-          find ${CACHE_DIR} -maxdepth 2 -type d -exec du -sh {} \; || true
+          find ${CACHE_DIR} ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
 
       - name: Debug output artifacts
         if: ${{ always() }}
