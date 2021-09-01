@@ -42,6 +42,7 @@ else()
   ExternalProject_Add (soci
     PREFIX ${nih_cache_path}
     SOURCE_DIR ${nih_src_path}/soci
+    STAMP_DIR ${nih_stamp_path}/soci
     GIT_REPOSITORY https://github.com/SOCI/soci.git
     GIT_TAG 04e1870294918d20761736743bb6136314c42dd5
     # We had an issue with soci integer range checking for boost::optional

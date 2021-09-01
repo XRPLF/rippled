@@ -12,6 +12,7 @@ if (NOT TARGET date::date)
   FetchContent_Declare(
     hh_date_src
     SOURCE_DIR ${nih_src_path}/hh_date
+    STAMP_DIR ${nih_stamp_path}/hh_date
     GIT_REPOSITORY https://github.com/HowardHinnant/date.git
     GIT_TAG        fc4cf092f9674f2670fb9177edcdee870399b829
   )

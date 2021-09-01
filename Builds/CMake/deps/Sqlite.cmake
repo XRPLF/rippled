@@ -22,6 +22,8 @@ else()
   ExternalProject_Add (sqlite3
     PREFIX ${nih_cache_path}
     SOURCE_DIR ${nih_src_path}/sqlite3
+    DOWNLOAD_DIR ${nih_src_path}/download/sqlite3
+    STAMP_DIR ${nih_stamp_path}/sqlite3
     # sqlite doesn't use git, but it provides versioned tarballs
     URL https://www.sqlite.org/2018/sqlite-amalgamation-3260000.zip
       http://www.sqlite.org/2018/sqlite-amalgamation-3260000.zip
