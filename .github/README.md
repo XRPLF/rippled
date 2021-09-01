@@ -182,12 +182,13 @@ by the job.
 
 ###### Strategy
 
-[Github Actions caches](https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)
+[Github Actions caches](https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows)
 are immutable once written, and use explicit key names for access. Caches can
 be shared across workflows, and can match partial names by prefix. They can
-also access caches created by base and default branches, but not across forks
-and distinct branches. Finally, they have a relatively short expiration time
-(7 days), and a relatively small size limit (5Gb).
+also access caches created by base and default branches, and to the forked
+from (parent) repository, but not across arbitrary forks, forked to (child)
+repositories, and distinct branches. Finally, they have a relatively short
+expiration time (7 days), and a relatively small size limit (5Gb).
 
 The caching policies used by these workflows attempt to take advantage of
 these properties to save as much time as possible when building, while
@@ -216,7 +217,7 @@ configuration and some components based on the hashes of the `cmake`
 configuration, the rippled source code, and the workflow config itself.
 
 To pull it all together with an example, the base job in
-`linux-clang8-debug.yml` might have a cache key that looks like (hashes
+`linux-clang8-release.yml` might have a cache key that looks like (hashes
 abbreviated for readability and simplicity):
 * `Linux-ecbd-clang-8-Release-ON-base-40b1-5fec-a88b`
 Once that job finishes, the "asan" job's cache key would look like:
