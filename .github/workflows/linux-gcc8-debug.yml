@@ -11,10 +11,14 @@ env:
   BUILD_TYPE: Debug
   unity: "ON"
   # Need this image because it has the coverage tools
-  image: "rippled-ci-builder:2020-01-08"
+  image_user: "rippleci"
+  image_name: "rippled-ci-builder"
+  image_tag: "2020-01-08"
   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
+  NINJA_BUILD: true
   CACHE_DIR: ${{ github.workspace }}/_cache
   NIH_CACHE_ROOT: ${{ github.workspace }}/_cache/nih_c
+  NIH_SRC_PATH: ${{ github.workspace }}/_srccache
   PARALLEL_TESTS: true
   USE_CCACHE: true
   CCACHE_BASEDIR: ${{ github.workspace }}
@@ -22,7 +26,7 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/_cache/ccache
 
 jobs:
-  linux_gcc_8_debug_unity:
+  base:
     # Can't access env in the name, so hard code
     name: Linux gcc-8, Debug, unity, base
     runs-on: ubuntu-18.04
@@ -72,7 +76,7 @@ jobs:
           echo "::set-output name=instructions::${{ hashfiles(
             '.github/**/linux-gcc8-debug.yml', '.github/**/action.yml') }}"
 
-      - name: Cache
+      - name: Build cache
         continue-on-error: true
         uses: actions/cache@v2
         # The cache key is built on the following in order
@@ -96,7 +100,21 @@ jobs:
             ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}
             ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}
             ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}
-            ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.image }}
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          # If this cache key exists when the job starts, it will use that
+          # cache read-only. However, if it does not exist, this process will
+          # build a fresh cache, and try to write it out. Because this is the
+          # same cache key used across the Linux jobs, that may cause a
+          # collision. That collision is safe to ignore.
+          key: ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.image_tag }}-${{ steps.cachekeys.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.image_tag }}-
 
       - name: Dump-environment
         run: |
@@ -120,8 +138,8 @@ jobs:
           df -h
           du -sh ${CACHE_DIR}
           du -sh ${CCACHE_DIR} || true
-          find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o \
-            -type d -exec du -sh {} \; \) || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
 
       - name: Build and test
         uses: ./.github/build-action
@@ -142,8 +160,8 @@ jobs:
           df -h
           du -sh ${CACHE_DIR}
           du -sh ${CCACHE_DIR} || true
-          find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o \
-            -type d -exec du -sh {} \; \) || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
 
       - name: Post-run ccache stats
         shell: bash
@@ -172,10 +190,10 @@ jobs:
             build/**/rippled
             !build/**/_INSTALLED_/**
 
-  linux_gcc_8_debug_unity_derived:
+  derived:
     # Can't access env in the name, so hard code
     name: Linux ${{ matrix.name }}, gcc-8, Debug, unity
-    needs: [ linux_gcc_8_debug_unity ]
+    needs: [ base ]
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     strategy:
@@ -237,7 +255,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Cache
+      - name: Build cache
         continue-on-error: true
         uses: actions/cache@v2
         # The cache key is built on the following in order
@@ -255,10 +273,21 @@ jobs:
         # the NIH built as a fallback, but that should never happen.
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ matrix.name }}-${{ needs.linux_gcc_8_debug_unity.outputs.headers }}-${{ needs.linux_gcc_8_debug_unity.outputs.source }}-${{ needs.linux_gcc_8_debug_unity.outputs.instructions }}
+          key: ${{ runner.os }}-${{ needs.base.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ matrix.name }}-${{ needs.base.outputs.headers }}-${{ needs.base.outputs.source }}-${{ needs.base.outputs.instructions }}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-base-${{ needs.linux_gcc_8_debug_unity.outputs.headers }}-${{ needs.linux_gcc_8_debug_unity.outputs.source }}-${{ needs.linux_gcc_8_debug_unity.outputs.instructions }}
-            ${{ runner.os }}-nih-${{ needs.linux_gcc_8_debug_unity.outputs.cmakeconfig }}-${{ env.image }}
+            ${{ runner.os }}-${{ needs.base.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-base-${{ needs.base.outputs.headers }}-${{ needs.base.outputs.source }}-${{ needs.base.outputs.instructions }}
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          # Because of the parent job, this cache key should definitely exist,
+          # but the disclaimer in the parent job still applies.
+          key: ${{ runner.os }}-nihsrc-${{ needs.base.outputs.cmakeconfig }}-${{ env.image_tag }}-${{ needs.base.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ needs.base.outputs.cmakeconfig }}-${{ env.image_tag }}-
 
       - name: Reset ccache stats
         shell: bash
@@ -278,8 +307,8 @@ jobs:
           df -h
           du -sh ${CACHE_DIR}
           du -sh ${CCACHE_DIR} || true
-          find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o \
-            -type d -exec du -sh {} \; \) || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
 
       - name: Build and test
         uses: ./.github/build-action
@@ -301,8 +330,8 @@ jobs:
           df -h
           du -sh ${CACHE_DIR}
           du -sh ${CCACHE_DIR} || true
-          find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o \
-            -type d -exec du -sh {} \; \) || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
 
       - name: Post-run ccache stats
         shell: bash
@@ -346,10 +375,10 @@ jobs:
             !build/**/CMake*
             !build/**/cmake*
 
-  linux_gcc_8_debug_unity_runner:
+  runner:
     # Can't access env in the name, so hard code
     name: Linux manual tests gcc-8, Debug, unity
-    needs: linux_gcc_8_debug_unity
+    needs: base
     runs-on: ubuntu-18.04
     timeout-minutes: 720
     strategy:

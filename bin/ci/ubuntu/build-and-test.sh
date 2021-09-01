@@ -112,7 +112,26 @@ do
 done
 
 # generate
-${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
+if ! ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS} \
+  && [[ -e "${NIH_CACHE_ROOT}" ]]
+then
+    # Only the *-stamp directories, which track the source location
+    # and git info of the NIH cache, are safe to use across builds.
+    # The build folders, which are more specific need to be removed
+    # before being cached. That means wasted build effort for one job
+    # (gcc-9, Debug), but the saved source space and download time
+    # across all jobs should make up for it.
+    find ${NIH_CACHE_ROOT} -depth -type d \
+        \( -iname '*-stamp' -printf "Keep %p\n" -prune -o \
+        \( -iname '*-build' -o -name 'tmp' \) -printf "Delete %p\n" \
+            -exec rm -rf {} \; -o \
+        -iname '*-subbuild' -printf "Clean %p\n" \
+            -exec rm -rfv {}/CMakeCache.txt {}/CMakeFiles \
+                {}/cmake_install.cmake {}/CMakeLists.txt\
+                {}/Makefile \; -exec ls {} \;  \)
+    ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
+fi
+
 
 # Display the cmake output, to help with debugging if something fails,
 # unless this is running under a Github action. They have another
@@ -131,7 +150,13 @@ fi
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
 
-${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
+if ! ${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS} \
+  && [[ -e "${NIH_CACHE_ROOT}" ]]
+then
+    # Caching isn't perfect
+    rm -rf ${NIH_CACHE_ROOT}
+    ${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
+fi
 
 if [[ ${TARGET} == "docs" ]]; then
     ## mimic the standard test output for docs build

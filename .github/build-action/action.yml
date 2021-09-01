@@ -39,33 +39,8 @@ runs:
         then
             du -sh ${CCACHE_DIR}
         fi
-        if [[ -d "${NIH_CACHE_ROOT}" ]]
-        then
-            find ${NIH_CACHE_ROOT} -maxdepth 3 \( -iname src -prune -o \
-              -type d -exec du -sh {} \; \)
-            # WARNING: This cache cannot be used to build with a different compiler.
-            if [[ "${CC}" =~ "gcc" ]]
-            then
-              echo Erasing NIH cache for clang
-              rm -rf "${NIH_CACHE_ROOT}"/*/Clang_*/ || true
-            elif [[ "${CC}" =~ "clang" ]]
-            then
-              echo Erasing NIH cache for gcc
-              rm -rf "${NIH_CACHE_ROOT}"/*/GNU_*/ || true
-            fi
-            # Free up space if the cache is being reused with a different
-            # generator from prior builds (ninja vs. makefiles).
-            # WARNING: This cache cannot be used to build with a different compiler.
-            if [[ "${NINJA_BUILD}" == "true" && -d "${NIH_CACHE_ROOT}"/unix_makefiles ]]
-            then
-              echo Erasing NIH cache for makefiles
-              rm -rf "${NIH_CACHE_ROOT}"/unix_makefiles || true
-            elif [[ "${NINJA_BUILD}" != "true" && -d "${NIH_CACHE_ROOT}"/ninja ]]
-            then
-              echo Erasing NIH cache for ninja
-              rm -rf "${NIH_CACHE_ROOT}"/ninja || true
-            fi
-        fi
+        find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+          -type d -exec du -sh {} \; || true
 
     - name: Build and test
       shell: bash
