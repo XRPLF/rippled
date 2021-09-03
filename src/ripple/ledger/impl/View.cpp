@@ -34,6 +34,126 @@
 
 namespace ripple {
 
+namespace detail {
+
+template <
+    class V,
+    class N,
+    class = std::enable_if_t<
+        std::is_same_v<std::remove_cv_t<N>, SLE> &&
+        std::is_base_of_v<ReadView, V>>>
+bool
+internalDirNext(
+    V& view,
+    uint256 const& root,
+    std::shared_ptr<N>& page,
+    unsigned int& index,
+    uint256& entry)
+{
+    auto const& svIndexes = page->getFieldV256(sfIndexes);
+    assert(index <= svIndexes.size());
+
+    if (index >= svIndexes.size())
+    {
+        auto const next = page->getFieldU64(sfIndexNext);
+
+        if (!next)
+        {
+            entry.zero();
+            return false;
+        }
+
+        if constexpr (std::is_const_v<N>)
+            page = view.read(keylet::page(root, next));
+        else
+            page = view.peek(keylet::page(root, next));
+
+        assert(page);
+
+        if (!page)
+            return false;
+
+        index = 0;
+
+        return internalDirNext(view, root, page, index, entry);
+    }
+
+    entry = svIndexes[index++];
+    return true;
+}
+
+template <
+    class V,
+    class N,
+    class = std::enable_if_t<
+        std::is_same_v<std::remove_cv_t<N>, SLE> &&
+        std::is_base_of_v<ReadView, V>>>
+bool
+internalDirFirst(
+    V& view,
+    uint256 const& root,
+    std::shared_ptr<N>& page,
+    unsigned int& index,
+    uint256& entry)
+{
+    if constexpr (std::is_const_v<N>)
+        page = view.read(keylet::page(root));
+    else
+        page = view.peek(keylet::page(root));
+
+    assert(page);
+
+    index = 0;
+
+    return internalDirNext(view, root, page, index, entry);
+}
+
+}  // namespace detail
+
+bool
+dirFirst(
+    ApplyView& view,
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry)
+{
+    return detail::internalDirFirst(view, root, page, index, entry);
+}
+
+bool
+dirNext(
+    ApplyView& view,
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry)
+{
+    return detail::internalDirNext(view, root, page, index, entry);
+}
+
+bool
+cdirFirst(
+    ReadView const& view,
+    uint256 const& root,
+    std::shared_ptr<SLE const>& page,
+    unsigned int& index,
+    uint256& entry)
+{
+    return detail::internalDirFirst(view, root, page, index, entry);
+}
+
+bool
+cdirNext(
+    ReadView const& view,
+    uint256 const& root,
+    std::shared_ptr<SLE const>& page,
+    unsigned int& index,
+    uint256& entry)
+{
+    return detail::internalDirNext(view, root, page, index, entry);
+}
+
 //------------------------------------------------------------------------------
 //
 // Observers
@@ -480,59 +600,6 @@ dirIsEmpty(ReadView const& view, Keylet const& k)
     return sleNode->getFieldU64(sfIndexNext) == 0;
 }
 
-bool
-cdirFirst(
-    ReadView const& view,
-    uint256 const& uRootIndex,            // --> Root of directory.
-    std::shared_ptr<SLE const>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,              // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
-{
-    sleNode = view.read(keylet::page(uRootIndex));
-    uDirEntry = 0;
-    assert(sleNode);  // Never probe for directories.
-    return cdirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
-}
-
-bool
-cdirNext(
-    ReadView const& view,
-    uint256 const& uRootIndex,            // --> Root of directory
-    std::shared_ptr<SLE const>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,              // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
-{
-    auto const& svIndexes = sleNode->getFieldV256(sfIndexes);
-    assert(uDirEntry <= svIndexes.size());
-    if (uDirEntry >= svIndexes.size())
-    {
-        auto const uNodeNext = sleNode->getFieldU64(sfIndexNext);
-        if (!uNodeNext)
-        {
-            uEntryIndex.zero();
-            return false;
-        }
-        auto const sleNext = view.read(keylet::page(uRootIndex, uNodeNext));
-        uDirEntry = 0;
-        if (!sleNext)
-        {
-            // This should never happen
-            JLOG(j.fatal()) << "Corrupt directory: index:" << uRootIndex
-                            << " next:" << uNodeNext;
-            return false;
-        }
-        sleNode = sleNext;
-        return cdirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
-    }
-    uEntryIndex = svIndexes[uDirEntry++];
-    JLOG(j.trace()) << "dirNext:"
-                    << " uDirEntry=" << uDirEntry
-                    << " uEntryIndex=" << uEntryIndex;
-    return true;
-}
-
 std::set<uint256>
 getEnabledAmendments(ReadView const& view)
 {
@@ -658,59 +725,6 @@ adjustOwnerCount(
     view.adjustOwnerCountHook(id, current, adjusted);
     sle->setFieldU32(sfOwnerCount, adjusted);
     view.update(sle);
-}
-
-bool
-dirFirst(
-    ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory.
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
-{
-    sleNode = view.peek(keylet::page(uRootIndex));
-    uDirEntry = 0;
-    assert(sleNode);  // Never probe for directories.
-    return dirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
-}
-
-bool
-dirNext(
-    ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j)
-{
-    auto const& svIndexes = sleNode->getFieldV256(sfIndexes);
-    assert(uDirEntry <= svIndexes.size());
-    if (uDirEntry >= svIndexes.size())
-    {
-        auto const uNodeNext = sleNode->getFieldU64(sfIndexNext);
-        if (!uNodeNext)
-        {
-            uEntryIndex.zero();
-            return false;
-        }
-        auto const sleNext = view.peek(keylet::page(uRootIndex, uNodeNext));
-        uDirEntry = 0;
-        if (!sleNext)
-        {
-            // This should never happen
-            JLOG(j.fatal()) << "Corrupt directory: index:" << uRootIndex
-                            << " next:" << uNodeNext;
-            return false;
-        }
-        sleNode = sleNext;
-        return dirNext(view, uRootIndex, sleNode, uDirEntry, uEntryIndex, j);
-    }
-    uEntryIndex = svIndexes[uDirEntry++];
-    JLOG(j.trace()) << "dirNext:"
-                    << " uDirEntry=" << uDirEntry
-                    << " uEntryIndex=" << uEntryIndex;
-    return true;
 }
 
 std::function<void(SLE::ref)>
