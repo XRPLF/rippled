@@ -198,12 +198,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     uint256 dirEntry{beast::zero};
 
     if (!cdirFirst(
-            ctx.view,
-            ownerDirKeylet.key,
-            sleDirNode,
-            uDirEntry,
-            dirEntry,
-            ctx.j))
+            ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         // Account has no directory at all.  This _should_ have been caught
         // by the dirIsEmpty() check earlier, but it's okay to catch it here.
         return tesSUCCESS;
@@ -237,7 +232,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             return tefTOO_BIG;
 
     } while (cdirNext(
-        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, ctx.j));
+        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
     return tesSUCCESS;
 }
@@ -261,8 +256,7 @@ DeleteAccount::doApply()
     uint256 dirEntry{beast::zero};
 
     if (view().exists(ownerDirKeylet) &&
-        dirFirst(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_))
+        dirFirst(view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
     {
         do
         {
@@ -324,7 +318,7 @@ DeleteAccount::doApply()
             uDirEntry = 0;
 
         } while (dirNext(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_));
+            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
     }
 
     // Transfer any XRP remaining after the fee is paid to the destination:
