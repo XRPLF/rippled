@@ -3410,13 +3410,7 @@ NetworkOPsImp::getBookPage(
                 uTipIndex = sleOfferDir->key();
                 saDirRate = amountFromQuality(getQuality(uTipIndex));
 
-                cdirFirst(
-                    view,
-                    uTipIndex,
-                    sleOfferDir,
-                    uBookEntry,
-                    offerIndex,
-                    viewJ);
+                cdirFirst(view, uTipIndex, sleOfferDir, uBookEntry, offerIndex);
 
                 JLOG(m_journal.trace())
                     << "getBookPage:   uTipIndex=" << uTipIndex;
@@ -3536,13 +3530,7 @@ NetworkOPsImp::getBookPage(
                 JLOG(m_journal.warn()) << "Missing offer";
             }
 
-            if (!cdirNext(
-                    view,
-                    uTipIndex,
-                    sleOfferDir,
-                    uBookEntry,
-                    offerIndex,
-                    viewJ))
+            if (!cdirNext(view, uTipIndex, sleOfferDir, uBookEntry, offerIndex))
             {
                 bDirectAdvance = true;
             }
