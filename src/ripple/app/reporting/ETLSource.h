@@ -368,9 +368,9 @@ public:
 
     /// Determine whether messages received on the transactions_proposed stream
     /// should be forwarded to subscribing clients. The server subscribes to
-    /// transactions_proposed on multiple ETLSources, yet only forwards messages
-    /// from one source at any given time (to avoid sending duplicate messages
-    /// to clients).
+    /// transactions_proposed, validations, and manifests on multiple
+    /// ETLSources, yet only forwards messages from one source at any given time
+    /// (to avoid sending duplicate messages to clients).
     /// @param in ETLSource in question
     /// @return true if messages should be forwarded
     bool

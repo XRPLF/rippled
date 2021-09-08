@@ -356,33 +356,30 @@ ETLSource::handleMessage()
         }
         else
         {
-            if (response.isMember(jss::transaction))
+            if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
             {
-                if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
+                if (response.isMember(jss::transaction))
                 {
                     etl_.getApplication().getOPs().forwardProposedTransaction(
                         response);
                 }
-            }
-            else if (
-                response.isMember("type") &&
-                response["type"] == "validationReceived")
-            {
-                if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "validationReceived")
                 {
                     etl_.getApplication().getOPs().forwardValidation(response);
                 }
-            }
-            else if (
-                response.isMember("type") &&
-                response["type"] == "manifestReceived")
-            {
-                if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "manifestReceived")
                 {
                     etl_.getApplication().getOPs().forwardManifest(response);
                 }
             }
-            else
+            
+            if (
+                    response.isMember("type") &&
+                    response["type"] == "ledgerClosed")
             {
                 JLOG(journal_.debug())
                     << __func__ << " : "
