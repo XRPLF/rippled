@@ -376,10 +376,8 @@ ETLSource::handleMessage()
                     etl_.getApplication().getOPs().forwardManifest(response);
                 }
             }
-            
-            if (
-                    response.isMember("type") &&
-                    response["type"] == "ledgerClosed")
+
+            if (response.isMember("type") && response["type"] == "ledgerClosed")
             {
                 JLOG(journal_.debug())
                     << __func__ << " : "
