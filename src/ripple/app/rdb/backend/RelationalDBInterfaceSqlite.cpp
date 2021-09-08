@@ -749,10 +749,7 @@ RelationalDBInterfaceSqliteImp::saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    if (!useTxTables_)
-        return true;
-
-    if (existsLedger() && existsTransaction())
+    if (existsLedger())
     {
         if (!ripple::saveValidatedLedger(
                 *lgrdb_, *txdb_, app_, ledger, current))
