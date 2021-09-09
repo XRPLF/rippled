@@ -13,6 +13,20 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Releases
 
+## Version 1.7.3
+
+This is the 1.7.3 release of `rippled`, the reference implementation of the XRP Ledger protocol. This release addresses an OOB memory read identified by Guido Vranken, as well as an unrelated issue identified by the Ripple C++ team that could result in incorrect use of SLEs. Additionally, this version also introduces the `NegativeUNL` amendment, which corresponds to the feature which was introduced with the 1.6.0 release.
+
+## Action Required
+
+If you operate an XRP Ledger server, then you should upgrade to version 1.7.3 at your earliest convenience to mitigate the issues addressed in this hotfix. If a sufficient majority of servers on the network upgrade, the `NegativeUNL` amendment may gain a majority, at which point a two week activation countdown will begin. If the `NegativeUNL` amendment activates, servers running versions of `rippled` prior to 1.7.3 will become [amendment blocked](https://xrpl.org/amendments.html#amendment-blocked).
+
+### Bug Fixes
+
+- **Improve SLE usage in check cashing**: Fixes a situation which could result in the incorrect use of SLEs.
+- **Address OOB in base58 decoder**: Corrects a technical flaw that could allow an out-of-bounds memory read in the Base58 decoder.
+- **Add `NegativeUNL` as a supported amendment**: Introduces an amendment for the Negative UNL feature introduced in `rippled` 1.6.0.
+
 ## Version 1.7.2
 
 This the 1.7.2 release of rippled, the reference server implementation of the XRP Ledger protocol. This release protects against the security issue [CVE-2021-3499](https://www.openssl.org/news/secadv/20210325.txt) affecting OpenSSL, adds an amendment to fix an issue with small offers not being properly removed from order books in some cases, and includes various other minor fixes.

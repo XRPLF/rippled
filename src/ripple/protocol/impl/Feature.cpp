@@ -131,7 +131,7 @@ detail::supportedAmendments()
         "fix1781",
         "HardenedValidations",
         "fixAmendmentMajorityCalc",
-        //"NegativeUNL",      // Commented out to prevent automatic enablement
+        "NegativeUNL",
         "TicketBatch",
         "FlowSortStrands",
         "fixSTAmountCanonicalize",
