@@ -112,6 +112,10 @@ JSS(account_objects);        // out: AccountObjects
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
 JSS(account_sequence_available);  // out: SubmitTransaction
+JSS(account_history_tx_stream);   // in: Subscribe, Unsubscribe
+JSS(stop_history_tx_only);        // in: Unsubscribe
+JSS(account_history_tx_index);    // out: Account txn history subscribe
+JSS(account_history_tx_last);     // out: Account txn history subscribe
 JSS(accounts);                    // in: LedgerEntry, Subscribe,
                                   //     handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe

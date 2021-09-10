@@ -24,6 +24,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/Book.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Consumer.h>
 #include <mutex>
 
@@ -81,6 +82,24 @@ public:
             std::uint64_t uListener,
             hash_set<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
+
+        virtual error_code_i
+        subAccountHistory(
+            ref ispListener,
+            AccountID const& account,
+            uint256 const& txHash) = 0;
+
+        virtual void
+        unsubAccountHistory(
+            ref ispListener,
+            AccountID const& account,
+            bool historyOnly) = 0;
+
+        virtual void
+        unsubAccountHistoryInternal(
+            std::uint64_t uListener,
+            AccountID const& account,
+            bool historyOnly) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool
@@ -168,6 +187,12 @@ public:
     void
     deleteSubAccountInfo(AccountID const& account, bool rt);
 
+    bool
+    insertSubAccountHistory(AccountID const& account);
+
+    void
+    deleteSubAccountHistory(AccountID const& account);
+
     void
     clearPathRequest();
 
@@ -187,6 +212,7 @@ private:
     hash_set<AccountID> normalSubscriptions_;
     std::shared_ptr<PathRequest> mPathRequest;
     std::uint64_t mSeq;
+    hash_set<AccountID> accountHistorySubscriptions_;
 
     static int
     assign_id()
