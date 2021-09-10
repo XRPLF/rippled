@@ -307,7 +307,7 @@ jobs:
             /C/ProgramData/chocolatey/logs/chocolatey.log
 
   windows_everything_else:
-    name: Windows ${{ matrix.VCVersion }}, ${{ matrix.BUILD_TYPE }}, ${{ matrix.cmake.CMAKE_GENERATOR }} ${{ matrix.note }} unity=${{ matrix.cmake.unity }}
+    name: Windows ${{ matrix.VCVersion }}, ${{ matrix.build.type }}, ${{ matrix.cmake.CMAKE_GENERATOR }} ${{ matrix.note }} unity=${{ matrix.cmake.unity }}
     needs: windows_cache
     runs-on: windows-latest
     timeout-minutes: 720
@@ -315,7 +315,15 @@ jobs:
       fail-fast: false
       matrix:
         VCVersion: [ 'VC2017', 'VC2019' ]
-        BUILD_TYPE: [ Debug, Release ]
+        build:
+          - # Debug builds have some tests that seem to make the Github
+            # hosts run out of resources. Skip those tests and run them
+            # manually
+            type: Debug
+            ci_tests: ON
+
+          - type: Release
+            ci_tests: OFF
         cmake:
           - CMAKE_GENERATOR: 'Ninja'
             unity: 'ON'
@@ -328,17 +336,12 @@ jobs:
             unity: 'OFF'
 
         include:
-          - # The VS2017 Debug tests with two threads are flaky on
-            # Github runners. Limit to one thread.
-            VCVersion: 'VC2017'
-            BUILD_TYPE: Debug
-            test_jobs: 1
-
           - # VS 2019 debug builds have a bug handling constexpr char*
             # that causes tests to fail. Skip them unless the windows
             # tests are explicitly requested.
             VCVersion: 'VC2019'
-            BUILD_TYPE: Debug
+            build:
+              type: Debug
             note: '(No tests by default)'
             skip_tests: ${{ ! contains(github.event.head_commit.message, 'ci_run_win') }}
 
@@ -346,18 +349,20 @@ jobs:
             # Limit Visual Studio jobs to one per VCVersion
             # VC 17: only run debug
             # VC 19: only run release
-          - cmake:
-              CMAKE_GENERATOR: 'Visual Studio 16 2019'
-            BUILD_TYPE: 'Release'
-            VCVersion: 'VC2017'
+          # - cmake:
+          #    CMAKE_GENERATOR: 'Visual Studio 16 2019'
+          #  build:
+          #    type: 'Release'
+          #  VCVersion: 'VC2017'
 
           - cmake:
               CMAKE_GENERATOR: 'Visual Studio 16 2019'
-            BUILD_TYPE: 'Debug'
+            build:
+              type: 'Debug'
             VCVersion: 'VC2019'
 
     env:
-      BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
+      BUILD_TYPE: ${{ matrix.build.type }}
       NUM_PROCESSORS: ${{ needs.windows_cache.outputs.NUM_PROCESSORS }}
       VCVersion: ${{ matrix.VCVersion }}
       # Not used in env, but this puts it in the output for job debugging
@@ -387,11 +392,11 @@ jobs:
         # the previous job.
         with:
           path: ${{ env.CACHE_DIR }}
-          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
+          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
           restore-keys: |
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}
-            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.BUILD_TYPE }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ needs.windows_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.VCVersion }}-${{ matrix.cmake.CMAKE_GENERATOR }}-${{ matrix.build.type }}-${{ matrix.cmake.unity }}-${{ matrix.cmake.CMAKE_GENERATOR }}
             ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions}}
             ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-
 
@@ -459,6 +464,7 @@ jobs:
             mkdir -p $builddir && cd $builddir
             export CMAKE_EXTRA_ARGS+=" -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
             export CMAKE_EXTRA_ARGS+=" -Dunity=${{ matrix.cmake.unity }}"
+            export CMAKE_EXTRA_ARGS+=" -Dci_tests=${{ matrix.build.ci_tests }}"
             if [ "${CMAKE_BOOST}" != "" ] ; then
                 export CMAKE_EXTRA_ARGS+=" $( eval echo ${CMAKE_BOOST} )"
             fi
@@ -495,7 +501,15 @@ jobs:
               echo Override NUM_PROCESSORS to ${NUM_PROCESSORS}
             fi
             "${RUNDIR}/rippled.exe" --version
-            # No need to save space. Always include the full test output.
+
+            # No need to save space. Always include the full test output,
+            # and the test command lines.
+            set -x
+            if [[ "${{ matrix.build.ci_tests}}" == "ON" ]]
+            then
+              "${RUNDIR}/rippled.exe" --unittest=Check --unittest-log \
+                --unittest-jobs ${NUM_PROCESSORS}
+            fi
             "${RUNDIR}/rippled.exe" --unittest --unittest-log \
               --unittest-jobs ${NUM_PROCESSORS}
 
@@ -506,7 +520,7 @@ jobs:
         # When that happens, this may help diagnose which source file
         #  is the problem.
         run: |
-          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+          find ${builddir} -iname 'unity_*.cxx' -ls -exec cat {} \;
 
       - name: Disk space after
         shell: bash
@@ -522,7 +536,7 @@ jobs:
         uses: actions/upload-artifact@v2
         continue-on-error: true
         with:
-          name: debug-output ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }} unity=${{ matrix.cmake.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
+          name: debug-output ${{ matrix.name }} ${{ matrix.build.type }} ${{ matrix.VCVersion }} unity=${{ matrix.cmake.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
           retention-days: 7
           if-no-files-found: ignore
           path: |
@@ -535,7 +549,7 @@ jobs:
         if: ${{ always() }}
         continue-on-error: true
         with:
-          name: rippled ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.VCVersion }} unity=${{ matrix.cmake.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
+          name: rippled ${{ matrix.name }} ${{ matrix.build.type }} ${{ matrix.VCVersion }} unity=${{ matrix.cmake.unity }} ${{ matrix.cmake.CMAKE_GENERATOR }}
           retention-days: 7
           if-no-files-found: ignore
           path: |

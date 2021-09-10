@@ -2627,6 +2627,10 @@ public:
     }
 };
 
+#ifdef RIPPLED_CI_TESTS
+BEAST_DEFINE_TESTSUITE_MANUAL(Check, tx, ripple);
+#else
 BEAST_DEFINE_TESTSUITE(Check, tx, ripple);
+#endif
 
 }  // namespace ripple

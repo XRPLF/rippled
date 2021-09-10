@@ -1009,6 +1009,10 @@ message(STATUS "Reporting mode build: rippled renamed ${BIN_NAME}")
   target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
 endif()
 
+if (ci_tests)
+    target_compile_definitions(rippled PRIVATE RIPPLED_CI_TESTS)
+endif ()
+
 # any files that don't play well with unity should be added here
 if (tests)
   set_source_files_properties(

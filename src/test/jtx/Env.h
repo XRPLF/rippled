@@ -470,7 +470,7 @@ public:
 
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
-    static std::pair<TER, bool>
+    std::tuple<TER, bool, std::string>
     parseResult(Json::Value const& jr);
 
     /** Submit an existing JTx.
@@ -489,7 +489,11 @@ public:
         of JTx submission.
     */
     void
-    postconditions(JTx const& jt, TER ter, bool didApply);
+    postconditions(
+        JTx const& jt,
+        TER ter,
+        bool didApply,
+        std::string const& err);
 
     /** Apply funclets and submit. */
     /** @{ */
