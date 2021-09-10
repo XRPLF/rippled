@@ -1,0 +1,76 @@
+@startuml
+
+participant "main chain network" as mc #LightGreen
+box "Federator"
+participant "**main** chain\ndoor account listener" as mdl
+participant "**main** chain\nsignature collector" as msc
+participant "**main** chain\nsequence number" as msn #LightBlue
+participant "ticket pair" as t #LightBlue
+participant "unordered event" as ue #LightCoral
+participant "**side** chain\nsequence number" as ssn #LightBlue
+participant "**side** chain\nsignature collector" as ssc
+participant "**side** chain\ndoor account listener" as sdl
+end box
+participant "side chain network" as sc #LightGreen
+actor "federator admin" as fa #LightGreen
+
+== payments == 
+group cross chain payment to side chain
+mc  -> mdl: payment tx to door account\nin ledger
+mdl -> ssn: side chain door account payment tx created
+ssn -> ssc: sequence number filled
+ssc -> ssc: payment tx signed,\ncollect signatures
+ssc -> sc : with quorum signatures\nsubmit tx to network
+end
+group cross chain payment to main chain
+sc  -> sdl: payment tx to door account\nin ledger
+sdl -> msn: main chain door account payment tx created
+msn -> msc: sequence number filled
+msc -> msc: payment tx signed,\ncollect signatures
+msc -> mc : with quorum signatures\nsubmit tx to network 
+end
+
+== unordered events == 
+group round 1
+fa  -> ue : misc request from admin\nor federator internal event\nE.g. close main chain door account due to high load
+ue  -> t  : **two** no-op AccountSet txns created\n(for trigger ticketCreate txns round 2)
+activate t
+t   -> msc: ticket number filled
+t   -> ssc: ticket number filled
+deactivate t
+msc -> msc: no-op AccountSet tx signed,\ncollect signatures 
+ssc -> ssc: no-op AccountSet tx signed,\ncollect signatures
+msc -> mc : with quorum signatures\nsubmit tx to network 
+ssc -> sc : with quorum signatures\nsubmit tx to network 
+end
+
+group round 2
+'== unordered event, round 2 == 
+mc  -> mdl: no-op AccountSet in ledger
+sc  -> sdl: no-op AccountSet in ledger
+mdl -> ssn: create side chain door account ticketCreate tx\nto allocate side chain door account ticket\nto refill ticket pair
+sdl -> msn: create main chain door account ticketCreate tx\nto allocate main chain door account ticket\nto refill ticket pair
+ssn -> ssc: sequence number filled
+msn -> msc: sequence number filled
+ssc -> ssc: ticketCreate tx signed,\ncollect signatures
+msc -> msc: ticketCreate tx signed,\ncollect signatures
+ssc -> sc : with quorum signatures\nsubmit tx to network 
+msc -> mc : with quorum signatures\nsubmit tx to network 
+end
+
+group round 3
+'== unordered event, round 3 == 
+mc  -> mdl: ticketCreate in ledger
+mdl -> t  : refill
+sc  -> sdl: ticketCreate in ledger
+activate sdl
+sdl -> t  : refill
+sdl -> msn: main chain deposit-auth AccountSet created
+note left: assuming the unordered event is to\nclose main chain door account\nto block new payments temporarily
+deactivate sdl
+msn -> msc: sequence number filled
+msc -> msc: deposit-auth AccountSet tx signed,\ncollect signatures
+msc -> mc : with quorum signatures\nsubmit tx to network 
+end
+
+@enduml

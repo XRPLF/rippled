@@ -1,3 +1,97 @@
+# XRP Ledger Side chain Branch
+
+## Warning
+
+This is not the main branch of the XRP Ledger. This branch supports side chains
+on the XRP ledger and integrates an implementation of side chain federators.
+This is a developers prelease and it should not be used for production or to
+transfer real value. Consider this "alpha" quality software. There will be bugs.
+See "Status" for a fuller description.
+
+The latest production code for the XRP ledger is on the "master" branch.
+
+Until this branch is merged with the mainline branch, it will periodically be
+rebased on that branch and force pushed to github.
+
+## What are side chains?
+
+Side chains are independent ledgers. They can have their own transaction types,
+their own UNL list (or even their own consensus algorithm), and their own set of
+other unique features (like a smart contracts layer). What's special about them
+is there is a way to transfer assets from the XRP ledger to the side chain, and
+a way to return those assets back from the side chain to the XRP ledger. Both
+XRP and issued assets may be exchanged.
+
+The motivation for creating a side chain is to implement an idea that may not be
+a great fit for the main XRP ledger, or may take a long time before such a
+feature is adopted by the main XRP ledger. The advantage of a side chain over a
+brand new ledger is it allows the side chain to immediate use tokens with real
+monetary value.
+
+This implementation is meant to support side chains that are similar to the XRP
+ledger and use the XRP ledger as the main chain. The idea is to develop a new
+side chain, first this code will be forked and the new features specific to the
+new chain will be implemented.
+
+## Status
+
+All the functionality needed to build side chains should be complete. However,
+it has not been well tested or polished.
+
+In particular, all of the following are built:
+
+* Cross chain transactions for both XRP and Issued Assets
+* Refunds if transactions fail
+* Allowing federators to rejoin a network
+* Detecting and handling when federators fall too far behind in processing
+  transactions
+* A python library to easily create configuration files for testing side chains
+  and spin up side chains on a local machine
+* Python scripts to test side chains
+* An interactive shell to explore side chain functionality
+
+The biggest missing pieces are:
+
+* Testing: While the functionality is there, it has just begun to be tested.
+  There will be bugs. Even horrible and embarrassing bugs. Of course, this will
+  improve as testing progresses.
+
+* Tooling: There is a python library and an interactive shell that was built to
+  help development. However, these tools are geared to run a test network on a
+  local machine. They are not geared to new users or to production systems.
+  Better tooling is coming.
+
+* Documentation: There is documentation that describes the technical details of
+  how side chains works, how to run the python scripts to set up side chains on
+  the local machine, and the changes to the configuration files. However, like
+  the tooling, this is not geared to new users or production systems. Better
+  documentation is coming. In particular, good documentation for how to set up a
+  production side chain - or even a test net that doesn't run on a local
+  machine - needs to be written.
+
+## Getting Started
+
+See the instructions [here](docs/sidechain/GettingStarted.md) for how to
+run an interactive shell that will spin up a set of federators on your local
+machine and allow you to transfer assets between the main chain and a side
+chain.
+
+After setting things up and completing a cross chain transaction with the
+"getting started" script above, it may to useful to browse some other
+documentation:
+
+* [This](bin/sidechain/python/README.md) document describes the scripts and
+  python modules used to test and explore side chains on your local machine.
+  
+* [This](docs/sidechain/configFile.md) document describes the new stanzas in the
+  config file needed for side chains.
+  
+* [This](docs/sidechain/federatorAccountSetup.md) document describes how to set
+  up the federator accounts if not using the python scripts.
+
+* [This](docs/sidechain/design.md) document describes the low-level details for
+  how side chains work.
+
 # The XRP Ledger
 
 The [XRP Ledger](https://xrpl.org/) is a decentralized cryptographic ledger powered by a network of peer-to-peer servers. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator.
