@@ -8,6 +8,9 @@ option (reporting "Build rippled with reporting mode enabled" OFF)
 
 option (tests "Build tests" ON)
 
+option (ci_tests "Mark certain tests as manual when running on \
+    low-resource CI hosts" OFF)
+
 option (unity "Creates a build using UNITY support in cmake. This is the default" ON)
 if (unity)
   if (NOT is_ci)
