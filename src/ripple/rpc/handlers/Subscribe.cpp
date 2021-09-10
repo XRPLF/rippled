@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
@@ -199,6 +200,69 @@ doSubscribe(RPC::JsonContext& context)
             return rpcError(rpcACT_MALFORMED);
         context.netOps.subAccount(ispSub, ids, false);
         JLOG(context.j.debug()) << "doSubscribe: accounts: " << ids.size();
+    }
+
+    if (context.params.isMember(jss::account_history_tx_stream))
+    {
+        auto const& req = context.params[jss::account_history_tx_stream];
+        if (!req.isMember(jss::account) || !req[jss::account].isString())
+            return rpcError(rpcINVALID_PARAMS);
+
+        auto const id = parseBase58<AccountID>(req[jss::account].asString());
+        if (!id)
+            return rpcError(rpcINVALID_PARAMS);
+
+        uint256 txHash{0};
+        if (req.isMember(jss::transaction))
+        {
+            if (!req[jss::transaction].isString() ||
+                !txHash.parseHex(req[jss::transaction].asString()))
+                return rpcError(rpcINVALID_PARAMS);
+
+            auto ec{rpcSUCCESS};
+            auto const v = context.app.getMasterTransaction().fetch(txHash, ec);
+            if (auto e = std::get_if<TxSearched>(&v); e)
+                return rpcError(rpcTXN_NOT_FOUND);
+
+            auto [txn, meta] = std::get<std::pair<
+                std::shared_ptr<Transaction>,
+                std::shared_ptr<TxMeta>>>(v);
+            if (!txn || !meta)
+                return rpcError(rpcTXN_NOT_FOUND);
+            bool found = false;
+            for (auto& node : meta->getNodes())
+            {
+                try
+                {
+                    if (node.getFieldU16(sfLedgerEntryType) == ltACCOUNT_ROOT)
+                    {
+                        auto inner = dynamic_cast<const STObject*>(
+                            node.peekAtPField(sfFinalFields));
+
+                        if (inner && inner->isFieldPresent(sfAccount) &&
+                            inner->getAccountID(sfAccount) == id)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                catch (std::exception const&)
+                {
+                    continue;
+                }
+            }
+            if (!found)
+                return rpcError(rpcTXN_NOT_FOUND);
+        }
+
+        if (auto result = context.netOps.subAccountHistory(ispSub, *id, txHash);
+            result != rpcSUCCESS)
+            return rpcError(result);
+
+        JLOG(context.j.debug())
+            << "doSubscribe: account_history_tx_stream: " << toBase58(*id)
+            << " tx hash " << txHash;
     }
 
     if (context.params.isMember(jss::books))
