@@ -1079,6 +1079,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 addr,
                 addr,
                 uint256{1},
+                uint256{1},
                 1,
                 {1, 0},
                 serverEnv.app());

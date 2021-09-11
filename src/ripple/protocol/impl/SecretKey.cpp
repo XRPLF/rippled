@@ -251,26 +251,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
         case KeyType::secp256k1: {
             sha512_half_hasher h;
             h(m.data(), m.size());
-            auto const digest = sha512_half_hasher::result_type(h);
-
-            secp256k1_ecdsa_signature sig_imp;
-            if (secp256k1_ecdsa_sign(
-                    secp256k1Context(),
-                    &sig_imp,
-                    reinterpret_cast<unsigned char const*>(digest.data()),
-                    reinterpret_cast<unsigned char const*>(sk.data()),
-                    secp256k1_nonce_function_rfc6979,
-                    nullptr) != 1)
-                LogicError("sign: secp256k1_ecdsa_sign failed");
-
-            unsigned char sig[72];
-            size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(
-                    secp256k1Context(), sig, &len, &sig_imp) != 1)
-                LogicError(
-                    "sign: secp256k1_ecdsa_signature_serialize_der failed");
-
-            return Buffer{sig, len};
+            return signDigest(pk, sk, sha512_half_hasher::result_type(h));
         }
         default:
             LogicError("sign: invalid type");

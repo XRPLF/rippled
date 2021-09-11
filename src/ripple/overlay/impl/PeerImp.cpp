@@ -728,6 +728,11 @@ PeerImp::doAccept()
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
 
+    auto const ekm = getSessionEKM(*stream_ptr_);
+
+    if (!ekm)
+        return fail("getSessionEKM: Unexpected failure");
+
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
     JLOG(journal_.info()) << "Public Key: "
                           << toBase58(TokenType::NodePublic, publicKey_);
@@ -755,6 +760,7 @@ PeerImp::doAccept()
         overlay_.setup().public_ip,
         remote_address_.address(),
         *sharedValue,
+        *ekm,
         overlay_.setup().networkID,
         protocol_,
         app_);

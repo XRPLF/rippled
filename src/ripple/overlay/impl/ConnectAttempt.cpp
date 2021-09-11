@@ -197,19 +197,24 @@ ConnectAttempt::onHandshake(error_code ec)
             slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
         return fail("Duplicate connection");
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
-    if (!sharedValue)
-        return close();  // makeSharedValue logs
-
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
         app_.config().COMPRESSION,
         app_.config().VP_REDUCE_RELAY_ENABLE,
         app_.config().LEDGER_REPLAY);
 
+    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    if (!sharedValue)
+        return close();  // makeSharedValue logs
+
+    auto const ekm = getSessionEKM(*stream_ptr_);
+    if (!ekm)
+        return fail("Unable to retrieve EKM for session");
+
     buildHandshake(
         req_,
         *sharedValue,
+        *ekm,
         overlay_.setup().networkID,
         overlay_.setup().public_ip,
         remote_endpoint_.address(),
@@ -350,11 +355,16 @@ ConnectAttempt::processResponse()
     if (!sharedValue)
         return close();  // makeSharedValue logs
 
+    auto const ekm = getSessionEKM(*stream_ptr_);
+    if (!ekm)
+        return fail("Unable to retrieve EKM for session");
+
     try
     {
         auto publicKey = verifyHandshake(
             response_,
             *sharedValue,
+            *ekm,
             overlay_.setup().networkID,
             overlay_.setup().public_ip,
             remote_endpoint_.address(),

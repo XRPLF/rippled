@@ -112,10 +112,12 @@ makeFeaturesResponseHeader(
                - `SSL_get_peer_finished`.
     @return `true` if successful, `false` otherwise.
 
-    @note This construct is non-standard. There are potential "standard"
-          alternatives that should be considered. For a discussion, on
-          this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/ripple/rippled/issues/2413.
+    @deprecated This construct is non-standard and is now deprecated in favor
+                of using `SSL_export_keying_material`. Support for this will
+                be removed in a future version of the codebase.
+                For a fuller discussion on this topic, please see:
+                    https://github.com/openssl/openssl/issues/5509
+                    https://github.com/ripple/rippled/issues/2413.
 */
 static std::optional<base_uint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
@@ -133,6 +135,27 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     base_uint<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
+}
+
+std::optional<uint256>
+getSessionEKM(stream_type& ssl)
+{
+    static std::string_view label("xrpl:session-ekm-data");
+
+    uint256 km;
+
+    if (SSL_export_keying_material(
+            ssl.native_handle(),
+            km.data(),
+            km.size(),
+            label.data(),
+            label.size(),
+            nullptr,
+            0,
+            0) == 1)
+        return km;
+
+    return std::nullopt;
 }
 
 std::optional<uint256>
@@ -170,7 +193,8 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    ripple::uint256 const& sharedValue,
+    uint256 const& sharedValue,
+    uint256 const& ekm,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -198,6 +222,11 @@ buildHandshake(
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
+    h.insert(
+        "Session-EKM-Signature",
+        strHex(signDigest(
+            app.nodeIdentity().first, app.nodeIdentity().second, ekm)));
+
     if (!app.config().SERVER_DOMAIN.empty())
         h.insert("Server-Domain", app.config().SERVER_DOMAIN);
 
@@ -209,21 +238,16 @@ buildHandshake(
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
-        // TODO: Use hex for these
-        h.insert(
-            "Closed-Ledger",
-            base64_encode(cl->info().hash.begin(), cl->info().hash.size()));
-        h.insert(
-            "Previous-Ledger",
-            base64_encode(
-                cl->info().parentHash.begin(), cl->info().parentHash.size()));
+        h.insert("Closed-Ledger", to_string(cl->info().hash));
+        h.insert("Previous-Ledger", to_string(cl->info().parentHash));
     }
 }
 
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    ripple::uint256 const& sharedValue,
+    uint256 const& sharedValue,
+    uint256 const& ekm,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
@@ -281,7 +305,7 @@ verifyHandshake(
             throw std::runtime_error("Peer clock is too far off");
     }
 
-    PublicKey const publicKey = [&headers] {
+    PublicKey const pubKey = [&headers] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
             auto pk = parseBase58<PublicKey>(
@@ -299,7 +323,7 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
-    if (publicKey == app.nodeIdentity().first)
+    if (pubKey == app.nodeIdentity().first)
         throw std::runtime_error("Self connection");
 
     // This check gets two birds with one stone:
@@ -309,14 +333,21 @@ verifyHandshake(
     // 2) it verifies that our SSL session is end-to-end with that node
     //    and not through a proxy that establishes two separate sessions.
     {
-        auto const iter = headers.find("Session-Signature");
+        bool ok = false;
 
-        if (iter == headers.end())
-            throw std::runtime_error("No session signature specified");
+        if (auto h = headers.find("Session-EKM-Signature"); h != headers.end())
+        {
+            if (uint512 sig; sig.parseHex(h->value().to_string()))
+                ok = verifyDigest(pubKey, ekm, {sig.data(), sig.size()});
+        }
 
-        auto sig = base64_decode(iter->value().to_string());
+        if (auto h = headers.find("Session-Signature"); h != headers.end())
+        {
+            if (auto sig = base64_decode(h->value().to_string()); !sig.empty())
+                ok = verifyDigest(pubKey, sharedValue, makeSlice(sig), false);
+        }
 
-        if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
+        if (!ok)
             throw std::runtime_error("Failed to verify session");
     }
 
@@ -356,7 +387,7 @@ verifyHandshake(
         }
     }
 
-    return publicKey;
+    return pubKey;
 }
 
 auto
@@ -389,6 +420,7 @@ makeResponse(
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
     uint256 const& sharedValue,
+    uint256 const& ekm,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
     Application& app)
@@ -409,7 +441,8 @@ makeResponse(
             app.config().VP_REDUCE_RELAY_ENABLE,
             app.config().LEDGER_REPLAY));
 
-    buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
+    buildHandshake(
+        resp, sharedValue, ekm, networkID, public_ip, remote_ip, app);
 
     return resp;
 }

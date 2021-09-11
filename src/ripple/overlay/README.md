@@ -65,9 +65,10 @@ Network-ID: 1
 Network-Time: 619234489
 Public-Key: n94MvLTiHQJjByfGZzvQewTxQP2qjF6shQcuHwCjh5WoiozBrdpX
 Session-Signature: MEUCIQCOO8tHOh/tgCSRNe6WwOwmIF6urZ5uSB8l9aAf5q7iRAIgA4aONKBZhpP5RuOuhJP2dP+2UIRioEJcfU4/m4gZdYo=
+Session-EKM-Signature: 4F73F4DF23453250BDDF81AFBB5CBF0FD32B92AAF548331DB0ECF1DB988BE2F3D7264621FC1E93404B77612F235AC6FFD4F1B7B4D420E8071384273D9A60201D
 Remote-IP: 192.0.2.79
-Closed-Ledger: llRZSKqvNieGpPqbFGnm358pmF1aW96SDIUQcnMh6HI=
-Previous-Ledger: q4aKbP7sd5wv+EXArwCmQiWZhq9AwBl2p/hCtpGJNsc=
+Closed-Ledger: 4F73F45E95343F7446F91B5F70E3AE4E155CCAA2B1CF2F267C99FD39C1C24178
+Previous-Ledger: F9D75AAB7D975BADC6D008C4AE94D9B7B6AA323EEE4B133F5B75CE92445C88ED
 ```
 
 ##### Example HTTP Upgrade Response (Success)
@@ -260,17 +261,31 @@ under the specified domain and locating the public key of this server under the
 Sending a malformed domain will prevent a connection from being established.
 
 
+| Field Name              |  Request          	| Response          	|
+|-------------------------|:-----------------:	|:-----------------:	|
+| `Session-EKM-Signature` | :heavy_check_mark: 	| :heavy_check_mark: 	|
+
+The `Session-EKM-Signature` field supersedes the `Session-Signature` field and is
+mandatory if `Session-Signature` is not present. It is used to secure the peer
+link against certain types of attack. For more details see the section titled
+"Session Security" below.
+
+The value is specified in **HEX** encoding.
+
+
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|
 | `Session-Signature` 	| :heavy_check_mark: 	| :heavy_check_mark: 	|
 
-The `Session-Signature` field is mandatory and is used to secure the peer link
-against certain types of attack. For more details see "Session Signature" below.
+The `Session-Signature` field is a legacy field that has been superseded by the
+`Session-EKM-Signature` field. It will be removed in a future release of the
+software.
+
+It is used to secure the peer link against certain types of attack. For more
+details see the section titled "Session Signature" below.
 
 The value is presently encoded using **Base64** encoding, but implementations
 should support both **Base64** and **HEX** encoding for this value.
-
-For more details on this field, please see **Session Signature** below.
 
 
 | Field Name          	|  Request          	| Response          	|
@@ -296,8 +311,8 @@ For more on the Peer Crawler, please visit https://xrpl.org/peer-crawler.html.
 If present, identifies the hash of the last ledger that the sending server
 considers to be closed.
 
-The value is presently encoded using **Base64** encoding, but implementations
-should support both **Base64** and **HEX** encoding for this value.
+The field data should be encoded using **HEX**, but implementations should
+correctly interpret both **Base64** and **HEX** encodings.
     
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|
@@ -306,8 +321,8 @@ should support both **Base64** and **HEX** encoding for this value.
 If present, identifies the hash of the parent ledger that the sending server
 considers to be closed.
 
-The value is presently encoded using **Base64** encoding, but implementations
-should support both **Base64** and **HEX** encoding for this value.
+The field data should be encoded using **HEX**, but implementations should
+correctly interpret both **Base64** and **HEX** encodings.
 
 #### Additional Headers
 
@@ -318,16 +333,16 @@ Implementations should not reject requests because of the presence of fields
 that they do not understand.
 
 
-### Session Signature
+### Session Security
 
 Even for SSL/TLS encrypted connections, it is possible for an attacker to mount
 relatively inexpensive MITM attacks that can be extremely hard to detect and
 may afford the attacker the ability to intelligently tamper with messages
 exchanged between the two endpoints.
 
-This risk can be mitigated if at least one side has a certificate from a certificate
-authority trusted by the other endpoint, but having a certificate is not always
-possible (or even desirable) in a decentralized and permissionless network.
+This risk can be mitigated if at least one side has a certificate from a CA that
+is trusted by the other endpoint, but having a certificate is not always
+possible (or, indeed, desirable) in a decentralized and permissionless network.
 
 Ultimately, the goal is to ensure that two endpoints A and B know that they are
 talking directly to each other over a single end-to-end SSL/TLS session instead
@@ -335,18 +350,14 @@ of two separate SSL/TLS sessions, with an attacker acting as a proxy.
 
 The XRP Ledger protocol prevents this attack by leveraging the fact that the two
 servers each have a node identity, in the form of **`secp256k1`** keypairs, and
-use that to strongly bind the SSL/TLS session to the node identities of each of
-the two servers at the end of the SSL/TLS session.
+use that, along with a secure fingerprint associated with the SSL/TLS session to
+strongly bind the SSL/TLS session to the node identities of each of the servers
+at the end of the SSL/TLS session.
 
-To do this we "reach into" the SSL/TLS session, and extract the **`finished`**
-messages for the local and remote endpoints, and combine them to generate a unique
-"fingerprint". By design, this fingerprint should be the same for both SSL/TLS
-endpoints.
-
-That fingerprint, which is never shared over the wire (since each endpoint will
-calculate it independently), is then signed by each server using its public
-**`secp256k1`** node identity and the signature is transferred over the SSL/TLS
-encrypted link during the protocol handshake phase.
+The fingerprint is never shared over the wire (the two endpoints calculate it
+independently) and is signed by each server using its public **`secp256k1`**
+node identity. The resulting signature is transferred over the SSL/TLS session
+during the protocol handshake phase.
 
 Each side of the link will verify that the provided signature is from the claimed
 public key against the session's unique fingerprint. If this signature check fails
@@ -365,17 +376,12 @@ message stream between Alice and Bob, although she may be still be able to injec
 delays or terminate the link.
 
 
-# Ripple Clustering #
+# Clustering #
 
-A cluster consists of more than one Ripple server under common
-administration that share load information, distribute cryptography
-operations, and provide greater response consistency.
-
-Cluster nodes are identified by their public node keys. Cluster nodes
-exchange information about endpoints that are imposing load upon them.
-Cluster nodes share information about their internal load status.  Cluster
-nodes do not have to verify the cryptographic signatures on messages
-received from other cluster nodes.
+A cluster consists of several servers, typically under common administration,
+that are configured to work cooperatively by sharing server load information,
+details about shards, optimizing processing to avoid duplicating work that other
+cluster members have done, and more.
 
 ## Configuration ##
 
@@ -385,9 +391,9 @@ beginning with the letter `n`.  The key is maintained across runs in a
 database.
 
 Cluster members are configured in the `rippled.cfg` file under
-`[cluster_nodes]`.  Each member should be configured on a line beginning
-with the node public key, followed optionally by a space and a friendly
-name.
+`[cluster_nodes]`.  Each member should be configured on a separate line,
+beginning with its node public key, followed optionally by a space and a
+friendly name.
 
 Because cluster members can introduce other cluster members, it is not
 necessary to configure every cluster member on every other cluster member.
@@ -413,11 +419,11 @@ not relay a transaction with an incorrect signature.  Validators may wish to
 disable this feature, preferring the additional load to get the additional
 security of having validators check each transaction.
 
-Local checks for transaction checking are also bypassed. For example, a
-server will not reject a transaction from a cluster peer because the fee
-does not meet its current relay fee.  It is preferable to keep the cluster
-in agreement and permit confirmation from one cluster member to more
-reliably indicate the transaction's acceptance by the cluster.
+Several "local" checks are also bypassed. For example, a server will not reject
+a transaction from a cluster peer because the fee does not meet its current
+relay fee. It is preferable to keep the cluster in agreement and permit
+confirmation from one cluster member to more reliably indicate the transaction's
+acceptance by the cluster.
 
 ## Server Load Information ##
 

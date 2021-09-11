@@ -20,8 +20,6 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/container/aged_unordered_set.h>
-#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 
@@ -106,7 +104,6 @@ using rsa_ptr = custom_delete_unique_ptr<RSA>;
 static rsa_ptr
 rsa_generate_key(int n_bits)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x00908000L
     BIGNUM* bn = BN_new();
     BN_set_word(bn, RSA_F4);
 
@@ -118,9 +115,6 @@ rsa_generate_key(int n_bits)
     }
 
     BN_free(bn);
-#else
-    RSA* rsa = RSA_generate_key(n_bits, RSA_F4, nullptr, nullptr);
-#endif
 
     if (rsa == nullptr)
         LogicError("RSA_generate_key failed");
