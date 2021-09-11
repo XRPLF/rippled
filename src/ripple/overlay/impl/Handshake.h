@@ -48,6 +48,23 @@ using http_request_type =
 using http_response_type =
     boost::beast::http::response<boost::beast::http::dynamic_body>;
 
+/** Returns a value shared by the two endpoints of a TLS-secured connection.
+
+    This value is generated in a secure fashion and is never communicated over
+    the wire, even over an encrypted connection. Used properly, it can help to
+    detect and prevent preventing active MITM attacks.
+
+    @param ssl the SSL/TLS connection state.
+    @param instance a 64-bit cookie, used in computing the shared value.
+    @param outgoing true to return the "outgoing" value is needed; false for
+                    the "incoming" value.
+
+    @return On success, the 256-bit value this side believes both endpoints
+            share; an unseated optional otherwise.
+ */
+[[nodiscard]] std::optional<uint256>
+getSessionEKM(stream_type& ssl, std::uint64_t instance, bool outgoing);
+
 /** Computes a shared value based on the SSL connection state.
 
     When there is no man in the middle, both sides will compute the same
@@ -60,32 +77,61 @@ using http_response_type =
 std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal);
 
-/** Insert fields headers necessary for upgrading the link to the peer protocol.
+/** Populate header fields needed when upgrading the link to the peer protocol.
+
+    Some of the fields are used in critical security checks that can prevent
+    active MITM attacks and ensure that the remote peer has the private keys
+    that correspond to the public identity it claims.
+
+    @param h the list of HTTP headers fields to send.
+    @param sharedValue a 256-bit value derived from the SSL session (legacy).
+    @param ekm a 256-bit value derived from the SSL session.
+    @param networkID the identifier of the network the server is configured for.
+    @param public_ip The server's public IP.
+    @param remote_ip The IP to which the server attempted to connect.
+    @param app The main application object.
+
+    @note The `sharedValue` parameter is deprecated and will be removed in a
+          future version of the code. It is replaced by `ekm` which is derived
+          in a more standardized function.
+
+          \sa makeSharedValue, getSessionEKM
  */
 void
 buildHandshake(
     boost::beast::http::fields& h,
     uint256 const& sharedValue,
+    uint256 const& ekm,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
     Application& app);
 
-/** Validate header fields necessary for upgrading the link to the peer
-   protocol.
+/** Validate header fields needed when upgrading the link to the peer protocol.
 
-    This performs critical security checks that ensure that prevent
-    MITM attacks on our peer-to-peer links and that the remote peer
-    has the private keys that correspond to the public identity it
-    claims.
+    Some of the fields are used in critical security checks that can prevent
+    active MITM attacks and ensure that the remote peer has the private keys
+    that correspond to the public identity it claims.
 
-    @return The public key of the remote peer.
-    @throw A class derived from std::exception.
+    @param h the list of HTTP headers fields we received.
+    @param sharedValue a 256-bit value derived from the SSL session (legacy).
+    @param ekm a 256-bit value derived from the SSL session.
+    @param networkID the identifier of the network the server is configured for.
+    @param public_ip The server's public IP.
+    @param remote_ip The IP to which the server attempted to connect.
+    @param app The main application object.
+
+    @return The public key of the remote peer on success. An exception
+            otherwise.
+
+    @throw A class derived from std::exception, with an appropriate error
+           message.
 */
-PublicKey
+[[nodiscard]] PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
     uint256 const& sharedValue,
+    uint256 const& ekm,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
@@ -117,6 +163,7 @@ makeRequest(
    @param public_ip server's public IP
    @param remote_ip peer's IP
    @param sharedValue shared value based on the SSL connection state
+   @param ekm shared value based on the SSL connection state
    @param networkID specifies what network we intend to connect to
    @param version supported protocol version
    @param app Application's reference to access some common properties
@@ -129,6 +176,7 @@ makeResponse(
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
     uint256 const& sharedValue,
+    uint256 const& ekm,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion version,
     Application& app);

@@ -248,11 +248,27 @@ OverlayImpl::onHandoff(
         return handoff;
     }
 
+    auto const ekm = getSessionEKM(*stream_ptr, app_.instanceID(), true);
+
+    if (!ekm)
+    {
+        m_peerFinder->on_closed(slot);
+        handoff.moved = false;
+        handoff.response = makeErrorResponse(
+            slot,
+            request,
+            remote_endpoint.address(),
+            "Session EKM is unavailable");
+        handoff.keep_alive = false;
+        return handoff;
+    }
+
     try
     {
         auto publicKey = verifyHandshake(
             request,
             *sharedValue,
+            *ekm,
             setup_.networkID,
             setup_.public_ip,
             remote_endpoint.address(),
@@ -694,8 +710,7 @@ OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
     if (auto shardStore = app_.getShardStore())
     {
         if (includePublicKey)
-            jv[jss::public_key] =
-                toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
+            jv[jss::public_key] = app_.getNodePublicIdentity();
 
         auto const shardInfo{shardStore->getShardInfo()};
         if (!shardInfo->finalized().empty())
