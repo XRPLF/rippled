@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/ShardArchive.h>
 #include <ripple/basics/Archive.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/core/ConfigSections.h>

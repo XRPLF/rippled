@@ -18,26 +18,20 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DatabaseShard.h>
 
 namespace ripple {
 
-extern std::unique_ptr<RelationalDBInterface>
-getRelationalDBInterfaceSqlite(
-    Application& app,
-    Config const& config,
-    JobQueue& jobQueue);
+extern std::unique_ptr<RelationalDatabase>
+getSQLiteDatabase(Application& app, Config const& config, JobQueue& jobQueue);
 
-extern std::unique_ptr<RelationalDBInterface>
-getRelationalDBInterfacePostgres(
-    Application& app,
-    Config const& config,
-    JobQueue& jobQueue);
+extern std::unique_ptr<RelationalDatabase>
+getPostgresDatabase(Application& app, Config const& config, JobQueue& jobQueue);
 
-std::unique_ptr<RelationalDBInterface>
-RelationalDBInterface::init(
+std::unique_ptr<RelationalDatabase>
+RelationalDatabase::init(
     Application& app,
     Config const& config,
     JobQueue& jobQueue)
@@ -73,14 +67,14 @@ RelationalDBInterface::init(
 
     if (use_sqlite)
     {
-        return getRelationalDBInterfaceSqlite(app, config, jobQueue);
+        return getSQLiteDatabase(app, config, jobQueue);
     }
     else if (use_postgres)
     {
-        return getRelationalDBInterfacePostgres(app, config, jobQueue);
+        return getPostgresDatabase(app, config, jobQueue);
     }
 
-    return std::unique_ptr<RelationalDBInterface>();
+    return std::unique_ptr<RelationalDatabase>();
 }
 
 }  // namespace ripple

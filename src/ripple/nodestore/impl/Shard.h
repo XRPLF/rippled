@@ -21,7 +21,7 @@
 #define RIPPLE_NODESTORE_SHARD_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/MathUtilities.h>

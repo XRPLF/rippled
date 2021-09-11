@@ -22,7 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/CachedSLEs.h>
@@ -75,23 +75,23 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (!app.config().reporting() && app.config().useTxTables())
     {
-        auto dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                        &app.getRelationalDBInterface())
-                        ->getKBUsedAll();
+        auto const db =
+            dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+
+        if (!db)
+            Throw<std::runtime_error>("Failed to get relational database");
+
+        auto dbKB = db->getKBUsedAll();
 
         if (dbKB > 0)
             ret[jss::dbKBTotal] = dbKB;
 
-        dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                   &app.getRelationalDBInterface())
-                   ->getKBUsedLedger();
+        dbKB = db->getKBUsedLedger();
 
         if (dbKB > 0)
             ret[jss::dbKBLedger] = dbKB;
 
-        dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                   &app.getRelationalDBInterface())
-                   ->getKBUsedTransaction();
+        dbKB = db->getKBUsedTransaction();
 
         if (dbKB > 0)
             ret[jss::dbKBTransaction] = dbKB;

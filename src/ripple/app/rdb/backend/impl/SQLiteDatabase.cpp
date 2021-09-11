@@ -23,43 +23,41 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/app/rdb/RelationalDBInterface_nodes.h>
-#include <ripple/app/rdb/RelationalDBInterface_postgres.h>
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
+#include <ripple/app/rdb/backend/detail/Node.h>
+#include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/DatabaseShard.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <soci/sqlite3/soci-sqlite3.h>
 
 namespace ripple {
 
-class RelationalDBInterfaceSqliteImp : public RelationalDBInterfaceSqlite
+class SQLiteDatabaseImp final : public SQLiteDatabase
 {
 public:
-    RelationalDBInterfaceSqliteImp(
+    SQLiteDatabaseImp(
         Application& app,
         Config const& config,
         JobQueue& jobQueue)
         : app_(app)
         , useTxTables_(config.useTxTables())
-        , j_(app_.journal("Ledger"))
+        , j_(app_.journal("SQLiteDatabaseImp"))
     {
-        DatabaseCon::Setup setup = setup_DatabaseCon(config, j_);
+        DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
         if (!makeLedgerDBs(
                 config,
                 setup,
                 DatabaseCon::CheckpointerSetup{&jobQueue, &app_.logs()}))
         {
-            JLOG(app_.journal("RelationalDBInterfaceSqlite").fatal())
-                << "AccountTransactions database should not have a primary key";
-            Throw<std::runtime_error>(
-                "AccountTransactions database initialization failed.");
+            std::string_view constexpr error =
+                "Failed to create ledger databases";
+
+            JLOG(j_.fatal()) << error;
+            Throw<std::runtime_error>(error.data());
         }
 
         if (app.getShardStore() &&
@@ -68,10 +66,11 @@ public:
                 setup,
                 DatabaseCon::CheckpointerSetup{&jobQueue, &app_.logs()}))
         {
-            JLOG(app_.journal("RelationalDBInterfaceSqlite").fatal())
-                << "Error during meta DB init";
-            Throw<std::runtime_error>(
-                "Shard meta database initialization failed.");
+            std::string_view constexpr error =
+                "Failed to create metadata databases";
+
+            JLOG(j_.fatal()) << error;
+            Throw<std::runtime_error>(error.data());
         }
     }
 
@@ -105,7 +104,7 @@ public:
     std::size_t
     getAccountTransactionCount() override;
 
-    RelationalDBInterface::CountMinMax
+    RelationalDatabase::CountMinMax
     getLedgerCountMinMax() override;
 
     bool
@@ -199,12 +198,12 @@ private:
     std::unique_ptr<DatabaseCon> lgrMetaDB_, txMetaDB_;
 
     /**
-     * @brief makeLedgerDBs Opens node ledger and transaction databases,
-     *        and saves its descriptors into internal variables.
+     * @brief makeLedgerDBs Opens ledger and transaction databases for the node
+     *        store, and stores their descriptors in private member variables.
      * @param config Config object.
-     * @param setup Path to database and other opening parameters.
+     * @param setup Path to the databases and other opening parameters.
      * @param checkpointerSetup Checkpointer parameters.
-     * @return True if node databases opened succsessfully.
+     * @return True if node databases opened successfully.
      */
     bool
     makeLedgerDBs(
@@ -213,10 +212,10 @@ private:
         DatabaseCon::CheckpointerSetup const& checkpointerSetup);
 
     /**
-     * @brief makeMetaDBs Opens shard index lookup databases, and saves
-     *        their descriptors into internal variables.
+     * @brief makeMetaDBs Opens shard index lookup databases, and stores
+     *        their descriptors in private member variables.
      * @param config Config object.
-     * @param setup Path to database and other opening parameters.
+     * @param setup Path to the databases and other opening parameters.
      * @param checkpointerSetup Checkpointer parameters.
      * @return True if node databases opened successfully.
      */
@@ -227,7 +226,8 @@ private:
         DatabaseCon::CheckpointerSetup const& checkpointerSetup);
 
     /**
-     * @brief seqToShardIndex Converts ledgers sequence to shard index.
+     * @brief seqToShardIndex Provides the index of the shard that stores the
+     *        ledger with the given sequence.
      * @param ledgerSeq Ledger sequence.
      * @return Shard index.
      */
@@ -238,7 +238,8 @@ private:
     }
 
     /**
-     * @brief firstLedgerSeq Returns first ledger sequence for given shard.
+     * @brief firstLedgerSeq Returns the sequence of the first ledger stored in
+     *        the shard specified by the shard index parameter.
      * @param shardIndex Shard Index.
      * @return First ledger sequence.
      */
@@ -249,7 +250,8 @@ private:
     }
 
     /**
-     * @brief lastLedgerSeq Returns last ledger sequence for given shard.
+     * @brief lastLedgerSeq Returns the sequence of the last ledger stored in
+     *        the shard specified by the shard index parameter.
      * @param shardIndex Shard Index.
      * @return Last ledger sequence.
      */
@@ -260,8 +262,8 @@ private:
     }
 
     /**
-     * @brief existsLedger Checks if node ledger DB exists.
-     * @return True if node ledger DB exists.
+     * @brief existsLedger Checks if the node store ledger database exists.
+     * @return True if the node store ledger database exists.
      */
     bool
     existsLedger()
@@ -270,8 +272,9 @@ private:
     }
 
     /**
-     * @brief existsTransaction Checks if node transaction DB exists.
-     * @return True if node transaction DB exists.
+     * @brief existsTransaction Checks if the node store transaction database
+     *        exists.
+     * @return True if the node store transaction database exists.
      */
     bool
     existsTransaction()
@@ -290,8 +293,9 @@ private:
     }
 
     /**
-     * @brief checkoutTransaction Checks out and returns node ledger DB.
-     * @return Session to node ledger DB.
+     * @brief checkoutTransaction Checks out and returns node store ledger
+     *        database.
+     * @return Session to the node store ledger database.
      */
     auto
     checkoutLedger()
@@ -300,8 +304,9 @@ private:
     }
 
     /**
-     * @brief checkoutTransaction Checks out and returns node transaction DB.
-     * @return Session to node transaction DB.
+     * @brief checkoutTransaction Checks out and returns the node store
+     *        transaction database.
+     * @return Session to the node store transaction database.
      */
     auto
     checkoutTransaction()
@@ -310,9 +315,9 @@ private:
     }
 
     /**
-     * @brief doLedger Checks out ledger database for shard
-     *        containing given ledger and calls given callback function passing
-     *        shard index and session with the database to it.
+     * @brief doLedger Checks out the ledger database owned by the shard
+     *        containing the given ledger, and invokes the provided callback
+     *        with a session to that database.
      * @param ledgerSeq Ledger sequence.
      * @param callback Callback function to call.
      * @return Value returned by callback function.
@@ -327,9 +332,9 @@ private:
     }
 
     /**
-     * @brief doTransaction Checks out transaction database for shard
-     *        containing given ledger and calls given callback function passing
-     *        shard index and session with the database to it.
+     * @brief doTransaction Checks out the transaction database owned by the
+     *        shard containing the given ledger, and invokes the provided
+     *        callback with a session to that database.
      * @param ledgerSeq Ledger sequence.
      * @param callback Callback function to call.
      * @return Value returned by callback function.
@@ -344,12 +349,12 @@ private:
     }
 
     /**
-     * @brief iterateLedgerForward Checks out ledger databases for
-     *        all shards in ascending order starting from given shard index
-     *        until shard with the largest index visited or callback returned
-     *        false. For each visited shard calls given callback function
-     *        passing shard index and session with the database to it.
-     * @param firstIndex Start shard index to visit or none if all shards
+     * @brief iterateLedgerForward Checks out ledger databases for all shards in
+     *        ascending order starting from the given shard index, until all
+     *        shards in range have been visited or the callback returns false.
+     *        For each visited shard, we invoke the provided callback with a
+     *        session to the database and the current shard index.
+     * @param firstIndex First shard index to visit or no value if all shards
      *        should be visited.
      * @param callback Callback function to call.
      * @return True if each callback function returned true, false otherwise.
@@ -366,12 +371,13 @@ private:
     }
 
     /**
-     * @brief iterateTransactionForward Checks out transaction databases for
-     *        all shards in ascending order starting from given shard index
-     *        until shard with the largest index visited or callback returned
-     *        false. For each visited shard calls given callback function
-     *        passing shard index and session with the database to it.
-     * @param firstIndex Start shard index to visit or none if all shards
+     * @brief iterateTransactionForward Checks out transaction databases for all
+     *        shards in ascending order starting from the given shard index,
+     *        until all shards in range have been visited or the callback
+     *        returns false. For each visited shard, we invoke the provided
+     *        callback with a session to the database and the current shard
+     *        index.
+     * @param firstIndex First shard index to visit or no value if all shards
      *        should be visited.
      * @param callback Callback function to call.
      * @return True if each callback function returned true, false otherwise.
@@ -388,12 +394,13 @@ private:
     }
 
     /**
-     * @brief iterateLedgerBack Checks out ledger databases for
-     *        all shards in descending order starting from given shard index
-     *        until shard with the smallest index visited or callback returned
-     *        false. For each visited shard calls given callback function
-     *        passing shard index and session with the database to it.
-     * @param firstIndex Start shard index to visit or none if all shards
+     * @brief iterateLedgerBack Checks out ledger databases for all
+     *        shards in descending order starting from the given shard index,
+     *        until all shards in range have been visited or the callback
+     *        returns false. For each visited shard, we invoke the provided
+     *        callback with a session to the database and the current shard
+     *        index.
+     * @param firstIndex First shard index to visit or no value if all shards
      *        should be visited.
      * @param callback Callback function to call.
      * @return True if each callback function returned true, false otherwise.
@@ -410,12 +417,13 @@ private:
     }
 
     /**
-     * @brief iterateTransactionForward Checks out transaction databases for
-     *        all shards in descending order starting from given shard index
-     *        until shard with the smallest index visited or callback returned
-     *        false. For each visited shard calls given callback function
-     *        passing shard index and session with the database to it.
-     * @param firstIndex Start shard index to visit or none if all shards
+     * @brief iterateTransactionBack Checks out transaction databases for all
+     *        shards in descending order starting from the given shard index,
+     *        until all shards in range have been visited or the callback
+     *        returns false. For each visited shard, we invoke the provided
+     *        callback with a session to the database and the current shard
+     *        index.
+     * @param firstIndex First shard index to visit or no value if all shards
      *        should be visited.
      * @param callback Callback function to call.
      * @return True if each callback function returned true, false otherwise.
@@ -433,26 +441,26 @@ private:
 };
 
 bool
-RelationalDBInterfaceSqliteImp::makeLedgerDBs(
+SQLiteDatabaseImp::makeLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
     DatabaseCon::CheckpointerSetup const& checkpointerSetup)
 {
     auto [lgr, tx, res] =
-        ripple::makeLedgerDBs(config, setup, checkpointerSetup);
+        detail::makeLedgerDBs(config, setup, checkpointerSetup);
     txdb_ = std::move(tx);
     lgrdb_ = std::move(lgr);
     return res;
 }
 
 bool
-RelationalDBInterfaceSqliteImp::makeMetaDBs(
+SQLiteDatabaseImp::makeMetaDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
     DatabaseCon::CheckpointerSetup const& checkpointerSetup)
 {
     auto [lgrMetaDB, txMetaDB] =
-        ripple::makeMetaDBs(config, setup, checkpointerSetup);
+        detail::makeMetaDBs(config, setup, checkpointerSetup);
 
     txMetaDB_ = std::move(txMetaDB);
     lgrMetaDB_ = std::move(lgrMetaDB);
@@ -461,13 +469,13 @@ RelationalDBInterfaceSqliteImp::makeMetaDBs(
 }
 
 std::optional<LedgerIndex>
-RelationalDBInterfaceSqliteImp::getMinLedgerSeq()
+SQLiteDatabaseImp::getMinLedgerSeq()
 {
     /* if databases exists, use it */
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getMinLedgerSeq(*db, TableType::Ledgers);
+        return detail::getMinLedgerSeq(*db, detail::TableType::Ledgers);
     }
 
     /* else use shard databases, if available */
@@ -476,7 +484,8 @@ RelationalDBInterfaceSqliteImp::getMinLedgerSeq()
         std::optional<LedgerIndex> res;
         iterateLedgerForward(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = ripple::getMinLedgerSeq(session, TableType::Ledgers);
+                res = detail::getMinLedgerSeq(
+                    session, detail::TableType::Ledgers);
                 return !res;
             });
         return res;
@@ -487,7 +496,7 @@ RelationalDBInterfaceSqliteImp::getMinLedgerSeq()
 }
 
 std::optional<LedgerIndex>
-RelationalDBInterfaceSqliteImp::getTransactionsMinLedgerSeq()
+SQLiteDatabaseImp::getTransactionsMinLedgerSeq()
 {
     if (!useTxTables_)
         return {};
@@ -495,7 +504,7 @@ RelationalDBInterfaceSqliteImp::getTransactionsMinLedgerSeq()
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getMinLedgerSeq(*db, TableType::Transactions);
+        return detail::getMinLedgerSeq(*db, detail::TableType::Transactions);
     }
 
     if (shardStoreExists())
@@ -503,7 +512,8 @@ RelationalDBInterfaceSqliteImp::getTransactionsMinLedgerSeq()
         std::optional<LedgerIndex> res;
         iterateTransactionForward(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = ripple::getMinLedgerSeq(session, TableType::Transactions);
+                res = detail::getMinLedgerSeq(
+                    session, detail::TableType::Transactions);
                 return !res;
             });
         return res;
@@ -513,7 +523,7 @@ RelationalDBInterfaceSqliteImp::getTransactionsMinLedgerSeq()
 }
 
 std::optional<LedgerIndex>
-RelationalDBInterfaceSqliteImp::getAccountTransactionsMinLedgerSeq()
+SQLiteDatabaseImp::getAccountTransactionsMinLedgerSeq()
 {
     if (!useTxTables_)
         return {};
@@ -521,7 +531,8 @@ RelationalDBInterfaceSqliteImp::getAccountTransactionsMinLedgerSeq()
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getMinLedgerSeq(*db, TableType::AccountTransactions);
+        return detail::getMinLedgerSeq(
+            *db, detail::TableType::AccountTransactions);
     }
 
     if (shardStoreExists())
@@ -529,8 +540,8 @@ RelationalDBInterfaceSqliteImp::getAccountTransactionsMinLedgerSeq()
         std::optional<LedgerIndex> res;
         iterateTransactionForward(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = ripple::getMinLedgerSeq(
-                    session, TableType::AccountTransactions);
+                res = detail::getMinLedgerSeq(
+                    session, detail::TableType::AccountTransactions);
                 return !res;
             });
         return res;
@@ -540,12 +551,12 @@ RelationalDBInterfaceSqliteImp::getAccountTransactionsMinLedgerSeq()
 }
 
 std::optional<LedgerIndex>
-RelationalDBInterfaceSqliteImp::getMaxLedgerSeq()
+SQLiteDatabaseImp::getMaxLedgerSeq()
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getMaxLedgerSeq(*db, TableType::Ledgers);
+        return detail::getMaxLedgerSeq(*db, detail::TableType::Ledgers);
     }
 
     if (shardStoreExists())
@@ -553,7 +564,8 @@ RelationalDBInterfaceSqliteImp::getMaxLedgerSeq()
         std::optional<LedgerIndex> res;
         iterateLedgerBack(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = ripple::getMaxLedgerSeq(session, TableType::Ledgers);
+                res = detail::getMaxLedgerSeq(
+                    session, detail::TableType::Ledgers);
                 return !res;
             });
         return res;
@@ -563,8 +575,7 @@ RelationalDBInterfaceSqliteImp::getMaxLedgerSeq()
 }
 
 void
-RelationalDBInterfaceSqliteImp::deleteTransactionByLedgerSeq(
-    LedgerIndex ledgerSeq)
+SQLiteDatabaseImp::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
         return;
@@ -572,27 +583,29 @@ RelationalDBInterfaceSqliteImp::deleteTransactionByLedgerSeq(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        ripple::deleteByLedgerSeq(*db, TableType::Transactions, ledgerSeq);
+        detail::deleteByLedgerSeq(
+            *db, detail::TableType::Transactions, ledgerSeq);
         return;
     }
 
     if (shardStoreExists())
     {
         doTransaction(ledgerSeq, [&](soci::session& session) {
-            ripple::deleteByLedgerSeq(
-                session, TableType::Transactions, ledgerSeq);
+            detail::deleteByLedgerSeq(
+                session, detail::TableType::Transactions, ledgerSeq);
             return true;
         });
     }
 }
 
 void
-RelationalDBInterfaceSqliteImp::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
+SQLiteDatabaseImp::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        ripple::deleteBeforeLedgerSeq(*db, TableType::Ledgers, ledgerSeq);
+        detail::deleteBeforeLedgerSeq(
+            *db, detail::TableType::Ledgers, ledgerSeq);
         return;
     }
 
@@ -601,16 +614,15 @@ RelationalDBInterfaceSqliteImp::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
         iterateLedgerBack(
             seqToShardIndex(ledgerSeq),
             [&](soci::session& session, std::uint32_t shardIndex) {
-                ripple::deleteBeforeLedgerSeq(
-                    session, TableType::Ledgers, ledgerSeq);
+                detail::deleteBeforeLedgerSeq(
+                    session, detail::TableType::Ledgers, ledgerSeq);
                 return true;
             });
     }
 }
 
 void
-RelationalDBInterfaceSqliteImp::deleteTransactionsBeforeLedgerSeq(
-    LedgerIndex ledgerSeq)
+SQLiteDatabaseImp::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
         return;
@@ -618,7 +630,8 @@ RelationalDBInterfaceSqliteImp::deleteTransactionsBeforeLedgerSeq(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        ripple::deleteBeforeLedgerSeq(*db, TableType::Transactions, ledgerSeq);
+        detail::deleteBeforeLedgerSeq(
+            *db, detail::TableType::Transactions, ledgerSeq);
         return;
     }
 
@@ -627,15 +640,15 @@ RelationalDBInterfaceSqliteImp::deleteTransactionsBeforeLedgerSeq(
         iterateTransactionBack(
             seqToShardIndex(ledgerSeq),
             [&](soci::session& session, std::uint32_t shardIndex) {
-                ripple::deleteBeforeLedgerSeq(
-                    session, TableType::Transactions, ledgerSeq);
+                detail::deleteBeforeLedgerSeq(
+                    session, detail::TableType::Transactions, ledgerSeq);
                 return true;
             });
     }
 }
 
 void
-RelationalDBInterfaceSqliteImp::deleteAccountTransactionsBeforeLedgerSeq(
+SQLiteDatabaseImp::deleteAccountTransactionsBeforeLedgerSeq(
     LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
@@ -644,8 +657,8 @@ RelationalDBInterfaceSqliteImp::deleteAccountTransactionsBeforeLedgerSeq(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        ripple::deleteBeforeLedgerSeq(
-            *db, TableType::AccountTransactions, ledgerSeq);
+        detail::deleteBeforeLedgerSeq(
+            *db, detail::TableType::AccountTransactions, ledgerSeq);
         return;
     }
 
@@ -654,15 +667,15 @@ RelationalDBInterfaceSqliteImp::deleteAccountTransactionsBeforeLedgerSeq(
         iterateTransactionBack(
             seqToShardIndex(ledgerSeq),
             [&](soci::session& session, std::uint32_t shardIndex) {
-                ripple::deleteBeforeLedgerSeq(
-                    session, TableType::AccountTransactions, ledgerSeq);
+                detail::deleteBeforeLedgerSeq(
+                    session, detail::TableType::AccountTransactions, ledgerSeq);
                 return true;
             });
     }
 }
 
 std::size_t
-RelationalDBInterfaceSqliteImp::getTransactionCount()
+SQLiteDatabaseImp::getTransactionCount()
 {
     if (!useTxTables_)
         return 0;
@@ -670,33 +683,7 @@ RelationalDBInterfaceSqliteImp::getTransactionCount()
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getRows(*db, TableType::Transactions);
-    }
-
-    if (shardStoreExists())
-    {
-        std::size_t rows = 0;
-        iterateTransactionForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                rows += ripple::getRows(session, TableType::Transactions);
-                return true;
-            });
-        return rows;
-    }
-
-    return 0;
-}
-
-std::size_t
-RelationalDBInterfaceSqliteImp::getAccountTransactionCount()
-{
-    if (!useTxTables_)
-        return 0;
-
-    if (existsTransaction())
-    {
-        auto db = checkoutTransaction();
-        return ripple::getRows(*db, TableType::AccountTransactions);
+        return detail::getRows(*db, detail::TableType::Transactions);
     }
 
     if (shardStoreExists())
@@ -705,7 +692,7 @@ RelationalDBInterfaceSqliteImp::getAccountTransactionCount()
         iterateTransactionForward(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
                 rows +=
-                    ripple::getRows(session, TableType::AccountTransactions);
+                    detail::getRows(session, detail::TableType::Transactions);
                 return true;
             });
         return rows;
@@ -714,13 +701,40 @@ RelationalDBInterfaceSqliteImp::getAccountTransactionCount()
     return 0;
 }
 
-RelationalDBInterface::CountMinMax
-RelationalDBInterfaceSqliteImp::getLedgerCountMinMax()
+std::size_t
+SQLiteDatabaseImp::getAccountTransactionCount()
+{
+    if (!useTxTables_)
+        return 0;
+
+    if (existsTransaction())
+    {
+        auto db = checkoutTransaction();
+        return detail::getRows(*db, detail::TableType::AccountTransactions);
+    }
+
+    if (shardStoreExists())
+    {
+        std::size_t rows = 0;
+        iterateTransactionForward(
+            {}, [&](soci::session& session, std::uint32_t shardIndex) {
+                rows += detail::getRows(
+                    session, detail::TableType::AccountTransactions);
+                return true;
+            });
+        return rows;
+    }
+
+    return 0;
+}
+
+RelationalDatabase::CountMinMax
+SQLiteDatabaseImp::getLedgerCountMinMax()
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getRowsMinMax(*db, TableType::Ledgers);
+        return detail::getRowsMinMax(*db, detail::TableType::Ledgers);
     }
 
     if (shardStoreExists())
@@ -728,7 +742,8 @@ RelationalDBInterfaceSqliteImp::getLedgerCountMinMax()
         CountMinMax res{0, 0, 0};
         iterateLedgerForward(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                auto r = ripple::getRowsMinMax(session, TableType::Ledgers);
+                auto r =
+                    detail::getRowsMinMax(session, detail::TableType::Ledgers);
                 if (r.numberOfRows)
                 {
                     res.numberOfRows += r.numberOfRows;
@@ -745,13 +760,13 @@ RelationalDBInterfaceSqliteImp::getLedgerCountMinMax()
 }
 
 bool
-RelationalDBInterfaceSqliteImp::saveValidatedLedger(
+SQLiteDatabaseImp::saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
     if (existsLedger())
     {
-        if (!ripple::saveValidatedLedger(
+        if (!detail::saveValidatedLedger(
                 *lgrdb_, *txdb_, app_, ledger, current))
             return false;
     }
@@ -769,7 +784,7 @@ RelationalDBInterfaceSqliteImp::saveValidatedLedger(
         auto lgrMetaSession = lgrMetaDB_->checkoutDb();
         auto txMetaSession = txMetaDB_->checkoutDb();
 
-        return ripple::saveLedgerMeta(
+        return detail::saveLedgerMeta(
             ledger,
             app_,
             *lgrMetaSession,
@@ -781,19 +796,22 @@ RelationalDBInterfaceSqliteImp::saveValidatedLedger(
 }
 
 std::optional<LedgerInfo>
-RelationalDBInterfaceSqliteImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
+SQLiteDatabaseImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getLedgerInfoByIndex(*db, ledgerSeq, j_);
+        auto const res = detail::getLedgerInfoByIndex(*db, ledgerSeq, j_);
+
+        if (res.has_value())
+            return res;
     }
 
     if (shardStoreExists())
     {
         std::optional<LedgerInfo> res;
         doLedger(ledgerSeq, [&](soci::session& session) {
-            res = ripple::getLedgerInfoByIndex(session, ledgerSeq, j_);
+            res = detail::getLedgerInfoByIndex(session, ledgerSeq, j_);
             return true;
         });
         return res;
@@ -803,12 +821,15 @@ RelationalDBInterfaceSqliteImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 }
 
 std::optional<LedgerInfo>
-RelationalDBInterfaceSqliteImp::getNewestLedgerInfo()
+SQLiteDatabaseImp::getNewestLedgerInfo()
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getNewestLedgerInfo(*db, j_);
+        auto const res = detail::getNewestLedgerInfo(*db, j_);
+
+        if (res.has_value())
+            return res;
     }
 
     if (shardStoreExists())
@@ -816,7 +837,7 @@ RelationalDBInterfaceSqliteImp::getNewestLedgerInfo()
         std::optional<LedgerInfo> res;
         iterateLedgerBack(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                if (auto info = ripple::getNewestLedgerInfo(session, j_))
+                if (auto info = detail::getNewestLedgerInfo(session, j_))
                 {
                     res = info;
                     return false;
@@ -831,13 +852,16 @@ RelationalDBInterfaceSqliteImp::getNewestLedgerInfo()
 }
 
 std::optional<LedgerInfo>
-RelationalDBInterfaceSqliteImp::getLimitedOldestLedgerInfo(
-    LedgerIndex ledgerFirstIndex)
+SQLiteDatabaseImp::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getLimitedOldestLedgerInfo(*db, ledgerFirstIndex, j_);
+        auto const res =
+            detail::getLimitedOldestLedgerInfo(*db, ledgerFirstIndex, j_);
+
+        if (res.has_value())
+            return res;
     }
 
     if (shardStoreExists())
@@ -846,7 +870,7 @@ RelationalDBInterfaceSqliteImp::getLimitedOldestLedgerInfo(
         iterateLedgerForward(
             seqToShardIndex(ledgerFirstIndex),
             [&](soci::session& session, std::uint32_t shardIndex) {
-                if (auto info = ripple::getLimitedOldestLedgerInfo(
+                if (auto info = detail::getLimitedOldestLedgerInfo(
                         session, ledgerFirstIndex, j_))
                 {
                     res = info;
@@ -862,13 +886,16 @@ RelationalDBInterfaceSqliteImp::getLimitedOldestLedgerInfo(
 }
 
 std::optional<LedgerInfo>
-RelationalDBInterfaceSqliteImp::getLimitedNewestLedgerInfo(
-    LedgerIndex ledgerFirstIndex)
+SQLiteDatabaseImp::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getLimitedNewestLedgerInfo(*db, ledgerFirstIndex, j_);
+        auto const res =
+            detail::getLimitedNewestLedgerInfo(*db, ledgerFirstIndex, j_);
+
+        if (res.has_value())
+            return res;
     }
 
     if (shardStoreExists())
@@ -876,7 +903,7 @@ RelationalDBInterfaceSqliteImp::getLimitedNewestLedgerInfo(
         std::optional<LedgerInfo> res;
         iterateLedgerBack(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                if (auto info = ripple::getLimitedNewestLedgerInfo(
+                if (auto info = detail::getLimitedNewestLedgerInfo(
                         session, ledgerFirstIndex, j_))
                 {
                     res = info;
@@ -892,12 +919,15 @@ RelationalDBInterfaceSqliteImp::getLimitedNewestLedgerInfo(
 }
 
 std::optional<LedgerInfo>
-RelationalDBInterfaceSqliteImp::getLedgerInfoByHash(uint256 const& ledgerHash)
+SQLiteDatabaseImp::getLedgerInfoByHash(uint256 const& ledgerHash)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getLedgerInfoByHash(*db, ledgerHash, j_);
+        auto const res = detail::getLedgerInfoByHash(*db, ledgerHash, j_);
+
+        if (res.has_value())
+            return res;
     }
 
     if (auto shardStore = app_.getShardStore())
@@ -906,11 +936,11 @@ RelationalDBInterfaceSqliteImp::getLedgerInfoByHash(uint256 const& ledgerHash)
         auto lgrMetaSession = lgrMetaDB_->checkoutDb();
 
         if (auto const shardIndex =
-                ripple::getShardIndexforLedger(*lgrMetaSession, ledgerHash))
+                detail::getShardIndexforLedger(*lgrMetaSession, ledgerHash))
         {
             shardStore->callForLedgerSQLByShardIndex(
                 *shardIndex, [&](soci::session& session) {
-                    res = ripple::getLedgerInfoByHash(session, ledgerHash, j_);
+                    res = detail::getLedgerInfoByHash(session, ledgerHash, j_);
                     return false;  // unused
                 });
         }
@@ -922,19 +952,22 @@ RelationalDBInterfaceSqliteImp::getLedgerInfoByHash(uint256 const& ledgerHash)
 }
 
 uint256
-RelationalDBInterfaceSqliteImp::getHashByIndex(LedgerIndex ledgerIndex)
+SQLiteDatabaseImp::getHashByIndex(LedgerIndex ledgerIndex)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getHashByIndex(*db, ledgerIndex);
+        auto const res = detail::getHashByIndex(*db, ledgerIndex);
+
+        if (res.isNonZero())
+            return res;
     }
 
     if (shardStoreExists())
     {
         uint256 hash;
         doLedger(ledgerIndex, [&](soci::session& session) {
-            hash = ripple::getHashByIndex(session, ledgerIndex);
+            hash = detail::getHashByIndex(session, ledgerIndex);
             return true;
         });
         return hash;
@@ -944,19 +977,22 @@ RelationalDBInterfaceSqliteImp::getHashByIndex(LedgerIndex ledgerIndex)
 }
 
 std::optional<LedgerHashPair>
-RelationalDBInterfaceSqliteImp::getHashesByIndex(LedgerIndex ledgerIndex)
+SQLiteDatabaseImp::getHashesByIndex(LedgerIndex ledgerIndex)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getHashesByIndex(*db, ledgerIndex, j_);
+        auto const res = detail::getHashesByIndex(*db, ledgerIndex, j_);
+
+        if (res.has_value())
+            return res;
     }
 
     if (shardStoreExists())
     {
         std::optional<LedgerHashPair> res;
         doLedger(ledgerIndex, [&](soci::session& session) {
-            res = ripple::getHashesByIndex(session, ledgerIndex, j_);
+            res = detail::getHashesByIndex(session, ledgerIndex, j_);
             return true;
         });
         return res;
@@ -966,14 +1002,15 @@ RelationalDBInterfaceSqliteImp::getHashesByIndex(LedgerIndex ledgerIndex)
 }
 
 std::map<LedgerIndex, LedgerHashPair>
-RelationalDBInterfaceSqliteImp::getHashesByIndex(
-    LedgerIndex minSeq,
-    LedgerIndex maxSeq)
+SQLiteDatabaseImp::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::getHashesByIndex(*db, minSeq, maxSeq, j_);
+        auto const res = detail::getHashesByIndex(*db, minSeq, maxSeq, j_);
+
+        if (!res.empty())
+            return res;
     }
 
     if (shardStoreExists())
@@ -986,7 +1023,7 @@ RelationalDBInterfaceSqliteImp::getHashesByIndex(
                 shardMaxSeq = maxSeq;
             doLedger(minSeq, [&](soci::session& session) {
                 auto r =
-                    ripple::getHashesByIndex(session, minSeq, shardMaxSeq, j_);
+                    detail::getHashesByIndex(session, minSeq, shardMaxSeq, j_);
                 res.insert(r.begin(), r.end());
                 return true;
             });
@@ -1000,7 +1037,7 @@ RelationalDBInterfaceSqliteImp::getHashesByIndex(
 }
 
 std::vector<std::shared_ptr<Transaction>>
-RelationalDBInterfaceSqliteImp::getTxHistory(LedgerIndex startIndex)
+SQLiteDatabaseImp::getTxHistory(LedgerIndex startIndex)
 {
     if (!useTxTables_)
         return {};
@@ -1008,7 +1045,11 @@ RelationalDBInterfaceSqliteImp::getTxHistory(LedgerIndex startIndex)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getTxHistory(*db, app_, startIndex, 20, false).first;
+        auto const res =
+            detail::getTxHistory(*db, app_, startIndex, 20, false).first;
+
+        if (!res.empty())
+            return res;
     }
 
     if (shardStoreExists())
@@ -1017,7 +1058,7 @@ RelationalDBInterfaceSqliteImp::getTxHistory(LedgerIndex startIndex)
         int quantity = 20;
         iterateTransactionBack(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                auto [tx, total] = ripple::getTxHistory(
+                auto [tx, total] = detail::getTxHistory(
                     session, app_, startIndex, quantity, true);
                 txs.insert(txs.end(), tx.begin(), tx.end());
                 if (total > 0)
@@ -1040,9 +1081,8 @@ RelationalDBInterfaceSqliteImp::getTxHistory(LedgerIndex startIndex)
     return {};
 }
 
-RelationalDBInterface::AccountTxs
-RelationalDBInterfaceSqliteImp::getOldestAccountTxs(
-    AccountTxOptions const& options)
+RelationalDatabase::AccountTxs
+SQLiteDatabaseImp::getOldestAccountTxs(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1052,7 +1092,7 @@ RelationalDBInterfaceSqliteImp::getOldestAccountTxs(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getOldestAccountTxs(
+        return detail::getOldestAccountTxs(
                    *db, app_, ledgerMaster, options, {}, j_)
             .first;
     }
@@ -1069,7 +1109,7 @@ RelationalDBInterfaceSqliteImp::getOldestAccountTxs(
                 if (opt.maxLedger &&
                     shardIndex > seqToShardIndex(opt.maxLedger))
                     return false;
-                auto [r, total] = ripple::getOldestAccountTxs(
+                auto [r, total] = detail::getOldestAccountTxs(
                     session, app_, ledgerMaster, opt, limit_used, j_);
                 ret.insert(ret.end(), r.begin(), r.end());
                 if (!total)
@@ -1101,9 +1141,8 @@ RelationalDBInterfaceSqliteImp::getOldestAccountTxs(
     return {};
 }
 
-RelationalDBInterface::AccountTxs
-RelationalDBInterfaceSqliteImp::getNewestAccountTxs(
-    AccountTxOptions const& options)
+RelationalDatabase::AccountTxs
+SQLiteDatabaseImp::getNewestAccountTxs(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1113,7 +1152,7 @@ RelationalDBInterfaceSqliteImp::getNewestAccountTxs(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getNewestAccountTxs(
+        return detail::getNewestAccountTxs(
                    *db, app_, ledgerMaster, options, {}, j_)
             .first;
     }
@@ -1130,7 +1169,7 @@ RelationalDBInterfaceSqliteImp::getNewestAccountTxs(
                 if (opt.minLedger &&
                     shardIndex < seqToShardIndex(opt.minLedger))
                     return false;
-                auto [r, total] = ripple::getNewestAccountTxs(
+                auto [r, total] = detail::getNewestAccountTxs(
                     session, app_, ledgerMaster, opt, limit_used, j_);
                 ret.insert(ret.end(), r.begin(), r.end());
                 if (!total)
@@ -1162,9 +1201,8 @@ RelationalDBInterfaceSqliteImp::getNewestAccountTxs(
     return {};
 }
 
-RelationalDBInterface::MetaTxsList
-RelationalDBInterfaceSqliteImp::getOldestAccountTxsB(
-    AccountTxOptions const& options)
+RelationalDatabase::MetaTxsList
+SQLiteDatabaseImp::getOldestAccountTxsB(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1172,7 +1210,7 @@ RelationalDBInterfaceSqliteImp::getOldestAccountTxsB(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getOldestAccountTxsB(*db, app_, options, {}, j_).first;
+        return detail::getOldestAccountTxsB(*db, app_, options, {}, j_).first;
     }
 
     if (shardStoreExists())
@@ -1187,7 +1225,7 @@ RelationalDBInterfaceSqliteImp::getOldestAccountTxsB(
                 if (opt.maxLedger &&
                     shardIndex > seqToShardIndex(opt.maxLedger))
                     return false;
-                auto [r, total] = ripple::getOldestAccountTxsB(
+                auto [r, total] = detail::getOldestAccountTxsB(
                     session, app_, opt, limit_used, j_);
                 ret.insert(ret.end(), r.begin(), r.end());
                 if (!total)
@@ -1219,9 +1257,8 @@ RelationalDBInterfaceSqliteImp::getOldestAccountTxsB(
     return {};
 }
 
-RelationalDBInterface::MetaTxsList
-RelationalDBInterfaceSqliteImp::getNewestAccountTxsB(
-    AccountTxOptions const& options)
+RelationalDatabase::MetaTxsList
+SQLiteDatabaseImp::getNewestAccountTxsB(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1229,7 +1266,7 @@ RelationalDBInterfaceSqliteImp::getNewestAccountTxsB(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getNewestAccountTxsB(*db, app_, options, {}, j_).first;
+        return detail::getNewestAccountTxsB(*db, app_, options, {}, j_).first;
     }
 
     if (shardStoreExists())
@@ -1244,7 +1281,7 @@ RelationalDBInterfaceSqliteImp::getNewestAccountTxsB(
                 if (opt.minLedger &&
                     shardIndex < seqToShardIndex(opt.minLedger))
                     return false;
-                auto [r, total] = ripple::getNewestAccountTxsB(
+                auto [r, total] = detail::getNewestAccountTxsB(
                     session, app_, opt, limit_used, j_);
                 ret.insert(ret.end(), r.begin(), r.end());
                 if (!total)
@@ -1277,10 +1314,9 @@ RelationalDBInterfaceSqliteImp::getNewestAccountTxsB(
 }
 
 std::pair<
-    RelationalDBInterface::AccountTxs,
-    std::optional<RelationalDBInterface::AccountTxMarker>>
-RelationalDBInterfaceSqliteImp::oldestAccountTxPage(
-    AccountTxPageOptions const& options)
+    RelationalDatabase::AccountTxs,
+    std::optional<RelationalDatabase::AccountTxMarker>>
+SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1302,7 +1338,7 @@ RelationalDBInterfaceSqliteImp::oldestAccountTxPage(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = ripple::oldestAccountTxPage(
+        auto newmarker = detail::oldestAccountTxPage(
                              *db,
                              idCache,
                              onUnsavedLedger,
@@ -1325,7 +1361,7 @@ RelationalDBInterfaceSqliteImp::oldestAccountTxPage(
                 if (opt.maxLedger != UINT32_MAX &&
                     shardIndex > seqToShardIndex(opt.minLedger))
                     return false;
-                auto [marker, total] = ripple::oldestAccountTxPage(
+                auto [marker, total] = detail::oldestAccountTxPage(
                     session,
                     idCache,
                     onUnsavedLedger,
@@ -1347,10 +1383,9 @@ RelationalDBInterfaceSqliteImp::oldestAccountTxPage(
 }
 
 std::pair<
-    RelationalDBInterface::AccountTxs,
-    std::optional<RelationalDBInterface::AccountTxMarker>>
-RelationalDBInterfaceSqliteImp::newestAccountTxPage(
-    AccountTxPageOptions const& options)
+    RelationalDatabase::AccountTxs,
+    std::optional<RelationalDatabase::AccountTxMarker>>
+SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1372,7 +1407,7 @@ RelationalDBInterfaceSqliteImp::newestAccountTxPage(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = ripple::newestAccountTxPage(
+        auto newmarker = detail::newestAccountTxPage(
                              *db,
                              idCache,
                              onUnsavedLedger,
@@ -1395,7 +1430,7 @@ RelationalDBInterfaceSqliteImp::newestAccountTxPage(
                 if (opt.minLedger &&
                     shardIndex < seqToShardIndex(opt.minLedger))
                     return false;
-                auto [marker, total] = ripple::newestAccountTxPage(
+                auto [marker, total] = detail::newestAccountTxPage(
                     session,
                     idCache,
                     onUnsavedLedger,
@@ -1417,10 +1452,9 @@ RelationalDBInterfaceSqliteImp::newestAccountTxPage(
 }
 
 std::pair<
-    RelationalDBInterface::MetaTxsList,
-    std::optional<RelationalDBInterface::AccountTxMarker>>
-RelationalDBInterfaceSqliteImp::oldestAccountTxPageB(
-    AccountTxPageOptions const& options)
+    RelationalDatabase::MetaTxsList,
+    std::optional<RelationalDatabase::AccountTxMarker>>
+SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1441,7 +1475,7 @@ RelationalDBInterfaceSqliteImp::oldestAccountTxPageB(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = ripple::oldestAccountTxPage(
+        auto newmarker = detail::oldestAccountTxPage(
                              *db,
                              idCache,
                              onUnsavedLedger,
@@ -1464,7 +1498,7 @@ RelationalDBInterfaceSqliteImp::oldestAccountTxPageB(
                 if (opt.maxLedger != UINT32_MAX &&
                     shardIndex > seqToShardIndex(opt.minLedger))
                     return false;
-                auto [marker, total] = ripple::oldestAccountTxPage(
+                auto [marker, total] = detail::oldestAccountTxPage(
                     session,
                     idCache,
                     onUnsavedLedger,
@@ -1486,10 +1520,9 @@ RelationalDBInterfaceSqliteImp::oldestAccountTxPageB(
 }
 
 std::pair<
-    RelationalDBInterface::MetaTxsList,
-    std::optional<RelationalDBInterface::AccountTxMarker>>
-RelationalDBInterfaceSqliteImp::newestAccountTxPageB(
-    AccountTxPageOptions const& options)
+    RelationalDatabase::MetaTxsList,
+    std::optional<RelationalDatabase::AccountTxMarker>>
+SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -1510,7 +1543,7 @@ RelationalDBInterfaceSqliteImp::newestAccountTxPageB(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = ripple::newestAccountTxPage(
+        auto newmarker = detail::newestAccountTxPage(
                              *db,
                              idCache,
                              onUnsavedLedger,
@@ -1533,7 +1566,7 @@ RelationalDBInterfaceSqliteImp::newestAccountTxPageB(
                 if (opt.minLedger &&
                     shardIndex < seqToShardIndex(opt.minLedger))
                     return false;
-                auto [marker, total] = ripple::newestAccountTxPage(
+                auto [marker, total] = detail::newestAccountTxPage(
                     session,
                     idCache,
                     onUnsavedLedger,
@@ -1554,8 +1587,8 @@ RelationalDBInterfaceSqliteImp::newestAccountTxPageB(
     return {};
 }
 
-std::variant<RelationalDBInterface::AccountTx, TxSearched>
-RelationalDBInterfaceSqliteImp::getTransaction(
+std::variant<RelationalDatabase::AccountTx, TxSearched>
+SQLiteDatabaseImp::getTransaction(
     uint256 const& id,
     std::optional<ClosedInterval<std::uint32_t>> const& range,
     error_code_i& ec)
@@ -1566,7 +1599,7 @@ RelationalDBInterfaceSqliteImp::getTransaction(
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::getTransaction(*db, app_, id, range, ec);
+        return detail::getTransaction(*db, app_, id, range, ec);
     }
 
     if (auto shardStore = app_.getShardStore(); shardStore)
@@ -1575,7 +1608,7 @@ RelationalDBInterfaceSqliteImp::getTransaction(
         auto txMetaSession = txMetaDB_->checkoutDb();
 
         if (auto const shardIndex =
-                ripple::getShardIndexforTransaction(*txMetaSession, id))
+                detail::getShardIndexforTransaction(*txMetaSession, id))
         {
             shardStore->callForTransactionSQLByShardIndex(
                 *shardIndex, [&](soci::session& session) {
@@ -1589,7 +1622,7 @@ RelationalDBInterfaceSqliteImp::getTransaction(
                         if (low <= high)
                             range1 = ClosedInterval<std::uint32_t>(low, high);
                     }
-                    res = ripple::getTransaction(session, app_, id, range1, ec);
+                    res = detail::getTransaction(session, app_, id, range1, ec);
 
                     return res.index() == 1 &&
                         std::get<TxSearched>(res) !=
@@ -1604,19 +1637,19 @@ RelationalDBInterfaceSqliteImp::getTransaction(
 }
 
 bool
-RelationalDBInterfaceSqliteImp::ledgerDbHasSpace(Config const& config)
+SQLiteDatabaseImp::ledgerDbHasSpace(Config const& config)
 {
     if (existsLedger())
     {
         auto db = checkoutLedger();
-        return ripple::dbHasSpace(*db, config, j_);
+        return detail::dbHasSpace(*db, config, j_);
     }
 
     if (shardStoreExists())
     {
         return iterateLedgerBack(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                return ripple::dbHasSpace(session, config, j_);
+                return detail::dbHasSpace(session, config, j_);
             });
     }
 
@@ -1624,7 +1657,7 @@ RelationalDBInterfaceSqliteImp::ledgerDbHasSpace(Config const& config)
 }
 
 bool
-RelationalDBInterfaceSqliteImp::transactionDbHasSpace(Config const& config)
+SQLiteDatabaseImp::transactionDbHasSpace(Config const& config)
 {
     if (!useTxTables_)
         return true;
@@ -1632,14 +1665,14 @@ RelationalDBInterfaceSqliteImp::transactionDbHasSpace(Config const& config)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return ripple::dbHasSpace(*db, config, j_);
+        return detail::dbHasSpace(*db, config, j_);
     }
 
     if (shardStoreExists())
     {
         return iterateTransactionBack(
             {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                return ripple::dbHasSpace(session, config, j_);
+                return detail::dbHasSpace(session, config, j_);
             });
     }
 
@@ -1647,7 +1680,7 @@ RelationalDBInterfaceSqliteImp::transactionDbHasSpace(Config const& config)
 }
 
 std::uint32_t
-RelationalDBInterfaceSqliteImp::getKBUsedAll()
+SQLiteDatabaseImp::getKBUsedAll()
 {
     if (existsLedger())
     {
@@ -1669,7 +1702,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedAll()
 }
 
 std::uint32_t
-RelationalDBInterfaceSqliteImp::getKBUsedLedger()
+SQLiteDatabaseImp::getKBUsedLedger()
 {
     if (existsLedger())
     {
@@ -1691,7 +1724,7 @@ RelationalDBInterfaceSqliteImp::getKBUsedLedger()
 }
 
 std::uint32_t
-RelationalDBInterfaceSqliteImp::getKBUsedTransaction()
+SQLiteDatabaseImp::getKBUsedTransaction()
 {
     if (!useTxTables_)
         return 0;
@@ -1716,25 +1749,21 @@ RelationalDBInterfaceSqliteImp::getKBUsedTransaction()
 }
 
 void
-RelationalDBInterfaceSqliteImp::closeLedgerDB()
+SQLiteDatabaseImp::closeLedgerDB()
 {
     lgrdb_.reset();
 }
 
 void
-RelationalDBInterfaceSqliteImp::closeTransactionDB()
+SQLiteDatabaseImp::closeTransactionDB()
 {
     txdb_.reset();
 }
 
-std::unique_ptr<RelationalDBInterface>
-getRelationalDBInterfaceSqlite(
-    Application& app,
-    Config const& config,
-    JobQueue& jobQueue)
+std::unique_ptr<RelationalDatabase>
+getSQLiteDatabase(Application& app, Config const& config, JobQueue& jobQueue)
 {
-    return std::make_unique<RelationalDBInterfaceSqliteImp>(
-        app, config, jobQueue);
+    return std::make_unique<SQLiteDatabaseImp>(app, config, jobQueue);
 }
 
 }  // namespace ripple

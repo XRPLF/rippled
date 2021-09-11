@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -119,8 +119,7 @@ class Transaction_test : public beast::unit_test::suite
         const auto deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->deleteTransactionByLedgerSeq(deletedLedger);
         }
 

@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/NodeIdentity.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/Wallet.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>

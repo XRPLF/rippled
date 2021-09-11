@@ -22,8 +22,8 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/rdb/State.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 

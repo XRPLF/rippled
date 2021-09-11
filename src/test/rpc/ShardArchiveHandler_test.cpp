@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/ShardArchive.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DummyScheduler.h>
