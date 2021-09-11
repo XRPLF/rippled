@@ -239,6 +239,9 @@ public:
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
 
+    virtual std::string const&
+    getNodePublicIdentity() const = 0;
+
     virtual PublicKey const&
     getValidationPublicKey() const = 0;
 

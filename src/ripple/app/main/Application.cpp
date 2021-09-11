@@ -186,6 +186,8 @@ public:
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
     std::pair<PublicKey, SecretKey> nodeIdentity_;
+    std::string nodePublicIdentity_;
+
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
@@ -588,6 +590,12 @@ public:
     nodeIdentity() override
     {
         return nodeIdentity_;
+    }
+
+    std::string const&
+    getNodePublicIdentity() const override
+    {
+        return nodePublicIdentity_;
     }
 
     PublicKey const&
@@ -1276,6 +1284,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
+    nodePublicIdentity_ = toBase58(TokenType::NodePublic, nodeIdentity().first);
 
     if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
     {

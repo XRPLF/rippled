@@ -197,10 +197,6 @@ ConnectAttempt::onHandshake(error_code ec)
             slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
         return fail("Duplicate connection");
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
-    if (!sharedValue)
-        return close();  // makeSharedValue logs
-
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
         app_.config().COMPRESSION,
@@ -208,15 +204,25 @@ ConnectAttempt::onHandshake(error_code ec)
         app_.config().TX_REDUCE_RELAY_ENABLE,
         app_.config().VP_REDUCE_RELAY_ENABLE);
 
+    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    if (!sharedValue)
+        return close();  // makeSharedValue logs
+
+    auto const ekm = getSessionEKM(*stream_ptr_, app_.instanceID(), true);
+    if (!ekm)
+        return fail("Unable to retrieve EKM for session");
+
     buildHandshake(
         req_,
         *sharedValue,
+        *ekm,
         overlay_.setup().networkID,
         overlay_.setup().public_ip,
         remote_endpoint_.address(),
         app_);
 
     setTimer();
+
     boost::beast::http::async_write(
         stream_,
         req_,
@@ -347,15 +353,37 @@ ConnectAttempt::processResponse()
                 "processResponse: Unable to negotiate protocol version");
     }
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
-    if (!sharedValue)
-        return close();  // makeSharedValue logs
-
     try
     {
+        auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+        if (!sharedValue)
+            return close();  // makeSharedValue logs
+
+        auto const peerInstanceID = [this]() {
+            std::uint64_t iid = 0;
+
+            if (auto const iter = response_.find("Instance-Cookie");
+                iter != response_.end())
+            {
+                if (!beast::lexicalCastChecked(iid, iter->value().to_string()))
+                    throw std::runtime_error("Invalid instance cookie");
+
+                if (iid == 0)
+                    throw std::runtime_error("Invalid instance cookie");
+            }
+
+            return iid;
+        }();
+
+        auto const ekm = getSessionEKM(*stream_ptr_, peerInstanceID, false);
+
+        if (!ekm)
+            return fail("Unable to retrieve EKM for session");
+
         auto publicKey = verifyHandshake(
             response_,
             *sharedValue,
+            *ekm,
             overlay_.setup().networkID,
             overlay_.setup().public_ip,
             remote_endpoint_.address(),

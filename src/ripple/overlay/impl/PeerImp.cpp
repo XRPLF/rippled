@@ -603,7 +603,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -767,6 +767,7 @@ void
 PeerImp::doAccept()
 {
     assert(read_buffer_.size() == 0);
+    assert(!inbound_);
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
@@ -776,6 +777,11 @@ PeerImp::doAccept()
     // the shared value successfully in OverlayImpl
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
+
+    auto const ekm = getSessionEKM(*stream_ptr_, app_.instanceID(), !inbound_);
+
+    if (!ekm)
+        return fail("getSessionEKM: Unexpected failure");
 
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
     JLOG(journal_.info()) << "Public Key: "
@@ -804,6 +810,7 @@ PeerImp::doAccept()
         overlay_.setup().public_ip,
         remote_address_.address(),
         *sharedValue,
+        *ekm,
         overlay_.setup().networkID,
         protocol_,
         app_);
