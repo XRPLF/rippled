@@ -31,7 +31,7 @@ namespace ripple {
 
 void
 convertBlobsToTxResult(
-    RelationalDBInterface::AccountTxs& to,
+    RelationalDatabase::AccountTxs& to,
     std::uint32_t ledger_index,
     std::string const& status,
     Blob const& rawTxn,

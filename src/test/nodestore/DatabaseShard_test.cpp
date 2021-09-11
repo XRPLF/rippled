@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/hash/hash_append.h>
@@ -1762,9 +1762,9 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testRelationalDBInterfaceSqlite(std::uint64_t const seedValue)
+    testSQLiteDatabase(std::uint64_t const seedValue)
     {
-        testcase("Relational DB Interface SQLite");
+        testcase("SQLite Database");
 
         using namespace test::jtx;
 
@@ -1782,8 +1782,8 @@ class DatabaseShard_test : public TestBase
         BEAST_EXPECT(shardStore->getShardInfo()->finalized().empty());
         BEAST_EXPECT(shardStore->getShardInfo()->incompleteToString().empty());
 
-        auto rdb = dynamic_cast<RelationalDBInterfaceSqlite*>(
-            &env.app().getRelationalDBInterface());
+        auto rdb =
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase());
 
         BEAST_EXPECT(rdb);
 
@@ -1796,7 +1796,7 @@ class DatabaseShard_test : public TestBase
                 return;
         }
 
-        // Close these databases to force the RelationalDBInterfaceSqlite
+        // Close these databases to force the SQLiteDatabase
         // to use the shard databases and lookup tables.
         rdb->closeLedgerDB();
         rdb->closeTransactionDB();
@@ -1814,7 +1814,7 @@ class DatabaseShard_test : public TestBase
         for (auto const& ledger : data.ledgers_)
         {
             // Compare each test ledger to the data retrieved
-            // from the RelationalDBInterfaceSqlite class
+            // from the SQLiteDatabase class
 
             if (shardStore->seqToShardIndex(ledger->seq()) <
                     shardStore->earliestShardIndex() ||
@@ -1829,8 +1829,7 @@ class DatabaseShard_test : public TestBase
             for (auto const& transaction : ledger->txs)
             {
                 // Compare each test transaction to the data
-                // retrieved from the RelationalDBInterfaceSqlite
-                // class
+                // retrieved from the SQLiteDatabase class
 
                 error_code_i error{rpcSUCCESS};
 
@@ -1885,7 +1884,7 @@ public:
         testPrepareWithHistoricalPaths(seedValue());
         testOpenShardManagement(seedValue());
         testShardInfo(seedValue());
-        testRelationalDBInterfaceSqlite(seedValue());
+        testSQLiteDatabase(seedValue());
     }
 };
 

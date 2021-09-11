@@ -21,8 +21,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/core/Pg.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_value.h>
@@ -42,14 +42,14 @@
 
 namespace ripple {
 
-using TxnsData = RelationalDBInterface::AccountTxs;
-using TxnsDataBinary = RelationalDBInterface::MetaTxsList;
-using TxnDataBinary = RelationalDBInterface::txnMetaLedgerType;
-using AccountTxArgs = RelationalDBInterface::AccountTxArgs;
-using AccountTxResult = RelationalDBInterface::AccountTxResult;
+using TxnsData = RelationalDatabase::AccountTxs;
+using TxnsDataBinary = RelationalDatabase::MetaTxsList;
+using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
+using AccountTxArgs = RelationalDatabase::AccountTxArgs;
+using AccountTxResult = RelationalDatabase::AccountTxResult;
 
-using LedgerShortcut = RelationalDBInterface::LedgerShortcut;
-using LedgerSpecifier = RelationalDBInterface::LedgerSpecifier;
+using LedgerShortcut = RelationalDatabase::LedgerShortcut;
+using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a grpc status object on error
 std::variant<std::optional<LedgerSpecifier>, grpc::Status>
@@ -257,9 +257,15 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
     if (context.app.config().reporting())
-        return dynamic_cast<RelationalDBInterfacePostgres*>(
-                   &context.app.getRelationalDBInterface())
-            ->getAccountTx(args);
+    {
+        auto const db = dynamic_cast<PostgresDatabase*>(
+            &context.app.getRelationalDatabase());
+
+        if (!db)
+            Throw<std::runtime_error>("Failed to get relational database");
+
+        return db->getAccountTx(args);
+    }
 
     AccountTxResult result;
 
@@ -274,7 +280,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 
     result.marker = args.marker;
 
-    RelationalDBInterface::AccountTxPageOptions options = {
+    RelationalDatabase::AccountTxPageOptions options = {
         args.account,
         result.ledgerRange.min,
         result.ledgerRange.max,
@@ -282,21 +288,23 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         args.limit,
         isUnlimited(context.role)};
 
+    auto const db =
+        dynamic_cast<SQLiteDatabase*>(&context.app.getRelationalDatabase());
+
+    if (!db)
+        Throw<std::runtime_error>("Failed to get relational database");
+
     if (args.binary)
     {
         if (args.forward)
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->oldestAccountTxPageB(options);
+            auto [tx, marker] = db->oldestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->newestAccountTxPageB(options);
+            auto [tx, marker] = db->newestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
@@ -305,17 +313,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     {
         if (args.forward)
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->oldestAccountTxPage(options);
+            auto [tx, marker] = db->oldestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->newestAccountTxPage(options);
+            auto [tx, marker] = db->newestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }

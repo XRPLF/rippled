@@ -17,18 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_RELATIONALDBINTERFACE_NODES_H_INCLUDED
-#define RIPPLE_CORE_RELATIONALDBINTERFACE_NODES_H_INCLUDED
+#ifndef RIPPLE_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
+#define RIPPLE_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/Manifest.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/core/Config.h>
 #include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/peerfinder/impl/Store.h>
 #include <boost/filesystem.hpp>
 
 namespace ripple {
+namespace detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
 enum class TableType { Ledgers, Transactions, AccountTransactions };
@@ -116,7 +117,7 @@ getRows(soci::session& session, TableType type);
  * @return Struct CountMinMax which contain minimum sequence,
  *         maximum sequence and number of rows.
  */
-RelationalDBInterface::CountMinMax
+RelationalDatabase::CountMinMax
 getRowsMinMax(soci::session& session, TableType type);
 
 /**
@@ -232,7 +233,7 @@ getHashesByIndex(
  * @param maxSeq Maximum ledger sequence.
  * @param j Journal.
  * @return Map which points sequence number of found ledger to the struct
- *         LedgerHashPair which contauns ledger hash and its parent hash.
+ *         LedgerHashPair which contains ledger hash and its parent hash.
  */
 std::map<LedgerIndex, LedgerHashPair>
 getHashesByIndex(
@@ -283,12 +284,12 @@ getTxHistory(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<RelationalDBInterface::AccountTxs, int>
+std::pair<RelationalDatabase::AccountTxs, int>
 getOldestAccountTxs(
     soci::session& session,
     Application& app,
     LedgerMaster& ledgerMaster,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j);
 
@@ -314,12 +315,12 @@ getOldestAccountTxs(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<RelationalDBInterface::AccountTxs, int>
+std::pair<RelationalDatabase::AccountTxs, int>
 getNewestAccountTxs(
     soci::session& session,
     Application& app,
     LedgerMaster& ledgerMaster,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j);
 
@@ -345,11 +346,11 @@ getNewestAccountTxs(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<std::vector<RelationalDBInterface::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
     Application& app,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j);
 
@@ -375,11 +376,11 @@ getOldestAccountTxsB(
  *         skipped. We need to skip some quantity of transactions if option
  *         offset is > 0 in the options structure.
  */
-std::pair<std::vector<RelationalDBInterface::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
     Application& app,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j);
 
@@ -404,7 +405,7 @@ getNewestAccountTxsB(
  *         sequence and marker for next search if search not finished.
  *         Also number of transactions processed during this call.
  */
-std::pair<std::optional<RelationalDBInterface::AccountTxMarker>, int>
+std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 oldestAccountTxPage(
     soci::session& session,
     AccountIDCache const& idCache,
@@ -412,7 +413,7 @@ oldestAccountTxPage(
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
-    RelationalDBInterface::AccountTxPageOptions const& options,
+    RelationalDatabase::AccountTxPageOptions const& options,
     int limit_used,
     std::uint32_t page_length);
 
@@ -437,7 +438,7 @@ oldestAccountTxPage(
  *         sequence and marker for next search if search not finished.
  *         Also number of transactions processed during this call.
  */
-std::pair<std::optional<RelationalDBInterface::AccountTxMarker>, int>
+std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 newestAccountTxPage(
     soci::session& session,
     AccountIDCache const& idCache,
@@ -445,7 +446,7 @@ newestAccountTxPage(
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
-    RelationalDBInterface::AccountTxPageOptions const& options,
+    RelationalDatabase::AccountTxPageOptions const& options,
     int limit_used,
     std::uint32_t page_length);
 
@@ -465,7 +466,7 @@ newestAccountTxPage(
  *         occured. In the last case error code modified in ec link
  *         parameter, in other cases default error code remained.
  */
-std::variant<RelationalDBInterface::AccountTx, TxSearched>
+std::variant<RelationalDatabase::AccountTx, TxSearched>
 getTransaction(
     soci::session& session,
     Application& app,
@@ -483,6 +484,7 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j);
 
+}  // namespace detail
 }  // namespace ripple
 
 #endif

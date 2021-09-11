@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 #define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/PeerFinder.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/peerfinder/impl/Store.h>

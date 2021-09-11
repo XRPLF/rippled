@@ -34,8 +34,7 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/rdb/RelationalDBInterface_postgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/MathUtilities.h>
@@ -278,10 +277,10 @@ LedgerMaster::getValidatedLedgerAge()
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return static_cast<RelationalDBInterfacePostgres*>(
-                   &app_.getRelationalDBInterface())
+        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
             ->getValidatedLedgerAge();
 #endif
+
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
     {
@@ -309,8 +308,7 @@ LedgerMaster::isCaughtUp(std::string& reason)
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return static_cast<RelationalDBInterfacePostgres*>(
-                   &app_.getRelationalDBInterface())
+        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
             ->isCaughtUp(reason);
 #endif
 
@@ -743,7 +741,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
                 mCompleteLedgers.insert(range(minHas, maxHas));
             }
             maxHas = minHas;
-            ledgerHashes = app_.getRelationalDBInterface().getHashesByIndex(
+            ledgerHashes = app_.getRelationalDatabase().getHashesByIndex(
                 (seq < 500) ? 0 : (seq - 499), seq);
             it = ledgerHashes.find(seq);
 
@@ -927,8 +925,8 @@ LedgerMaster::setFullLedger(
     {
         // Check the SQL database's entry for the sequence before this
         // ledger, if it's not this ledger's parent, invalidate it
-        uint256 prevHash = app_.getRelationalDBInterface().getHashByIndex(
-            ledger->info().seq - 1);
+        uint256 prevHash =
+            app_.getRelationalDatabase().getHashByIndex(ledger->info().seq - 1);
         if (prevHash.isNonZero() && prevHash != ledger->info().parentHash)
             clearLedger(ledger->info().seq - 1);
     }
@@ -1664,7 +1662,7 @@ LedgerMaster::getValidatedLedger()
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
     {
-        auto seq = app_.getRelationalDBInterface().getMaxLedgerSeq();
+        auto seq = app_.getRelationalDatabase().getMaxLedgerSeq();
         if (!seq)
             return {};
         return getLedgerBySeq(*seq);
@@ -1700,8 +1698,7 @@ LedgerMaster::getCompleteLedgers()
 {
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return static_cast<RelationalDBInterfacePostgres*>(
-                   &app_.getRelationalDBInterface())
+        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
             ->getCompleteLedgers();
 #endif
     std::lock_guard sl(mCompleteLock);
@@ -1746,7 +1743,7 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
     if (hash.isNonZero())
         return hash;
 
-    return app_.getRelationalDBInterface().getHashByIndex(index);
+    return app_.getRelationalDatabase().getHashByIndex(index);
 }
 
 std::optional<LedgerHash>
@@ -1967,7 +1964,7 @@ LedgerMaster::fetchForHistory(
                     fillInProgress = mFillInProgress;
                 }
                 if (fillInProgress == 0 &&
-                    app_.getRelationalDBInterface().getHashByIndex(seq - 1) ==
+                    app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
                         ledger->info().parentHash)
                 {
                     {
@@ -2363,7 +2360,7 @@ LedgerMaster::getFetchPackCacheSize() const
 std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
-    return app_.getRelationalDBInterface().getMinLedgerSeq();
+    return app_.getRelationalDatabase().getMinLedgerSeq();
 }
 
 }  // namespace ripple

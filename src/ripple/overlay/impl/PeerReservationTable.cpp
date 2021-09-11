@@ -19,8 +19,8 @@
 
 #include <ripple/overlay/PeerReservationTable.h>
 
-#include <ripple/app/rdb/RelationalDBInterface.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/rdb/Wallet.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/PublicKey.h>

@@ -20,8 +20,8 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStoreImp.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/State.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/Pg.h>
@@ -620,19 +620,17 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (stopping())
         return;
 
-    RelationalDBInterfaceSqlite* iface =
-        dynamic_cast<RelationalDBInterfaceSqlite*>(
-            &app_.getRelationalDBInterface());
+    SQLiteDatabase* const db =
+        dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase());
+
+    if (!db)
+        Throw<std::runtime_error>("Failed to get relational database");
 
     clearSql(
         lastRotated,
         "Ledgers",
-        [&iface]() -> std::optional<LedgerIndex> {
-            return iface->getMinLedgerSeq();
-        },
-        [&iface](LedgerIndex min) -> void {
-            iface->deleteBeforeLedgerSeq(min);
-        });
+        [db]() -> std::optional<LedgerIndex> { return db->getMinLedgerSeq(); },
+        [db](LedgerIndex min) -> void { db->deleteBeforeLedgerSeq(min); });
     if (stopping())
         return;
 
@@ -642,11 +640,11 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&iface]() -> std::optional<LedgerIndex> {
-            return iface->getTransactionsMinLedgerSeq();
+        [&db]() -> std::optional<LedgerIndex> {
+            return db->getTransactionsMinLedgerSeq();
         },
-        [&iface](LedgerIndex min) -> void {
-            iface->deleteTransactionsBeforeLedgerSeq(min);
+        [&db](LedgerIndex min) -> void {
+            db->deleteTransactionsBeforeLedgerSeq(min);
         });
     if (stopping())
         return;
@@ -654,11 +652,11 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&iface]() -> std::optional<LedgerIndex> {
-            return iface->getAccountTransactionsMinLedgerSeq();
+        [&db]() -> std::optional<LedgerIndex> {
+            return db->getAccountTransactionsMinLedgerSeq();
         },
-        [&iface](LedgerIndex min) -> void {
-            iface->deleteAccountTransactionsBeforeLedgerSeq(min);
+        [&db](LedgerIndex min) -> void {
+            db->deleteAccountTransactionsBeforeLedgerSeq(min);
         });
     if (stopping())
         return;

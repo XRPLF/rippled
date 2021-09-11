@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_RELATIONALDBINTERFACE_H_INCLUDED
-#define RIPPLE_CORE_RELATIONALDBINTERFACE_H_INCLUDED
+#ifndef RIPPLE_APP_RDB_RELATIONALDATABASE_H_INCLUDED
+#define RIPPLE_APP_RDB_RELATIONALDATABASE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/main/Application.h>
@@ -45,7 +45,7 @@ struct LedgerRange
     uint32_t max;
 };
 
-class RelationalDBInterface
+class RelationalDatabase
 {
 public:
     struct CountMinMax
@@ -135,56 +135,61 @@ public:
     };
 
     /**
-     * @brief init Creates and returns appropriate interface based on config.
+     * @brief init Creates and returns an appropriate RelationalDatabase
+     *        instance based on configuration.
      * @param app Application object.
      * @param config Config object.
      * @param jobQueue JobQueue object.
      * @return Unique pointer to the interface.
      */
-    static std::unique_ptr<RelationalDBInterface>
+    static std::unique_ptr<RelationalDatabase>
     init(Application& app, Config const& config, JobQueue& jobQueue);
 
-    virtual ~RelationalDBInterface() = default;
+    virtual ~RelationalDatabase() = default;
 
     /**
-     * @brief getMinLedgerSeq Returns minimum ledger sequence in Ledgers table.
-     * @return Ledger sequence or none if no ledgers exist.
+     * @brief getMinLedgerSeq Returns the minimum ledger sequence in the Ledgers
+     *        table.
+     * @return Ledger sequence or no value if no ledgers exist.
      */
     virtual std::optional<LedgerIndex>
     getMinLedgerSeq() = 0;
 
     /**
-     * @brief getMaxLedgerSeq Returns maximum ledger sequence in Ledgers table.
+     * @brief getMaxLedgerSeq Returns the maximum ledger sequence in the Ledgers
+     *        table.
      * @return Ledger sequence or none if no ledgers exist.
      */
     virtual std::optional<LedgerIndex>
     getMaxLedgerSeq() = 0;
 
     /**
-     * @brief getLedgerInfoByIndex Returns ledger by its sequence.
+     * @brief getLedgerInfoByIndex Returns a ledger by its sequence.
      * @param ledgerSeq Ledger sequence.
-     * @return Ledger or none if ledger not found.
+     * @return The ledger if found, otherwise no value.
      */
     virtual std::optional<LedgerInfo>
     getLedgerInfoByIndex(LedgerIndex ledgerSeq) = 0;
 
     /**
-     * @brief getNewestLedgerInfo Returns info of newest saved ledger.
-     * @return Ledger info or none if ledger not found.
+     * @brief getNewestLedgerInfo Returns the info of the newest saved ledger.
+     * @return Ledger info if found, otherwise no value.
      */
     virtual std::optional<LedgerInfo>
     getNewestLedgerInfo() = 0;
 
     /**
-     * @brief getLedgerInfoByHash Returns info of ledger with given hash.
+     * @brief getLedgerInfoByHash Returns the info of the ledger with given
+     *        hash.
      * @param ledgerHash Hash of the ledger.
-     * @return Ledger or none if ledger not found.
+     * @return Ledger if found, otherwise no value.
      */
     virtual std::optional<LedgerInfo>
     getLedgerInfoByHash(uint256 const& ledgerHash) = 0;
 
     /**
-     * @brief getHashByIndex Returns hash of ledger with given sequence.
+     * @brief getHashByIndex Returns the hash of the ledger with the given
+     *        sequence.
      * @param ledgerIndex Ledger sequence.
      * @return Hash of the ledger.
      */
@@ -192,39 +197,40 @@ public:
     getHashByIndex(LedgerIndex ledgerIndex) = 0;
 
     /**
-     * @brief getHashesByIndex Returns hash of the ledger and hash of parent
-     *        ledger for the ledger of given sequence.
+     * @brief getHashesByIndex Returns the hashes of the ledger and its parent
+     *        as specified by the ledgerIndex.
      * @param ledgerIndex Ledger sequence.
-     * @return Struct LedgerHashPair which contain hashes of the ledger and
-     *         its parent ledger.
+     * @return Struct LedgerHashPair which contains hashes of the ledger and
+     *         its parent.
      */
     virtual std::optional<LedgerHashPair>
     getHashesByIndex(LedgerIndex ledgerIndex) = 0;
 
     /**
-     * @brief getHashesByIndex Returns hash of the ledger and hash of parent
-     *        ledger for all ledgers with sequences from given minimum limit
-     *        to given maximum limit.
+     * @brief getHashesByIndex Returns hashes of each ledger and its parent for
+     *        all ledgers within the provided range.
      * @param minSeq Minimum ledger sequence.
      * @param maxSeq Maximum ledger sequence.
-     * @return Map which points sequence number of found ledger to the struct
-     *         LedgerHashPair which contains ledger hash and its parent hash.
+     * @return Container that maps the sequence number of a found ledger to the
+     *         struct LedgerHashPair which contains the hashes of the ledger and
+     *         its parent.
      */
     virtual std::map<LedgerIndex, LedgerHashPair>
     getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq) = 0;
 
     /**
-     * @brief getTxHistory Returns most recent 20 transactions starting from
-     *        given number or entry.
+     * @brief getTxHistory Returns the 20 most recent transactions starting from
+     *        the given number.
      * @param startIndex First number of returned entry.
-     * @return Vector of sharded pointers to transactions sorted in
+     * @return Vector of shared pointers to transactions sorted in
      *         descending order by ledger sequence.
      */
     virtual std::vector<std::shared_ptr<Transaction>>
     getTxHistory(LedgerIndex startIndex) = 0;
 
     /**
-     * @brief ledgerDbHasSpace Checks if ledger database has available space.
+     * @brief ledgerDbHasSpace Checks if the ledger database has available
+     *        space.
      * @param config Config object.
      * @return True if space is available.
      */
@@ -232,7 +238,7 @@ public:
     ledgerDbHasSpace(Config const& config) = 0;
 
     /**
-     * @brief transactionDbHasSpace Checks if transaction database has
+     * @brief transactionDbHasSpace Checks if the transaction database has
      *        available space.
      * @param config Config object.
      * @return True if space is available.

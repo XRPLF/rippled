@@ -17,55 +17,47 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_RELATIONALDBINTERFACEPOSTGRES_H_INCLUDED
-#define RIPPLE_CORE_RELATIONALDBINTERFACEPOSTGRES_H_INCLUDED
+#ifndef RIPPLE_APP_RDB_BACKEND_POSTGRESDATABASE_H_INCLUDED
+#define RIPPLE_APP_RDB_BACKEND_POSTGRESDATABASE_H_INCLUDED
 
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 
 namespace ripple {
 
-class RelationalDBInterfacePostgres : public RelationalDBInterface
+class PostgresDatabase : public RelationalDatabase
 {
 public:
-    /** There is only one implementation of this interface:
-     * RelationalDBInterfacePostgresImp. It wraps a stoppable object (PgPool)
-     * that does not follow RAII, and it does not go through the effort of
-     * following RAII either. The owner of the only object of that type
-     * (ApplicationImp) holds it by the type of its interface instead of its
-     * implementation, and thus the lifetime management methods need to be
-     * part of the interface.
-     */
     virtual void
     stop() = 0;
 
     /**
-     * @brief sweep Sweep the database. Method is specific for postgres backend.
+     * @brief sweep Sweeps the database.
      */
     virtual void
     sweep() = 0;
 
     /**
-     * @brief getCompleteLedgers Returns string which contains list of
-     *        completed ledgers. Method is specific for postgres backend.
-     * @return String with completed ledger numbers
+     * @brief getCompleteLedgers Returns a string which contains a list of
+     *        completed ledgers.
+     * @return String with completed ledger sequences
      */
     virtual std::string
     getCompleteLedgers() = 0;
 
     /**
-     * @brief getValidatedLedgerAge Returns age of last
-     *        validated ledger. Method is specific for postgres backend.
-     * @return Age of last validated ledger in seconds
+     * @brief getValidatedLedgerAge Returns the age of the last validated
+     *        ledger.
+     * @return Age of the last validated ledger in seconds
      */
     virtual std::chrono::seconds
     getValidatedLedgerAge() = 0;
 
     /**
-     * @brief writeLedgerAndTransactions Write new ledger and transaction data
-     *        into database. Method is specific for Postgres backend.
+     * @brief writeLedgerAndTransactions Writes new ledger and transaction data
+     *        into the database.
      * @param info Ledger info to write.
      * @param accountTxData Transaction data to write
-     * @return True if success, false if failure.
+     * @return True on success, false on failure.
      */
     virtual bool
     writeLedgerAndTransactions(
@@ -73,32 +65,30 @@ public:
         std::vector<AccountTransactionsData> const& accountTxData) = 0;
 
     /**
-     * @brief getTxHashes Returns vector of tx hashes by given ledger
-     *        sequence. Method is specific to postgres backend.
+     * @brief getTxHashes Returns a vector of the hashes of transactions
+     *        belonging to the ledger with the provided sequence.
      * @param seq Ledger sequence
-     * @return Vector of tx hashes
+     * @return Vector of transaction hashes
      */
     virtual std::vector<uint256>
     getTxHashes(LedgerIndex seq) = 0;
 
     /**
-     * @brief getAccountTx Get last account transactions specifies by
-     *        passed argumenrs structure. Function if specific to postgres
-     *        backend.
-     * @param args Arguments which specify account and whose tx to return.
-     * @param app Application
-     * @param j Journal
-     * @return Vector of account transactions and RPC status of responce.
+     * @brief getAccountTx Get the last account transactions specified by the
+     *        AccountTxArgs struct.
+     * @param args Arguments which specify the account and which transactions to
+     *        return.
+     * @return Vector of account transactions and the RPC status response.
      */
     virtual std::pair<AccountTxResult, RPC::Status>
     getAccountTx(AccountTxArgs const& args) = 0;
 
     /**
      * @brief locateTransaction Returns information used to locate
-     *        a transaction. Function is specific to postgres backend.
+     *        a transaction.
      * @param id Hash of the transaction.
      * @return Information used to locate a transaction. Contains a nodestore
-     *         hash and ledger sequence pair if the transaction was found.
+     *         hash and a ledger sequence pair if the transaction was found.
      *         Otherwise, contains the range of ledgers present in the database
      *         at the time of search.
      */
@@ -110,9 +100,9 @@ public:
      *             network
      * @param[out] reason if the database is not caught up, reason contains a
      *             helpful message describing why
-     * @return     false if the most recently written
-     *             ledger has a close time over 3 minutes ago, or if there are
-     *             no ledgers in the database. true otherwise
+     * @return     false if the most recently written ledger has a close time
+     *             over 3 minutes ago, or if there are no ledgers in the
+     *             database. true otherwise
      */
     virtual bool
     isCaughtUp(std::string& reason) = 0;

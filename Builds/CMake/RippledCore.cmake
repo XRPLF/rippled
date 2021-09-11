@@ -402,13 +402,18 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp
   src/ripple/app/paths/impl/XRPEndpointStep.cpp
-  src/ripple/app/rdb/backend/RelationalDBInterfacePostgres.cpp
-  src/ripple/app/rdb/backend/RelationalDBInterfaceSqlite.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_global.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_nodes.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_postgres.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_shards.cpp
+  src/ripple/app/rdb/backend/detail/impl/Node.cpp
+  src/ripple/app/rdb/backend/detail/impl/Shard.cpp
+  src/ripple/app/rdb/backend/impl/PostgresDatabase.cpp
+  src/ripple/app/rdb/backend/impl/SQLiteDatabase.cpp
+  src/ripple/app/rdb/impl/Download.cpp
+  src/ripple/app/rdb/impl/PeerFinder.cpp
+  src/ripple/app/rdb/impl/RelationalDatabase.cpp
+  src/ripple/app/rdb/impl/ShardArchive.cpp
+  src/ripple/app/rdb/impl/State.cpp
+  src/ripple/app/rdb/impl/UnitaryShard.cpp
+  src/ripple/app/rdb/impl/Vacuum.cpp
+  src/ripple/app/rdb/impl/Wallet.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp

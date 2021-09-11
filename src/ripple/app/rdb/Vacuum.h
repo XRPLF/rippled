@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2021 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -10,36 +10,27 @@
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    ANY  SPECIAL,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
     WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
-#define RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
+#ifndef RIPPLE_APP_RDB_VACUUM_H_INCLUDED
+#define RIPPLE_APP_RDB_VACUUM_H_INCLUDED
 
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <cstdint>
-#include <string>
-#include <utility>
-
-//------------------------------------------------------------------------------
+#include <ripple/core/DatabaseCon.h>
 
 namespace ripple {
 
-void
-convertBlobsToTxResult(
-    RelationalDatabase::AccountTxs& to,
-    std::uint32_t ledger_index,
-    std::string const& status,
-    Blob const& rawTxn,
-    Blob const& rawMeta,
-    Application& app);
-
-void
-saveLedgerAsync(Application& app, std::uint32_t seq);
+/**
+ * @brief doVacuumDB Creates, initialises, and performs cleanup on a database.
+ * @param setup Path to the database and other opening parameters.
+ * @return True if the vacuum process completed successfully.
+ */
+bool
+doVacuumDB(DatabaseCon::Setup const& setup);
 
 }  // namespace ripple
 
