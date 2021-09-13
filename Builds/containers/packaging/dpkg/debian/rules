@@ -10,7 +10,9 @@ export CXXFLAGS:=$(subst -Werror=format-security,,$(CXXFLAGS))
 
 %:
 	dh $@ --with systemd
+
 override_dh_systemd_start:
+	dh_systemd_start --no-restart-on-upgrade
 
 override_dh_auto_configure:
 	env
