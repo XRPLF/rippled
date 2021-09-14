@@ -171,6 +171,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6b50b5ccd10ecfff2c4b50f6ebdf1923"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a6b50b5ccd10ecfff2c4b50f6ebdf1923">relay</a> (protocol::TMValidation &amp;m, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;uid, <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;validator)=0</td></tr>
 <tr class="memdesc:a6b50b5ccd10ecfff2c4b50f6ebdf1923"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relay a validation.  <a href="classripple_1_1Overlay.html#a6b50b5ccd10ecfff2c4b50f6ebdf1923">More...</a><br /></td></tr>
 <tr class="separator:a6b50b5ccd10ecfff2c4b50f6ebdf1923"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a876aee0822b3e6b83e236f5ea531ae50"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a876aee0822b3e6b83e236f5ea531ae50">relay</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, protocol::TMTransaction &amp;m, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; const &amp;toSkip)=0</td></tr>
+<tr class="memdesc:a876aee0822b3e6b83e236f5ea531ae50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relay a transaction.  <a href="classripple_1_1Overlay.html#a876aee0822b3e6b83e236f5ea531ae50">More...</a><br /></td></tr>
+<tr class="separator:a876aee0822b3e6b83e236f5ea531ae50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace401ddd7d28c698af38c35ef8fc06e3"><td class="memTemplParams" colspan="2">template&lt;class Function &gt; </td></tr>
 <tr class="memitem:ace401ddd7d28c698af38c35ef8fc06e3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#ace401ddd7d28c698af38c35ef8fc06e3">foreach</a> (Function f) const</td></tr>
 <tr class="memdesc:ace401ddd7d28c698af38c35ef8fc06e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit every active peer.  <a href="classripple_1_1Overlay.html#ace401ddd7d28c698af38c35ef8fc06e3">More...</a><br /></td></tr>
@@ -195,6 +198,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1f7a3d7c70388657579d552b82f159b2"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a1f7a3d7c70388657579d552b82f159b2">networkID</a> () const =0</td></tr>
 <tr class="memdesc:a1f7a3d7c70388657579d552b82f159b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the ID of the network this server is configured for, if any.  <a href="classripple_1_1Overlay.html#a1f7a3d7c70388657579d552b82f159b2">More...</a><br /></td></tr>
 <tr class="separator:a1f7a3d7c70388657579d552b82f159b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a856f1e66387e4ad7ff78cf03e16c7029"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a856f1e66387e4ad7ff78cf03e16c7029">txMetrics</a> () const =0</td></tr>
+<tr class="memdesc:a856f1e66387e4ad7ff78cf03e16c7029"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns tx reduce-relay metrics.  <a href="classripple_1_1Overlay.html#a856f1e66387e4ad7ff78cf03e16c7029">More...</a><br /></td></tr>
+<tr class="separator:a856f1e66387e4ad7ff78cf03e16c7029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5672372869d3a59c7cd2f7ce3056ae33"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">name</a> () const</td></tr>
 <tr class="memdesc:a5672372869d3a59c7cd2f7ce3056ae33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of this source.  <a href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">More...</a><br /></td></tr>
 <tr class="separator:a5672372869d3a59c7cd2f7ce3056ae33"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -830,7 +836,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a2296ce3fbc4885e2616265ff3dd8c723"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2296ce3fbc4885e2616265ff3dd8c723">&#9670;&nbsp;</a></span>relay() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2296ce3fbc4885e2616265ff3dd8c723">&#9670;&nbsp;</a></span>relay() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -885,7 +891,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a6b50b5ccd10ecfff2c4b50f6ebdf1923"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b50b5ccd10ecfff2c4b50f6ebdf1923">&#9670;&nbsp;</a></span>relay() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b50b5ccd10ecfff2c4b50f6ebdf1923">&#9670;&nbsp;</a></span>relay() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -939,6 +945,60 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a876aee0822b3e6b83e236f5ea531ae50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a876aee0822b3e6b83e236f5ea531ae50">&#9670;&nbsp;</a></span>relay() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::Overlay::relay </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">protocol::TMTransaction &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>toSkip</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Relay a transaction. </p>
+<p>If the tx reduce-relay feature is enabled then randomly select peers to relay to and queue transaction's hash for the rest of the peers. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">hash</td><td>transaction's hash </td></tr>
+    <tr><td class="paramname">m</td><td>transaction's protocol message to relay </td></tr>
+    <tr><td class="paramname">toSkip</td><td>peers which have already seen this transaction </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#a960a7f99133f717f3cd36a1cfd4e48d6">ripple::OverlayImpl</a>.</p>
+
+</div>
+</div>
 <a id="ace401ddd7d28c698af38c35ef8fc06e3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ace401ddd7d28c698af38c35ef8fc06e3">&#9670;&nbsp;</a></span>foreach()</h2>
 
@@ -966,7 +1026,7 @@ template&lt;class Function &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Overlay_8h_source.html#l00185">185</a> of file <a class="el" href="Overlay_8h_source.html">Overlay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Overlay_8h_source.html#l00198">198</a> of file <a class="el" href="Overlay_8h_source.html">Overlay.h</a>.</p>
 
 </div>
 </div>
@@ -1211,6 +1271,36 @@ template&lt;class Function &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>The numerical identifier configured by the administrator of the server. An unseated optional, otherwise. </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#ab719d5e97c8ed68bd0817b852f533f7b">ripple::OverlayImpl</a>.</p>
+
+</div>
+</div>
+<a id="a856f1e66387e4ad7ff78cf03e16c7029"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a856f1e66387e4ad7ff78cf03e16c7029">&#9670;&nbsp;</a></span>txMetrics()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::Overlay::txMetrics </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns tx reduce-relay metrics. </p>
+<dl class="section return"><dt>Returns</dt><dd>json value of tx reduce-relay metrics </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#a21576de278ccc1cef61adc539af9b0c0">ripple::OverlayImpl</a>.</p>
 
 </div>
 </div>

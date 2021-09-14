@@ -169,6 +169,17 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a68a60f4466fd52acbb13db210852c23e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c207543e9db7f2cf8876bc780774c4c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a6c207543e9db7f2cf8876bc780774c4c">compressionEnabled</a> () const override</td></tr>
 <tr class="separator:a6c207543e9db7f2cf8876bc780774c4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a314bde933a8f3c3863aeca66810c5d80"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a314bde933a8f3c3863aeca66810c5d80">txReduceRelayEnabled</a> () const override</td></tr>
+<tr class="separator:a314bde933a8f3c3863aeca66810c5d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6de1fc8bedd7d84aad85219194bbdc1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#af6de1fc8bedd7d84aad85219194bbdc1">sendTxQueue</a> () override</td></tr>
+<tr class="memdesc:af6de1fc8bedd7d84aad85219194bbdc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send aggregated transactions' hashes.  <a href="classripple_1_1test_1_1PeerPartial.html#af6de1fc8bedd7d84aad85219194bbdc1">More...</a><br /></td></tr>
+<tr class="separator:af6de1fc8bedd7d84aad85219194bbdc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f8b4bd40da9cfe3d58505e91e993d5f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a4f8b4bd40da9cfe3d58505e91e993d5f">addTxQueue</a> (const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;) override</td></tr>
+<tr class="memdesc:a4f8b4bd40da9cfe3d58505e91e993d5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Aggregate transaction's hash.  <a href="classripple_1_1test_1_1PeerPartial.html#a4f8b4bd40da9cfe3d58505e91e993d5f">More...</a><br /></td></tr>
+<tr class="separator:a4f8b4bd40da9cfe3d58505e91e993d5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbd18f7342c0b7daa8364492fe41c65a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#abbd18f7342c0b7daa8364492fe41c65a">removeTxQueue</a> (const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;) override</td></tr>
+<tr class="memdesc:abbd18f7342c0b7daa8364492fe41c65a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove hash from the transactions' hashes queue.  <a href="classripple_1_1test_1_1PeerPartial.html#abbd18f7342c0b7daa8364492fe41c65a">More...</a><br /></td></tr>
+<tr class="separator:abbd18f7342c0b7daa8364492fe41c65a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
@@ -195,7 +206,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00431">431</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00448">448</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a9b9d2acd941fc5e7a4bd490929a69622"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9b9d2acd941fc5e7a4bd490929a69622">&#9670;&nbsp;</a></span>id_t</h2>
@@ -209,7 +220,7 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00434">434</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00451">451</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -264,7 +275,7 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00435">435</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00452">452</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -319,7 +330,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#aee121254a095838be2d8040bfdfacc79">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00444">444</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00461">461</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -346,7 +357,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00450">450</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00467">467</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -388,7 +399,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a696e6416ee4c0a413af8626f1eea4c9c">ripple::test::PeerPartial</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00457">457</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00474">474</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -420,7 +431,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a0252e0b91b31834a3e742c45c88d4d84">ripple::test::PeerPartial</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00469">469</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00486">486</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1028,6 +1039,130 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a314bde933a8f3c3863aeca66810c5d80"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a314bde933a8f3c3863aeca66810c5d80">&#9670;&nbsp;</a></span>txReduceRelayEnabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::test::PeerPartial::txReduceRelayEnabled </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#a0cb56d7585b19a684f6476830125b835">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00163">163</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af6de1fc8bedd7d84aad85219194bbdc1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6de1fc8bedd7d84aad85219194bbdc1">&#9670;&nbsp;</a></span>sendTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::PeerPartial::sendTxQueue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send aggregated transactions' hashes. </p>
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#a9cec6a68be4e99382787eec3571a36b4">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00168">168</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4f8b4bd40da9cfe3d58505e91e993d5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f8b4bd40da9cfe3d58505e91e993d5f">&#9670;&nbsp;</a></span>addTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::PeerPartial::addTxQueue </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Aggregate transaction's hash. </p>
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#a910dd384abd01647432192b7e05b3748">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00172">172</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="abbd18f7342c0b7daa8364492fe41c65a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbd18f7342c0b7daa8364492fe41c65a">&#9670;&nbsp;</a></span>removeTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::PeerPartial::removeTxQueue </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove hash from the transactions' hashes queue. </p>
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00176">176</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="ac2d865ca59dc6b0d79c5cb0b14eda097"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac2d865ca59dc6b0d79c5cb0b14eda097">&#9670;&nbsp;</a></span>sid_</h2>
@@ -1049,7 +1184,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00481">481</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00498">498</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1208,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00482">482</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00499">499</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1097,7 +1232,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00483">483</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00500">500</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1121,7 +1256,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00484">484</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00501">501</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>

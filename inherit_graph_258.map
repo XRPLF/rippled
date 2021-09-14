@@ -1,3 +1,18 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1ETLSource.html" title="This class manages a connection to a single ETL source." alt="" coords="5,5,140,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="47,208,122,235"/>
+<area shape="rect" id="node2" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="221,15,410,57"/>
+<area shape="rect" id="node3" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="244,263,387,289"/>
+<area shape="rect" id="node4" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="244,212,387,239"/>
+<area shape="rect" id="node5" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="221,81,410,122"/>
+<area shape="rect" id="node6" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="221,146,410,187"/>
+<area shape="rect" id="node7" title=" " alt="" coords="43,5,126,32"/>
+<area shape="rect" id="node8" title=" " alt="" coords="5,157,164,184"/>
+<area shape="rect" id="node9" title=" " alt="" coords="45,56,124,83"/>
+<area shape="rect" id="node10" title=" " alt="" coords="24,288,145,315"/>
+<area shape="rect" id="node11" href="$structripple_1_1Rate.html" title="Represents a transfer rate." alt="" coords="267,313,364,340"/>
+<area shape="rect" id="node12" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="233,365,398,406"/>
+<area shape="rect" id="node13" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="228,430,403,471"/>
+<area shape="rect" id="node14" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="212,495,419,537"/>
+<area shape="rect" id="node15" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="222,561,409,602"/>
+<area shape="rect" id="node16" title=" " alt="" coords="25,107,144,133"/>
 </map>

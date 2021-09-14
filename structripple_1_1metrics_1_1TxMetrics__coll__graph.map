@@ -1,0 +1,8 @@
+<map id="ripple::metrics::TxMetrics" name="ripple::metrics::TxMetrics">
+<area shape="rect" id="node1" title="Run transaction reduce&#45;relay feature related metrics." alt="" coords="227,393,414,420"/>
+<area shape="rect" id="node2" href="$structripple_1_1metrics_1_1MultipleMetrics.html" title="Run two metrics." alt="" coords="233,222,409,263"/>
+<area shape="rect" id="node3" href="$structripple_1_1metrics_1_1SingleMetrics.html" title="Run single metrics rolling average." alt="" coords="14,109,225,136"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,235,32"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="433,229,525,256"/>
+</map>

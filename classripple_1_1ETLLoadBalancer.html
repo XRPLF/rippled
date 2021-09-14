@@ -135,9 +135,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad200aaca546601e212a973c0cf374178"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc3fc877fa56c57d21d8040ad7b247e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ETLLoadBalancer.html#adc3fc877fa56c57d21d8040ad7b247e6">stop</a> ()</td></tr>
 <tr class="separator:adc3fc877fa56c57d21d8040ad7b247e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a372869d4391b3328dc926200346aa2e9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ETLLoadBalancer.html#a372869d4391b3328dc926200346aa2e9">shouldPropagateTxnStream</a> (<a class="el" href="classripple_1_1ETLSource.html">ETLSource</a> *in) const</td></tr>
-<tr class="memdesc:a372869d4391b3328dc926200346aa2e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether messages received on the transactions_proposed stream should be forwarded to subscribing clients.  <a href="classripple_1_1ETLLoadBalancer.html#a372869d4391b3328dc926200346aa2e9">More...</a><br /></td></tr>
-<tr class="separator:a372869d4391b3328dc926200346aa2e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6df0bc04d07bc79676660e57894cd53"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ETLLoadBalancer.html#ab6df0bc04d07bc79676660e57894cd53">shouldPropagateStream</a> (<a class="el" href="classripple_1_1ETLSource.html">ETLSource</a> *in) const</td></tr>
+<tr class="memdesc:ab6df0bc04d07bc79676660e57894cd53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether messages received on the transactions_proposed stream should be forwarded to subscribing clients.  <a href="classripple_1_1ETLLoadBalancer.html#ab6df0bc04d07bc79676660e57894cd53">More...</a><br /></td></tr>
+<tr class="separator:ab6df0bc04d07bc79676660e57894cd53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad50b94eccab1d17847b3a3683ff50d0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ETLLoadBalancer.html#ad50b94eccab1d17847b3a3683ff50d0b">toJson</a> () const</td></tr>
 <tr class="separator:ad50b94eccab1d17847b3a3683ff50d0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6215bb2c863dbf41eaa165fe820960f6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; org::xrpl::rpc::v1::XRPLedgerAPIService::Stub &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ETLLoadBalancer.html#a6215bb2c863dbf41eaa165fe820960f6">getP2pForwardingStub</a> () const</td></tr>
@@ -185,7 +185,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00630">630</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00650">650</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -232,7 +232,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00637">637</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00657">657</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -271,7 +271,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00650">650</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00670">670</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -310,7 +310,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00660">660</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00680">680</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -350,7 +350,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the extracted data, if extraction was successful. If the ledger was found in the database or the server is shutting down, the optional will be empty </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00679">679</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00699">699</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -371,7 +371,7 @@ Private Attributes</h2></td></tr>
 
 <p>Setup all of the ETL sources and subscribe to the necessary streams. </p>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00938">938</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00958">958</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -390,18 +390,18 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00945">945</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00965">965</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a372869d4391b3328dc926200346aa2e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a372869d4391b3328dc926200346aa2e9">&#9670;&nbsp;</a></span>shouldPropagateTxnStream()</h2>
+<a id="ab6df0bc04d07bc79676660e57894cd53"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6df0bc04d07bc79676660e57894cd53">&#9670;&nbsp;</a></span>shouldPropagateStream()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::ETLLoadBalancer::shouldPropagateTxnStream </td>
+          <td class="memname">bool ripple::ETLLoadBalancer::shouldPropagateStream </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1ETLSource.html">ETLSource</a> *&#160;</td>
           <td class="paramname"><em>in</em></td><td>)</td>
@@ -411,7 +411,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Determine whether messages received on the transactions_proposed stream should be forwarded to subscribing clients. </p>
-<p>The server subscribes to transactions_proposed on multiple ETLSources, yet only forwards messages from one source at any given time (to avoid sending duplicate messages to clients). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>The server subscribes to transactions_proposed, validations, and manifests on multiple ETLSources, yet only forwards messages from one source at any given time (to avoid sending duplicate messages to clients). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">in</td><td><a class="el" href="classripple_1_1ETLSource.html" title="This class manages a connection to a single ETL source.">ETLSource</a> in question </td></tr>
   </table>
@@ -460,7 +460,7 @@ Private Attributes</h2></td></tr>
 <p>Randomly select a p2p node to forward a gRPC request to. </p>
 <dl class="section return"><dt>Returns</dt><dd>gRPC stub to forward requests to p2p node </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00713">713</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00733">733</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -489,7 +489,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>response received from p2p node </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00735">735</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00755">755</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>
@@ -539,7 +539,7 @@ template&lt;class Func &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if f was eventually executed successfully. false if the ledger was found in the database or the server is shutting down </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00867">867</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLSource_8cpp_source.html#l00887">887</a> of file <a class="el" href="ETLSource_8cpp_source.html">ETLSource.cpp</a>.</p>
 
 </div>
 </div>

@@ -294,53 +294,97 @@ $(function() {
 <div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            static_assert(<a class="code" href="structripple_1_1test_1_1base__uint__test.html#ad0f1429947089bc9aa7b78825561b3d9">test96</a>(<span class="stringliteral">&quot;00000000000000000000000~&quot;</span>).signum() == 1);</div>
 <div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="preprocessor">#endif  // 0</span></div>
 <div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <span class="comment">// Verify that constexpr base_uints interpret a string the same</span></div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            <span class="comment">// way parseHex() does.</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            <span class="keyword">struct </span>StrBaseUint</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            {</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                <span class="keywordtype">char</span> <span class="keyword">const</span>* <span class="keyword">const</span> str;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                <a class="code" href="classripple_1_1base__uint.html">test96</a> tst;</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                constexpr StrBaseUint(<span class="keywordtype">char</span> <span class="keyword">const</span>* s) : str(s), tst(s)</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                {</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                }</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            };</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            constexpr StrBaseUint testCases[] = {</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                <span class="stringliteral">&quot;000000000000000000000000&quot;</span>,</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                <span class="stringliteral">&quot;000000000000000000000001&quot;</span>,</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                <span class="stringliteral">&quot;fedcba9876543210ABCDEF91&quot;</span>,</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                <span class="stringliteral">&quot;19FEDCBA0123456789abcdef&quot;</span>,</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                <span class="stringliteral">&quot;800000000000000000000000&quot;</span>,</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                <span class="stringliteral">&quot;fFfFfFfFfFfFfFfFfFfFfFfF&quot;</span>};</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            <span class="keywordflow">for</span> (StrBaseUint <span class="keyword">const</span>&amp; t : testCases)</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            {</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                <a class="code" href="classripple_1_1base__uint.html">test96</a> t96;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                BEAST_EXPECT(t96.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(t.str));</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                BEAST_EXPECT(t96 == t.tst);</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            }</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        }</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    }</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;};</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1base__uint.html">base_uint</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <span class="comment">// Using the constexpr constructor in a non-constexpr context</span></div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            <span class="comment">// with an error in the parsing throws an exception.</span></div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            {</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                <span class="comment">// Invalid length for string.</span></div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                <span class="keywordtype">bool</span> caught = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                {</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    <span class="comment">// Try to prevent constant evaluation.</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char&gt;</a> str(23, <span class="charliteral">&#39;7&#39;</span>);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> sView(str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                    [[maybe_unused]] <a class="code" href="classripple_1_1base__uint.html">test96</a> t96(sView);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                }</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/invalid_argument.html">std::invalid_argument</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                {</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                    BEAST_EXPECT(</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                        e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() ==</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;invalid length for hex string&quot;</span>));</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                    caught = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                }</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                BEAST_EXPECT(caught);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            }</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            {</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                <span class="comment">// Invalid character in string.</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                <span class="keywordtype">bool</span> caught = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                {</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                    <span class="comment">// Try to prevent constant evaluation.</span></div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;char&gt;</a> str(23, <span class="charliteral">&#39;7&#39;</span>);</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                    str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(<span class="charliteral">&#39;G&#39;</span>);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> sView(str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), str.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                    [[maybe_unused]] <a class="code" href="classripple_1_1base__uint.html">test96</a> t96(sView);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                }</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/range_error.html">std::range_error</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                {</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                    BEAST_EXPECT(</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                        e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() == <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;invalid hex character&quot;</span>));</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                    caught = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;                }</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                BEAST_EXPECT(caught);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            }</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            <span class="comment">// Verify that constexpr base_uints interpret a string the same</span></div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            <span class="comment">// way parseHex() does.</span></div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            <span class="keyword">struct </span>StrBaseUint</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            {</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;                <span class="keywordtype">char</span> <span class="keyword">const</span>* <span class="keyword">const</span> str;</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                <a class="code" href="classripple_1_1base__uint.html">test96</a> tst;</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                constexpr StrBaseUint(<span class="keywordtype">char</span> <span class="keyword">const</span>* s) : str(s), tst(s)</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                {</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                }</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;            };</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;            constexpr StrBaseUint testCases[] = {</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                <span class="stringliteral">&quot;000000000000000000000000&quot;</span>,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                <span class="stringliteral">&quot;000000000000000000000001&quot;</span>,</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                <span class="stringliteral">&quot;fedcba9876543210ABCDEF91&quot;</span>,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                <span class="stringliteral">&quot;19FEDCBA0123456789abcdef&quot;</span>,</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                <span class="stringliteral">&quot;800000000000000000000000&quot;</span>,</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                <span class="stringliteral">&quot;fFfFfFfFfFfFfFfFfFfFfFfF&quot;</span>};</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;            <span class="keywordflow">for</span> (StrBaseUint <span class="keyword">const</span>&amp; t : testCases)</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            {</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                <a class="code" href="classripple_1_1base__uint.html">test96</a> t96;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                BEAST_EXPECT(t96.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(t.str));</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                BEAST_EXPECT(t96 == t.tst);</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            }</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        }</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    }</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;};</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1base__uint.html">base_uint</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160; </div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astructripple_1_1test_1_1base__uint__test_html"><div class="ttname"><a href="structripple_1_1test_1_1base__uint__test.html">ripple::test::base_uint_test</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint__test_8cpp_source.html#l00057">base_uint_test.cpp:57</a></div></div>
+<div class="ttc" id="abasic_string_view_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aunordered_set_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astructripple_1_1test_1_1nonhash_html_a1c3fa150f043890e7b5b6025e99b2acd"><div class="ttname"><a href="structripple_1_1test_1_1nonhash.html#a1c3fa150f043890e7b5b6025e99b2acd">ripple::test::nonhash::WIDTH</a></div><div class="ttdeci">static constexpr std::size_t WIDTH</div><div class="ttdef"><b>Definition:</b> <a href="base__uint__test_8cpp_source.html#l00038">base_uint_test.cpp:38</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt; unsigned char &gt;</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set/size.html">std::unordered_set::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="ais_assignable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_assignable.html">std::is_assignable</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00074">base_uint.h:74</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html_a4b9e8d36a37963d48be8f081d99257bf"><div class="ttname"><a href="classripple_1_1base__uint.html#a4b9e8d36a37963d48be8f081d99257bf">ripple::base_uint::bytes</a></div><div class="ttdeci">static constexpr std::size_t bytes</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00097">base_uint.h:97</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad584345ad1d39fa2234a298a991f8e66"><div class="ttname"><a href="namespaceripple.html#ad584345ad1d39fa2234a298a991f8e66">ripple::compare</a></div><div class="ttdeci">int compare(base_uint&lt; Bits, Tag &gt; const &amp;a, base_uint&lt; Bits, Tag &gt; const &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00530">base_uint.h:530</a></div></div>
+<div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00075">base_uint.h:75</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html_a4b9e8d36a37963d48be8f081d99257bf"><div class="ttname"><a href="classripple_1_1base__uint.html#a4b9e8d36a37963d48be8f081d99257bf">ripple::base_uint::bytes</a></div><div class="ttdeci">static constexpr std::size_t bytes</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00098">base_uint.h:98</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad584345ad1d39fa2234a298a991f8e66"><div class="ttname"><a href="namespaceripple.html#ad584345ad1d39fa2234a298a991f8e66">ripple::compare</a></div><div class="ttdeci">int compare(base_uint&lt; Bits, Tag &gt; const &amp;a, base_uint&lt; Bits, Tag &gt; const &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00533">base_uint.h:533</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt; std::uint8_t, WIDTH &gt;</a></div></div>
+<div class="ttc" id="ainvalid_argument_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/invalid_argument.html">std::invalid_argument</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astructripple_1_1test_1_1nonhash_html_a2e7ebf1142ed70d907ade5d5c53e38ea"><div class="ttname"><a href="structripple_1_1test_1_1nonhash.html#a2e7ebf1142ed70d907ade5d5c53e38ea">ripple::test::nonhash::endian</a></div><div class="ttdeci">static constexpr const auto endian</div><div class="ttdef"><b>Definition:</b> <a href="base__uint__test_8cpp_source.html#l00037">base_uint_test.cpp:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html_a846cfc85f78f671c86bba3512a706f0d"><div class="ttname"><a href="classripple_1_1base__uint.html#a846cfc85f78f671c86bba3512a706f0d">ripple::base_uint::signum</a></div><div class="ttdeci">constexpr int signum() const</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00317">base_uint.h:317</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html_a846cfc85f78f671c86bba3512a706f0d"><div class="ttname"><a href="classripple_1_1base__uint.html#a846cfc85f78f671c86bba3512a706f0d">ripple::base_uint::signum</a></div><div class="ttdeci">constexpr int signum() const</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00320">base_uint.h:320</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1base__uint__test_html_ad0f1429947089bc9aa7b78825561b3d9"><div class="ttname"><a href="structripple_1_1test_1_1base__uint__test.html#ad0f1429947089bc9aa7b78825561b3d9">ripple::test::base_uint_test::test96</a></div><div class="ttdeci">base_uint&lt; 96 &gt; test96</div><div class="ttdef"><b>Definition:</b> <a href="base__uint__test_8cpp_source.html#l00059">base_uint_test.cpp:59</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1nonhash_html_a3ff4472cb2f7cb7417689a01222809b9"><div class="ttname"><a href="structripple_1_1test_1_1nonhash.html#a3ff4472cb2f7cb7417689a01222809b9">ripple::test::nonhash::nonhash</a></div><div class="ttdeci">nonhash()=default</div></div>
 <div class="ttc" id="ais_copy_constructible_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_copy_constructible.html">std::is_copy_constructible</a></div></div>
@@ -352,16 +396,18 @@ $(function() {
 <div class="ttc" id="ais_constructible_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_constructible.html">std::is_constructible</a></div></div>
 <div class="ttc" id="acomplex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/complex.html">complex</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00039">app/misc/impl/Manifest.cpp:39</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00038">app/misc/impl/Manifest.cpp:38</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array/end.html">std::array::end</a></div><div class="ttdeci">T end(T... args)</div></div>
 <div class="ttc" id="ais_copy_assignable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_copy_assignable.html">std::is_copy_assignable</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html_a698d3fd0c0f0155995c87d2f48ac90d5"><div class="ttname"><a href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">ripple::base_uint::parseHex</a></div><div class="ttdeci">constexpr bool parseHex(std::string_view sv)</div><div class="ttdoc">Parse a hex string into a base_uint.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00472">base_uint.h:472</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html_a698d3fd0c0f0155995c87d2f48ac90d5"><div class="ttname"><a href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">ripple::base_uint::parseHex</a></div><div class="ttdeci">constexpr bool parseHex(std::string_view sv)</div><div class="ttdoc">Parse a hex string into a base_uint.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00475">base_uint.h:475</a></div></div>
 <div class="ttc" id="aprev_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/prev.html">std::prev</a></div><div class="ttdeci">T prev(T... args)</div></div>
+<div class="ttc" id="arange_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/range_error.html">std::range_error</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a9c3a01178261b6e8a98c0ea99f01d154"><div class="ttname"><a href="namespaceripple.html#a9c3a01178261b6e8a98c0ea99f01d154">ripple::hash_append</a></div><div class="ttdeci">void hash_append(Hasher &amp;h, ValidatorBlobInfo const &amp;blobInfo)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8h_source.html#l00897">ValidatorList.h:897</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1nonhash_html_ad1b551c357d8f9e8e8cde83bfb3c8dba"><div class="ttname"><a href="structripple_1_1test_1_1nonhash.html#ad1b551c357d8f9e8e8cde83bfb3c8dba">ripple::test::nonhash::data_</a></div><div class="ttdeci">std::array&lt; std::uint8_t, WIDTH &gt; data_</div><div class="ttdef"><b>Definition:</b> <a href="base__uint__test_8cpp_source.html#l00040">base_uint_test.cpp:40</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1base__uint__test_html_a42578831586d37f561728089f5a46e6a"><div class="ttname"><a href="structripple_1_1test_1_1base__uint__test.html#a42578831586d37f561728089f5a46e6a">ripple::test::base_uint_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="base__uint__test_8cpp_source.html#l00064">base_uint_test.cpp:64</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array/data.html">std::array::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
+<div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::invalid_argument::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a36e90e9cdf2adf7993483b3190ee8e21"><div class="ttname"><a href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(DeliverMin, app, ripple)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

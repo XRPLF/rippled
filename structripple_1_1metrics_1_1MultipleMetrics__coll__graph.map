@@ -1,0 +1,6 @@
+<map id="ripple::metrics::MultipleMetrics" name="ripple::metrics::MultipleMetrics">
+<area shape="rect" id="node1" title="Run two metrics." alt="" coords="31,213,207,255"/>
+<area shape="rect" id="node2" href="$structripple_1_1metrics_1_1SingleMetrics.html" title="Run single metrics rolling average." alt="" coords="14,109,225,136"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,235,32"/>
+</map>

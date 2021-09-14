@@ -148,6 +148,17 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aeab3b4b097662cd5f9ec0bfc2041bb10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6b951a8134eac2f989056efb31bb7e2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#ae6b951a8134eac2f989056efb31bb7e2">compressionEnabled</a> () const override</td></tr>
 <tr class="separator:ae6b951a8134eac2f989056efb31bb7e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9564cc1d134445c828262c31371d115"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#af9564cc1d134445c828262c31371d115">sendTxQueue</a> () override</td></tr>
+<tr class="memdesc:af9564cc1d134445c828262c31371d115"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send aggregated transactions' hashes.  <a href="classripple_1_1test_1_1TestPeer.html#af9564cc1d134445c828262c31371d115">More...</a><br /></td></tr>
+<tr class="separator:af9564cc1d134445c828262c31371d115"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7fff7d3f7018080efe29cca5d8eba11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#aa7fff7d3f7018080efe29cca5d8eba11">addTxQueue</a> (const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;) override</td></tr>
+<tr class="memdesc:aa7fff7d3f7018080efe29cca5d8eba11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Aggregate transaction's hash.  <a href="classripple_1_1test_1_1TestPeer.html#aa7fff7d3f7018080efe29cca5d8eba11">More...</a><br /></td></tr>
+<tr class="separator:aa7fff7d3f7018080efe29cca5d8eba11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a391311e2939da285e6502c94d9f1c01a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a391311e2939da285e6502c94d9f1c01a">removeTxQueue</a> (const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;) override</td></tr>
+<tr class="memdesc:a391311e2939da285e6502c94d9f1c01a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove hash from the transactions' hashes queue.  <a href="classripple_1_1test_1_1TestPeer.html#a391311e2939da285e6502c94d9f1c01a">More...</a><br /></td></tr>
+<tr class="separator:a391311e2939da285e6502c94d9f1c01a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86cd77871fad7677f30757f903357ae2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a86cd77871fad7677f30757f903357ae2">txReduceRelayEnabled</a> () const override</td></tr>
+<tr class="separator:a86cd77871fad7677f30757f903357ae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -838,6 +849,130 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="af9564cc1d134445c828262c31371d115"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9564cc1d134445c828262c31371d115">&#9670;&nbsp;</a></span>sendTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::TestPeer::sendTxQueue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send aggregated transactions' hashes. </p>
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#a9cec6a68be4e99382787eec3571a36b4">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00293">293</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa7fff7d3f7018080efe29cca5d8eba11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7fff7d3f7018080efe29cca5d8eba11">&#9670;&nbsp;</a></span>addTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::TestPeer::addTxQueue </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Aggregate transaction's hash. </p>
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#a910dd384abd01647432192b7e05b3748">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00297">297</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a391311e2939da285e6502c94d9f1c01a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a391311e2939da285e6502c94d9f1c01a">&#9670;&nbsp;</a></span>removeTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::TestPeer::removeTxQueue </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove hash from the transactions' hashes queue. </p>
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00301">301</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a86cd77871fad7677f30757f903357ae2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86cd77871fad7677f30757f903357ae2">&#9670;&nbsp;</a></span>txReduceRelayEnabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::test::TestPeer::txReduceRelayEnabled </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1Peer.html#a0cb56d7585b19a684f6476830125b835">ripple::Peer</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00305">305</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a69752edc130b66cf2ec1fb93043882ee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a69752edc130b66cf2ec1fb93043882ee">&#9670;&nbsp;</a></span>ledgerReplayEnabled_</h2>
@@ -851,7 +986,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00293">293</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00310">310</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>

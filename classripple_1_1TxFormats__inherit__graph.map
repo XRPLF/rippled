@@ -1,4 +1,4 @@
 <map id="ripple::TxFormats" name="ripple::TxFormats">
-<area shape="rect" id="node1" title="Manages the list of known transaction formats." alt="" coords="19,95,155,121"/>
-<area shape="rect" id="node2" href="$classripple_1_1KnownFormats.html" title=" " alt="" coords="5,5,169,47"/>
+<area shape="rect" id="node1" title="Manages the list of known transaction formats." alt="" coords="25,95,161,121"/>
+<area shape="rect" id="node2" href="$classripple_1_1KnownFormats.html" title=" " alt="" coords="5,5,180,47"/>
 </map>

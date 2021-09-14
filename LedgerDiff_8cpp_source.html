@@ -133,22 +133,22 @@ $(function() {
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [k, v] : differences)</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">auto</span> <a class="code" href="namespaceripple.html#ae5310ca5604fba73b42fb0de0205d846a2d2dee7af60385a060eae7f556845a8b">diff</a> = response.mutable_ledger_objects()-&gt;add_objects();</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">auto</span> diff = response.mutable_ledger_objects()-&gt;add_objects();</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">auto</span> inBase = v.first;</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keyword">auto</span> inDesired = v.second;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment">// key does not exist in desired</span></div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">if</span> (!inDesired)</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        {</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <a class="code" href="namespaceripple.html#ae5310ca5604fba73b42fb0de0205d846a2d2dee7af60385a060eae7f556845a8b">diff</a>-&gt;set_key(k.data(), k.size());</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            diff-&gt;set_key(k.data(), k.size());</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        }</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">else</span></div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        {</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            assert(inDesired-&gt;size() &gt; 0);</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="code" href="namespaceripple.html#ae5310ca5604fba73b42fb0de0205d846a2d2dee7af60385a060eae7f556845a8b">diff</a>-&gt;set_key(k.data(), k.size());</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            diff-&gt;set_key(k.data(), k.size());</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="keywordflow">if</span> (request.include_blobs())</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                <a class="code" href="namespaceripple.html#ae5310ca5604fba73b42fb0de0205d846a2d2dee7af60385a060eae7f556845a8b">diff</a>-&gt;set_data(inDesired-&gt;data(), inDesired-&gt;size());</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                diff-&gt;set_data(inDesired-&gt;data(), inDesired-&gt;size());</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            }</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        }</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    }</div>
@@ -159,7 +159,6 @@ $(function() {
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae5310ca5604fba73b42fb0de0205d846a2d2dee7af60385a060eae7f556845a8b"><div class="ttname"><a href="namespaceripple.html#ae5310ca5604fba73b42fb0de0205d846a2d2dee7af60385a060eae7f556845a8b">ripple::SBoxCmp::diff</a></div><div class="ttdeci">@ diff</div></div>
 <div class="ttc" id="anamespaceripple_html_aeaa95680c026e10fbdfbbb02300f89b8"><div class="ttname"><a href="namespaceripple.html#aeaa95680c026e10fbdfbbb02300f89b8">ripple::doLedgerDiffGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status &gt; doLedgerDiffGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerDiffRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerDiff_8cpp_source.html#l00006">LedgerDiff.cpp:6</a></div></div>
 <div class="ttc" id="aclassripple_1_1Ledger_html_ab63abcfcbba33c67bb15284381555313"><div class="ttname"><a href="classripple_1_1Ledger.html#ab63abcfcbba33c67bb15284381555313">ripple::Ledger::stateMap</a></div><div class="ttdeci">SHAMap const  &amp; stateMap() const</div><div class="ttdef"><b>Definition:</b> <a href="Ledger_8h_source.html#l00307">Ledger.h:307</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1GRPCContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1GRPCContext.html">ripple::RPC::GRPCContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00070">Context.h:70</a></div></div>

@@ -278,11 +278,14 @@ Private Member Functions</h2></td></tr>
 <tr class="memdesc:ab2471f80190fe950cdb18804dbaee9f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">lastLedgerSeq Returns last ledger sequence for given shard.  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#ab2471f80190fe950cdb18804dbaee9f7">More...</a><br /></td></tr>
 <tr class="separator:ab2471f80190fe950cdb18804dbaee9f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55d0a4053af6d75fa58c282f90180bb7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a55d0a4053af6d75fa58c282f90180bb7">existsLedger</a> ()</td></tr>
-<tr class="memdesc:a55d0a4053af6d75fa58c282f90180bb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">checkoutLedger Checks if node ledger DB exists.  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a55d0a4053af6d75fa58c282f90180bb7">More...</a><br /></td></tr>
+<tr class="memdesc:a55d0a4053af6d75fa58c282f90180bb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">existsLedger Checks if node ledger DB exists.  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a55d0a4053af6d75fa58c282f90180bb7">More...</a><br /></td></tr>
 <tr class="separator:a55d0a4053af6d75fa58c282f90180bb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a734988b736b4d0cb71ddffacbb3479dc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a734988b736b4d0cb71ddffacbb3479dc">existsTransaction</a> ()</td></tr>
-<tr class="memdesc:a734988b736b4d0cb71ddffacbb3479dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">checkoutTransaction Checks if node transaction DB exists.  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a734988b736b4d0cb71ddffacbb3479dc">More...</a><br /></td></tr>
+<tr class="memdesc:a734988b736b4d0cb71ddffacbb3479dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">existsTransaction Checks if node transaction DB exists.  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a734988b736b4d0cb71ddffacbb3479dc">More...</a><br /></td></tr>
 <tr class="separator:a734988b736b4d0cb71ddffacbb3479dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a332b58e27fba7d65a800c916a3c4c85f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a332b58e27fba7d65a800c916a3c4c85f">shardStoreExists</a> ()</td></tr>
+<tr class="memdesc:a332b58e27fba7d65a800c916a3c4c85f"><td class="mdescLeft">&#160;</td><td class="mdescRight">shardStoreExists Checks whether the shard store exists  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a332b58e27fba7d65a800c916a3c4c85f">More...</a><br /></td></tr>
+<tr class="separator:a332b58e27fba7d65a800c916a3c4c85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a085167166031658ec20f0867ed3ed31b"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a085167166031658ec20f0867ed3ed31b">checkoutLedger</a> ()</td></tr>
 <tr class="memdesc:a085167166031658ec20f0867ed3ed31b"><td class="mdescLeft">&#160;</td><td class="mdescRight">checkoutTransaction Checks out and returns node ledger DB.  <a href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a085167166031658ec20f0867ed3ed31b">More...</a><br /></td></tr>
 <tr class="separator:a085167166031658ec20f0867ed3ed31b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -312,6 +315,8 @@ Private Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:af0490b1e89a74ed5931514ff2d36fb41"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#af0490b1e89a74ed5931514ff2d36fb41">app_</a></td></tr>
 <tr class="separator:af0490b1e89a74ed5931514ff2d36fb41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbd68fc46aee9101d9cdf27d97156442"><td class="memItemLeft" align="right" valign="top">const bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#adbd68fc46aee9101d9cdf27d97156442">useTxTables_</a></td></tr>
+<tr class="separator:adbd68fc46aee9101d9cdf27d97156442"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a397066ffa563a476bf06f731041d46a0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a397066ffa563a476bf06f731041d46a0">j_</a></td></tr>
 <tr class="separator:a397066ffa563a476bf06f731041d46a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac68873a0e4760800a636333953ce37d0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#ac68873a0e4760800a636333953ce37d0">lgrdb_</a></td></tr>
@@ -585,7 +590,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a3f927d304043ce7b7f5499ab1820db49">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00451">451</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00464">464</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -617,7 +622,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#aaf17b693bdedbe8a1aeb51e00c7f499f">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00471">471</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00490">490</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -649,7 +654,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a003fadfc176d35281033e5c5110f51d4">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00491">491</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00516">516</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -681,7 +686,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#aa4ec3fcac75481ae862805f34289e80e">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00512">512</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00543">543</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -719,7 +724,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a925efb25de1639b059becd08444dcb9f">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00532">532</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00566">566</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -757,7 +762,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a77ecacdc4eca4bc5d1d62495aa5a528f">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00551">551</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00590">590</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -795,7 +800,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a64b8aedd1beb6fc95d71bc5be1f9bc85">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00572">572</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00612">612</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -833,7 +838,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a498aa027d3f6575296c05e6b0ed1acbe">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00594">594</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00638">638</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -865,7 +870,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a5b56eeaf91337e1be10a832e2cae53e4">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00617">617</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00665">665</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -897,7 +902,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a5f2a7f64959fcf37bf4b691e7b22947b">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00637">637</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00691">691</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -929,7 +934,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a2ef6a4489f6aac51847eff211727cedf">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00657">657</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00718">718</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -979,7 +984,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a0cb68876126213372ba458923f6b21bd">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00684">684</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00748">748</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +1023,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a1704b3edfa1eebb97e2772a1362ef781">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00721">721</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00784">784</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1050,7 +1055,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a1cf137dce25e130bffe96e816ab67408">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00740">740</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00806">806</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1089,7 +1094,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a9e50dc6228f9c8281a49f1aaf209c1b5">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00765">765</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00834">834</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1128,7 +1133,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a8916d7230a6c6a586c2fea05fa22098d">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00793">793</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00865">865</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1156,7 +1161,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00820">820</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00895">895</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1195,7 +1200,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#ae99d6906c4f05898cf938bb4a701686e">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00852">852</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00925">925</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1234,7 +1239,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a21bc1426669349600fc43a631f4d624d">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00871">871</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00947">947</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1284,7 +1289,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#ad24ab2dbf3df1b3c413fb7974261d903">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00890">890</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00969">969</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1323,7 +1328,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a3eab4bbd8ddad6e25c276c23145a47d7">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00920">920</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01003">1003</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1362,7 +1367,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a6923fedab7e86972d4262314a464e721">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00955">955</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01044">1044</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1401,7 +1406,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#af697cb0869cbd9e32654751f99fc96da">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01004">1004</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01105">1105</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1440,7 +1445,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#af183009c111395777d3e2d1df488474d">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01053">1053</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01166">1166</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1479,7 +1484,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#abbc8baec96a06197d50c405c31343576">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01098">1098</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01223">1223</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1518,7 +1523,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#ac3dc0b7f20eed2597568bfb8c72f2822">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01145">1145</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01282">1282</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1557,7 +1562,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#adc9ea34423cebb858a9e2b57f892123e">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01209">1209</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01352">1352</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1596,7 +1601,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a4067d3b38b2241830ac681c1286115da">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01272">1272</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01422">1422</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1635,7 +1640,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a7ccbf409a71eb13cb3910b68117f08b0">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01335">1335</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01491">1491</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1679,7 +1684,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01395">1395</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01558">1558</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1718,7 +1723,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#a732cc66fd22621337d40ac1f9ad8fd03">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01443">1443</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01607">1607</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1757,7 +1762,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterface.html#ae82bbbaf83168411afc4e866d6c895e5">ripple::RelationalDBInterface</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01460">1460</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01627">1627</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1789,7 +1794,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a88fe22cab881c92758e57cb24551f772">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01477">1477</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01650">1650</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1821,7 +1826,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#adce610a20d1e0305ca30ea671bef169e">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01496">1496</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01672">1672</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1853,7 +1858,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a28e5e405df5380d3cf3d6ff240a14849">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01515">1515</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01694">1694</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1884,7 +1889,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#a2f740aec1f490b1109aefdba62d38334">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01534">1534</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01719">1719</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1915,7 +1920,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1RelationalDBInterfaceSqlite.html#ad8cf31e34f4fc754ce2a2dea10b9d586">ripple::RelationalDBInterfaceSqlite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01540">1540</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l01725">1725</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1970,7 +1975,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if node databases opened succsessfully. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00423">423</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00436">436</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2025,7 +2030,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if node databases opened successfully. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00436">436</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00449">449</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2062,7 +2067,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Shard index. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00232">232</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00235">235</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2099,7 +2104,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>First ledger sequence. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00243">243</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00246">246</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2136,7 +2141,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Last ledger sequence. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00254">254</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00257">257</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2163,10 +2168,10 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>checkoutLedger Checks if node ledger DB exists. </p>
+<p>existsLedger Checks if node ledger DB exists. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if node ledger DB exists. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00264">264</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00267">267</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2193,10 +2198,40 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>checkoutTransaction Checks if node transaction DB exists. </p>
+<p>existsTransaction Checks if node transaction DB exists. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if node transaction DB exists. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00274">274</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00277">277</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a332b58e27fba7d65a800c916a3c4c85f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a332b58e27fba7d65a800c916a3c4c85f">&#9670;&nbsp;</a></span>shardStoreExists()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::RelationalDBInterfaceSqliteImp::shardStoreExists </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>shardStoreExists Checks whether the shard store exists </p>
+<dl class="section return"><dt>Returns</dt><dd>True if the shard store exists </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00287">287</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2226,7 +2261,7 @@ Private Attributes</h2></td></tr>
 <p>checkoutTransaction Checks out and returns node ledger DB. </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> to node ledger DB. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00284">284</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00297">297</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2256,7 +2291,7 @@ Private Attributes</h2></td></tr>
 <p>checkoutTransaction Checks out and returns node transaction DB. </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> to node transaction DB. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00294">294</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00307">307</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2304,7 +2339,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Value returned by callback function. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00308">308</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00321">321</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2352,7 +2387,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Value returned by callback function. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00325">325</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00338">338</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2400,7 +2435,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if each callback function returned true, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00345">345</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00358">358</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2448,7 +2483,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if each callback function returned true, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00367">367</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00380">380</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2496,7 +2531,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if each callback function returned true, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00389">389</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00402">402</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2544,7 +2579,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if each callback function returned true, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00411">411</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00424">424</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2712,7 +2747,31 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00193">193</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00195">195</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adbd68fc46aee9101d9cdf27d97156442"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbd68fc46aee9101d9cdf27d97156442">&#9670;&nbsp;</a></span>useTxTables_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const bool ripple::RelationalDBInterfaceSqliteImp::useTxTables_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00196">196</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2736,7 +2795,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00194">194</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00197">197</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2760,7 +2819,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00195">195</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00198">198</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2784,7 +2843,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00195">195</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00198">198</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2808,7 +2867,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00196">196</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00199">199</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>
@@ -2832,7 +2891,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00196">196</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html#l00199">199</a> of file <a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a>.</p>
 
 </div>
 </div>

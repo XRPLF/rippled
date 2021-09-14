@@ -1,11 +1,11 @@
-<map id="ripple::KnownFormats&lt; KeyType &gt;" name="ripple::KnownFormats&lt; KeyType &gt;">
-<area shape="rect" id="node1" title="Manages a list of known formats." alt="" coords="107,615,271,656"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/forward_list.html" title=" " alt="" coords="105,496,273,552"/>
-<area shape="rect" id="node3" href="$classripple_1_1KnownFormats_1_1Item.html" title="A known format." alt="" coords="107,392,271,433"/>
-<area shape="rect" id="node4" href="$classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="46,303,191,329"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,206,144,233"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="169,199,311,240"/>
-<area shape="rect" id="node7" href="$classripple_1_1SOElement.html" title="An element in a SOTemplate." alt="" coords="171,109,309,136"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="153,5,327,47"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="215,303,302,329"/>
+<map id="ripple::KnownFormats&lt; KeyType, Derived &gt;" name="ripple::KnownFormats&lt; KeyType, Derived &gt;">
+<area shape="rect" id="node1" title="Manages a list of known formats." alt="" coords="5,615,171,656"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="23,303,110,329"/>
+<area shape="rect" id="node4" href="$classripple_1_1KnownFormats_1_1Item.html" title="A known format." alt="" coords="104,392,307,433"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/forward_list.html" title=" " alt="" coords="112,496,280,552"/>
+<area shape="rect" id="node5" href="$classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="134,303,279,329"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="75,206,213,233"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="238,199,381,240"/>
+<area shape="rect" id="node8" href="$classripple_1_1SOElement.html" title="An element in a SOTemplate." alt="" coords="240,109,379,136"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="222,5,397,47"/>
 </map>

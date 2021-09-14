@@ -441,7 +441,7 @@ $(function() {
 <div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            }</div>
 <div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160; </div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            query = {};</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            query.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>(<span class="stringliteral">&quot;&quot;</span>);</div>
 <div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            query &lt;&lt; <span class="stringliteral">&quot;SELECT * FROM &quot;</span> &lt;&lt; tableName &lt;&lt; <span class="stringliteral">&quot; LIMIT 1&quot;</span>;</div>
 <div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;            statement = makeStatement(query.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>().c_str(), 0);</div>
 <div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            fut = cass_session_execute(session_.get(), statement);</div>
@@ -504,7 +504,7 @@ $(function() {
 <div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;<span class="comment">             */</span></div>
 <div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;            cass_future_free(prepare_future);</div>
 <div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160; </div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;            query = {};</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;            query.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>(<span class="stringliteral">&quot;&quot;</span>);</div>
 <div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;            query &lt;&lt; <span class="stringliteral">&quot;SELECT object FROM &quot;</span> &lt;&lt; tableName &lt;&lt; <span class="stringliteral">&quot; WHERE hash = ?&quot;</span>;</div>
 <div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;            prepare_future =</div>
 <div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;                cass_session_prepare(session_.get(), query.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>().c_str());</div>

@@ -181,102 +181,111 @@ $(function() {
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    grpc::Status status = grpc::Status::OK;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple_1_1RPC.html#a104dbc5195143f3a17ab8b9af1ada0fc">RPC::ledgerFromRequest</a>(ledger, context))</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> status = <a class="code" href="namespaceripple_1_1RPC.html#a104dbc5195143f3a17ab8b9af1ada0fc">RPC::ledgerFromRequest</a>(ledger, context))</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    {</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        grpc::Status errorStatus{</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;ledger not found&quot;</span>};</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="keywordflow">return</span> {response, errorStatus};</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    }</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <a class="code" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="code" href="namespaceripple.html#ace117d2fc5a43543b6a33fff822d4854">addRaw</a>(ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>(), s, <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    response.set_ledger_header(s.<a class="code" href="classripple_1_1Serializer.html#a5f8c275ba7cfa80e56671b6935e29242">peekData</a>().<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), s.<a class="code" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordflow">if</span> (request.transactions())</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    {</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; i : ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a5c70dc4b36e757ed6472b0aef460d858">txs</a>)</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        {</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            assert(i.first);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            <span class="keywordflow">if</span> (request.expand())</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            {</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                <span class="keyword">auto</span> txn =</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                    response.mutable_transactions_list()-&gt;add_transactions();</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                <a class="code" href="classripple_1_1Serializer.html">Serializer</a> sTxn = i.first-&gt;getSerializer();</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                txn-&gt;set_transaction_blob(sTxn.<a class="code" href="classripple_1_1Serializer.html#a7caa5feabdbbeb1e2e89e0d0543b5911">data</a>(), sTxn.<a class="code" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                <span class="keywordflow">if</span> (i.second)</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                {</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                    <a class="code" href="classripple_1_1Serializer.html">Serializer</a> sMeta = i.second-&gt;getSerializer();</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                    txn-&gt;set_metadata_blob(sMeta.<a class="code" href="classripple_1_1Serializer.html#a7caa5feabdbbeb1e2e89e0d0543b5911">data</a>(), sMeta.<a class="code" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                }</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            }</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            {</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span>&amp; hash = i.first-&gt;getTransactionID();</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                response.mutable_hashes_list()-&gt;add_hashes(</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    hash.data(), hash.size());</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            }</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        }</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    }</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">if</span> (request.get_objects())</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    {</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> parent =</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#adb95579405e9ad8d61239ffa23b1fb22">getLedgerBySeq</a>(ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#ac284afc905c482953c35c61b459fd85b">seq</a>() - 1);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> base =</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            std::dynamic_pointer_cast&lt;Ledger const&gt;(parent);</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <span class="keywordflow">if</span> (!base)</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        {</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            grpc::Status errorStatus{</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;parent ledger not validated&quot;</span>};</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <span class="keywordflow">return</span> {response, errorStatus};</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        }</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        grpc::Status errorStatus;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">if</span> (status.toErrorCode() == <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>)</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        {</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            errorStatus = grpc::Status(</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                grpc::StatusCode::INVALID_ARGUMENT, status.message());</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        }</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        {</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            errorStatus =</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        }</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">return</span> {response, errorStatus};</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    }</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <a class="code" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <a class="code" href="namespaceripple.html#ace117d2fc5a43543b6a33fff822d4854">addRaw</a>(ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>(), s, <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    response.set_ledger_header(s.<a class="code" href="classripple_1_1Serializer.html#a5f8c275ba7cfa80e56671b6935e29242">peekData</a>().<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), s.<a class="code" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordflow">if</span> (request.transactions())</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; i : ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a5c70dc4b36e757ed6472b0aef460d858">txs</a>)</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        {</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            assert(i.first);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            <span class="keywordflow">if</span> (request.expand())</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            {</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <span class="keyword">auto</span> txn =</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    response.mutable_transactions_list()-&gt;add_transactions();</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                <a class="code" href="classripple_1_1Serializer.html">Serializer</a> sTxn = i.first-&gt;getSerializer();</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                txn-&gt;set_transaction_blob(sTxn.<a class="code" href="classripple_1_1Serializer.html#a7caa5feabdbbeb1e2e89e0d0543b5911">data</a>(), sTxn.<a class="code" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keywordflow">if</span> (i.second)</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                {</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    <a class="code" href="classripple_1_1Serializer.html">Serializer</a> sMeta = i.second-&gt;getSerializer();</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    txn-&gt;set_metadata_blob(sMeta.<a class="code" href="classripple_1_1Serializer.html#a7caa5feabdbbeb1e2e89e0d0543b5911">data</a>(), sMeta.<a class="code" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                }</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            }</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            {</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span>&amp; hash = i.first-&gt;getTransactionID();</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                response.mutable_hashes_list()-&gt;add_hashes(</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    hash.data(), hash.size());</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            }</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        }</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    }</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keywordflow">if</span> (request.get_objects())</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    {</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> parent =</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#adb95579405e9ad8d61239ffa23b1fb22">getLedgerBySeq</a>(ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#ac284afc905c482953c35c61b459fd85b">seq</a>() - 1);</div>
 <div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> desired =</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            std::dynamic_pointer_cast&lt;Ledger const&gt;(ledger);</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        <span class="keywordflow">if</span> (!desired)</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> base =</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            std::dynamic_pointer_cast&lt;Ledger const&gt;(parent);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        <span class="keywordflow">if</span> (!base)</div>
 <div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        {</div>
 <div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            grpc::Status errorStatus{</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;ledger not validated&quot;</span>};</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;parent ledger not validated&quot;</span>};</div>
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;            <span class="keywordflow">return</span> {response, errorStatus};</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        }</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">SHAMap::Delta</a> differences;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <span class="keywordtype">int</span> maxDifferences = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;int&gt;::max</a>();</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <span class="keywordtype">bool</span> res = base-&gt;<a class="code" href="classripple_1_1Ledger.html#ab63abcfcbba33c67bb15284381555313">stateMap</a>().<a class="code" href="classripple_1_1SHAMap.html#a09a39196247b7d775f001db67eb37882">compare</a>(</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            desired-&gt;<a class="code" href="classripple_1_1Ledger.html#ab63abcfcbba33c67bb15284381555313">stateMap</a>(), differences, maxDifferences);</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <span class="keywordflow">if</span> (!res)</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        {</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            grpc::Status errorStatus{</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                grpc::StatusCode::RESOURCE_EXHAUSTED,</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                <span class="stringliteral">&quot;too many differences between specified ledgers&quot;</span>};</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            <span class="keywordflow">return</span> {response, errorStatus};</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        }</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160; </div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [k, v] : differences)</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        {</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            <span class="keyword">auto</span> obj = response.mutable_ledger_objects()-&gt;add_objects();</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            <span class="keyword">auto</span> inBase = v.first;</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            <span class="keyword">auto</span> inDesired = v.second;</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            obj-&gt;set_key(k.data(), k.size());</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <span class="keywordflow">if</span> (inDesired)</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            {</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                assert(inDesired-&gt;size() &gt; 0);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                obj-&gt;set_data(inDesired-&gt;data(), inDesired-&gt;size());</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            }</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        }</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        response.set_skiplist_included(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    }</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    response.set_validated(</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">RPC::isValidated</a>(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>, *ledger, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>));</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keywordflow">return</span> {response, status};</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;}</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> desired =</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            std::dynamic_pointer_cast&lt;Ledger const&gt;(ledger);</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keywordflow">if</span> (!desired)</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        {</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            grpc::Status errorStatus{</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;ledger not validated&quot;</span>};</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;            <span class="keywordflow">return</span> {response, errorStatus};</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        }</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">SHAMap::Delta</a> differences;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="keywordtype">int</span> maxDifferences = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;int&gt;::max</a>();</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160; </div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keywordtype">bool</span> res = base-&gt;<a class="code" href="classripple_1_1Ledger.html#ab63abcfcbba33c67bb15284381555313">stateMap</a>().<a class="code" href="classripple_1_1SHAMap.html#a09a39196247b7d775f001db67eb37882">compare</a>(</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            desired-&gt;<a class="code" href="classripple_1_1Ledger.html#ab63abcfcbba33c67bb15284381555313">stateMap</a>(), differences, maxDifferences);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <span class="keywordflow">if</span> (!res)</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        {</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            grpc::Status errorStatus{</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                grpc::StatusCode::RESOURCE_EXHAUSTED,</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                <span class="stringliteral">&quot;too many differences between specified ledgers&quot;</span>};</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            <span class="keywordflow">return</span> {response, errorStatus};</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        }</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [k, v] : differences)</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        {</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            <span class="keyword">auto</span> obj = response.mutable_ledger_objects()-&gt;add_objects();</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            <span class="keyword">auto</span> inBase = v.first;</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            <span class="keyword">auto</span> inDesired = v.second;</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160; </div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            obj-&gt;set_key(k.data(), k.size());</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <span class="keywordflow">if</span> (inDesired)</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            {</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                assert(inDesired-&gt;size() &gt; 0);</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                obj-&gt;set_data(inDesired-&gt;data(), inDesired-&gt;size());</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            }</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        }</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        response.set_skiplist_included(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    }</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    response.set_validated(</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">RPC::isValidated</a>(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>, *ledger, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>));</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <span class="keywordflow">return</span> {response, status};</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;}</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1ReadView_html_a9263b10d706a447166b229ad8e3b574c"><div class="ttname"><a href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">ripple::ReadView::info</a></div><div class="ttdeci">virtual LedgerInfo const  &amp; info() const =0</div><div class="ttdoc">Returns information about the ledger.</div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34">ripple::LedgerFill::dumpTxrp</a></div><div class="ttdeci">@ dumpTxrp</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00046">LedgerToJson.h:46</a></div></div>
@@ -285,10 +294,10 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1RPC_1_1LedgerHandler_html_af7147e206b4440a32e5e27ef90c08ad5"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerHandler.html#af7147e206b4440a32e5e27ef90c08ad5">ripple::RPC::LedgerHandler::context_</a></div><div class="ttdeci">JsonContext &amp; context_</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHandler_8h_source.html#l00080">LedgerHandler.h:80</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">ripple::rpcINVALID_PARAMS</a></div><div class="ttdeci">@ rpcINVALID_PARAMS</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00084">ErrorCodes.h:84</a></div></div>
-<div class="ttc" id="aclassripple_1_1TxQ_html_a4b49f0851c94b4c15b1826b8fe018a26"><div class="ttname"><a href="classripple_1_1TxQ.html#a4b49f0851c94b4c15b1826b8fe018a26">ripple::TxQ::getTxs</a></div><div class="ttdeci">std::vector&lt; TxDetails &gt; getTxs(ReadView const &amp;view) const</div><div class="ttdoc">Returns information about all transactions currently in the queue.</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8cpp_source.html#l01781">TxQ.cpp:1781</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxQ_html_a4b49f0851c94b4c15b1826b8fe018a26"><div class="ttname"><a href="classripple_1_1TxQ.html#a4b49f0851c94b4c15b1826b8fe018a26">ripple::TxQ::getTxs</a></div><div class="ttdeci">std::vector&lt; TxDetails &gt; getTxs(ReadView const &amp;view) const</div><div class="ttdoc">Returns information about all transactions currently in the queue.</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8cpp_source.html#l01780">TxQ.cpp:1780</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1Resource_html_abde9c8db0d3084fcdbedd459001f7463"><div class="ttname"><a href="namespaceripple_1_1Resource.html#abde9c8db0d3084fcdbedd459001f7463">ripple::Resource::feeMediumBurdenRPC</a></div><div class="ttdeci">const Charge feeMediumBurdenRPC</div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ace117d2fc5a43543b6a33fff822d4854"><div class="ttname"><a href="namespaceripple.html#ace117d2fc5a43543b6a33fff822d4854">ripple::addRaw</a></div><div class="ttdeci">void addRaw(LedgerInfo const &amp;info, Serializer &amp;s, bool includeHash)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00044">View.cpp:44</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ace117d2fc5a43543b6a33fff822d4854"><div class="ttname"><a href="namespaceripple.html#ace117d2fc5a43543b6a33fff822d4854">ripple::addRaw</a></div><div class="ttdeci">void addRaw(LedgerInfo const &amp;info, Serializer &amp;s, bool includeHash)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00164">View.cpp:164</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a53cf66700be4d73f6249db71ed263bc4"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a53cf66700be4d73f6249db71ed263bc4">ripple::RPC::Context::loadType</a></div><div class="ttdeci">Resource::Charge &amp; loadType</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00043">Context.h:43</a></div></div>
 <div class="ttc" id="aclassripple_1_1RPC_1_1LedgerHandler_html_a2bf0ee84650228777feb6f6fe271072b"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerHandler.html#a2bf0ee84650228777feb6f6fe271072b">ripple::RPC::LedgerHandler::ledger_</a></div><div class="ttdeci">std::shared_ptr&lt; ReadView const  &gt; ledger_</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHandler_8h_source.html#l00081">LedgerHandler.h:81</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b">ripple::LedgerFill::dumpQueue</a></div><div class="ttdeci">@ dumpQueue</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00052">LedgerToJson.h:52</a></div></div>
@@ -297,11 +306,11 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f">ripple::rpcTOO_BUSY</a></div><div class="ttdeci">@ rpcTOO_BUSY</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00056">ErrorCodes.h:56</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a20ec6d6aa84f8c76eeb90ad92fe25e20"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a20ec6d6aa84f8c76eeb90ad92fe25e20">ripple::RPC::Context::role</a></div><div class="ttdeci">Role role</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00047">Context.h:47</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a4f938035f8870502b74cc4ad01256a99"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4f938035f8870502b74cc4ad01256a99">ripple::LedgerFill::expand</a></div><div class="ttdeci">@ expand</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00048">LedgerToJson.h:48</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00537">RPCHelpers.cpp:537</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00540">RPCHelpers.cpp:540</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a426bdbb87f6dc2082cf6f418526901cb"><div class="ttname"><a href="classripple_1_1Application.html#a426bdbb87f6dc2082cf6f418526901cb">ripple::Application::getFeeTrack</a></div><div class="ttdeci">virtual LoadFeeTrack &amp; getFeeTrack()=0</div></div>
 <div class="ttc" id="aclassripple_1_1Serializer_html_a7caa5feabdbbeb1e2e89e0d0543b5911"><div class="ttname"><a href="classripple_1_1Serializer.html#a7caa5feabdbbeb1e2e89e0d0543b5911">ripple::Serializer::data</a></div><div class="ttdeci">void const  * data() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00075">Serializer.h:75</a></div></div>
 <div class="ttc" id="aclassripple_1_1LoadFeeTrack_html_a7654f33d98c38af33f47c6b0739eedec"><div class="ttname"><a href="classripple_1_1LoadFeeTrack.html#a7654f33d98c38af33f47c6b0739eedec">ripple::LoadFeeTrack::isLoadedLocal</a></div><div class="ttdeci">bool isLoadedLocal() const</div><div class="ttdef"><b>Definition:</b> <a href="LoadFeeTrack_8h_source.html#l00123">LoadFeeTrack.h:123</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_a8fdf3fd3b2112759b3a0a7fa4d8afa05"><div class="ttname"><a href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config::reporting</a></div><div class="ttdeci">bool reporting() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00276">Config.h:276</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a8fdf3fd3b2112759b3a0a7fa4d8afa05"><div class="ttname"><a href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config::reporting</a></div><div class="ttdeci">bool reporting() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00291">Config.h:291</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a57929fa83c551514e364fe6981b0c104"><div class="ttname"><a href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">ripple::Application::getLedgerMaster</a></div><div class="ttdeci">virtual LedgerMaster &amp; getLedgerMaster()=0</div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_aca56b7c63030174e59720ab51d739422"><div class="ttname"><a href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">ripple::Application::config</a></div><div class="ttdeci">virtual Config &amp; config()=0</div></div>
 <div class="ttc" id="aclassripple_1_1Ledger_html_ab63abcfcbba33c67bb15284381555313"><div class="ttname"><a href="classripple_1_1Ledger.html#ab63abcfcbba33c67bb15284381555313">ripple::Ledger::stateMap</a></div><div class="ttdeci">SHAMap const  &amp; stateMap() const</div><div class="ttdef"><b>Definition:</b> <a href="Ledger_8h_source.html#l00307">Ledger.h:307</a></div></div>
@@ -319,10 +328,10 @@ $(function() {
 <div class="ttc" id="astructripple_1_1RPC_1_1GRPCContext_html_af072cfd1412032444cefd2f4dcf29555"><div class="ttname"><a href="structripple_1_1RPC_1_1GRPCContext.html#af072cfd1412032444cefd2f4dcf29555">ripple::RPC::GRPCContext::params</a></div><div class="ttdeci">RequestType params</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00072">Context.h:72</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6">ripple::LedgerFill::ownerFunds</a></div><div class="ttdeci">@ ownerFunds</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00051">LedgerToJson.h:51</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a917fae72b7b1397139e909f58fe058ca"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">ripple::RPC::isValidated</a></div><div class="ttdeci">bool isValidated(LedgerMaster &amp;ledgerMaster, ReadView const &amp;ledger, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00465">RPCHelpers.cpp:465</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a917fae72b7b1397139e909f58fe058ca"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">ripple::RPC::isValidated</a></div><div class="ttdeci">bool isValidated(LedgerMaster &amp;ledgerMaster, ReadView const &amp;ledger, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00468">RPCHelpers.cpp:468</a></div></div>
 <div class="ttc" id="aclassripple_1_1RPC_1_1LedgerHandler_html_afa39c881edcf53399964ec32b3312b1a"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerHandler.html#afa39c881edcf53399964ec32b3312b1a">ripple::RPC::LedgerHandler::LedgerHandler</a></div><div class="ttdeci">LedgerHandler(JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHandler_8cpp_source.html#l00036">LedgerHandler.cpp:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html_ac284afc905c482953c35c61b459fd85b"><div class="ttname"><a href="classripple_1_1ReadView.html#ac284afc905c482953c35c61b459fd85b">ripple::ReadView::seq</a></div><div class="ttdeci">LedgerIndex seq() const</div><div class="ttdoc">Returns the sequence number of the base ledger.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00260">ReadView.h:260</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a75647cbae9e0bae5c52d8b8288d78028"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a75647cbae9e0bae5c52d8b8288d78028">ripple::RPC::chooseLedgerEntryType</a></div><div class="ttdeci">std::pair&lt; RPC::Status, LedgerEntryType &gt; chooseLedgerEntryType(Json::Value const &amp;params)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00837">RPCHelpers.cpp:837</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a75647cbae9e0bae5c52d8b8288d78028"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a75647cbae9e0bae5c52d8b8288d78028">ripple::RPC::chooseLedgerEntryType</a></div><div class="ttdeci">std::pair&lt; RPC::Status, LedgerEntryType &gt; chooseLedgerEntryType(Json::Value const &amp;params)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00840">RPCHelpers.cpp:840</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932af84f0f070938fb2e6bfc21dd28e98c5c"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932af84f0f070938fb2e6bfc21dd28e98c5c">ripple::rpcNO_PERMISSION</a></div><div class="ttdeci">@ rpcNO_PERMISSION</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00053">ErrorCodes.h:53</a></div></div>
 <div class="ttc" id="aclassripple_1_1RPC_1_1LedgerHandler_html_af099f3216ba0d65210f33693f5c6e114"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerHandler.html#af099f3216ba0d65210f33693f5c6e114">ripple::RPC::LedgerHandler::type_</a></div><div class="ttdeci">LedgerEntryType type_</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHandler_8h_source.html#l00085">LedgerHandler.h:85</a></div></div>
 <div class="ttc" id="aclassripple_1_1Serializer_html_a5f8c275ba7cfa80e56671b6935e29242"><div class="ttname"><a href="classripple_1_1Serializer.html#a5f8c275ba7cfa80e56671b6935e29242">ripple::Serializer::peekData</a></div><div class="ttdeci">Blob const  &amp; peekData() const</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00168">Serializer.h:168</a></div></div>

@@ -350,7 +350,8 @@ $(function() {
 : <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTransactionsData.html#a116fb433427cfa2f659a899525855a7b">ripple::RelationalDBInterface::AccountTransactionsData</a>
 </li>
 <li>transactions
-: <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxResult.html#af8075e7bd765a5901243c6fac0f53706">ripple::RelationalDBInterface::AccountTxResult</a>
+: <a class="el" href="structripple_1_1metrics_1_1TxMetrics.html#a9416b0fb9630d3f3bb6f827d19e2b5fc">ripple::metrics::TxMetrics</a>
+, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxResult.html#af8075e7bd765a5901243c6fac0f53706">ripple::RelationalDBInterface::AccountTxResult</a>
 , <a class="el" href="classripple_1_1TxQ_1_1TxQAccount.html#a278169eda7bcc599bc4061359cf33b48">ripple::TxQ::TxQAccount</a>
 </li>
 <li>transferRateDist_
@@ -367,12 +368,6 @@ $(function() {
 </li>
 <li>trustAmount_
 : <a class="el" href="classripple_1_1test_1_1RandomAccountParams.html#a3e1bd08c66e36be42dc683c368a8e609">ripple::test::RandomAccountParams</a>
-</li>
-<li>trustChanges
-: <a class="el" href="structripple_1_1detail_1_1CashSummary.html#a8ef2705b148bb79a22e6f9cdc5c69d35">ripple::detail::CashSummary</a>
-</li>
-<li>trustDeletions
-: <a class="el" href="structripple_1_1detail_1_1CashSummary.html#a97fa124beea31b15fce37f2da6f545a8">ripple::detail::CashSummary</a>
 </li>
 <li>trusted_
 : <a class="el" href="classripple_1_1test_1_1csf_1_1Validation.html#ac5f4ae289c02e7726ccb8fb26901768b">ripple::test::csf::Validation</a>
@@ -399,6 +394,7 @@ $(function() {
 </li>
 <li>tx
 : <a class="el" href="classripple_1_1ApplyContext.html#a8c8757b3b1f88baef47b31ed4e9682d0">ripple::ApplyContext</a>
+, <a class="el" href="structripple_1_1metrics_1_1TxMetrics.html#a5d78f344753a5244615e9ee74cb52b10">ripple::metrics::TxMetrics</a>
 , <a class="el" href="structripple_1_1PreclaimContext.html#a8e1240b39791cf309b9caaffe8e5d306">ripple::PreclaimContext</a>
 , <a class="el" href="structripple_1_1PreclaimResult.html#adfb8e7aade8a1246d72082e31d531f42">ripple::PreclaimResult</a>
 , <a class="el" href="structripple_1_1PreflightContext.html#af202c00e509cfbb1df4fe69f4d6d6560">ripple::PreflightContext</a>
@@ -409,6 +405,18 @@ $(function() {
 <li>tx_
 : <a class="el" href="classripple_1_1DisputedTx.html#ab7197c18716286663c783fcd2dc017f2">ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;</a>
 , <a class="el" href="classripple_1_1RCLCxTx.html#a7e371c89131df3bd613a889757b81a18">ripple::RCLCxTx</a>
+</li>
+<li>TX_REDUCE_RELAY_ENABLE
+: <a class="el" href="classripple_1_1Config.html#a83ff989bc69d931321cc8efaecbb1c0c">ripple::Config</a>
+</li>
+<li>TX_REDUCE_RELAY_METRICS
+: <a class="el" href="classripple_1_1Config.html#a9433d2b86e6e37bfcec0066ba608d354">ripple::Config</a>
+</li>
+<li>TX_REDUCE_RELAY_MIN_PEERS
+: <a class="el" href="classripple_1_1Config.html#a571b13011e10271dd2c5c010106389d8">ripple::Config</a>
+</li>
+<li>TX_RELAY_PERCENTAGE
+: <a class="el" href="classripple_1_1Config.html#aa03bee9cf3f844d3539a85fbc2a9184a">ripple::Config</a>
 </li>
 <li>tx_type_
 : <a class="el" href="classripple_1_1STTx.html#a9defa833c6d4f7150ea82178ad5398b7">ripple::STTx</a>
@@ -450,6 +458,9 @@ $(function() {
 <li>txMetaDB_
 : <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#ac1013d41cc136b4e3f49b37247a38554">ripple::RelationalDBInterfaceSqliteImp</a>
 </li>
+<li>txMetrics_
+: <a class="el" href="classripple_1_1OverlayImpl.html#a6fcecedab437fc1bf8ab7e7bbf87f866">ripple::OverlayImpl</a>
+</li>
 <li>txn
 : <a class="el" href="structripple_1_1OpenView_1_1txData.html#a891ccc2c2466a4d7d90e3e11dc12c6f2">ripple::OpenView::txData</a>
 , <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#abf55d40e02fe19801802976089234c2c">ripple::TxQ::MaybeTx</a>
@@ -479,6 +490,12 @@ $(function() {
 </li>
 <li>txQueue
 : <a class="el" href="structripple_1_1LedgerFill.html#a9226f8fde98cd8e64b097418d40e9800">ripple::LedgerFill</a>
+</li>
+<li>txQueue_
+: <a class="el" href="classripple_1_1PeerImp.html#a67d040880021a143d0cb1d6b7b68961c">ripple::PeerImp</a>
+</li>
+<li>txReduceRelayEnabled_
+: <a class="el" href="classripple_1_1PeerImp.html#a7a42d4226e65fc2633dafe4b757cd7f9">ripple::PeerImp</a>
 </li>
 <li>txs
 : <a class="el" href="classripple_1_1ReadView.html#a5c70dc4b36e757ed6472b0aef460d858">ripple::ReadView</a>
@@ -514,7 +531,7 @@ $(function() {
 : <a class="el" href="classJson_1_1Reader_1_1Token.html#aa0f06d0105ec3d8cb42427c66b991bad">Json::Reader::Token</a>
 , <a class="el" href="classJson_1_1Value.html#abd222c2536dc88bf330dedcd076d2356">Json::Value</a>
 , <a class="el" href="classripple_1_1JobQueue_1_1Coro.html#a4adb1c6eb251bde0b9e56b082ef2ea68">ripple::JobQueue::Coro</a>
-, <a class="el" href="classripple_1_1KnownFormats_1_1Item.html#a139c2cc44f47b650ccc6c4cf8665a247">ripple::KnownFormats&lt; KeyType &gt;::Item</a>
+, <a class="el" href="classripple_1_1KnownFormats_1_1Item.html#aefb958f0055e62d6bf192ab478a67bfa">ripple::KnownFormats&lt; KeyType, Derived &gt;::Item</a>
 , <a class="el" href="classripple_1_1RPC_1_1LedgerHandler.html#af099f3216ba0d65210f33693f5c6e114">ripple::RPC::LedgerHandler</a>
 , <a class="el" href="structripple_1_1RPC_1_1Status.html#a0cbd05e8e91f05bc17af874b81337d02">ripple::RPC::Status</a>
 , <a class="el" href="classripple_1_1SeqProxy.html#a5b926a31cb90d0ecfcb70c44729a4115">ripple::SeqProxy</a>
@@ -528,7 +545,7 @@ $(function() {
 : <a class="el" href="classripple_1_1LedgerEntryTypesMatch.html#a5e34cbf42f7065e304e55b483ca1976b">ripple::LedgerEntryTypesMatch</a>
 </li>
 <li>types_
-: <a class="el" href="classripple_1_1KnownFormats.html#aa292c93d9151dfcf55c963c30afa132d">ripple::KnownFormats&lt; KeyType &gt;</a>
+: <a class="el" href="classripple_1_1KnownFormats.html#ad8af5a92ed877ac672e2c4cff1949141">ripple::KnownFormats&lt; KeyType, Derived &gt;</a>
 </li>
 </ul>
 </div><!-- contents -->

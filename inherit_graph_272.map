@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1InboundLedgers.html" title="Manages the lifetime of inbound ledgers." alt="" coords="5,35,176,61"/>
-<area shape="rect" id="node2" href="$classripple_1_1InboundLedgersImp.html" title=" " alt="" coords="224,5,419,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1MagicInboundLedgers.html" title="Simulate a network InboundLedgers." alt="" coords="226,57,417,98"/>
+<area shape="rect" id="node1" href="$classripple_1_1InfoSub_1_1Source.html" title="Abstracts the source of subscription data." alt="" coords="5,5,173,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1NetworkOPs.html" title="Provides server functionality for clients." alt="" coords="221,5,368,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1NetworkOPsImp.html" title=" " alt="" coords="416,5,588,32"/>
 </map>

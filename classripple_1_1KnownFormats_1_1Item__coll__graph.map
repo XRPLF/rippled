@@ -1,5 +1,5 @@
-<map id="ripple::KnownFormats&lt; KeyType &gt;::Item" name="ripple::KnownFormats&lt; KeyType &gt;::Item">
-<area shape="rect" id="node1" title="A known format." alt="" coords="107,392,271,433"/>
+<map id="ripple::KnownFormats&lt; KeyType, Derived &gt;::Item" name="ripple::KnownFormats&lt; KeyType, Derived &gt;::Item">
+<area shape="rect" id="node1" title="A known format." alt="" coords="88,392,291,433"/>
 <area shape="rect" id="node2" href="$classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="46,303,191,329"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,206,144,233"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="169,199,311,240"/>

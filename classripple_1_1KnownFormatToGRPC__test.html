@@ -117,12 +117,12 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:ac5cbc023cd54c40a734ae62432510a4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a94fdc5adf6083f6729de63a7e900d0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1KnownFormatToGRPC__test.html#a2a94fdc5adf6083f6729de63a7e900d0">validateDescriptor</a> (google::protobuf::Descriptor const *const entryDesc, <a class="el" href="classripple_1_1SField.html">SField</a> const *const sField)</td></tr>
 <tr class="separator:a2a94fdc5adf6083f6729de63a7e900d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a6ff6deb6ca0f15c6044c5034cf264c"><td class="memTemplParams" colspan="2">template&lt;typename FmtType &gt; </td></tr>
-<tr class="memitem:a8a6ff6deb6ca0f15c6044c5034cf264c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1KnownFormatToGRPC__test.html#a8a6ff6deb6ca0f15c6044c5034cf264c">validateFields</a> (google::protobuf::Descriptor const *const pbufDescriptor, google::protobuf::Descriptor const *const commonFields, typename <a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType &gt;::Item const *const knownFormatItem)</td></tr>
-<tr class="separator:a8a6ff6deb6ca0f15c6044c5034cf264c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5b7f33a28882315a6ed045781234b87"><td class="memTemplParams" colspan="2">template&lt;typename FmtType &gt; </td></tr>
-<tr class="memitem:af5b7f33a28882315a6ed045781234b87"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1KnownFormatToGRPC__test.html#af5b7f33a28882315a6ed045781234b87">testKnownFormats</a> (<a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType &gt; const &amp;knownFormat, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;knownFormatName, google::protobuf::Descriptor const *const commonFields, google::protobuf::OneofDescriptor const *const oneOfDesc)</td></tr>
-<tr class="separator:af5b7f33a28882315a6ed045781234b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2eb54d38b54b2606fc04d6b1cae3d64"><td class="memTemplParams" colspan="2">template&lt;typename FmtType , typename FmtName &gt; </td></tr>
+<tr class="memitem:af2eb54d38b54b2606fc04d6b1cae3d64"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1KnownFormatToGRPC__test.html#af2eb54d38b54b2606fc04d6b1cae3d64">validateFields</a> (google::protobuf::Descriptor const *const pbufDescriptor, google::protobuf::Descriptor const *const commonFields, typename <a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType, FmtName &gt;::Item const *const knownFormatItem)</td></tr>
+<tr class="separator:af2eb54d38b54b2606fc04d6b1cae3d64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad81d1b73521d155149cb82f42c2756fc"><td class="memTemplParams" colspan="2">template&lt;typename FmtType , typename FmtName &gt; </td></tr>
+<tr class="memitem:ad81d1b73521d155149cb82f42c2756fc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1KnownFormatToGRPC__test.html#ad81d1b73521d155149cb82f42c2756fc">testKnownFormats</a> (<a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType, FmtName &gt; const &amp;knownFormat, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;knownFormatName, google::protobuf::Descriptor const *const commonFields, google::protobuf::OneofDescriptor const *const oneOfDesc)</td></tr>
+<tr class="separator:ad81d1b73521d155149cb82f42c2756fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -457,13 +457,13 @@ template&lt;typename KeyType &gt; </div>
 
 </div>
 </div>
-<a id="a8a6ff6deb6ca0f15c6044c5034cf264c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a6ff6deb6ca0f15c6044c5034cf264c">&#9670;&nbsp;</a></span>validateFields()</h2>
+<a id="af2eb54d38b54b2606fc04d6b1cae3d64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2eb54d38b54b2606fc04d6b1cae3d64">&#9670;&nbsp;</a></span>validateFields()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename FmtType &gt; </div>
+template&lt;typename FmtType , typename FmtName &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -483,7 +483,7 @@ template&lt;typename FmtType &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">typename <a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType &gt;::Item const *const&#160;</td>
+          <td class="paramtype">typename <a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType, FmtName &gt;::Item const *const&#160;</td>
           <td class="paramname"><em>knownFormatItem</em>&#160;</td>
         </tr>
         <tr>
@@ -503,13 +503,13 @@ template&lt;typename FmtType &gt; </div>
 
 </div>
 </div>
-<a id="af5b7f33a28882315a6ed045781234b87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5b7f33a28882315a6ed045781234b87">&#9670;&nbsp;</a></span>testKnownFormats()</h2>
+<a id="ad81d1b73521d155149cb82f42c2756fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad81d1b73521d155149cb82f42c2756fc">&#9670;&nbsp;</a></span>testKnownFormats()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename FmtType &gt; </div>
+template&lt;typename FmtType , typename FmtName &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -517,7 +517,7 @@ template&lt;typename FmtType &gt; </div>
         <tr>
           <td class="memname">void ripple::KnownFormatToGRPC_test::testKnownFormats </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1KnownFormats.html">KnownFormats</a>&lt; FmtType, FmtName &gt; const &amp;&#160;</td>
           <td class="paramname"><em>knownFormat</em>, </td>
         </tr>
         <tr>
@@ -551,7 +551,7 @@ template&lt;typename FmtType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00811">811</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00812">812</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -570,7 +570,7 @@ template&lt;typename FmtType &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00921">921</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00924">924</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -589,7 +589,7 @@ template&lt;typename FmtType &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00937">937</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00940">940</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -616,7 +616,7 @@ template&lt;typename FmtType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00953">953</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html#l00956">956</a> of file <a class="el" href="KnownFormatToGRPC__test_8cpp_source.html">KnownFormatToGRPC_test.cpp</a>.</p>
 
 </div>
 </div>

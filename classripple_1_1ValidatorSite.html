@@ -153,9 +153,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a560c7b68b6fcb5c7f1ddb59437110955"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidatorSite.html#a560c7b68b6fcb5c7f1ddb59437110955">load</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;siteURIs, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;)</td></tr>
 <tr class="memdesc:a560c7b68b6fcb5c7f1ddb59437110955"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load configured site URIs.  <a href="classripple_1_1ValidatorSite.html#a560c7b68b6fcb5c7f1ddb59437110955">More...</a><br /></td></tr>
 <tr class="separator:a560c7b68b6fcb5c7f1ddb59437110955"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ce40e16d14a93dbce5317099c6545b2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidatorSite.html#a5ce40e16d14a93dbce5317099c6545b2">setTimer</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;)</td></tr>
-<tr class="memdesc:a5ce40e16d14a93dbce5317099c6545b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue next site to be fetched lock over state_mutex_ required.  <a href="classripple_1_1ValidatorSite.html#a5ce40e16d14a93dbce5317099c6545b2">More...</a><br /></td></tr>
-<tr class="separator:a5ce40e16d14a93dbce5317099c6545b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52cc0b9c9c22ec110dc2ff34abb4a7ec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidatorSite.html#a52cc0b9c9c22ec110dc2ff34abb4a7ec">setTimer</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;)</td></tr>
+<tr class="memdesc:a52cc0b9c9c22ec110dc2ff34abb4a7ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue next site to be fetched lock over site_mutex_ and state_mutex_ required.  <a href="classripple_1_1ValidatorSite.html#a52cc0b9c9c22ec110dc2ff34abb4a7ec">More...</a><br /></td></tr>
+<tr class="separator:a52cc0b9c9c22ec110dc2ff34abb4a7ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97751fa3c9dad7c82c9567e0044dd566"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidatorSite.html#a97751fa3c9dad7c82c9567e0044dd566">onRequestTimeout</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> siteIdx, <a class="el" href="classripple_1_1ValidatorSite.html#accb524d6aaf2c9b2e4f11b2a2e618292">error_code</a> const &amp;ec)</td></tr>
 <tr class="memdesc:a97751fa3c9dad7c82c9567e0044dd566"><td class="mdescLeft">&#160;</td><td class="mdescRight">request took too long  <a href="classripple_1_1ValidatorSite.html#a97751fa3c9dad7c82c9567e0044dd566">More...</a><br /></td></tr>
 <tr class="separator:a97751fa3c9dad7c82c9567e0044dd566"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -341,7 +341,7 @@ Validator Sites</h2>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00089">89</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00088">88</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +360,7 @@ Validator Sites</h2>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00103">103</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00102">102</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -392,7 +392,7 @@ Validator Sites</h2>
 <p>May be called concurrently</p>
 <dl class="section return"><dt>Returns</dt><dd><code>false</code> if an entry is invalid or unparsable </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00128">128</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00127">127</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -416,7 +416,7 @@ Validator Sites</h2>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00168">168</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00167">167</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -524,12 +524,12 @@ Validator Sites</h2>
 
 <p>Load configured site URIs. </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00138">138</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00137">137</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a5ce40e16d14a93dbce5317099c6545b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ce40e16d14a93dbce5317099c6545b2">&#9670;&nbsp;</a></span>setTimer()</h2>
+<a id="a52cc0b9c9c22ec110dc2ff34abb4a7ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52cc0b9c9c22ec110dc2ff34abb4a7ec">&#9670;&nbsp;</a></span>setTimer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -541,8 +541,18 @@ Validator Sites</h2>
           <td class="memname">void ripple::ValidatorSite::setTimer </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>state_lock</em></td><td>)</td>
+          <td class="paramname"><em>site_lock</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>state_lock</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -552,7 +562,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p>Queue next site to be fetched lock over state_mutex_ required. </p>
+<p>Queue next site to be fetched lock over site_mutex_ and state_mutex_ required. </p>
 
 <p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00209">209</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
@@ -903,7 +913,7 @@ Validator Sites</h2>
 
 <p>If no sites are provided, or a site fails to load, get a list of local cache files from the <a class="el" href="classripple_1_1ValidatorList.html">ValidatorList</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00121">121</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8cpp_source.html#l00120">120</a> of file <a class="el" href="ValidatorSite_8cpp_source.html">ValidatorSite.cpp</a>.</p>
 
 </div>
 </div>
@@ -1001,7 +1011,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00120">120</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00122">122</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1025,7 +1035,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00121">121</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00123">123</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1049,7 +1059,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00123">123</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00125">125</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1083,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00124">124</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00126">126</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1097,7 +1107,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00125">125</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00127">127</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1121,7 +1131,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00128">128</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00130">130</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1145,7 +1155,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00131">131</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00133">133</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1169,7 +1179,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00132">132</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00134">134</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1193,7 +1203,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00135">135</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00137">137</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -1217,7 +1227,7 @@ Validator Sites</h2>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00138">138</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00140">140</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>

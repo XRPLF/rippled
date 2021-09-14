@@ -1,0 +1,8 @@
+<map id="ripple::test::tx_reduce_relay_test" name="ripple::test::tx_reduce_relay_test">
+<area shape="rect" id="node1" title=" " alt="" coords="475,71,639,113"/>
+<area shape="rect" id="node2" title=" " alt="" coords="201,5,255,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="177,56,279,83"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="149,107,307,149"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,115,44,141"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="143,173,313,214"/>
+</map>

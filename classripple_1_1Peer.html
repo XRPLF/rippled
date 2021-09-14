@@ -81,11 +81,12 @@ Inheritance diagram for ripple::Peer:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Peer__inherit__graph.png" border="0" usemap="#ripple_1_1Peer_inherit__map" alt="Inheritance graph"/></div>
 <map name="ripple_1_1Peer_inherit__map" id="ripple_1_1Peer_inherit__map">
-<area shape="rect" title="Represents a peer connection in the overlay." alt="" coords="189,5,285,32"/>
-<area shape="rect" href="classripple_1_1PeerImp.html" title=" " alt="" coords="5,80,127,107"/>
-<area shape="rect" href="classripple_1_1test_1_1PeerPartial.html" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="151,80,322,107"/>
-<area shape="rect" href="classripple_1_1test_1_1TestPeer.html" title="Simulate a network peer." alt="" coords="346,80,501,107"/>
-<area shape="rect" href="classripple_1_1test_1_1PeerSim.html" title=" " alt="" coords="159,155,314,181"/>
+<area shape="rect" title="Represents a peer connection in the overlay." alt="" coords="219,5,315,32"/>
+<area shape="rect" href="classripple_1_1PeerImp.html" title=" " alt="" coords="33,80,155,107"/>
+<area shape="rect" href="classripple_1_1test_1_1PeerPartial.html" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="182,80,353,107"/>
+<area shape="rect" href="classripple_1_1test_1_1TestPeer.html" title="Simulate a network peer." alt="" coords="377,80,531,107"/>
+<area shape="rect" href="classripple_1_1test_1_1tx__reduce__relay__test_1_1PeerTest.html" title=" " alt="" coords="5,155,169,196"/>
+<area shape="rect" href="classripple_1_1test_1_1PeerSim.html" title=" " alt="" coords="194,162,349,189"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -105,6 +106,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3c89dbf867ba814f0bf2417757d5a0f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35b25d5a662db9a534ac4a972a8ba6b3"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a35b25d5a662db9a534ac4a972a8ba6b3">getRemoteAddress</a> () const =0</td></tr>
 <tr class="separator:a35b25d5a662db9a534ac4a972a8ba6b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9cec6a68be4e99382787eec3571a36b4"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a9cec6a68be4e99382787eec3571a36b4">sendTxQueue</a> ()=0</td></tr>
+<tr class="memdesc:a9cec6a68be4e99382787eec3571a36b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send aggregated transactions' hashes.  <a href="classripple_1_1Peer.html#a9cec6a68be4e99382787eec3571a36b4">More...</a><br /></td></tr>
+<tr class="separator:a9cec6a68be4e99382787eec3571a36b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a910dd384abd01647432192b7e05b3748"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a910dd384abd01647432192b7e05b3748">addTxQueue</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;)=0</td></tr>
+<tr class="memdesc:a910dd384abd01647432192b7e05b3748"><td class="mdescLeft">&#160;</td><td class="mdescRight">Aggregate transaction's hash.  <a href="classripple_1_1Peer.html#a910dd384abd01647432192b7e05b3748">More...</a><br /></td></tr>
+<tr class="separator:a910dd384abd01647432192b7e05b3748"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4df87634b8bfedbdb69edcd11fee6a1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">removeTxQueue</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;)=0</td></tr>
+<tr class="memdesc:ac4df87634b8bfedbdb69edcd11fee6a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove hash from the transactions' hashes queue.  <a href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">More...</a><br /></td></tr>
+<tr class="separator:ac4df87634b8bfedbdb69edcd11fee6a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6fb081a4c8492b9891bff272041541ab"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;fee)=0</td></tr>
 <tr class="memdesc:a6fb081a4c8492b9891bff272041541ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust this peer's load balance based on the type of load imposed.  <a href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">More...</a><br /></td></tr>
 <tr class="separator:a6fb081a4c8492b9891bff272041541ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -141,6 +151,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a95b02bf56c4332da48e7e0bc503a0d43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a574a942c5ee778c1b795b5ca65292821"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a574a942c5ee778c1b795b5ca65292821">compressionEnabled</a> () const =0</td></tr>
 <tr class="separator:a574a942c5ee778c1b795b5ca65292821"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cb56d7585b19a684f6476830125b835"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a0cb56d7585b19a684f6476830125b835">txReduceRelayEnabled</a> () const =0</td></tr>
+<tr class="separator:a0cb56d7585b19a684f6476830125b835"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Represents a peer connection in the overlay. </p>
@@ -233,7 +245,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#aa349eb9f7a80300fcfc951ed514cb658">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a49a0c65115d326e7fbd38be43a800f8d">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a6bba98dbc825f28588494756ff103c98">ripple::test::PeerPartial</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#aa349eb9f7a80300fcfc951ed514cb658">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a49a0c65115d326e7fbd38be43a800f8d">ripple::test::TestPeer</a>, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a6bba98dbc825f28588494756ff103c98">ripple::test::PeerPartial</a>, and <a class="el" href="classripple_1_1test_1_1tx__reduce__relay__test_1_1PeerTest.html#a8acefb03a28d2d12b5d56f59a3b77905">ripple::test::tx_reduce_relay_test::PeerTest</a>.</p>
 
 </div>
 </div>
@@ -261,6 +273,95 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#a7a737331e178418758cda61c2a8a39e3">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a31b518b004fd1fa0d597036180f21a5b">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a72899475d28d41d88b1e181ac08ba095">ripple::test::PeerPartial</a>.</p>
+
+</div>
+</div>
+<a id="a9cec6a68be4e99382787eec3571a36b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9cec6a68be4e99382787eec3571a36b4">&#9670;&nbsp;</a></span>sendTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::Peer::sendTxQueue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send aggregated transactions' hashes. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#af9564cc1d134445c828262c31371d115">ripple::test::TestPeer</a>, <a class="el" href="classripple_1_1PeerImp.html#ac680e8b2826200be0de66f39e6350f32">ripple::PeerImp</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#af6de1fc8bedd7d84aad85219194bbdc1">ripple::test::PeerPartial</a>.</p>
+
+</div>
+</div>
+<a id="a910dd384abd01647432192b7e05b3748"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a910dd384abd01647432192b7e05b3748">&#9670;&nbsp;</a></span>addTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::Peer::addTxQueue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Aggregate transaction's hash. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1test_1_1tx__reduce__relay__test_1_1PeerTest.html#a9f00f294be4b8bcc2e63eafa2d6c0593">ripple::test::tx_reduce_relay_test::PeerTest</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#aa7fff7d3f7018080efe29cca5d8eba11">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a4f8b4bd40da9cfe3d58505e91e993d5f">ripple::test::PeerPartial</a>.</p>
+
+</div>
+</div>
+<a id="ac4df87634b8bfedbdb69edcd11fee6a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4df87634b8bfedbdb69edcd11fee6a1">&#9670;&nbsp;</a></span>removeTxQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::Peer::removeTxQueue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove hash from the transactions' hashes queue. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#a391311e2939da285e6502c94d9f1c01a">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#abbd18f7342c0b7daa8364492fe41c65a">ripple::test::PeerPartial</a>.</p>
 
 </div>
 </div>
@@ -614,7 +715,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#a08aa2f230196348cdeb3f5eccf97fd86">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a021a8599de198786f1dc71901cdf1e1f">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#af0bcc80ae7641f46179ed5a1c782dc0b">ripple::test::PeerPartial</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#a021a8599de198786f1dc71901cdf1e1f">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#af0bcc80ae7641f46179ed5a1c782dc0b">ripple::test::PeerPartial</a>.</p>
 
 </div>
 </div>
@@ -680,7 +781,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#a457d11b1db6ab6e7d0b138d59f6fcc3d">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#aa6226f36aadeba23415ab0acc8be6670">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#accad7bf1cde28944c6d284159f9ebeee">ripple::test::PeerPartial</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#aa6226f36aadeba23415ab0acc8be6670">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#accad7bf1cde28944c6d284159f9ebeee">ripple::test::PeerPartial</a>.</p>
 
 </div>
 </div>
@@ -773,6 +874,33 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#acae3ecb1ba86b676d690d894ed0953f1">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#ae6b951a8134eac2f989056efb31bb7e2">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a6c207543e9db7f2cf8876bc780774c4c">ripple::test::PeerPartial</a>.</p>
+
+</div>
+</div>
+<a id="a0cb56d7585b19a684f6476830125b835"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0cb56d7585b19a684f6476830125b835">&#9670;&nbsp;</a></span>txReduceRelayEnabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::Peer::txReduceRelayEnabled </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#acbc5cde85994cdfc157d2011be362afa">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a86cd77871fad7677f30757f903357ae2">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a314bde933a8f3c3863aeca66810c5d80">ripple::test::PeerPartial</a>.</p>
 
 </div>
 </div>

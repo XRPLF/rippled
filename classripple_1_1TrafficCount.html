@@ -145,15 +145,19 @@ Public Types</h2></td></tr>
 &#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a36ed3431c27c144f0407afc400c736e8">get_cas_object</a>, 
 <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ace6a8a16555daa7e04ba5ccaf9672cb7">share_fetch_pack</a>, 
 <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a11f98604c8d2bf034d5981c2e46d6b86">get_fetch_pack</a>, 
-<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a9953e5681503deb0eb854af8eb4a4a60">share_hash</a>, 
+<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7adb15948ddbacc73e868382a65286a746">get_transactions</a>, 
 <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acd178b9b0f9a37a3e94a53b384bcc215">get_hash</a>, 
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a9953e5681503deb0eb854af8eb4a4a60">share_hash</a>, 
+<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acd178b9b0f9a37a3e94a53b384bcc215">get_hash</a>, 
 <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a12daff4da9926d993515c1abbe440294">proof_path_request</a>, 
 <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a58bfe29c5a771bac79ae82168a063ece">proof_path_response</a>, 
-<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ac00367186e1994e3ba5993b9c509d093">replay_delta_request</a>, 
 <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354">replay_delta_response</a>, 
-<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8">unknown</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ac00367186e1994e3ba5993b9c509d093">replay_delta_request</a>, 
+<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354">replay_delta_response</a>, 
+<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acf56755e14ebee8ccdbb094140df62b7">have_transactions</a>, 
+<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acebb5c897d624ae1c27e67da091b5752">requested_transactions</a>, 
+<br />
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8">unknown</a>
 <br />
  }</td></tr>
 <tr class="separator:adbaee77c7a063c9aac783e54594aeda7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -235,12 +239,15 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a36ed3431c27c144f0407afc400c736e8"></a>get_cas_object&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7ace6a8a16555daa7e04ba5ccaf9672cb7"></a>share_fetch_pack&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a11f98604c8d2bf034d5981c2e46d6b86"></a>get_fetch_pack&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7adb15948ddbacc73e868382a65286a746"></a>get_transactions&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a9953e5681503deb0eb854af8eb4a4a60"></a>share_hash&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7acd178b9b0f9a37a3e94a53b384bcc215"></a>get_hash&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a12daff4da9926d993515c1abbe440294"></a>proof_path_request&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a58bfe29c5a771bac79ae82168a063ece"></a>proof_path_response&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7ac00367186e1994e3ba5993b9c509d093"></a>replay_delta_request&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354"></a>replay_delta_response&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7acf56755e14ebee8ccdbb094140df62b7"></a>have_transactions&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7acebb5c897d624ae1c27e67da091b5752"></a>requested_transactions&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8"></a>unknown&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
@@ -355,7 +362,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Account for traffic associated with the given category. </p>
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00164">164</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00173">173</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>
@@ -377,7 +384,7 @@ Protected Attributes</h2></td></tr>
 <p>An up-to-date copy of all the counters. </p>
 <dl class="section return"><dt>Returns</dt><dd>an object which satisfies the requirements of Container </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00187">187</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00196">196</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>
@@ -402,7 +409,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00193">193</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00202">202</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>

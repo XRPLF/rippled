@@ -194,6 +194,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1a707bd1efa527ac55091d9652145cde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5228b52adce7276a83d4d0cf14991589"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a5228b52adce7276a83d4d0cf14991589">pubValidation</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt; const &amp;val)=0</td></tr>
 <tr class="separator:a5228b52adce7276a83d4d0cf14991589"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d7d7f55b2e28f300f0745217592d832"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a6d7d7f55b2e28f300f0745217592d832">forwardValidation</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvObj)=0</td></tr>
+<tr class="separator:a6d7d7f55b2e28f300f0745217592d832"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51854a2d16452823739a88ce7de648ab"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a51854a2d16452823739a88ce7de648ab">forwardManifest</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvObj)=0</td></tr>
+<tr class="separator:a51854a2d16452823739a88ce7de648ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8bc22e121fc8db46ec0cae484d474a2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#af8bc22e121fc8db46ec0cae484d474a2">forwardProposedTransaction</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvObj)=0</td></tr>
 <tr class="separator:af8bc22e121fc8db46ec0cae484d474a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aa539c0415cfa0f8bb92381906b4a02"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a6aa539c0415cfa0f8bb92381906b4a02">forwardProposedAccountTransaction</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvObj)=0</td></tr>
@@ -1633,6 +1637,62 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a7fca93ca8a1a6cdba2c887100e8e6ed8">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="a6d7d7f55b2e28f300f0745217592d832"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d7d7f55b2e28f300f0745217592d832">&#9670;&nbsp;</a></span>forwardValidation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::NetworkOPs::forwardValidation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>jvObj</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#ab758ce300807a2e5dd3e1f8c872347e6">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="a51854a2d16452823739a88ce7de648ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51854a2d16452823739a88ce7de648ab">&#9670;&nbsp;</a></span>forwardManifest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::NetworkOPs::forwardManifest </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>jvObj</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a56d2c5409d075d2cd12b9721b51adbd9">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
