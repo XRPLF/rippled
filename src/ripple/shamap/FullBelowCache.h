@@ -21,8 +21,10 @@
 #define RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 
 #include <ripple/basics/KeyCache.h>
+#include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/insight/Collector.h>
+#include <ripple/beast/utility/Journal.h>
 #include <atomic>
 #include <string>
 
@@ -33,17 +35,15 @@ namespace detail {
 /** Remembers which tree keys have all descendants resident.
     This optimizes the process of acquiring a complete tree.
 */
-template <class Key>
 class BasicFullBelowCache
 {
 private:
-    using CacheType = KeyCache<Key>;
+    using CacheType = KeyCache;
 
 public:
     enum { defaultCacheTargetSize = 0 };
 
-    using key_type = Key;
-    using size_type = typename CacheType::size_type;
+    using key_type = uint256;
     using clock_type = typename CacheType::clock_type;
 
     /** Construct the cache.
@@ -56,11 +56,12 @@ public:
     BasicFullBelowCache(
         std::string const& name,
         clock_type& clock,
+        beast::Journal j,
         beast::insight::Collector::ptr const& collector =
             beast::insight::NullCollector::New(),
         std::size_t target_size = defaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_cache(name, clock, collector, target_size, expiration), m_gen(1)
+        : m_cache(name, target_size, expiration, clock, j, collector), m_gen(1)
     {
     }
 
@@ -75,7 +76,7 @@ public:
         Thread safety:
             Safe to call from any thread.
     */
-    size_type
+    std::size_t
     size() const
     {
         return m_cache.size();
@@ -138,13 +139,13 @@ public:
     }
 
 private:
-    KeyCache<Key> m_cache;
+    CacheType m_cache;
     std::atomic<std::uint32_t> m_gen;
 };
 
 }  // namespace detail
 
-using FullBelowCache = detail::BasicFullBelowCache<uint256>;
+using FullBelowCache = detail::BasicFullBelowCache;
 
 }  // namespace ripple
 

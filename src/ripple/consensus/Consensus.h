@@ -666,6 +666,7 @@ Consensus<Adaptor>::startRoundInternal(
     ConsensusMode mode)
 {
     phase_ = ConsensusPhase::open;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::open";
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -1290,6 +1291,7 @@ Consensus<Adaptor>::phaseEstablish()
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::accepted";
     adaptor_.onAccept(
         *result_,
         previousLedger_,
@@ -1307,6 +1309,7 @@ Consensus<Adaptor>::closeLedger()
     assert(!result_);
 
     phase_ = ConsensusPhase::establish;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
     rawCloseTimes_.self = now_;
 
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));

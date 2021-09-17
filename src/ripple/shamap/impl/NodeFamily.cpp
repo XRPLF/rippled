@@ -31,6 +31,7 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     , fbCache_(std::make_shared<FullBelowCache>(
           "Node family full below cache",
           stopwatch(),
+          app.journal("NodeFamilyFulLBelowCache"),
           cm.collector(),
           fullBelowTargetSize,
           fullBelowExpiration))

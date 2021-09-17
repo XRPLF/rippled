@@ -79,12 +79,14 @@
 
 #include <date/date.h>
 
+#include <chrono>
 #include <condition_variable>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <mutex>
 #include <optional>
+#include <sstream>
 #include <utility>
 #include <variant>
 
@@ -327,7 +329,12 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
 
-        , cachedSLEs_(std::chrono::minutes(1), stopwatch())
+        , cachedSLEs_(
+              "Cached SLEs",
+              0,
+              std::chrono::minutes(1),
+              stopwatch(),
+              logs_->journal("CachedSLEs"))
 
         , validatorKeys_(*config_, m_journal)
 
@@ -1146,11 +1153,11 @@ public:
             shardStore_->sweep();
         getLedgerMaster().sweep();
         getTempNodeCache().sweep();
-        getValidations().expire();
+        getValidations().expire(m_journal);
         getInboundLedgers().sweep();
         getLedgerReplayer().sweep();
         m_acceptedLedgerCache.sweep();
-        cachedSLEs_.expire();
+        cachedSLEs_.sweep();
 
 #ifdef RIPPLED_REPORTING
         if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(

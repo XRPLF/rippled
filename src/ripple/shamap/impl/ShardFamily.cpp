@@ -55,6 +55,7 @@ ShardFamily::getFullBelowCache(std::uint32_t ledgerSeq)
     auto fbCache{std::make_shared<FullBelowCache>(
         "Shard family full below cache shard " + std::to_string(shardIndex),
         stopwatch(),
+        j_,
         cm_.collector(),
         fullBelowTargetSize,
         fullBelowExpiration)};

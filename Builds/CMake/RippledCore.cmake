@@ -447,6 +447,7 @@ target_sources (rippled PRIVATE
   src/ripple/basics/impl/UptimeClock.cpp
   src/ripple/basics/impl/make_SSLContext.cpp
   src/ripple/basics/impl/mulDiv.cpp
+  src/ripple/basics/impl/partitioned_unordered_map.cpp
   #[===============================[
      main sources:
        subdir: conditions
@@ -483,7 +484,6 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/ApplyViewBase.cpp
   src/ripple/ledger/impl/ApplyViewImpl.cpp
   src/ripple/ledger/impl/BookDirs.cpp
-  src/ripple/ledger/impl/CachedSLEs.cpp
   src/ripple/ledger/impl/CachedView.cpp
   src/ripple/ledger/impl/Directory.cpp
   src/ripple/ledger/impl/OpenView.cpp
