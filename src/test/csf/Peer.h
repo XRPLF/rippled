@@ -919,7 +919,7 @@ struct Peer
     start()
     {
         // TODO: Expire validations less frequently?
-        validations.expire();
+        validations.expire(j);
         scheduler.in(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
         startRound();
     }

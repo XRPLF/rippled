@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/KeyCache.h>
 #include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/core/DatabaseCon.h>
@@ -39,7 +40,7 @@ namespace ripple {
 namespace NodeStore {
 
 using PCache = TaggedCache<uint256, NodeObject>;
-using NCache = KeyCache<uint256>;
+using NCache = KeyCache;
 class DatabaseShard;
 
 /* A range of historical ledgers backed by a node store.
