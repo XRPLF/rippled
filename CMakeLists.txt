@@ -27,13 +27,8 @@ include(RippledSanity)
 include(RippledVersion)
 include(RippledSettings)
 include(RippledNIH)
-include(RippledRelease)
-# this check has to remain in the top-level cmake
-# because of the early return statement
 if (packages_only)
-  if (NOT TARGET rpm)
-    message (FATAL_ERROR "packages_only requested, but targets were not created - is docker installed?")
-  endif()
+  # Packaging is handed off to a separate repo here.
   return ()
 endif ()
 include(RippledCompiler)
