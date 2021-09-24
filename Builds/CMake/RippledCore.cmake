@@ -404,6 +404,17 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/RelationalDBInterface_nodes.cpp
   src/ripple/app/rdb/impl/RelationalDBInterface_postgres.cpp
   src/ripple/app/rdb/impl/RelationalDBInterface_shards.cpp
+  src/ripple/app/sidechain/Federator.cpp
+  src/ripple/app/sidechain/FederatorEvents.cpp
+  src/ripple/app/sidechain/impl/ChainListener.cpp
+  src/ripple/app/sidechain/impl/DoorKeeper.cpp
+  src/ripple/app/sidechain/impl/InitialSync.cpp
+  src/ripple/app/sidechain/impl/MainchainListener.cpp
+  src/ripple/app/sidechain/impl/SidechainListener.cpp
+  src/ripple/app/sidechain/impl/SignatureCollector.cpp
+  src/ripple/app/sidechain/impl/SignerList.cpp
+  src/ripple/app/sidechain/impl/TicketHolder.cpp
+  src/ripple/app/sidechain/impl/WebsocketClient.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
@@ -575,6 +586,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/DepositAuthorized.cpp
   src/ripple/rpc/handlers/DownloadShard.cpp
   src/ripple/rpc/handlers/Feature1.cpp
+  src/ripple/rpc/handlers/FederatorInfo.cpp
   src/ripple/rpc/handlers/Fee1.cpp
   src/ripple/rpc/handlers/FetchInfo.cpp
   src/ripple/rpc/handlers/GatewayBalances.cpp

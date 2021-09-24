@@ -141,6 +141,16 @@ getSigningData(STTx const& that)
     return s.getData();
 }
 
+static Blob
+getMultiSigningData(STTx const& that, AccountID const& signingID)
+{
+    Serializer s;
+    s.add32(HashPrefix::txMultiSign);
+    that.addWithoutSigningFields(s);
+    s.addBitString(signingID);
+    return s.getData();
+}
+
 uint256
 STTx::getSigningHash() const
 {
@@ -158,6 +168,30 @@ STTx::getSignature() const
     {
         return Blob();
     }
+}
+
+Buffer
+STTx::getSignature(PublicKey const& publicKey, SecretKey const& secretKey) const
+{
+    auto const data = getSigningData(*this);
+    return ripple::sign(publicKey, secretKey, makeSlice(data));
+}
+
+Buffer
+STTx::getMultiSignature(
+    AccountID const& signingID,
+    PublicKey const& publicKey,
+    SecretKey const& secretKey) const
+{
+    auto const data = getMultiSigningData(*this, signingID);
+    return ripple::sign(publicKey, secretKey, makeSlice(data));
+}
+
+void
+STTx::setSignature(Buffer const& sig)
+{
+    setFieldVL(sfTxnSignature, sig);
+    tid_ = getHash(HashPrefix::transactionID);
 }
 
 SeqProxy
@@ -178,12 +212,7 @@ STTx::getSeqProxy() const
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {
-    auto const data = getSigningData(*this);
-
-    auto const sig = ripple::sign(publicKey, secretKey, makeSlice(data));
-
-    setFieldVL(sfTxnSignature, sig);
-    tid_ = getHash(HashPrefix::transactionID);
+    setSignature(getSignature(publicKey, secretKey));
 }
 
 Expected<void, std::string>

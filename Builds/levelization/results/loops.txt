@@ -11,7 +11,7 @@ Loop: ripple.app ripple.nodestore
   ripple.nodestore ~= ripple.app
 
 Loop: ripple.app ripple.overlay
-  ripple.overlay ~= ripple.app
+  ripple.overlay == ripple.app
 
 Loop: ripple.app ripple.peerfinder
   ripple.peerfinder ~= ripple.app

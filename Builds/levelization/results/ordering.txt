@@ -6,6 +6,7 @@ ripple.app > ripple.crypto
 ripple.app > ripple.json
 ripple.app > ripple.protocol
 ripple.app > ripple.resource
+ripple.app > ripple.server
 ripple.app > test.unit_test
 ripple.basics > ripple.beast
 ripple.conditions > ripple.basics

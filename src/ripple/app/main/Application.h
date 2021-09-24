@@ -50,6 +50,10 @@ namespace RPC {
 class ShardArchiveHandler;
 }
 
+namespace sidechain {
+class Federator;
+}
+
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
 class CachedSLEs;
@@ -137,6 +141,9 @@ public:
     checkSigs(bool) = 0;
     virtual bool
     isStopping() const = 0;
+
+    virtual void
+    startFederator() = 0;
 
     //
     // ---
@@ -261,6 +268,9 @@ public:
     /** Retrieve the "wallet database" */
     virtual DatabaseCon&
     getWalletDB() = 0;
+
+    virtual std::shared_ptr<sidechain::Federator>
+    getSidechainFederator() = 0;
 
     /** Ensure that a newly-started validator does not sign proposals older
      * than the last ledger it persisted. */

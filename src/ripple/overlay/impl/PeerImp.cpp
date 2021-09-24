@@ -27,6 +27,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/app/sidechain/Federator.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/base64.h>
@@ -45,6 +46,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
 
+#include "protocol/SField.h"
 #include <algorithm>
 #include <memory>
 #include <mutex>
@@ -2898,6 +2900,339 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 
     JLOG(p_journal_.debug())
         << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
+}
+
+void
+PeerImp::onMessage(
+    std::shared_ptr<protocol::TMFederatorXChainTxnSignature> const& m)
+{
+    std::shared_ptr<sidechain::Federator> federator =
+        app_.getSidechainFederator();
+
+    auto sidechainJ = app_.journal("SidechainFederator");
+
+    auto badData = [&](std::string msg) {
+        fee_ = Resource::feeBadData;
+        JLOG(p_journal_.warn()) << msg;
+    };
+
+    auto getTxnType = [](::protocol::TMFederatorTxnType tt)
+        -> std::optional<sidechain::Federator::TxnType> {
+        switch (tt)
+        {
+            case ::protocol::TMFederatorTxnType::ftxnt_XCHAIN:
+                return sidechain::Federator::TxnType::xChain;
+            case ::protocol::TMFederatorTxnType::ftxnt_REFUND:
+                return sidechain::Federator::TxnType::refund;
+            default:
+                return {};
+        }
+    };
+
+    auto getChainType = [](::protocol::TMFederatorChainType ct)
+        -> std::optional<sidechain::Federator::ChainType> {
+        switch (ct)
+        {
+            case ::protocol::TMFederatorChainType::fct_SIDE:
+                return sidechain::Federator::sideChain;
+            case ::protocol::TMFederatorChainType::fct_MAIN:
+                return sidechain::Federator::mainChain;
+            default:
+                return {};
+        }
+    };
+
+    auto getPublicKey =
+        [](std::string const& data) -> std::optional<PublicKey> {
+        if (data.empty())
+            return {};
+        auto const s = makeSlice(data);
+        if (!publicKeyType(s))
+            return {};
+        return PublicKey(s);
+    };
+
+    auto getHash = [](std::string const& data) -> std::optional<uint256> {
+        if (data.size() != 32)
+            return {};
+        return uint256(data);
+    };
+
+    auto getAccountId =
+        [](std::string const& data) -> std::optional<AccountID> {
+        if (data.size() != 20)
+            return {};
+        return AccountID(data);
+    };
+
+    auto const signingPK = getPublicKey(m->signingpk());
+    if (!signingPK)
+    {
+        return badData("Invalid federator key");
+    }
+    auto const txnType = getTxnType(m->txntype());
+    if (!txnType)
+    {
+        return badData("Invalid txn type");
+    }
+    auto const dstChain = getChainType(m->dstchain());
+    if (!dstChain)
+    {
+        return badData("Invalid dst chain");
+    }
+    auto const srcChainTxnHash = getHash(m->srcchaintxnhash());
+    if (!srcChainTxnHash)
+    {
+        return badData("Invalid src chain txn hash");
+    }
+    auto const dstChainTxnHash = getHash(m->dstchaintxnhash());
+    if (*txnType == sidechain::Federator::TxnType::refund && !dstChainTxnHash)
+    {
+        return badData("Invalid dst chain txn hash for refund");
+    }
+    if (*txnType == sidechain::Federator::TxnType::xChain && dstChainTxnHash)
+    {
+        return badData("Invalid dst chain txn hash for xchain");
+    }
+    auto const srcChainSrcAccount = getAccountId(m->srcchainsrcaccount());
+    if (!srcChainSrcAccount)
+    {
+        return badData("Invalid src chain src account");
+    }
+    auto const dstChainSrcAccount = getAccountId(m->dstchainsrcaccount());
+    if (!dstChainSrcAccount)
+    {
+        return badData("Invalid dst chain src account");
+    }
+    auto const dstChainDstAccount = getAccountId(m->dstchaindstaccount());
+    if (!dstChainDstAccount)
+    {
+        return badData("Invalid dst account");
+    }
+    auto const seq = m->seq();
+    auto const amt = [&m]() -> std::optional<STAmount> {
+        try
+        {
+            SerialIter iter{m->amount().data(), m->amount().size()};
+            STAmount amt{iter, sfGeneric};
+            if (!iter.empty() || amt.signum() <= 0)
+            {
+                return std::nullopt;
+            }
+            if (amt.native() && amt.xrp() > INITIAL_XRP)
+            {
+                return std::nullopt;
+            }
+            return amt;
+        }
+        catch (std::exception const&)
+        {
+        }
+        return std::nullopt;
+    }();
+
+    if (!amt)
+    {
+        return badData("Invalid amount");
+    }
+
+    Buffer sig{m->signature().data(), m->signature().size()};
+
+    JLOGV(
+        sidechainJ.trace(),
+        "Received signature from peer",
+        jv("id", id()),
+        jv("sig", strHex(sig.data(), sig.data() + sig.size())));
+
+    if (federator && federator->alreadySent(*dstChain, seq))
+    {
+        // already sent this transaction, no need to forward signature
+        return;
+    }
+
+    uint256 const suppression = sidechain::crossChainTxnSignatureId(
+        *signingPK,
+        *srcChainTxnHash,
+        dstChainTxnHash,
+        *amt,
+        *dstChainSrcAccount,
+        *dstChainDstAccount,
+        seq,
+        sig);
+    app_.getHashRouter().addSuppressionPeer(suppression, id_);
+
+    app_.getJobQueue().addJob(
+        jtFEDERATORSIGNATURE,
+        "federator signature",
+        [self = shared_from_this(),
+         federator = std::move(federator),
+         suppression,
+         txnType,
+         dstChain,
+         signingPK,
+         srcChainTxnHash,
+         dstChainTxnHash,
+         amt,
+         srcChainSrcAccount,
+         dstChainDstAccount,
+         seq,
+         m,
+         j = sidechainJ,
+         sig = std::move(sig)](Job&) mutable {
+            auto& hashRouter = self->app_.getHashRouter();
+            if (auto const toSkip = hashRouter.shouldRelay(suppression))
+            {
+                auto const toSend = std::make_shared<Message>(
+                    *m, protocol::mtFederatorXChainTxnSignature);
+                self->overlay_.foreach([&](std::shared_ptr<Peer> const& p) {
+                    hashRouter.addSuppressionPeer(suppression, p->id());
+                    if (toSkip->count(p->id()))
+                    {
+                        JLOGV(
+                            j.trace(),
+                            "Not forwarding signature to peer",
+                            jv("id", p->id()),
+                            jv("suppression", suppression));
+                        return;
+                    }
+                    JLOGV(
+                        j.trace(),
+                        "Forwarding signature to peer",
+                        jv("id", p->id()),
+                        jv("suppression", suppression));
+                    p->send(toSend);
+                });
+            }
+
+            if (federator)
+            {
+                // Signature is checked in `addPendingTxnSig`
+                federator->addPendingTxnSig(
+                    *txnType,
+                    *dstChain,
+                    *signingPK,
+                    *srcChainTxnHash,
+                    dstChainTxnHash,
+                    *amt,
+                    *srcChainSrcAccount,
+                    *dstChainDstAccount,
+                    seq,
+                    std::move(sig));
+            }
+        });
+}
+
+void
+PeerImp::onMessage(
+    std::shared_ptr<protocol::TMFederatorAccountCtrlSignature> const& m)
+{
+    std::shared_ptr<sidechain::Federator> federator =
+        app_.getSidechainFederator();
+
+    auto sidechainJ = app_.journal("SidechainFederator");
+
+    auto badData = [&](std::string msg) {
+        fee_ = Resource::feeBadData;
+        JLOG(p_journal_.warn()) << msg;
+    };
+    auto getChainType = [](::protocol::TMFederatorChainType ct)
+        -> std::optional<sidechain::Federator::ChainType> {
+        switch (ct)
+        {
+            case ::protocol::TMFederatorChainType::fct_SIDE:
+                return sidechain::Federator::sideChain;
+            case ::protocol::TMFederatorChainType::fct_MAIN:
+                return sidechain::Federator::mainChain;
+            default:
+                return {};
+        }
+    };
+    auto const dstChain = getChainType(m->chain());
+    if (!dstChain)
+    {
+        return badData("Invalid dst chain");
+    }
+    auto getPublicKey =
+        [](std::string const& data) -> std::optional<PublicKey> {
+        if (data.empty())
+            return {};
+        auto const s = makeSlice(data);
+        if (!publicKeyType(s))
+            return {};
+        return PublicKey(s);
+    };
+
+    auto getHash = [](std::string const& data) -> std::optional<uint256> {
+        if (data.size() != 32)
+            return {};
+        return uint256(data);
+    };
+
+    auto const pk = getPublicKey(m->publickey());
+    if (!pk)
+    {
+        return badData("Invalid federator key");
+    }
+    auto const mId = getHash(m->messageid());
+    if (!mId)
+    {
+        return badData("Invalid txn hash");
+    }
+
+    Buffer sig{m->signature().data(), m->signature().size()};
+
+    JLOGV(
+        sidechainJ.trace(),
+        "Received signature from peer",
+        jv("id", id()),
+        jv("sig", strHex(sig.data(), sig.data() + sig.size())));
+
+    uint256 const suppression = sidechain::computeMessageSuppression(*mId, sig);
+    app_.getHashRouter().addSuppressionPeer(suppression, id_);
+
+    app_.getJobQueue().addJob(
+        jtFEDERATORSIGNATURE,
+        "federator signature",
+        [self = shared_from_this(),
+         federator = std::move(federator),
+         suppression,
+         pk,
+         mId,
+         m,
+         j = sidechainJ,
+         chain = *dstChain,
+         sig = std::move(sig)](Job&) mutable {
+            auto& hashRouter = self->app_.getHashRouter();
+            if (auto const toSkip = hashRouter.shouldRelay(suppression))
+            {
+                auto const toSend = std::make_shared<Message>(
+                    *m, protocol::mtFederatorAccountCtrlSignature);
+                self->overlay_.foreach([&](std::shared_ptr<Peer> const& p) {
+                    hashRouter.addSuppressionPeer(suppression, p->id());
+                    if (toSkip->count(p->id()))
+                    {
+                        JLOGV(
+                            j.trace(),
+                            "Not forwarding signature to peer",
+                            jv("id", p->id()),
+                            jv("suppression", suppression));
+                        return;
+                    }
+                    JLOGV(
+                        j.trace(),
+                        "Forwarding signature to peer",
+                        jv("id", p->id()),
+                        jv("suppression", suppression));
+                    p->send(toSend);
+                });
+            }
+
+            if (federator)
+            {
+                // Signature is checked in `addPendingTxnSig`
+                federator->addPendingTxnSig(chain, *pk, *mId, std::move(sig));
+            }
+        });
 }
 
 //--------------------------------------------------------------------------

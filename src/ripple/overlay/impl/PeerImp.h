@@ -584,6 +584,12 @@ public:
     onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m);
+    void
+    onMessage(
+        std::shared_ptr<protocol::TMFederatorXChainTxnSignature> const& m);
+    void
+    onMessage(
+        std::shared_ptr<protocol::TMFederatorAccountCtrlSignature> const& m);
 
 private:
     //--------------------------------------------------------------------------
