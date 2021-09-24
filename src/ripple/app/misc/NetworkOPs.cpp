@@ -38,6 +38,7 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/PerfLog.h>
@@ -3386,45 +3387,64 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                 RelationalDBInterface::AccountTxPageOptions options = {
                     accountId, startLedgerSeq, lastLedgerSeq, {}, 0, true};
-
-                auto [txns, marker] =
-                    dynamic_cast<RelationalDBInterfaceSqlite*>(
-                        &app_.getRelationalDBInterface())
-                        ->newestAccountTxPage(options);
-
-                for (auto const& [tx, meta] : txns)
+                for (;;)
                 {
-                    assert(tx && meta);
-                    if (!tx || !meta)
-                    {
-                        send(rpcError(rpcINTERNAL), true);
-                        return;
-                    }
-                    auto curTxLedger =
-                        app_.getLedgerMaster().getLedgerBySeq(tx->getLedger());
-                    assert(curTxLedger);
-                    if (!curTxLedger)
-                    {
-                        send(rpcError(rpcINTERNAL), true);
-                        return;
-                    }
-                    std::shared_ptr<STTx const> stTxn = tx->getSTransaction();
-                    Json::Value jvTx = transJson(
-                        *stTxn, meta->getResultTER(), true, curTxLedger);
-                    jvTx[jss::meta] = meta->getJson(JsonOptions::none);
-                    jvTx[jss::account_history_tx_index] = txHistoryIndex--;
-                    RPC::insertDeliveredAmount(
-                        jvTx[jss::meta], *curTxLedger, stTxn, *meta);
-                    if (isLastTx(tx, meta))
-                        jvTx[jss::account_history_tx_last] = true;
+                    auto [txns, marker] =
+                        dynamic_cast<RelationalDBInterfaceSqlite*>(
+                            &app_.getRelationalDBInterface())
+                            ->newestAccountTxPage(options);
 
-                    send(jvTx, false);
-                    if (jvTx.isMember(jss::account_history_tx_last))
+                    for (auto const& [tx, meta] : txns)
                     {
+                        assert(tx && meta);
+                        if (!tx || !meta)
+                        {
+                            send(rpcError(rpcINTERNAL), true);
+                            return;
+                        }
+                        auto curTxLedger =
+                            app_.getLedgerMaster().getLedgerBySeq(
+                                tx->getLedger());
+                        assert(curTxLedger);
+                        if (!curTxLedger)
+                        {
+                            send(rpcError(rpcINTERNAL), true);
+                            return;
+                        }
+                        std::shared_ptr<STTx const> stTxn =
+                            tx->getSTransaction();
+                        Json::Value jvTx = transJson(
+                            *stTxn, meta->getResultTER(), true, curTxLedger);
+                        jvTx[jss::meta] = meta->getJson(JsonOptions::none);
+                        jvTx[jss::account_history_tx_index] = txHistoryIndex--;
+                        RPC::insertDeliveredAmount(
+                            jvTx[jss::meta], *curTxLedger, stTxn, *meta);
+                        if (isLastTx(tx, meta))
+                            jvTx[jss::account_history_tx_last] = true;
+
+                        send(jvTx, false);
+                        if (jvTx.isMember(jss::account_history_tx_last))
+                        {
+                            JLOG(m_journal.trace())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId)
+                                << " done, found last tx.";
+                            return;
+                        }
+                    }
+
+                    if (marker)
+                    {
+                        options.marker = marker;
                         JLOG(m_journal.trace())
                             << "AccountHistory job for account "
-                            << toBase58(accountId) << " done, found last tx.";
-                        return;
+                            << toBase58(accountId)
+                            << " paging, marker=" << marker->ledgerSeq << ":"
+                            << marker->txnSeq;
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
 

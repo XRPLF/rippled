@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STTX_H_INCLUDED
 #define RIPPLE_PROTOCOL_STTX_H_INCLUDED
 
+#include <ripple/basics/Buffer.h>
 #include <ripple/basics/Expected.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STObject.h>
@@ -92,6 +93,20 @@ public:
     // Outer transaction functions / signature functions.
     Blob
     getSignature() const;
+
+    Buffer
+    getSignature(PublicKey const& publicKey, SecretKey const& secretKey) const;
+
+    // Get one of the multi-signatures
+    Buffer
+    getMultiSignature(
+        AccountID const& signingID,
+        PublicKey const& publicKey,
+        SecretKey const& secretKey) const;
+
+    // unconditionally set signature. No error checking.
+    void
+    setSignature(Buffer const& sig);
 
     uint256
     getSigningHash() const;
