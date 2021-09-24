@@ -113,6 +113,10 @@ protocolMessageName(int type)
             return "get_peer_shard_info_v2";
         case protocol::mtPEER_SHARD_INFO_V2:
             return "peer_shard_info_v2";
+        case protocol::mtFederatorXChainTxnSignature:
+            return "federator_xchain_txn_signature";
+        case protocol::mtFederatorAccountCtrlSignature:
+            return "federator_account_ctrl_signature";
         default:
             break;
     }
@@ -491,6 +495,14 @@ invokeProtocolMessage(
             break;
         case protocol::mtPEER_SHARD_INFO_V2:
             success = detail::invoke<protocol::TMPeerShardInfoV2>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtFederatorXChainTxnSignature:
+            success = detail::invoke<protocol::TMFederatorXChainTxnSignature>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtFederatorAccountCtrlSignature:
+            success = detail::invoke<protocol::TMFederatorAccountCtrlSignature>(
                 *header, buffers, handler);
             break;
         default:

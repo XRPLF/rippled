@@ -59,6 +59,8 @@ doDownloadShard(RPC::JsonContext&);
 Json::Value
 doFeature(RPC::JsonContext&);
 Json::Value
+doFederatorInfo(RPC::JsonContext&);
+Json::Value
 doFee(RPC::JsonContext&);
 Json::Value
 doFetchInfo(RPC::JsonContext&);

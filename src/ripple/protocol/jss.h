@@ -70,6 +70,10 @@ JSS(Invalid);                //
 JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
 JSS(LimitAmount);            // field.
+JSS(Memo);                   // txn common field
+JSS(Memos);                  // txn common field
+JSS(MemoType);               // txn common field
+JSS(MemoData);               // txn common field
 JSS(Offer);                  // ledger type.
 JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.
@@ -91,6 +95,10 @@ JSS(SetFlag);                // field.
 JSS(SetRegularKey);          // transaction type.
 JSS(SignerList);             // ledger type.
 JSS(SignerListSet);          // transaction type.
+JSS(SignerEntry);            // transaction type.
+JSS(SignerEntries);          // transaction type.
+JSS(SignerQuorum);           // transaction type.
+JSS(SignerWeight);           // transaction type.
 JSS(SigningPubKey);          // field.
 JSS(TakerGets);              // field.
 JSS(TakerPays);              // field.
@@ -310,6 +318,7 @@ JSS(last_close);                  // out: NetworkOPs
 JSS(last_refresh_time);           // out: ValidatorSite
 JSS(last_refresh_status);         // out: ValidatorSite
 JSS(last_refresh_message);        // out: ValidatorSite
+JSS(last_transaction_sent_seq);   // out: federator_info
 JSS(ledger);                      // in: NetworkOPs, LedgerCleaner,
                                   //     RPCHelpers
                                   // out: NetworkOPs, PeerImp
@@ -337,6 +346,7 @@ JSS(limit);                       // in/out: AccountTx*, AccountOffers,
 JSS(limit_peer);                  // out: AccountLines
 JSS(lines);                       // out: AccountLines
 JSS(list);                        // out: ValidatorList
+JSS(listener_info);               // out: federator_info
 JSS(load);                        // out: NetworkOPs, PeerImp
 JSS(load_base);                   // out: NetworkOPs
 JSS(load_factor);                 // out: NetworkOPs
@@ -353,6 +363,7 @@ JSS(local_txs);                   // out: GetCounts
 JSS(local_static_keys);           // out: ValidatorList
 JSS(lowest_sequence);             // out: AccountInfo
 JSS(lowest_ticket);               // out: AccountInfo
+JSS(mainchain);                   // out: federator_info
 JSS(majority);                    // out: RPC feature
 JSS(manifest);                    // out: ValidatorInfo, Manifest
 JSS(marker);                      // in/out: AccountTx, AccountOffers,
@@ -434,6 +445,7 @@ JSS(peers);                      // out: InboundLedger, handlers/Peers, Overlay
 JSS(peer_disconnects);           // Severed peer connection counter.
 JSS(peer_disconnects_resources);  // Severed peer connections because of
                                   // excess resource consumption.
+JSS(pending_transactions);        // out: federator_info
 JSS(port);                        // in: Connect
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
@@ -506,7 +518,9 @@ JSS(server_version);            // out: NetworkOPs
 JSS(settle_delay);              // out: AccountChannels
 JSS(severity);                  // in: LogLevel
 JSS(shards);                    // in/out: GetCounts, DownloadShard
+JSS(sidechain);                 // out: federator_info
 JSS(signature);                 // out: NetworkOPs, ChannelAuthorize
+JSS(signatures);                // out: federator_info
 JSS(signature_verified);        // out: ChannelVerify
 JSS(signing_key);               // out: NetworkOPs
 JSS(signing_keys);              // out: ValidatorList
@@ -534,6 +548,7 @@ JSS(sub_index);             // in: LedgerEntry
 JSS(subcommand);            // in: PathFind
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
+JSS(sync_info);             // out: federator_info
 JSS(system_time_offset);    // out: NetworkOPs
 JSS(tag);                   // out: Peers
 JSS(taker);                 // in: Subscribe, BookOffers

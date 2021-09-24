@@ -48,6 +48,7 @@
 #include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
 #include <ripple/app/reporting/ReportingETL.h>
+#include <ripple/app/sidechain/Federator.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/PerfLog.h>
@@ -213,6 +214,8 @@ public:
     RCLValidations mValidations;
     std::unique_ptr<LoadManager> m_loadManager;
     std::unique_ptr<TxQ> txQ_;
+
+    std::shared_ptr<sidechain::Federator> sidechainFederator_;
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
@@ -483,6 +486,8 @@ public:
     checkSigs(bool) override;
     bool
     isStopping() const override;
+    void
+    startFederator() override;
     int
     fdRequired() const override;
 
@@ -853,6 +858,12 @@ public:
         return *mWalletDB;
     }
 
+    std::shared_ptr<sidechain::Federator>
+    getSidechainFederator() override
+    {
+        return sidechainFederator_;
+    }
+
     ReportingETL&
     getReportingETL() override
     {
@@ -1021,6 +1032,8 @@ public:
         ledgerCleaner_->stop();
         if (reportingETL_)
             reportingETL_->stop();
+        if (sidechainFederator_)
+            sidechainFederator_->stop();
         if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
                 &*mRelationalDBInterface))
             pg->stop();
@@ -1126,6 +1139,8 @@ public:
         getLedgerReplayer().sweep();
         m_acceptedLedgerCache.sweep();
         cachedSLEs_.expire();
+        if (sidechainFederator_)
+            sidechainFederator_->sweep();
 
 #ifdef RIPPLED_REPORTING
         if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
@@ -1553,6 +1568,15 @@ ApplicationImp::setup()
     if (reportingETL_)
         reportingETL_->start();
 
+    sidechainFederator_ = sidechain::make_Federator(
+        *this,
+        get_io_service(),
+        *config_,
+        logs_->journal("SidechainFederator"));
+
+    if (sidechainFederator_)
+        sidechainFederator_->start();
+
     return true;
 }
 
@@ -1577,6 +1601,7 @@ ApplicationImp::start(bool withTimers)
     grpcServer_->start();
     ledgerCleaner_->start();
     perfLog_->start();
+    startFederator();
 }
 
 void
@@ -1632,6 +1657,13 @@ ApplicationImp::isStopping() const
 {
     std::lock_guard lk{mut_};
     return isTimeToStop;
+}
+
+void
+ApplicationImp::startFederator()
+{
+    if (sidechainFederator_)
+        sidechainFederator_->unlockMainLoop();
 }
 
 int
