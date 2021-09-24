@@ -33,6 +33,8 @@ enum MessageType
     mtPEER_SHARD_INFO_V2        = 62;
     mtHAVE_TRANSACTIONS         = 63;
     mtTRANSACTIONS              = 64;
+    mtFederatorXChainTxnSignature = 65;
+    mtFederatorAccountCtrlSignature = 66;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -450,3 +452,42 @@ message TMHaveTransactions
     repeated bytes hashes = 1;
 }
 
+enum TMFederatorChainType
+{
+   fct_SIDE = 1;
+   fct_MAIN = 2;
+}
+
+enum TMFederatorTxnType
+{
+   ftxnt_XCHAIN = 1; // cross chain
+   ftxnt_REFUND = 2; 
+}
+
+message TMFederatorXChainTxnSignature
+{
+    required TMFederatorTxnType txnType = 1;
+    required TMFederatorChainType dstChain = 2;
+    required bytes signingPK = 3; // federator's signing public key (unencoded binary data)
+    // txn hash for the src chain (unencoded bigendian binary data)
+    // This will be origional transaction from the src account to the door account
+    required bytes srcChainTxnHash = 4; 
+    // txn hash for the dst chain (unencoded bigendian binary data)
+    // This will be empty for XCHAIN transaction, and will the failed transaction from the
+    // door account to the dst account for refund txns.
+    optional bytes dstChainTxnHash = 5; 
+    required bytes amount = 6; // STAmount in wire serialized format
+    required bytes srcChainSrcAccount = 7; // account id (unencoded bigendian binary data)
+    required bytes dstChainSrcAccount = 8; // account id (unencoded bigendian binary data)
+    required bytes dstChainDstAccount = 9; // account id (unencoded bigendian binary data)
+    required uint32 seq = 10; // sequence number
+    required bytes signature = 11; // (unencoded bigendian binary data)
+}
+
+message TMFederatorAccountCtrlSignature
+{
+    required TMFederatorChainType chain = 1;
+    required bytes publicKey = 2;
+    required bytes messageId = 3;
+    required bytes signature = 4;
+}

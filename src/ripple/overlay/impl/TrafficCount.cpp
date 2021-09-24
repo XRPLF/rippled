@@ -163,6 +163,9 @@ TrafficCount::categorize(
     if (type == protocol::mtTRANSACTIONS)
         return TrafficCount::category::requested_transactions;
 
+    if (type == protocol::mtFederatorXChainTxnSignature)
+        return TrafficCount::category::federator_xchain_txn_signature;
+
     return TrafficCount::category::unknown;
 }
 

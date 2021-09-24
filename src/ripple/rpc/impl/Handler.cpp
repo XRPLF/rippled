@@ -89,6 +89,7 @@ Handler const handlerArray[]{
 #endif
     {"get_counts", byRef(&doGetCounts), Role::ADMIN, NO_CONDITION},
     {"feature", byRef(&doFeature), Role::ADMIN, NO_CONDITION},
+    {"federator_info", byRef(&doFederatorInfo), Role::USER, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
     {"fetch_info", byRef(&doFetchInfo), Role::ADMIN, NO_CONDITION},
     {"ledger_accept",

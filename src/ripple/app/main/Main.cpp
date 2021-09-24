@@ -20,6 +20,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/sidechain/Federator.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/contract.h>

@@ -320,6 +320,7 @@ ServerHandlerImp::onWSMessage(
     if (size > RPC::Tuning::maxRequestSize ||
         !Json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
+        Json::Reader{}.parse(jv, buffers);  // swd debug
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";

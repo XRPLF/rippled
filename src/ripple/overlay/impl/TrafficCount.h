@@ -157,6 +157,8 @@ public:
         // TMTransactions
         requested_transactions,
 
+        federator_xchain_txn_signature,
+
         unknown  // must be last
     };
 
@@ -243,12 +245,13 @@ protected:
         {"getobject_share"},                     // category::share_hash
         {"getobject_get"},                       // category::get_hash
         {"proof_path_request"},                  // category::proof_path_request
-        {"proof_path_response"},     // category::proof_path_response
-        {"replay_delta_request"},    // category::replay_delta_request
-        {"replay_delta_response"},   // category::replay_delta_response
-        {"have_transactions"},       // category::have_transactions
-        {"requested_transactions"},  // category::transactions
-        {"unknown"}                  // category::unknown
+        {"proof_path_response"},             // category::proof_path_response
+        {"replay_delta_request"},            // category::replay_delta_request
+        {"replay_delta_response"},           // category::replay_delta_response
+        {"have_transactions"},               // category::have_transactions
+        {"requested_transactions"},          // category::transactions
+        {"federator_xchain_txn_signature"},  // category::federator_xchain_txn_signature
+        {"unknown"}                          // category::unknown
     }};
 };
 

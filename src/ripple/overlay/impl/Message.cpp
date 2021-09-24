@@ -87,6 +87,7 @@ Message::compress()
             case protocol::mtVALIDATORLISTCOLLECTION:
             case protocol::mtREPLAY_DELTA_RESPONSE:
             case protocol::mtTRANSACTIONS:
+            case protocol::mtFederatorXChainTxnSignature:
                 return true;
             case protocol::mtPING:
             case protocol::mtCLUSTER:
@@ -102,6 +103,7 @@ Message::compress()
             case protocol::mtGET_PEER_SHARD_INFO_V2:
             case protocol::mtPEER_SHARD_INFO_V2:
             case protocol::mtHAVE_TRANSACTIONS:
+            case protocol::mtFederatorAccountCtrlSignature:
                 break;
         }
         return false;

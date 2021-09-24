@@ -60,20 +60,21 @@ enum JobType {
     jtREPLAY_TASK,        // A Ledger replay task/subtask
     jtLEDGER_DATA,        // Received data for a ledger we're acquiring
     jtTRANSACTION,        // A transaction received from the network
-    jtMISSING_TXN,        // Request missing transactions
-    jtREQUESTED_TXN,      // Reply with requested transactions
-    jtBATCH,              // Apply batched transactions
-    jtADVANCE,            // Advance validated/acquired ledgers
-    jtPUBLEDGER,          // Publish a fully-accepted ledger
-    jtTXN_DATA,           // Fetch a proposed set
-    jtWAL,                // Write-ahead logging
-    jtVALIDATION_t,       // A validation from a trusted source
-    jtWRITE,              // Write out hashed objects
-    jtACCEPT,             // Accept a consensus ledger
-    jtPROPOSAL_t,         // A proposal from a trusted source
-    jtNETOP_CLUSTER,      // NetworkOPs cluster peer report
-    jtNETOP_TIMER,        // NetworkOPs net timer processing
-    jtADMIN,              // An administrative operation
+    jtFEDERATORSIGNATURE,  // A signature from a sidechain federator
+    jtMISSING_TXN,         // Request missing transactions
+    jtREQUESTED_TXN,       // Reply with requested transactions
+    jtBATCH,               // Apply batched transactions
+    jtADVANCE,             // Advance validated/acquired ledgers
+    jtPUBLEDGER,           // Publish a fully-accepted ledger
+    jtTXN_DATA,            // Fetch a proposed set
+    jtWAL,                 // Write-ahead logging
+    jtVALIDATION_t,        // A validation from a trusted source
+    jtWRITE,               // Write out hashed objects
+    jtACCEPT,              // Accept a consensus ledger
+    jtPROPOSAL_t,          // A proposal from a trusted source
+    jtNETOP_CLUSTER,       // NetworkOPs cluster peer report
+    jtNETOP_TIMER,         // NetworkOPs net timer processing
+    jtADMIN,               // An administrative operation
 
     // Special job types which are not dispatched by the job pool
     jtPEER,

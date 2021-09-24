@@ -90,6 +90,13 @@ private:
         add(jtUPDATE_PF,         "updatePaths",                 1,     0ms,     0ms);
         add(jtTRANSACTION,       "transaction",          maxLimit,   250ms,  1000ms);
         add(jtBATCH,             "batch",                maxLimit,   250ms,  1000ms);
+        // TODO chose ave latency and peak latency numbers
+        add(jtFEDERATORSIGNATURE,
+            "federatorSignature",
+            maxLimit,
+            false,
+            250ms,
+            1000ms);
         add(jtADVANCE,           "advanceLedger",        maxLimit,     0ms,     0ms);
         add(jtPUBLEDGER,         "publishNewLedger",     maxLimit,  3000ms,  4500ms);
         add(jtTXN_DATA,          "fetchTxnData",                5,     0ms,     0ms);
