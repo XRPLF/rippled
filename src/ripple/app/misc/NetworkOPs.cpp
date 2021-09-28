@@ -3394,48 +3394,67 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                 RelationalDBInterface::AccountTxPageOptions options = {
                     accountId, startLedgerSeq, lastLedgerSeq, {}, 0, true};
-
-                auto [txns, marker] =
-                    dynamic_cast<RelationalDBInterfaceSqlite*>(
-                        &app_.getRelationalDBInterface())
-                        ->newestAccountTxPage(options);
-
-                for (auto const& [tx, meta] : txns)
+                for (;;)
                 {
-                    if (!tx || !meta)
-                    {
-                        send(rpcError(rpcINTERNAL), true);
-                        return;
-                    }
-                    auto curTxLedger =
-                        app_.getLedgerMaster().getLedgerBySeq(tx->getLedger());
-                    if (!curTxLedger)
-                    {
-                        send(rpcError(rpcINTERNAL), true);
-                        return;
-                    }
-                    std::shared_ptr<STTx const> stTxn = tx->getSTransaction();
-                    if (!stTxn)
-                    {
-                        send(rpcError(rpcINTERNAL), true);
-                        return;
-                    }
-                    Json::Value jvTx = transJson(
-                        *stTxn, meta->getResultTER(), true, curTxLedger);
-                    jvTx[jss::meta] = meta->getJson(JsonOptions::none);
-                    jvTx[jss::account_history_tx_index] = txHistoryIndex--;
-                    RPC::insertDeliveredAmount(
-                        jvTx[jss::meta], *curTxLedger, stTxn, *meta);
-                    if (isFirstTx(tx, meta))
-                        jvTx[jss::account_history_tx_first] = true;
+                    auto [txns, marker] =
+                        dynamic_cast<RelationalDBInterfaceSqlite*>(
+                            &app_.getRelationalDBInterface())
+                            ->newestAccountTxPage(options);
 
-                    send(jvTx, false);
-                    if (jvTx.isMember(jss::account_history_tx_first))
+                    for (auto const& [tx, meta] : txns)
                     {
+                        if (!tx || !meta)
+                        {
+                            send(rpcError(rpcINTERNAL), true);
+                            return;
+                        }
+                        auto curTxLedger =
+                            app_.getLedgerMaster().getLedgerBySeq(
+                                tx->getLedger());
+                        if (!curTxLedger)
+                        {
+                            send(rpcError(rpcINTERNAL), true);
+                            return;
+                        }
+                        std::shared_ptr<STTx const> stTxn =
+                            tx->getSTransaction();
+                        if (!stTxn)
+                        {
+                            send(rpcError(rpcINTERNAL), true);
+                            return;
+                        }
+                        Json::Value jvTx = transJson(
+                            *stTxn, meta->getResultTER(), true, curTxLedger);
+                        jvTx[jss::meta] = meta->getJson(JsonOptions::none);
+                        jvTx[jss::account_history_tx_index] = txHistoryIndex--;
+                        RPC::insertDeliveredAmount(
+                            jvTx[jss::meta], *curTxLedger, stTxn, *meta);
+                        if (isFirstTx(tx, meta))
+                            jvTx[jss::account_history_tx_first] = true;
+
+                        send(jvTx, false);
+                        if (jvTx.isMember(jss::account_history_tx_first))
+                        {
+                            JLOG(m_journal.trace())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId)
+                                << " done, found last tx.";
+                            return;
+                        }
+                    }
+
+                    if (marker)
+                    {
+                        options.marker = marker;
                         JLOG(m_journal.trace())
                             << "AccountHistory job for account "
-                            << toBase58(accountId) << " done, found last tx.";
-                        return;
+                            << toBase58(accountId)
+                            << " paging, marker=" << marker->ledgerSeq << ":"
+                            << marker->txnSeq;
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
 
