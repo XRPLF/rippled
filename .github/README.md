@@ -171,9 +171,10 @@ by the job.
        including "ci_run_win" in the git commit message.)
        * Ninja generator, MSVC 2017, Debug, unity
        * Ninja generator, MSVC 2017, Release, unity
-       * Ninja generator, MSVC 2019, Debug, unity
+       * Ninja generator, MSVC 2019, Debug, unity (without tests)
        * Ninja generator, MSVC 2019, Release, unity
        * Visual Studio 2019 generator, MSVC 2017, Debug, non-unity
+       * Visual Studio 2019 generator, MSVC 2017, Release, non-unity
        * Visual Studio 2019 generator, MSVC 2019, Release, non-unity
     3. There is no stage 3 in this workflow.
     4. There is no stage 4 in this workflow.
@@ -196,16 +197,12 @@ minimizing space when feasible. There is almost certainly room for
 improvement.
 
 Thus, for example, the `linux-general.yml` workflow downloads the "NIH"
-dependencies into a single cache (per docker image). All of the source files
-for these dependencies are stored in a single folder, which saves space in
-the shared cache. Unfortunately, `cmake` is not always smart enough to know
-that the source has already been downloaded, so there is some wasted effort
-there, but because the same paths are used for unity and non-unity builds, it
-still saves about half of that time.
+dependencies into a single cache (per docker image). All of the source and
+git timestamp files for these dependencies are stored in a single folder,
+which is reused across jobs, and *not* duplicated across job-specific caches.
 
-Each "base" job then uses that cache to initialize its specific cache. During
-the build, any additional dependencies are stored in the cache, along with
-`ccache` output. This significantly speeds up subsequent builds of the same
+Each "base" job stores dependency build output along with `ccache` output.
+This significantly speeds up subsequent builds of the same
 base job.
 
 Once the base job is done, any "special case" jobs (e.g. Coverage, address
