@@ -82,7 +82,7 @@ if (Boost_COMPILER)
   target_link_libraries (ripple_boost INTERFACE Boost::disable_autolinking)
 endif ()
 if (san AND is_clang)
-  # TODO: gcc does not support -fsanitize-blacklist...can we do something else 
+  # TODO: gcc does not support -fsanitize-blacklist...can we do something else
   # for gcc ?
   if (NOT Boost_INCLUDE_DIRS AND TARGET Boost::headers)
     get_target_property (Boost_INCLUDE_DIRS Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
@@ -93,13 +93,4 @@ if (san AND is_clang)
     INTERFACE
       # ignore boost headers for sanitizing
       -fsanitize-blacklist=${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt)
-endif ()
-
-# workaround for xcode 10.2 and boost < 1.69
-# once we require Boost 1.69 or higher, this can be removed
-# see:  https://github.com/boostorg/asio/commit/43874d5
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0.1.10010043 AND
-    Boost_VERSION LESS 106900)
-  target_compile_definitions (opts INTERFACE BOOST_ASIO_HAS_STD_STRING_VIEW)
 endif ()
