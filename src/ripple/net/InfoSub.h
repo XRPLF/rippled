@@ -197,6 +197,7 @@ public:
     void
     deleteSubAccountInfo(AccountID const& account, bool rt);
 
+    // return false if already subscribed to this account
     bool
     insertSubAccountHistory(AccountID const& account);
 

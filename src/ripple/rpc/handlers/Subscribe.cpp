@@ -203,6 +203,7 @@ doSubscribe(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::account_history_tx_stream))
     {
+        context.loadType = Resource::feeMediumBurdenRPC;
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())
             return rpcError(rpcINVALID_PARAMS);
@@ -213,8 +214,13 @@ doSubscribe(RPC::JsonContext& context)
 
         if (auto result = context.netOps.subAccountHistory(ispSub, *id);
             result != rpcSUCCESS)
+        {
             return rpcError(result);
+        }
 
+        jvResult[jss::warning] =
+            "account_history_tx_stream is an experimental feature and likely "
+            "to be removed in the future";
         JLOG(context.j.debug())
             << "doSubscribe: account_history_tx_stream: " << toBase58(*id);
     }

@@ -60,6 +60,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -638,6 +639,14 @@ private:
     using SubInfoMapType = hash_map<AccountID, SubMapType>;
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
 
+    /*
+     * With a validated ledger to separate history and future, the node
+     * streams historical txns with negative indexes starting from -1,
+     * and streams future txns starting from index 0.
+     * The SubAccountHistoryIndex struct maintains these indexes.
+     * It also has a flag stopHistorical_ for stopping streaming
+     * the historical txns.
+     */
     struct SubAccountHistoryIndex
     {
         AccountID const accountId_;
@@ -3081,12 +3090,13 @@ NetworkOPsImp::pubAccountTransaction(
         if (!bAccepted && mSubRTAccount.empty())
             return;
 
-        if (!mSubAccount.empty() || (!mSubRTAccount.empty()))
+        if (!mSubAccount.empty() || (!mSubRTAccount.empty()) ||
+            !mSubAccountHistory.empty())
         {
             for (auto const& affectedAccount : alTx.getAffected())
             {
-                auto simiIt = mSubRTAccount.find(affectedAccount);
-                if (simiIt != mSubRTAccount.end())
+                if (auto simiIt = mSubRTAccount.find(affectedAccount);
+                    simiIt != mSubRTAccount.end())
                 {
                     auto it = simiIt->second.begin();
 
@@ -3107,9 +3117,8 @@ NetworkOPsImp::pubAccountTransaction(
 
                 if (bAccepted)
                 {
-                    simiIt = mSubAccount.find(affectedAccount);
-
-                    if (simiIt != mSubAccount.end())
+                    if (auto simiIt = mSubAccount.find(affectedAccount);
+                        simiIt != mSubAccount.end())
                     {
                         auto it = simiIt->second.begin();
                         while (it != simiIt->second.end())
@@ -3126,41 +3135,36 @@ NetworkOPsImp::pubAccountTransaction(
                                 it = simiIt->second.erase(it);
                         }
                     }
-                }
-            }
-        }
 
-        if (bAccepted && !mSubAccountHistory.empty())
-        {
-            for (auto const& accountId : alTx.getAffected())
-            {
-                if (auto histoIt = mSubAccountHistory.find(accountId);
-                    histoIt != mSubAccountHistory.end())
-                {
-                    auto& subs = histoIt->second;
-                    auto it = subs.begin();
-                    while (it != subs.end())
+                    if (auto histoIt = mSubAccountHistory.find(affectedAccount);
+                        histoIt != mSubAccountHistory.end())
                     {
-                        SubAccountHistoryInfoWeak const& info = it->second;
-                        if (currLedgerSeq <= info.index_->separationLedgerSeq_)
+                        auto& subs = histoIt->second;
+                        auto it = subs.begin();
+                        while (it != subs.end())
                         {
-                            ++it;
-                            continue;
-                        }
+                            SubAccountHistoryInfoWeak const& info = it->second;
+                            if (currLedgerSeq <=
+                                info.index_->separationLedgerSeq_)
+                            {
+                                ++it;
+                                continue;
+                            }
 
-                        if (auto isSptr = info.sinkWptr_.lock(); isSptr)
-                        {
-                            accountHistoryNotify.emplace_back(
-                                SubAccountHistoryInfo{isSptr, info.index_});
-                            ++it;
+                            if (auto isSptr = info.sinkWptr_.lock(); isSptr)
+                            {
+                                accountHistoryNotify.emplace_back(
+                                    SubAccountHistoryInfo{isSptr, info.index_});
+                                ++it;
+                            }
+                            else
+                            {
+                                it = subs.erase(it);
+                            }
                         }
-                        else
-                        {
-                            it = subs.erase(it);
-                        }
+                        if (subs.empty())
+                            mSubAccountHistory.erase(histoIt);
                     }
-                    if (subs.empty())
-                        mSubAccountHistory.erase(histoIt);
                 }
             }
         }
@@ -3290,7 +3294,7 @@ void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
     app_.getJobQueue().addJob(
-        jtCLIENT, "AccountHistory", [this, subInfo](Job&) {
+        jtCLIENT, "AccountHistoryTxStream", [this, subInfo](Job&) {
             auto const& accountId = subInfo.index_->accountId_;
             auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;
             auto& txHistoryIndex = subInfo.index_->historyTxIndex_;
@@ -3315,28 +3319,21 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                 for (auto& node : meta->getNodes())
                 {
-                    try
-                    {
-                        if (node.getFieldU16(sfLedgerEntryType) !=
-                            ltACCOUNT_ROOT)
-                            continue;
+                    if (node.getFieldU16(sfLedgerEntryType) != ltACCOUNT_ROOT)
+                        continue;
 
-                        if (node.isFieldPresent(sfNewFields))
+                    if (node.isFieldPresent(sfNewFields))
+                    {
+                        if (auto inner = dynamic_cast<const STObject*>(
+                                node.peekAtPField(sfNewFields));
+                            inner)
                         {
-                            if (auto inner = dynamic_cast<const STObject*>(
-                                    node.peekAtPField(sfNewFields));
-                                inner)
+                            if (inner->isFieldPresent(sfAccount) &&
+                                inner->getAccountID(sfAccount) == accountId)
                             {
-                                if (inner->getAccountID(sfAccount) == accountId)
-                                {
-                                    return true;
-                                }
+                                return true;
                             }
                         }
-                    }
-                    catch (std::exception const&)
-                    {
-                        continue;
                     }
                 }
 
@@ -3352,17 +3349,26 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         unsubAccountHistory(sptr, accountId, false);
                     return true;
                 }
-                else
-                {
-                    return false;
-                }
+
+                return false;
             };
 
+            auto db = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                &app_.getRelationalDBInterface());
+            if (!db)
+            {
+                JLOG(m_journal.debug())
+                    << "AccountHistory job for account " << toBase58(accountId)
+                    << " DB interface type wrong";
+                send(rpcError(rpcINTERNAL), true);
+                return;
+            }
             /*
              * search backward until the genesis ledger or asked to stop
              */
             while (lastLedgerSeq >= 2 && !subInfo.index_->stopHistorical_)
             {
+                // try to search in 256 ledgers till reaching genesis ledgers
                 auto startLedgerSeq =
                     (lastLedgerSeq > 256 + 2 ? lastLedgerSeq - 256 : 2);
                 JLOG(m_journal.trace())
@@ -3396,10 +3402,20 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     accountId, startLedgerSeq, lastLedgerSeq, {}, 0, true};
                 for (;;)
                 {
-                    auto [txns, marker] =
-                        dynamic_cast<RelationalDBInterfaceSqlite*>(
-                            &app_.getRelationalDBInterface())
-                            ->newestAccountTxPage(options);
+                    if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                    {
+                        sptr->getConsumer().charge(
+                            Resource::feeMediumBurdenRPC);
+                    }
+                    else
+                    {
+                        JLOG(m_journal.trace())
+                            << "AccountHistory job for account "
+                            << toBase58(accountId) << " no InfoSub.";
+                        return;
+                    }
+
+                    auto [txns, marker] = db->newestAccountTxPage(options);
 
                     for (auto const& [tx, meta] : txns)
                     {
@@ -3430,16 +3446,19 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         RPC::insertDeliveredAmount(
                             jvTx[jss::meta], *curTxLedger, stTxn, *meta);
                         if (isFirstTx(tx, meta))
-                            jvTx[jss::account_history_tx_first] = true;
-
-                        send(jvTx, false);
-                        if (jvTx.isMember(jss::account_history_tx_first))
                         {
+                            jvTx[jss::account_history_tx_first] = true;
+                            send(jvTx, false);
+
                             JLOG(m_journal.trace())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId)
                                 << " done, found last tx.";
                             return;
+                        }
+                        else
+                        {
+                            send(jvTx, false);
                         }
                     }
 
@@ -3545,10 +3564,17 @@ NetworkOPsImp::subAccountHistory(
 
     auto const ledger = app_.getLedgerMaster().getValidatedLedger();
     if (ledger)
+    {
         subAccountHistoryStart(ledger, ahi);
+    }
     else
+    {
+        // The node does not have validated ledgers, so wait for
+        // one before start streaming.
+        // In this case, the subscription is also considered successful.
         JLOG(m_journal.debug())
             << "subAccountHistory, no validated ledger yet, delay start";
+    }
 
     return rpcSUCCESS;
 }
