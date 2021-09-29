@@ -101,6 +101,11 @@ public:
     {
         return (mNodes);
     }
+    STArray const&
+    peekNodes() const
+    {
+        return (mNodes);
+    }
 
     void
     setDeliveredAmount(STAmount const& delivered)

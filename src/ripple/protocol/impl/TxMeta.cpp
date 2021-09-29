@@ -20,8 +20,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <ripple/json/to_string.h>
-#include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/TxMeta.h>
 #include <string>
 
 namespace ripple {

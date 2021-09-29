@@ -104,6 +104,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/Sign.cpp
   src/ripple/protocol/impl/TER.cpp
   src/ripple/protocol/impl/TxFormats.cpp
+  src/ripple/protocol/impl/TxMeta.cpp
   src/ripple/protocol/impl/UintTypes.cpp
   src/ripple/protocol/impl/digest.cpp
   src/ripple/protocol/impl/tokens.cpp
@@ -237,6 +238,7 @@ install (
     src/ripple/protocol/TER.h
     src/ripple/protocol/TxFlags.h
     src/ripple/protocol/TxFormats.h
+    src/ripple/protocol/TxMeta.h
     src/ripple/protocol/UintTypes.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
@@ -483,7 +485,6 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/PaymentSandbox.cpp
   src/ripple/ledger/impl/RawStateTable.cpp
   src/ripple/ledger/impl/ReadView.cpp
-  src/ripple/ledger/impl/TxMeta.cpp
   src/ripple/ledger/impl/View.cpp
   #[===============================[
      main sources:
