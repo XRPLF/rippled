@@ -17,13 +17,19 @@ from ripple_client import RippleClient
 class Network:
     # If run_server is None, run all the servers.
     # This is useful to help debugging
-    def __init__(self,
-                 exe: str,
-                 configs: List[ConfigFile],
-                 *,
-                 command_logs: Optional[List[str]] = None,
-                 run_server: Optional[List[bool]] = None,
-                 extra_args: Optional[List[List[str]]] = None):
+    def __init__(
+            self,
+            exe: str,
+            configs: List[ConfigFile],
+            *,
+            command_logs: Optional[List[str]] = None,
+            run_server: Optional[List[bool]] = None,
+            # undocumented feature. If with_rr is not None, assume it points to the rr debugger executable
+            # and run server 0 under rr
+            with_rr: Optional[str] = None,
+            extra_args: Optional[List[List[str]]] = None):
+
+        self.with_rr = with_rr
         if not configs:
             raise ValueError(f'Must specify at least one config')
 
@@ -164,7 +170,11 @@ class Network:
 
             client = self.clients[i]
             to_run = [client.exe, '--conf', client.config_file_name]
-            print(f'Starting server {client.config_file_name}')
+            if self.with_rr and i == 0:
+                to_run = [self.with_rr, 'record'] + to_run
+                print(f'Starting server with rr {client.config_file_name}')
+            else:
+                print(f'Starting server {client.config_file_name}')
             fout = open(os.devnull, 'w')
             p = subprocess.Popen(to_run + extra_args[i],
                                  stdout=fout,

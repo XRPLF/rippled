@@ -127,6 +127,12 @@ class Params:
         if args.debug_mainchain:
             self.debug_mainchain = arts.debug_mainchain
 
+        # Undocumented feature: if the environment variable RIPPLED_SIDECHAIN_RR is set, it is
+        # assumed to point to the rr executable. Sidechain server 0 will then be run under rr.
+        self.sidechain_rr = None
+        if 'RIPPLED_SIDECHAIN_RR' in os.environ:
+            self.sidechain_rr = os.environ['RIPPLED_SIDECHAIN_RR']
+
         self.standalone = args.standalone
         self.with_pauses = args.with_pauses
         self.interactive = args.interactive
@@ -471,7 +477,8 @@ def _multinode_with_callback(params: Params,
 
         with testnet_app(exe=params.sidechain_exe,
                          configs=testnet_configs,
-                         run_server=run_server_list) as n_app:
+                         run_server=run_server_list,
+                         sidechain_rr=params.sidechain_rr) as n_app:
 
             if params.with_pauses:
                 input("Pausing after testnet start (press enter to continue)")

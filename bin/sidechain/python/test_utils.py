@@ -26,11 +26,13 @@ def _sc_subscribe_callback(v: dict):
 
 
 def mc_connect_subscription(app: App, door_account: Account):
-    app(Subscribe(accounts=[door_account]), _mc_subscribe_callback)
+    app(Subscribe(account_history_account=door_account),
+        _mc_subscribe_callback)
 
 
 def sc_connect_subscription(app: App, door_account: Account):
-    app(Subscribe(accounts=[door_account]), _sc_subscribe_callback)
+    app(Subscribe(account_history_account=door_account),
+        _sc_subscribe_callback)
 
 
 # This pops elements off the subscribe_queue until the transaction is found
@@ -111,18 +113,18 @@ def sc_wait_for_payment_detect(app: App, src: Account, dst: Account,
 def wait_for_balance_change(app: App,
                             acc: Account,
                             pre_balance: Asset,
-                            final_diff: Optional[Asset] = None):
+                            expected_diff: Optional[Asset] = None):
     logging.info(
-        f'waiting for balance change {acc.account_id = } {pre_balance = } {final_diff = }'
+        f'waiting for balance change {acc.account_id = } {pre_balance = } {expected_diff = }'
     )
     for i in range(30):
         new_bal = app.get_balance(acc, pre_balance(0))
         diff = new_bal - pre_balance
         if new_bal != pre_balance:
             logging.info(
-                f'Balance changed {acc.account_id = } {pre_balance = } {new_bal = } {diff = } {final_diff = }'
+                f'Balance changed {acc.account_id = } {pre_balance = } {new_bal = } {diff = } {expected_diff = }'
             )
-            if final_diff is None or diff == final_diff:
+            if expected_diff is None or diff == expected_diff:
                 return
         app.maybe_ledger_accept()
         time.sleep(2)
@@ -131,10 +133,10 @@ def wait_for_balance_change(app: App,
                 f'Waiting for balance to change {acc.account_id = } {pre_balance = }'
             )
     logging.error(
-        f'Expected balance to change {acc.account_id = } {pre_balance = } {new_bal = } {diff = } {final_diff = }'
+        f'Expected balance to change {acc.account_id = } {pre_balance = } {new_bal = } {diff = } {expected_diff = }'
     )
     raise ValueError(
-        f'Expected balance to change {acc.account_id = } {pre_balance = } {new_bal = } {diff = } {final_diff = }'
+        f'Expected balance to change {acc.account_id = } {pre_balance = } {new_bal = } {diff = } {expected_diff = }'
     )
 
 

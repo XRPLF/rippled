@@ -3,7 +3,9 @@
 Script to run an interactive shell to test sidechains.
 '''
 
-from common import disable_eprint
+import sys
+
+from common import disable_eprint, eprint
 import interactive
 import sidechain
 
