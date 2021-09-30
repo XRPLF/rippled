@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import json
+import logging
 import os
 import pandas as pd
 from pathlib import Path
@@ -159,11 +160,16 @@ class App:
             raise ValueError('Cannot sign transaction without secret key')
         r = self(Sign(txn.account.secret_key, txn.to_cmd_obj()))
         raw_signed = r['tx_blob']
-        return self(Submit(raw_signed))
+        r = self(Submit(raw_signed))
+        logging.info(f'App.send_signed: {json.dumps(r, indent=1)}')
+        return r
 
     def send_command(self, cmd: Command) -> dict:
         '''Send the command to the rippled server'''
-        return self.client.send_command(cmd)
+        r = self.client.send_command(cmd)
+        logging.info(
+            f'App.send_command : {cmd.cmd_name()} : {json.dumps(r, indent=1)}')
+        return r
 
     # Need async version to close ledgers from async functions
     async def async_send_command(self, cmd: Command) -> dict:
@@ -589,12 +595,17 @@ def configs_for_testnet(config_file_prefix: str) -> List[ConfigFile]:
 
 
 # Start an app for a network with the config files matched by `config_file_prefix*/rippled.cfg`
+
+
+# Undocumented feature: if the environment variable RIPPLED_SIDECHAIN_RR is set, it is
+# assumed to point to the rr executable. Sidechain server 0 will then be run under rr.
 @contextmanager
 def testnet_app(*,
                 exe: str,
                 configs: List[ConfigFile],
                 command_logs: Optional[List[str]] = None,
                 run_server: Optional[List[bool]] = None,
+                sidechain_rr: Optional[str] = None,
                 extra_args: Optional[List[List[str]]] = None):
     '''Start a ripple testnet and return an app'''
     try:
@@ -603,6 +614,7 @@ def testnet_app(*,
                                   configs,
                                   command_logs=command_logs,
                                   run_server=run_server,
+                                  with_rr=sidechain_rr,
                                   extra_args=extra_args)
         network.wait_for_validated_ledger()
         app = App(network=network, standalone=False)

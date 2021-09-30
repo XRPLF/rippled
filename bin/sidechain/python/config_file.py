@@ -36,13 +36,22 @@ class Section:
         return None
 
     def __getattr__(self, name):
-        return self._kv_pairs[name]
+        try:
+            return self._kv_pairs[name]
+        except KeyError:
+            raise AttributeError(name)
 
     def __setattr__(self, name, value):
         if name in self.__dict__:
             super().__setattr__(name, value)
         else:
             self._kv_pairs[name] = value
+
+    def __getstate__(self):
+        return vars(self)
+
+    def __setstate__(self, state):
+        vars(self).update(state)
 
 
 class ConfigFile:
@@ -79,5 +88,14 @@ class ConfigFile:
     def get_file_name(self):
         return self._file_name
 
+    def __getstate__(self):
+        return vars(self)
+
+    def __setstate__(self, state):
+        vars(self).update(state)
+
     def __getattr__(self, name):
-        return self._sections[name]
+        try:
+            return self._sections[name]
+        except KeyError:
+            raise AttributeError(name)

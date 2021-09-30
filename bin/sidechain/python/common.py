@@ -1,5 +1,6 @@
 import binascii
 import datetime
+import logging
 from typing import List, Optional, Union
 import pandas as pd
 import pytz
@@ -21,6 +22,7 @@ def enable_eprint():
 def eprint(*args, **kwargs):
     if not EPRINT_ENABLED:
         return
+    logging.error(*args)
     print(*args, file=sys.stderr, flush=True, **kwargs)
 
 
@@ -189,6 +191,10 @@ class Asset:
 
 def XRP(v: Union[int, float]) -> Asset:
     return Asset(value=v * 1_000_000)
+
+
+def drops(v: int) -> Asset:
+    return Asset(value=v)
 
 
 class Path:

@@ -516,6 +516,7 @@ class Subscribe(SubscriptionCommand):
             streams: Optional[List[str]] = None,
             accounts: Optional[List[Account]] = None,
             accounts_proposed: Optional[List[Account]] = None,
+            account_history_account: Optional[Account] = None,
             books: Optional[
                 List[BookSubscription]] = None,  # taker_pays, taker_gets
             url: Optional[str] = None,
@@ -524,6 +525,7 @@ class Subscribe(SubscriptionCommand):
         super().__init__()
         self.streams = streams
         self.accounts = accounts
+        self.account_history_account = account_history_account
         self.accounts_proposed = accounts_proposed
         self.books = books
         self.url = url
@@ -542,6 +544,10 @@ class Subscribe(SubscriptionCommand):
             d['streams'] = self.streams
         if self.accounts is not None:
             d['accounts'] = [a.account_id for a in self.accounts]
+        if self.account_history_account is not None:
+            d['account_history_tx_stream'] = {
+                'account': self.account_history_account.account_id
+            }
         if self.accounts_proposed is not None:
             d['accounts_proposed'] = [
                 a.account_id for a in self.accounts_proposed
