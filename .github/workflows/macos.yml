@@ -163,6 +163,7 @@ jobs:
             ${CXX} --version
 
             export BLD_CONFIG=Debug
+            export OPENSSL_ROOT=$(brew --prefix openssl@1.1)
 
             ${CC} --version
             ${CXX} --version
@@ -337,6 +338,7 @@ jobs:
           [[ "${verbose}" == "true" ]] && set -x || true
           $CC --version
           $CXX --version
+          export OPENSSL_ROOT=$(brew --prefix openssl@1.1)
           if [ "${CMAKE_ADD}" != "" ] ; then
             export CMAKE_ARGS+=" ${CMAKE_ADD}"
           fi
