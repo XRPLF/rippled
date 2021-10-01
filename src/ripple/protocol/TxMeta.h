@@ -102,7 +102,7 @@ public:
         return (mNodes);
     }
     STArray const&
-    peekNodes() const
+    getNodes() const
     {
         return (mNodes);
     }
