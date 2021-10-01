@@ -28,7 +28,6 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/regex.hpp>
-#include <deque>
 #include <optional>
 
 namespace ripple {
