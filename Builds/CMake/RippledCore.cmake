@@ -128,6 +128,7 @@ target_include_directories (xrpl_core
 target_compile_definitions(xrpl_core
   PUBLIC
     BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
+    BOOST_CONTAINER_FWD_BAD_DEQUE
     HAS_UNCAUGHT_EXCEPTIONS=1)
 target_compile_options (xrpl_core
   PUBLIC
