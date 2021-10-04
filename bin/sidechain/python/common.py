@@ -54,7 +54,7 @@ class Account:  # pylint: disable=too-few-public-methods
             self.account_id = result_dict['account_id']
             self.public_key = result_dict['public_key']
             self.public_key_hex = result_dict['public_key_hex']
-            self.secret_key = result_dict['master_key']
+            self.secret_key = result_dict['master_seed']
 
     # Accounts are equal if they represent the same account on the ledger
     # I.e. only check the account_id field for equality.
