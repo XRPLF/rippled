@@ -1164,20 +1164,22 @@ OverlayImpl::getActivePeers(
     std::lock_guard lock(mutex_);
 
     active = ids_.size();
-    ret.reserve(ids_.size() - toSkip.size());
+    disabled = enabledInSkip = 0;
+    ret.reserve(ids_.size());
 
     for (auto& [id, w] : ids_)
     {
         if (auto p = w.lock())
         {
-            // tx rr feature disabled
-            if (!p->txReduceRelayEnabled())
-                disabled++;
+            bool const reduceRelayEnabled = p->txReduceRelayEnabled();
+            // tx reduced relay feature disabled
+            if (!reduceRelayEnabled)
+                ++disabled;
 
             if (toSkip.count(id) == 0)
                 ret.emplace_back(std::move(p));
-            else if (p->txReduceRelayEnabled())
-                enabledInSkip++;
+            else if (reduceRelayEnabled)
+                ++enabledInSkip;
         }
     }
 
