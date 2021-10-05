@@ -360,7 +360,6 @@ public:
         }
         // Create data file with values
         std::size_t nitems = 0;
-        std::size_t nbytes = 0;
         dat_file_header dh;
         dh.version = currentVersion;
         dh.uid = make_uid();
@@ -420,7 +419,6 @@ public:
                 std::memcpy(os.data(32), key, 32);
                 std::memcpy(os.data(out.second), out.first, out.second);
                 ++nitems;
-                nbytes += size;
             }
             dw.flush(ec);
             if (ec)
