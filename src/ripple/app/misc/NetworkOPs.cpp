@@ -38,6 +38,7 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
 #include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
@@ -3353,6 +3354,65 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 return false;
             };
 
+#ifdef RIPPLED_REPORTING
+            if (!app_.config().reporting())
+            {
+                JLOG(m_journal.error())
+                    << "AccountHistory job for account " << toBase58(accountId)
+                    << " reporting mode not enabled in config";
+                send(rpcError(rpcINTERNAL), true);
+                return;
+            }
+
+            auto db = dynamic_cast<RelationalDBInterfacePostgres*>(
+                &app_.getRelationalDBInterface());
+            if (!db)
+            {
+                JLOG(m_journal.error())
+                    << "AccountHistory job for account " << toBase58(accountId)
+                    << " DB interface type wrong";
+                send(rpcError(rpcINTERNAL), true);
+                return;
+            }
+
+            RelationalDBInterface::AccountTxArgs args;
+            args.account = accountId;
+            auto getMoreTxns =
+                [&](std::uint32_t minLedger,
+                    std::uint32_t maxLedger,
+                    std::optional<RelationalDBInterface::AccountTxMarker>
+                        marker)
+                -> std::optional<std::pair<
+                    RelationalDBInterface::AccountTxs,
+                    std::optional<RelationalDBInterface::AccountTxMarker>>> {
+                LedgerRange range{minLedger, maxLedger};
+                args.ledger = range;
+                args.marker = marker;
+
+                auto [txResult, status] = db->getAccountTx(args);
+                if (status != rpcSUCCESS)
+                {
+                    JLOG(m_journal.debug())
+                        << "AccountHistory job for account "
+                        << toBase58(accountId) << " getAccountTx failed";
+                    return {};
+                }
+
+                if (auto txns = std::get_if<RelationalDBInterface::AccountTxs>(
+                        &txResult.transactions);
+                    txns)
+                {
+                    return std::make_pair(*txns, txResult.marker);
+                }
+                else
+                {
+                    JLOG(m_journal.debug())
+                        << "AccountHistory job for account "
+                        << toBase58(accountId) << " getAccountTx wrong data";
+                    return {};
+                }
+            };
+#else
             auto db = dynamic_cast<RelationalDBInterfaceSqlite*>(
                 &app_.getRelationalDBInterface());
             if (!db)
@@ -3363,14 +3423,47 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 send(rpcError(rpcINTERNAL), true);
                 return;
             }
+
+            RelationalDBInterface::AccountTxPageOptions options{
+                accountId, 0, 0, {}, 0, true};
+            auto getMoreTxns =
+                [&](std::uint32_t minLedger,
+                    std::uint32_t maxLedger,
+                    std::optional<RelationalDBInterface::AccountTxMarker>
+                        marker)
+                -> std::optional<std::pair<
+                    RelationalDBInterface::AccountTxs,
+                    std::optional<RelationalDBInterface::AccountTxMarker>>> {
+                options.maxLedger = maxLedger;
+                options.minLedger = minLedger;
+                options.marker = marker;
+                return db->newestAccountTxPage(options);
+            };
+#endif
+
             /*
              * search backward until the genesis ledger or asked to stop
              */
             while (lastLedgerSeq >= 2 && !subInfo.index_->stopHistorical_)
             {
-                // try to search in 256 ledgers till reaching genesis ledgers
+                int feeChargeCount = 0;
+                if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                {
+                    sptr->getConsumer().charge(Resource::feeMediumBurdenRPC);
+                    ++feeChargeCount;
+                }
+                else
+                {
+                    JLOG(m_journal.trace())
+                        << "AccountHistory job for account "
+                        << toBase58(accountId) << " no InfoSub. Fee charged "
+                        << feeChargeCount << " times.";
+                    return;
+                }
+
+                // try to search in 1024 ledgers till reaching genesis ledgers
                 auto startLedgerSeq =
-                    (lastLedgerSeq > 256 + 2 ? lastLedgerSeq - 256 : 2);
+                    (lastLedgerSeq > 1024 + 2 ? lastLedgerSeq - 1024 : 2);
                 JLOG(m_journal.trace())
                     << "AccountHistory job for account " << toBase58(accountId)
                     << ", working on ledger range [" << startLedgerSeq << ","
@@ -3398,29 +3491,29 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     return;
                 }
 
-                RelationalDBInterface::AccountTxPageOptions options = {
-                    accountId, startLedgerSeq, lastLedgerSeq, {}, 0, true};
-                for (;;)
+                std::optional<RelationalDBInterface::AccountTxMarker> marker{};
+                while (!subInfo.index_->stopHistorical_)
                 {
-                    if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                    auto dbResult =
+                        getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
+                    if (!dbResult)
                     {
-                        sptr->getConsumer().charge(
-                            Resource::feeMediumBurdenRPC);
-                    }
-                    else
-                    {
-                        JLOG(m_journal.trace())
+                        JLOG(m_journal.debug())
                             << "AccountHistory job for account "
-                            << toBase58(accountId) << " no InfoSub.";
+                            << toBase58(accountId) << " getMoreTxns failed.";
+                        send(rpcError(rpcINTERNAL), true);
                         return;
                     }
 
-                    auto [txns, marker] = db->newestAccountTxPage(options);
-
+                    auto const& txns = dbResult->first;
+                    marker = dbResult->second;
                     for (auto const& [tx, meta] : txns)
                     {
                         if (!tx || !meta)
                         {
+                            JLOG(m_journal.debug())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId) << " empty tx or meta.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
                         }
@@ -3429,6 +3522,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 tx->getLedger());
                         if (!curTxLedger)
                         {
+                            JLOG(m_journal.debug())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId) << " no ledger.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
                         }
@@ -3436,6 +3532,10 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             tx->getSTransaction();
                         if (!stTxn)
                         {
+                            JLOG(m_journal.debug())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId)
+                                << " getSTransaction failed.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
                         }
@@ -3464,7 +3564,6 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                     if (marker)
                     {
-                        options.marker = marker;
                         JLOG(m_journal.trace())
                             << "AccountHistory job for account "
                             << toBase58(accountId)
@@ -3477,13 +3576,17 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     }
                 }
 
-                lastLedgerSeq = startLedgerSeq - 1;
-                if (lastLedgerSeq <= 1)
+                if (!subInfo.index_->stopHistorical_)
                 {
-                    JLOG(m_journal.trace()) << "AccountHistory job for account "
-                                            << toBase58(accountId)
-                                            << " done, reached genesis ledger.";
-                    return;
+                    lastLedgerSeq = startLedgerSeq - 1;
+                    if (lastLedgerSeq <= 1)
+                    {
+                        JLOG(m_journal.trace())
+                            << "AccountHistory job for account "
+                            << toBase58(accountId)
+                            << " done, reached genesis ledger.";
+                        return;
+                    }
                 }
             }
         });
