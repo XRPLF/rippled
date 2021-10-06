@@ -11,7 +11,7 @@ The server software that powers the XRP Ledger is called `rippled` and is availa
 ### Build from Source
 
 * [Linux](Builds/linux/README.md)
-* [Mac](Builds/macos/README.md)
+* [Mac](Builds/macos/README.md) (Not recommended for production)
 * [Windows](Builds/VisualStudio2017/README.md) (Not recommended for production)
 
 ## Key Features of the XRP Ledger
