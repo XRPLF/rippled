@@ -90,7 +90,7 @@ LedgerHandler::check()
         if (!ledger_ || !ledger_->open())
         {
             // It doesn't make sense to request the queue
-            // with a non-existant or closed/validated ledger.
+            // with a non-existent or closed/validated ledger.
             return rpcINVALID_PARAMS;
         }
 
