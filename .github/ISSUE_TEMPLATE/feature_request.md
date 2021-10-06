@@ -11,7 +11,7 @@ assignees: ''
 ## Summary
 <!-- Provide a summary to the feature request-->
 
-## Motivation
+## Benefit
 <!-- Why do we need this feature?-->
 
 ## Solution
