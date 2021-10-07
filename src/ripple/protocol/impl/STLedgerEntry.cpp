@@ -88,6 +88,24 @@ STLedgerEntry::getFullText() const
     return ret;
 }
 
+STBase*
+STLedgerEntry::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STLedgerEntry::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STLedgerEntry::getSType() const
+{
+    return STI_LEDGERENTRY;
+}
+
 std::string
 STLedgerEntry::getText() const
 {

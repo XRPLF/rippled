@@ -29,7 +29,8 @@ class Invariants_test;
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
-    friend Invariants_test;  // this test wants access to the private type_
+    uint256 key_;
+    LedgerEntryType type_;
 
 public:
     using pointer = std::shared_ptr<STLedgerEntry>;
@@ -37,37 +38,19 @@ public:
 
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
-
-    STLedgerEntry(LedgerEntryType type, uint256 const& key)
-        : STLedgerEntry(Keylet(type, key))
-    {
-    }
-
+    STLedgerEntry(LedgerEntryType type, uint256 const& key);
     STLedgerEntry(SerialIter& sit, uint256 const& index);
-    STLedgerEntry(SerialIter&& sit, uint256 const& index)
-        : STLedgerEntry(sit, index)
-    {
-    }
-
+    STLedgerEntry(SerialIter&& sit, uint256 const& index);
     STLedgerEntry(STObject const& object, uint256 const& index);
 
     STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
+    copy(std::size_t n, void* buf) const override;
 
     STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
+    move(std::size_t n, void* buf) override;
 
     SerializedTypeID
-    getSType() const override
-    {
-        return STI_LEDGERENTRY;
-    }
+    getSType() const override;
 
     std::string
     getFullText() const override;
@@ -83,16 +66,10 @@ public:
         the SHAMap associative container.
     */
     uint256 const&
-    key() const
-    {
-        return key_;
-    }
+    key() const;
 
     LedgerEntryType
-    getType() const
-    {
-        return type_;
-    }
+    getType() const;
 
     // is this a ledger entry that can be threaded
     bool
@@ -112,12 +89,36 @@ private:
     void
     setSLEType();
 
-private:
-    uint256 key_;
-    LedgerEntryType type_;
+    friend Invariants_test;  // this test wants access to the private type_
 };
 
 using SLE = STLedgerEntry;
+
+inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
+    : STLedgerEntry(Keylet(type, key))
+{
+}
+
+inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index)
+    : STLedgerEntry(sit, index)
+{
+}
+
+/** Returns the 'key' (or 'index') of this item.
+    The key identifies this entry's position in
+    the SHAMap associative container.
+*/
+inline uint256 const&
+STLedgerEntry::key() const
+{
+    return key_;
+}
+
+inline LedgerEntryType
+STLedgerEntry::getType() const
+{
+    return type_;
+}
 
 }  // namespace ripple
 

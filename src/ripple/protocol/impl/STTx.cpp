@@ -56,14 +56,14 @@ getTxFormat(TxType type)
     return format;
 }
 
-STTx::STTx(STObject&& object) noexcept(false) : STObject(std::move(object))
+STTx::STTx(STObject&& object) : STObject(std::move(object))
 {
     tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx(SerialIter& sit) noexcept(false) : STObject(sfTransaction)
+STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
     int length = sit.getBytesLeft();
 
@@ -95,6 +95,25 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
         LogicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::transactionID);
+}
+
+STBase*
+STTx::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STTx::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+// STObject functions.
+SerializedTypeID
+STTx::getSType() const
+{
+    return STI_TRANSACTION;
 }
 
 std::string

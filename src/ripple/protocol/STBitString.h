@@ -31,92 +31,87 @@ class STBitString final : public STBase
 public:
     using value_type = base_uint<Bits>;
 
+private:
+    value_type value_;
+
+public:
     STBitString() = default;
 
-    STBitString(SField const& n) : STBase(n)
-    {
-    }
-
-    STBitString(const value_type& v) : value_(v)
-    {
-    }
-
-    STBitString(SField const& n, const value_type& v) : STBase(n), value_(v)
-    {
-    }
-
-    STBitString(SerialIter& sit, SField const& name)
-        : STBitString(name, sit.getBitString<Bits>())
-    {
-    }
+    STBitString(SField const& n);
+    STBitString(const value_type& v);
+    STBitString(SField const& n, const value_type& v);
+    STBitString(SerialIter& sit, SField const& name);
 
     STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
+    copy(std::size_t n, void* buf) const override;
 
     STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
+    move(std::size_t n, void* buf) override;
 
     SerializedTypeID
     getSType() const override;
 
     std::string
-    getText() const override
-    {
-        return to_string(value_);
-    }
+    getText() const override;
 
     bool
-    isEquivalent(const STBase& t) const override
-    {
-        const STBitString* v = dynamic_cast<const STBitString*>(&t);
-        return v && (value_ == v->value_);
-    }
+    isEquivalent(const STBase& t) const override;
 
     void
-    add(Serializer& s) const override
-    {
-        assert(fName->isBinary());
-        assert(fName->fieldType == getSType());
-        s.addBitString<Bits>(value_);
-    }
+    add(Serializer& s) const override;
+
+    bool
+    isDefault() const override;
 
     template <typename Tag>
     void
-    setValue(base_uint<Bits, Tag> const& v)
-    {
-        value_ = v;
-    }
+    setValue(base_uint<Bits, Tag> const& v);
 
     value_type const&
-    value() const
-    {
-        return value_;
-    }
+    value() const;
 
-    operator value_type() const
-    {
-        return value_;
-    }
-
-    bool
-    isDefault() const override
-    {
-        return value_ == beast::zero;
-    }
-
-private:
-    value_type value_;
+    operator value_type() const;
 };
 
 using STHash128 = STBitString<128>;
 using STHash160 = STBitString<160>;
 using STHash256 = STBitString<256>;
+
+template <std::size_t Bits>
+inline STBitString<Bits>::STBitString(SField const& n) : STBase(n)
+{
+}
+
+template <std::size_t Bits>
+inline STBitString<Bits>::STBitString(const value_type& v) : value_(v)
+{
+}
+
+template <std::size_t Bits>
+inline STBitString<Bits>::STBitString(SField const& n, const value_type& v)
+    : STBase(n), value_(v)
+{
+}
+
+template <std::size_t Bits>
+inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name)
+    : STBitString(name, sit.getBitString<Bits>())
+{
+}
+
+template <std::size_t Bits>
+STBase*
+STBitString<Bits>::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+template <std::size_t Bits>
+STBase*
+STBitString<Bits>::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
 
 template <>
 inline SerializedTypeID
@@ -137,6 +132,58 @@ inline SerializedTypeID
 STHash256::getSType() const
 {
     return STI_HASH256;
+}
+
+template <std::size_t Bits>
+std::string
+STBitString<Bits>::getText() const
+{
+    return to_string(value_);
+}
+
+template <std::size_t Bits>
+bool
+STBitString<Bits>::isEquivalent(const STBase& t) const
+{
+    const STBitString* v = dynamic_cast<const STBitString*>(&t);
+    return v && (value_ == v->value_);
+}
+
+template <std::size_t Bits>
+void
+STBitString<Bits>::add(Serializer& s) const
+{
+    assert(getFName().isBinary());
+    assert(getFName().fieldType == getSType());
+    s.addBitString<Bits>(value_);
+}
+
+template <std::size_t Bits>
+template <typename Tag>
+void
+STBitString<Bits>::setValue(base_uint<Bits, Tag> const& v)
+{
+    value_ = v;
+}
+
+template <std::size_t Bits>
+typename STBitString<Bits>::value_type const&
+STBitString<Bits>::value() const
+{
+    return value_;
+}
+
+template <std::size_t Bits>
+STBitString<Bits>::operator value_type() const
+{
+    return value_;
+}
+
+template <std::size_t Bits>
+bool
+STBitString<Bits>::isDefault() const
+{
+    return value_ == beast::zero;
 }
 
 }  // namespace ripple

@@ -59,6 +59,50 @@ STAccount::STAccount(SField const& n, AccountID const& v)
 {
 }
 
+STBase*
+STAccount::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STAccount::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STAccount::getSType() const
+{
+    return STI_ACCOUNT;
+}
+
+void
+STAccount::add(Serializer& s) const
+{
+    assert(getFName().isBinary());
+    assert(getFName().fieldType == STI_ACCOUNT);
+
+    // Preserve the serialization behavior of an STBlob:
+    //  o If we are default (all zeros) serialize as an empty blob.
+    //  o Otherwise serialize 160 bits.
+    int const size = isDefault() ? 0 : uint160::bytes;
+    s.addVL(value_.data(), size);
+}
+
+bool
+STAccount::isEquivalent(const STBase& t) const
+{
+    auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
+    return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);
+}
+
+bool
+STAccount::isDefault() const
+{
+    return default_;
+}
+
 std::string
 STAccount::getText() const
 {
