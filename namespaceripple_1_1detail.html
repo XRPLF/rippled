@@ -99,8 +99,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1DirectoryTag.html">DirectoryTag</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1FeatureCollections.html">FeatureCollections</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1Generator.html">Generator</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Produces a sequence of secp256k1 key pairs.  <a href="classripple_1_1detail_1_1Generator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -212,9 +210,15 @@ Functions</h2></td></tr>
 <tr class="memitem:a1ebc7f9a2b695a1f5987457e5eaaf79b"><td class="memTemplParams" colspan="2">template&lt;class T , class Buffers , class Handler , class  = std::enable_if_t&lt;        std::is_base_of&lt;::google::protobuf::Message, T&gt;::value&gt;&gt; </td></tr>
 <tr class="memitem:a1ebc7f9a2b695a1f5987457e5eaaf79b"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a1ebc7f9a2b695a1f5987457e5eaaf79b">invoke</a> (<a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a> const &amp;header, Buffers const &amp;buffers, Handler &amp;handler)</td></tr>
 <tr class="separator:a1ebc7f9a2b695a1f5987457e5eaaf79b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a69ad76af590957aabbb780058387f3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9a69ad76af590957aabbb780058387f3">supportedAmendments</a> ()</td></tr>
-<tr class="memdesc:a9a69ad76af590957aabbb780058387f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amendments that this server supports, but doesn't enable by default.  <a href="namespaceripple_1_1detail.html#a9a69ad76af590957aabbb780058387f3">More...</a><br /></td></tr>
-<tr class="separator:a9a69ad76af590957aabbb780058387f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d6ca19ec37d10a7f601bd9c53335c2a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8d6ca19ec37d10a7f601bd9c53335c2a">supportedAmendments</a> ()</td></tr>
+<tr class="memdesc:a8d6ca19ec37d10a7f601bd9c53335c2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amendments that this server supports and the default voting behavior.  <a href="namespaceripple_1_1detail.html#a8d6ca19ec37d10a7f601bd9c53335c2a">More...</a><br /></td></tr>
+<tr class="separator:a8d6ca19ec37d10a7f601bd9c53335c2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a907b165d0a3ebb3ce0a2f1c64c50e107"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a907b165d0a3ebb3ce0a2f1c64c50e107">numDownVotedAmendments</a> ()</td></tr>
+<tr class="memdesc:a907b165d0a3ebb3ce0a2f1c64c50e107"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amendments that this server won't vote for by default.  <a href="namespaceripple_1_1detail.html#a907b165d0a3ebb3ce0a2f1c64c50e107">More...</a><br /></td></tr>
+<tr class="separator:a907b165d0a3ebb3ce0a2f1c64c50e107"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48573a366f17fd2a6294905c3cb4a29e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a48573a366f17fd2a6294905c3cb4a29e">numUpVotedAmendments</a> ()</td></tr>
+<tr class="memdesc:a48573a366f17fd2a6294905c3cb4a29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amendments that this server will vote for by default.  <a href="namespaceripple_1_1detail.html#a48573a366f17fd2a6294905c3cb4a29e">More...</a><br /></td></tr>
+<tr class="separator:a48573a366f17fd2a6294905c3cb4a29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3266bff106a961696ef3397134178cac"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a3266bff106a961696ef3397134178cac">make_hash_prefix</a> (char a, char b, char c)</td></tr>
 <tr class="separator:a3266bff106a961696ef3397134178cac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367989857fb62d21d0d9d5f1b2c91e87"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a367989857fb62d21d0d9d5f1b2c91e87">as_amount</a> (<a class="el" href="structripple_1_1Rate.html">Rate</a> const &amp;rate)</td></tr>
@@ -243,6 +247,8 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
+<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 46</td></tr>
+<tr class="separator:a21f3cf18de89d49823e064f09526cb5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1detail_1_1defaultObject__t.html">defaultObject_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad7cc030b8a64621b81be32a2dc7ad84f">defaultObject</a></td></tr>
 <tr class="separator:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b142da3d10ee6d6b09c707724ca3c80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1detail_1_1nonPresentObject__t.html">nonPresentObject_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8b142da3d10ee6d6b09c707724ca3c80">nonPresentObject</a></td></tr>
@@ -836,14 +842,14 @@ template&lt;class T , class Buffers , class Handler , class  = std::enable_if_t&
 
 </div>
 </div>
-<a id="a9a69ad76af590957aabbb780058387f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a69ad76af590957aabbb780058387f3">&#9670;&nbsp;</a></span>supportedAmendments()</h2>
+<a id="a8d6ca19ec37d10a7f601bd9c53335c2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d6ca19ec37d10a7f601bd9c53335c2a">&#9670;&nbsp;</a></span>supportedAmendments()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp; ripple::detail::supportedAmendments </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a> &gt; const  &amp; ripple::detail::supportedAmendments </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -851,9 +857,55 @@ template&lt;class T , class Buffers , class Handler , class  = std::enable_if_t&
       </table>
 </div><div class="memdoc">
 
-<p>Amendments that this server supports, but doesn't enable by default. </p>
+<p>Amendments that this server supports and the default voting behavior. </p>
+<p>Amendments that this server supports.</p>
+<p>Whether they are enabled depends on the <a class="el" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior.">Rules</a> defined in the validated ledger </p>
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00081">81</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00314">314</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a907b165d0a3ebb3ce0a2f1c64c50e107"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a907b165d0a3ebb3ce0a2f1c64c50e107">&#9670;&nbsp;</a></span>numDownVotedAmendments()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numDownVotedAmendments </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Amendments that this server won't vote for by default. </p>
+<p>This function is only used in unit tests. </p>
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00321">321</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a48573a366f17fd2a6294905c3cb4a29e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48573a366f17fd2a6294905c3cb4a29e">&#9670;&nbsp;</a></span>numUpVotedAmendments()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numUpVotedAmendments </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Amendments that this server will vote for by default. </p>
+<p>This function is only used in unit tests. </p>
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00328">328</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -1208,6 +1260,30 @@ template&lt;class T , class... Args&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="a21f3cf18de89d49823e064f09526cb5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21f3cf18de89d49823e064f09526cb5f">&#9670;&nbsp;</a></span>numFeatures</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 46</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8h_source.html#l00077">77</a> of file <a class="el" href="Feature_8h_source.html">Feature.h</a>.</p>
+
+</div>
+</div>
 <a id="ad7cc030b8a64621b81be32a2dc7ad84f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad7cc030b8a64621b81be32a2dc7ad84f">&#9670;&nbsp;</a></span>defaultObject</h2>
 

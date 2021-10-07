@@ -1575,6 +1575,10 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple.html#a2fca0f72cfacc04d15ad41d84ebf46fda4d9c2073afa3c2abb817dceb22c34de6">StrandDirection::reverse</a>
  }</td></tr>
 <tr class="separator:a2fca0f72cfacc04d15ad41d84ebf46fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dcb4cf27e683bd94d11f5322836c689"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> : int { <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689a46c48bec0d282018b9d167eef7711b2c">AmendmentVote::up</a> = 0, 
+<a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689a74e8333ad11685ff3bdae589c8f6e34d">AmendmentVote::down</a> = 1
+ }</td></tr>
+<tr class="separator:a1dcb4cf27e683bd94d11f5322836c689"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a403c17c92e52d9dbbd1ef06eb4d26d9f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a403c17c92e52d9dbbd1ef06eb4d26d9f">TableType</a> { <a class="el" href="namespaceripple.html#a403c17c92e52d9dbbd1ef06eb4d26d9fabf53b9dc929f4f311bd89ae2a9bc4c30">TableType::Ledgers</a>, 
 <a class="el" href="namespaceripple.html#a403c17c92e52d9dbbd1ef06eb4d26d9fa31112aca11d0e9e6eb7db96f317dda49">TableType::Transactions</a>, 
 <a class="el" href="namespaceripple.html#a403c17c92e52d9dbbd1ef06eb4d26d9fa905a88ab91dd81b2eac7aee14c283b7c">TableType::AccountTransactions</a>
@@ -1841,6 +1845,10 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Codes returned in the <code>warnings</code> array of certain RPC commands.  <a href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9">More...</a><br /></td></tr>
 <tr class="separator:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaf9aac668f4e0805bc2911291e29e9f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a> : bool { <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a> = false, 
+<a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>
+ }</td></tr>
+<tr class="separator:afaf9aac668f4e0805bc2911291e29e9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5143ceada01141772ae4aab984f94bd"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bd">HashPrefix</a> : std::uint32_t { <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda9ff03a73c38a945848893498e0c617a4">HashPrefix::transactionID</a> = detail::make_hash_prefix('T', 'X', 'N'), 
 <a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda555f976fd82d9e7e487770c44c7980bf">HashPrefix::txNode</a> = detail::make_hash_prefix('S', 'N', 'D'), 
@@ -2369,8 +2377,8 @@ Functions</h2></td></tr>
 <tr class="memitem:a29b57ac75b457310c19803014311345a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>, <a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a29b57ac75b457310c19803014311345a">getNodeIdentity</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="memdesc:a29b57ac75b457310c19803014311345a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The cryptographic credentials identifying this server instance.  <a href="namespaceripple.html#a29b57ac75b457310c19803014311345a">More...</a><br /></td></tr>
 <tr class="separator:a29b57ac75b457310c19803014311345a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af161cd4a544a6a5d5cceac3133f9a865"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1AmendmentTable.html">AmendmentTable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af161cd4a544a6a5d5cceac3133f9a865">make_AmendmentTable</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;supported, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;enabled, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;vetoed, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="separator:af161cd4a544a6a5d5cceac3133f9a865"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad41956ef004d64710296fd76a5dc9e06"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1AmendmentTable.html">AmendmentTable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad41956ef004d64710296fd76a5dc9e06">make_AmendmentTable</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1AmendmentTable_1_1FeatureInfo.html">AmendmentTable::FeatureInfo</a> &gt; const &amp;supported, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;enabled, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;vetoed, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
+<tr class="separator:ad41956ef004d64710296fd76a5dc9e06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae7f0e432d5fa980cfc588654bb6c77d7">operator&lt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;rhs)</td></tr>
 <tr class="separator:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbafe6bd675116b7d1c63c314fcd369d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1FeeVote_1_1Setup.html">FeeVote::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acbafe6bd675116b7d1c63c314fcd369d">setup_FeeVote</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section)</td></tr>
@@ -2599,12 +2607,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a5d759654f3c40954985245643f7003ec"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5d759654f3c40954985245643f7003ec">createFeatureVotes</a> (soci::session &amp;session)</td></tr>
 <tr class="memdesc:a5d759654f3c40954985245643f7003ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">createFeatureVotes Creates FeatureVote table if it is not exists.  <a href="namespaceripple.html#a5d759654f3c40954985245643f7003ec">More...</a><br /></td></tr>
 <tr class="separator:a5d759654f3c40954985245643f7003ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14492276c53836ae876852be6ab5c875"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a14492276c53836ae876852be6ab5c875">readAmendments</a> (soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void( boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_hash, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_name, boost::optional&lt; int &gt; vote_to_veto)&gt; const  &amp;callback)</td></tr>
-<tr class="memdesc:a14492276c53836ae876852be6ab5c875"><td class="mdescLeft">&#160;</td><td class="mdescRight">readAmendments Read all amendments from FeatureVotes table.  <a href="namespaceripple.html#a14492276c53836ae876852be6ab5c875">More...</a><br /></td></tr>
-<tr class="separator:a14492276c53836ae876852be6ab5c875"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a761bccdfe0c93b59c60bf55b65406b13"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a761bccdfe0c93b59c60bf55b65406b13">voteAmendment</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;amendment, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;name, bool vote_to_veto)</td></tr>
-<tr class="memdesc:a761bccdfe0c93b59c60bf55b65406b13"><td class="mdescLeft">&#160;</td><td class="mdescRight">voteAmendment Set veto value for particular amendment.  <a href="namespaceripple.html#a761bccdfe0c93b59c60bf55b65406b13">More...</a><br /></td></tr>
-<tr class="separator:a761bccdfe0c93b59c60bf55b65406b13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a740f27a016e79e42b15532d24eeb54d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a740f27a016e79e42b15532d24eeb54d3">readAmendments</a> (soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void( boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_hash, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_name, boost::optional&lt; <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> &gt; vote)&gt; const  &amp;callback)</td></tr>
+<tr class="memdesc:a740f27a016e79e42b15532d24eeb54d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">readAmendments Read all amendments from FeatureVotes table.  <a href="namespaceripple.html#a740f27a016e79e42b15532d24eeb54d3">More...</a><br /></td></tr>
+<tr class="separator:a740f27a016e79e42b15532d24eeb54d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4775b9f1e9a5a194f086f657c9faa37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">voteAmendment</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;amendment, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;name, <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> vote)</td></tr>
+<tr class="memdesc:af4775b9f1e9a5a194f086f657c9faa37"><td class="mdescLeft">&#160;</td><td class="mdescRight">voteAmendment Set veto value for particular amendment.  <a href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">More...</a><br /></td></tr>
+<tr class="separator:af4775b9f1e9a5a194f086f657c9faa37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a632dcd1160907dbaea1cd6caceca886c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a632dcd1160907dbaea1cd6caceca886c">initStateDB</a> (soci::session &amp;session, <a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const  &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;dbName)</td></tr>
 <tr class="memdesc:a632dcd1160907dbaea1cd6caceca886c"><td class="mdescLeft">&#160;</td><td class="mdescRight">initStateDB Opens DB session with State DB.  <a href="namespaceripple.html#a632dcd1160907dbaea1cd6caceca886c">More...</a><br /></td></tr>
 <tr class="separator:a632dcd1160907dbaea1cd6caceca886c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3602,6 +3610,8 @@ Functions</h2></td></tr>
 <tr class="separator:a7829716dab9950c88863168cc8731870"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28da871aa8d28d28a444e1b3885065cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a28da871aa8d28d28a444e1b3885065cf">bitsetIndexToFeature</a> (size_t i)</td></tr>
 <tr class="separator:a28da871aa8d28d28a444e1b3885065cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa00e870074854cb15cc1d91427e47bec"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa00e870074854cb15cc1d91427e47bec">featureToName</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;f)</td></tr>
+<tr class="separator:aa00e870074854cb15cc1d91427e47bec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8fff823cb47f139e7735bc8a65082eb"><td class="memTemplParams" colspan="2">template&lt;class F &gt; </td></tr>
 <tr class="memitem:ab8fff823cb47f139e7735bc8a65082eb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab8fff823cb47f139e7735bc8a65082eb">foreachFeature</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> bs, F &amp;&amp;f)</td></tr>
 <tr class="separator:ab8fff823cb47f139e7735bc8a65082eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3610,6 +3620,75 @@ Functions</h2></td></tr>
 <tr class="separator:a51a6fc5662dc2d364f352e28610c5813"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a614d8681c8dff84ac2257939751987c5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a614d8681c8dff84ac2257939751987c5">calcAccountID</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;pk)</td></tr>
 <tr class="separator:a614d8681c8dff84ac2257939751987c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f497dcb1c3e98dd745e3278eafc5342"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7f497dcb1c3e98dd745e3278eafc5342">hash_value</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a> const &amp;feature)</td></tr>
+<tr class="separator:a7f497dcb1c3e98dd745e3278eafc5342"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe038ff792ec0fff57daed002f438f15"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe038ff792ec0fff57daed002f438f15">registerFeature</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, Supported support, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a> vote)</td></tr>
+<tr class="separator:afe038ff792ec0fff57daed002f438f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c231e0a6ac493297e442e8e99af8037"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)</td></tr>
+<tr class="separator:a8c231e0a6ac493297e442e8e99af8037"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac52a0eb5ca3e6aec7bc695eb44ed1ab8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac52a0eb5ca3e6aec7bc695eb44ed1ab8">registrationIsDone</a> ()</td></tr>
+<tr class="memdesc:ac52a0eb5ca3e6aec7bc695eb44ed1ab8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tell FeatureCollections when registration is complete.  <a href="namespaceripple.html#ac52a0eb5ca3e6aec7bc695eb44ed1ab8">More...</a><br /></td></tr>
+<tr class="separator:ac52a0eb5ca3e6aec7bc695eb44ed1ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3027a89189f7590509e1afdb945ac9b2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3027a89189f7590509e1afdb945ac9b2">REGISTER_FEATURE</a> (OwnerPaysFee, Supported::no, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
+<tr class="separator:a3027a89189f7590509e1afdb945ac9b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae955b1ffdbc6f642edc6bd1631600efc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae955b1ffdbc6f642edc6bd1631600efc">REGISTER_FEATURE</a> (Flow, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ae955b1ffdbc6f642edc6bd1631600efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3d27856e5f56e0125a4ac0503dc5128"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af3d27856e5f56e0125a4ac0503dc5128">REGISTER_FEATURE</a> (FlowCross, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:af3d27856e5f56e0125a4ac0503dc5128"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6567270f826f07bffde8c18f15932061"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6567270f826f07bffde8c18f15932061">REGISTER_FEATURE</a> (CryptoConditionsSuite, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
+<tr class="separator:a6567270f826f07bffde8c18f15932061"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4be9c7709719b27e7148aa76bc60175"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa4be9c7709719b27e7148aa76bc60175">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a1e4e6d3ac032cc3787c0901156036618">fix1513</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:aa4be9c7709719b27e7148aa76bc60175"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace1dbecf4a73917b8dbb850b6c1d9ea6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ace1dbecf4a73917b8dbb850b6c1d9ea6">REGISTER_FEATURE</a> (DepositAuth, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ace1dbecf4a73917b8dbb850b6c1d9ea6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09fe5714d7a1dcbeb4cd08a4ae848f04"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a09fe5714d7a1dcbeb4cd08a4ae848f04">REGISTER_FEATURE</a> (Checks, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a09fe5714d7a1dcbeb4cd08a4ae848f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7980c9fc25b221977d1821637f6de98"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af7980c9fc25b221977d1821637f6de98">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aceb75e0144de4950c33dedd1191de320">fix1571</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:af7980c9fc25b221977d1821637f6de98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae36c67724a59a42d50fc59fac5f10e42"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae36c67724a59a42d50fc59fac5f10e42">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#af692a0db75adbc331df9226d28909dd9">fix1543</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ae36c67724a59a42d50fc59fac5f10e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4df0a44a6f14554e9104ca92ebb046f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad4df0a44a6f14554e9104ca92ebb046f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ad4df0a44a6f14554e9104ca92ebb046f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34ce95c5969e4ba85e5e28b474efe5cc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a34ce95c5969e4ba85e5e28b474efe5cc">REGISTER_FEATURE</a> (<a class="el" href="classripple_1_1DepositPreauth.html">DepositPreauth</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a34ce95c5969e4ba85e5e28b474efe5cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b4926e7f116e47ccb3a73f850add5f9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0b4926e7f116e47ccb3a73f850add5f9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0c155f4dfdb9766fbe27cbe85d43ded7">fix1515</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a0b4926e7f116e47ccb3a73f850add5f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a929e6bcad1025310e66e58d1ae77301f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a929e6bcad1025310e66e58d1ae77301f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#afa20eb58bea379999a57028e082576f1">fix1578</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a929e6bcad1025310e66e58d1ae77301f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae70b3dcb595ff6d0833f762db9e63f2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae70b3dcb595ff6d0833f762db9e63f2a">REGISTER_FEATURE</a> (MultiSignReserve, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ae70b3dcb595ff6d0833f762db9e63f2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c12a3621b99b304577f17e58eb0d81b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2c12a3621b99b304577f17e58eb0d81b">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0c6216b12b73b15239445dfaeee8d473">fixTakerDryOfferRemoval</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a2c12a3621b99b304577f17e58eb0d81b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac68ae6a4840dae3bbc1acc9d82c5aad3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac68ae6a4840dae3bbc1acc9d82c5aad3">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aba5b8db3b6370710dbaadeb4a3b56f6b">fixMasterKeyAsRegularKey</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ac68ae6a4840dae3bbc1acc9d82c5aad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a969dddbd16dea21dfaed7c4120c1a9bc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a969dddbd16dea21dfaed7c4120c1a9bc">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#ac73c4c435b681301e35a8028c549c709">fixCheckThreading</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a969dddbd16dea21dfaed7c4120c1a9bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1c493fa7a0a22a75df71b3fdb68b691"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac1c493fa7a0a22a75df71b3fdb68b691">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#afd7eb1f95de1f953b43cfd2adb902eec">fixPayChanRecipientOwnerDir</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ac1c493fa7a0a22a75df71b3fdb68b691"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a358da1774db087dbe9962994818798ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a358da1774db087dbe9962994818798ca">REGISTER_FEATURE</a> (DeletableAccounts, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a358da1774db087dbe9962994818798ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf2484d392ce039ae80f86f0b3fa2a39"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abf2484d392ce039ae80f86f0b3fa2a39">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0925502ed5ba18e4eaec5b16b1f552c0">fixQualityUpperBound</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:abf2484d392ce039ae80f86f0b3fa2a39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bb81c798dcd5c65d9d3e84229661edf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7bb81c798dcd5c65d9d3e84229661edf">REGISTER_FEATURE</a> (RequireFullyCanonicalSig, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a7bb81c798dcd5c65d9d3e84229661edf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1c4b0b0fd89f0fc5c78944b022b2fb9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac1c4b0b0fd89f0fc5c78944b022b2fb9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aa520966ed6e3285630d0871466e438a8">fix1781</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:ac1c4b0b0fd89f0fc5c78944b022b2fb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf25e0f9d5bc0181eb548a571def035d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaf25e0f9d5bc0181eb548a571def035d">REGISTER_FEATURE</a> (HardenedValidations, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:aaf25e0f9d5bc0181eb548a571def035d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e88cb027ef298cf997eb008d5328f7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3e88cb027ef298cf997eb008d5328f7c">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a7ddad39c3614122e497f9a0980f0f0cc">fixAmendmentMajorityCalc</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a3e88cb027ef298cf997eb008d5328f7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae69520001cb849a5589aad90f8cd8a31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae69520001cb849a5589aad90f8cd8a31">REGISTER_FEATURE</a> (NegativeUNL, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
+<tr class="separator:ae69520001cb849a5589aad90f8cd8a31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31744e05fceff02bbe0b19c7335d09e2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a31744e05fceff02bbe0b19c7335d09e2">REGISTER_FEATURE</a> (TicketBatch, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a31744e05fceff02bbe0b19c7335d09e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27842b5bf18f3391ac140f8e94161248"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a27842b5bf18f3391ac140f8e94161248">REGISTER_FEATURE</a> (FlowSortStrands, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a27842b5bf18f3391ac140f8e94161248"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3826809481851bac3da12b77a45f7b3f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3826809481851bac3da12b77a45f7b3f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a58db4f19d243f6c82a533a40a0db89cd">fixSTAmountCanonicalize</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a3826809481851bac3da12b77a45f7b3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61e0ee25af6fdc7e001381205fffcf18"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a61e0ee25af6fdc7e001381205fffcf18">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a628c330b73f95a76b38d4d385bd37ac0">fixRmSmallIncreasedQOffers</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
+<tr class="separator:a61e0ee25af6fdc7e001381205fffcf18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3017b7c2fef62c7121dc4e1ff409ca7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab3017b7c2fef62c7121dc4e1ff409ca7">REGISTER_FEATURE</a> (CheckCashMakesTrustLine, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
+<tr class="separator:ab3017b7c2fef62c7121dc4e1ff409ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d94a73034cd9472952dc5448bc420a4"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
 <tr class="memitem:a4d94a73034cd9472952dc5448bc420a4"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4d94a73034cd9472952dc5448bc420a4">indexHash</a> (<a class="el" href="namespaceripple.html#a22768e0a41b646442c98d38f2f2a307b">LedgerNameSpace</a> space, Args const &amp;... args)</td></tr>
 <tr class="separator:a4d94a73034cd9472952dc5448bc420a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4817,92 +4896,98 @@ Variables</h2></td></tr>
 <tr class="separator:ac6313681c41516db0a8f8829e1d7b753"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3140a85c45d311ae31be783f38207854"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3140a85c45d311ae31be783f38207854">relayLimit</a> = 3</td></tr>
 <tr class="separator:a3140a85c45d311ae31be783f38207854"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a641d0cd1ae7b4807024597224a33d57e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a641d0cd1ae7b4807024597224a33d57e">featureOwnerPaysFee</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;OwnerPaysFee&quot;)</td></tr>
+<tr class="memitem:a641d0cd1ae7b4807024597224a33d57e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a641d0cd1ae7b4807024597224a33d57e">featureOwnerPaysFee</a></td></tr>
 <tr class="separator:a641d0cd1ae7b4807024597224a33d57e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63fcad85117109e07c65b9917cdc8aac"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a63fcad85117109e07c65b9917cdc8aac">featureFlow</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;Flow&quot;)</td></tr>
+<tr class="memitem:a63fcad85117109e07c65b9917cdc8aac"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a63fcad85117109e07c65b9917cdc8aac">featureFlow</a></td></tr>
 <tr class="separator:a63fcad85117109e07c65b9917cdc8aac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2cb56a55020f266d207ee04d66cc97ae"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2cb56a55020f266d207ee04d66cc97ae">featureFlowCross</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;FlowCross&quot;)</td></tr>
+<tr class="memitem:a2cb56a55020f266d207ee04d66cc97ae"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2cb56a55020f266d207ee04d66cc97ae">featureFlowCross</a></td></tr>
 <tr class="separator:a2cb56a55020f266d207ee04d66cc97ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae388ae3995c8f94c4d77907c23981d09"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae388ae3995c8f94c4d77907c23981d09">featureCryptoConditionsSuite</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;CryptoConditionsSuite&quot;)</td></tr>
+<tr class="memitem:ae388ae3995c8f94c4d77907c23981d09"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae388ae3995c8f94c4d77907c23981d09">featureCryptoConditionsSuite</a></td></tr>
 <tr class="separator:ae388ae3995c8f94c4d77907c23981d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e4e6d3ac032cc3787c0901156036618"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1e4e6d3ac032cc3787c0901156036618">fix1513</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1513&quot;)</td></tr>
+<tr class="memitem:a1e4e6d3ac032cc3787c0901156036618"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1e4e6d3ac032cc3787c0901156036618">fix1513</a></td></tr>
 <tr class="separator:a1e4e6d3ac032cc3787c0901156036618"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a549e32c7ae17a01dcd562df1a9679853"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a549e32c7ae17a01dcd562df1a9679853">featureDepositAuth</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;DepositAuth&quot;)</td></tr>
+<tr class="memitem:a549e32c7ae17a01dcd562df1a9679853"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a549e32c7ae17a01dcd562df1a9679853">featureDepositAuth</a></td></tr>
 <tr class="separator:a549e32c7ae17a01dcd562df1a9679853"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f719e22f7b14728584f07b665dfd7cc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5f719e22f7b14728584f07b665dfd7cc">featureChecks</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;Checks&quot;)</td></tr>
+<tr class="memitem:a5f719e22f7b14728584f07b665dfd7cc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5f719e22f7b14728584f07b665dfd7cc">featureChecks</a></td></tr>
 <tr class="separator:a5f719e22f7b14728584f07b665dfd7cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aceb75e0144de4950c33dedd1191de320"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aceb75e0144de4950c33dedd1191de320">fix1571</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1571&quot;)</td></tr>
+<tr class="memitem:aceb75e0144de4950c33dedd1191de320"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aceb75e0144de4950c33dedd1191de320">fix1571</a></td></tr>
 <tr class="separator:aceb75e0144de4950c33dedd1191de320"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af692a0db75adbc331df9226d28909dd9"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af692a0db75adbc331df9226d28909dd9">fix1543</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1543&quot;)</td></tr>
+<tr class="memitem:af692a0db75adbc331df9226d28909dd9"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af692a0db75adbc331df9226d28909dd9">fix1543</a></td></tr>
 <tr class="separator:af692a0db75adbc331df9226d28909dd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2c25b95b708d565d681958fbd20d2b6"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1623&quot;)</td></tr>
+<tr class="memitem:af2c25b95b708d565d681958fbd20d2b6"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a></td></tr>
 <tr class="separator:af2c25b95b708d565d681958fbd20d2b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2af7805d6ffc69b2227309433bccc833"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2af7805d6ffc69b2227309433bccc833">featureDepositPreauth</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;DepositPreauth&quot;)</td></tr>
+<tr class="memitem:a2af7805d6ffc69b2227309433bccc833"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2af7805d6ffc69b2227309433bccc833">featureDepositPreauth</a></td></tr>
 <tr class="separator:a2af7805d6ffc69b2227309433bccc833"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c155f4dfdb9766fbe27cbe85d43ded7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0c155f4dfdb9766fbe27cbe85d43ded7">fix1515</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1515&quot;)</td></tr>
+<tr class="memitem:a0c155f4dfdb9766fbe27cbe85d43ded7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0c155f4dfdb9766fbe27cbe85d43ded7">fix1515</a></td></tr>
 <tr class="separator:a0c155f4dfdb9766fbe27cbe85d43ded7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa20eb58bea379999a57028e082576f1"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afa20eb58bea379999a57028e082576f1">fix1578</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1578&quot;)</td></tr>
+<tr class="memitem:afa20eb58bea379999a57028e082576f1"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afa20eb58bea379999a57028e082576f1">fix1578</a></td></tr>
 <tr class="separator:afa20eb58bea379999a57028e082576f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20fc4ac346fe042a5585c2107b0ca91b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a20fc4ac346fe042a5585c2107b0ca91b">featureMultiSignReserve</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;MultiSignReserve&quot;)</td></tr>
+<tr class="memitem:a20fc4ac346fe042a5585c2107b0ca91b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a20fc4ac346fe042a5585c2107b0ca91b">featureMultiSignReserve</a></td></tr>
 <tr class="separator:a20fc4ac346fe042a5585c2107b0ca91b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c6216b12b73b15239445dfaeee8d473"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0c6216b12b73b15239445dfaeee8d473">fixTakerDryOfferRemoval</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixTakerDryOfferRemoval&quot;)</td></tr>
+<tr class="memitem:a0c6216b12b73b15239445dfaeee8d473"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0c6216b12b73b15239445dfaeee8d473">fixTakerDryOfferRemoval</a></td></tr>
 <tr class="separator:a0c6216b12b73b15239445dfaeee8d473"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba5b8db3b6370710dbaadeb4a3b56f6b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aba5b8db3b6370710dbaadeb4a3b56f6b">fixMasterKeyAsRegularKey</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixMasterKeyAsRegularKey&quot;)</td></tr>
+<tr class="memitem:aba5b8db3b6370710dbaadeb4a3b56f6b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aba5b8db3b6370710dbaadeb4a3b56f6b">fixMasterKeyAsRegularKey</a></td></tr>
 <tr class="separator:aba5b8db3b6370710dbaadeb4a3b56f6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac73c4c435b681301e35a8028c549c709"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac73c4c435b681301e35a8028c549c709">fixCheckThreading</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixCheckThreading&quot;)</td></tr>
+<tr class="memitem:ac73c4c435b681301e35a8028c549c709"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac73c4c435b681301e35a8028c549c709">fixCheckThreading</a></td></tr>
 <tr class="separator:ac73c4c435b681301e35a8028c549c709"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd7eb1f95de1f953b43cfd2adb902eec"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afd7eb1f95de1f953b43cfd2adb902eec">fixPayChanRecipientOwnerDir</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixPayChanRecipientOwnerDir&quot;)</td></tr>
+<tr class="memitem:afd7eb1f95de1f953b43cfd2adb902eec"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afd7eb1f95de1f953b43cfd2adb902eec">fixPayChanRecipientOwnerDir</a></td></tr>
 <tr class="separator:afd7eb1f95de1f953b43cfd2adb902eec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19e46a085c26216e75132e85139d09ea"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a19e46a085c26216e75132e85139d09ea">featureDeletableAccounts</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;DeletableAccounts&quot;)</td></tr>
+<tr class="memitem:a19e46a085c26216e75132e85139d09ea"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a19e46a085c26216e75132e85139d09ea">featureDeletableAccounts</a></td></tr>
 <tr class="separator:a19e46a085c26216e75132e85139d09ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0925502ed5ba18e4eaec5b16b1f552c0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0925502ed5ba18e4eaec5b16b1f552c0">fixQualityUpperBound</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixQualityUpperBound&quot;)</td></tr>
+<tr class="memitem:a0925502ed5ba18e4eaec5b16b1f552c0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0925502ed5ba18e4eaec5b16b1f552c0">fixQualityUpperBound</a></td></tr>
 <tr class="separator:a0925502ed5ba18e4eaec5b16b1f552c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abca47aa4443ba4667feae50f0bb7840d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abca47aa4443ba4667feae50f0bb7840d">featureRequireFullyCanonicalSig</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;RequireFullyCanonicalSig&quot;)</td></tr>
+<tr class="memitem:abca47aa4443ba4667feae50f0bb7840d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abca47aa4443ba4667feae50f0bb7840d">featureRequireFullyCanonicalSig</a></td></tr>
 <tr class="separator:abca47aa4443ba4667feae50f0bb7840d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa520966ed6e3285630d0871466e438a8"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa520966ed6e3285630d0871466e438a8">fix1781</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1781&quot;)</td></tr>
+<tr class="memitem:aa520966ed6e3285630d0871466e438a8"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa520966ed6e3285630d0871466e438a8">fix1781</a></td></tr>
 <tr class="separator:aa520966ed6e3285630d0871466e438a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe6621666690fb309225d4d57b1748d1"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe6621666690fb309225d4d57b1748d1">featureHardenedValidations</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;HardenedValidations&quot;)</td></tr>
+<tr class="memitem:afe6621666690fb309225d4d57b1748d1"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe6621666690fb309225d4d57b1748d1">featureHardenedValidations</a></td></tr>
 <tr class="separator:afe6621666690fb309225d4d57b1748d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ddad39c3614122e497f9a0980f0f0cc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7ddad39c3614122e497f9a0980f0f0cc">fixAmendmentMajorityCalc</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixAmendmentMajorityCalc&quot;)</td></tr>
+<tr class="memitem:a7ddad39c3614122e497f9a0980f0f0cc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7ddad39c3614122e497f9a0980f0f0cc">fixAmendmentMajorityCalc</a></td></tr>
 <tr class="separator:a7ddad39c3614122e497f9a0980f0f0cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb8eb6b8a92d7cb7fe9e359677ab2532"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afb8eb6b8a92d7cb7fe9e359677ab2532">featureNegativeUNL</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;NegativeUNL&quot;)</td></tr>
+<tr class="memitem:afb8eb6b8a92d7cb7fe9e359677ab2532"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afb8eb6b8a92d7cb7fe9e359677ab2532">featureNegativeUNL</a></td></tr>
 <tr class="separator:afb8eb6b8a92d7cb7fe9e359677ab2532"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5a63958686496574543bdfeb4b68ffa"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;TicketBatch&quot;)</td></tr>
+<tr class="memitem:af5a63958686496574543bdfeb4b68ffa"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af5a63958686496574543bdfeb4b68ffa">featureTicketBatch</a></td></tr>
 <tr class="separator:af5a63958686496574543bdfeb4b68ffa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4a3b6da5fd09c790148fab25803d4bc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa4a3b6da5fd09c790148fab25803d4bc">featureFlowSortStrands</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;FlowSortStrands&quot;)</td></tr>
+<tr class="memitem:aa4a3b6da5fd09c790148fab25803d4bc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa4a3b6da5fd09c790148fab25803d4bc">featureFlowSortStrands</a></td></tr>
 <tr class="separator:aa4a3b6da5fd09c790148fab25803d4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58db4f19d243f6c82a533a40a0db89cd"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a58db4f19d243f6c82a533a40a0db89cd">fixSTAmountCanonicalize</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixSTAmountCanonicalize&quot;)</td></tr>
+<tr class="memitem:a58db4f19d243f6c82a533a40a0db89cd"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a58db4f19d243f6c82a533a40a0db89cd">fixSTAmountCanonicalize</a></td></tr>
 <tr class="separator:a58db4f19d243f6c82a533a40a0db89cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a628c330b73f95a76b38d4d385bd37ac0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a628c330b73f95a76b38d4d385bd37ac0">fixRmSmallIncreasedQOffers</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixRmSmallIncreasedQOffers&quot;)</td></tr>
+<tr class="memitem:a628c330b73f95a76b38d4d385bd37ac0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a628c330b73f95a76b38d4d385bd37ac0">fixRmSmallIncreasedQOffers</a></td></tr>
 <tr class="separator:a628c330b73f95a76b38d4d385bd37ac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adba2cb9b84145dcb4b81daa3249d7d5b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adba2cb9b84145dcb4b81daa3249d7d5b">featureCheckCashMakesTrustLine</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;CheckCashMakesTrustLine&quot;)</td></tr>
+<tr class="memitem:adba2cb9b84145dcb4b81daa3249d7d5b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adba2cb9b84145dcb4b81daa3249d7d5b">featureCheckCashMakesTrustLine</a></td></tr>
 <tr class="separator:adba2cb9b84145dcb4b81daa3249d7d5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20b8b8934ee4b63ea32c06f6a3623b21"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classripple_1_1detail_1_1FeatureCollections.html">detail::FeatureCollections</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a20b8b8934ee4b63ea32c06f6a3623b21">featureCollections</a></td></tr>
-<tr class="separator:a20b8b8934ee4b63ea32c06f6a3623b21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c47c9315caed48b938967bb8a78891e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4c47c9315caed48b938967bb8a78891e">retiredPayChan</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;PayChan&quot;)</td></tr>
+<tr class="memitem:a669e38445782d88a025171f1c39716c2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a669e38445782d88a025171f1c39716c2">retiredMultiSign</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;MultiSign&quot;)</td></tr>
+<tr class="separator:a669e38445782d88a025171f1c39716c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08389962808b12151f0527bd74d106a6"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a08389962808b12151f0527bd74d106a6">retiredTrustSetAuth</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;TrustSetAuth&quot;)</td></tr>
+<tr class="separator:a08389962808b12151f0527bd74d106a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a689ffcfe20478b6769caf00cf865bcad"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a689ffcfe20478b6769caf00cf865bcad">retiredFeeEscalation</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;FeeEscalation&quot;)</td></tr>
+<tr class="separator:a689ffcfe20478b6769caf00cf865bcad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c47c9315caed48b938967bb8a78891e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4c47c9315caed48b938967bb8a78891e">retiredPayChan</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;PayChan&quot;)</td></tr>
 <tr class="separator:a4c47c9315caed48b938967bb8a78891e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5c1cee76ef3294bbb33190e30ed07ce"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae5c1cee76ef3294bbb33190e30ed07ce">retiredCryptoConditions</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;CryptoConditions&quot;)</td></tr>
+<tr class="memitem:ae5c1cee76ef3294bbb33190e30ed07ce"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae5c1cee76ef3294bbb33190e30ed07ce">retiredCryptoConditions</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;CryptoConditions&quot;)</td></tr>
 <tr class="separator:ae5c1cee76ef3294bbb33190e30ed07ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2cdee379bd2a55fe3dee570a36d9f8e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac2cdee379bd2a55fe3dee570a36d9f8e">retiredTickSize</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;TickSize&quot;)</td></tr>
+<tr class="memitem:ac2cdee379bd2a55fe3dee570a36d9f8e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac2cdee379bd2a55fe3dee570a36d9f8e">retiredTickSize</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;TickSize&quot;)</td></tr>
 <tr class="separator:ac2cdee379bd2a55fe3dee570a36d9f8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87b7aae2e788b04f6c439217f994f901"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a87b7aae2e788b04f6c439217f994f901">retiredFix1368</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1368&quot;)</td></tr>
+<tr class="memitem:a87b7aae2e788b04f6c439217f994f901"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a87b7aae2e788b04f6c439217f994f901">retiredFix1368</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1368&quot;)</td></tr>
 <tr class="separator:a87b7aae2e788b04f6c439217f994f901"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53b3831b0646238359466f8310fd5cfe"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a53b3831b0646238359466f8310fd5cfe">retiredEscrow</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;Escrow&quot;)</td></tr>
+<tr class="memitem:a53b3831b0646238359466f8310fd5cfe"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a53b3831b0646238359466f8310fd5cfe">retiredEscrow</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;Escrow&quot;)</td></tr>
 <tr class="separator:a53b3831b0646238359466f8310fd5cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8f4a6fbdcdaabe9de5cf5f9c7dcdcdc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af8f4a6fbdcdaabe9de5cf5f9c7dcdcdc">retiredFix1373</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1373&quot;)</td></tr>
+<tr class="memitem:af8f4a6fbdcdaabe9de5cf5f9c7dcdcdc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af8f4a6fbdcdaabe9de5cf5f9c7dcdcdc">retiredFix1373</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1373&quot;)</td></tr>
 <tr class="separator:af8f4a6fbdcdaabe9de5cf5f9c7dcdcdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad95f3c81e57821c73a314eb9767a13e5"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad95f3c81e57821c73a314eb9767a13e5">retiredEnforceInvariants</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;EnforceInvariants&quot;)</td></tr>
+<tr class="memitem:ad95f3c81e57821c73a314eb9767a13e5"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad95f3c81e57821c73a314eb9767a13e5">retiredEnforceInvariants</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;EnforceInvariants&quot;)</td></tr>
 <tr class="separator:ad95f3c81e57821c73a314eb9767a13e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0928ca5a324144ff7ce4faaaacbdc2d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab0928ca5a324144ff7ce4faaaacbdc2d">retiredSortedDirectories</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;SortedDirectories&quot;)</td></tr>
+<tr class="memitem:ab0928ca5a324144ff7ce4faaaacbdc2d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab0928ca5a324144ff7ce4faaaacbdc2d">retiredSortedDirectories</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;SortedDirectories&quot;)</td></tr>
 <tr class="separator:ab0928ca5a324144ff7ce4faaaacbdc2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a807ede3495796bd8a080803cc3605b9d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a807ede3495796bd8a080803cc3605b9d">retiredFix1201</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1201&quot;)</td></tr>
+<tr class="memitem:a807ede3495796bd8a080803cc3605b9d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a807ede3495796bd8a080803cc3605b9d">retiredFix1201</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1201&quot;)</td></tr>
 <tr class="separator:a807ede3495796bd8a080803cc3605b9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a671dcbd0f1cf19f9dc241e9c0d5904"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6a671dcbd0f1cf19f9dc241e9c0d5904">retiredFix1512</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1512&quot;)</td></tr>
+<tr class="memitem:a6a671dcbd0f1cf19f9dc241e9c0d5904"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6a671dcbd0f1cf19f9dc241e9c0d5904">retiredFix1512</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1512&quot;)</td></tr>
 <tr class="separator:a6a671dcbd0f1cf19f9dc241e9c0d5904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1728143f9320a061a084a5b9599a36a9"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1728143f9320a061a084a5b9599a36a9">retiredFix1523</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1523&quot;)</td></tr>
+<tr class="memitem:a1728143f9320a061a084a5b9599a36a9"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1728143f9320a061a084a5b9599a36a9">retiredFix1523</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1523&quot;)</td></tr>
 <tr class="separator:a1728143f9320a061a084a5b9599a36a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29031547549155bd2da48db469afd0fc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a29031547549155bd2da48db469afd0fc">retiredFix1528</a> = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1528&quot;)</td></tr>
+<tr class="memitem:a29031547549155bd2da48db469afd0fc"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a29031547549155bd2da48db469afd0fc">retiredFix1528</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1528&quot;)</td></tr>
 <tr class="separator:a29031547549155bd2da48db469afd0fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a326f6023f0803e3b50aa98f8922327c7"><td class="memItemLeft" align="right" valign="top">static const bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a326f6023f0803e3b50aa98f8922327c7">readOnlySet</a></td></tr>
+<tr class="separator:a326f6023f0803e3b50aa98f8922327c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ca9b43bfc508a3fdbc296fb926320ce"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structripple_1_1Rate.html">Rate</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">parityRate</a> (QUALITY_ONE)</td></tr>
 <tr class="memdesc:a8ca9b43bfc508a3fdbc296fb926320ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">A transfer rate signifying a 1:1 exchange.  <a href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">More...</a><br /></td></tr>
 <tr class="separator:a8ca9b43bfc508a3fdbc296fb926320ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -7263,6 +7348,34 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 
 </div>
 </div>
+<a id="a1dcb4cf27e683bd94d11f5322836c689"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1dcb4cf27e683bd94d11f5322836c689">&#9670;&nbsp;</a></span>AmendmentVote</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">ripple::AmendmentVote</a> : int</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a1dcb4cf27e683bd94d11f5322836c689a46c48bec0d282018b9d167eef7711b2c"></a>up&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1dcb4cf27e683bd94d11f5322836c689a74e8333ad11685ff3bdae589c8f6e34d"></a>down&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8h_source.html#l00137">137</a> of file <a class="el" href="RelationalDBInterface__global_8h_source.html">RelationalDBInterface_global.h</a>.</p>
+
+</div>
+</div>
 <a id="a403c17c92e52d9dbbd1ef06eb4d26d9f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a403c17c92e52d9dbbd1ef06eb4d26d9f">&#9670;&nbsp;</a></span>TableType</h2>
 
@@ -7911,6 +8024,34 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </table>
 
 <p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00150">150</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+
+</div>
+</div>
+<a id="afaf9aac668f4e0805bc2911291e29e9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afaf9aac668f4e0805bc2911291e29e9f">&#9670;&nbsp;</a></span>DefaultVote</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">ripple::DefaultVote</a> : bool</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7"></a>no&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e"></a>yes&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="Feature_8h_source.html#l00069">69</a> of file <a class="el" href="Feature_8h_source.html">Feature.h</a>.</p>
 
 </div>
 </div>
@@ -10352,7 +10493,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02136">2136</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02138">2138</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -10488,8 +10629,8 @@ template&lt;class Object &gt; </div>
 
 </div>
 </div>
-<a id="af161cd4a544a6a5d5cceac3133f9a865"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af161cd4a544a6a5d5cceac3133f9a865">&#9670;&nbsp;</a></span>make_AmendmentTable()</h2>
+<a id="ad41956ef004d64710296fd76a5dc9e06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad41956ef004d64710296fd76a5dc9e06">&#9670;&nbsp;</a></span>make_AmendmentTable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -10509,7 +10650,7 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Section.html">Section</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1AmendmentTable_1_1FeatureInfo.html">AmendmentTable::FeatureInfo</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>supported</em>, </td>
         </tr>
         <tr>
@@ -10538,7 +10679,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00780">780</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00789">789</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -14236,8 +14377,8 @@ template&lt;class TDerived &gt; </div>
 
 </div>
 </div>
-<a id="a14492276c53836ae876852be6ab5c875"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14492276c53836ae876852be6ab5c875">&#9670;&nbsp;</a></span>readAmendments()</h2>
+<a id="a740f27a016e79e42b15532d24eeb54d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a740f27a016e79e42b15532d24eeb54d3">&#9670;&nbsp;</a></span>readAmendments()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14251,7 +14392,7 @@ template&lt;class TDerived &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_hash, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_name, boost::optional&lt; int &gt; vote_to_veto)&gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_hash, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; amendment_name, boost::optional&lt; <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> &gt; vote)&gt; const &amp;&#160;</td>
           <td class="paramname"><em>callback</em>&#160;</td>
         </tr>
         <tr>
@@ -14266,7 +14407,7 @@ template&lt;class TDerived &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with walletDB database. </td></tr>
-    <tr><td class="paramname">callback</td><td>Callback called for each amendment passing its hash, name and teh flag if it should be vetoed as callback parameters </td></tr>
+    <tr><td class="paramname">callback</td><td>Callback called for each amendment passing its hash, name and the flag if it should be vetoed as callback parameters </td></tr>
   </table>
   </dd>
 </dl>
@@ -14275,8 +14416,8 @@ template&lt;class TDerived &gt; </div>
 
 </div>
 </div>
-<a id="a761bccdfe0c93b59c60bf55b65406b13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a761bccdfe0c93b59c60bf55b65406b13">&#9670;&nbsp;</a></span>voteAmendment()</h2>
+<a id="af4775b9f1e9a5a194f086f657c9faa37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4775b9f1e9a5a194f086f657c9faa37">&#9670;&nbsp;</a></span>voteAmendment()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14302,8 +14443,8 @@ template&lt;class TDerived &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>vote_to_veto</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a>&#160;</td>
+          <td class="paramname"><em>vote</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -14319,12 +14460,12 @@ template&lt;class TDerived &gt; </div>
     <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with walletDB database. </td></tr>
     <tr><td class="paramname">amendment</td><td>Hash of amendment. </td></tr>
     <tr><td class="paramname">name</td><td>Name of amendment. </td></tr>
-    <tr><td class="paramname">vote_to_veto</td><td>Trus if this amendment should be vetoed. </td></tr>
+    <tr><td class="paramname">vote</td><td>Whether to vote in favor of this amendment. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00283">283</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00289">289</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14370,7 +14511,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00303">303</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00309">309</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14399,7 +14540,7 @@ template&lt;class TDerived &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00359">359</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00365">365</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14439,7 +14580,7 @@ template&lt;class TDerived &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Previous value of ledger sequence whic can be deleted. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00369">369</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00375">375</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14468,7 +14609,7 @@ template&lt;class TDerived &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The <a class="el" href="structripple_1_1SavedState.html">SavedState</a> structure which contains names of writable DB, archive DB and last rotated ledger sequence. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00377">377</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00383">383</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14507,7 +14648,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00389">389</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00395">395</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14546,7 +14687,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00401">401</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00407">407</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14586,7 +14727,7 @@ template&lt;class TDerived &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Pair of unique pointer to database and current downloaded size if download process continues. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00411">411</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00417">417</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14654,7 +14795,7 @@ template&lt;class TDerived &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of saved parts. Downloaded piece may be splitted into several parts of size not large that maxRowSizePad. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00450">450</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00456">456</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14693,7 +14834,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00527">527</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00533">533</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14722,7 +14863,7 @@ template&lt;class TDerived &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if vacuum process completed successfully. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00540">540</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00546">546</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14768,7 +14909,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00584">584</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00590">590</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14814,7 +14955,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00620">620</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00626">626</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14853,7 +14994,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00776">776</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00782">782</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -14892,7 +15033,7 @@ template&lt;class TDerived &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00798">798</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RelationalDBInterface__global_8cpp_source.html#l00804">804</a> of file <a class="el" href="RelationalDBInterface__global_8cpp_source.html">RelationalDBInterface_global.cpp</a>.</p>
 
 </div>
 </div>
@@ -27154,7 +27295,7 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01443">1443</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01445">1445</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -27174,7 +27315,7 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01535">1535</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01537">1537</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -27242,7 +27383,7 @@ template&lt;typename headers &gt; </div>
 
 <p>Creates the implementation of <a class="el" href="classripple_1_1Overlay.html" title="Manages the set of connected peers.">Overlay</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01640">1640</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01642">1642</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -28700,7 +28841,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00147">147</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00336">336</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -28720,7 +28861,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00153">153</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00363">363</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -28740,7 +28881,27 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00159">159</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00369">369</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa00e870074854cb15cc1d91427e47bec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa00e870074854cb15cc1d91427e47bec">&#9670;&nbsp;</a></span>featureToName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::featureToName </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00375">375</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -28772,7 +28933,7 @@ template&lt;class F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8h_source.html#l00345">345</a> of file <a class="el" href="Feature_8h_source.html">Feature.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8h_source.html#l00299">299</a> of file <a class="el" href="Feature_8h_source.html">Feature.h</a>.</p>
 
 </div>
 </div>
@@ -28833,6 +28994,1123 @@ template&lt;class Hasher &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="AccountID_8cpp_source.html#l00080">80</a> of file <a class="el" href="AccountID_8cpp_source.html">AccountID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7f497dcb1c3e98dd745e3278eafc5342"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f497dcb1c3e98dd745e3278eafc5342">&#9670;&nbsp;</a></span>hash_value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::hash_value </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>feature</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00035">35</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="afe038ff792ec0fff57daed002f438f15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe038ff792ec0fff57daed002f438f15">&#9670;&nbsp;</a></span>registerFeature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::registerFeature </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported&#160;</td>
+          <td class="paramname"><em>support</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a>&#160;</td>
+          <td class="paramname"><em>vote</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00342">342</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8c231e0a6ac493297e442e8e99af8037"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c231e0a6ac493297e442e8e99af8037">&#9670;&nbsp;</a></span>retireFeature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retireFeature </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00350">350</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ac52a0eb5ca3e6aec7bc695eb44ed1ab8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac52a0eb5ca3e6aec7bc695eb44ed1ab8">&#9670;&nbsp;</a></span>registrationIsDone()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::registrationIsDone </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Tell FeatureCollections when registration is complete. </p>
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00357">357</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a3027a89189f7590509e1afdb945ac9b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3027a89189f7590509e1afdb945ac9b2">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[1/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">OwnerPaysFee&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::no&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae955b1ffdbc6f642edc6bd1631600efc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae955b1ffdbc6f642edc6bd1631600efc">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[2/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">Flow&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af3d27856e5f56e0125a4ac0503dc5128"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3d27856e5f56e0125a4ac0503dc5128">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[3/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">FlowCross&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6567270f826f07bffde8c18f15932061"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6567270f826f07bffde8c18f15932061">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[4/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">CryptoConditionsSuite&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa4be9c7709719b27e7148aa76bc60175"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4be9c7709719b27e7148aa76bc60175">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[1/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a1e4e6d3ac032cc3787c0901156036618">fix1513</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ace1dbecf4a73917b8dbb850b6c1d9ea6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace1dbecf4a73917b8dbb850b6c1d9ea6">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[5/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">DepositAuth&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a09fe5714d7a1dcbeb4cd08a4ae848f04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09fe5714d7a1dcbeb4cd08a4ae848f04">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[6/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">Checks&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af7980c9fc25b221977d1821637f6de98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7980c9fc25b221977d1821637f6de98">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[2/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aceb75e0144de4950c33dedd1191de320">fix1571</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae36c67724a59a42d50fc59fac5f10e42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae36c67724a59a42d50fc59fac5f10e42">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[3/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#af692a0db75adbc331df9226d28909dd9">fix1543</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad4df0a44a6f14554e9104ca92ebb046f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4df0a44a6f14554e9104ca92ebb046f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[4/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a34ce95c5969e4ba85e5e28b474efe5cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34ce95c5969e4ba85e5e28b474efe5cc">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[7/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1DepositPreauth.html">DepositPreauth</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0b4926e7f116e47ccb3a73f850add5f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b4926e7f116e47ccb3a73f850add5f9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[5/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a0c155f4dfdb9766fbe27cbe85d43ded7">fix1515</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a929e6bcad1025310e66e58d1ae77301f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a929e6bcad1025310e66e58d1ae77301f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[6/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afa20eb58bea379999a57028e082576f1">fix1578</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae70b3dcb595ff6d0833f762db9e63f2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae70b3dcb595ff6d0833f762db9e63f2a">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[8/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">MultiSignReserve&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2c12a3621b99b304577f17e58eb0d81b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c12a3621b99b304577f17e58eb0d81b">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[7/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a0c6216b12b73b15239445dfaeee8d473">fixTakerDryOfferRemoval</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac68ae6a4840dae3bbc1acc9d82c5aad3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac68ae6a4840dae3bbc1acc9d82c5aad3">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[8/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aba5b8db3b6370710dbaadeb4a3b56f6b">fixMasterKeyAsRegularKey</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a969dddbd16dea21dfaed7c4120c1a9bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a969dddbd16dea21dfaed7c4120c1a9bc">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[9/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ac73c4c435b681301e35a8028c549c709">fixCheckThreading</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac1c493fa7a0a22a75df71b3fdb68b691"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1c493fa7a0a22a75df71b3fdb68b691">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[10/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afd7eb1f95de1f953b43cfd2adb902eec">fixPayChanRecipientOwnerDir</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a358da1774db087dbe9962994818798ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a358da1774db087dbe9962994818798ca">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[9/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">DeletableAccounts&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abf2484d392ce039ae80f86f0b3fa2a39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf2484d392ce039ae80f86f0b3fa2a39">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[11/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a0925502ed5ba18e4eaec5b16b1f552c0">fixQualityUpperBound</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7bb81c798dcd5c65d9d3e84229661edf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bb81c798dcd5c65d9d3e84229661edf">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[10/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">RequireFullyCanonicalSig&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac1c4b0b0fd89f0fc5c78944b022b2fb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1c4b0b0fd89f0fc5c78944b022b2fb9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[12/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa520966ed6e3285630d0871466e438a8">fix1781</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaf25e0f9d5bc0181eb548a571def035d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf25e0f9d5bc0181eb548a571def035d">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[11/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">HardenedValidations&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3e88cb027ef298cf997eb008d5328f7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e88cb027ef298cf997eb008d5328f7c">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[13/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a7ddad39c3614122e497f9a0980f0f0cc">fixAmendmentMajorityCalc</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae69520001cb849a5589aad90f8cd8a31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae69520001cb849a5589aad90f8cd8a31">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[12/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">NegativeUNL&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a31744e05fceff02bbe0b19c7335d09e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31744e05fceff02bbe0b19c7335d09e2">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[13/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">TicketBatch&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a27842b5bf18f3391ac140f8e94161248"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27842b5bf18f3391ac140f8e94161248">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[14/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">FlowSortStrands&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3826809481851bac3da12b77a45f7b3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3826809481851bac3da12b77a45f7b3f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[14/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a58db4f19d243f6c82a533a40a0db89cd">fixSTAmountCanonicalize</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a61e0ee25af6fdc7e001381205fffcf18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61e0ee25af6fdc7e001381205fffcf18">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[15/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a628c330b73f95a76b38d4d385bd37ac0">fixRmSmallIncreasedQOffers</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab3017b7c2fef62c7121dc4e1ff409ca7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3017b7c2fef62c7121dc4e1ff409ca7">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[15/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">CheckCashMakesTrustLine&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -47377,12 +48655,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureOwnerPaysFee = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;OwnerPaysFee&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureOwnerPaysFee</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00167">167</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47393,12 +48669,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureFlow = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;Flow&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureFlow</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00168">168</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47409,12 +48683,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureFlowCross = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;FlowCross&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureFlowCross</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00169">169</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47425,12 +48697,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureCryptoConditionsSuite = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;CryptoConditionsSuite&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureCryptoConditionsSuite</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00170">170</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47441,12 +48711,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1513 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1513&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1513</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00171">171</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47457,12 +48725,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureDepositAuth = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;DepositAuth&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureDepositAuth</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00172">172</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47473,12 +48739,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureChecks = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;Checks&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureChecks</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00173">173</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47489,12 +48753,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1571 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1571&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1571</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00174">174</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47505,12 +48767,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1543 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1543&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1543</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00175">175</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47521,12 +48781,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1623 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1623&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1623</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00176">176</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47537,12 +48795,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureDepositPreauth = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;DepositPreauth&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureDepositPreauth</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00177">177</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47553,12 +48809,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1515 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1515&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1515</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00178">178</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47569,12 +48823,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1578 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1578&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1578</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00179">179</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47585,12 +48837,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureMultiSignReserve = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;MultiSignReserve&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureMultiSignReserve</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00180">180</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47601,12 +48851,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixTakerDryOfferRemoval = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixTakerDryOfferRemoval&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixTakerDryOfferRemoval</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00181">181</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47617,12 +48865,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixMasterKeyAsRegularKey = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixMasterKeyAsRegularKey&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixMasterKeyAsRegularKey</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00182">182</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47633,12 +48879,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixCheckThreading = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixCheckThreading&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixCheckThreading</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00183">183</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47649,12 +48893,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixPayChanRecipientOwnerDir = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixPayChanRecipientOwnerDir&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixPayChanRecipientOwnerDir</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00184">184</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47665,12 +48907,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureDeletableAccounts = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;DeletableAccounts&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureDeletableAccounts</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00185">185</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47681,12 +48921,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixQualityUpperBound = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixQualityUpperBound&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixQualityUpperBound</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00186">186</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47697,12 +48935,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureRequireFullyCanonicalSig = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;RequireFullyCanonicalSig&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureRequireFullyCanonicalSig</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00187">187</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47713,12 +48949,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1781 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1781&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fix1781</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00188">188</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47729,12 +48963,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureHardenedValidations = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;HardenedValidations&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureHardenedValidations</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00189">189</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47745,12 +48977,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixAmendmentMajorityCalc = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixAmendmentMajorityCalc&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixAmendmentMajorityCalc</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00190">190</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47761,12 +48991,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureNegativeUNL = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;NegativeUNL&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureNegativeUNL</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00191">191</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47777,12 +49005,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureTicketBatch = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;TicketBatch&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureTicketBatch</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00192">192</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47793,12 +49019,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureFlowSortStrands = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;FlowSortStrands&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureFlowSortStrands</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00193">193</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47809,12 +49033,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixSTAmountCanonicalize = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixSTAmountCanonicalize&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixSTAmountCanonicalize</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00194">194</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47825,12 +49047,10 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixRmSmallIncreasedQOffers = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fixRmSmallIncreasedQOffers&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::fixRmSmallIncreasedQOffers</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00195">195</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47841,36 +49061,58 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureCheckCashMakesTrustLine = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;CheckCashMakesTrustLine&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureCheckCashMakesTrustLine</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00196">196</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
-
 </div>
 </div>
-<a id="a20b8b8934ee4b63ea32c06f6a3623b21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20b8b8934ee4b63ea32c06f6a3623b21">&#9670;&nbsp;</a></span>featureCollections</h2>
+<a id="a669e38445782d88a025171f1c39716c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a669e38445782d88a025171f1c39716c2">&#9670;&nbsp;</a></span>retiredMultiSign</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classripple_1_1detail_1_1FeatureCollections.html">detail::FeatureCollections</a> ripple::featureCollections</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredMultiSign = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;MultiSign&quot;)</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00077">77</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00447">447</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a08389962808b12151f0527bd74d106a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08389962808b12151f0527bd74d106a6">&#9670;&nbsp;</a></span>retiredTrustSetAuth</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredTrustSetAuth = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;TrustSetAuth&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00448">448</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a689ffcfe20478b6769caf00cf865bcad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a689ffcfe20478b6769caf00cf865bcad">&#9670;&nbsp;</a></span>retiredFeeEscalation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFeeEscalation = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;FeeEscalation&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00449">449</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47881,12 +49123,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredPayChan = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;PayChan&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredPayChan = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;PayChan&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00202">202</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00450">450</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47897,12 +49139,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredCryptoConditions = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;CryptoConditions&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredCryptoConditions = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;CryptoConditions&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00203">203</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00451">451</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47913,12 +49155,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredTickSize = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;TickSize&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredTickSize = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;TickSize&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00204">204</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00452">452</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47929,12 +49171,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1368 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1368&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1368 = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1368&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00205">205</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00453">453</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47945,12 +49187,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredEscrow = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;Escrow&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredEscrow = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;Escrow&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00206">206</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00454">454</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47961,12 +49203,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1373 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1373&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1373 = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1373&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00207">207</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00455">455</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47977,12 +49219,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredEnforceInvariants = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;EnforceInvariants&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredEnforceInvariants = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;EnforceInvariants&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00208">208</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00456">456</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -47993,12 +49235,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredSortedDirectories = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;SortedDirectories&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredSortedDirectories = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;SortedDirectories&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00209">209</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00457">457</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -48009,12 +49251,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1201 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1201&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1201 = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1201&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00210">210</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00458">458</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -48025,12 +49267,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1512 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1512&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1512 = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1512&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00211">211</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00459">459</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -48041,12 +49283,12 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1523 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1523&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1523 = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1523&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00212">212</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00460">460</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -48057,12 +49299,38 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1528 = *<a class="el" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(&quot;fix1528&quot;)</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::retiredFix1528 = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;fix1528&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00213">213</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00461">461</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a326f6023f0803e3b50aa98f8922327c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a326f6023f0803e3b50aa98f8922327c7">&#9670;&nbsp;</a></span>readOnlySet</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const bool ripple::readOnlySet</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    featureCollections.registrationIsDone()</div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00476">476</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
