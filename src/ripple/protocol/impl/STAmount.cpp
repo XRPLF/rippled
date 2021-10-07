@@ -292,6 +292,18 @@ STAmount::construct(SerialIter& sit, SField const& name)
     return std::make_unique<STAmount>(sit, name);
 }
 
+STBase*
+STAmount::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STAmount::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
 //------------------------------------------------------------------------------
 //
 // Conversion
@@ -485,6 +497,12 @@ STAmount::setJson(Json::Value& elem) const
 //
 //------------------------------------------------------------------------------
 
+SerializedTypeID
+STAmount::getSType() const
+{
+    return STI_AMOUNT;
+}
+
 std::string
 STAmount::getFullText() const
 {
@@ -636,6 +654,12 @@ STAmount::isEquivalent(const STBase& t) const
 {
     const STAmount* v = dynamic_cast<const STAmount*>(&t);
     return v && (*v == *this);
+}
+
+bool
+STAmount::isDefault() const
+{
+    return (mValue == 0) && mIsNative;
 }
 
 //------------------------------------------------------------------------------

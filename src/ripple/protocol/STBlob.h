@@ -32,109 +32,115 @@ namespace ripple {
 // variable length byte string
 class STBlob : public STBase
 {
+    Buffer value_;
+
 public:
     using value_type = Slice;
 
     STBlob() = default;
-    STBlob(STBlob const& rhs) : STBase(rhs), value_(rhs.data(), rhs.size())
-    {
-    }
+    STBlob(STBlob const& rhs);
 
-    STBlob(SField const& f, void const* data, std::size_t size)
-        : STBase(f), value_(data, size)
-    {
-    }
-
-    STBlob(SField const& f, Buffer&& b) : STBase(f), value_(std::move(b))
-    {
-    }
-
-    STBlob(SField const& n) : STBase(n)
-    {
-    }
-
+    STBlob(SField const& f, void const* data, std::size_t size);
+    STBlob(SField const& f, Buffer&& b);
+    STBlob(SField const& n);
     STBlob(SerialIter&, SField const& name = sfGeneric);
 
     STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
+    copy(std::size_t n, void* buf) const override;
 
     STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
+    move(std::size_t n, void* buf) override;
 
     std::size_t
-    size() const
-    {
-        return value_.size();
-    }
+    size() const;
 
     std::uint8_t const*
-    data() const
-    {
-        return reinterpret_cast<std::uint8_t const*>(value_.data());
-    }
+    data() const;
 
     SerializedTypeID
-    getSType() const override
-    {
-        return STI_VL;
-    }
+    getSType() const override;
 
     std::string
     getText() const override;
 
     void
-    add(Serializer& s) const override
-    {
-        assert(fName->isBinary());
-        assert(
-            (fName->fieldType == STI_VL) || (fName->fieldType == STI_ACCOUNT));
-        s.addVL(value_.data(), value_.size());
-    }
-
-    STBlob&
-    operator=(Slice const& slice)
-    {
-        value_ = Buffer(slice.data(), slice.size());
-        return *this;
-    }
-
-    value_type
-    value() const noexcept
-    {
-        return value_;
-    }
-
-    STBlob&
-    operator=(Buffer&& buffer)
-    {
-        value_ = std::move(buffer);
-        return *this;
-    }
-
-    void
-    setValue(Buffer&& b)
-    {
-        value_ = std::move(b);
-    }
+    add(Serializer& s) const override;
 
     bool
     isEquivalent(const STBase& t) const override;
 
     bool
-    isDefault() const override
-    {
-        return value_.empty();
-    }
+    isDefault() const override;
 
-private:
-    Buffer value_;
+    STBlob&
+    operator=(Slice const& slice);
+
+    value_type
+    value() const noexcept;
+
+    STBlob&
+    operator=(Buffer&& buffer);
+
+    void
+    setValue(Buffer&& b);
 };
+
+inline STBlob::STBlob(STBlob const& rhs)
+    : STBase(rhs), value_(rhs.data(), rhs.size())
+{
+}
+
+inline STBlob::STBlob(SField const& f, void const* data, std::size_t size)
+    : STBase(f), value_(data, size)
+{
+}
+
+inline STBlob::STBlob(SField const& f, Buffer&& b)
+    : STBase(f), value_(std::move(b))
+{
+}
+
+inline STBlob::STBlob(SField const& n) : STBase(n)
+{
+}
+
+inline std::size_t
+STBlob::size() const
+{
+    return value_.size();
+}
+
+inline std::uint8_t const*
+STBlob::data() const
+{
+    return reinterpret_cast<std::uint8_t const*>(value_.data());
+}
+
+inline STBlob&
+STBlob::operator=(Slice const& slice)
+{
+    value_ = Buffer(slice.data(), slice.size());
+    return *this;
+}
+
+inline STBlob::value_type
+STBlob::value() const noexcept
+{
+    return value_;
+}
+
+inline STBlob&
+STBlob::operator=(Buffer&& buffer)
+{
+    value_ = std::move(buffer);
+    return *this;
+}
+
+inline void
+STBlob::setValue(Buffer&& b)
+{
+    value_ = std::move(b);
+}
 
 }  // namespace ripple
 

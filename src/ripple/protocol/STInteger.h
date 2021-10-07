@@ -30,27 +30,19 @@ class STInteger : public STBase
 public:
     using value_type = Integer;
 
-    explicit STInteger(Integer v) : value_(v)
-    {
-    }
+private:
+    Integer value_;
 
-    STInteger(SField const& n, Integer v = 0) : STBase(n), value_(v)
-    {
-    }
-
+public:
+    explicit STInteger(Integer v);
+    STInteger(SField const& n, Integer v = 0);
     STInteger(SerialIter& sit, SField const& name);
 
     STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
+    copy(std::size_t n, void* buf) const override;
 
     STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
+    move(std::size_t n, void* buf) override;
 
     SerializedTypeID
     getSType() const override;
@@ -61,58 +53,107 @@ public:
     getText() const override;
 
     void
-    add(Serializer& s) const override
-    {
-        assert(fName->isBinary());
-        assert(fName->fieldType == getSType());
-        s.addInteger(value_);
-    }
-
-    STInteger&
-    operator=(value_type const& v)
-    {
-        value_ = v;
-        return *this;
-    }
-
-    value_type
-    value() const noexcept
-    {
-        return value_;
-    }
-
-    void
-    setValue(Integer v)
-    {
-        value_ = v;
-    }
-
-    operator Integer() const
-    {
-        return value_;
-    }
-
-    virtual bool
-    isDefault() const override
-    {
-        return value_ == 0;
-    }
+    add(Serializer& s) const override;
 
     bool
-    isEquivalent(const STBase& t) const override
-    {
-        const STInteger* v = dynamic_cast<const STInteger*>(&t);
-        return v && (value_ == v->value_);
-    }
+    isDefault() const override;
 
-private:
-    Integer value_;
+    bool
+    isEquivalent(const STBase& t) const override;
+
+    STInteger&
+    operator=(value_type const& v);
+
+    value_type
+    value() const noexcept;
+
+    void
+    setValue(Integer v);
+
+    operator Integer() const;
 };
 
 using STUInt8 = STInteger<unsigned char>;
 using STUInt16 = STInteger<std::uint16_t>;
 using STUInt32 = STInteger<std::uint32_t>;
 using STUInt64 = STInteger<std::uint64_t>;
+
+template <typename Integer>
+inline STInteger<Integer>::STInteger(Integer v) : value_(v)
+{
+}
+
+template <typename Integer>
+inline STInteger<Integer>::STInteger(SField const& n, Integer v)
+    : STBase(n), value_(v)
+{
+}
+
+template <typename Integer>
+inline STBase*
+STInteger<Integer>::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+template <typename Integer>
+inline STBase*
+STInteger<Integer>::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+template <typename Integer>
+inline void
+STInteger<Integer>::add(Serializer& s) const
+{
+    assert(getFName().isBinary());
+    assert(getFName().fieldType == getSType());
+    s.addInteger(value_);
+}
+
+template <typename Integer>
+inline bool
+STInteger<Integer>::isDefault() const
+{
+    return value_ == 0;
+}
+
+template <typename Integer>
+inline bool
+STInteger<Integer>::isEquivalent(const STBase& t) const
+{
+    const STInteger* v = dynamic_cast<const STInteger*>(&t);
+    return v && (value_ == v->value_);
+}
+
+template <typename Integer>
+inline STInteger<Integer>&
+STInteger<Integer>::operator=(value_type const& v)
+{
+    value_ = v;
+    return *this;
+}
+
+template <typename Integer>
+inline typename STInteger<Integer>::value_type
+STInteger<Integer>::value() const noexcept
+{
+    return value_;
+}
+
+template <typename Integer>
+inline void
+STInteger<Integer>::setValue(Integer v)
+{
+    value_ = v;
+}
+
+template <typename Integer>
+inline STInteger<Integer>::operator Integer() const
+{
+    return value_;
+}
 
 }  // namespace ripple
 
