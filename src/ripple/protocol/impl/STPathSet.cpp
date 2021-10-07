@@ -101,6 +101,18 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     }
 }
 
+STBase*
+STPathSet::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STPathSet::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
@@ -127,6 +139,12 @@ STPathSet::isEquivalent(const STBase& t) const
 {
     const STPathSet* v = dynamic_cast<const STPathSet*>(&t);
     return v && (value == v->value);
+}
+
+bool
+STPathSet::isDefault() const
+{
+    return value.empty();
 }
 
 bool
@@ -181,11 +199,17 @@ STPathSet::getJson(JsonOptions options) const
     return ret;
 }
 
+SerializedTypeID
+STPathSet::getSType() const
+{
+    return STI_PATHSET;
+}
+
 void
 STPathSet::add(Serializer& s) const
 {
-    assert(fName->isBinary());
-    assert(fName->fieldType == STI_PATHSET);
+    assert(getFName().isBinary());
+    assert(getFName().fieldType == STI_PATHSET);
     bool first = true;
 
     for (auto const& spPath : value)

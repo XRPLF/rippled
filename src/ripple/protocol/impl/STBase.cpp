@@ -53,6 +53,18 @@ STBase::operator!=(const STBase& t) const
     return (getSType() != t.getSType()) || !isEquivalent(t);
 }
 
+STBase*
+STBase::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STBase::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
 SerializedTypeID
 STBase::getSType() const
 {

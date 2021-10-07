@@ -40,78 +40,61 @@ public:
     using value_type = AccountID;
 
     STAccount();
+
     STAccount(SField const& n);
     STAccount(SField const& n, Buffer&& v);
     STAccount(SerialIter& sit, SField const& name);
     STAccount(SField const& n, AccountID const& v);
 
     STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
-
+    copy(std::size_t n, void* buf) const override;
     STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
+    move(std::size_t n, void* buf) override;
 
     SerializedTypeID
-    getSType() const override
-    {
-        return STI_ACCOUNT;
-    }
+    getSType() const override;
 
     std::string
     getText() const override;
 
     void
-    add(Serializer& s) const override
-    {
-        assert(fName->isBinary());
-        assert(fName->fieldType == STI_ACCOUNT);
-
-        // Preserve the serialization behavior of an STBlob:
-        //  o If we are default (all zeros) serialize as an empty blob.
-        //  o Otherwise serialize 160 bits.
-        int const size = isDefault() ? 0 : uint160::bytes;
-        s.addVL(value_.data(), size);
-    }
+    add(Serializer& s) const override;
 
     bool
-    isEquivalent(const STBase& t) const override
-    {
-        auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
-        return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);
-    }
+    isEquivalent(const STBase& t) const override;
 
     bool
-    isDefault() const override
-    {
-        return default_;
-    }
+    isDefault() const override;
 
     STAccount&
-    operator=(AccountID const& value)
-    {
-        setValue(value);
-        return *this;
-    }
+    operator=(AccountID const& value);
 
     AccountID
-    value() const noexcept
-    {
-        return value_;
-    }
+    value() const noexcept;
 
     void
-    setValue(AccountID const& v)
-    {
-        value_ = v;
-        default_ = false;
-    }
+    setValue(AccountID const& v);
 };
+
+inline STAccount&
+STAccount::operator=(AccountID const& value)
+{
+    setValue(value);
+    return *this;
+}
+
+inline AccountID
+STAccount::value() const noexcept
+{
+    return value_;
+}
+
+inline void
+STAccount::setValue(AccountID const& v)
+{
+    value_ = v;
+    default_ = false;
+}
 
 }  // namespace ripple
 
