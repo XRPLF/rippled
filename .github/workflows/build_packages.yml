@@ -1,4 +1,4 @@
-name: Dispatch on push
+name: Trigger rippled-packages repository
 on: [pull_request, push]
 jobs:
   dispatch_build_event:
