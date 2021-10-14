@@ -203,6 +203,9 @@ doSubscribe(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::account_history_tx_stream))
     {
+        if (!context.app.config().useTxTables())
+            return rpcError(rpcNOT_ENABLED);
+
         context.loadType = Resource::feeMediumBurdenRPC;
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())

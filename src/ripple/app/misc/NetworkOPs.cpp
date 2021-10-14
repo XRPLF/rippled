@@ -3294,8 +3294,54 @@ NetworkOPsImp::unsubAccountInternal(
 void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
+    enum DatabaseType { Postgres, Sqlite, None };
+    static const auto databaseType = [&]() -> DatabaseType {
+#ifdef RIPPLED_REPORTING
+        if (app_.config().reporting())
+        {
+            if (dynamic_cast<RelationalDBInterfacePostgres*>(
+                    &app_.getRelationalDBInterface()))
+            {
+                return DatabaseType::Postgres;
+            }
+            return DatabaseType::None;
+        }
+        else
+        {
+            if (dynamic_cast<RelationalDBInterfaceSqlite*>(
+                    &app_.getRelationalDBInterface()))
+            {
+                return DatabaseType::Sqlite;
+            }
+            return DatabaseType::None;
+        }
+#else
+        if (dynamic_cast<RelationalDBInterfaceSqlite*>(
+                &app_.getRelationalDBInterface()))
+        {
+            return DatabaseType::Sqlite;
+        }
+        return DatabaseType::None;
+#endif
+    }();
+
+    if (databaseType == DatabaseType::None)
+    {
+        JLOG(m_journal.error())
+            << "AccountHistory job for account "
+            << toBase58(subInfo.index_->accountId_) << " no database";
+        if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+        {
+            sptr->send(rpcError(rpcINTERNAL), true);
+            unsubAccountHistory(sptr, subInfo.index_->accountId_, false);
+        }
+        return;
+    }
+
     app_.getJobQueue().addJob(
-        jtCLIENT, "AccountHistoryTxStream", [this, subInfo](Job&) {
+        jtCLIENT,
+        "AccountHistoryTxStream",
+        [this, dbType = databaseType, subInfo](Job&) {
             auto const& accountId = subInfo.index_->accountId_;
             auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;
             auto& txHistoryIndex = subInfo.index_->historyTxIndex_;
@@ -3354,29 +3400,6 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 return false;
             };
 
-#ifdef RIPPLED_REPORTING
-            if (!app_.config().reporting())
-            {
-                JLOG(m_journal.error())
-                    << "AccountHistory job for account " << toBase58(accountId)
-                    << " reporting mode not enabled in config";
-                send(rpcError(rpcINTERNAL), true);
-                return;
-            }
-
-            auto db = dynamic_cast<RelationalDBInterfacePostgres*>(
-                &app_.getRelationalDBInterface());
-            if (!db)
-            {
-                JLOG(m_journal.error())
-                    << "AccountHistory job for account " << toBase58(accountId)
-                    << " DB interface type wrong";
-                send(rpcError(rpcINTERNAL), true);
-                return;
-            }
-
-            RelationalDBInterface::AccountTxArgs args;
-            args.account = accountId;
             auto getMoreTxns =
                 [&](std::uint32_t minLedger,
                     std::uint32_t maxLedger,
@@ -3385,61 +3408,55 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 -> std::optional<std::pair<
                     RelationalDBInterface::AccountTxs,
                     std::optional<RelationalDBInterface::AccountTxMarker>>> {
-                LedgerRange range{minLedger, maxLedger};
-                args.ledger = range;
-                args.marker = marker;
+                switch (dbType)
+                {
+                    case Postgres: {
+                        auto db = static_cast<RelationalDBInterfacePostgres*>(
+                            &app_.getRelationalDBInterface());
+                        RelationalDBInterface::AccountTxArgs args;
+                        args.account = accountId;
+                        LedgerRange range{minLedger, maxLedger};
+                        args.ledger = range;
+                        args.marker = marker;
+                        auto [txResult, status] = db->getAccountTx(args);
+                        if (status != rpcSUCCESS)
+                        {
+                            JLOG(m_journal.debug())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId)
+                                << " getAccountTx failed";
+                            return {};
+                        }
 
-                auto [txResult, status] = db->getAccountTx(args);
-                if (status != rpcSUCCESS)
-                {
-                    JLOG(m_journal.debug())
-                        << "AccountHistory job for account "
-                        << toBase58(accountId) << " getAccountTx failed";
-                    return {};
-                }
-
-                if (auto txns = std::get_if<RelationalDBInterface::AccountTxs>(
-                        &txResult.transactions);
-                    txns)
-                {
-                    return std::make_pair(*txns, txResult.marker);
-                }
-                else
-                {
-                    JLOG(m_journal.debug())
-                        << "AccountHistory job for account "
-                        << toBase58(accountId) << " getAccountTx wrong data";
-                    return {};
+                        if (auto txns =
+                                std::get_if<RelationalDBInterface::AccountTxs>(
+                                    &txResult.transactions);
+                            txns)
+                        {
+                            return std::make_pair(*txns, txResult.marker);
+                        }
+                        else
+                        {
+                            JLOG(m_journal.debug())
+                                << "AccountHistory job for account "
+                                << toBase58(accountId)
+                                << " getAccountTx wrong data";
+                            return {};
+                        }
+                    }
+                    case Sqlite: {
+                        auto db = static_cast<RelationalDBInterfaceSqlite*>(
+                            &app_.getRelationalDBInterface());
+                        RelationalDBInterface::AccountTxPageOptions options{
+                            accountId, minLedger, maxLedger, marker, 0, true};
+                        return db->newestAccountTxPage(options);
+                    }
+                    default: {
+                        assert(false);
+                        return {};
+                    }
                 }
             };
-#else
-            auto db = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &app_.getRelationalDBInterface());
-            if (!db)
-            {
-                JLOG(m_journal.debug())
-                    << "AccountHistory job for account " << toBase58(accountId)
-                    << " DB interface type wrong";
-                send(rpcError(rpcINTERNAL), true);
-                return;
-            }
-
-            RelationalDBInterface::AccountTxPageOptions options{
-                accountId, 0, 0, {}, 0, true};
-            auto getMoreTxns =
-                [&](std::uint32_t minLedger,
-                    std::uint32_t maxLedger,
-                    std::optional<RelationalDBInterface::AccountTxMarker>
-                        marker)
-                -> std::optional<std::pair<
-                    RelationalDBInterface::AccountTxs,
-                    std::optional<RelationalDBInterface::AccountTxMarker>>> {
-                options.maxLedger = maxLedger;
-                options.minLedger = minLedger;
-                options.marker = marker;
-                return db->newestAccountTxPage(options);
-            };
-#endif
 
             /*
              * search backward until the genesis ledger or asked to stop
