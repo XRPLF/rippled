@@ -43,12 +43,6 @@ public:
     STLedgerEntry(SerialIter&& sit, uint256 const& index);
     STLedgerEntry(STObject const& object, uint256 const& index);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     SerializedTypeID
     getSType() const override;
 
@@ -90,6 +84,13 @@ private:
     setSLEType();
 
     friend Invariants_test;  // this test wants access to the private type_
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 using SLE = STLedgerEntry;

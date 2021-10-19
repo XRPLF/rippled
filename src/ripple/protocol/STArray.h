@@ -50,12 +50,6 @@ public:
     explicit STArray(int n);
     explicit STArray(SField const& f);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     STObject&
     operator[](std::size_t j);
 
@@ -134,6 +128,14 @@ public:
 
     bool
     isDefault() const override;
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 inline STObject&

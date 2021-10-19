@@ -144,11 +144,6 @@ public:
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     //--------------------------------------------------------------------------
     //
     // Observers
@@ -273,6 +268,13 @@ private:
     set(std::int64_t v);
     void
     canonicalize();
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 //------------------------------------------------------------------------------

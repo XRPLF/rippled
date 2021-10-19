@@ -46,11 +46,6 @@ public:
     STAccount(SerialIter& sit, SField const& name);
     STAccount(SField const& n, AccountID const& v);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     SerializedTypeID
     getSType() const override;
 
@@ -74,6 +69,14 @@ public:
 
     void
     setValue(AccountID const& v);
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 inline STAccount&

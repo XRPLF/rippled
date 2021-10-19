@@ -38,12 +38,6 @@ public:
     STInteger(SField const& n, Integer v = 0);
     STInteger(SerialIter& sit, SField const& name);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     SerializedTypeID
     getSType() const override;
 
@@ -71,6 +65,14 @@ public:
     setValue(Integer v);
 
     operator Integer() const;
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 using STUInt8 = STInteger<unsigned char>;

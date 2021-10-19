@@ -45,12 +45,6 @@ public:
     STBlob(SField const& n);
     STBlob(SerialIter&, SField const& name = sfGeneric);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     std::size_t
     size() const;
 
@@ -83,6 +77,14 @@ public:
 
     void
     setValue(Buffer&& b);
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 inline STBlob::STBlob(STBlob const& rhs)

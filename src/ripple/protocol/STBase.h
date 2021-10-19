@@ -33,6 +33,10 @@ namespace ripple {
 
 enum class JsonOptions { none = 0, include_date = 1 };
 
+namespace detail {
+class STVar;
+}
+
 // VFALCO TODO fix this restriction on copy assignment.
 //
 // CAUTION: Do not create a vector (or similar container) of any object derived
@@ -76,11 +80,6 @@ public:
     operator==(const STBase& t) const;
     bool
     operator!=(const STBase& t) const;
-
-    virtual STBase*
-    copy(std::size_t n, void* buf) const;
-    virtual STBase*
-    move(std::size_t n, void* buf);
 
     template <class D>
     D&
@@ -126,6 +125,14 @@ protected:
     template <class T>
     static STBase*
     emplace(std::size_t n, void* buf, T&& val);
+
+private:
+    virtual STBase*
+    copy(std::size_t n, void* buf) const;
+    virtual STBase*
+    move(std::size_t n, void* buf);
+
+    friend class detail::STVar;
 };
 
 //------------------------------------------------------------------------------
