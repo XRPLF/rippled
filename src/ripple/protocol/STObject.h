@@ -92,12 +92,6 @@ public:
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     iterator
     begin() const;
 
@@ -448,6 +442,13 @@ private:
     template <typename T>
     T&
     peekField(SField const& field);
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 //------------------------------------------------------------------------------

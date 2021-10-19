@@ -182,12 +182,6 @@ public:
     STPathSet(SField const& n);
     STPathSet(SerialIter& sit, SField const& name);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     void
     add(Serializer& s) const override;
 
@@ -230,6 +224,14 @@ public:
     template <typename... Args>
     void
     emplace_back(Args&&... args);
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 // ------------ STPathElement ------------

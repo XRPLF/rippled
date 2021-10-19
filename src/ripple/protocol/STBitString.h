@@ -42,12 +42,6 @@ public:
     STBitString(SField const& n, const value_type& v);
     STBitString(SerialIter& sit, SField const& name);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     SerializedTypeID
     getSType() const override;
 
@@ -71,6 +65,14 @@ public:
     value() const;
 
     operator value_type() const;
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 using STHash128 = STBitString<128>;

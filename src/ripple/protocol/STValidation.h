@@ -94,12 +94,6 @@ public:
         NodeID const& nodeID,
         F&& f);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     // Hash of the validated ledger
     uint256
     getLedgerHash() const;
@@ -150,6 +144,13 @@ public:
 private:
     static SOTemplate const&
     validationFormat();
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 template <class LookupNodeID>

@@ -66,12 +66,6 @@ public:
     */
     STTx(TxType type, std::function<void(STObject&)> assembler);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     // STObject functions.
     SerializedTypeID
     getSType() const override;
@@ -137,6 +131,13 @@ private:
 
     Expected<void, std::string>
     checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const;
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 bool

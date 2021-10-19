@@ -40,12 +40,6 @@ public:
     STVector256(SField const& n, std::vector<uint256> const& vector);
     STVector256(SerialIter& sit, SField const& name);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     SerializedTypeID
     getSType() const override;
 
@@ -116,6 +110,14 @@ public:
 
     void
     clear() noexcept;
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 inline STVector256::STVector256(SField const& n) : STBase(n)
