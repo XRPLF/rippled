@@ -802,7 +802,8 @@ public:
                                Account const& a,
                                Account const& b,
                                int newTxns,
-                               std::uint32_t ledgersToClose) {
+                               std::uint32_t ledgersToClose,
+                               int numXRP = 10) {
             env.memoize(a);
             env.memoize(b);
             for (int i = 0; i < newTxns; ++i)
@@ -810,7 +811,7 @@ public:
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
                 env.apply(
-                    pay(from, to, jtx::XRP(100)),
+                    pay(from, to, jtx::XRP(numXRP)),
                     jtx::seq(jtx::autofill),
                     jtx::fee(jtx::autofill),
                     jtx::sig(jtx::autofill));
@@ -890,12 +891,7 @@ public:
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
 
-            env.apply(
-                pay(env.master, alice, XRP(123456)),
-                jtx::seq(jtx::autofill),
-                fee(jtx::autofill),
-                sig(jtx::autofill));
-            env.close();
+            sendPayments(env, env.master, alice, 1, 1, 123456);
 
             IdxHashVec vec;
             auto r = getTxHash(*wscTxHistory, vec, 1);
@@ -910,13 +906,7 @@ public:
             jv = wscTxHistory->invoke("unsubscribe", request);
             BEAST_EXPECT(goodSubRPC(jv));
 
-            env.apply(
-                pay(env.master, alice, XRP(456)),
-                jtx::seq(jtx::autofill),
-                fee(jtx::autofill),
-                sig(jtx::autofill));
-            env.close();
-
+            sendPayments(env, env.master, alice, 1, 1);
             r = getTxHash(*wscTxHistory, vec, 1);
             BEAST_EXPECT(!r.first);
         }
@@ -944,12 +934,7 @@ public:
              * create bob's account with one tx
              * the two subscriptions should both stream it
              */
-            env.apply(
-                pay(env.master, bob, XRP(123456)),
-                jtx::seq(jtx::autofill),
-                fee(jtx::autofill),
-                sig(jtx::autofill));
-            env.close();
+            sendPayments(env, env.master, bob, 1, 1, 654321);
 
             auto r = getTxHash(*wscTxHistory, genesisFullHistoryVec, 1);
             if (!BEAST_EXPECT(r.first && r.second))
@@ -1066,41 +1051,57 @@ public:
 
         {
             /*
-             * alice and bob issue USD to carol
+             * alice issues USD to carol
              * mix USD and XRP payments
              */
             Env env(*this);
             auto const USD_a = alice["USD"];
-            auto const USD_b = bob["USD"];
 
-            std::array<Account, 3> accounts = {alice, bob, carol};
+            std::array<Account, 2> accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
             env.trust(USD_a(20000), carol);
-            env.trust(USD_b(30000), carol);
-            env.close();
             env.close();
 
-            std::uint32_t amount = 1;
-            auto sendUSDPayments = [&](int newTxns,
-                                       std::uint32_t ledgersToClose) {
-                for (int i = 0; i < newTxns; ++i)
-                {
-                    env(pay(bob, carol, USD_b(amount++)));
-                    env(pay(alice, carol, USD_a(amount++)));
-                }
-                for (int i = 0; i < ledgersToClose; ++i)
-                    env.close();
-                return 2 * newTxns;
+            auto mixedPayments = [&]() -> int {
+                sendPayments(env, alice, carol, 1, 0);
+                env(pay(alice, carol, USD_a(100)));
+                env.close();
+                return 2;
             };
 
-            // mix XRP and USD payments, and close lots of ledgers
-            auto oneRound = [&](int uxux) {
-                return sendUSDPayments(uxux, 0) +
-                    sendPayments(env, alice, carol, uxux, 0) +
-                    sendUSDPayments(uxux, 0) +
-                    sendPayments(env, bob, carol, uxux, 300);
-            };
+            // subscribe
+            Json::Value request;
+            request[jss::account_history_tx_stream] = Json::objectValue;
+            request[jss::account_history_tx_stream][jss::account] =
+                carol.human();
+            auto ws = makeWSClient(env.app().config());
+            auto jv = ws->invoke("subscribe", request);
+            {
+                // take out existing txns from the stream
+                IdxHashVec tempVec;
+                getTxHash(*ws, tempVec, 100);
+            }
+
+            auto count = mixedPayments();
+            IdxHashVec vec1;
+            if (!BEAST_EXPECT(getTxHash(*ws, vec1, count).first))
+                return;
+            ws->invoke("unsubscribe", request);
+        }
+
+        {
+            /*
+             * long transaction history
+             */
+            Env env(*this);
+            std::array<Account, 2> accounts = {alice, carol};
+            env.fund(XRP(444444), accounts);
             env.close();
+
+            // many payments, and close lots of ledgers
+            auto oneRound = [&](int numPayments) {
+                return sendPayments(env, alice, carol, numPayments, 300);
+            };
 
             // subscribe
             Json::Value request;
@@ -1112,13 +1113,13 @@ public:
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
-                getTxHash(*wscLong, tempVec, 1000);
+                getTxHash(*wscLong, tempVec, 100);
             }
 
-            // repeat the mix payments many rounds
-            for (int kk = 0; kk < 10; ++kk)
+            // repeat the payments many rounds
+            for (int kk = 2; kk < 10; ++kk)
             {
-                auto count = oneRound(kk + 2);
+                auto count = oneRound(kk);
                 IdxHashVec vec1;
                 if (!BEAST_EXPECT(getTxHash(*wscLong, vec1, count).first))
                     return;
