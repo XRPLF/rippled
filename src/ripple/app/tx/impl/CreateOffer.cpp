@@ -637,7 +637,7 @@ CreateOffer::takerCross(
     Sandbox& sbCancel,
     Amounts const& takerAmount)
 {
-    NetClock::time_point const when = ctx_.view().parentCloseTime();
+    NetClock::time_point const when = sb.parentCloseTime();
 
     beast::WrappedSink takerSink(j_, "Taker ");
 
@@ -957,7 +957,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Expiration is defined in terms of the close time of the parent ledger,
     // because we definitively know the time that it closed but we do not
     // know the closing time of the ledger that is under construction.
-    if (expiration && (ctx_.view().parentCloseTime() >= tp{d{*expiration}}))
+    if (expiration && (sb.parentCloseTime() >= tp{d{*expiration}}))
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
@@ -965,13 +965,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // The return code change is attached to featureDepositPreauth as a
         // convenience.  The change is not big enough to deserve a fix code.
         TER const ter{
-            ctx_.view().rules().enabled(featureDepositPreauth)
-                ? TER{tecEXPIRED}
-                : TER{tesSUCCESS}};
+            sb.rules().enabled(featureDepositPreauth) ? TER{tecEXPIRED}
+                                                      : TER{tesSUCCESS}};
         return {ter, true};
     }
 
-    bool const bOpenLedger = ctx_.view().open();
+    bool const bOpenLedger = sb.open();
     bool crossed = false;
 
     if (result == tesSUCCESS)
@@ -1129,8 +1128,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve = ctx_.view().fees().accountReserve(
-            sleCreator->getFieldU32(sfOwnerCount) + 1);
+        XRPAmount reserve =
+            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
         if (mPriorBalance < reserve)
         {
