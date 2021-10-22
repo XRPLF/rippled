@@ -175,7 +175,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a4cb31c3ebed3f201bc0cd563666ed3c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the root database directory.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a4cb31c3ebed3f201bc0cd563666ed3c9">More...</a><br /></td></tr>
 <tr class="separator:a4cb31c3ebed3f201bc0cd563666ed3c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28f06b51f3f4465d44c7324d450de65f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a28f06b51f3f4465d44c7324d450de65f">getDatabaseImportStatus</a> () const =0</td></tr>
+<tr class="memdesc:a28f06b51f3f4465d44c7324d450de65f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a JSON object detailing the status of an ongoing database import if one is running, otherwise an error object.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a28f06b51f3f4465d44c7324d450de65f">More...</a><br /></td></tr>
 <tr class="separator:a28f06b51f3f4465d44c7324d450de65f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43d746883cc502df22837f469e344e4d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a43d746883cc502df22837f469e344e4d">startNodeToShard</a> ()=0</td></tr>
+<tr class="memdesc:a43d746883cc502df22837f469e344e4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiates a <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> to ShardStore import and returns the result in a JSON object.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a43d746883cc502df22837f469e344e4d">More...</a><br /></td></tr>
+<tr class="separator:a43d746883cc502df22837f469e344e4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adea6a9e03d63bccdadee0fde68aa5d1b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#adea6a9e03d63bccdadee0fde68aa5d1b">stopNodeToShard</a> ()=0</td></tr>
+<tr class="memdesc:adea6a9e03d63bccdadee0fde68aa5d1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminates a <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> to ShardStore import and returns the result in a JSON object.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#adea6a9e03d63bccdadee0fde68aa5d1b">More...</a><br /></td></tr>
+<tr class="separator:adea6a9e03d63bccdadee0fde68aa5d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a9981be2b0583217f800f8c3f4881d6"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a0a9981be2b0583217f800f8c3f4881d6">getDatabaseImportSequence</a> () const =0</td></tr>
 <tr class="memdesc:a0a9981be2b0583217f800f8c3f4881d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the first ledger sequence of the shard currently being imported from the <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a>.  <a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a0a9981be2b0583217f800f8c3f4881d6">More...</a><br /></td></tr>
 <tr class="separator:a0a9981be2b0583217f800f8c3f4881d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1117,7 +1124,67 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns a JSON object detailing the status of an ongoing database import if one is running, otherwise an error object. </p>
+
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a2b7b6ee715298cd3f75bedca36731e91">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="a43d746883cc502df22837f469e344e4d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43d746883cc502df22837f469e344e4d">&#9670;&nbsp;</a></span>startNodeToShard()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::NodeStore::DatabaseShard::startNodeToShard </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Initiates a <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> to ShardStore import and returns the result in a JSON object. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#abc68f3d60e7537a73a88b23b6c4de6ce">ripple::NodeStore::DatabaseShardImp</a>.</p>
+
+</div>
+</div>
+<a id="adea6a9e03d63bccdadee0fde68aa5d1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adea6a9e03d63bccdadee0fde68aa5d1b">&#9670;&nbsp;</a></span>stopNodeToShard()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::NodeStore::DatabaseShard::stopNodeToShard </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Terminates a <a class="el" href="namespaceripple_1_1NodeStore.html">NodeStore</a> to ShardStore import and returns the result in a JSON object. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a0b06eea823aeb46b174998a4b60682cb">ripple::NodeStore::DatabaseShardImp</a>.</p>
 
 </div>
 </div>

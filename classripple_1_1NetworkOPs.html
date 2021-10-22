@@ -208,6 +208,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aba84e61b320524b25e0c692efc8eb24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92fea0de270108048be12563708c33da"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a92fea0de270108048be12563708c33da">unsubAccountInternal</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uListener, <a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const &amp;vnaAccountIDs, bool realTime)=0</td></tr>
 <tr class="separator:a92fea0de270108048be12563708c33da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1512e079849b413d377e97c56bce86a0"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a1512e079849b413d377e97c56bce86a0">subAccountHistory</a> (ref ispListener, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account)=0</td></tr>
+<tr class="memdesc:a1512e079849b413d377e97c56bce86a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">subscribe an account's new transactions and retrieve the account's historical transactions  <a href="classripple_1_1InfoSub_1_1Source.html#a1512e079849b413d377e97c56bce86a0">More...</a><br /></td></tr>
+<tr class="separator:a1512e079849b413d377e97c56bce86a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5269f244a752bbbb23ff32c161386a4"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#af5269f244a752bbbb23ff32c161386a4">unsubAccountHistory</a> (ref ispListener, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, bool historyOnly)=0</td></tr>
+<tr class="memdesc:af5269f244a752bbbb23ff32c161386a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">unsubscribe an account's transactions  <a href="classripple_1_1InfoSub_1_1Source.html#af5269f244a752bbbb23ff32c161386a4">More...</a><br /></td></tr>
+<tr class="separator:af5269f244a752bbbb23ff32c161386a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad29b7fda9598d690fab8995aed1eee08"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#ad29b7fda9598d690fab8995aed1eee08">unsubAccountHistoryInternal</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uListener, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, bool historyOnly)=0</td></tr>
+<tr class="separator:ad29b7fda9598d690fab8995aed1eee08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0b605951cb74872c096b5a816c8175c"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#ad0b605951cb74872c096b5a816c8175c">subLedger</a> (ref ispListener, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)=0</td></tr>
 <tr class="separator:ad0b605951cb74872c096b5a816c8175c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9aa6655862d29312e9118e8d38440f58"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a9aa6655862d29312e9118e8d38440f58">unsubLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uListener)=0</td></tr>
@@ -1881,6 +1889,144 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a4c60356de0a73f4ecda6bc9a0ed46cd3">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="a1512e079849b413d377e97c56bce86a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1512e079849b413d377e97c56bce86a0">&#9670;&nbsp;</a></span>subAccountHistory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> ripple::InfoSub::Source::subAccountHistory </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1InfoSub.html#a35f86745473f425773220ed4b4620349">ref</a>&#160;</td>
+          <td class="paramname"><em>ispListener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>subscribe an account's new transactions and retrieve the account's historical transactions </p>
+<dl class="section return"><dt>Returns</dt><dd>rpcSUCCESS if successful, otherwise an error code </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#ae2ed2bce9a28e6fec6ca4b2b93e6586e">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="af5269f244a752bbbb23ff32c161386a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5269f244a752bbbb23ff32c161386a4">&#9670;&nbsp;</a></span>unsubAccountHistory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::InfoSub::Source::unsubAccountHistory </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1InfoSub.html#a35f86745473f425773220ed4b4620349">ref</a>&#160;</td>
+          <td class="paramname"><em>ispListener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>historyOnly</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>unsubscribe an account's transactions </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">historyOnly</td><td>if true, only stop historical transactions </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>once a client receives enough historical transactions, it should unsubscribe with historyOnly == true to stop receiving more historical transactions. It will continue to receive new transactions. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a585d24e22d0587657e0a1f4f87f402bb">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="ad29b7fda9598d690fab8995aed1eee08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad29b7fda9598d690fab8995aed1eee08">&#9670;&nbsp;</a></span>unsubAccountHistoryInternal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::InfoSub::Source::unsubAccountHistoryInternal </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>uListener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>historyOnly</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a3af0fb9cd6822f82797487a8df42b027">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
