@@ -167,8 +167,6 @@ public:
     // Return `hasReplayed_`. This is used to determine if events should
     // continue to be routed to this object. Once replayed, events can be
     // processed normally.
-    [[nodiscard]] bool
-    onEvent(event::StartOfHistoricTransactions&& e) EXCLUDES(m_);
     // Return `hasReplayed_`.
     [[nodiscard]] bool
     onEvent(event::TicketCreateTrigger&& e) EXCLUDES(m_);

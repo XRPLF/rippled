@@ -641,14 +641,7 @@ parseRippleLibSeed(Json::Value const& value)
     if (!value.isString())
         return std::nullopt;
 
-    auto const result = decodeBase58Token(value.asString(), TokenType::None);
-
-    if (result.size() == 18 &&
-        static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
-        static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
-        return Seed(makeSlice(result.substr(2)));
-
-    return std::nullopt;
+    return ripple::parseRippleLibSeed(value.asString());
 }
 
 std::optional<Seed>

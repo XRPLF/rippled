@@ -135,4 +135,17 @@ seedAs1751(Seed const& seed)
     return encodedKey;
 }
 
+std::optional<Seed>
+parseRippleLibSeed(std::string const& s)
+{
+    auto const result = decodeBase58Token(s, TokenType::None);
+
+    if (result.size() == 18 &&
+        static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
+        static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
+        return Seed(makeSlice(result.substr(2)));
+
+    return std::nullopt;
+}
+
 }  // namespace ripple

@@ -67,7 +67,10 @@ MainchainListener::onMessage(Json::Value const& msg)
 
     if (callbackOpt)
     {
-        JLOG(j_.trace()) << "Mainchain onMessage, reply to a callback: " << msg;
+        JLOGV(
+            j_.trace(),
+            "Mainchain onMessage, reply to a callback",
+            jv("msg", msg));
         assert(msg.isMember(jss::result));
         (*callbackOpt)(msg[jss::result]);
     }
@@ -121,8 +124,8 @@ void
 MainchainListener::stopHistoricalTxns()
 {
     Json::Value params;
-    params[jss::stop_history_tx_only] = true;
     params[jss::account_history_tx_stream] = Json::objectValue;
+    params[jss::account_history_tx_stream][jss::stop_history_tx_only] = true;
     params[jss::account_history_tx_stream][jss::account] = doorAccountStr_;
     send("unsubscribe", params);
 }

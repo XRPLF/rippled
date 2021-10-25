@@ -70,17 +70,6 @@ ChainListener::chainName() const
 }
 
 namespace detail {
-// consider making this available as a general utility
-// Run a lambda on scope exit, unless the `reset` function is called.
-template <class F>
-[[nodiscard]] inline auto
-make_scope(F f)
-{
-    static int dummy = 0;
-    auto d = [f = std::move(f)](auto) { f(); };
-    return std::unique_ptr<int, decltype(d)>{&dummy, std::move(d)};
-}
-
 template <class T>
 std::optional<T>
 getMemoData(Json::Value const& v, std::uint32_t index) = delete;
@@ -214,51 +203,6 @@ ChainListener::processMessage(Json::Value const& msg)
                 return false;
             return f.asString() == toMatch;
         };
-
-    bool const isLastInHistory = [&msg] {
-        if (msg.isMember(jss::account_history_tx_last))
-            return msg[jss::account_history_tx_last].asBool();
-        return false;
-    }();
-
-    // no matter how this function exits, run this code. It handles the
-    // "lastInHistory" condition. It is difficult to see how to property
-    // annotate `make_scope` for clang's thread safety analysis, so it is
-    // skipped.
-    auto onExit = detail::make_scope([&]() NO_THREAD_SAFETY_ANALYSIS {
-        if (!isLastInHistory)
-            return;
-
-        if (initialSync_ && isLastInHistory)
-        {
-            event::StartOfHistoricTransactions e{isMainchain_};
-            auto const hasReplayed = initialSync_->onEvent(std::move(e));
-            if (hasReplayed)
-                initialSync_.reset();
-
-            JLOGV(
-                j_.trace(),
-                "sent start of historic transactions event",
-                jv("isMainchain", isMainchain_),
-                jv("hasReplayed", hasReplayed));
-        }
-        else
-        {
-            // Note this branch is needed since the other chain's
-            // "setNoLastXChainTxnWithResult" may reset the initialSync object.
-            if (auto f = federator_.lock())
-            {
-                // Inform the other sync object that the last transaction
-                // with a result was found. Note that if start of historic
-                // transactions is found while listening to the mainchain, the
-                // _sidechain_ listener needs to be informed that there is no
-                // last cross chain transaction with result.
-                Federator::ChainType const chainType =
-                    getChainType(!isMainchain_);
-                f->setNoLastXChainTxnWithResult(chainType);
-            }
-        }
-    });
 
     TER const txnTER = [&msg] {
         return TER::fromInt(msg[jss::engine_result_code].asInt());

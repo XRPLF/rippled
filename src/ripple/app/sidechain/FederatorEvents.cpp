@@ -156,21 +156,6 @@ RefundTransferResult::toJson() const
 }
 
 EventType
-StartOfHistoricTransactions::eventType() const
-{
-    return EventType::startOfTransactions;
-}
-
-Json::Value
-StartOfHistoricTransactions::toJson() const
-{
-    Json::Value result{Json::objectValue};
-    result["eventType"] = "StartOfHistoricTransactions";
-    result["isMainchain"] = isMainchain_;
-    return result;
-}
-
-EventType
 TicketCreateTrigger::eventType() const
 {
     return EventType::trigger;
