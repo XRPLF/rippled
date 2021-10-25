@@ -61,13 +61,15 @@ class Federator : public std::enable_shared_from_this<Federator>
 {
 public:
     enum ChainType { sideChain, mainChain };
+    constexpr static size_t numChains = 2;
+
+    enum class UnlockMainLoopKey { app, mainChain, sideChain };
+    constexpr static size_t numUnlockMainLoopKeys = 3;
 
     // These enums are encoded in the transaction. Changing the order will break
     // backward compatibility. If a new type is added change txnTypeLast.
     enum class TxnType { xChain, refund };
     constexpr static std::uint8_t txnTypeLast = 2;
-
-    constexpr static size_t numChains = 2;
 
     static constexpr std::uint32_t accountControlTxFee{1000};
 
@@ -95,6 +97,10 @@ private:
     std::array<std::atomic<std::uint32_t>, numChains> lastTxnSeqConfirmed_{
         0,
         0};
+    std::array<std::atomic<bool>, numUnlockMainLoopKeys> unlockMainLoopKeys_{
+        false,
+        false,
+        false};
     std::shared_ptr<MainchainListener> mainchainListener_;
     std::shared_ptr<SidechainListener> sidechainListener_;
 
@@ -226,7 +232,7 @@ public:
 
     // Don't process any events until the bootstrap has a chance to run
     void
-    unlockMainLoop() EXCLUDES(m_);
+    unlockMainLoop(UnlockMainLoopKey key) EXCLUDES(m_);
 
     void
     addPendingTxnSig(
@@ -286,6 +292,11 @@ public:
     addTxToSend(ChainType chain, std::uint32_t seq, STTx const& tx)
         EXCLUDES(toSendTxnsM_);
 
+    // Set the accountSeq to the max of the current value and the requested
+    // value. This is done with a lock free algorithm.
+    void
+    setAccountSeqMax(ChainType chaintype, std::uint32_t reqValue);
+
 private:
     // Two phase init needed for shared_from this.
     // Only called from `make_Federator`
@@ -303,11 +314,6 @@ private:
     // the `assetProps_` array.
     [[nodiscard]] std::optional<STAmount>
     toOtherChainAmount(ChainType srcChain, STAmount const& from) const;
-
-    // Set the accountSeq to the max of the current value and the requested
-    // value. This is done with a lock free algorithm.
-    void
-    setAccountSeqMax(ChainType chaintype, std::uint32_t reqValue);
 
     // Set the lastTxnSeqSent to the max of the current value and the requested
     // value. This is done with a lock free algorithm.
@@ -358,8 +364,6 @@ private:
     onEvent(event::RefundTransferResult const& e) EXCLUDES(pendingTxnsM_);
     void
     onEvent(event::HeartbeatTimer const& e);
-    void
-    onEvent(event::StartOfHistoricTransactions const& e);
     void
     onEvent(event::TicketCreateTrigger const& e);
     void

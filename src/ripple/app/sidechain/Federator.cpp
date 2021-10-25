@@ -83,6 +83,12 @@ getChainType(bool isMainchain)
                        : Federator::ChainType::sideChain;
 }
 
+[[nodiscard]] char const*
+chainTypeStr(Federator::ChainType ct)
+{
+    return ct == Federator::ChainType::mainChain ? "mainchain" : "sidechain";
+}
+
 [[nodiscard]] uint256
 crossChainTxnSignatureId(
     PublicKey signingPK,
@@ -385,6 +391,9 @@ parseFederatorSecrets(BasicConfig const& config, beast::Journal j)
 
         auto seed = parseBase58<Seed>(elements[0]);
         if (!seed)
+            seed = parseRippleLibSeed(elements[0]);
+
+        if (!seed)
         {
             std::string const msg =
                 "invalid sidechain_federators_secrets key: " + elements[0];
@@ -671,7 +680,10 @@ make_Federator(
     auto key = parseBase58<SecretKey>(TokenType::AccountSecret, *keyStr);
     if (!key)
     {
-        if (auto const seed = parseBase58<Seed>(*keyStr))
+        std::optional<Seed> seed = parseRippleLibSeed(*keyStr);
+        if (!seed)
+            seed = parseBase58<Seed>(*keyStr);
+        if (seed)
         {
             // TODO: we don't know the key type
             key = generateKeyPair(KeyType::ed25519, *seed).second;
@@ -874,6 +886,12 @@ Federator::setLastTxnSeqConfirmedMax(
 void
 Federator::setAccountSeqMax(ChainType chaintype, std::uint32_t reqValue)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator setAccountSeqMax",
+        jv("chaintype", chainTypeStr(chaintype)),
+        jv("curValue", accountSeq_[chaintype]),
+        jv("reqValue", reqValue));
     detail::lockfreeSetMax(accountSeq_[chaintype], reqValue);
 }
 
@@ -926,6 +944,7 @@ Federator::payTxn(
     }
 
     auto const seq = accountSeq_[dstChain]++;
+    assert(seq > 1);
 
     auto job = [federator = shared_from_this(),
                 txnType,
@@ -1140,6 +1159,11 @@ Federator::payTxn(
 void
 Federator::onEvent(event::XChainTransferDetected const& e)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "XChainTransferDetected"),
+        jv("event", e.toJson()));
     auto const srcChain = srcChainType(e.dir_);
     std::optional<STAmount> toSendAmt =
         toOtherChainAmount(srcChain, e.deliveredAmt_);
@@ -1200,7 +1224,11 @@ Federator::sendRefund(
 void
 Federator::onEvent(event::XChainTransferResult const& e)
 {
-    JLOGV(j_.trace(), "Federator::onEvent", jv("event", e.toJson()));
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "XChainTransferResult"),
+        jv("event", e.toJson()));
 
     // srcChain and dstChain are the chains of the triggering transaction.
     // I.e. A srcChain of main is a transfer result is a transaction that
@@ -1294,7 +1322,11 @@ Federator::onEvent(event::XChainTransferResult const& e)
 void
 Federator::onEvent(event::RefundTransferResult const& e)
 {
-    JLOGV(j_.trace(), "RefundTransferResult", jv("event", e.toJson()));
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "RefundTransferResult"),
+        jv("event", e.toJson()));
 
     auto const srcChain = srcChainType(e.dir_);
     onResult(srcChain, e.txnSeq_);
@@ -1317,7 +1349,11 @@ Federator::onEvent(event::RefundTransferResult const& e)
 void
 Federator::onEvent(event::HeartbeatTimer const& e)
 {
-    JLOG(j_.trace()) << "HeartbeatTimer";
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "HeartbeatTimer"),
+        jv("event", e.toJson()));
 }
 
 void
@@ -1870,8 +1906,19 @@ Federator::sendTxns()
 }
 
 void
-Federator::unlockMainLoop()
+Federator::unlockMainLoop(UnlockMainLoopKey key)
 {
+    // The main loop will only be unlocked when the app is ready and both side
+    // chain listeners are initialized.
+    unlockMainLoopKeys_[static_cast<std::size_t>(key)].store(true);
+    for (auto const& k : unlockMainLoopKeys_)
+    {
+        if (!k.load())
+            return;
+    }
+    JLOG(j_.trace()) << "Federator main loop unlocked";
+
+    // all keys set, unlock the loop
     std::lock_guard<std::mutex> l(m_);
     mainLoopLocked_ = false;
     mainLoopCv_.notify_one();
@@ -1914,14 +1961,14 @@ Federator::mainLoop()
 }
 
 void
-Federator::onEvent(event::StartOfHistoricTransactions const& e)
-{
-    assert(0);  // StartOfHistoricTransactions is only used in initial sync
-}
-
-void
 Federator::onEvent(event::TicketCreateTrigger const& e)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "TicketCreateTrigger"),
+        jv("event", e.toJson()));
+
     Federator::ChainType toChain = e.dir_ == event::Dir::mainToSide
         ? Federator::sideChain
         : Federator::mainChain;
@@ -1932,6 +1979,12 @@ Federator::onEvent(event::TicketCreateTrigger const& e)
 void
 Federator::onEvent(const event::TicketCreateResult& e)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "TicketCreateResult"),
+        jv("event", e.toJson()));
+
     auto const [fromChain, toChain] = e.dir_ == event::Dir::mainToSide
         ? std::make_pair(sideChain, mainChain)
         : std::make_pair(mainChain, sideChain);
@@ -1952,6 +2005,12 @@ Federator::onEvent(const event::TicketCreateResult& e)
 void
 Federator::onEvent(event::DepositAuthResult const& e)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "DepositAuthResult"),
+        jv("event", e.toJson()));
+
     auto const chainType =
         (e.dir_ == event::Dir::mainToSide ? sideChain : mainChain);
 
@@ -1971,6 +2030,12 @@ Federator::onEvent(event::DepositAuthResult const& e)
 void
 Federator::onEvent(event::BootstrapTicket const& e)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "BootstrapTicket"),
+        jv("event", e.toJson()));
+
     setAccountSeqMax(getChainType(e.isMainchain_), e.txnSeq_ + 1);
     setLastTxnSeqSentMax(getChainType(e.isMainchain_), e.txnSeq_);
     setLastTxnSeqConfirmedMax(getChainType(e.isMainchain_), e.txnSeq_);
@@ -1980,6 +2045,12 @@ Federator::onEvent(event::BootstrapTicket const& e)
 void
 Federator::onEvent(event::DisableMasterKeyResult const& e)
 {
+    JLOGV(
+        j_.trace(),
+        "Federator::onEvent",
+        jv("eventtype", "DisableMasterKeyResult"),
+        jv("event", e.toJson()));
+
     setAccountSeqMax(getChainType(e.isMainchain_), e.txnSeq_ + 1);
     setLastTxnSeqSentMax(getChainType(e.isMainchain_), e.txnSeq_);
     setLastTxnSeqConfirmedMax(getChainType(e.isMainchain_), e.txnSeq_);

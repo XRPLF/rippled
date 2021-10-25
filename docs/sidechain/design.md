@@ -312,25 +312,9 @@ struct RefundTransferResult
 };
 ```
 
-* `StartOfHistoricTransactions`. This is added when a federator detects that
-  there are no more historic transactions left to receive in a stream of
-  transactions. This is used when a federator initially syncs to the network.
-
-```c++
-struct StartOfHistoricTransactions
-{
-    bool isMainchain_;
-
-    EventType
-    eventType() const;
-
-    Json::Value
-    toJson() const;
-};
-```
-
 * `TicketCreateResult`. This is added when the federator detects a ticket create
   transaction.
+
 ```
 struct TicketCreateResult
 {
@@ -436,8 +420,6 @@ void
 onEvent(event::RefundTransferResult const& e);
 void
 onEvent(event::HeartbeatTimer const& e);
-void
-onEvent(event::StartOfHistoricTransactions const& e);
 
 void
 Federator::mainLoop()

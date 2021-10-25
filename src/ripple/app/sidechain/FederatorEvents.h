@@ -49,7 +49,6 @@ enum class EventType {
     result,
     resultAndTrigger,
     heartbeat,
-    startOfTransactions
 };
 
 // A cross chain transfer was detected on this federator
@@ -125,18 +124,6 @@ struct RefundTransferResult
     uint256 txnHash_;
     TER ter_;
     std::int32_t rpcOrder_;
-
-    EventType
-    eventType() const;
-
-    Json::Value
-    toJson() const;
-};
-
-// The start of historic transactions has been reached
-struct StartOfHistoricTransactions
-{
-    bool isMainchain_;
 
     EventType
     eventType() const;
@@ -253,7 +240,6 @@ using FederatorEvent = std::variant<
     event::HeartbeatTimer,
     event::XChainTransferResult,
     event::RefundTransferResult,
-    event::StartOfHistoricTransactions,
     event::TicketCreateTrigger,
     event::TicketCreateResult,
     event::DepositAuthResult,

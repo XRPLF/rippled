@@ -124,6 +124,11 @@ parseGenericSeed(std::string const& str);
 std::string
 seedAs1751(Seed const& seed);
 
+/** ripple-lib encodes seeds used to generate an Ed25519 wallet in a
+ * non-standard way. */
+std::optional<Seed>
+parseRippleLibSeed(std::string const& s);
+
 /** Format a seed as a Base58 string */
 inline std::string
 toBase58(Seed const& seed)

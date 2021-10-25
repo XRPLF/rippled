@@ -22,6 +22,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/Output.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/server/Port.h>
@@ -152,11 +153,12 @@ WebsocketClient::onReadMsg(error_code const& ec)
         return;
     }
 
-    Json::Value jv;
+    Json::Value jval;
     Json::Reader jr;
-    jr.parse(buffer_string(rb_.data()), jv);
+    jr.parse(buffer_string(rb_.data()), jval);
     rb_.consume(rb_.size());
-    callback_(jv);
+    JLOGV(j_.trace(), "WebsocketClient::onReadMsg", jv("msg", jval));
+    callback_(jval);
 
     std::lock_guard l{m_};
     ws_.async_read(

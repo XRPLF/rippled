@@ -26,6 +26,7 @@
 #include <ripple/json/json_writer.h>
 
 #include <type_traits>
+#include <variant>
 
 namespace ripple {
 namespace sidechain {
@@ -198,7 +199,7 @@ InitialSync::replay(std::lock_guard<std::mutex> const& l)
                 j_.trace(),
                 "InitialSync replay, remove trigger event from pendingEvents_",
                 jv("chain_name", (isMainchain_ ? "Mainchain" : "Sidechain")),
-                jv("txnHash", *txnHash));
+                jv("txn", toJson(i->second)));
             if (*lastXChainTxnWithResult_ == *txnHash)
             {
                 matched = true;
@@ -208,7 +209,7 @@ InitialSync::replay(std::lock_guard<std::mutex> const& l)
         assert(matched);
         if (matched)
         {
-            for (auto i : toRemoveTrigger)
+            for (auto const& i : toRemoveTrigger)
             {
                 if (auto ticketResult = std::get_if<event::TicketCreateResult>(
                         &(pendingEvents_.erase(i, i)->second));
@@ -217,21 +218,57 @@ InitialSync::replay(std::lock_guard<std::mutex> const& l)
                     ticketResult->removeTrigger();
                 }
             }
-            for (auto i = toRemove.begin(), e = toRemove.end(); i != e; ++i)
+            for (auto const& i : toRemove)
             {
-                pendingEvents_.erase(*i);
+                pendingEvents_.erase(i);
             }
+        }
+    }
+
+    if (disableMasterKeySeq_)
+    {
+        // Remove trigger events that come beofre disableMasterKeySeq_
+        std::vector<decltype(pendingEvents_)::const_iterator> toRemove;
+        toRemove.reserve(pendingEvents_.size());
+        for (auto i = pendingEvents_.cbegin(), e = pendingEvents_.cend();
+             i != e;
+             ++i)
+        {
+            if (std::holds_alternative<event::DisableMasterKeyResult>(
+                    i->second))
+                break;
+            if (eventType(i->second) != event::EventType::trigger)
+                continue;
+
+            toRemove.push_back(i);
+        }
+        for (auto const& i : toRemove)
+        {
+            pendingEvents_.erase(i);
         }
     }
 
     if (auto f = federator_.lock())
     {
         for (auto&& [_, e] : pendingEvents_)
+        {
+            JLOGV(
+                j_.trace(),
+                "InitialSync replay, pushing event",
+                jv("chain_name", (isMainchain_ ? "Mainchain" : "Sidechain")),
+                jv("txn", toJson(e)));
             f->push(std::move(e));
+        }
     }
 
     seenTriggeringTxns_.clear();
     pendingEvents_.clear();
+    if (auto f = federator_.lock())
+    {
+        auto const key = isMainchain_ ? Federator::UnlockMainLoopKey::mainChain
+                                      : Federator::UnlockMainLoopKey::sideChain;
+        f->unlockMainLoop(key);
+    }
     done();
 }
 
@@ -338,18 +375,45 @@ InitialSync::onEvent(event::DisableMasterKeyResult&& e)
 {
     std::lock_guard l{m_};
 
-    if (hasReplayed_)
-    {
-        assert(0);
-        return hasReplayed_;
-    }
-
     JLOGV(
         j_.trace(),
         "InitialSync onDisableMasterKeyResultEvent",
         jv("event", e.toJson()));
     assert(!disableMasterKeySeq_);
     disableMasterKeySeq_ = e.txnSeq_;
+
+    if (lastXChainTxnWithResult_)
+        LogicError("Initial sync could not find historic XChain transaction");
+
+    if (needsOtherChainLastXChainTxn_)
+    {
+        if (auto f = federator_.lock())
+        {
+            // Inform the other sync object that the last transaction
+            // with a result was found. Note that if start of historic
+            // transactions is found while listening to the mainchain, the
+            // _sidechain_ listener needs to be informed that there is no last
+            // cross chain transaction with result.
+            Federator::ChainType const chainType = getChainType(!isMainchain_);
+            f->setNoLastXChainTxnWithResult(chainType);
+        }
+        needsOtherChainLastXChainTxn_ = false;
+    }
+
+    if (hasReplayed_)
+    {
+        assert(0);
+        return hasReplayed_;
+    }
+
+    if (auto f = federator_.lock())
+    {
+        // Set the account sequence right away. Otherwise when replaying, a
+        // triggering transaction from the main chain can be replayed before the
+        // disable master key event on the side chain, and the sequence number
+        // will be wrong.
+        f->setAccountSeqMax(getChainType(e.isMainchain_), e.txnSeq_ + 1);
+    }
 
     pendingEvents_[e.rpcOrder_] = std::move(e);
 
@@ -446,39 +510,6 @@ InitialSync::onEvent(event::RefundTransferResult&& e)
         if (canReplay(l))
             replay(l);
     }
-    return hasReplayed_;
-}
-
-bool
-InitialSync::onEvent(event::StartOfHistoricTransactions&& e)
-{
-    std::lock_guard l{m_};
-    if (lastXChainTxnWithResult_)
-        LogicError("Initial sync could not find historic XChain transaction");
-
-    if (needsOtherChainLastXChainTxn_)
-    {
-        if (auto f = federator_.lock())
-        {
-            // Inform the other sync object that the last transaction
-            // with a result was found. Note that if start of historic
-            // transactions is found while listening to the mainchain, the
-            // _sidechain_ listener needs to be informed that there is no last
-            // cross chain transaction with result.
-            Federator::ChainType const chainType = getChainType(!isMainchain_);
-            f->setNoLastXChainTxnWithResult(chainType);
-        }
-        needsOtherChainLastXChainTxn_ = false;
-    }
-
-    acquiringHistoricData_ = false;
-    needsOtherChainLastXChainTxn_ = false;
-
-    if (canReplay(l))
-    {
-        replay(l);
-    }
-
     return hasReplayed_;
 }
 
