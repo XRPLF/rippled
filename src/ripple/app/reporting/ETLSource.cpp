@@ -941,7 +941,7 @@ ETLLoadBalancer::execute(Func f, uint32_t ledgerSequence)
                     << "Error executing function. "
                     << " Tried all sources, but ledger was found in db."
                     << " Sequence = " << ledgerSequence;
-                break;
+                return false;
             }
             JLOG(journal_.error())
                 << __func__ << " : "
