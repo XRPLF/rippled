@@ -524,14 +524,6 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
             auto start = std::chrono::system_clock::now();
             std::optional<org::xrpl::rpc::v1::GetLedgerResponse> fetchResponse{
                 fetchLedgerDataAndDiff(currentSequence)};
-            auto end = std::chrono::system_clock::now();
-
-            auto time = ((end - start).count()) / 1000000000.0;
-            auto tps =
-                fetchResponse->transactions_list().transactions_size() / time;
-
-            JLOG(journal_.debug()) << "Extract phase time = " << time
-                                   << " . Extract phase tps = " << tps;
             // if the fetch is unsuccessful, stop. fetchLedger only returns
             // false if the server is shutting down, or if the ledger was
             // found in the database (which means another process already
@@ -543,6 +535,14 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
             {
                 break;
             }
+            auto end = std::chrono::system_clock::now();
+
+            auto time = ((end - start).count()) / 1000000000.0;
+            auto tps =
+                fetchResponse->transactions_list().transactions_size() / time;
+
+            JLOG(journal_.debug()) << "Extract phase time = " << time
+                                   << " . Extract phase tps = " << tps;
 
             transformQueue.push(std::move(fetchResponse));
             ++currentSequence;
