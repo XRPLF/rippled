@@ -204,6 +204,10 @@ public:
     // Thread pool configuration
     std::size_t WORKERS = 0;
 
+    // Normally the sweep timer is automatically deduced based on the node
+    // size, but we allow admins to explicitly set it in the config.
+    std::optional<int> SWEEP_INTERVAL;
+
     // Reduce-relay - these parameters are experimental.
     // Enable reduce-relay features
     // Validation/proposal reduce-relay feature
