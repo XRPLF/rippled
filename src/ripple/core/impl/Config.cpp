@@ -615,6 +615,11 @@ Config::loadFromString(std::string const& fileContents)
             FETCH_DEPTH = 10;
     }
 
+    // By default, validators don't have pathfinding enabled, unless it is
+    // explicitly requested by the server's admin.
+    if (exists(SECTION_VALIDATION_SEED) || exists(SECTION_VALIDATOR_TOKEN))
+        PATH_SEARCH_MAX = 0;
+
     if (getSingleSection(secConfig, SECTION_PATH_SEARCH_OLD, strTemp, j_))
         PATH_SEARCH_OLD = beast::lexicalCastThrow<int>(strTemp);
     if (getSingleSection(secConfig, SECTION_PATH_SEARCH, strTemp, j_))

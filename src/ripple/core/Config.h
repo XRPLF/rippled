@@ -160,7 +160,18 @@ public:
     std::size_t PEERS_OUT_MAX = 0;
     std::size_t PEERS_IN_MAX = 0;
 
-    // Path searching
+    // Path searching: these were reasonable default values at some point but
+    //                 further research is needed to decide if they still are
+    //                 and whether all of them are needed.
+    //
+    //                 The performance and resource consumption of a server can
+    //                 be dramatically impacted by changing these configuration
+    //                 options; higher values result in exponentially higher
+    //                 resource usage.
+    //
+    //                 Servers operating as validators disable path finding by
+    //                 default by setting the `PATH_SEARCH_MAX` option to 0
+    //                 unless it is explicitly set in the configuration file.
     int PATH_SEARCH_OLD = 7;
     int PATH_SEARCH = 7;
     int PATH_SEARCH_FAST = 2;
