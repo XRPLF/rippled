@@ -1065,7 +1065,8 @@ public:
         {
             using namespace std::chrono;
             sweepTimer_.expires_from_now(
-                seconds{config_->getValueFor(SizedItem::sweepInterval)});
+                seconds{config_->SWEEP_INTERVAL.value_or(
+                    config_->getValueFor(SizedItem::sweepInterval))});
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
     }
