@@ -71,6 +71,7 @@
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 
 namespace ripple {
@@ -4023,7 +4024,7 @@ NetworkOPsImp::getBookPage(
     Json::Value& jvOffers =
         (jvResult[jss::offers] = Json::Value(Json::arrayValue));
 
-    std::map<AccountID, STAmount> umBalance;
+    std::unordered_map<AccountID, STAmount> umBalance;
     const uint256 uBookBase = getBookBase(book);
     const uint256 uBookEnd = getQualityNext(uBookBase);
     uint256 uTipIndex = uBookBase;
