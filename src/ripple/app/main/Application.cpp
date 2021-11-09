@@ -283,6 +283,29 @@ public:
               logs_->journal("Collector")))
 
         , m_jobQueue(std::make_unique<JobQueue>(
+              [](std::unique_ptr<Config> const& config) {
+                  if (config->standalone() && !config->reporting() &&
+                      !config->FORCE_MULTI_THREAD)
+                      return 1;
+
+                  if (config->WORKERS)
+                      return config->WORKERS;
+
+                  auto count =
+                      static_cast<int>(std::thread::hardware_concurrency());
+
+                  // Be more aggressive about the number of threads to use
+                  // for the job queue if the server is configured as "large"
+                  // or "huge" if there are enough cores.
+                  if (config->NODE_SIZE >= 4 && count >= 16)
+                      count = 6 + std::min(count, 8);
+                  else if (config->NODE_SIZE >= 3 && count >= 8)
+                      count = 4 + std::min(count, 6);
+                  else
+                      count = 2 + std::min(count, 4);
+
+                  return count;
+              }(config_),
               m_collectorManager->group("jobq"),
               logs_->journal("JobQueue"),
               *logs_,
@@ -305,6 +328,7 @@ public:
               logs_->journal("TaggedCache"))
 
         , cachedSLEs_(std::chrono::minutes(1), stopwatch())
+
         , validatorKeys_(*config_, m_journal)
 
         , m_resourceManager(Resource::make_Manager(
@@ -1221,9 +1245,6 @@ ApplicationImp::setup()
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
-
-    m_jobQueue->setThreadCount(
-        config_->WORKERS, config_->standalone() && !config_->reporting());
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
