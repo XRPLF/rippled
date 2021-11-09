@@ -283,6 +283,30 @@ public:
               logs_->journal("Collector")))
 
         , m_jobQueue(std::make_unique<JobQueue>(
+              [this]() {
+                  if (config_->standalone() && !config_->reporting())
+                      return 1;
+
+                  if (config_->WORKERS)
+                      return config_->WORKERS;
+
+                  auto count =
+                      static_cast<int>(std::thread::hardware_concurrency());
+
+                  // Be more aggressive about the number of threads to use
+                  // for the job queue if the server is configured as "large"
+                  // or "huge".
+                  if (config_->NODE_SIZE >= 3)
+                      count = 4 + std::min(count, 8);
+                  else
+                      count = 2 + std::min(count, 4);
+
+                  JLOG(m_journal.info())
+                      << "Auto-tuning to " << count
+                      << " validation/transaction/proposal threads.";
+
+                  return count;
+              }(),
               m_collectorManager->group("jobq"),
               logs_->journal("JobQueue"),
               *logs_,
@@ -1221,9 +1245,6 @@ ApplicationImp::setup()
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
-
-    m_jobQueue->setThreadCount(
-        config_->WORKERS, config_->standalone() && !config_->reporting());
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);

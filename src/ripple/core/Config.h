@@ -202,7 +202,7 @@ public:
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
     // Thread pool configuration
-    std::size_t WORKERS = 0;
+    int WORKERS = 0;
 
     // Normally the sweep timer is automatically deduced based on the node
     // size, but we allow admins to explicitly set it in the config.

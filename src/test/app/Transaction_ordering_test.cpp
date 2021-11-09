@@ -69,8 +69,11 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        Env env(*this);
-        env.app().getJobQueue().setThreadCount(0, false);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("workers").legacy("5");
+            return cfg;
+        }));
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), noripple(alice));
 
@@ -109,8 +112,11 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        Env env(*this);
-        env.app().getJobQueue().setThreadCount(0, false);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("workers").legacy("6");
+            return cfg;
+        }));
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), noripple(alice));
 
