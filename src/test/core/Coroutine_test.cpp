@@ -63,17 +63,19 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
-        auto& jq = env.app().getJobQueue();
-        jq.setThreadCount(0, false);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("workers").legacy("4");
+            return cfg;
+        }));
         gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
-        jq.postCoro(jtCLIENT, "Coroutine-Test", [&](auto const& cr) {
-            c = cr;
-            g1.signal();
-            c->yield();
-            g2.signal();
-        });
+        env.app().getJobQueue().postCoro(
+            jtCLIENT, "Coroutine-Test", [&](auto const& cr) {
+                c = cr;
+                g1.signal();
+                c->yield();
+                g2.signal();
+            });
         BEAST_EXPECT(g1.wait_for(5s));
         c->join();
         c->post();
@@ -85,15 +87,17 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
-        auto& jq = env.app().getJobQueue();
-        jq.setThreadCount(0, false);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("workers").legacy("5");
+            return cfg;
+        }));
         gate g;
-        jq.postCoro(jtCLIENT, "Coroutine-Test", [&](auto const& c) {
-            c->post();
-            c->yield();
-            g.signal();
-        });
+        env.app().getJobQueue().postCoro(
+            jtCLIENT, "Coroutine-Test", [&](auto const& c) {
+                c->post();
+                c->yield();
+                g.signal();
+            });
         BEAST_EXPECT(g.wait_for(5s));
     }
 
@@ -102,9 +106,13 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("workers").legacy("1");
+            return cfg;
+        }));
+
         auto& jq = env.app().getJobQueue();
-        jq.setThreadCount(0, true);
+
         static int const N = 4;
         std::array<std::shared_ptr<JobQueue::Coro>, N> a;
 

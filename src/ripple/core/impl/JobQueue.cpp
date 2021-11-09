@@ -25,6 +25,7 @@
 namespace ripple {
 
 JobQueue::JobQueue(
+    int threadCount,
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal,
     Logs& logs,
@@ -33,11 +34,13 @@ JobQueue::JobQueue(
     , m_lastJob(0)
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
-    , m_workers(*this, &perfLog, "JobQueue", 0)
+    , m_workers(*this, &perfLog, "JobQueue", threadCount)
     , m_cancelCallback(std::bind(&JobQueue::isStopping, this))
     , perfLog_(perfLog)
     , m_collector(collector)
 {
+    JLOG(m_journal.info()) << "Using " << threadCount << "  threads";
+
     hook = m_collector->make_hook(std::bind(&JobQueue::collect, this));
     job_count = m_collector->make_gauge("job_count");
 
@@ -137,29 +140,6 @@ JobQueue::getJobCountGE(JobType t) const
     }
 
     return ret;
-}
-
-void
-JobQueue::setThreadCount(int c, bool const standaloneMode)
-{
-    if (standaloneMode)
-    {
-        c = 1;
-    }
-    else if (c == 0)
-    {
-        c = static_cast<int>(std::thread::hardware_concurrency());
-        c = 2 + std::min(c, 4);  // I/O will bottleneck
-        JLOG(m_journal.info()) << "Auto-tuning to " << c
-                               << " validation/transaction/proposal threads.";
-    }
-    else
-    {
-        JLOG(m_journal.info()) << "Configured " << c
-                               << " validation/transaction/proposal threads.";
-    }
-
-    m_workers.setNumberOfThreads(c);
 }
 
 std::unique_ptr<LoadEvent>

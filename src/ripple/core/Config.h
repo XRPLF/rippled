@@ -202,7 +202,7 @@ public:
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
     // Thread pool configuration
-    std::size_t WORKERS = 0;
+    int WORKERS = 0;
 
     // Reduce-relay - these parameters are experimental.
     // Enable reduce-relay features
