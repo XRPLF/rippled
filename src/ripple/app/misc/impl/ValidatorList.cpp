@@ -39,6 +39,23 @@
 
 namespace ripple {
 
+bool
+isSite(std::string const& source)
+{
+    parsedURL parsed;
+    if (!parseUrl(parsed, source))
+        // Assume that the source is a peer address in the
+        // event that parsing fails.
+        return false;
+
+    const std::unordered_set<std::string> schemes{"file", "http", "https"};
+
+    if (schemes.find(parsed.scheme) != schemes.end())
+        return true;
+
+    return false;
+}
+
 std::string
 to_string(ListDisposition disposition)
 {
@@ -870,14 +887,14 @@ ValidatorList::applyListsAndBroadcast(
     std::string const& manifest,
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
-    std::string siteUri,
+    std::string source,
     uint256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
 {
     auto const result =
-        applyLists(manifest, version, blobs, std::move(siteUri), hash);
+        applyLists(manifest, version, blobs, std::move(source), hash);
     auto const disposition = result.bestDisposition();
 
     if (disposition == ListDisposition::accepted)
@@ -923,7 +940,7 @@ ValidatorList::applyLists(
     std::string const& manifest,
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
-    std::string siteUri,
+    std::string source,
     std::optional<uint256> const& hash /* = {} */)
 {
     if (std::count(
@@ -943,7 +960,7 @@ ValidatorList::applyLists(
             blobInfo.blob,
             blobInfo.signature,
             version,
-            siteUri,
+            source,
             hash,
             lock);
 
@@ -1063,7 +1080,7 @@ ValidatorList::applyList(
     std::string const& blob,
     std::string const& signature,
     std::uint32_t version,
-    std::string siteUri,
+    std::string source,
     std::optional<uint256> const& hash,
     ValidatorList::lock_guard const& lock)
 {
@@ -1137,7 +1154,9 @@ ValidatorList::applyList(
             list.isMember(jss::effective) ? list[jss::effective].asUInt() : 0}};
         publisher.validUntil = TimeKeeper::time_point{
             TimeKeeper::duration{list[jss::expiration].asUInt()}};
-        publisher.siteUri = std::move(siteUri);
+        auto& sourceField =
+            isSite(source) ? publisher.sourceUri : publisher.sourcePeer;
+        sourceField = std::move(source);
         publisher.rawBlob = blob;
         publisher.rawSignature = signature;
         publisher.rawManifest = localManifest;
@@ -1504,7 +1523,7 @@ ValidatorList::expires() const
 }
 
 Json::Value
-ValidatorList::getJson() const
+ValidatorList::getJson(std::optional<RPC::JsonContext> context) const
 {
     Json::Value res(Json::objectValue);
 
@@ -1563,9 +1582,17 @@ ValidatorList::getJson() const
         curr[jss::available] =
             pubCollection.status == PublisherStatus::available;
 
-        auto appendList = [](PublisherList const& publisherList,
-                             Json::Value& target) {
-            target[jss::uri] = publisherList.siteUri;
+        auto appendList = [&context](
+                              PublisherList const& publisherList,
+                              Json::Value& target) {
+            if ((context && context->apiVersion == 1) || !context)
+                target[jss::uri] = publisherList.sourceUri.empty()
+                    ? publisherList.sourcePeer
+                    : publisherList.sourceUri;
+            if (!publisherList.sourceUri.empty())
+                target[jss::source_uri] = publisherList.sourceUri;
+            if (!publisherList.sourcePeer.empty())
+                target[jss::source_peer] = publisherList.sourcePeer;
             if (publisherList.validUntil != TimeKeeper::time_point{})
             {
                 target[jss::seq] =

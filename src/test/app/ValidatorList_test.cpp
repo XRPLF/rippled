@@ -476,7 +476,7 @@ private:
         testcase("Apply list");
         using namespace std::chrono_literals;
 
-        std::string const siteUri = "testApplyList.test";
+        std::string const siteUri = "http://testApplyList.test";
 
         auto checkAvailable =
             [this](
@@ -926,7 +926,7 @@ private:
         testcase("GetAvailable");
         using namespace std::chrono_literals;
 
-        std::string const siteUri = "testApplyList.test";
+        std::string const siteUri = "http://testApplyList.test";
 
         ManifestCache manifests;
         jtx::Env env(*this);
@@ -1062,7 +1062,7 @@ private:
     {
         testcase("Update trusted");
 
-        std::string const siteUri = "testUpdateTrusted.test";
+        std::string const siteUri = "http://testUpdateTrusted.test";
 
         PublicKey emptyLocalKeyOuter;
         ManifestCache manifestsOuter;
@@ -1615,7 +1615,7 @@ private:
     {
         testcase("Expires");
 
-        std::string const siteUri = "testExpires.test";
+        std::string const siteUri = "http://testExpires.test";
 
         jtx::Env env(*this);
         auto& app = env.app();

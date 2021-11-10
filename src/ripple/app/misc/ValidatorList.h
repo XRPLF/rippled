@@ -28,6 +28,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/rpc/Context.h>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -180,7 +181,10 @@ class ValidatorList
         std::size_t sequence;
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
-        std::string siteUri;
+        // the peer that provided the list, if applicable
+        std::string sourcePeer;
+        // the website or filesystem uri that provided the list, if applicable
+        std::string sourceUri;
         // base-64 encoded JSON containing the validator list.
         std::string rawBlob;
         // hex-encoded signature of the blob using the publisher's signing key
@@ -382,7 +386,9 @@ public:
         @param blobs Vector of BlobInfos representing one or more encoded
             validator lists and signatures (and optional manifests)
 
-        @param siteUri Uri of the site from which the list was validated
+        @param source The peer address, or site/file uri that provided the
+            lists. The formatting of this parameter is important as it is
+            used to determine the source type
 
         @param hash Hash of the data parameters
 
@@ -406,7 +412,7 @@ public:
         std::string const& manifest,
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
-        std::string siteUri,
+        std::string source,
         uint256 const& hash,
         Overlay& overlay,
         HashRouter& hashRouter,
@@ -419,14 +425,16 @@ public:
         @param version Version of published list format
 
         @param blobs Vector of BlobInfos representing one or more encoded
-        validator lists and signatures (and optional manifests)
+            validator lists and signatures (and optional manifests)
 
-        @param siteUri Uri of the site from which the list was validated
+        @param source The peer address, or site/file uri that provided the
+            lists. The formatting of this parameter is important as it is
+            used to determine the source type
 
         @param hash Optional hash of the data parameters
 
         @return `ListDisposition::accepted`, plus some of the publisher
-        information, if list was successfully applied
+            information, if list was successfully applied
 
         @par Thread Safety
 
@@ -437,7 +445,7 @@ public:
         std::string const& manifest,
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
-        std::string siteUri,
+        std::string source,
         std::optional<uint256> const& hash = {});
 
     /* Attempt to read previously stored list files. Expected to only be
@@ -647,7 +655,7 @@ public:
         May be called concurrently
     */
     Json::Value
-    getJson() const;
+    getJson(std::optional<RPC::JsonContext> context = std::nullopt) const;
 
     using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;
     /** Get the quorum and all of the trusted keys.
@@ -743,7 +751,9 @@ private:
 
         @param version Version of published list format
 
-        @param siteUri Uri of the site from which the list was validated
+        @param source The peer address, or site/file uri that provided the
+            lists. The formatting of this parameter is important as it is
+            used to determine the source type
 
         @param hash Optional hash of the data parameters.
             Defaults to uninitialized
@@ -762,7 +772,7 @@ private:
         std::string const& blob,
         std::string const& signature,
         std::uint32_t version,
-        std::string siteUri,
+        std::string source,
         std::optional<uint256> const& hash,
         lock_guard const&);
 
