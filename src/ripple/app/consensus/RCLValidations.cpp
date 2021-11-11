@@ -190,8 +190,8 @@ handleNewValidation(
     // so that our peers will also observe them and take independent notice of
     // such validators, informing their operators.
     if (auto const ls = val->isTrusted()
-            ? validations.adaptor().journal().fatal()
-            : validations.adaptor().journal().warn();
+            ? validations.adaptor().journal().error()
+            : validations.adaptor().journal().info();
         ls.active())
     {
         auto const id = [&masterKey, &signingKey]() {
