@@ -37,24 +37,35 @@ class PerfLog;
 /**
  * `Workers` is effectively a thread pool. The constructor takes a "callback"
  * that has a `void processTask(int instance)` method, and a number of
- * workers. It creates that many Workers and then waits for calls to
+ * workers. It creates that many `Worker`s and then waits for calls to
  * `Workers::addTask()`. It holds a semaphore that counts the number of
- * waiting tasks, and a condition variable for the event when the last worker
- * pauses itself.
+ * pending "tasks", and a condition variable for the event when the last
+ * worker pauses itself.
+ *
+ * A "task" is just a call to the callback's `processTask` method.
+ * "Adding a task" means calling that method now, or remembering to call it in
+ * the future.
+ * This is implemented with a semaphore.
+ * If there are any workers waiting when a task is added, then one will be
+ * woken to claim the task.
+ * If not, then the next worker to wait on the semaphore will claim the task.
  *
  * Creating a `Worker` creates a thread that calls `Worker::run()`. When that
  * thread enters `Worker::run`, it increments the count of active workers in
- * the parent `Workers` object and then blocks on the semaphore if there are
- * no waiting tasks. It will be unblocked whenever the number of waiting tasks
- * is incremented. That only happens in two circumstances: (1) when
+ * the parent `Workers` object and then tries to claim a task, which blocks if
+ * there are none pending.
+ * It will be unblocked whenever the semaphore is notified (i.e. when the
+ * number of pending tasks is incremented).
+ * That only happens in two circumstances: (1) when
  * `Workers::addTask` is called and (2) when `Workers` wants to pause some
  * workers ("pause one worker" is considered one task), which happens when
  * someone wants to stop the workers or shrink the threadpool. No worker
  * threads are ever destroyed until `Workers` is destroyed; it merely pauses
  * workers until then.
  *
- * When an idle worker is woken, it checks whether `Workers` is trying to pause
- * workers. If so, it adds itself to the set of paused workers and blocks on
+ * When a waiting worker is woken, it checks whether `Workers` is trying to
+ * pause workers. If so, it changes its status from active to paused and
+ * blocks on
  * its own condition variable. If not, then it calls `processTask` on the
  * "callback" held by `Workers`.
  *
@@ -62,8 +73,8 @@ class PerfLog;
  * to exit is only set in the destructor of `Worker`, which unblocks the
  * paused thread and waits for it to exit. A `Worker::run` thread checks
  * whether it needs to exit only when it is woken from a pause (not when it is
- * woken from idle). This is why the destructor for `Workers` pauses all the
- * workers before destroying them.
+ * woken from waiting). This is why the destructor for `Workers` pauses all
+ * the workers before destroying them.
  */
 class Workers
 {
