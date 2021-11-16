@@ -2937,7 +2937,7 @@ NetworkOPsImp::reportFeeChange()
     if (f != mLastFeeSummary)
     {
         m_job_queue.addJob(
-            jtCLIENT, "reportFeeChange->pubServer", [this](Job&) {
+            jtCLIENT_FEE_CHANGE, "reportFeeChange->pubServer", [this](Job&) {
                 pubServer();
             });
     }
@@ -2947,7 +2947,7 @@ void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
     m_job_queue.addJob(
-        jtCLIENT,
+        jtCLIENT_CONSENSUS,
         "reportConsensusStateChange->pubConsensus",
         [this, phase](Job&) { pubConsensus(phase); });
 }
@@ -3340,7 +3340,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
     }
 
     app_.getJobQueue().addJob(
-        jtCLIENT,
+        jtCLIENT_ACCT_HIST,
         "AccountHistoryTxStream",
         [this, dbType = databaseType, subInfo](Job&) {
             auto const& accountId = subInfo.index_->accountId_;

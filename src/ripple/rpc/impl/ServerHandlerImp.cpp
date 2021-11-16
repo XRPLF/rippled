@@ -292,7 +292,7 @@ ServerHandlerImp::onRequest(Session& session)
 
     std::shared_ptr<Session> detachedSession = session.detach();
     auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT,
+        jtCLIENT_RPC,
         "RPC-Client",
         [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
@@ -339,7 +339,7 @@ ServerHandlerImp::onWSMessage(
     JLOG(m_journal.trace()) << "Websocket received '" << jv << "'";
 
     auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT,
+        jtCLIENT_WEBSOCKET,
         "WS-Client",
         [this, session, jv = std::move(jv)](
             std::shared_ptr<JobQueue::Coro> const& coro) {
