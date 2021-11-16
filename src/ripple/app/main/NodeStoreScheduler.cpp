@@ -32,7 +32,7 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
     if (jobQueue_.isStopped())
         return;
 
-    if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task](Job&) {
+    if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task]() {
             task.performScheduledTask();
         }))
     {

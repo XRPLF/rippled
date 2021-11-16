@@ -127,7 +127,7 @@ public:
         BEAST_EXPECT(*lv == -1);
 
         gate g;
-        jq.addJob(jtCLIENT, "LocalValue-Test", [&](auto const& job) {
+        jq.addJob(jtCLIENT, "LocalValue-Test", [&]() {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;
             this->BEAST_EXPECT(*lv == -2);
@@ -166,7 +166,7 @@ public:
             c->join();
         }
 
-        jq.addJob(jtCLIENT, "LocalValue-Test", [&](auto const& job) {
+        jq.addJob(jtCLIENT, "LocalValue-Test", [&]() {
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });

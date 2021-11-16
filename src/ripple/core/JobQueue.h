@@ -138,7 +138,7 @@ public:
         join();
     };
 
-    using JobFunction = std::function<void(Job&)>;
+    using JobFunction = std::function<void()>;
 
     JobQueue(
         int threadCount,
@@ -160,7 +160,7 @@ public:
     template <
         typename JobHandler,
         typename = std::enable_if_t<std::is_same<
-            decltype(std::declval<JobHandler&&>()(std::declval<Job&>())),
+            decltype(std::declval<JobHandler&&>()()),
             void>::value>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
@@ -259,7 +259,6 @@ private:
     int nSuspend_ = 0;
 
     Workers m_workers;
-    Job::CancelCallback m_cancelCallback;
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
@@ -287,23 +286,6 @@ private:
         JobType type,
         std::string const& name,
         JobFunction const& func);
-
-    // Signals an added Job for processing.
-    //
-    // Pre-conditions:
-    //  The JobType must be valid.
-    //  The Job must exist in mJobSet.
-    //  The Job must not have previously been queued.
-    //
-    // Post-conditions:
-    //  Count of waiting jobs of that type will be incremented.
-    //  If JobQueue exists, and has at least one thread, Job will eventually
-    //  run.
-    //
-    // Invariants:
-    //  The calling thread owns the JobLock
-    void
-    queueJob(Job const& job, std::lock_guard<std::mutex> const& lock);
 
     // Returns the next Job we should run now.
     //

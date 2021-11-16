@@ -131,9 +131,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             acquiringLedger_ = hash;
 
             app_.getJobQueue().addJob(
-                jtADVANCE,
-                "getConsensusLedger",
-                [id = hash, &app = app_](Job&) {
+                jtADVANCE, "getConsensusLedger", [id = hash, &app = app_]() {
                     app.getInboundLedgers().acquire(
                         id, 0, InboundLedger::Reason::CONSENSUS);
                 });
@@ -423,9 +421,7 @@ RCLConsensus::Adaptor::onAccept(
     Json::Value&& consensusJson)
 {
     app_.getJobQueue().addJob(
-        jtACCEPT,
-        "acceptLedger",
-        [=, cj = std::move(consensusJson)](auto&) mutable {
+        jtACCEPT, "acceptLedger", [=, cj = std::move(consensusJson)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state

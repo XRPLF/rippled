@@ -35,7 +35,6 @@ JobQueue::JobQueue(
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
     , m_workers(*this, &perfLog, "JobQueue", threadCount)
-    , m_cancelCallback(std::bind(&JobQueue::isStopping, this))
     , perfLog_(perfLog)
     , m_collector(collector)
 {
@@ -100,9 +99,27 @@ JobQueue::addRefCountedJob(
 
     {
         std::lock_guard lock(m_mutex);
-        auto result = m_jobSet.emplace(
-            type, name, ++m_lastJob, data.load(), func, m_cancelCallback);
-        queueJob(*result.first, lock);
+        auto result =
+            m_jobSet.emplace(type, name, ++m_lastJob, data.load(), func);
+        auto const& job = *result.first;
+
+        JobType const type(job.getType());
+        assert(type != jtINVALID);
+        assert(m_jobSet.find(job) != m_jobSet.end());
+        perfLog_.jobQueue(type);
+
+        JobTypeData& data(getJobTypeData(type));
+
+        if (data.waiting + data.running < getJobLimit(type))
+        {
+            m_workers.addTask();
+        }
+        else
+        {
+            // defer the task until we go below the limit
+            ++data.deferred;
+        }
+        ++data.waiting;
     }
     return true;
 }
@@ -283,29 +300,6 @@ JobQueue::isStopped() const
 }
 
 void
-JobQueue::queueJob(Job const& job, std::lock_guard<std::mutex> const& lock)
-{
-    JobType const type(job.getType());
-    assert(type != jtINVALID);
-    assert(m_jobSet.find(job) != m_jobSet.end());
-    perfLog_.jobQueue(type);
-
-    JobTypeData& data(getJobTypeData(type));
-
-    if (data.waiting + data.running < getJobLimit(type))
-    {
-        m_workers.addTask();
-    }
-    else
-    {
-        // defer the task until we go below the limit
-        //
-        ++data.deferred;
-    }
-    ++data.waiting;
-}
-
-void
 JobQueue::getNextJob(Job& job)
 {
     assert(!m_jobSet.empty());
@@ -313,30 +307,25 @@ JobQueue::getNextJob(Job& job)
     std::set<Job>::const_iterator iter;
     for (iter = m_jobSet.begin(); iter != m_jobSet.end(); ++iter)
     {
-        JobTypeData& data(getJobTypeData(iter->getType()));
+        JobType const type = iter->getType();
+        assert(type != jtINVALID);
 
-        assert(data.running <= getJobLimit(data.type()));
+        JobTypeData& data(getJobTypeData(type));
+        assert(data.running <= getJobLimit(type));
 
         // Run this job if we're running below the limit.
         if (data.running < getJobLimit(data.type()))
         {
             assert(data.waiting > 0);
+            --data.waiting;
+            ++data.running;
             break;
         }
     }
 
     assert(iter != m_jobSet.end());
-
-    JobType const type = iter->getType();
-    JobTypeData& data(getJobTypeData(type));
-
-    assert(type != jtINVALID);
-
     job = *iter;
     m_jobSet.erase(iter);
-
-    --data.waiting;
-    ++data.running;
 }
 
 void

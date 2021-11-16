@@ -55,9 +55,7 @@ PathRequests::getLineCache(
 }
 
 void
-PathRequests::updateAll(
-    std::shared_ptr<ReadView const> const& inLedger,
-    Job::CancelCallback shouldCancel)
+PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
     auto event =
         app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
@@ -84,7 +82,7 @@ PathRequests::updateAll(
     {
         for (auto const& wr : requests)
         {
-            if (shouldCancel())
+            if (app_.getJobQueue().isStopping())
                 break;
 
             auto request = wr.lock();
@@ -174,7 +172,7 @@ PathRequests::updateAll(
             requests = requests_;
             cache = getLineCache(cache->getLedger(), false);
         }
-    } while (!shouldCancel());
+    } while (!app_.getJobQueue().isStopping());
 
     JLOG(mJournal.debug()) << "updateAll complete: " << processed
                            << " processed and " << removed << " removed";

@@ -1070,7 +1070,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     // VFALCO What's the right job type?
     auto that = shared_from_this();
     app_.getJobQueue().addJob(
-        jtVALIDATION_ut, "receiveManifests", [this, that, m](Job&) {
+        jtVALIDATION_ut, "receiveManifests", [this, that, m]() {
             overlay_.onManifests(m, that);
         });
 }
@@ -1608,7 +1608,7 @@ PeerImp::handleTransaction(
                 [weak = std::weak_ptr<PeerImp>(shared_from_this()),
                  flags,
                  checkSignature,
-                 stx](Job&) {
+                 stx]() {
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx);
                 });
@@ -1711,7 +1711,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Queue a job to process the request
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(jtLEDGER_REQ, "recvGetLedger", [weak, m](Job&) {
+    app_.getJobQueue().addJob(jtLEDGER_REQ, "recvGetLedger", [weak, m]() {
         if (auto peer = weak.lock())
             peer->processLedgerRequest(m);
     });
@@ -1730,7 +1730,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
     fee_ = Resource::feeMediumBurdenPeer;
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
-        jtREPLAY_REQ, "recvProofPathRequest", [weak, m](Job&) {
+        jtREPLAY_REQ, "recvProofPathRequest", [weak, m]() {
             if (auto peer = weak.lock())
             {
                 auto reply =
@@ -1779,7 +1779,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
     fee_ = Resource::feeMediumBurdenPeer;
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
-        jtREPLAY_REQ, "recvReplayDeltaRequest", [weak, m](Job&) {
+        jtREPLAY_REQ, "recvReplayDeltaRequest", [weak, m]() {
             if (auto peer = weak.lock())
             {
                 auto reply =
@@ -1900,7 +1900,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     {
         std::weak_ptr<PeerImp> weak{shared_from_this()};
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "recvPeerData", [weak, ledgerHash, m](Job&) {
+            jtTXN_DATA, "recvPeerData", [weak, ledgerHash, m]() {
                 if (auto peer = weak.lock())
                 {
                     peer->app_.getInboundTransactions().gotData(
@@ -2013,9 +2013,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose",
-        [weak, m, proposal](Job& job) {
+        [weak, isTrusted, m, proposal]() {
             if (auto peer = weak.lock())
-                peer->checkPropose(job, m, proposal);
+                peer->checkPropose(isTrusted, m, proposal);
         });
 }
 
@@ -2602,7 +2602,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             app_.getJobQueue().addJob(
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                 "recvValidation->checkValidation",
-                [weak, val, m](Job&) {
+                [weak, val, m]() {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, m);
                 });
@@ -2655,7 +2655,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
-                jtREQUESTED_TXN, "doTransactions", [weak, m](Job&) {
+                jtREQUESTED_TXN, "doTransactions", [weak, m]() {
                     if (auto peer = weak.lock())
                         peer->doTransactions(m);
                 });
@@ -2795,7 +2795,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
-        jtMISSING_TXN, "handleHaveTransactions", [weak, m](Job&) {
+        jtMISSING_TXN, "handleHaveTransactions", [weak, m]() {
             if (auto peer = weak.lock())
                 peer->handleHaveTransactions(m);
         });
@@ -2975,7 +2975,7 @@ PeerImp::doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
     auto elapsed = UptimeClock::now();
     auto const pap = &app_;
     app_.getJobQueue().addJob(
-        jtPACK, "MakeFetchPack", [pap, weak, packet, hash, elapsed](Job&) {
+        jtPACK, "MakeFetchPack", [pap, weak, packet, hash, elapsed]() {
             pap->getLedgerMaster().makeFetchPack(weak, packet, hash, elapsed);
         });
 }
@@ -3111,12 +3111,10 @@ PeerImp::checkTransaction(
 // Called from our JobQueue
 void
 PeerImp::checkPropose(
-    Job& job,
+    bool isTrusted,
     std::shared_ptr<protocol::TMProposeSet> const& packet,
     RCLCxPeerPos peerPos)
 {
-    bool isTrusted = (job.getType() == jtPROPOSAL_t);
-
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 

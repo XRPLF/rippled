@@ -527,7 +527,7 @@ InboundLedger::done()
 
     // We hold the PeerSet lock, so must dispatch
     app_.getJobQueue().addJob(
-        jtLEDGER_DATA, "AcquisitionDone", [self = shared_from_this()](Job&) {
+        jtLEDGER_DATA, "AcquisitionDone", [self = shared_from_this()]() {
             if (self->complete_ && !self->failed_)
             {
                 self->app_.getLedgerMaster().checkAccept(self->getLedger());

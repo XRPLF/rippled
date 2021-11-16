@@ -96,7 +96,7 @@ public:
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
             mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this](Job&) {
+                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
                     sendThread();
                 });
         }

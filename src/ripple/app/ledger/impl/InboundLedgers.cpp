@@ -183,7 +183,7 @@ public:
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "processLedgerData", [ledger](Job&) {
+                    jtLEDGER_DATA, "processLedgerData", [ledger]() {
                         ledger->runData();
                     });
 
@@ -198,7 +198,7 @@ public:
         if (packet->type() == protocol::liAS_NODE)
         {
             app_.getJobQueue().addJob(
-                jtLEDGER_DATA, "gotStaleData", [this, packet](Job&) {
+                jtLEDGER_DATA, "gotStaleData", [this, packet]() {
                     gotStaleData(packet);
                 });
         }
