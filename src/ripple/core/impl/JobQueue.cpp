@@ -94,7 +94,9 @@ JobQueue::addRefCountedJob(
 
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
-    assert(type == jtCLIENT || m_workers.getNumberOfThreads() > 0);
+    assert(
+        (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) ||
+        m_workers.getNumberOfThreads() > 0);
 
     {
         std::lock_guard lock(m_mutex);
