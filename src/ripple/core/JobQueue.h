@@ -292,23 +292,6 @@ private:
         std::string const& name,
         JobFunction const& func);
 
-    // Signals an added Job for processing.
-    //
-    // Pre-conditions:
-    //  The JobType must be valid.
-    //  The Job must exist in mJobSet.
-    //  The Job must not have previously been queued.
-    //
-    // Post-conditions:
-    //  Count of waiting jobs of that type will be incremented.
-    //  If JobQueue exists, and has at least one thread, Job will eventually
-    //  run.
-    //
-    // Invariants:
-    //  The calling thread owns the JobLock
-    void
-    queueJob(Job const& job, std::lock_guard<std::mutex> const& lock);
-
     // Returns the next Job we should run now.
     //
     // RunnableJob:

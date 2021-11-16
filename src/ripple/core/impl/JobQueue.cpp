@@ -97,7 +97,25 @@ JobQueue::addRefCountedJob(
         std::lock_guard lock(m_mutex);
         auto result = m_jobSet.emplace(
             type, name, ++m_lastJob, data.load(), func, m_cancelCallback);
-        queueJob(*result.first, lock);
+        auto const& job = *result.first;
+
+        JobType const type(job.getType());
+        assert(type != jtINVALID);
+        assert(m_jobSet.find(job) != m_jobSet.end());
+        perfLog_.jobQueue(type);
+
+        JobTypeData& data(getJobTypeData(type));
+
+        if (data.waiting + data.running < getJobLimit(type))
+        {
+            m_workers.addTask();
+        }
+        else
+        {
+            // defer the task until we go below the limit
+            ++data.deferred;
+        }
+        ++data.waiting;
     }
     return true;
 }
@@ -304,29 +322,6 @@ bool
 JobQueue::isStopped() const
 {
     return stopped_;
-}
-
-void
-JobQueue::queueJob(Job const& job, std::lock_guard<std::mutex> const& lock)
-{
-    JobType const type(job.getType());
-    assert(type != jtINVALID);
-    assert(m_jobSet.find(job) != m_jobSet.end());
-    perfLog_.jobQueue(type);
-
-    JobTypeData& data(getJobTypeData(type));
-
-    if (data.waiting + data.running < getJobLimit(type))
-    {
-        m_workers.addTask();
-    }
-    else
-    {
-        // defer the task until we go below the limit
-        //
-        ++data.deferred;
-    }
-    ++data.waiting;
 }
 
 void
