@@ -31,21 +31,21 @@ namespace ripple {
 
 /**
  * The role of a `ClosureCounter` is to assist in shutdown by letting callers
- * wait for the completion of callbacks (of a single type signature) that they
- * previously scheduled. The lifetime of a `ClosureCounter` consists of two
+ * wait for the completion of closures (of a specific type signature) that they
+ * previously registered. These closures are typically callbacks for
+ * asynchronous operations. The lifetime of a `ClosureCounter` consists of two
  * phases: the initial expanding "fork" phase, and the subsequent shrinking
  * "join" phase.
  *
- * In the fork phase, callers register a callback by passing the callback and
+ * In the fork phase, callers register a closure by passing the closure and
  * receiving a substitute in return. The substitute has the same callable
- * interface as the callback, and it informs the `ClosureCounter` whenever it
+ * interface as the closure, and it informs the `ClosureCounter` whenever it
  * is copied or destroyed, so that it can keep an accurate count of copies.
  *
  * The transition to the join phase is made by a call to `join`. In this
- * phase, every substitute returned going forward will be empty, signaling to
- * the caller that they should just drop the callback and cancel their
- * asynchronous operation. `join` blocks until all existing callback
- * substitutes are destroyed.
+ * phase, every substitute returned going forward will be null, signaling to
+ * the caller that they should drop the closure and cancel their operation.
+ * `join` blocks until all existing closure substitutes are destroyed.
  *
  * \tparam Ret_t The return type of the closure.
  * \tparam Args_t The argument types of the closure.
