@@ -136,9 +136,6 @@ public:
     void
     doJob();
 
-    void
-    rename(std::string const& n);
-
     // These comparison operators make the jobs sort in priority order
     // in the job set
     bool

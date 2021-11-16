@@ -89,12 +89,6 @@ Job::doJob()
     mJob = nullptr;
 }
 
-void
-Job::rename(std::string const& newName)
-{
-    mName = newName;
-}
-
 bool
 Job::operator>(const Job& j) const
 {
