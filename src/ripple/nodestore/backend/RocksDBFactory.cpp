@@ -23,6 +23,7 @@
 
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/Config.h>  // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
@@ -30,6 +31,7 @@
 #include <ripple/nodestore/impl/BatchWriter.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
+
 #include <atomic>
 #include <memory>
 
@@ -310,7 +312,8 @@ public:
             }
             else
             {
-                status = Status(customCode + getStatus.code());
+                status =
+                    Status(customCode + unsafe_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();
             }

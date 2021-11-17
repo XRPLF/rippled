@@ -126,7 +126,6 @@ class FeatureBitset : private std::bitset<detail::numFeatures>
 public:
     using base::bitset;
     using base::operator==;
-    using base::operator!=;
 
     using base::all;
     using base::any;

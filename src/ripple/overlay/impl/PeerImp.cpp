@@ -2119,7 +2119,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
             m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([=]() -> Json::Value {
+    app_.getOPs().pubPeerStatus([=, this]() -> Json::Value {
         Json::Value j = Json::objectValue;
 
         if (m->has_newstatus())

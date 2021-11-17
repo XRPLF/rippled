@@ -251,22 +251,22 @@ public:
     }
 
     bool
-    operator==(Blob const& v)
+    operator==(Blob const& v) const
     {
         return v == mData;
     }
     bool
-    operator!=(Blob const& v)
+    operator!=(Blob const& v) const
     {
         return v != mData;
     }
     bool
-    operator==(const Serializer& v)
+    operator==(const Serializer& v) const
     {
         return v.mData == mData;
     }
     bool
-    operator!=(const Serializer& v)
+    operator!=(const Serializer& v) const
     {
         return v.mData != mData;
     }
