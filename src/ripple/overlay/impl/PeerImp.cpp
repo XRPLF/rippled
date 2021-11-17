@@ -342,7 +342,7 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee)
 {
-    if ((usage_.charge(fee) == Resource::drop) && usage_.disconnect() &&
+    if ((usage_.charge(fee) == Resource::drop) && usage_.disconnect(p_journal_) &&
         strand_.running_in_this_thread())
     {
         // Sever the connection

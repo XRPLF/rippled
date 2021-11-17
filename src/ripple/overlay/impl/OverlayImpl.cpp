@@ -190,7 +190,7 @@ OverlayImpl::onHandoff(
 
     auto consumer = m_resourceManager.newInboundEndpoint(
         beast::IPAddressConversion::from_asio(remote_endpoint));
-    if (consumer.disconnect())
+    if (consumer.disconnect(journal))
         return handoff;
 
     auto const slot = m_peerFinder->new_inbound_slot(
@@ -392,7 +392,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
     assert(work_);
 
     auto usage = resourceManager().newOutboundEndpoint(remote_endpoint);
-    if (usage.disconnect())
+    if (usage.disconnect(journal_))
     {
         JLOG(journal_.info()) << "Over resource limit: " << remote_endpoint;
         return;
