@@ -47,12 +47,9 @@ public:
     /** Update all of the contained PathRequest instances.
 
         @param ledger Ledger we are pathfinding in.
-        @param shouldCancel Invocable that returns whether to cancel.
      */
     void
-    updateAll(
-        std::shared_ptr<ReadView const> const& ledger,
-        Job::CancelCallback shouldCancel);
+    updateAll(std::shared_ptr<ReadView const> const& ledger);
 
     std::shared_ptr<RippleLineCache>
     getLineCache(
