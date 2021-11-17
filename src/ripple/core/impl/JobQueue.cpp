@@ -332,30 +332,25 @@ JobQueue::getNextJob(Job& job)
     std::set<Job>::const_iterator iter;
     for (iter = m_jobSet.begin(); iter != m_jobSet.end(); ++iter)
     {
-        JobTypeData& data(getJobTypeData(iter->getType()));
+        JobType const type = iter->getType();
+        assert(type != jtINVALID);
 
-        assert(data.running <= getJobLimit(data.type()));
+        JobTypeData& data(getJobTypeData(type));
+        assert(data.running <= getJobLimit(type));
 
         // Run this job if we're running below the limit.
         if (data.running < getJobLimit(data.type()))
         {
             assert(data.waiting > 0);
+            --data.waiting;
+            ++data.running;
             break;
         }
     }
 
     assert(iter != m_jobSet.end());
-
-    JobType const type = iter->getType();
-    JobTypeData& data(getJobTypeData(type));
-
-    assert(type != jtINVALID);
-
     job = *iter;
     m_jobSet.erase(iter);
-
-    --data.waiting;
-    ++data.running;
 }
 
 void
