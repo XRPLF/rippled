@@ -34,7 +34,6 @@ JobQueue::JobQueue(
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
     , m_workers(*this, &perfLog, "JobQueue", 0)
-    , m_cancelCallback(std::bind(&JobQueue::isStopping, this))
     , perfLog_(perfLog)
     , m_collector(collector)
 {
@@ -95,8 +94,8 @@ JobQueue::addRefCountedJob(
 
     {
         std::lock_guard lock(m_mutex);
-        auto result = m_jobSet.emplace(
-            type, name, ++m_lastJob, data.load(), func, m_cancelCallback);
+        auto result =
+            m_jobSet.emplace(type, name, ++m_lastJob, data.load(), func);
         auto const& job = *result.first;
 
         JobType const type(job.getType());

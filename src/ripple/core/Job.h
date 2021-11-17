@@ -102,36 +102,21 @@ public:
     //
     Job();
 
-    // Job (Job const& other);
-
     Job(JobType type, std::uint64_t index);
-
-    /** A callback used to check for canceling a job. */
-    using CancelCallback = std::function<bool(void)>;
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job(JobType type,
         std::string const& name,
         std::uint64_t index,
         LoadMonitor& lm,
-        std::function<void(Job&)> const& job,
-        CancelCallback cancelCallback);
-
-    // Job& operator= (Job const& other);
+        std::function<void(Job&)> const& job);
 
     JobType
     getType() const;
 
-    CancelCallback
-    getCancelCallback() const;
-
     /** Returns the time when the job was queued. */
     clock_type::time_point const&
     queue_time() const;
-
-    /** Returns `true` if the running job should make a best-effort cancel. */
-    bool
-    shouldCancel() const;
 
     void
     doJob();
@@ -148,7 +133,6 @@ public:
     operator>=(const Job& j) const;
 
 private:
-    CancelCallback m_cancelCallback;
     JobType mType;
     std::uint64_t mJobIndex;
     std::function<void(Job&)> mJob;

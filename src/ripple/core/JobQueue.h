@@ -263,7 +263,6 @@ private:
     int nSuspend_ = 0;
 
     Workers m_workers;
-    Job::CancelCallback m_cancelCallback;
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
