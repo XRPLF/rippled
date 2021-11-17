@@ -619,7 +619,7 @@ private:
 
     void
     checkPropose(
-        Job& job,
+        bool isTrusted,
         std::shared_ptr<protocol::TMProposeSet> const& packet,
         RCLCxPeerPos peerPos);
 

@@ -1994,9 +1994,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose",
-        [weak, m, proposal](Job& job) {
+        [weak, isTrusted, m, proposal](Job&) {
             if (auto peer = weak.lock())
-                peer->checkPropose(job, m, proposal);
+                peer->checkPropose(isTrusted, m, proposal);
         });
 }
 
@@ -3083,12 +3083,10 @@ PeerImp::checkTransaction(
 // Called from our JobQueue
 void
 PeerImp::checkPropose(
-    Job& job,
+    bool isTrusted,
     std::shared_ptr<protocol::TMProposeSet> const& packet,
     RCLCxPeerPos peerPos)
 {
-    bool isTrusted = (job.getType() == jtPROPOSAL_t);
-
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
