@@ -553,9 +553,11 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_RELAY_VALIDATIONS, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))
-            RELAY_UNTRUSTED_VALIDATIONS = true;
+            RELAY_UNTRUSTED_VALIDATIONS = 1;
         else if (boost::iequals(strTemp, "trusted"))
-            RELAY_UNTRUSTED_VALIDATIONS = false;
+            RELAY_UNTRUSTED_VALIDATIONS = 0;
+        else if (boost::iequals(strTemp, "drop_untrusted"))
+            RELAY_UNTRUSTED_VALIDATIONS = -1;
         else
             Throw<std::runtime_error>(
                 "Invalid value specified in [" SECTION_RELAY_VALIDATIONS
@@ -565,9 +567,11 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_RELAY_PROPOSALS, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))
-            RELAY_UNTRUSTED_PROPOSALS = true;
+            RELAY_UNTRUSTED_PROPOSALS = 1;
         else if (boost::iequals(strTemp, "trusted"))
-            RELAY_UNTRUSTED_PROPOSALS = false;
+            RELAY_UNTRUSTED_PROPOSALS = 0;
+        else if (boost::iequals(strTemp, "drop_untrusted"))
+            RELAY_UNTRUSTED_PROPOSALS = -1;
         else
             Throw<std::runtime_error>(
                 "Invalid value specified in [" SECTION_RELAY_PROPOSALS

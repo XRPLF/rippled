@@ -146,8 +146,10 @@ public:
     std::size_t NETWORK_QUORUM = 1;
 
     // Peer networking parameters
-    bool RELAY_UNTRUSTED_VALIDATIONS = true;
-    bool RELAY_UNTRUSTED_PROPOSALS = false;
+    // 1 = relay, 0 = do not relay (but process), -1 = drop completely (do NOT
+    // process)
+    int RELAY_UNTRUSTED_VALIDATIONS = 1;
+    int RELAY_UNTRUSTED_PROPOSALS = 0;
 
     // True to ask peers not to relay current IP.
     bool PEER_PRIVATE = false;
