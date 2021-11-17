@@ -109,7 +109,7 @@ public:
         std::string const& name,
         std::uint64_t index,
         LoadMonitor& lm,
-        std::function<void(Job&)> const& job);
+        std::function<void()> const& job);
 
     JobType
     getType() const;
@@ -135,13 +135,13 @@ public:
 private:
     JobType mType;
     std::uint64_t mJobIndex;
-    std::function<void(Job&)> mJob;
+    std::function<void()> mJob;
     std::shared_ptr<LoadEvent> m_loadEvent;
     std::string mName;
     clock_type::time_point m_queue_time;
 };
 
-using JobCounter = ClosureCounter<void, Job&>;
+using JobCounter = ClosureCounter<void>;
 
 }  // namespace ripple
 

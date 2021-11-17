@@ -70,7 +70,7 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
         update(ledger);
     else
         app_.getJobQueue().addJob(
-            jtUPDATE_PF, "OrderBookDB::update", [this, ledger](Job&) {
+            jtUPDATE_PF, "OrderBookDB::update", [this, ledger]() {
                 update(ledger);
             });
 }

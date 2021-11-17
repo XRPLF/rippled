@@ -77,7 +77,7 @@ JobQueue::Coro::post()
 
     // sp keeps 'this' alive
     if (jq_.addJob(
-            type_, name_, [this, sp = shared_from_this()](Job&) { resume(); }))
+            type_, name_, [this, sp = shared_from_this()]() { resume(); }))
     {
         return true;
     }

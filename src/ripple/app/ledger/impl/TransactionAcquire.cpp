@@ -81,7 +81,7 @@ TransactionAcquire::done()
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "completeAcquire", [pap, hash, map](Job&) {
+            jtTXN_DATA, "completeAcquire", [pap, hash, map]() {
                 pap->getInboundTransactions().giveSet(hash, map, true);
             });
     }

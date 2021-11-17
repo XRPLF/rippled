@@ -949,7 +949,7 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         mConsensus.parms().ledgerGRANULARITY,
         [this]() {
-            m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this](Job&) {
+            m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
                 processHeartbeatTimer();
             });
         },
@@ -964,7 +964,7 @@ NetworkOPsImp::setClusterTimer()
         clusterTimer_,
         10s,
         [this]() {
-            m_job_queue.addJob(jtNETOP_CLUSTER, "NetOPs.cluster", [this](Job&) {
+            m_job_queue.addJob(jtNETOP_CLUSTER, "NetOPs.cluster", [this]() {
                 processClusterTimer();
             });
         },
@@ -1153,7 +1153,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     auto tx = std::make_shared<Transaction>(trans, reason, app_);
 
-    m_job_queue.addJob(jtTRANSACTION, "submitTxn", [this, tx](Job&) {
+    m_job_queue.addJob(jtTRANSACTION, "submitTxn", [this, tx]() {
         auto t = tx;
         processTransaction(t, false, false, FailHard::no);
     });
@@ -1224,9 +1224,8 @@ NetworkOPsImp::doTransactionAsync(
 
     if (mDispatchState == DispatchState::none)
     {
-        if (m_job_queue.addJob(jtBATCH, "transactionBatch", [this](Job&) {
-                transactionBatch();
-            }))
+        if (m_job_queue.addJob(
+                jtBATCH, "transactionBatch", [this]() { transactionBatch(); }))
         {
             mDispatchState = DispatchState::scheduled;
         }
@@ -1262,10 +1261,9 @@ NetworkOPsImp::doTransactionSync(
             if (mTransactions.size())
             {
                 // More transactions need to be applied, but by another job.
-                if (m_job_queue.addJob(
-                        jtBATCH, "transactionBatch", [this](Job&) {
-                            transactionBatch();
-                        }))
+                if (m_job_queue.addJob(jtBATCH, "transactionBatch", [this]() {
+                        transactionBatch();
+                    }))
                 {
                     mDispatchState = DispatchState::scheduled;
                 }
@@ -2936,9 +2934,7 @@ NetworkOPsImp::reportFeeChange()
     if (f != mLastFeeSummary)
     {
         m_job_queue.addJob(
-            jtCLIENT, "reportFeeChange->pubServer", [this](Job&) {
-                pubServer();
-            });
+            jtCLIENT, "reportFeeChange->pubServer", [this]() { pubServer(); });
     }
 }
 
@@ -2946,9 +2942,9 @@ void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
     m_job_queue.addJob(
-        jtCLIENT,
-        "reportConsensusStateChange->pubConsensus",
-        [this, phase](Job&) { pubConsensus(phase); });
+        jtCLIENT, "reportConsensusStateChange->pubConsensus", [this, phase]() {
+            pubConsensus(phase);
+        });
 }
 
 inline void
@@ -3341,7 +3337,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
     app_.getJobQueue().addJob(
         jtCLIENT,
         "AccountHistoryTxStream",
-        [this, dbType = databaseType, subInfo](Job&) {
+        [this, dbType = databaseType, subInfo]() {
             auto const& accountId = subInfo.index_->accountId_;
             auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;
             auto& txHistoryIndex = subInfo.index_->historyTxIndex_;

@@ -360,7 +360,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
     // to prevent holding up the lock if the downloader
     // sleeps.
     auto const& url{archives_.begin()->second};
-    auto wrapper = jobCounter_.wrap([this, url, dstDir](Job&) {
+    auto wrapper = jobCounter_.wrap([this, url, dstDir]() {
         auto const ssl = (url.scheme == "https");
         auto const defaultPort = ssl ? 443 : 80;
 
@@ -417,7 +417,7 @@ ShardArchiveHandler::complete(path dstPath)
 
     // Make lambdas mutable captured vars can be moved from
     auto wrapper =
-        jobCounter_.wrap([=, dstPath = std::move(dstPath)](Job&) mutable {
+        jobCounter_.wrap([=, dstPath = std::move(dstPath)]() mutable {
             if (stopping_)
                 return;
 

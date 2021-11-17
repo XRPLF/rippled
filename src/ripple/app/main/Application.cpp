@@ -1049,7 +1049,7 @@ public:
                     if (e.value() == boost::system::errc::success)
                     {
                         m_jobQueue->addJob(
-                            jtSWEEP, "sweep", [this](Job&) { doSweep(); });
+                            jtSWEEP, "sweep", [this]() { doSweep(); });
                     }
                     // Recover as best we can if an unexpected error occurs.
                     if (e.value() != boost::system::errc::success &&

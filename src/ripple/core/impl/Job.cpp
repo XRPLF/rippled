@@ -36,7 +36,7 @@ Job::Job(
     std::string const& name,
     std::uint64_t index,
     LoadMonitor& lm,
-    std::function<void(Job&)> const& job)
+    std::function<void()> const& job)
     : mType(type)
     , mJobIndex(index)
     , mJob(job)
@@ -65,7 +65,7 @@ Job::doJob()
     m_loadEvent->start();
     m_loadEvent->setName(mName);
 
-    mJob(*this);
+    mJob();
 
     // Destroy the lambda, otherwise we won't include
     // its duration in the time measurement

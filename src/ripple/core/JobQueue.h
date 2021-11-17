@@ -138,7 +138,7 @@ public:
         join();
     };
 
-    using JobFunction = std::function<void(Job&)>;
+    using JobFunction = std::function<void()>;
 
     JobQueue(
         beast::insight::Collector::ptr const& collector,
@@ -159,7 +159,7 @@ public:
     template <
         typename JobHandler,
         typename = std::enable_if_t<std::is_same<
-            decltype(std::declval<JobHandler&&>()(std::declval<Job&>())),
+            decltype(std::declval<JobHandler&&>()()),
             void>::value>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)

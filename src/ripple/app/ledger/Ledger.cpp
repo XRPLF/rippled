@@ -978,10 +978,9 @@ pendSaveValidated(
 
     // See if we can use the JobQueue.
     if (!isSynchronous &&
-        app.getJobQueue().addJob(
-            jobType, jobName, [&app, ledger, isCurrent](Job&) {
-                saveValidatedLedger(app, ledger, isCurrent);
-            }))
+        app.getJobQueue().addJob(jobType, jobName, [&app, ledger, isCurrent]() {
+            saveValidatedLedger(app, ledger, isCurrent);
+        }))
     {
         return true;
     }
