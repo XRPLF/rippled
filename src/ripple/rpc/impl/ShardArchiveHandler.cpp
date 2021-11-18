@@ -416,42 +416,41 @@ ShardArchiveHandler::complete(path dstPath)
     }
 
     // Make lambdas mutable captured vars can be moved from
-    auto wrapper =
-        jobCounter_.wrap([=, dstPath = std::move(dstPath)]() mutable {
-            if (stopping_)
-                return;
+    auto wrapper = jobCounter_.wrap([=,
+                                     dstPath = std::move(dstPath)]() mutable {
+        if (stopping_)
+            return;
 
-            // If not synced then defer and retry
-            auto const mode{app_.getOPs().getOperatingMode()};
-            if (mode != OperatingMode::FULL)
-            {
-                std::lock_guard lock(m_);
-                timer_.expires_from_now(static_cast<std::chrono::seconds>(
-                    (static_cast<std::size_t>(OperatingMode::FULL) -
-                     static_cast<std::size_t>(mode)) *
-                    10));
+        // If not synced then defer and retry
+        auto const mode{app_.getOPs().getOperatingMode()};
+        if (mode != OperatingMode::FULL)
+        {
+            std::lock_guard lock(m_);
+            timer_.expires_from_now(static_cast<std::chrono::seconds>(
+                (static_cast<std::size_t>(OperatingMode::FULL) -
+                 static_cast<std::size_t>(mode)) *
+                10));
 
-                auto wrapper = timerCounter_.wrap(
-                    [=, dstPath = std::move(dstPath)](
-                        boost::system::error_code const& ec) mutable {
-                        if (ec != boost::asio::error::operation_aborted)
-                            complete(std::move(dstPath));
-                    });
+            auto wrapper = timerCounter_.wrap(
+                [=, dstPath = std::move(dstPath)](
+                    boost::system::error_code const& ec) mutable {
+                    if (ec != boost::asio::error::operation_aborted)
+                        complete(std::move(dstPath));
+                });
 
-                if (!wrapper)
-                    onClosureFailed(
-                        "failed to wrap closure for operating mode timer",
-                        lock);
-                else
-                    timer_.async_wait(*wrapper);
-            }
+            if (!wrapper)
+                onClosureFailed(
+                    "failed to wrap closure for operating mode timer", lock);
             else
-            {
-                process(dstPath);
-                std::lock_guard lock(m_);
-                removeAndProceed(lock);
-            }
-        });
+                timer_.async_wait(*wrapper);
+        }
+        else
+        {
+            process(dstPath);
+            std::lock_guard lock(m_);
+            removeAndProceed(lock);
+        }
+    });
 
     if (!wrapper)
     {
