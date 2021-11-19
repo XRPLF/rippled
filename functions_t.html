@@ -118,7 +118,7 @@ $(function() {
 : <a class="el" href="classripple_1_1tagged__integer.html#a40f771f92a1c7e3b3aa00997efa111c8">ripple::tagged_integer&lt; Int, Tag &gt;</a>
 </li>
 <li>TaggedCache()
-: <a class="el" href="classripple_1_1TaggedCache.html#a1e652b0c7ea31644db1692be4a62f662">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
+: <a class="el" href="classripple_1_1TaggedCache.html#ab321071f80cb871b276f2f45f0d4e1e9">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>TaggedFee()
 : <a class="el" href="classripple_1_1feeunit_1_1TaggedFee.html#a71b02cce1d4245629ad9a3f8d550833b">ripple::feeunit::TaggedFee&lt; UnitTag, T &gt;</a>
@@ -3004,9 +3004,6 @@ $(function() {
 <li>timeRunning_
 : <a class="el" href="classripple_1_1LoadEvent.html#a3c3476909e1b28d39e6aa1169670efc6">ripple::LoadEvent</a>
 </li>
-<li>timeToLive_
-: <a class="el" href="classripple_1_1CachedSLEs.html#ae117a1bba8a9bc4fbd1bc60199e68fd3">ripple::CachedSLEs</a>
-</li>
 <li>timeWaiting_
 : <a class="el" href="classripple_1_1LoadEvent.html#a55fa1564b1427c307721beb95335ddbc">ripple::LoadEvent</a>
 </li>
@@ -3051,7 +3048,7 @@ $(function() {
 </li>
 <li>to_string()
 : <a class="el" href="classbeast_1_1IP_1_1Endpoint.html#adcbd20a3d8d1d3f7c6a3ae541f519fb4">beast::IP::Endpoint</a>
-, <a class="el" href="classripple_1_1NodeStore_1_1Timing__test.html#a23fbaa65d0fd9e9957b5b4d44a620f53">ripple::NodeStore::Timing_test</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1Timing__test.html#a641a85ae177a19d5ccef9250ad5b7f57">ripple::NodeStore::Timing_test</a>
 , <a class="el" href="structripple_1_1path_1_1detail_1_1FlowDebugInfo.html#a089d6472b9f7a1e98c6bf9ca74818c60">ripple::path::detail::FlowDebugInfo</a>
 , <a class="el" href="classripple_1_1Resource_1_1Charge.html#a9ed6361d00000cc6124f397f1cc44d0c">ripple::Resource::Charge</a>
 , <a class="el" href="classripple_1_1Resource_1_1Consumer.html#a503ea58eb052215f605ede3e009df17a">ripple::Resource::Consumer</a>
@@ -3086,7 +3083,7 @@ $(function() {
 : <a class="el" href="structripple_1_1RPC_1_1Status.html#a30085f404550dd6243344fe43c1486d4">ripple::RPC::Status</a>
 </li>
 <li>TOffer()
-: <a class="el" href="classripple_1_1TOffer.html#a1cc470a8cd0f1304685cc019055a99fa">ripple::TOffer&lt; TIn, TOut &gt;</a>
+: <a class="el" href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">ripple::TOffer&lt; TIn, TOut &gt;</a>
 </li>
 <li>TOfferBase()
 : <a class="el" href="classripple_1_1TOfferBase_3_01STAmount_00_01STAmount_01_4.html#a506e2b4461874e08d5da3aee85b928a7">ripple::TOfferBase&lt; STAmount, STAmount &gt;</a>
@@ -3229,11 +3226,12 @@ $(function() {
 : <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#ad64fc1dcf202be0de3465c2a1105e11a">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
 , <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a5f594e1d898494335231653c83367d4f">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 , <a class="el" href="classripple_1_1InboundLedger.html#af907877c2e81e4c01a47bf4b591d22f3">ripple::InboundLedger</a>
-, <a class="el" href="classripple_1_1TaggedCache_1_1Entry.html#aab67c36c11b6e57b77fcb70d64fa87e4">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Entry</a>
+, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html#aec6f370d9cec43fc9cc78490832422a1">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::KeyOnlyEntry</a>
+, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html#a24e9360735e967278ea6e3e4cc53f55e">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::ValueEntry</a>
 </li>
 <li>touch_if_exists()
-: <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#a5e207e81c6878a8d26e48c8fdaad5859">ripple::detail::BasicFullBelowCache&lt; Key &gt;</a>
-, <a class="el" href="classripple_1_1KeyCache.html#ad93a1bca0da205d937a9b9781ffab7c9">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;</a>
+: <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#ab51f01e912288d8bd3fce87177815c7e">ripple::detail::BasicFullBelowCache</a>
+, <a class="el" href="classripple_1_1TaggedCache.html#aa3c8e033d152cefb85f9546aac64b175">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>tp
 : <a class="el" href="classripple_1_1test_1_1csf_1_1CollectorRef.html#a42f5aff161c144918c3990f85012a268">ripple::test::csf::CollectorRef</a>
@@ -3624,7 +3622,7 @@ $(function() {
 : <a class="el" href="structripple_1_1TxQ_1_1Metrics.html#aa6d188cab1f33a838cda74a0dc6cbbf2">ripple::TxQ::Metrics</a>
 </li>
 <li>txMap()
-: <a class="el" href="classripple_1_1Ledger.html#a11f25aad5ff78b63ac348842f87fe40c">ripple::Ledger</a>
+: <a class="el" href="classripple_1_1Ledger.html#adefba8f4497f8dc4554dc1e7026e05a2">ripple::Ledger</a>
 </li>
 <li>TxMap
 : <a class="el" href="classripple_1_1TxQ_1_1TxQAccount.html#ae79c60b82b9d9984281eaf667a8b3ce5">ripple::TxQ::TxQAccount</a>
@@ -3667,7 +3665,7 @@ $(function() {
 : <a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html#a37f68c24e1cd38f10a3cca07fd2c50cc">ripple::TxQ::FeeMetrics</a>
 </li>
 <li>TxnTestData()
-: <a class="el" href="structripple_1_1RPC_1_1TxnTestData.html#adcd9ef256e44a76e8303c4090dc38e36">ripple::RPC::TxnTestData</a>
+: <a class="el" href="structripple_1_1RPC_1_1TxnTestData.html#a2d2fc8fe70832a84b8b42f59340eb70f">ripple::RPC::TxnTestData</a>
 </li>
 <li>txPerLedger
 : <a class="el" href="structripple_1_1TxQ_1_1Metrics.html#a2d5fc7af8dab3cda00ba533feb108f1a">ripple::TxQ::Metrics</a>
@@ -3720,7 +3718,7 @@ $(function() {
 , <a class="el" href="classripple_1_1test_1_1csf_1_1TxSet.html#ae442ca5572e0c5a5eec8a8e5f768ca20">ripple::test::csf::TxSet</a>
 </li>
 <li>txs_iter_impl()
-: <a class="el" href="classripple_1_1Ledger_1_1txs__iter__impl.html#a1b268e09c4992690fd50340067617c28">ripple::Ledger::txs_iter_impl</a>
+: <a class="el" href="classripple_1_1Ledger_1_1txs__iter__impl.html#a491ee5f53e571bcc2f30fb22f98bf2ea">ripple::Ledger::txs_iter_impl</a>
 , <a class="el" href="classripple_1_1OpenView_1_1txs__iter__impl.html#a2aa2c83a7926495eba5e2ed557c08c20">ripple::OpenView::txs_iter_impl</a>
 </li>
 <li>txs_map

@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1detail_1_1save__stream__state.html" title=" " alt="" coords="5,5,196,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1Manager.html" title="Singleton for managing NodeStore factories and back ends." alt="" coords="5,5,148,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1ManagerImp.html" title=" " alt="" coords="196,5,339,47"/>
 </map>

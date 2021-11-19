@@ -91,8 +91,8 @@ Collaboration diagram for ripple::JobTypeInfo:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a888ec625c9da234e5e16a1d50d37c2ce"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#a888ec625c9da234e5e16a1d50d37c2ce">JobTypeInfo</a> ()=delete</td></tr>
 <tr class="separator:a888ec625c9da234e5e16a1d50d37c2ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8dd0ce4fc8576031bc07c11963e9bf31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#a8dd0ce4fc8576031bc07c11963e9bf31">JobTypeInfo</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> <a class="el" href="classripple_1_1JobTypeInfo.html#a7f92faa9872d6eeb583b268a2578e7c9">type</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1JobTypeInfo.html#ac5a94d5c2d4a7818c3ec72f37a04c282">name</a>, int <a class="el" href="classripple_1_1JobTypeInfo.html#aa69e4844c58496c5107c04d23f8536b2">limit</a>, bool <a class="el" href="classripple_1_1JobTypeInfo.html#a8a4128e368194dac7abe04ca9e865563">special</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> avgLatency, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> peakLatency)</td></tr>
-<tr class="separator:a8dd0ce4fc8576031bc07c11963e9bf31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedfb80d994f467413e19febbb2f4c55f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#aedfb80d994f467413e19febbb2f4c55f">JobTypeInfo</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> <a class="el" href="classripple_1_1JobTypeInfo.html#a7f92faa9872d6eeb583b268a2578e7c9">type</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1JobTypeInfo.html#ac5a94d5c2d4a7818c3ec72f37a04c282">name</a>, int <a class="el" href="classripple_1_1JobTypeInfo.html#aa69e4844c58496c5107c04d23f8536b2">limit</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> avgLatency, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> peakLatency)</td></tr>
+<tr class="separator:aedfb80d994f467413e19febbb2f4c55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f92faa9872d6eeb583b268a2578e7c9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#a7f92faa9872d6eeb583b268a2578e7c9">type</a> () const</td></tr>
 <tr class="separator:a7f92faa9872d6eeb583b268a2578e7c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5a94d5c2d4a7818c3ec72f37a04c282"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#ac5a94d5c2d4a7818c3ec72f37a04c282">name</a> () const</td></tr>
@@ -115,9 +115,6 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a3b2da2138ec877ec993dd85f450605e0"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#a3b2da2138ec877ec993dd85f450605e0">m_limit</a></td></tr>
 <tr class="memdesc:a3b2da2138ec877ec993dd85f450605e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The limit on the number of running jobs for this job type.  <a href="classripple_1_1JobTypeInfo.html#a3b2da2138ec877ec993dd85f450605e0">More...</a><br /></td></tr>
 <tr class="separator:a3b2da2138ec877ec993dd85f450605e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4c57028ae13a3a25b284853b6d28681"><td class="memItemLeft" align="right" valign="top">const bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#ac4c57028ae13a3a25b284853b6d28681">m_special</a></td></tr>
-<tr class="memdesc:ac4c57028ae13a3a25b284853b6d28681"><td class="mdescLeft">&#160;</td><td class="mdescRight">Special jobs are not dispatched via the job queue.  <a href="classripple_1_1JobTypeInfo.html#ac4c57028ae13a3a25b284853b6d28681">More...</a><br /></td></tr>
-<tr class="separator:ac4c57028ae13a3a25b284853b6d28681"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add93a07119d3b3b4e41b8b852e4cfdf1"><td class="memItemLeft" align="right" valign="top">const <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobTypeInfo.html#add93a07119d3b3b4e41b8b852e4cfdf1">m_avgLatency</a></td></tr>
 <tr class="memdesc:add93a07119d3b3b4e41b8b852e4cfdf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Average and peak latencies for this job type.  <a href="classripple_1_1JobTypeInfo.html#add93a07119d3b3b4e41b8b852e4cfdf1">More...</a><br /></td></tr>
 <tr class="separator:add93a07119d3b3b4e41b8b852e4cfdf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -154,8 +151,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8dd0ce4fc8576031bc07c11963e9bf31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8dd0ce4fc8576031bc07c11963e9bf31">&#9670;&nbsp;</a></span>JobTypeInfo() <span class="overload">[2/2]</span></h2>
+<a id="aedfb80d994f467413e19febbb2f4c55f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedfb80d994f467413e19febbb2f4c55f">&#9670;&nbsp;</a></span>JobTypeInfo() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -181,12 +178,6 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>special</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td>
           <td class="paramname"><em>avgLatency</em>, </td>
         </tr>
@@ -204,7 +195,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00048">48</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00049">49</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -224,7 +215,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00065">65</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00064">64</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -243,7 +234,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00071">71</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00070">70</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -262,7 +253,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00077">77</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00076">76</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -281,7 +272,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00083">83</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00082">82</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +291,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00089">89</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00088">88</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -319,7 +310,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00095">95</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00094">94</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -393,34 +384,9 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The limit on the number of running jobs for this job type. </p>
+<p>A limit of 0 marks this as a "special job" which is not dispatched via the job queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00035">35</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
-
-</div>
-</div>
-<a id="ac4c57028ae13a3a25b284853b6d28681"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4c57028ae13a3a25b284853b6d28681">&#9670;&nbsp;</a></span>m_special</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const bool ripple::JobTypeInfo::m_special</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Special jobs are not dispatched via the job queue. </p>
-
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00038">38</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00039">39</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -447,7 +413,7 @@ Private Attributes</h2></td></tr>
 <p>Average and peak latencies for this job type. </p>
 <p>0 is none specified </p>
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00041">41</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00042">42</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>
@@ -471,7 +437,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00042">42</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobTypeInfo_8h_source.html#l00043">43</a> of file <a class="el" href="JobTypeInfo_8h_source.html">JobTypeInfo.h</a>.</p>
 
 </div>
 </div>

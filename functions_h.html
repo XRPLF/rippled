@@ -250,6 +250,7 @@ $(function() {
 <li>hasher
 : <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a323ca19e28ce67eb0cc93363dfda1b6b">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 , <a class="el" href="classripple_1_1base__uint.html#a2b1b6cd709ca016bd589753b07296bb2">ripple::base_uint&lt; Bits, Tag &gt;</a>
+, <a class="el" href="classripple_1_1partitioned__unordered__map.html#a57a02c2a1fd82f3b25a7dd3676adbb94">ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;</a>
 , <a class="el" href="structstd_1_1hash_3_01ripple_1_1Book_01_4.html#ab1fa30e5d03f89fc68b51bc2f7bb85e1">std::hash&lt; ripple::Book &gt;</a>
 </li>
 <li>hasher_
@@ -268,7 +269,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ApplicationImp.html#a6772048a5a095373990d83fe9905c123">ripple::ApplicationImp</a>
 </li>
 <li>HashT()
-: <a class="el" href="classbeast_1_1aged__associative__container__test__base_1_1HashT.html#a97877b95a7083f0cebc8889c672593bf">beast::aged_associative_container_test_base::HashT&lt; T &gt;</a>
+: <a class="el" href="classbeast_1_1aged__associative__container__test__base_1_1HashT.html#a13d66661765af95bba7279af189ce42b">beast::aged_associative_container_test_base::HashT&lt; T &gt;</a>
 </li>
 <li>hasInnerNode()
 : <a class="el" href="classripple_1_1SHAMap.html#a8a20e910f929701bee2a43d408dd7afa">ripple::SHAMap</a>
@@ -365,11 +366,11 @@ $(function() {
 <li>headers_
 : <a class="el" href="classripple_1_1PeerImp.html#a07c076bb0ff33256d508d55713ecaa50">ripple::PeerImp</a>
 </li>
-<li>Health
-: <a class="el" href="classripple_1_1SHAMapStoreImp.html#ada256179ba2ac337d7f4bb6c70d8fe8e">ripple::SHAMapStoreImp</a>
-</li>
 <li>health()
 : <a class="el" href="classripple_1_1SHAMapStoreImp.html#a736d110df0b17beacd0897c28c654d79">ripple::SHAMapStoreImp</a>
+</li>
+<li>Health
+: <a class="el" href="classripple_1_1SHAMapStoreImp.html#ada256179ba2ac337d7f4bb6c70d8fe8e">ripple::SHAMapStoreImp</a>
 </li>
 <li>healthy_
 : <a class="el" href="classripple_1_1SHAMapStoreImp.html#ae3bbfded16bd305dd1ca60de09af1d97">ripple::SHAMapStoreImp</a>
@@ -427,15 +428,11 @@ $(function() {
 <li>historyTxIndex_
 : <a class="el" href="structripple_1_1NetworkOPsImp_1_1SubAccountHistoryIndex.html#ac462a6210690a40781385b13a9e42723">ripple::NetworkOPsImp::SubAccountHistoryIndex</a>
 </li>
-<li>hit_
-: <a class="el" href="classripple_1_1CachedSLEs.html#ae7009b929f0d9061fad5a05acf4d7d26">ripple::CachedSLEs</a>
-</li>
 <li>hit_rate
-: <a class="el" href="structripple_1_1KeyCache_1_1Stats.html#aa3804e218120a0c04d14d2525fe6be88">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;::Stats</a>
-, <a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#adf45ccf55e50f8330efcdeaefb55ec5b">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats</a>
+: <a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#ad3ca44daa6d124b85131e72df27d05d1">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats</a>
 </li>
 <li>hits
-: <a class="el" href="structripple_1_1KeyCache_1_1Stats.html#ad6312fa8c1e7c5f5e6714ca95fb11208">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;::Stats</a>
+: <a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a9fe4fa6a49dd3a207de3ee4a7a353ad5">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats</a>
 </li>
 <li>hold_
 : <a class="el" href="classripple_1_1OpenView.html#aeb1f50a567c80fb4f104916ef326ee64">ripple::OpenView</a>
@@ -450,16 +447,15 @@ $(function() {
 : <a class="el" href="classripple_1_1HashRouter.html#a19e9d80278950aa81c843fb216d2362a">ripple::HashRouter</a>
 </li>
 <li>Hook()
-: <a class="el" href="classbeast_1_1insight_1_1Hook.html#acc8a20037f0c1810a494a3e53a63e30f">beast::insight::Hook</a>
+: <a class="el" href="classbeast_1_1insight_1_1Hook.html#af4a410e83235e729dada63b36e4c39d7">beast::insight::Hook</a>
 </li>
 <li>hook
 : <a class="el" href="classripple_1_1JobQueue.html#ac25021cf0852da2b3993654b243a6fc1">ripple::JobQueue</a>
-, <a class="el" href="structripple_1_1KeyCache_1_1Stats.html#a8800d43f52000e084acc3686058052f3">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;::Stats</a>
 , <a class="el" href="structripple_1_1LedgerMaster_1_1Stats.html#a68816197b3947b9a0f413fbcf5252706">ripple::LedgerMaster::Stats</a>
 , <a class="el" href="structripple_1_1NetworkOPsImp_1_1Stats.html#a378542deceeace519d78f23bfa518d53">ripple::NetworkOPsImp::Stats</a>
 , <a class="el" href="structripple_1_1OverlayImpl_1_1Stats.html#af9238f95a0de007c6af23a9bc07cea15">ripple::OverlayImpl::Stats</a>
 , <a class="el" href="structripple_1_1PeerFinder_1_1ManagerImp_1_1Stats.html#a8d389bd9d03113b28be3e8f7afe14f35">ripple::PeerFinder::ManagerImp::Stats</a>
-, <a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a924588b8edb32945757ec95796dd8752">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats</a>
+, <a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a09f93f17c4895a651fc9abeed8c98792">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats</a>
 </li>
 <li>Hop()
 : <a class="el" href="classripple_1_1PeerFinder_1_1detail_1_1LivecacheBase_1_1Hop.html#a518cfd83e2f55ca4d95ef9b7d57b3ecc">ripple::PeerFinder::detail::LivecacheBase::Hop&lt; IsConst &gt;</a>

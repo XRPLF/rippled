@@ -13,7 +13,7 @@
 <area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,670,176,697"/>
 <area shape="rect" id="node14" href="$classripple_1_1ClosureCounter.html" title=" " alt="" coords="399,626,566,682"/>
 <area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="45,499,137,526"/>
-<area shape="rect" id="node50" href="$classripple_1_1CachedSLEs.html" title="Caches SLEs by their digest." alt="" coords="410,462,555,489"/>
+<area shape="rect" id="node50" href="$classripple_1_1AccountIDCache.html" title="Caches the base58 representations of AccountIDs." alt="" coords="396,462,569,489"/>
 <area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="397,1068,568,1109"/>
 <area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="397,1133,568,1175"/>
 <area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="406,1199,559,1226"/>

@@ -1,44 +1,43 @@
 <map id="ripple::tests::TestNodeFamily" name="ripple::tests::TestNodeFamily">
-<area shape="rect" id="node1" title=" " alt="" coords="2552,972,2763,999"/>
-<area shape="rect" id="node2" href="$classripple_1_1Family.html" title=" " alt="" coords="2270,788,2381,815"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="2234,839,2417,881"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1Database.html" title="Persistency layer for NodeObject." alt="" coords="1837,387,1980,429"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="541,167,643,193"/>
-<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="791,273,959,314"/>
-<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1437,167,1643,193"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1455,116,1625,143"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1445,217,1635,244"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="1137,217,1229,244"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1437,552,1643,579"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1131,653,1234,680"/>
-<area shape="rect" id="node22" href="$classripple_1_1TaggedCache.html" title="Map/cache combination." alt="" coords="1445,909,1635,965"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1137,475,1229,501"/>
-<area shape="rect" id="node38" href="$classripple_1_1KeyCache.html" title=" " alt="" coords="1447,643,1633,669"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1421,269,1659,369"/>
-<area shape="rect" id="node13" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="1112,298,1253,339"/>
-<area shape="rect" id="node18" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1112,387,1253,429"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="831,445,919,472"/>
-<area shape="rect" id="node39" href="$structripple_1_1KeyCache_1_1Stats.html" title=" " alt="" coords="1095,569,1270,625"/>
-<area shape="rect" id="node37" href="$classripple_1_1detail_1_1BasicFullBelowCache.html" title="Remembers which tree keys have all descendants resident." alt="" coords="1824,665,1993,706"/>
-<area shape="rect" id="node17" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="1469,771,1611,813"/>
-<area shape="rect" id="node40" href="$classripple_1_1NodeStore_1_1DummyScheduler.html" title="Simple NodeStore Scheduler that just peforms the tasks synchronously." alt="" coords="2031,971,2174,1013"/>
-<area shape="rect" id="node19" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1127,1095,1238,1121"/>
-<area shape="rect" id="node20" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="801,1095,948,1121"/>
-<area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="2017,1027,2188,1069"/>
-<area shape="rect" id="node23" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="1102,869,1263,925"/>
-<area shape="rect" id="node41" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="1459,1081,1621,1137"/>
-<area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1061,772,1304,828"/>
-<area shape="rect" id="node25" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="1103,949,1262,976"/>
-<area shape="rect" id="node26" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="1139,711,1226,737"/>
-<area shape="rect" id="node27" href="$structripple_1_1TaggedCache_1_1Stats.html" title=" " alt="" coords="1087,1000,1278,1056"/>
-<area shape="rect" id="node28" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="795,824,955,851"/>
-<area shape="rect" id="node29" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,817,677,858"/>
-<area shape="rect" id="node30" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,824,436,851"/>
-<area shape="rect" id="node31" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,817,197,858"/>
-<area shape="rect" id="node32" href="$classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="799,909,951,936"/>
-<area shape="rect" id="node33" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,902,677,943"/>
-<area shape="rect" id="node34" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,909,432,936"/>
-<area shape="rect" id="node35" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,902,193,943"/>
-<area shape="rect" id="node36" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="2212,905,2439,946"/>
-<area shape="rect" id="node42" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="1097,1196,1269,1223"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2521,663,2732,689"/>
+<area shape="rect" id="node2" href="$classripple_1_1Family.html" title=" " alt="" coords="2239,475,2350,501"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="2203,526,2386,567"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1Database.html" title="Persistency layer for NodeObject." alt="" coords="1807,362,1949,403"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="541,181,643,208"/>
+<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="800,115,968,157"/>
+<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1406,595,1613,621"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1424,5,1595,32"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1414,232,1605,259"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="1140,243,1232,269"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1406,363,1613,389"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1135,360,1237,387"/>
+<area shape="rect" id="node22" href="$classripple_1_1TaggedCache.html" title="Map/cache combination." alt="" coords="1414,704,1605,760"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1463,415,1555,441"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1391,57,1628,157"/>
+<area shape="rect" id="node13" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="1115,55,1257,97"/>
+<area shape="rect" id="node18" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1115,294,1257,335"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="840,461,928,488"/>
+<area shape="rect" id="node25" href="$classripple_1_1partitioned__unordered__map.html" title=" " alt="" coords="1099,559,1273,644"/>
+<area shape="rect" id="node28" href="$structripple_1_1TaggedCache_1_1Stats.html" title=" " alt="" coords="1099,669,1273,739"/>
+<area shape="rect" id="node38" href="$classripple_1_1detail_1_1BasicFullBelowCache.html" title="Remembers which tree keys have all descendants resident." alt="" coords="1793,654,1963,695"/>
+<area shape="rect" id="node17" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="1438,529,1581,570"/>
+<area shape="rect" id="node39" href="$classripple_1_1NodeStore_1_1DummyScheduler.html" title="Simple NodeStore Scheduler that just peforms the tasks synchronously." alt="" coords="2001,557,2143,598"/>
+<area shape="rect" id="node19" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1131,508,1241,535"/>
+<area shape="rect" id="node20" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="811,512,957,539"/>
+<area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1987,773,2157,814"/>
+<area shape="rect" id="node23" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="1105,865,1267,921"/>
+<area shape="rect" id="node40" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="1429,887,1590,943"/>
+<area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="1107,815,1265,841"/>
+<area shape="rect" id="node26" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="791,571,977,597"/>
+<area shape="rect" id="node27" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="1143,764,1229,791"/>
+<area shape="rect" id="node29" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="804,689,964,716"/>
+<area shape="rect" id="node30" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,681,677,722"/>
+<area shape="rect" id="node31" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,688,436,715"/>
+<area shape="rect" id="node32" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,681,197,722"/>
+<area shape="rect" id="node33" href="$classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="808,743,960,769"/>
+<area shape="rect" id="node34" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,746,677,787"/>
+<area shape="rect" id="node35" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,753,432,780"/>
+<area shape="rect" id="node36" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,746,193,787"/>
+<area shape="rect" id="node37" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="2181,655,2408,697"/>
+<area shape="rect" id="node41" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="1100,945,1272,972"/>
 </map>

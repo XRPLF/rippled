@@ -111,7 +111,7 @@ Public Types</h2></td></tr>
 <tr class="separator:ab1430dec61fd5ef9bf4a013aab558d71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a937328125a7d62270f32b4e1555c5cdd"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> = <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a></td></tr>
 <tr class="separator:a937328125a7d62270f32b4e1555c5cdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c7268164504d76bee886f296b15e814"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">mapped_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;</td></tr>
+<tr class="memitem:a0c7268164504d76bee886f296b15e814"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">mapped_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const  &gt;</td></tr>
 <tr class="separator:a0c7268164504d76bee886f296b15e814"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -147,7 +147,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adb3ef95cbd470775fe1e09955399667f"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=std::nullopt) const =0</td></tr>
 <tr class="memdesc:adb3ef95cbd470775fe1e09955399667f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1ReadView.html#adb3ef95cbd470775fe1e09955399667f">More...</a><br /></td></tr>
 <tr class="separator:adb3ef95cbd470775fe1e09955399667f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3351e0244f921234d5ba005a07ddf539"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const =0</td></tr>
+<tr class="memitem:a3351e0244f921234d5ba005a07ddf539"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const =0</td></tr>
 <tr class="memdesc:a3351e0244f921234d5ba005a07ddf539"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the state item associated with a key.  <a href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">More...</a><br /></td></tr>
 <tr class="separator:a3351e0244f921234d5ba005a07ddf539"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81e1b7628e44e758a0359061c4b17c96"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a81e1b7628e44e758a0359061c4b17c96">balanceHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;issuer, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount) const</td></tr>
@@ -258,7 +258,7 @@ Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">ripple::ReadView::mapped_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">ripple::ReadView::mapped_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const&gt;</td>
         </tr>
       </table>
   </td>
@@ -352,7 +352,7 @@ Public Attributes</h2></td></tr>
 <p>Return the digest associated with the key. </p>
 <dl class="section return"><dt>Returns</dt><dd>std::nullopt if the item does not exist. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1Ledger.html#a68cfe4a8abf683e2d6909f0d96013d8f">ripple::Ledger</a>, and <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#ac5a3432213732d31649d46d740331a1e">ripple::detail::CachedViewImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1Ledger.html#a68cfe4a8abf683e2d6909f0d96013d8f">ripple::Ledger</a>.</p>
 
 </div>
 </div>
@@ -600,7 +600,7 @@ Public Attributes</h2></td></tr>
 <p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, std::nullopt is returned.</p>
 <p>If <code>last</code> is engaged, returns std::nullopt when the key returned would be outside the open interval (key, last). </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a96f3599bffc047126acfd74f075d2125">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">ripple::OpenView</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>
@@ -614,7 +614,7 @@ Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const&gt; ripple::ReadView::read </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const&gt; ripple::ReadView::read </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
           <td class="paramname"><em>k</em></td><td>)</td>
@@ -884,7 +884,7 @@ Public Attributes</h2></td></tr>
 <p>Returns <code>true</code> if a tx exists in the tx map. </p>
 <p>A tx exists in the map if it is part of the base ledger, or if it is a newly inserted tx. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a2294a6339fc789d88ca4b155a493c71a">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a5315d4aaf5a02b646e44cbc28cfca9ec">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#ad7cd53575d79dd8f0bf93a0143957b9d">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a2294a6339fc789d88ca4b155a493c71a">ripple::OpenView</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#ad7cd53575d79dd8f0bf93a0143957b9d">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>
@@ -916,7 +916,7 @@ Public Attributes</h2></td></tr>
 <p>If the view represents an open ledger, the metadata object will be empty.</p>
 <dl class="section return"><dt>Returns</dt><dd>A pair of nullptr if the key is not found in the tx map. </dd></dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a16e0ecf8af65a3d89350dcfdb77ea1d1">ripple::OpenView</a>, <a class="el" href="classripple_1_1Ledger.html#a6cf0862134638e77b99e53c25c41f3a9">ripple::Ledger</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a27043f0ad97acde4fc0e2fc6103d4f85">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#a7da423c0d9af7e21383bffd56059aba3">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a16e0ecf8af65a3d89350dcfdb77ea1d1">ripple::OpenView</a>, <a class="el" href="classripple_1_1Ledger.html#a6cf0862134638e77b99e53c25c41f3a9">ripple::Ledger</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#a7da423c0d9af7e21383bffd56059aba3">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>

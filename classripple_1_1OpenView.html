@@ -144,7 +144,7 @@ Public Types</h2></td></tr>
 <tr class="separator:ab1430dec61fd5ef9bf4a013aab558d71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a937328125a7d62270f32b4e1555c5cdd"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> = <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a></td></tr>
 <tr class="separator:a937328125a7d62270f32b4e1555c5cdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c7268164504d76bee886f296b15e814"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">mapped_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;</td></tr>
+<tr class="memitem:a0c7268164504d76bee886f296b15e814"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">mapped_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const  &gt;</td></tr>
 <tr class="separator:a0c7268164504d76bee886f296b15e814"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -187,7 +187,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a76b4e313ced46f6caaff0b53da2298bb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">succ</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> &gt; const &amp;last=std::nullopt) const override</td></tr>
 <tr class="memdesc:a76b4e313ced46f6caaff0b53da2298bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the key of the next state item.  <a href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">More...</a><br /></td></tr>
 <tr class="separator:a76b4e313ced46f6caaff0b53da2298bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad31c6cb5856530ac7d72bf01fe780d43"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ad31c6cb5856530ac7d72bf01fe780d43">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const override</td></tr>
+<tr class="memitem:ad31c6cb5856530ac7d72bf01fe780d43"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ad31c6cb5856530ac7d72bf01fe780d43">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const override</td></tr>
 <tr class="memdesc:ad31c6cb5856530ac7d72bf01fe780d43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the state item associated with a key.  <a href="classripple_1_1OpenView.html#ad31c6cb5856530ac7d72bf01fe780d43">More...</a><br /></td></tr>
 <tr class="separator:ad31c6cb5856530ac7d72bf01fe780d43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8f657e95982e0f69f5b1476119ad76f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#aa8f657e95982e0f69f5b1476119ad76f">slesBegin</a> () const override</td></tr>
@@ -206,13 +206,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a16e0ecf8af65a3d89350dcfdb77ea1d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ReadView.html#ab1430dec61fd5ef9bf4a013aab558d71">tx_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a16e0ecf8af65a3d89350dcfdb77ea1d1">txRead</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const override</td></tr>
 <tr class="memdesc:a16e0ecf8af65a3d89350dcfdb77ea1d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read a transaction from the tx map.  <a href="classripple_1_1OpenView.html#a16e0ecf8af65a3d89350dcfdb77ea1d1">More...</a><br /></td></tr>
 <tr class="separator:a16e0ecf8af65a3d89350dcfdb77ea1d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8ec1fb6833f8962f766b214c580ab7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ab8ec1fb6833f8962f766b214c580ab7b">rawErase</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;sle) override</td></tr>
+<tr class="memitem:ab8ec1fb6833f8962f766b214c580ab7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ab8ec1fb6833f8962f766b214c580ab7b">rawErase</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;sle) override</td></tr>
 <tr class="memdesc:ab8ec1fb6833f8962f766b214c580ab7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an existing state item.  <a href="classripple_1_1OpenView.html#ab8ec1fb6833f8962f766b214c580ab7b">More...</a><br /></td></tr>
 <tr class="separator:ab8ec1fb6833f8962f766b214c580ab7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8795d23968108dca84420d2d25e1dd7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ad8795d23968108dca84420d2d25e1dd7">rawInsert</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;sle) override</td></tr>
+<tr class="memitem:ad8795d23968108dca84420d2d25e1dd7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ad8795d23968108dca84420d2d25e1dd7">rawInsert</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;sle) override</td></tr>
 <tr class="memdesc:ad8795d23968108dca84420d2d25e1dd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unconditionally insert a state item.  <a href="classripple_1_1OpenView.html#ad8795d23968108dca84420d2d25e1dd7">More...</a><br /></td></tr>
 <tr class="separator:ad8795d23968108dca84420d2d25e1dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2a95c6fd9303d94164d55530cc1df39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ad2a95c6fd9303d94164d55530cc1df39">rawReplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;sle) override</td></tr>
+<tr class="memitem:ad2a95c6fd9303d94164d55530cc1df39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#ad2a95c6fd9303d94164d55530cc1df39">rawReplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;sle) override</td></tr>
 <tr class="memdesc:ad2a95c6fd9303d94164d55530cc1df39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unconditionally replace a state item.  <a href="classripple_1_1OpenView.html#ad2a95c6fd9303d94164d55530cc1df39">More...</a><br /></td></tr>
 <tr class="separator:ad2a95c6fd9303d94164d55530cc1df39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88584a83d760fe41178b3397359b7816"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a88584a83d760fe41178b3397359b7816">rawDestroyXRP</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;fee) override</td></tr>
@@ -365,7 +365,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">ripple::ReadView::mapped_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1ReadView.html#a0c7268164504d76bee886f296b15e814">ripple::ReadView::mapped_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const&gt;</td>
         </tr>
       </table>
   </td>
@@ -894,7 +894,7 @@ The rules are inherited from the base.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt; ripple::OpenView::read </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const  &gt; ripple::OpenView::read </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
           <td class="paramname"><em>k</em></td><td>)</td>
@@ -1142,7 +1142,7 @@ The rules are inherited from the base.
         <tr>
           <td class="memname">void ripple::OpenView::rawErase </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>sle</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1175,7 +1175,7 @@ The rules are inherited from the base.
         <tr>
           <td class="memname">void ripple::OpenView::rawInsert </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>sle</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1210,7 +1210,7 @@ The rules are inherited from the base.
         <tr>
           <td class="memname">void ripple::OpenView::rawReplace </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>sle</em></td><td>)</td>
           <td></td>
         </tr>

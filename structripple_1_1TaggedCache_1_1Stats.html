@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>rippled: ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats Struct Reference</title>
+<title>rippled: ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -70,60 +70,65 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structripple_1_1TaggedCache_1_1Stats-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats Struct Reference</div>  </div>
+<div class="title">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
-Collaboration diagram for ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats:</div>
+Collaboration diagram for ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats:</div>
 <div class="dyncontent">
-<div class="center"><img src="structripple_1_1TaggedCache_1_1Stats__coll__graph.png" border="0" usemap="#ripple_1_1TaggedCache_3_01Key_00_01T_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_1_1Stats_coll__map" alt="Collaboration graph"/></div>
-<map name="ripple_1_1TaggedCache_3_01Key_00_01T_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_1_1Stats_coll__map" id="ripple_1_1TaggedCache_3_01Key_00_01T_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_1_1Stats_coll__map">
-<area shape="rect" title=" " alt="" coords="1041,27,1232,83"/>
-<area shape="rect" href="classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="779,15,939,42"/>
+<div class="center"><img src="structripple_1_1TaggedCache_1_1Stats__coll__graph.png" border="0" usemap="#ripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_1_1Stats_coll__map" alt="Collaboration graph"/></div>
+<map name="ripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_1_1Stats_coll__map" id="ripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_1_1Stats_coll__map">
+<area shape="rect" title=" " alt="" coords="1041,45,1216,116"/>
+<area shape="rect" href="classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="779,18,939,45"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="507,5,677,47"/>
 <area shape="rect" href="classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,13,436,39"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,197,47"/>
-<area shape="rect" href="classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="783,67,935,94"/>
+<area shape="rect" href="classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="783,70,935,97"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="507,71,677,112"/>
 <area shape="rect" href="classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,78,432,105"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,71,193,112"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="815,127,903,154"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a910eb46f498ff8e713db8f6fa0d473c0"><td class="memTemplParams" colspan="2">template&lt;class Handler &gt; </td></tr>
-<tr class="memitem:a910eb46f498ff8e713db8f6fa0d473c0"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a910eb46f498ff8e713db8f6fa0d473c0">Stats</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;prefix, Handler const &amp;handler, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;collector)</td></tr>
-<tr class="separator:a910eb46f498ff8e713db8f6fa0d473c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a417785e7e261b1c161d8ed920dcaddcc"><td class="memTemplParams" colspan="2">template&lt;class Handler &gt; </td></tr>
+<tr class="memitem:a417785e7e261b1c161d8ed920dcaddcc"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a417785e7e261b1c161d8ed920dcaddcc">Stats</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;prefix, Handler const &amp;handler, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;collector)</td></tr>
+<tr class="separator:a417785e7e261b1c161d8ed920dcaddcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a924588b8edb32945757ec95796dd8752"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1insight_1_1Hook.html">beast::insight::Hook</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a924588b8edb32945757ec95796dd8752">hook</a></td></tr>
-<tr class="separator:a924588b8edb32945757ec95796dd8752"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abac5a34419b08141eef4267ada1a3f26"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#abac5a34419b08141eef4267ada1a3f26">size</a></td></tr>
-<tr class="separator:abac5a34419b08141eef4267ada1a3f26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf45ccf55e50f8330efcdeaefb55ec5b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#adf45ccf55e50f8330efcdeaefb55ec5b">hit_rate</a></td></tr>
-<tr class="separator:adf45ccf55e50f8330efcdeaefb55ec5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09f93f17c4895a651fc9abeed8c98792"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1insight_1_1Hook.html">beast::insight::Hook</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a09f93f17c4895a651fc9abeed8c98792">hook</a></td></tr>
+<tr class="separator:a09f93f17c4895a651fc9abeed8c98792"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61b119ae7dbc8dfbcc83fccfba7a12ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a61b119ae7dbc8dfbcc83fccfba7a12ad">size</a></td></tr>
+<tr class="separator:a61b119ae7dbc8dfbcc83fccfba7a12ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3ca44daa6d124b85131e72df27d05d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#ad3ca44daa6d124b85131e72df27d05d1">hit_rate</a></td></tr>
+<tr class="separator:ad3ca44daa6d124b85131e72df27d05d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe4fa6a49dd3a207de3ee4a7a353ad5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#a9fe4fa6a49dd3a207de3ee4a7a353ad5">hits</a></td></tr>
+<tr class="separator:a9fe4fa6a49dd3a207de3ee4a7a353ad5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa306c577e39234b03f360782d827776c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#aa306c577e39234b03f360782d827776c">misses</a></td></tr>
+<tr class="separator:aa306c577e39234b03f360782d827776c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;class Key, class T, class Hash = hardened_hash&lt;&gt;, class KeyEqual = std::equal_to&lt;Key&gt;, class Mutex = std::recursive_mutex&gt;<br />
-struct ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats</h3>
+<div class="textblock"><h3>template&lt;class Key, class T, bool IsKeyCache = false, class Hash = hardened_hash&lt;&gt;, class KeyEqual = std::equal_to&lt;Key&gt;, class Mutex = std::recursive_mutex&gt;<br />
+struct ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::Stats</h3>
 
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00544">544</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00556">556</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a910eb46f498ff8e713db8f6fa0d473c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a910eb46f498ff8e713db8f6fa0d473c0">&#9670;&nbsp;</a></span>Stats()</h2>
+<a id="a417785e7e261b1c161d8ed920dcaddcc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a417785e7e261b1c161d8ed920dcaddcc">&#9670;&nbsp;</a></span>Stats()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <div class="memtemplate">
 template&lt;class Handler &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::Stats </td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::Stats </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>prefix</em>, </td>
@@ -148,62 +153,98 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00547">547</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00559">559</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a924588b8edb32945757ec95796dd8752"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a924588b8edb32945757ec95796dd8752">&#9670;&nbsp;</a></span>hook</h2>
+<a id="a09f93f17c4895a651fc9abeed8c98792"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09f93f17c4895a651fc9abeed8c98792">&#9670;&nbsp;</a></span>hook</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1insight_1_1Hook.html">beast::insight::Hook</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::hook</td>
+          <td class="memname"><a class="el" href="classbeast_1_1insight_1_1Hook.html">beast::insight::Hook</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::hook</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00557">557</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00571">571</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="abac5a34419b08141eef4267ada1a3f26"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abac5a34419b08141eef4267ada1a3f26">&#9670;&nbsp;</a></span>size</h2>
+<a id="a61b119ae7dbc8dfbcc83fccfba7a12ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61b119ae7dbc8dfbcc83fccfba7a12ad">&#9670;&nbsp;</a></span>size</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::size</td>
+          <td class="memname"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::size</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00558">558</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00572">572</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="adf45ccf55e50f8330efcdeaefb55ec5b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf45ccf55e50f8330efcdeaefb55ec5b">&#9670;&nbsp;</a></span>hit_rate</h2>
+<a id="ad3ca44daa6d124b85131e72df27d05d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3ca44daa6d124b85131e72df27d05d1">&#9670;&nbsp;</a></span>hit_rate</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::hit_rate</td>
+          <td class="memname"><a class="el" href="classbeast_1_1insight_1_1Gauge.html">beast::insight::Gauge</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::hit_rate</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00559">559</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00573">573</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+
+</div>
+</div>
+<a id="a9fe4fa6a49dd3a207de3ee4a7a353ad5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fe4fa6a49dd3a207de3ee4a7a353ad5">&#9670;&nbsp;</a></span>hits</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::hits</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00575">575</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+
+</div>
+</div>
+<a id="aa306c577e39234b03f360782d827776c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa306c577e39234b03f360782d827776c">&#9670;&nbsp;</a></span>misses</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Stats::misses</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00576">576</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>

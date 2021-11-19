@@ -110,11 +110,11 @@ $(function() {
 <li>raSrcAccount
 : <a class="el" href="classripple_1_1PathRequest.html#a95608aae61222c1f873702cbd206a793">ripple::PathRequest</a>
 </li>
-<li>rate()
-: <a class="el" href="classripple_1_1CachedSLEs.html#afe41e23f09421ebba22e632c965a0a88">ripple::CachedSLEs</a>
-</li>
 <li>Rate()
 : <a class="el" href="structripple_1_1Rate.html#ad98d5b7539da32d919e355fbabaee41d">ripple::Rate</a>
+</li>
+<li>rate()
+: <a class="el" href="classripple_1_1TaggedCache.html#aeeae514b81e823a018c05e1b2ba29a15">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>raw()
 : <a class="el" href="classripple_1_1Quality__test.html#a8971e78567b5ed80fd0baeae830f578e">ripple::Quality_test</a>
@@ -462,6 +462,7 @@ $(function() {
 , <a class="el" href="classripple_1_1BookDirs_1_1const__iterator.html#a7b1b94549460377d7082eb0fe01647f2">ripple::BookDirs::const_iterator</a>
 , <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange_1_1iterator.html#aa29b977cb2ee38da792a153e440f8be7">ripple::detail::ReadViewFwdRange&lt; ValueType &gt;::iterator</a>
 , <a class="el" href="classripple_1_1Dir_1_1const__iterator.html#a5c10b36dcf197f4ccd12419eb00ef13a">ripple::Dir::const_iterator</a>
+, <a class="el" href="classripple_1_1partitioned__unordered__map.html#afbec7390e2e75846bc7fb976706feb71">ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;</a>
 , <a class="el" href="classripple_1_1SHAMap_1_1const__iterator.html#a6b211b902ad277bb4ff854b4455f3245">ripple::SHAMap::const_iterator</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1PeerGroup.html#a3f3547dc02b990527b602e2ae92503ec">ripple::test::csf::PeerGroup</a>
 </li>
@@ -476,9 +477,6 @@ $(function() {
 </li>
 <li>refreshed
 : <a class="el" href="structripple_1_1ValidatorSite_1_1Site_1_1Status.html#a051a2a912896e81b91346204942255fe">ripple::ValidatorSite::Site::Status</a>
-</li>
-<li>refreshIfPresent()
-: <a class="el" href="classripple_1_1TaggedCache.html#a635c0680fb5abbadead1541e632e2f75">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>refreshInterval
 : <a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a9ad8dccf45a8752422df47c9cfbcf484">ripple::ValidatorSite::Site</a>
@@ -885,17 +883,16 @@ $(function() {
 : <a class="el" href="classbeast_1_1Journal__test_1_1TestSink.html#a0a187f7663b23de2164a18e1f63ce9ad">beast::Journal_test::TestSink</a>
 , <a class="el" href="classripple_1_1CanonicalTXSet.html#af36fed1e1de928391be3cd7c29f94b52">ripple::CanonicalTXSet</a>
 , <a class="el" href="classripple_1_1ConsensusTimer.html#a4ed4c7abd53a5919320beec03501dcc3">ripple::ConsensusTimer</a>
-, <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#a5901f72842fa510c191e2ebecc366920">ripple::detail::BasicFullBelowCache&lt; Key &gt;</a>
+, <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#a114c0f8772cc05647c76f9ade209247e">ripple::detail::BasicFullBelowCache</a>
 , <a class="el" href="classripple_1_1Family.html#a2711e78e7c2e33e24db3dfa5235eccd4">ripple::Family</a>
 , <a class="el" href="classripple_1_1FeatureBitset.html#a5392de6471bc5bef9f4ed286d4398bcb">ripple::FeatureBitset</a>
-, <a class="el" href="classripple_1_1KeyCache.html#a940476190bb52cda457bc93fa492d6e3">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;</a>
 , <a class="el" href="classripple_1_1NodeFamily.html#acd15a63c12f9d7bfd363ef35707171da">ripple::NodeFamily</a>
 , <a class="el" href="classripple_1_1RCLCensorshipDetector.html#a791b4d8bc5dfce6dc78f83075d01af1a">ripple::RCLCensorshipDetector&lt; TxID, Sequence &gt;</a>
 , <a class="el" href="classripple_1_1RPC_1_1ShardVerificationScheduler.html#a33b34d5ee1010717b41810e3413323f1">ripple::RPC::ShardVerificationScheduler</a>
 , <a class="el" href="classripple_1_1SerialIter.html#aabc139857d4fdddd733521f12373a135">ripple::SerialIter</a>
 , <a class="el" href="classripple_1_1SHAMapAddNode.html#a4a7243dcc881321364d61ccbf14b9942">ripple::SHAMapAddNode</a>
 , <a class="el" href="classripple_1_1ShardFamily.html#abc32123f94ee1177fa3a1fd5dfe1c982">ripple::ShardFamily</a>
-, <a class="el" href="classripple_1_1TaggedCache.html#afd534e6732c9a23f2bfa7f2327ce1d24">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
+, <a class="el" href="classripple_1_1TaggedCache.html#a86fc97392f9cb3079c407a0e53f7c037">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 , <a class="el" href="classripple_1_1test_1_1ManualClock.html#a2f43ff600e0eac26630f53aad499652f">ripple::test::ManualClock</a>
 , <a class="el" href="classripple_1_1test_1_1Network.html#ab325b1cb3fc7c12bea70cc84f9c6b7fe">ripple::test::Network</a>
 , <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a1f76e62e5e7675389c08622c7cbcd292">ripple::tests::TestNodeFamily</a>
@@ -1064,7 +1061,7 @@ $(function() {
 , <a class="el" href="structripple_1_1TxQ_1_1TxDetails.html#af62f2b7354cbefc4223cf768c867fa1f">ripple::TxQ::TxDetails</a>
 </li>
 <li>retrieve()
-: <a class="el" href="classripple_1_1TaggedCache.html#a2e61f518bfa4db1818b19a04885e3f5f">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
+: <a class="el" href="classripple_1_1TaggedCache.html#a080e1514d06ec95c554f569a35b3288f">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>retrieveSkipList()
 : <a class="el" href="classripple_1_1SkipListAcquire.html#a74a17b2059151e8452f68a1fefce5a31">ripple::SkipListAcquire</a>
@@ -1146,7 +1143,7 @@ $(function() {
 : <a class="el" href="classripple_1_1RippleLineCache.html#a7cb4bd513a914bbeda5978a3981e2cd7">ripple::RippleLineCache</a>
 </li>
 <li>RippleState()
-: <a class="el" href="classripple_1_1RippleState.html#a7df0184492855f453ed4eb09a7d3cafc">ripple::RippleState</a>
+: <a class="el" href="classripple_1_1RippleState.html#a6f7993b07249917d95a5ed41ee442b46">ripple::RippleState</a>
 </li>
 <li>rmax
 : <a class="el" href="structripple_1_1RPC_1_1Tuning_1_1LimitRange.html#a0030613e1637c29d503482140a3486d4">ripple::RPC::Tuning::LimitRange</a>
@@ -1257,7 +1254,7 @@ $(function() {
 : <a class="el" href="structripple_1_1RPCCallImp.html#a32512463f0b70d4fcc36aec0536ab066">ripple::RPCCallImp</a>
 </li>
 <li>RPCCallTestData()
-: <a class="el" href="structripple_1_1test_1_1RPCCallTestData.html#ab37aaf643e887b4270baae9421d8c861">ripple::test::RPCCallTestData</a>
+: <a class="el" href="structripple_1_1test_1_1RPCCallTestData.html#a37b89bf14fecb506b1b6de81b17613e7">ripple::test::RPCCallTestData</a>
 </li>
 <li>rpcEnd()
 : <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a09db64fc2f2fda2ce5baed6593246e3a">ripple::perf::PerfLogImp</a>
@@ -1601,7 +1598,7 @@ $(function() {
 : <a class="el" href="structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Jq.html#ac1a27c3de1704642d3e40fd61a2b37be">ripple::perf::PerfLogImp::Counters::Jq</a>
 </li>
 <li>runTest()
-: <a class="el" href="structJson_1_1Output__test.html#a31a6f9aa6b66c866afbe423ca4df2fc3">Json::Output_test</a>
+: <a class="el" href="structJson_1_1Output__test.html#a84be62654f8e7ad2473ff56f17413685">Json::Output_test</a>
 </li>
 <li>runTime()
 : <a class="el" href="classripple_1_1LoadEvent.html#a77fe563d65b3545d3621f60b5937dc79">ripple::LoadEvent</a>

@@ -1,4 +1,12 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,13,59,39"/>
-<area shape="rect" id="node2" href="$structripple_1_1detail_1_1throw__policy.html" title=" " alt="" coords="107,5,256,47"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,181,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="239,13,406,39"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="229,195,416,236"/>
+<area shape="rect" id="node4" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="464,170,641,197"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="234,325,411,367"/>
+<area shape="rect" id="node6" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="469,299,637,326"/>
+<area shape="rect" id="node7" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="21,103,166,130"/>
+<area shape="rect" id="node8" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="234,64,411,105"/>
+<area shape="rect" id="node9" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="234,129,411,171"/>
+<area shape="rect" id="node10" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="234,260,411,301"/>
 </map>

@@ -78,15 +78,16 @@ Enumerations</h2></td></tr>
 <tr class="memitem:a728589bd52b8426227390d5640782a10"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <br />
 &#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a991f7034b02d9b550b1c64a597c0faaf">convergedLedgerLimit</a> = 24, 
 <a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10ac19611797683cae3c0d7e80c69508d6d">divergedLedgerLimit</a> = 128, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a22752773d462ba2999ad6ba76a8887bb">maxReplyNodes</a> = 8192, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10ab1675121c898e98033db8e9111642e6f">sendqIntervals</a> = 4, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a156b806f3cd8e506444feda0328169c4">softMaxReplyNodes</a> = 8192, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a57fbf7bb7fb66538d27bb5e802adda33">hardMaxReplyNodes</a> = 12288, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10ac53e07d6dbec8160ba8b4631a39fe84f">dropSendQueue</a> = 192, 
+&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10ab1675121c898e98033db8e9111642e6f">sendqIntervals</a> = 4, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10ac53e07d6dbec8160ba8b4631a39fe84f">dropSendQueue</a> = 192, 
 <a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a18c2b9f69bcc5e76875aa02bfb0908ec">targetSendQueue</a> = 128, 
 <a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10abdc936f3cecce920c48b176c0f8bc0a7">sendQueueLogFreq</a> = 64, 
-<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a253dac09e40a5b8076dc4ea672e6aba7">checkIdlePeers</a> = 4, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a5560358d1654b8d46cd3728b4aba826c">maxQueryDepth</a> = 3
+&#160;&#160;<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a253dac09e40a5b8076dc4ea672e6aba7">checkIdlePeers</a> = 4, 
+<a class="el" href="namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10a5560358d1654b8d46cd3728b4aba826c">maxQueryDepth</a> = 3
 <br />
  }</td></tr>
 <tr class="separator:a728589bd52b8426227390d5640782a10"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -114,7 +115,9 @@ Variables</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a728589bd52b8426227390d5640782a10ac19611797683cae3c0d7e80c69508d6d"></a>divergedLedgerLimit&#160;</td><td class="fielddoc"><p>How many ledgers off a server has to be before we consider it diverged. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a728589bd52b8426227390d5640782a10a22752773d462ba2999ad6ba76a8887bb"></a>maxReplyNodes&#160;</td><td class="fielddoc"><p>The maximum number of ledger entries in a single reply. </p>
+<tr><td class="fieldname"><a id="a728589bd52b8426227390d5640782a10a156b806f3cd8e506444feda0328169c4"></a>softMaxReplyNodes&#160;</td><td class="fielddoc"><p>The soft cap on the number of ledger entries in a single reply. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a728589bd52b8426227390d5640782a10a57fbf7bb7fb66538d27bb5e802adda33"></a>hardMaxReplyNodes&#160;</td><td class="fielddoc"><p>The hard cap on the number of ledger entries in a single reply. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a728589bd52b8426227390d5640782a10ab1675121c898e98033db8e9111642e6f"></a>sendqIntervals&#160;</td><td class="fielddoc"><p>How many timer intervals a sendq has to stay large before we disconnect. </p>
 </td></tr>
@@ -157,7 +160,7 @@ Variables</h2></td></tr>
 
 <p>Size of buffer used to read from the socket. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2impl_2Tuning_8h_source.html#l00063">63</a> of file <a class="el" href="overlay_2impl_2Tuning_8h_source.html">overlay/impl/Tuning.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2impl_2Tuning_8h_source.html#l00065">65</a> of file <a class="el" href="overlay_2impl_2Tuning_8h_source.html">overlay/impl/Tuning.h</a>.</p>
 
 </div>
 </div>

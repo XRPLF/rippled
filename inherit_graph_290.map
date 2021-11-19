@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1keylet_1_1book__t.html" title="The beginning of an order book." alt="" coords="5,5,165,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1KnownFormats.html" title=" " alt="" coords="5,5,271,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1LedgerFormats.html" title="Holds the list of known ledger entry formats." alt="" coords="319,13,483,39"/>
 </map>

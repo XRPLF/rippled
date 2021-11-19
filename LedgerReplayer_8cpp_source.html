@@ -289,68 +289,76 @@ $(function() {
 <div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;<span class="keywordtype">void</span></div>
 <div class="line"><a name="l00219"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerReplayer.html#a14d52623cda41f42570ca30239eae356">  219</a></span>&#160;<a class="code" href="classripple_1_1LedgerReplayer.html#a14d52623cda41f42570ca30239eae356">LedgerReplayer::sweep</a>()</div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;{</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard&lt;std::mutex&gt;</a> lock(<a class="code" href="classripple_1_1LedgerReplayer.html#ac0bcab237e804acef639e21822204a3e">mtx_</a>);</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    JLOG(<a class="code" href="classripple_1_1LedgerReplayer.html#a387edc65f66abef7dca3c076fb271090">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Sweeping, LedgerReplayer has &quot;</span> &lt;&lt; <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.size()</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                     &lt;&lt; <span class="stringliteral">&quot; tasks, &quot;</span> &lt;&lt; <a class="code" href="classripple_1_1LedgerReplayer.html#a8773a97fe87b7f61f2c90f1c89f982fc">skipLists_</a>.size() &lt;&lt; <span class="stringliteral">&quot; skipLists, and &quot;</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                     &lt;&lt; <a class="code" href="classripple_1_1LedgerReplayer.html#ad379e998b9ed9b7639191b52a04cee9f">deltas_</a>.size() &lt;&lt; <span class="stringliteral">&quot; deltas.&quot;</span>;</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.erase(</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/remove.html">std::remove_if</a>(</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.begin(),</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.end(),</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            [<span class="keyword">this</span>](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; t) -&gt; <span class="keywordtype">bool</span> {</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                if (t-&gt;finished())</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                {</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    JLOG(j_.debug())</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                        &lt;&lt; <span class="stringliteral">&quot;Sweep task &quot;</span> &lt;&lt; t-&gt;getTaskParameter().finishHash_;</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                    return true;</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                }</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            }),</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        tasks_.end());</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    <span class="keyword">auto</span> removeCannotLocked = [](<span class="keyword">auto</span>&amp; subTasks) {</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = subTasks.begin(); it != subTasks.end();)</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        {</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> item = it-&gt;second.lock(); !item)</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock/now.html">std::chrono::steady_clock::now</a>();</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    {</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard&lt;std::mutex&gt;</a> lock(<a class="code" href="classripple_1_1LedgerReplayer.html#ac0bcab237e804acef639e21822204a3e">mtx_</a>);</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        JLOG(<a class="code" href="classripple_1_1LedgerReplayer.html#a387edc65f66abef7dca3c076fb271090">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Sweeping, LedgerReplayer has &quot;</span> &lt;&lt; <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.size()</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                         &lt;&lt; <span class="stringliteral">&quot; tasks, &quot;</span> &lt;&lt; <a class="code" href="classripple_1_1LedgerReplayer.html#a8773a97fe87b7f61f2c90f1c89f982fc">skipLists_</a>.size()</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                         &lt;&lt; <span class="stringliteral">&quot; skipLists, and &quot;</span> &lt;&lt; <a class="code" href="classripple_1_1LedgerReplayer.html#ad379e998b9ed9b7639191b52a04cee9f">deltas_</a>.size() &lt;&lt; <span class="stringliteral">&quot; deltas.&quot;</span>;</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.erase(</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/remove.html">std::remove_if</a>(</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.begin(),</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.end(),</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                [<span class="keyword">this</span>](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; t) -&gt; <span class="keywordtype">bool</span> {</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    if (t-&gt;finished())</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                    {</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                        JLOG(j_.debug()) &lt;&lt; <span class="stringliteral">&quot;Sweep task &quot;</span></div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                                         &lt;&lt; t-&gt;getTaskParameter().finishHash_;</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                        return true;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                    }</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                }),</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <a class="code" href="classripple_1_1LedgerReplayer.html#a1b3a65f4362211b322e949f6b5f2b9f1">tasks_</a>.end());</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <span class="keyword">auto</span> removeCannotLocked = [](<span class="keyword">auto</span>&amp; subTasks) {</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = subTasks.begin(); it != subTasks.end();)</div>
 <div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            {</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                it = subTasks.erase(it);</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            }</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                ++it;</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        }</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    };</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    removeCannotLocked(skipLists_);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    removeCannotLocked(deltas_);</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;}</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerReplayer.html#a5ddb27e3488d9a8546b7d897d25dc4f1">  257</a></span>&#160;LedgerReplayer::stop()</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;{</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a87d6bd59020d94110027dcab3d9e3357">info</a>()) &lt;&lt; <span class="stringliteral">&quot;Stopping...&quot;</span>;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    {</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard&lt;std::mutex&gt;</a> lock(mtx_);</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a>(</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            tasks_.begin(), tasks_.end(), [](<span class="keyword">auto</span>&amp; i) { i-&gt;cancel(); });</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        tasks_.clear();</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        <span class="keyword">auto</span> lockAndCancel = [](<span class="keyword">auto</span>&amp; i) {</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> sptr = i.second.lock(); sptr)</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            {</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                sptr-&gt;cancel();</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            }</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        };</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a>(skipLists_.begin(), skipLists_.end(), lockAndCancel);</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        skipLists_.clear();</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a>(deltas_.begin(), deltas_.end(), lockAndCancel);</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        deltas_.clear();</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    }</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a87d6bd59020d94110027dcab3d9e3357">info</a>()) &lt;&lt; <span class="stringliteral">&quot;Stopped&quot;</span>;</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;}</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                <span class="keywordflow">if</span> (<span class="keyword">auto</span> item = it-&gt;second.lock(); !item)</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                {</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                    it = subTasks.erase(it);</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                }</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                    ++it;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        };</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        removeCannotLocked(<a class="code" href="classripple_1_1LedgerReplayer.html#a8773a97fe87b7f61f2c90f1c89f982fc">skipLists_</a>);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        removeCannotLocked(<a class="code" href="classripple_1_1LedgerReplayer.html#ad379e998b9ed9b7639191b52a04cee9f">deltas_</a>);</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    }</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot; LedgerReplayer sweep lock duration &quot;</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                     &lt;&lt; std::chrono::duration_cast&lt;std::chrono::milliseconds&gt;(</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock/now.html">std::chrono::steady_clock::now</a>() - start)</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                            .count()</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                     &lt;&lt; <span class="stringliteral">&quot;ms&quot;</span>;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;}</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00265"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerReplayer.html#a5ddb27e3488d9a8546b7d897d25dc4f1">  265</a></span>&#160;LedgerReplayer::stop()</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;{</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a87d6bd59020d94110027dcab3d9e3357">info</a>()) &lt;&lt; <span class="stringliteral">&quot;Stopping...&quot;</span>;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    {</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard&lt;std::mutex&gt;</a> lock(mtx_);</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a>(</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            tasks_.begin(), tasks_.end(), [](<span class="keyword">auto</span>&amp; i) { i-&gt;cancel(); });</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        tasks_.clear();</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        <span class="keyword">auto</span> lockAndCancel = [](<span class="keyword">auto</span>&amp; i) {</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> sptr = i.second.lock(); sptr)</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            {</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                sptr-&gt;cancel();</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;            }</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        };</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a>(skipLists_.begin(), skipLists_.end(), lockAndCancel);</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        skipLists_.clear();</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a>(deltas_.begin(), deltas_.end(), lockAndCancel);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        deltas_.clear();</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    }</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a87d6bd59020d94110027dcab3d9e3357">info</a>()) &lt;&lt; <span class="stringliteral">&quot;Stopped&quot;</span>;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;}</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00103">Application.h:103</a></div></div>
+<div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00115">Application.h:115</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerReplayer_html_a8773a97fe87b7f61f2c90f1c89f982fc"><div class="ttname"><a href="classripple_1_1LedgerReplayer.html#a8773a97fe87b7f61f2c90f1c89f982fc">ripple::LedgerReplayer::skipLists_</a></div><div class="ttdeci">hash_map&lt; uint256, std::weak_ptr&lt; SkipListAcquire &gt; &gt; skipLists_</div><div class="ttdef"><b>Definition:</b> <a href="LedgerReplayer_8h_source.html#l00132">LedgerReplayer.h:132</a></div></div>
 <div class="ttc" id="afor_each_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/for_each.html">std::for_each</a></div><div class="ttdeci">T for_each(T... args)</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
@@ -393,6 +401,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1LedgerReplayer_html_a7f1036aacf255756c523a2cb17986bb4"><div class="ttname"><a href="classripple_1_1LedgerReplayer.html#a7f1036aacf255756c523a2cb17986bb4">ripple::LedgerReplayer::gotSkipList</a></div><div class="ttdeci">void gotSkipList(LedgerInfo const &amp;info, std::shared_ptr&lt; SHAMapItem const &gt; const &amp;data)</div><div class="ttdoc">Process a skip list (extracted from a TMProofPathResponse message)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerReplayer_8cpp_source.html#l00173">LedgerReplayer.cpp:173</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerReplayTask_1_1TaskParameter_html_a3c2b56668a4a6a767dd2763a52553bd6"><div class="ttname"><a href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html#a3c2b56668a4a6a767dd2763a52553bd6">ripple::LedgerReplayTask::TaskParameter::canMergeInto</a></div><div class="ttdeci">bool canMergeInto(TaskParameter const &amp;existingTask) const</div><div class="ttdoc">check if this task can be merged into an existing task</div><div class="ttdef"><b>Definition:</b> <a href="LedgerReplayTask_8cpp_source.html#l00058">LedgerReplayTask.cpp:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerReplayer_html_ac0bcab237e804acef639e21822204a3e"><div class="ttname"><a href="classripple_1_1LedgerReplayer.html#ac0bcab237e804acef639e21822204a3e">ripple::LedgerReplayer::mtx_</a></div><div class="ttdeci">std::mutex mtx_</div><div class="ttdef"><b>Definition:</b> <a href="LedgerReplayer_8h_source.html#l00129">LedgerReplayer.h:129</a></div></div>
+<div class="ttc" id="anow_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/steady_clock/now.html">std::chrono::steady_clock::now</a></div><div class="ttdeci">T now(T... args)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

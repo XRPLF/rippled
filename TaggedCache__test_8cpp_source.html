@@ -92,148 +92,150 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/chrono.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/clock/manual_clock.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/unit_test/SuiteJournal.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">I guess you can put some items in, make sure they&#39;re still there. Let some</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">time pass, make sure they&#39;re gone. Keep a strong pointer to one of them, make</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">sure you can still find it even after time passes. Create two objects with</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">the same key, canonicalize them both and make sure you get the same object.</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">Put an object in but keep a strong pointer to it, advance the clock a lot,</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">then canonicalize a new object with the same key, make sure you get the</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">original object.</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache__test.html">   38</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1TaggedCache__test.html">TaggedCache_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache__test.html#a728972228b7527e580e4a5ff721075fe">   42</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache__test.html#a728972228b7527e580e4a5ff721075fe">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keyword">using namespace </span><a class="code" href="namespacebeast_1_1severities.html">beast::severities</a>;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <a class="code" href="classripple_1_1test_1_1SuiteJournal.html">test::SuiteJournal</a> journal(<span class="stringliteral">&quot;TaggedCache_test&quot;</span>, *<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="code" href="classbeast_1_1manual__clock.html">TestStopwatch</a> clock;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        clock.set(0);</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keyword">using</span> Key = int;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">using</span> Value = <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">using</span> Cache = <a class="code" href="classripple_1_1TaggedCache.html">TaggedCache&lt;Key, Value&gt;</a>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        Cache c(<span class="stringliteral">&quot;test&quot;</span>, 1, 1s, clock, journal);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="comment">// Insert an item, retrieve it, and age it so it gets purged.</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        {</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            BEAST_EXPECT(!c.insert(1, <span class="stringliteral">&quot;one&quot;</span>));</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 1);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                BEAST_EXPECT(c.retrieve(1, s));</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                BEAST_EXPECT(s == <span class="stringliteral">&quot;one&quot;</span>);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            }</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            ++clock;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            c.sweep();</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        }</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="comment">// Insert an item, maintain a strong pointer, age it, and</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// verify that the entry still exists.</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            BEAST_EXPECT(!c.insert(2, <span class="stringliteral">&quot;two&quot;</span>));</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 1);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            {</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                <span class="keyword">auto</span> p = c.fetch(2);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                BEAST_EXPECT(p != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                ++clock;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                c.sweep();</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            }</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="comment">// Make sure its gone now that our reference is gone</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            ++clock;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            c.sweep();</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        }</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="comment">// Insert the same key/value pair and make sure we get the same result</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        {</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            BEAST_EXPECT(!c.insert(3, <span class="stringliteral">&quot;three&quot;</span>));</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            {</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> p1 = c.fetch(3);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keyword">auto</span> p2 = std::make_shared&lt;Value&gt;(<span class="stringliteral">&quot;three&quot;</span>);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                c.canonicalize_replace_client(3, p2);</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                BEAST_EXPECT(p1.get() == p2.get());</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            }</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            ++clock;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            c.sweep();</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        }</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="comment">// Put an object in but keep a strong pointer to it, advance the clock a</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="comment">// lot, then canonicalize a new object with the same key, make sure you</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="comment">// get the original object.</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        {</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            <span class="comment">// Put an object in</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            BEAST_EXPECT(!c.insert(4, <span class="stringliteral">&quot;four&quot;</span>));</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 1);</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            {</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                <span class="comment">// Keep a strong pointer to it</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> p1 = c.fetch(4);</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                BEAST_EXPECT(p1 != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 1);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                <span class="comment">// Advance the clock a lot</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                ++clock;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                c.sweep();</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                <span class="comment">// Canonicalize a new object with the same key</span></div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                <span class="keyword">auto</span> p2 = std::make_shared&lt;std::string&gt;(<span class="stringliteral">&quot;four&quot;</span>);</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 1);</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <span class="comment">// Make sure we get the original object</span></div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                BEAST_EXPECT(p1.get() == p2.get());</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            }</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            ++clock;</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            c.sweep();</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        }</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    }</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;};</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(TaggedCache, common, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Protocol.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/unit_test/SuiteJournal.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">/*</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">I guess you can put some items in, make sure they&#39;re still there. Let some</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">time pass, make sure they&#39;re gone. Keep a strong pointer to one of them, make</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">sure you can still find it even after time passes. Create two objects with</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">the same key, canonicalize them both and make sure you get the same object.</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">Put an object in but keep a strong pointer to it, advance the clock a lot,</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">then canonicalize a new object with the same key, make sure you get the</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">original object.</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">*/</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache__test.html">   39</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1TaggedCache__test.html">TaggedCache_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;{</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache__test.html#a728972228b7527e580e4a5ff721075fe">   43</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache__test.html#a728972228b7527e580e4a5ff721075fe">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">using namespace </span><a class="code" href="namespacebeast_1_1severities.html">beast::severities</a>;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="classripple_1_1test_1_1SuiteJournal.html">test::SuiteJournal</a> journal(<span class="stringliteral">&quot;TaggedCache_test&quot;</span>, *<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="code" href="classbeast_1_1manual__clock.html">TestStopwatch</a> clock;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        clock.set(0);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">using</span> Key = <a class="code" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">using</span> Value = <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keyword">using</span> Cache = <a class="code" href="classripple_1_1TaggedCache.html">TaggedCache&lt;Key, Value&gt;</a>;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        Cache c(<span class="stringliteral">&quot;test&quot;</span>, 1, 1s, clock, journal);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="comment">// Insert an item, retrieve it, and age it so it gets purged.</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        {</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            BEAST_EXPECT(!c.insert(1, <span class="stringliteral">&quot;one&quot;</span>));</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 1);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            {</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                BEAST_EXPECT(c.retrieve(1, s));</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                BEAST_EXPECT(s == <span class="stringliteral">&quot;one&quot;</span>);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            ++clock;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            c.sweep();</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        }</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// Insert an item, maintain a strong pointer, age it, and</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment">// verify that the entry still exists.</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            BEAST_EXPECT(!c.insert(2, <span class="stringliteral">&quot;two&quot;</span>));</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 1);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                <span class="keyword">auto</span> p = c.fetch(2);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                BEAST_EXPECT(p != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                ++clock;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                c.sweep();</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            }</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            <span class="comment">// Make sure its gone now that our reference is gone</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            ++clock;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            c.sweep();</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        }</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="comment">// Insert the same key/value pair and make sure we get the same result</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        {</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            BEAST_EXPECT(!c.insert(3, <span class="stringliteral">&quot;three&quot;</span>));</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            {</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> p1 = c.fetch(3);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                <span class="keyword">auto</span> p2 = std::make_shared&lt;Value&gt;(<span class="stringliteral">&quot;three&quot;</span>);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                c.canonicalize_replace_client(3, p2);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                BEAST_EXPECT(p1.get() == p2.get());</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            ++clock;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            c.sweep();</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        }</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="comment">// Put an object in but keep a strong pointer to it, advance the clock a</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="comment">// lot, then canonicalize a new object with the same key, make sure you</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="comment">// get the original object.</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        {</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="comment">// Put an object in</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            BEAST_EXPECT(!c.insert(4, <span class="stringliteral">&quot;four&quot;</span>));</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 1);</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            {</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                <span class="comment">// Keep a strong pointer to it</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> p1 = c.fetch(4);</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                BEAST_EXPECT(p1 != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 1);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                <span class="comment">// Advance the clock a lot</span></div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                ++clock;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                c.sweep();</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                <span class="comment">// Canonicalize a new object with the same key</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                <span class="keyword">auto</span> p2 = std::make_shared&lt;std::string&gt;(<span class="stringliteral">&quot;four&quot;</span>);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                BEAST_EXPECT(c.getCacheSize() == 1);</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                BEAST_EXPECT(c.getTrackSize() == 1);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="comment">// Make sure we get the original object</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                BEAST_EXPECT(p1.get() == p2.get());</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            }</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            ++clock;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            c.sweep();</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            BEAST_EXPECT(c.getCacheSize() == 0);</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            BEAST_EXPECT(c.getTrackSize() == 0);</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        }</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    }</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;};</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(TaggedCache, common, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="anamespaceripple_html_a12af8e98b794e8ee3b4dbecaed2a4efd"><div class="ttname"><a href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">ripple::LedgerIndex</a></div><div class="ttdeci">std::uint32_t LedgerIndex</div><div class="ttdoc">A ledger index.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00057">Protocol.h:57</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1TaggedCache_html"><div class="ttname"><a href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a></div><div class="ttdoc">Map/cache combination.</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00052">TaggedCache.h:52</a></div></div>
+<div class="ttc" id="aclassripple_1_1TaggedCache_html"><div class="ttname"><a href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a></div><div class="ttdoc">Map/cache combination.</div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00063">Application.h:63</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="anamespacebeast_1_1severities_html"><div class="ttname"><a href="namespacebeast_1_1severities.html">beast::severities</a></div><div class="ttdoc">A namespace for easy access to logging severity values.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00029">Journal.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1SuiteJournal_html"><div class="ttname"><a href="classripple_1_1test_1_1SuiteJournal.html">ripple::test::SuiteJournal</a></div><div class="ttdef"><b>Definition:</b> <a href="SuiteJournal_8h_source.html#l00088">SuiteJournal.h:88</a></div></div>
-<div class="ttc" id="aclassripple_1_1TaggedCache__test_html"><div class="ttname"><a href="classripple_1_1TaggedCache__test.html">ripple::TaggedCache_test</a></div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache__test_8cpp_source.html#l00038">TaggedCache_test.cpp:38</a></div></div>
+<div class="ttc" id="aclassripple_1_1TaggedCache__test_html"><div class="ttname"><a href="classripple_1_1TaggedCache__test.html">ripple::TaggedCache_test</a></div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache__test_8cpp_source.html#l00039">TaggedCache_test.cpp:39</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassbeast_1_1manual__clock_html"><div class="ttname"><a href="classbeast_1_1manual__clock.html">beast::manual_clock&lt; std::chrono::steady_clock &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1TaggedCache__test_html_a728972228b7527e580e4a5ff721075fe"><div class="ttname"><a href="classripple_1_1TaggedCache__test.html#a728972228b7527e580e4a5ff721075fe">ripple::TaggedCache_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache__test_8cpp_source.html#l00042">TaggedCache_test.cpp:42</a></div></div>
+<div class="ttc" id="aclassripple_1_1TaggedCache__test_html_a728972228b7527e580e4a5ff721075fe"><div class="ttname"><a href="classripple_1_1TaggedCache__test.html#a728972228b7527e580e4a5ff721075fe">ripple::TaggedCache_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache__test_8cpp_source.html#l00043">TaggedCache_test.cpp:43</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

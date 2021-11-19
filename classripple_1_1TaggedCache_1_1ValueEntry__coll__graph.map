@@ -1,5 +1,5 @@
-<map id="ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Entry" name="ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Entry">
-<area shape="rect" id="node1" title=" " alt="" coords="106,109,297,165"/>
+<map id="ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::ValueEntry" name="ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::ValueEntry">
+<area shape="rect" id="node1" title=" " alt="" coords="114,109,289,180"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="5,5,192,47"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/weak_ptr.html" title=" " alt="" coords="216,5,395,47"/>
 </map>

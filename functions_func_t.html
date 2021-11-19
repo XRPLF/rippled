@@ -68,7 +68,7 @@ $(function() {
 : <a class="el" href="classripple_1_1tagged__integer.html#a40f771f92a1c7e3b3aa00997efa111c8">ripple::tagged_integer&lt; Int, Tag &gt;</a>
 </li>
 <li>TaggedCache()
-: <a class="el" href="classripple_1_1TaggedCache.html#a1e652b0c7ea31644db1692be4a62f662">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
+: <a class="el" href="classripple_1_1TaggedCache.html#ab321071f80cb871b276f2f45f0d4e1e9">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>TaggedFee()
 : <a class="el" href="classripple_1_1feeunit_1_1TaggedFee.html#aab9d9ac64ee997c35c0df60691af2ea9">ripple::feeunit::TaggedFee&lt; UnitTag, T &gt;</a>
@@ -2708,11 +2708,11 @@ $(function() {
 : <a class="el" href="classripple_1_1detail_1_1ApplyStateTable.html#a3b84e6caea0d8f5e213a863d05e77563">ripple::detail::ApplyStateTable</a>
 </li>
 <li>threshold()
-: <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a763da4afe95c22997084ad368db9dfc1">beast::Journal::Sink</a>
+: <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a3d5da921524075948fd96299d17a4763">beast::Journal::Sink</a>
 , <a class="el" href="classbeast_1_1NullJournalSink.html#aa44e45d147dac57fe02166450503cd63">beast::NullJournalSink</a>
 , <a class="el" href="classbeast_1_1WrappedSink.html#ae823d11f371af8f69a0a5959a1771643">beast::WrappedSink</a>
 , <a class="el" href="classripple_1_1AmendmentSet.html#ac0d9edcc31c8b0fe5a90da0e35e09dc5">ripple::AmendmentSet</a>
-, <a class="el" href="classripple_1_1Logs.html#a1a420a33a1738d195f150d94e71e7c99">ripple::Logs</a>
+, <a class="el" href="classripple_1_1Logs.html#a5dc4fb3cb9c2b3c42fd54bef18d06c83">ripple::Logs</a>
 </li>
 <li>tick()
 : <a class="el" href="classripple_1_1ConsensusTimer.html#aa1622d363e3b90aa2b36c772c1bc9b1f">ripple::ConsensusTimer</a>
@@ -2843,21 +2843,22 @@ $(function() {
 : <a class="el" href="structripple_1_1RPC_1_1Status.html#ad7e3e64388599428c00be81fac79de77">ripple::RPC::Status</a>
 </li>
 <li>touch()
-: <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#ac02713356dcfdcc8c2f3fcfdca9bfd43">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
-, <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#ac8d2ae4e3085e6b042f6f3471b02d5e4">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
+: <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#a04e4371ce003779a28bbf904cc246cdc">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
+, <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a5f594e1d898494335231653c83367d4f">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 , <a class="el" href="classripple_1_1InboundLedger.html#af907877c2e81e4c01a47bf4b591d22f3">ripple::InboundLedger</a>
-, <a class="el" href="classripple_1_1TaggedCache_1_1Entry.html#aab67c36c11b6e57b77fcb70d64fa87e4">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Entry</a>
+, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html#aec6f370d9cec43fc9cc78490832422a1">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::KeyOnlyEntry</a>
+, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html#a24e9360735e967278ea6e3e4cc53f55e">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::ValueEntry</a>
 </li>
 <li>touch_if_exists()
-: <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#a5e207e81c6878a8d26e48c8fdaad5859">ripple::detail::BasicFullBelowCache&lt; Key &gt;</a>
-, <a class="el" href="classripple_1_1KeyCache.html#ad93a1bca0da205d937a9b9781ffab7c9">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;</a>
+: <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#ab51f01e912288d8bd3fce87177815c7e">ripple::detail::BasicFullBelowCache</a>
+, <a class="el" href="classripple_1_1TaggedCache.html#aa3c8e033d152cefb85f9546aac64b175">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
 <li>trace()
 : <a class="el" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">beast::Journal</a>
 , <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a19e248c03cb8bf6833b07423c5be5a19">ripple::test::jtx::Env</a>
 </li>
 <li>TrackedString()
-: <a class="el" href="classripple_1_1test_1_1ClosureCounter__test_1_1TrackedString.html#a36b6ae7fc35229692325e01ac265ee2f">ripple::test::ClosureCounter_test::TrackedString</a>
+: <a class="el" href="classripple_1_1test_1_1ClosureCounter__test_1_1TrackedString.html#a35dccf09f7c1151624f747db0f0fd1e9">ripple::test::ClosureCounter_test::TrackedString</a>
 </li>
 <li>Tracker()
 : <a class="el" href="structripple_1_1test_1_1csf_1_1LedgerCollector_1_1Tracker.html#a8109e4bdf6b2029dfc022c7e14e304a3">ripple::test::csf::LedgerCollector::Tracker</a>
@@ -2896,7 +2897,7 @@ $(function() {
 : <a class="el" href="classripple_1_1TransactionMaster.html#a5587b8238b939e76ddcfc2ddad158812">ripple::TransactionMaster</a>
 </li>
 <li>transactionPreProcessResult()
-: <a class="el" href="structripple_1_1RPC_1_1detail_1_1transactionPreProcessResult.html#a84665d471ed6dd4c4f0d5053f0fb0544">ripple::RPC::detail::transactionPreProcessResult</a>
+: <a class="el" href="structripple_1_1RPC_1_1detail_1_1transactionPreProcessResult.html#a9b885b1c6044f4301c1c59251fec30c3">ripple::RPC::detail::transactionPreProcessResult</a>
 </li>
 <li>TransactionStateSF()
 : <a class="el" href="classripple_1_1TransactionStateSF.html#a62fd2ae2ec3ee446ccf19502217b494e">ripple::TransactionStateSF</a>
@@ -2972,11 +2973,11 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#ad71fd7d9762e7c9b25ef2f27514afd9f">ripple::test::csf::TrustGraph&lt; Peer &gt;</a>
 </li>
 <li>trusts()
-: <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#aac1bfd9bacd19c5eff49f522078889f7">ripple::test::csf::Peer</a>
+: <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#a7d90c844a93ab5bab48e60f310a2ded6">ripple::test::csf::Peer</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#ac3e3fd5bec7f64df6fa53946c7c0af86">ripple::test::csf::TrustGraph&lt; Peer &gt;</a>
 </li>
 <li>try_insert()
-: <a class="el" href="classripple_1_1PeerFinder_1_1ConnectHandouts.html#ac595a42feb950cb8f69addee27e7a304">ripple::PeerFinder::ConnectHandouts</a>
+: <a class="el" href="classripple_1_1PeerFinder_1_1ConnectHandouts.html#aa6b5832354de26226b8fca9de53a4fc8">ripple::PeerFinder::ConnectHandouts</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1RedirectHandouts.html#a2b813049f715d111d966dc5db57fa6b9">ripple::PeerFinder::RedirectHandouts</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1SlotHandouts.html#ad42ba02b8ffe4862964591a45c657c40">ripple::PeerFinder::SlotHandouts</a>
 </li>
@@ -3038,7 +3039,7 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1tx__reduce__relay__test.html#af624cda40dd8f959e1b874d0611c8955">ripple::test::tx_reduce_relay_test</a>
 </li>
 <li>TxConsequences()
-: <a class="el" href="classripple_1_1TxConsequences.html#a23bdb1eae1a640c53c8aaaf72900f7e7">ripple::TxConsequences</a>
+: <a class="el" href="classripple_1_1TxConsequences.html#aec29d4ddbb16470c1dfcb0956b42e253">ripple::TxConsequences</a>
 </li>
 <li>txCount()
 : <a class="el" href="classripple_1_1OpenView.html#a10ff5beee54073a0fc27425c591fac9e">ripple::OpenView</a>
@@ -3072,14 +3073,14 @@ $(function() {
 : <a class="el" href="classripple_1_1Ledger.html#adefba8f4497f8dc4554dc1e7026e05a2">ripple::Ledger</a>
 </li>
 <li>TxMeta()
-: <a class="el" href="classripple_1_1TxMeta.html#ade925f5277c29c19fee914235edcba21">ripple::TxMeta</a>
+: <a class="el" href="classripple_1_1TxMeta.html#a7451ae89d75ee9a5b1443fbbb7b3b99c">ripple::TxMeta</a>
 </li>
 <li>txMetrics()
 : <a class="el" href="classripple_1_1Overlay.html#a856f1e66387e4ad7ff78cf03e16c7029">ripple::Overlay</a>
 , <a class="el" href="classripple_1_1OverlayImpl.html#a21576de278ccc1cef61adc539af9b0c0">ripple::OverlayImpl</a>
 </li>
 <li>TxnTestData()
-: <a class="el" href="structripple_1_1RPC_1_1TxnTestData.html#ab49cef88619d44efd0d1a8ea6eb59ccf">ripple::RPC::TxnTestData</a>
+: <a class="el" href="structripple_1_1RPC_1_1TxnTestData.html#adcd9ef256e44a76e8303c4090dc38e36">ripple::RPC::TxnTestData</a>
 </li>
 <li>TxQ()
 : <a class="el" href="classripple_1_1TxQ.html#aac2f17011c010d71a7ad4596f2b9ead9">ripple::TxQ</a>
@@ -3105,7 +3106,7 @@ $(function() {
 , <a class="el" href="classripple_1_1test_1_1csf_1_1TxSet.html#a15d8b7f27f4aee2c12dc3329017dde85">ripple::test::csf::TxSet</a>
 </li>
 <li>txs_iter_impl()
-: <a class="el" href="classripple_1_1Ledger_1_1txs__iter__impl.html#a491ee5f53e571bcc2f30fb22f98bf2ea">ripple::Ledger::txs_iter_impl</a>
+: <a class="el" href="classripple_1_1Ledger_1_1txs__iter__impl.html#a1b268e09c4992690fd50340067617c28">ripple::Ledger::txs_iter_impl</a>
 , <a class="el" href="classripple_1_1OpenView_1_1txs__iter__impl.html#a2aa2c83a7926495eba5e2ed557c08c20">ripple::OpenView::txs_iter_impl</a>
 </li>
 <li>txs_type()
@@ -3137,7 +3138,7 @@ $(function() {
 , <a class="el" href="structripple_1_1RPC_1_1Status.html#ac00efb0515ed008298110d1419be0ef7">ripple::RPC::Status</a>
 </li>
 <li>TypedField()
-: <a class="el" href="structripple_1_1TypedField.html#af58fed4c31dc56cca1c7c7504b1376f4">ripple::TypedField&lt; T &gt;</a>
+: <a class="el" href="structripple_1_1TypedField.html#a19da92421d770181a123b2c1514f411f">ripple::TypedField&lt; T &gt;</a>
 </li>
 </ul>
 </div><!-- contents -->

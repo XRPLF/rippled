@@ -155,8 +155,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab3688005e441cb27fc1d5e9725255634"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobQueue.html#ab3688005e441cb27fc1d5e9725255634">JobQueue</a> (<a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;collector, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, <a class="el" href="classripple_1_1perf_1_1PerfLog.html">perf::PerfLog</a> &amp;perfLog)</td></tr>
-<tr class="separator:ab3688005e441cb27fc1d5e9725255634"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2e2d101e0ab78fb09e321422589d0b9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobQueue.html#ad2e2d101e0ab78fb09e321422589d0b9">JobQueue</a> (int threadCount, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;collector, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, <a class="el" href="classripple_1_1perf_1_1PerfLog.html">perf::PerfLog</a> &amp;perfLog)</td></tr>
+<tr class="separator:ad2e2d101e0ab78fb09e321422589d0b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5823c4740d0e0943cb7ba722154d0350"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobQueue.html#a5823c4740d0e0943cb7ba722154d0350">~JobQueue</a> ()</td></tr>
 <tr class="separator:a5823c4740d0e0943cb7ba722154d0350"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5e34187d55aa58e551dc196aaf1ec25"><td class="memTemplParams" colspan="2">template&lt;typename JobHandler &gt; </td></tr>
@@ -176,9 +176,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a685aca6c37cce283d45467ce5c918806"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobQueue.html#a685aca6c37cce283d45467ce5c918806">getJobCountGE</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> t) const</td></tr>
 <tr class="memdesc:a685aca6c37cce283d45467ce5c918806"><td class="mdescLeft">&#160;</td><td class="mdescRight">All waiting jobs at or greater than this priority.  <a href="classripple_1_1JobQueue.html#a685aca6c37cce283d45467ce5c918806">More...</a><br /></td></tr>
 <tr class="separator:a685aca6c37cce283d45467ce5c918806"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2d6cf5a106079b38a8ec9a78dfe9a18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobQueue.html#af2d6cf5a106079b38a8ec9a78dfe9a18">setThreadCount</a> (int c, bool const standaloneMode)</td></tr>
-<tr class="memdesc:af2d6cf5a106079b38a8ec9a78dfe9a18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the number of thread serving the job queue to precisely this number.  <a href="classripple_1_1JobQueue.html#af2d6cf5a106079b38a8ec9a78dfe9a18">More...</a><br /></td></tr>
-<tr class="separator:af2d6cf5a106079b38a8ec9a78dfe9a18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaacda2b13f6602a6db919fdc2a8bcdec"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1LoadEvent.html">LoadEvent</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JobQueue.html#aaacda2b13f6602a6db919fdc2a8bcdec">makeLoadEvent</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> t, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)</td></tr>
 <tr class="memdesc:aaacda2b13f6602a6db919fdc2a8bcdec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a scoped <a class="el" href="classripple_1_1LoadEvent.html">LoadEvent</a>.  <a href="classripple_1_1JobQueue.html#aaacda2b13f6602a6db919fdc2a8bcdec">More...</a><br /></td></tr>
 <tr class="separator:aaacda2b13f6602a6db919fdc2a8bcdec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -312,13 +309,13 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00247">247</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00243">243</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ab3688005e441cb27fc1d5e9725255634"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3688005e441cb27fc1d5e9725255634">&#9670;&nbsp;</a></span>JobQueue()</h2>
+<a id="ad2e2d101e0ab78fb09e321422589d0b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2e2d101e0ab78fb09e321422589d0b9">&#9670;&nbsp;</a></span>JobQueue()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -326,6 +323,12 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">ripple::JobQueue::JobQueue </td>
           <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>threadCount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;&#160;</td>
           <td class="paramname"><em>collector</em>, </td>
         </tr>
@@ -374,7 +377,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00062">62</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00065">65</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -424,7 +427,7 @@ template&lt;typename JobHandler &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if jobHandler added to queue. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00165">165</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00166">166</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -473,7 +476,7 @@ template&lt;class F &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>shared_ptr to posted <a class="el" href="classripple_1_1JobQueue_1_1Coro.html" title="Coroutines must run to completion.">Coro</a>. nullptr if post was not successful. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00433">433</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00429">429</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -495,7 +498,7 @@ template&lt;class F &gt; </div>
 
 <p>Jobs waiting at this priority. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00106">106</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00109">109</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -517,7 +520,7 @@ template&lt;class F &gt; </div>
 
 <p>Jobs waiting plus running at this priority. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00116">116</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00119">119</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -539,39 +542,7 @@ template&lt;class F &gt; </div>
 
 <p>All waiting jobs at or greater than this priority. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00126">126</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
-
-</div>
-</div>
-<a id="af2d6cf5a106079b38a8ec9a78dfe9a18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2d6cf5a106079b38a8ec9a78dfe9a18">&#9670;&nbsp;</a></span>setThreadCount()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::JobQueue::setThreadCount </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>c</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool const&#160;</td>
-          <td class="paramname"><em>standaloneMode</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Set the number of thread serving the job queue to precisely this number. </p>
-
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00143">143</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00129">129</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -603,7 +574,7 @@ template&lt;class F &gt; </div>
 
 <p>Return a scoped <a class="el" href="classripple_1_1LoadEvent.html">LoadEvent</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00166">166</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00146">146</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -641,7 +612,7 @@ template&lt;class F &gt; </div>
 
 <p>Add multiple load events. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00178">178</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00158">158</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -660,7 +631,7 @@ template&lt;class F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00189">189</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00169">169</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -680,7 +651,7 @@ template&lt;class F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00203">203</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00183">183</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -701,7 +672,7 @@ template&lt;class F &gt; </div>
 
 <p>Block until no jobs running. </p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00261">261</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00241">241</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -720,7 +691,7 @@ template&lt;class F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00282">282</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00262">262</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -739,7 +710,7 @@ template&lt;class F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00234">234</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00230">230</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -758,7 +729,7 @@ template&lt;class F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00304">304</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00284">284</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -785,7 +756,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00069">69</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00072">72</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -813,7 +784,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00268">268</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00248">248</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -857,7 +828,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00076">76</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00079">79</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -895,7 +866,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00310">310</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00290">290</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -923,7 +894,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00333">333</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00313">313</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -951,7 +922,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00367">367</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00347">347</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -991,7 +962,7 @@ template&lt;class F &gt; </div>
 
 <p>Implements <a class="el" href="structripple_1_1Workers_1_1Callback.html#aaf9d435c1413c9a7ac8f662518e16312">ripple::Workers::Callback</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00386">386</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00366">366</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -1019,7 +990,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00439">439</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8cpp_source.html#l00419">419</a> of file <a class="el" href="JobQueue_8cpp_source.html">JobQueue.cpp</a>.</p>
 
 </div>
 </div>
@@ -1044,7 +1015,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00245">245</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00241">241</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1069,7 +1040,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00249">249</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00245">245</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1093,7 +1064,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00250">250</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00246">246</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1117,7 +1088,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00251">251</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00247">247</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1141,7 +1112,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00252">252</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00248">248</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1165,7 +1136,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00253">253</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00249">249</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1189,7 +1160,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00254">254</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00250">250</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1213,7 +1184,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00255">255</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00251">251</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1237,7 +1208,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00256">256</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00252">252</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1261,7 +1232,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00257">257</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00253">253</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1285,7 +1256,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00260">260</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00256">256</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1309,7 +1280,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00263">263</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00259">259</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1333,7 +1304,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00265">265</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00261">261</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1357,7 +1328,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00266">266</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00262">262</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1381,7 +1352,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00269">269</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00265">265</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1405,7 +1376,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00270">270</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00266">266</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1429,7 +1400,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00271">271</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00267">267</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1453,7 +1424,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00272">272</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00268">268</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>
@@ -1477,7 +1448,7 @@ template&lt;class F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00274">274</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JobQueue_8h_source.html#l00270">270</a> of file <a class="el" href="JobQueue_8h_source.html">JobQueue.h</a>.</p>
 
 </div>
 </div>

@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structJson_1_1Writer_1_1Impl_1_1Collection.html" title=" " alt="" coords="5,5,139,47"/>
+<area shape="rect" id="node1" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,31,133,57"/>
+<area shape="rect" id="node2" href="$classJson_1_1FastWriter.html" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="189,5,311,32"/>
+<area shape="rect" id="node3" href="$classJson_1_1StyledWriter.html" title="Writes a Value in JSON format in a human friendly way." alt="" coords="181,56,319,83"/>
 </map>

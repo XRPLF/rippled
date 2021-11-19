@@ -147,15 +147,14 @@ $(function() {
 : <a class="el" href="classripple_1_1FeeVoteImpl.html#ad0d05ada35919d89d0fd63ed76bed35d">ripple::FeeVoteImpl</a>
 </li>
 <li>fetch()
-: <a class="el" href="classripple_1_1CachedSLEs.html#a8c5f73f01940233efbe84def5d105cee">ripple::CachedSLEs</a>
-, <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">ripple::NodeStore::Backend</a>
+: <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">ripple::NodeStore::Backend</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ad1c41ea346dc8b8202fd05f67349735c">ripple::NodeStore::MemoryBackend</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a1b03edf356922e780fe41987476f1f6a">ripple::NodeStore::NuDBBackend</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a1dc8a4f932bb50366f9f967e5c35cb3a">ripple::NodeStore::NullBackend</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Logic.html#a23c2d4639dfb4a42d126b43007f6cc2f">ripple::PeerFinder::Logic&lt; Checker &gt;</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Source.html#a915205fd6d8a3e16d25b7012e02431fb">ripple::PeerFinder::Source</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1SourceStringsImp.html#a5f3148ab2905b65acaf1056c152a897f">ripple::PeerFinder::SourceStringsImp</a>
-, <a class="el" href="classripple_1_1TaggedCache.html#a8b19cf9b9885ddeceb282d5fb6757ce5">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
+, <a class="el" href="classripple_1_1TaggedCache.html#a3560674c26007c744baaedfc8aa0a126">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 , <a class="el" href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">ripple::TransactionMaster</a>
 </li>
 <li>fetch_from_cache()
@@ -286,6 +285,7 @@ $(function() {
 , <a class="el" href="classripple_1_1LedgerTrie.html#a60af5a4a37ee2d6f41bed188720a734c">ripple::LedgerTrie&lt; Ledger &gt;</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1Manager.html#a2ba9ddfb3327328112ef8d906297fdaa">ripple::NodeStore::Manager</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#a3426a8df0e54bf2fb73ad4f0c334ef9a">ripple::NodeStore::ManagerImp</a>
+, <a class="el" href="classripple_1_1partitioned__unordered__map.html#adbc404e309cf1bfee175028af700c6dc">ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;</a>
 , <a class="el" href="classripple_1_1RCLTxSet.html#a8458d70c74a361bfc2a4671bbd41889f">ripple::RCLTxSet</a>
 , <a class="el" href="classripple_1_1STObject_1_1Proxy.html#a4698c93a552079aa7bdbfb86a55309c3">ripple::STObject::Proxy&lt; T &gt;</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1TxSet.html#a99573aa7ad75bd81a9e46ab9338b16eb">ripple::test::csf::TxSet</a>
@@ -500,7 +500,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ValidatorList.html#abc82f50ad5da8d3d12240e8025369789">ripple::ValidatorList</a>
 </li>
 <li>for_each_manifest()
-: <a class="el" href="classripple_1_1ManifestCache.html#a7f05c967613f99e5f05af017673c6765">ripple::ManifestCache</a>
+: <a class="el" href="classripple_1_1ManifestCache.html#ad2e75cff2c2f79664967d4c0f0bf8284">ripple::ManifestCache</a>
 </li>
 <li>for_links()
 : <a class="el" href="classripple_1_1test_1_1Validator.html#a99de4b4ffe86b724d671b7ca9dd25873">ripple::test::Validator</a>
@@ -597,7 +597,7 @@ $(function() {
 : <a class="el" href="classripple_1_1base__uint.html#ad70fd469f70ad3533eb0cee8e18fa095">ripple::base_uint&lt; Bits, Tag &gt;</a>
 </li>
 <li>front()
-: <a class="el" href="classbeast_1_1List.html#a1d46509c54405b5fe4558ff8f00db5f3">beast::List&lt; T, Tag &gt;</a>
+: <a class="el" href="classbeast_1_1List.html#a822463abd19c159b0811ed64e0e34ccd">beast::List&lt; T, Tag &gt;</a>
 , <a class="el" href="classripple_1_1STPath.html#a6d24eb683f34d5f7f05b9c1cd42eb949">ripple::STPath</a>
 </li>
 <li>fulfillment()
@@ -617,7 +617,7 @@ $(function() {
 : <a class="el" href="classripple_1_1PeerFinder_1_1Sim_1_1FunctionQueue.html#a1083f4f7f04942d5cb79fc6c3e9bd3b4">ripple::PeerFinder::Sim::FunctionQueue</a>
 </li>
 <li>fund()
-: <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">ripple::test::jtx::Env</a>
+: <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a9264df26c2f14a094de53a21055cdb1c">ripple::test::jtx::Env</a>
 , <a class="el" href="structripple_1_1test_1_1PayChan__test.html#a072329800931de9be36e41fe7ef53b6a">ripple::test::PayChan_test</a>
 </li>
 <li>fund_arg()
