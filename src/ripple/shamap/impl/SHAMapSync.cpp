@@ -583,7 +583,6 @@ SHAMap::addKnownNode(
     }
 
     auto const generation = f_.getFullBelowCache(ledgerSeq_)->getGeneration();
-    auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 
@@ -612,6 +611,8 @@ SHAMap::addKnownNode(
 
         if (iNode == nullptr)
         {
+            auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
+
             if (!newNode || childHash != newNode->getHash())
             {
                 JLOG(journal_.warn()) << "Corrupt node received";
