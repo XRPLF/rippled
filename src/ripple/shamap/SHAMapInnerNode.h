@@ -27,6 +27,7 @@
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/shamap/impl/TaggedPointer.h>
 
+#include <atomic>
 #include <bitset>
 #include <cstdint>
 #include <memory>
@@ -53,7 +54,15 @@ private:
     std::uint32_t fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
 
-    static std::mutex childLock;
+    /** A bitlock for the children of this node, with one bit per child */
+    mutable std::atomic<std::uint16_t> lock_ = 0;
+
+    static_assert(
+        std::numeric_limits<decltype(lock_)::value_type>::digits >=
+            branchFactor,
+        "The number of addressable bits in SHAMapInnerNode::lock_ must be at "
+        "least equal to the branching factor");
+    static_assert(decltype(lock_)::is_always_lock_free);
 
     /** Convert arrays stored in `hashesAndChildren_` so they can store the
         requested number of children.
