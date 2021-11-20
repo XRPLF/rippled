@@ -792,11 +792,7 @@ CREATE OR REPLACE FUNCTION tx (
     _in_trans_id bytea
 ) RETURNS jsonb AS $$
 DECLARE
-    _min_ledger        bigint := min_ledger();
-    _min_seq           bigint := (SELECT ledger_seq
-                                    FROM ledgers
-                                   WHERE ledger_seq = _min_ledger
-                                     FOR SHARE);
+    _min_seq           bigint := min_ledger();
     _max_seq           bigint := max_ledger();
     _ledger_seq        bigint;
     _nodestore_hash    bytea;
