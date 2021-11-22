@@ -154,14 +154,20 @@ forwardedFor(http_request_type const& request)
             return pos;
         }());
 
-        return *boost::beast::http::token_list(boost::string_view(found, pos))
-                    .begin();
+        return boost::string_view(found, pos);
+//        return *boost::beast::http::token_list(boost::string_view(found, pos))
+//                    .begin();
     }
 
     it = request.find("X-Forwarded-For");
     if (it != request.end())
     {
-        return *boost::beast::http::token_list(it->value()).begin();
+        // This call to boost::beast::http::token_list() truncates an
+        // IPv6 address at the first colon.
+        std::size_t const found = it->value().find(',');
+        return found == boost::string_view::npos ? it->value() :
+            it->value().substr(0, found);
+//        return *boost::beast::http::token_list(it->value()).begin();
     }
 
     return {};
