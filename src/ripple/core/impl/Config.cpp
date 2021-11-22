@@ -655,6 +655,26 @@ Config::loadFromString(std::string const& fileContents)
                 ": must be between 1 and 1024 inclusive.");
     }
 
+    if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
+    {
+        IO_WORKERS = beast::lexicalCastThrow<int>(strTemp);
+
+        if (IO_WORKERS < 1 || IO_WORKERS > 1024)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_IO_WORKERS
+                ": must be between 1 and 1024 inclusive.");
+    }
+
+    if (getSingleSection(secConfig, SECTION_PREFETCH_WORKERS, strTemp, j_))
+    {
+        PREFETCH_WORKERS = beast::lexicalCastThrow<int>(strTemp);
+
+        if (PREFETCH_WORKERS < 1 || PREFETCH_WORKERS > 1024)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_PREFETCH_WORKERS
+                ": must be between 1 and 1024 inclusive.");
+    }
+
     if (getSingleSection(secConfig, SECTION_COMPRESSION, strTemp, j_))
         COMPRESSION = beast::lexicalCastThrow<bool>(strTemp);
 

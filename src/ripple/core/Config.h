@@ -214,8 +214,11 @@ public:
     // Amendment majority time
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
-    // Thread pool configuration
-    int WORKERS = 0;
+    // Thread pool configuration (0 = choose for me)
+    int WORKERS = 0;           // jobqueue thread count. default: upto 6
+    int IO_WORKERS = 0;        // io svc thread count. default: 2
+    int PREFETCH_WORKERS = 0;  // prefetch thread count. default: 4
+
     // Can only be set in code, specifically unit tests
     bool FORCE_MULTI_THREAD = false;
 
