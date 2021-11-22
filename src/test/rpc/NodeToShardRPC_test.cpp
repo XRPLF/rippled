@@ -21,6 +21,7 @@
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DatabaseShard.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx/Env.h>
 
@@ -52,6 +53,76 @@ class NodeToShardRPC_test : public beast::unit_test::suite
     }
 
 public:
+    void
+    testDisabled()
+    {
+        testcase("Disabled");
+
+        beast::temp_dir tempDir;
+
+        jtx::Env env = [&] {
+            auto c = jtx::envconfig();
+            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+            sectionNode.set("earliest_seq", "257");
+            sectionNode.set("ledgers_per_shard", "256");
+            c->setupControl(true, true, true);
+
+            return jtx::Env(*this, std::move(c));
+        }();
+
+        std::uint8_t const numberOfShards = 10;
+
+        // Create some ledgers so that we can initiate a
+        // shard store database import.
+        for (int i = 0; i < 256 * (numberOfShards + 1); ++i)
+        {
+            env.close();
+        }
+
+        {
+            auto shardStore = env.app().getShardStore();
+            if (!BEAST_EXPECT(!shardStore))
+                return;
+        }
+
+        {
+            // Try the node_to_shard status RPC command. Should fail.
+
+            Json::Value jvParams;
+            jvParams[jss::action] = "status";
+
+            auto const result = env.rpc(
+                "json", "node_to_shard", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(result[jss::error_code] == rpcNOT_ENABLED);
+        }
+
+        {
+            // Try to start a shard store import via the RPC
+            // interface. Should fail.
+
+            Json::Value jvParams;
+            jvParams[jss::action] = "start";
+
+            auto const result = env.rpc(
+                "json", "node_to_shard", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(result[jss::error_code] == rpcNOT_ENABLED);
+        }
+
+        {
+            // Try the node_to_shard status RPC command. Should fail.
+
+            Json::Value jvParams;
+            jvParams[jss::action] = "status";
+
+            auto const result = env.rpc(
+                "json", "node_to_shard", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(result[jss::error_code] == rpcNOT_ENABLED);
+        }
+    }
+
     void
     testStart()
     {
@@ -321,6 +392,7 @@ public:
     void
     run() override
     {
+        testDisabled();
         testStart();
         testStop();
     }

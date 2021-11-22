@@ -38,7 +38,7 @@ doNodeToShard(RPC::JsonContext& context)
     // Shard store must be enabled
     auto const shardStore = context.app.getShardStore();
     if (!shardStore)
-        return rpcError(rpcINTERNAL, "No shard store");
+        return RPC::make_error(rpcNOT_ENABLED);
 
     if (!context.params.isMember(jss::action))
         return RPC::missing_field_error(jss::action);
