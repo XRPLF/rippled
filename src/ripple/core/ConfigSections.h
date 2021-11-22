@@ -96,6 +96,8 @@ struct ConfigSection
 #define SECTION_VALIDATOR_TOKEN "validator_token"
 #define SECTION_VETO_AMENDMENTS "veto_amendments"
 #define SECTION_WORKERS "workers"
+#define SECTION_IO_WORKERS "io_workers"
+#define SECTION_PREFETCH_WORKERS "prefetch_workers"
 #define SECTION_LEDGER_REPLAY "ledger_replay"
 #define SECTION_BETA_RPC_API "beta_rpc_api"
 #define SECTION_SWEEP_INTERVAL "sweep_interval"
