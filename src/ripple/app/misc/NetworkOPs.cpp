@@ -134,15 +134,17 @@ class NetworkOPsImp final : public NetworkOPs
         {
             explicit Counters() = default;
 
-            std::uint32_t transitions = 0;
+            std::uint64_t transitions = 0;
             std::chrono::microseconds dur = std::chrono::microseconds(0);
         };
 
         OperatingMode mode_ = OperatingMode::DISCONNECTED;
         std::array<Counters, 5> counters_;
         mutable std::mutex mutex_;
-        std::chrono::system_clock::time_point start_ =
-            std::chrono::system_clock::now();
+        std::chrono::steady_clock::time_point start_ =
+            std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point const processStart_ = start_;
+        std::uint64_t initialSyncUs_{0};
         static std::array<Json::StaticString const, 5> const states_;
 
     public:
@@ -162,32 +164,26 @@ class NetworkOPsImp final : public NetworkOPs
         mode(OperatingMode om);
 
         /**
-         * Json-formatted state accounting data.
-         * 1st member: state accounting object.
-         * 2nd member: duration in current state.
-         */
-        using StateCountersJson = std::pair<Json::Value, std::string>;
-
-        /**
          * Output state counters in JSON format.
          *
-         * @return JSON object.
+         * @obj Json object to which to add state accounting data.
          */
-        StateCountersJson
-        json() const;
+        void
+        json(Json::Value& obj) const;
 
         struct CounterData
         {
             decltype(counters_) counters;
             decltype(mode_) mode;
             decltype(start_) start;
+            decltype(initialSyncUs_) initialSyncUs;
         };
 
         CounterData
         getCounterData() const
         {
             std::lock_guard lock(mutex_);
-            return {counters_, mode_, start_};
+            return {counters_, mode_, start_, initialSyncUs_};
         }
     };
 
@@ -594,6 +590,9 @@ public:
         using namespace std::chrono_literals;
         waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
     }
+
+    void
+    stateAccounting(Json::Value& obj) override;
 
 private:
     void
@@ -2607,8 +2606,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             info[jss::published_ledger] = lpPublished->info().seq;
     }
 
-    std::tie(info[jss::state_accounting], info[jss::server_state_duration_us]) =
-        accounting_.json();
+    accounting_.json(info);
     info[jss::uptime] = UptimeClock::now().time_since_epoch().count();
     if (!app_.config().reporting())
     {
@@ -3919,6 +3917,12 @@ NetworkOPsImp::subValidations(InfoSub::ref isrListener)
         .second;
 }
 
+void
+NetworkOPsImp::stateAccounting(Json::Value& obj)
+{
+    accounting_.json(obj);
+}
+
 // <-- bool: true=erased, false=was not there
 bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
@@ -4354,9 +4358,9 @@ NetworkOPsImp::getBookPage(
 inline void
 NetworkOPsImp::collect_metrics()
 {
-    auto [counters, mode, start] = accounting_.getCounterData();
+    auto [counters, mode, start, initialSync] = accounting_.getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::system_clock::now() - start);
+        std::chrono::steady_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     std::lock_guard lock(m_statsMutex);
@@ -4392,10 +4396,17 @@ NetworkOPsImp::collect_metrics()
 void
 NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 {
-    auto now = std::chrono::system_clock::now();
+    auto now = std::chrono::steady_clock::now();
 
     std::lock_guard lock(mutex_);
     ++counters_[static_cast<std::size_t>(om)].transitions;
+    if (om == OperatingMode::FULL &&
+        counters_[static_cast<std::size_t>(om)].transitions == 1)
+    {
+        initialSyncUs_ = std::chrono::duration_cast<std::chrono::microseconds>(
+                             now - processStart_)
+                             .count();
+    }
     counters_[static_cast<std::size_t>(mode_)].dur +=
         std::chrono::duration_cast<std::chrono::microseconds>(now - start_);
 
@@ -4403,27 +4414,27 @@ NetworkOPsImp::StateAccounting::mode(OperatingMode om)
     start_ = now;
 }
 
-NetworkOPsImp::StateAccounting::StateCountersJson
-NetworkOPsImp::StateAccounting::json() const
+void
+NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
 {
-    auto [counters, mode, start] = getCounterData();
+    auto [counters, mode, start, initialSync] = getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::system_clock::now() - start);
+        std::chrono::steady_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
 
-    Json::Value ret = Json::objectValue;
-
+    obj[jss::state_accounting] = Json::objectValue;
     for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        ret[states_[i]] = Json::objectValue;
-        auto& state = ret[states_[i]];
-        state[jss::transitions] = counters[i].transitions;
+        obj[jss::state_accounting][states_[i]] = Json::objectValue;
+        auto& state = obj[jss::state_accounting][states_[i]];
+        state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }
-
-    return {ret, std::to_string(current.count())};
+    obj[jss::server_state_duration_us] = std::to_string(current.count());
+    if (initialSync)
+        obj[jss::initial_sync_duration_us] = std::to_string(initialSync);
 }
 
 //------------------------------------------------------------------------------

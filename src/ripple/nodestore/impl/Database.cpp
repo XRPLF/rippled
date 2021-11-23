@@ -166,6 +166,8 @@ Database::fetchNodeObject(
     auto const begin{steady_clock::now()};
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport)};
+    auto dur = steady_clock::now() - begin;
+    fetchDurationUs_ += duration_cast<microseconds>(dur).count();
     if (nodeObject)
     {
         ++fetchHitCount_;
@@ -173,8 +175,7 @@ Database::fetchNodeObject(
     }
     ++fetchTotalCount_;
 
-    fetchReport.elapsed =
-        duration_cast<milliseconds>(steady_clock::now() - begin);
+    fetchReport.elapsed = duration_cast<milliseconds>(dur);
     scheduler_.onFetch(fetchReport);
     return nodeObject;
 }

@@ -286,14 +286,15 @@ JSS(index);                 // in: LedgerEntry, DownloadShard
                             // out: STLedgerEntry,
                             //      LedgerEntry, TxHistory, LedgerData
 JSS(info);                  // out: ServerInfo, ConsensusInfo, FetchInfo
-JSS(internal_command);      // in: Internal
-JSS(invalid_API_version);   // out: Many, when a request has an invalid
-                            //      version
-JSS(io_latency_ms);         // out: NetworkOPs
-JSS(ip);                    // in: Connect, out: OverlayImpl
-JSS(issuer);                // in: RipplePathFind, Subscribe,
-                            //     Unsubscribe, BookOffers
-                            // out: STPathSet, STAmount
+JSS(initial_sync_duration_us);
+JSS(internal_command);     // in: Internal
+JSS(invalid_API_version);  // out: Many, when a request has an invalid
+                           //      version
+JSS(io_latency_ms);        // out: NetworkOPs
+JSS(ip);                   // in: Connect, out: OverlayImpl
+JSS(issuer);               // in: RipplePathFind, Subscribe,
+                           //     Unsubscribe, BookOffers
+                           // out: STPathSet, STAmount
 JSS(job);
 JSS(job_queue);
 JSS(jobs);

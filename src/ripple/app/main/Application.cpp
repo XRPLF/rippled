@@ -275,6 +275,7 @@ public:
               perf::setup_PerfLog(
                   config_->section("perf"),
                   config_->CONFIG_DIR),
+              *this,
               logs_->journal("PerfLog"),
               [this] { signalStop(); }))
 

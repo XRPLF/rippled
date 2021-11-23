@@ -143,10 +143,6 @@ DatabaseRotatingImp::fetchNodeObject(
         switch (status)
         {
             case ok:
-                ++fetchHitCount_;
-                if (nodeObject)
-                    fetchSz_ += nodeObject->getData().size();
-                break;
             case notFound:
                 break;
             case dataCorrupt:

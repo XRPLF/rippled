@@ -24,6 +24,7 @@
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
@@ -296,16 +297,23 @@ PerfLogImp::report()
     }
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
+    report[jss::nodestore] = Json::objectValue;
+    if (app_.getShardStore())
+        app_.getShardStore()->getCountsJson(report[jss::nodestore]);
+    else
+        app_.getNodeStore().getCountsJson(report[jss::nodestore]);
     report[jss::current_activities] = counters_.currentJson();
+    app_.getOPs().stateAccounting(report);
 
     logFile_ << Json::Compact{std::move(report)} << std::endl;
 }
 
 PerfLogImp::PerfLogImp(
     Setup const& setup,
+    Application& app,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-    : setup_(setup), j_(journal), signalStop_(std::move(signalStop))
+    : setup_(setup), app_(app), j_(journal), signalStop_(std::move(signalStop))
 {
     openLog();
 }
@@ -491,10 +499,12 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
 std::unique_ptr<PerfLog>
 make_PerfLog(
     PerfLog::Setup const& setup,
+    Application& app,
     beast::Journal journal,
     std::function<void()>&& signalStop)
 {
-    return std::make_unique<PerfLogImp>(setup, journal, std::move(signalStop));
+    return std::make_unique<PerfLogImp>(
+        setup, app, journal, std::move(signalStop));
 }
 
 }  // namespace perf
