@@ -35,10 +35,6 @@ enum MessageType
     mtTRANSACTIONS              = 64;
 }
 
-// token, iterations, target, challenge = issue demand for proof of work
-// token, response = give solution to proof of work
-// token, result = report result of pow
-
 //------------------------------------------------------------------------------
 
 /* Provides the current ephemeral key for a validator. */
