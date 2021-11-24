@@ -293,6 +293,20 @@ HTTPDownloader::stop()
     }
 }
 
+bool
+HTTPDownloader::sessionIsActive() const
+{
+    std::lock_guard lock(m_);
+    return sessionActive_;
+}
+
+bool
+HTTPDownloader::isStopping() const
+{
+    std::lock_guard lock(m_);
+    return stop_;
+}
+
 void
 HTTPDownloader::fail(
     boost::filesystem::path dstPath,

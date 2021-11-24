@@ -19,7 +19,6 @@
 
 #include <ripple/net/DatabaseDownloader.h>
 #include <boost/filesystem/operations.hpp>
-#include <boost/predef.h>
 #include <condition_variable>
 #include <mutex>
 #include <test/jtx.h>
@@ -28,6 +27,8 @@
 
 namespace ripple {
 namespace test {
+
+#define REPORT_FAILURE(D) reportFailure(D, __FILE__, __LINE__)
 
 class DatabaseDownloader_test : public beast::unit_test::suite
 {
@@ -65,13 +66,10 @@ class DatabaseDownloader_test : public beast::unit_test::suite
         waitComplete()
         {
             std::unique_lock<std::mutex> lk(m);
-            using namespace std::chrono_literals;
-#if BOOST_OS_WINDOWS
-            auto constexpr timeout = 4s;
-#else
-            auto constexpr timeout = 2s;
-#endif
-            auto stat = cv.wait_for(lk, timeout, [this] { return called; });
+
+            auto stat = cv.wait_for(
+                lk, std::chrono::seconds(10), [this] { return called; });
+
             called = false;
             return stat;
         };
@@ -103,7 +101,28 @@ class DatabaseDownloader_test : public beast::unit_test::suite
         {
             return ptr_.get();
         }
+
+        DatabaseDownloader const*
+        operator->() const
+        {
+            return ptr_.get();
+        }
     };
+
+    void
+    reportFailure(Downloader const& dl, char const* file, int line)
+    {
+        std::stringstream ss;
+        ss << "Failed. LOGS:\n"
+           << dl.sink_.messages().str()
+           << "\nDownloadCompleter failure."
+              "\nDatabaseDownloader session active? "
+           << std::boolalpha << dl->sessionIsActive()
+           << "\nDatabaseDownloader is stopping? " << std::boolalpha
+           << dl->isStopping();
+
+        fail(ss.str(), file, line);
+    }
 
     void
     testDownload(bool verify)
@@ -122,7 +141,7 @@ class DatabaseDownloader_test : public beast::unit_test::suite
                     return cfg;
                 })};
 
-        Downloader downloader{env};
+        Downloader dl{env};
 
         // create a TrustedPublisherServer as a simple HTTP
         // server to request from. Use the /textfile endpoint
@@ -133,7 +152,7 @@ class DatabaseDownloader_test : public beast::unit_test::suite
             *this, "downloads", "data", "", false, false};
         // initiate the download and wait for the callback
         // to be invoked
-        auto stat = downloader->download(
+        auto stat = dl->download(
             server->local_endpoint().address().to_string(),
             std::to_string(server->local_endpoint().port()),
             "/textfile",
@@ -142,12 +161,12 @@ class DatabaseDownloader_test : public beast::unit_test::suite
             std::function<void(boost::filesystem::path)>{std::ref(cb)});
         if (!BEAST_EXPECT(stat))
         {
-            log << "Failed. LOGS:\n" + downloader.sink_.messages().str();
+            REPORT_FAILURE(dl);
             return;
         }
         if (!BEAST_EXPECT(cb.waitComplete()))
         {
-            log << "Failed. LOGS:\n" + downloader.sink_.messages().str();
+            REPORT_FAILURE(dl);
             return;
         }
         BEAST_EXPECT(cb.dest == data.file());
@@ -187,7 +206,10 @@ class DatabaseDownloader_test : public beast::unit_test::suite
                     datafile.file(),
                     std::function<void(boost::filesystem::path)>{
                         std::ref(cb)}));
-                BEAST_EXPECT(cb.waitComplete());
+                if (!BEAST_EXPECT(cb.waitComplete()))
+                {
+                    REPORT_FAILURE(dl);
+                }
                 BEAST_EXPECT(!boost::filesystem::exists(datafile.file()));
                 BEAST_EXPECTS(
                     dl.sink_.messages().str().find("async_resolve") !=
@@ -211,7 +233,10 @@ class DatabaseDownloader_test : public beast::unit_test::suite
                 11,
                 datafile.file(),
                 std::function<void(boost::filesystem::path)>{std::ref(cb)}));
-            BEAST_EXPECT(cb.waitComplete());
+            if (!BEAST_EXPECT(cb.waitComplete()))
+            {
+                REPORT_FAILURE(dl);
+            }
             BEAST_EXPECT(!boost::filesystem::exists(datafile.file()));
             BEAST_EXPECTS(
                 dl.sink_.messages().str().find("async_connect") !=
@@ -231,7 +256,10 @@ class DatabaseDownloader_test : public beast::unit_test::suite
                 11,
                 datafile.file(),
                 std::function<void(boost::filesystem::path)>{std::ref(cb)}));
-            BEAST_EXPECT(cb.waitComplete());
+            if (!BEAST_EXPECT(cb.waitComplete()))
+            {
+                REPORT_FAILURE(dl);
+            }
             BEAST_EXPECT(!boost::filesystem::exists(datafile.file()));
             BEAST_EXPECTS(
                 dl.sink_.messages().str().find("async_handshake") !=
@@ -251,7 +279,10 @@ class DatabaseDownloader_test : public beast::unit_test::suite
                 11,
                 datafile.file(),
                 std::function<void(boost::filesystem::path)>{std::ref(cb)}));
-            BEAST_EXPECT(cb.waitComplete());
+            if (!BEAST_EXPECT(cb.waitComplete()))
+            {
+                REPORT_FAILURE(dl);
+            }
             BEAST_EXPECT(!boost::filesystem::exists(datafile.file()));
             BEAST_EXPECTS(
                 dl.sink_.messages().str().find("Insufficient disk space") !=
@@ -269,6 +300,8 @@ public:
         testFailures();
     }
 };
+
+#undef REPORT_FAILURE
 
 BEAST_DEFINE_TESTSUITE(DatabaseDownloader, net, ripple);
 }  // namespace test
