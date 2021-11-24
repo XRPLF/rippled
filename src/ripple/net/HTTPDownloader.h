@@ -61,6 +61,12 @@ public:
 
     virtual ~HTTPDownloader() = default;
 
+    bool
+    sessionIsActive() const;
+
+    bool
+    isStopping() const;
+
 protected:
     // must be accessed through a shared_ptr
     // use make_XXX functions to create
@@ -88,7 +94,7 @@ private:
     std::atomic<bool> stop_;
 
     // Used to protect sessionActive_
-    std::mutex m_;
+    mutable std::mutex m_;
     bool sessionActive_;
     std::condition_variable c_;
 
