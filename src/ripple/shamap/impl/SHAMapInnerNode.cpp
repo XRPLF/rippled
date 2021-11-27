@@ -132,19 +132,21 @@ SHAMapInnerNode::makeFullInner(
     SHAMapHash const& hash,
     bool hashValid)
 {
-    if (data.size() != 512)
+    // A full inner node is serialized as 16 256-bit hashes, back to back:
+    if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
     auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
 
-    Serializer s(data.data(), data.size());
+    SerialIter si(data);
 
-    auto retHashes = ret->hashesAndChildren_.getHashes();
+    auto hashes = ret->hashesAndChildren_.getHashes();
+
     for (int i = 0; i < branchFactor; ++i)
     {
-        s.getBitString(retHashes[i].as_uint256(), i * 32);
+        hashes[i].as_uint256() = si.getBitString<256>();
 
-        if (retHashes[i].isNonZero())
+        if (hashes[i].isNonZero())
             ret->isBranch_ |= (1 << i);
     }
 
@@ -154,39 +156,43 @@ SHAMapInnerNode::makeFullInner(
         ret->hash_ = hash;
     else
         ret->updateHash();
+
     return ret;
 }
 
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
-    Serializer s(data.data(), data.size());
+    // A compressed inner node is serialized as a series of 33 byte chunks,
+    // representing a one byte "position" and a 256-bit hash:
+    constexpr std::size_t chunkSize = uint256::bytes + 1;
 
-    int len = s.getLength();
+    if (auto const s = data.size();
+        (s % chunkSize != 0) || (s > chunkSize * branchFactor))
+        Throw<std::runtime_error>("Invalid CI node");
+
+    SerialIter si(data);
 
     auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
 
-    auto retHashes = ret->hashesAndChildren_.getHashes();
-    for (int i = 0; i < (len / 33); ++i)
+    auto hashes = ret->hashesAndChildren_.getHashes();
+
+    while (!si.empty())
     {
-        int pos;
+        auto const hash = si.getBitString<256>();
+        auto const pos = si.get8();
 
-        if (!s.get8(pos, 32 + (i * 33)))
-            Throw<std::runtime_error>("short CI node");
-
-        if ((pos < 0) || (pos >= branchFactor))
+        if (pos >= branchFactor)
             Throw<std::runtime_error>("invalid CI node");
 
-        s.getBitString(retHashes[pos].as_uint256(), i * 33);
+        hashes[pos].as_uint256() = hash;
 
-        if (retHashes[pos].isNonZero())
+        if (hashes[pos].isNonZero())
             ret->isBranch_ |= (1 << pos);
     }
 
     ret->resizeChildArrays(ret->getBranchCount());
-
     ret->updateHash();
-
     return ret;
 }
 
