@@ -111,9 +111,18 @@ public:
         rocksdb::BlockBasedTableOptions table_options;
         m_options.env = env;
 
+        bool hard_set =
+            keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+
         if (keyValues.exists("cache_mb"))
-            table_options.block_cache = rocksdb::NewLRUCache(
-                get<int>(keyValues, "cache_mb") * megabytes(1));
+        {
+            auto size = get<int>(keyValues, "cache_mb");
+
+            if (!hard_set && size == 256)
+                size = 1024;
+
+            table_options.block_cache = rocksdb::NewLRUCache(megabytes(size));
+        }
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
         {
@@ -124,12 +133,21 @@ public:
         }
 
         if (get_if_exists(keyValues, "open_files", m_options.max_open_files))
-            fdRequired_ = m_options.max_open_files;
+        {
+            if (!hard_set && m_options.max_open_files == 2000)
+                m_options.max_open_files = 8000;
+
+            fdRequired_ = m_options.max_open_files + 128;
+        }
 
         if (keyValues.exists("file_size_mb"))
         {
-            m_options.target_file_size_base =
-                megabytes(1) * get<int>(keyValues, "file_size_mb");
+            auto file_size_mb = get<int>(keyValues, "file_size_mb");
+
+            if (!hard_set && file_size_mb == 8)
+                file_size_mb = 256;
+
+            m_options.target_file_size_base = megabytes(file_size_mb);
             m_options.max_bytes_for_level_base =
                 5 * m_options.target_file_size_base;
             m_options.write_buffer_size = 2 * m_options.target_file_size_base;

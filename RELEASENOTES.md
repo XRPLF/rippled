@@ -13,6 +13,36 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Releases
 
+## Version 1.8.0
+Ripple has released version 1.8.0 of rippled, the reference server implementation of the XRP Ledger protocol. This release brings several features and improvements.
+
+### New and Improved Features
+
+- **Improve History Sharding**: Shards of ledger history are now assembled in a deterministic way so that any server can make a binary-identical shard for a given range of ledgers. This makes it possible to retrieve a shard from multiple sources in parallel, then verify its integrity by comparing checksums with peers' checksums for the same shard. Additionally, there's a new admin RPC command to import ledger history from the shard store, and the crawl_shards command has been expanded with more info. ([#2688](https://github.com/ripple/rippled/issues/2688), [#3726](https://github.com/ripple/rippled/pull/3726), [#3875](https://github.com/ripple/rippled/pull/3875))
+- **New CheckCashMakesTrustLine Amendment**: If enabled, this amendment will change the CheckCash transaction type so that cashing a check for an issued token automatically creates a trust line to hold the token, similar to how purchasing a token in the decentralized exchange creates a trust line to hold the token. This change provides a way for issuers to send tokens to a user before that user has set up a trust line, but without forcing anyone to hold tokens they don't want. ([#3823](https://github.com/ripple/rippled/pull/3823))
+- **Automatically determine the node size**: The server now selects an appropriate `[node_size]` configuration value by default if it is not explicitly specified. This parameter tunes various settings to the specs of the hardware that the server is running on, especially the amount of RAM and the number of CPU threads available in the system. Previously the server always chose the smallest value by default.
+- **Improve transaction relaying logic**: Previously, the server relayed every transaction to all its peers (except the one that it received the transaction from). To reduce redundant messages, the server now relays transactions to a subset of peers using a randomized algorithm. Peers can determine whether there are transactions they have not seen and can request them from a peer that has them. It is expected that this feature will further reduce the bandwidth needed to operate a server.
+- **Improve the Byzantine validator detector**: This expands the detection capabilities of the Byzantine validation detector. Previously, the server only monitored validators on its own UNL. Now, the server monitors for Byzantine behavior in all validations it sees.
+- **Experimental tx stream with history for sidechains**: Adds an experimental subscription stream for sidechain federators to track messages on the main chain in canonical order. This stream is expected to change or be replaced in future versions as work on sidechains matures.
+- **Support Debian 11 Bullseye**: This is the first release that is compatible with Debian Linux version 11.x, "Bullseye." The .deb packages now use absolute paths only, for compatibility with Bullseye's stricter package requirements. ([#3909](https://github.com/ripple/rippled/pull/3909))
+- **Improve Cache Performance**: The server uses a new storage structure for several in-memory caches for greatly improved overall performance. The process of purging old data from these caches, called "sweeping", was time-consuming and blocked other important activities necessary for maintaining ledger state and participating in consensus. The new structure divides the caches into smaller partitions that can be swept in parallel.
+- **Amendment default votes:** Introduces variable default votes per amendment. Previously the server always voted "yes" on any new amendment unless an admin explicitly configured a voting preference for that amendment. Now the server's default vote can be "yes" or "no" in the source code. This should allow a safer, more gradual roll-out of new amendments, as new releases can be configured to understand a new amendment but not vote for it by default. ([#3877](https://github.com/ripple/rippled/pull/3877))
+- **More fields in the `validations` stream:** The `validations` subscription stream in the API now reports additional fields that were added to validation messages by the HardenedValidations amendment. These fields make it easier to detect misconfigurations such as multiple servers sharing a validation key pair. ([#3865](https://github.com/ripple/rippled/pull/3865))
+- **Reporting mode supports `validations` and `manifests` streams:** In the API it is now possible to connect to these streams when connected to a servers running in reporting. Previously, attempting to subscribe to these streams on a reporting server failed with the error `reportingUnsupported`. ([#3905](https://github.com/ripple/rippled/pull/3905))
+
+### Bug Fixes
+
+- **Clarify the safety of NetClock::time_point arithmetic**: * NetClock::rep is uint32_t and can be error-prone when   used with subtraction. * Fixes [#3656](https://github.com/ripple/rippled/pull/3656)
+- **Fix out-of-bounds reserve, and some minor optimizations**
+- **Fix nested locks in ValidatorSite**
+- **Fix clang warnings about copies vs references**
+- **Fix reporting mode build issue**
+- **Fix potential deadlock in Validator sites**
+- **Use libsecp256k1 instead of OpenSSL for key derivation**: The deterministic key derivation code was still using calls to OpenSSL. This replaces the OpenSSL-based routines with new libsecp256k1-based implementations
+- **Improve NodeStore to ShardStore imports**: This runs the import process in a background thread while preventing online_delete from removing ledgers pending import
+- **Simplify SHAMapItem construction**: The existing class offered several constructors which were mostly unnecessary. This eliminates all existing constructors and introduces a single new one, taking a `Slice`. The internal buffer is switched from `std::vector` to `Buffer` to save a minimum of 8 bytes (plus the buffer slack that is inherent in `std::vector`) per SHAMapItem instance.
+- **Redesign stoppable objects**: Stoppable is no longer an abstract base class, but a pattern, modeled after the well-understood `std::thread`. The immediate benefits are less code, less synchronization, less runtime work, and (subjectively) more readable code. The end goal is to adhere to RAII in our object design, and this is one necessary step on that path.
+
 ## Version 1.7.3
 
 This is the 1.7.3 release of `rippled`, the reference implementation of the XRP Ledger protocol. This release addresses an OOB memory read identified by Guido Vranken, as well as an unrelated issue identified by the Ripple C++ team that could result in incorrect use of SLEs. Additionally, this version also introduces the `NegativeUNL` amendment, which corresponds to the feature which was introduced with the 1.6.0 release.
