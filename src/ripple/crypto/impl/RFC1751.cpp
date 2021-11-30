@@ -438,7 +438,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     return 1;
 }
 
-/** Convert words seperated by spaces into a 128 bit key in big-endian format.
+/** Convert words separated by spaces into a 128 bit key in big-endian format.
 
     @return
          1 if succeeded
