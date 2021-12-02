@@ -92,7 +92,7 @@ traffic periods, and give those transactions a much better chance to
 succeed.
 
 1. If an incoming transaction meets both the base [fee
-level](#fee-level) and the load fee minimum, but does not have a high
+level](#fee-level) and the [load fee](#load-fee) minimum, but does not have a high
 enough [fee level](#fee-level) to immediately go into the open ledger,
 it is instead put into the queue and broadcast to peers. Each peer will
 then make an independent decision about whether to put the transaction
@@ -172,6 +172,10 @@ fee level`.
 This demonstrates that a simpler transaction paying less XRP can be more
 likely to get into the open ledger, or be sorted earlier in the queue
 than a more complex transaction paying more XRP.
+
+### Load Fee
+
+Each rippled server maintains a minimum cost threshold based on its current load. If you submit a transaction with a fee that is lower than the current load-based transaction cost of the rippled server, the server neither applies nor relays the transaction to its peers. A transaction is very unlikely to survive the consensus process unless its transaction fee value meets the requirements of a majority of servers.
 
 ### Reference Transaction
 
