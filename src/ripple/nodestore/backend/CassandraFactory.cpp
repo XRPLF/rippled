@@ -249,17 +249,21 @@ public:
                 cluster, username.c_str(), get(config_, "password").c_str());
         }
 
-        unsigned int const workers = std::thread::hardware_concurrency();
-        rc = cass_cluster_set_num_threads_io(cluster, workers);
+        unsigned int const ioThreads = get<int>(config_, "io_threads", 4);
+        maxRequestsOutstanding =
+            get<int>(config_, "max_requests_outstanding", 10000000);
+        JLOG(j_.info()) << "Configuring Cassandra driver to use " << ioThreads
+                        << " IO threads. Capping maximum pending requests at "
+                        << maxRequestsOutstanding;
+        rc = cass_cluster_set_num_threads_io(cluster, ioThreads);
         if (rc != CASS_OK)
         {
             std::stringstream ss;
-            ss << "nodestore: Error setting Cassandra io threads to " << workers
-               << ", result: " << rc << ", " << cass_error_desc(rc);
+            ss << "nodestore: Error setting Cassandra io threads to "
+               << ioThreads << ", result: " << rc << ", "
+               << cass_error_desc(rc);
             Throw<std::runtime_error>(ss.str());
         }
-
-        cass_cluster_set_request_timeout(cluster, 2000);
 
         rc = cass_cluster_set_queue_size_io(
             cluster,
@@ -275,6 +279,7 @@ public:
             return;
             ;
         }
+        cass_cluster_set_request_timeout(cluster, 2000);
 
         std::string certfile = get(config_, "certfile");
         if (certfile.size())
@@ -466,12 +471,6 @@ public:
         work_.emplace(ioContext_);
         ioThread_ = std::thread{[this]() { ioContext_.run(); }};
         open_ = true;
-
-        if (config_.exists("max_requests_outstanding"))
-        {
-            maxRequestsOutstanding =
-                get<int>(config_, "max_requests_outstanding");
-        }
     }
 
     // Close the connection to the database
