@@ -168,15 +168,13 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 bool
 JobQueue::isOverloaded()
 {
-    int count = 0;
-
     for (auto& x : m_jobData)
     {
         if (x.second.load().isOver())
-            ++count;
+            return true;
     }
 
-    return count > 0;
+    return false;
 }
 
 Json::Value

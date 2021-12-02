@@ -174,15 +174,19 @@ Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    auto const feeDue =
-        minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
-
     // Only check fee is sufficient when the ledger is open.
-    if (ctx.view.open() && feePaid < feeDue)
+    if (ctx.view.open())
     {
-        JLOG(ctx.j.trace()) << "Insufficient fee paid: " << to_string(feePaid)
-                            << "/" << to_string(feeDue);
-        return telINSUF_FEE_P;
+        auto const feeDue =
+            minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
+
+        if (feePaid < feeDue)
+        {
+            JLOG(ctx.j.trace())
+                << "Insufficient fee paid: " << to_string(feePaid) << "/"
+                << to_string(feeDue);
+            return telINSUF_FEE_P;
+        }
     }
 
     if (feePaid == beast::zero)
