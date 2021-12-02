@@ -1080,6 +1080,16 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     if (!fees.empty())
     {
         std::sort(fees.begin(), fees.end());
+        if (auto stream = m_journal.debug())
+        {
+            std::stringstream s;
+            s << "Received fees from validations: (" << fees.size() << ") ";
+            for (auto const fee1 : fees)
+            {
+                s << " " << fee1;
+            }
+            stream << s.str();
+        }
         fee = fees[fees.size() / 2];  // median
     }
     else
