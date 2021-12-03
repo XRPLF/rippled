@@ -2574,6 +2574,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = closeOffset.count();
 
+#if RIPPLED_REPORTING
+            std::int64_t const dbAge = std::max(m_ledgerMaster.getValidatedLedgerAge().count(),
+                0L);
+            l[jss::age] = Json::UInt(dbAge);
+#else
             constexpr std::chrono::seconds highAgeThreshold{1000000};
             if (m_ledgerMaster.haveValidated())
             {
@@ -2593,6 +2598,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                         Json::UInt(age < highAgeThreshold ? age.count() : 0);
                 }
             }
+#endif
         }
 
         if (valid)
