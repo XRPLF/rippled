@@ -123,7 +123,7 @@ set (CMAKE_CURRENT_BINARY_DIR ${CMAKE_BINARY_DIR}/proto_gen)
 protobuf_generate_cpp (
   PROTO_SRCS
   PROTO_HDRS
-  src/ripple/proto/ripple.proto)
+  src/ripple/proto/xrpl.proto)
 set (CMAKE_CURRENT_BINARY_DIR ${save_CBD})
 
 add_library (pbufs STATIC ${PROTO_SRCS} ${PROTO_HDRS})
