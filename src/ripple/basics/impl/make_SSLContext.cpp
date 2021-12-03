@@ -164,7 +164,7 @@ x509_new()
     if (x509 == nullptr)
         LogicError("X509_new failed");
 
-    X509_set_version(x509, NID_X509);
+    X509_set_version(x509, X509_VERSION_1);
 
     int const margin = 60 * 60;                     //      3600, one hour
     int const length = 10 * 365.25 * 24 * 60 * 60;  // 315576000, ten years
