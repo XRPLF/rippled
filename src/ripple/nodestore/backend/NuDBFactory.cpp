@@ -92,7 +92,16 @@ public:
 
     ~NuDBBackend() override
     {
-        close();
+        try
+        {
+            // close can throw and we don't want the destructor to throw.
+            close();
+        }
+        catch (nudb::system_error const&)
+        {
+            // Don't allow exceptions to propagate out of destructors.
+            // close() has already logged the error.
+        }
     }
 
     std::string
@@ -174,10 +183,20 @@ public:
             nudb::error_code ec;
             db_.close(ec);
             if (ec)
+            {
+                // Log to make sure the nature of the error gets to the user.
+                JLOG(j_.fatal()) << "NuBD close() failed: " << ec.message();
                 Throw<nudb::system_error>(ec);
+            }
+
             if (deletePath_)
             {
-                boost::filesystem::remove_all(name_);
+                boost::filesystem::remove_all(name_, ec);
+                if (ec)
+                {
+                    JLOG(j_.fatal()) << "Filesystem remove_all of " << name_
+                                     << " failed with: " << ec.message();
+                }
             }
         }
     }
