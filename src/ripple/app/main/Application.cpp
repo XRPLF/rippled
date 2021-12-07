@@ -448,8 +448,7 @@ public:
 
         , hashRouter_(std::make_unique<HashRouter>(
               stopwatch(),
-              HashRouter::getDefaultHoldTime(),
-              HashRouter::getDefaultRecoverLimit()))
+              HashRouter::getDefaultHoldTime()))
 
         , mValidations(
               ValidationParms(),
