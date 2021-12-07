@@ -81,17 +81,11 @@ OpenLedger::accept(
 {
     JLOG(j_.trace()) << "accept ledger " << ledger->seq() << " " << suffix;
     auto next = create(rules, ledger);
-    std::map<uint256, bool> shouldRecover;
     if (retriesFirst)
     {
-        for (auto const& tx : retries)
-        {
-            auto const txID = tx.second->getTransactionID();
-            shouldRecover[txID] = app.getHashRouter().shouldRecover(txID);
-        }
         // Handle disputed tx, outside lock
         using empty = std::vector<std::shared_ptr<STTx const>>;
-        apply(app, *next, *ledger, empty{}, retries, flags, shouldRecover, j_);
+        apply(app, *next, *ledger, empty{}, retries, flags, j_);
     }
     // Block calls to modify, otherwise
     // new tx going into the open ledger
@@ -100,17 +94,6 @@ OpenLedger::accept(
     // Apply tx from the current open view
     if (!current_->txs.empty())
     {
-        for (auto const& tx : current_->txs)
-        {
-            auto const txID = tx.first->getTransactionID();
-            auto iter = shouldRecover.lower_bound(txID);
-            if (iter != shouldRecover.end() && iter->first == txID)
-                // already had a chance via disputes
-                iter->second = false;
-            else
-                shouldRecover.emplace_hint(
-                    iter, txID, app.getHashRouter().shouldRecover(txID));
-        }
         apply(
             app,
             *next,
@@ -124,7 +107,6 @@ OpenLedger::accept(
                 }),
             retries,
             flags,
-            shouldRecover,
             j_);
     }
     // Call the modifier
@@ -179,21 +161,12 @@ OpenLedger::apply_one(
     std::shared_ptr<STTx const> const& tx,
     bool retry,
     ApplyFlags flags,
-    bool shouldRecover,
     beast::Journal j) -> Result
 {
     if (retry)
         flags = flags | tapRETRY;
-    auto const result = [&] {
-        auto const queueResult =
-            app.getTxQ().apply(app, view, tx, flags | tapPREFER_QUEUE, j);
-        // If the transaction can't get into the queue for intrinsic
-        // reasons, and it can still be recovered, try to put it
-        // directly into the open ledger, else drop it.
-        if (queueResult.first == telCAN_NOT_QUEUE && shouldRecover)
-            return ripple::apply(app, view, *tx, flags, j);
-        return queueResult;
-    }();
+    // If it's in anybody's proposed set, try to keep it in the ledger
+    auto const result = ripple::apply(app, view, *tx, flags, j);
     if (result.second || result.first == terQUEUED)
         return Result::success;
     if (isTefFailure(result.first) || isTemMalformed(result.first) ||

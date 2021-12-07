@@ -1176,8 +1176,7 @@ TxQ::apply(
             for some other reason. Tx is allowed to queue in case
             conditions change, but don't waste the effort to clear).
     */
-    if (!(flags & tapPREFER_QUEUE) && txSeqProx.isSeq() && txIter &&
-        multiTxn.has_value() &&
+    if (txSeqProx.isSeq() && txIter && multiTxn.has_value() &&
         txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
         feeLevelPaid > requiredFeeLevel && requiredFeeLevel > baseLevel)
     {
@@ -1306,9 +1305,6 @@ TxQ::apply(
 
     // Don't allow soft failures, which can lead to retries
     flags &= ~tapRETRY;
-
-    // Don't queue because we're already in the queue
-    flags &= ~tapPREFER_QUEUE;
 
     auto& candidate = accountIter->second.add(
         {tx, transactionID, feeLevelPaid, flags, pfresult});
@@ -1612,13 +1608,7 @@ TxQ::getRequiredFeeLevel(
     FeeMetrics::Snapshot const& metricsSnapshot,
     std::lock_guard<std::mutex> const& lock) const
 {
-    FeeLevel64 const feeLevel =
-        FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
-
-    if ((flags & tapPREFER_QUEUE) && !byFee_.empty())
-        return std::max(feeLevel, byFee_.begin()->feeLevel);
-
-    return feeLevel;
+    return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
 
 std::optional<std::pair<TER, bool>>

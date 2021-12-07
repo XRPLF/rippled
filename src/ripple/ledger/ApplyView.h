@@ -37,11 +37,6 @@ enum ApplyFlags : std::uint32_t {
     // Transaction can be retried, soft failures allowed
     tapRETRY = 0x20,
 
-    // Transaction must pay more than both the open ledger
-    // fee and all transactions in the queue to get into the
-    // open ledger
-    tapPREFER_QUEUE = 0x40,
-
     // Transaction came from a privileged source
     tapUNLIMITED = 0x400,
 };
@@ -55,10 +50,10 @@ operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
 }
 
 static_assert(
-    (tapPREFER_QUEUE | tapRETRY) == safe_cast<ApplyFlags>(0x60u),
+    (tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u),
     "ApplyFlags operator |");
 static_assert(
-    (tapRETRY | tapPREFER_QUEUE) == safe_cast<ApplyFlags>(0x60u),
+    (tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u),
     "ApplyFlags operator |");
 
 constexpr ApplyFlags
@@ -69,8 +64,8 @@ operator&(ApplyFlags const& lhs, ApplyFlags const& rhs)
         safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert((tapPREFER_QUEUE & tapRETRY) == tapNONE, "ApplyFlags operator &");
-static_assert((tapRETRY & tapPREFER_QUEUE) == tapNONE, "ApplyFlags operator &");
+static_assert((tapFAIL_HARD & tapRETRY) == tapNONE, "ApplyFlags operator &");
+static_assert((tapRETRY & tapFAIL_HARD) == tapNONE, "ApplyFlags operator &");
 
 constexpr ApplyFlags
 operator~(ApplyFlags const& flags)
