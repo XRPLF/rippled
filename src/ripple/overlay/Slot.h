@@ -28,7 +28,7 @@
 #include <ripple/overlay/ReduceRelayCommon.h>
 #include <ripple/overlay/Squelch.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple.pb.h>
+#include <xrpl.pb.h>
 
 #include <algorithm>
 #include <memory>

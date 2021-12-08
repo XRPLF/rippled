@@ -32,7 +32,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <ripple.pb.h>
+#include <xrpl.pb.h>
 #include <type_traits>
 #include <vector>
 

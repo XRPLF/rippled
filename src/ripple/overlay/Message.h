@@ -39,7 +39,7 @@ constexpr std::size_t maximiumMessageSize = megabytes(64);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the
-//             entire ripple.pb.h from the main headers.
+//             entire xrpl.pb.h from the main headers.
 //
 
 // packaging of messages into length/type-prepended buffers
