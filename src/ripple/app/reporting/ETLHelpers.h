@@ -71,6 +71,15 @@ public:
         return max_;
     }
 
+    /// Get most recently validated sequence.
+    /// @return sequence of most recently validated ledger, or empty optional
+    /// if no ledgers are known to have been validated.
+    std::optional<uint32_t>
+    tryGetMostRecent()
+    {
+        return max_;
+    }
+
     /// Waits for the sequence to be validated by the network
     /// @param sequence to wait for
     /// @return true if sequence was validated, false otherwise
