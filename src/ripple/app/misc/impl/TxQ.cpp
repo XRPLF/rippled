@@ -466,30 +466,15 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     assert(byFee_.iterator_to(accountIter->second) == candidateIter);
     auto const accountNextIter = std::next(accountIter);
 
-    // Check if the next transaction for this account has a greater
-    // SeqProxy, and a higher fee level, which means we skipped it
-    // earlier, and need to try it again.
-    //
-    // Edge cases:
-    //  o If the next account tx has a lower fee level, it's going to be
-    //    later in the fee queue, so we haven't skipped it yet.
-    //
-    //  o If the next tx has an equal fee level, it was...
-    //
-    //     * EITHER submitted later, so it's also going to be later in the
-    //       fee queue,
-    //
-    //     * OR the current was resubmitted to bump up the fee level, and
-    //       we have skipped that next tx.
-    //
-    //    In the latter case, continue through the fee queue anyway
-    //    to head off potential ordering manipulation problems.
+    // Check if the next transaction for this account is earlier in the queue,
+    // which means we skipped it earlier, and need to try it again.
+    OrderCandidates o;
     auto const feeNextIter = std::next(candidateIter);
     bool const useAccountNext =
         accountNextIter != txQAccount.transactions.end() &&
         accountNextIter->first > candidateIter->seqProxy &&
         (feeNextIter == byFee_.end() ||
-         accountNextIter->second.feeLevel > feeNextIter->feeLevel);
+         o(accountNextIter->second, *feeNextIter));
 
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
@@ -1224,9 +1209,19 @@ TxQ::apply(
     if (!replacedTxIter && isFull())
     {
         auto lastRIter = byFee_.rbegin();
-        if (lastRIter->account == account)
+        while (lastRIter != byFee_.rend() && lastRIter->account == account)
         {
-            JLOG(j_.warn())
+            ++lastRIter;
+        }
+        if (lastRIter == byFee_.rend())
+        {
+            // The only way this condition can happen is if the entire
+            // queue is filled with transactions from this account. This
+            // is impossible with default settings - minimum queue size
+            // is 2000, and an account can only have 10 transactions
+            // queued. However, it can occur if settings are changed,
+            // and there is unit test coverage.
+            JLOG(j_.info())
                 << "Queue is full, and transaction " << transactionID
                 << " would kick a transaction from the same account ("
                 << account << ") out of the queue.";
