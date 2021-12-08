@@ -613,17 +613,30 @@ private:
         }
     };
 
-    /// Used for sorting @ref MaybeTx by `feeLevel`
-    class GreaterFee
+    /// Used for sorting @ref MaybeTx
+    class OrderCandidates
     {
     public:
         /// Default constructor
-        explicit GreaterFee() = default;
+        explicit OrderCandidates() = default;
 
-        /// Is the fee level of `lhs` greater than the fee level of `rhs`?
+        /** Sort @ref MaybeTx by `feeLevel` descending, then by
+         * transaction ID ascending
+         *
+         * The transaction queue is ordered such that transactions
+         * paying a higher fee are in front of transactions paying
+         * a lower fee, giving them an opportunity to be processed into
+         * the open ledger first. Within transactions paying the same
+         * fee, order by the arbitrary but consistent transaction ID.
+         * This allows validators to build similar queues in the same
+         * order, and thus have more similar initial proposals.
+         *
+         */
         bool
         operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
         {
+            if (lhs.feeLevel == rhs.feeLevel)
+                return lhs.txID < rhs.txID;
             return lhs.feeLevel > rhs.feeLevel;
         }
     };
@@ -722,7 +735,7 @@ private:
         &MaybeTx::byFeeListHook>;
 
     using FeeMultiSet = boost::intrusive::
-        multiset<MaybeTx, FeeHook, boost::intrusive::compare<GreaterFee>>;
+        multiset<MaybeTx, FeeHook, boost::intrusive::compare<OrderCandidates>>;
 
     using AccountMap = std::map<AccountID, TxQAccount>;
 
