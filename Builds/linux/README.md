@@ -6,8 +6,7 @@ builds, including docker based builds for those distributions, please consult
 the [rippled-package-builder](https://github.com/ripple/rippled-package-builder)
 repository. 
 
-Note: Ubuntu 16.04 users may need to update their compiler (see the dependencies
-section). For non Ubuntu distributions, the steps below should work be
+For non Ubuntu distributions, the steps below should work be
 installing the appropriate dependencies using that distribution's package
 management tools.
 
@@ -28,8 +27,6 @@ $ apt-get install -y autoconf flex bison
 ```
 
 Advanced users can choose to install newer versions of gcc, or the clang compiler.
-At this time, rippled only supports protobuf version 2. Using version 3 of 
-protobuf will give errors.
 
 ### Build Boost
 
