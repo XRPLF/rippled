@@ -58,7 +58,7 @@ Much of the shard downloading process concerns the following classes:
    file, or simply return if there are no more downloads to process. When
    `complete` is invoked with no remaining files to be downloaded, the handler
    and downloader are not destroyed automatically, but persist for the duration
-   of the application to assist with graceful shutdowns by `Stoppable`.
+   of the application to assist with graceful shutdowns.
 
 - `DatabaseBody`
 
@@ -86,18 +86,18 @@ std::atomic<bool>           stop_;
 
 ##### Thread 1:
 
-A graceful shutdown begins when the `onStop()` method of the
+A graceful shutdown begins when the `stop()` method of the
 `ShardArchiveHandler` is invoked:
 
 ```c++
 void
-ShardArchiveHandler::onStop()
+ShardArchiveHandler::stop()
 {
     std::lock_guard<std::mutex> lock(m_);
 
     if (downloader_)
     {
-        downloader_->onStop();
+        downloader_->stop();
         downloader_.reset();
     }
 
@@ -105,13 +105,13 @@ ShardArchiveHandler::onStop()
 }
 ```
 
-Inside of `HTTPDownloader::onStop()`, if a download is currently in progress,
+Inside of `HTTPDownloader::stop()`, if a download is currently in progress,
 the `stop_` member variable is set and the thread waits for the
 download to stop:
 
 ```c++
 void
-HTTPDownloader::onStop()
+HTTPDownloader::stop()
 {
     std::unique_lock lock(m_);
 
@@ -208,9 +208,9 @@ used instead.
 
 ```dosini
 # This is the persistent datastore for shards. It is important for the health
-# of the ripple network that rippled operators shard as much as practical.
-# NuDB requires SSD storage. Helpful information can be found here
-# https://ripple.com/build/history-sharding
+# of the network that rippled operators shard as much as practical.
+# NuDB requires SSD storage. Helpful information can be found on
+# https://xrpl.org/history-sharding.html
 [shard_db]
 type=NuDB
 path=/var/lib/rippled/db/shards/nudb

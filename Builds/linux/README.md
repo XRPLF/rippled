@@ -13,13 +13,18 @@ management tools.
 
 ## Dependencies
 
-gcc-7 or later is required.
+gcc-8 or later is required.
 
 Use `apt-get` to install the dependencies provided by the distribution
 
 ```
 $ apt-get update
 $ apt-get install -y gcc g++ wget git cmake pkg-config protobuf-compiler libprotobuf-dev libssl-dev
+```
+
+To build the software in reporting mode, install these additional dependencies:
+```
+$ apt-get install -y autoconf flex bison
 ```
 
 Advanced users can choose to install newer versions of gcc, or the clang compiler.
@@ -31,9 +36,8 @@ protobuf will give errors.
 Boost 1.70 or later is required. We recommend downloading and compiling boost
 with the following process: After changing to the directory where
 you wish to download and compile boost, run
-
 ``` 
-$ wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz
+$ wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz
 $ tar -xzf boost_1_70_0.tar.gz
 $ cd boost_1_70_0
 $ ./bootstrap.sh
@@ -139,7 +143,7 @@ testing and running.
 * `-Dsan=thread` to enable the thread sanitizer with clang
 * `-Dsan=address` to enable the address sanitizer with clang
 * `-Dstatic=ON` to enable static linking library dependencies
-* `-Dreporting=ON` to build code neccessary for reporting mode (defaults to OFF)
+* `-Dreporting=ON` to build code necessary for reporting mode (defaults to OFF)
 
 Several other infrequently used options are available - run `ccmake` or
 `cmake-gui` for a list of all options.
@@ -156,7 +160,7 @@ the `-j` parameter in this example tells the build tool to compile several
 files in parallel. This value should be chosen roughly based on the number of
 cores you have available and/or want to use for building.
 
-When the build completes succesfully, you will have a `rippled` executable in
+When the build completes successfully, you will have a `rippled` executable in
 the current directory, which can be used to connect to the network (when
 properly configured) or to run unit tests.
 
@@ -235,5 +239,3 @@ change the `/opt/local` module path above to match your chosen installation pref
 `rippled` builds a set of unit tests into the server executable. To run these unit
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit with summary info after running the unit tests.
-
-

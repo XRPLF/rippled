@@ -24,7 +24,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include <boost/optional.hpp>
+#include <optional>
 #include <string>
 
 namespace ripple {
@@ -113,7 +113,7 @@ struct Manifest
     revoked() const;
 
     /// Returns manifest signature
-    boost::optional<Blob>
+    std::optional<Blob>
     getSignature() const;
 
     /// Returns manifest master key signature
@@ -121,20 +121,24 @@ struct Manifest
     getMasterSignature() const;
 };
 
+/** Format the specified manifest to a string for debugging purposes. */
+std::string
+to_string(Manifest const& m);
+
 /** Constructs Manifest from serialized string
 
     @param s Serialized manifest string
 
-    @return `boost::none` if string is invalid
+    @return `std::nullopt` if string is invalid
 
     @note This does not verify manifest signatures.
           `Manifest::verify` should be called after constructing manifest.
 */
 /** @{ */
-boost::optional<Manifest>
+std::optional<Manifest>
 deserializeManifest(Slice s);
 
-inline boost::optional<Manifest>
+inline std::optional<Manifest>
 deserializeManifest(std::string const& s)
 {
     return deserializeManifest(makeSlice(s));
@@ -144,7 +148,7 @@ template <
     class T,
     class = std::enable_if_t<
         std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
-boost::optional<Manifest>
+std::optional<Manifest>
 deserializeManifest(std::vector<T> const& v)
 {
     return deserializeManifest(makeSlice(v));
@@ -173,7 +177,7 @@ struct ValidatorToken
     SecretKey validationSecret;
 };
 
-boost::optional<ValidatorToken>
+std::optional<ValidatorToken>
 loadValidatorToken(std::vector<std::string> const& blob);
 
 enum class ManifestDisposition {
@@ -182,6 +186,12 @@ enum class ManifestDisposition {
 
     /// Sequence is too old
     stale,
+
+    /// The master key is not acceptable to us
+    badMasterKey,
+
+    /// The ephemeral key is not acceptable to us
+    badEphemeralKey,
 
     /// Timely, but invalid signature
     invalid
@@ -196,6 +206,10 @@ to_string(ManifestDisposition m)
             return "accepted";
         case ManifestDisposition::stale:
             return "stale";
+        case ManifestDisposition::badMasterKey:
+            return "badMasterKey";
+        case ManifestDisposition::badEphemeralKey:
+            return "badEphemeralKey";
         case ManifestDisposition::invalid:
             return "invalid";
         default:
@@ -264,25 +278,25 @@ public:
     /** Returns master key's current manifest sequence.
 
         @return sequence corresponding to Master public key
-          if configured or boost::none otherwise
+          if configured or std::nullopt otherwise
     */
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     getSequence(PublicKey const& pk) const;
 
     /** Returns domain claimed by a given public key
 
         @return domain corresponding to Master public key
-          if present, otherwise boost::none
+          if present, otherwise std::nullopt
     */
-    boost::optional<std::string>
+    std::optional<std::string>
     getDomain(PublicKey const& pk) const;
 
     /** Returns mainfest corresponding to a given public key
 
         @return manifest corresponding to Master public key
-          if present, otherwise boost::none
+          if present, otherwise std::nullopt
     */
-    boost::optional<std::string>
+    std::optional<std::string>
     getManifest(PublicKey const& pk) const;
 
     /** Returns `true` if master key has been revoked in a manifest.
@@ -360,7 +374,7 @@ public:
     save(
         DatabaseCon& dbCon,
         std::string const& dbTable,
-        std::function<bool(PublicKey const&)> isTrusted);
+        std::function<bool(PublicKey const&)> const& isTrusted);
 
     /** Invokes the callback once for every populated manifest.
 

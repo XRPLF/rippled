@@ -34,19 +34,16 @@ public:
     operator=(DatabaseRotatingImp const&) = delete;
 
     DatabaseRotatingImp(
-        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
-        Stoppable& parent,
         std::shared_ptr<Backend> writableBackend,
         std::shared_ptr<Backend> archiveBackend,
         Section const& config,
         beast::Journal j);
 
-    ~DatabaseRotatingImp() override
+    ~DatabaseRotatingImp()
     {
-        // Stop read threads in base before data members are destroyed
-        stopReadThreads();
+        stop();
     }
 
     void
@@ -61,7 +58,7 @@ public:
     getWriteLoad() const override;
 
     void
-    import(Database& source) override;
+    importDatabase(Database& source) override;
 
     bool isSameDB(std::uint32_t, std::uint32_t) override
     {
@@ -86,12 +83,6 @@ private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
-
-    struct Backends
-    {
-        std::shared_ptr<Backend> const& writableBackend;
-        std::shared_ptr<Backend> const& archiveBackend;
-    };
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(

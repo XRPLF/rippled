@@ -17,16 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/core/SociDB.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Checker.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
 #include <boost/asio/io_service.hpp>
-#include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <memory>
+#include <optional>
 #include <thread>
 
 namespace ripple {
@@ -36,47 +35,46 @@ class ManagerImp : public Manager
 {
 public:
     boost::asio::io_service& io_service_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
     Checker<boost::asio::ip::tcp> checker_;
     Logic<decltype(checker_)> m_logic;
-    SociConfig m_sociConfig;
+    BasicConfig const& m_config;
 
     //--------------------------------------------------------------------------
 
     ManagerImp(
-        Stoppable& stoppable,
         boost::asio::io_service& io_service,
         clock_type& clock,
         beast::Journal journal,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector)
-        : Manager(stoppable)
+        : Manager()
         , io_service_(io_service)
-        , work_(boost::in_place(std::ref(io_service_)))
+        , work_(std::in_place, std::ref(io_service_))
         , m_clock(clock)
         , m_journal(journal)
         , m_store(journal)
         , checker_(io_service_)
         , m_logic(clock, m_store, checker_, journal)
-        , m_sociConfig(config, "peerfinder")
+        , m_config(config)
         , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
     {
     }
 
     ~ManagerImp() override
     {
-        close();
+        stop();
     }
 
     void
-    close()
+    stop() override
     {
         if (work_)
         {
-            work_ = boost::none;
+            work_.reset();
             checker_.stop();
             m_logic.stop();
         }
@@ -214,24 +212,11 @@ public:
         return m_logic.buildEndpointsForPeers();
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // Stoppable
-    //
-    //--------------------------------------------------------------------------
-
     void
-    onPrepare() override
+    start() override
     {
-        m_store.open(m_sociConfig);
+        m_store.open(m_config);
         m_logic.load();
-    }
-
-    void
-    onStop() override
-    {
-        close();
-        stopped();
     }
 
     //--------------------------------------------------------------------------
@@ -280,15 +265,12 @@ private:
 
 //------------------------------------------------------------------------------
 
-Manager::Manager(Stoppable& parent)
-    : Stoppable("PeerFinder", parent)
-    , beast::PropertyStream::Source("peerfinder")
+Manager::Manager() noexcept : beast::PropertyStream::Source("peerfinder")
 {
 }
 
 std::unique_ptr<Manager>
 make_Manager(
-    Stoppable& parent,
     boost::asio::io_service& io_service,
     clock_type& clock,
     beast::Journal journal,
@@ -296,7 +278,7 @@ make_Manager(
     beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<ManagerImp>(
-        parent, io_service, clock, journal, config, collector);
+        io_service, clock, journal, config, collector);
 }
 
 }  // namespace PeerFinder

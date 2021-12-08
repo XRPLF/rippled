@@ -55,11 +55,8 @@ to_string(Currency const& currency)
     if (currency == noCurrency())
         return "1";
 
-    static Currency const sIsoBits = []() {
-        Currency c;
-        (void)c.parseHex("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
-        return c;
-    }();
+    static constexpr Currency sIsoBits(
+        "FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if ((currency & sIsoBits).isZero())
     {

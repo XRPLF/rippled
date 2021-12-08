@@ -76,6 +76,7 @@ struct ConfigSection
 #define SECTION_PEERS_IN_MAX "peers_in_max"
 #define SECTION_PEERS_OUT_MAX "peers_out_max"
 #define SECTION_REDUCE_RELAY "reduce_relay"
+#define SECTION_RELATIONAL_DB "relational_db"
 #define SECTION_RELAY_PROPOSALS "relay_proposals"
 #define SECTION_RELAY_VALIDATIONS "relay_validations"
 #define SECTION_RPC_STARTUP "rpc_startup"
@@ -87,7 +88,6 @@ struct ConfigSection
 #define SECTION_SERVER_DOMAIN "server_domain"
 #define SECTION_VALIDATORS_FILE "validators_file"
 #define SECTION_VALIDATION_SEED "validation_seed"
-#define SECTION_WEBSOCKET_PING_FREQ "websocket_ping_frequency"
 #define SECTION_VALIDATOR_KEYS "validator_keys"
 #define SECTION_VALIDATOR_KEY_REVOCATION "validator_key_revocation"
 #define SECTION_VALIDATOR_LIST_KEYS "validator_list_keys"
@@ -97,6 +97,8 @@ struct ConfigSection
 #define SECTION_VETO_AMENDMENTS "veto_amendments"
 #define SECTION_WORKERS "workers"
 #define SECTION_LEDGER_REPLAY "ledger_replay"
+#define SECTION_BETA_RPC_API "beta_rpc_api"
+#define SECTION_SWEEP_INTERVAL "sweep_interval"
 
 }  // namespace ripple
 

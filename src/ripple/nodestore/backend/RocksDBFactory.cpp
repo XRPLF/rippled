@@ -88,7 +88,6 @@ private:
 public:
     beast::Journal m_journal;
     size_t const m_keyBytes;
-    Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
     std::unique_ptr<rocksdb::DB> m_db;
@@ -104,7 +103,6 @@ public:
         : m_deletePath(false)
         , m_journal(journal)
         , m_keyBytes(keyBytes)
-        , m_scheduler(scheduler)
         , m_batch(*this, scheduler)
     {
         if (!get_if_exists(keyValues, "path", m_name))
@@ -113,9 +111,18 @@ public:
         rocksdb::BlockBasedTableOptions table_options;
         m_options.env = env;
 
+        bool hard_set =
+            keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+
         if (keyValues.exists("cache_mb"))
-            table_options.block_cache = rocksdb::NewLRUCache(
-                get<int>(keyValues, "cache_mb") * megabytes(1));
+        {
+            auto size = get<int>(keyValues, "cache_mb");
+
+            if (!hard_set && size == 256)
+                size = 1024;
+
+            table_options.block_cache = rocksdb::NewLRUCache(megabytes(size));
+        }
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
         {
@@ -126,12 +133,21 @@ public:
         }
 
         if (get_if_exists(keyValues, "open_files", m_options.max_open_files))
-            fdRequired_ = m_options.max_open_files;
+        {
+            if (!hard_set && m_options.max_open_files == 2000)
+                m_options.max_open_files = 8000;
+
+            fdRequired_ = m_options.max_open_files + 128;
+        }
 
         if (keyValues.exists("file_size_mb"))
         {
-            m_options.target_file_size_base =
-                megabytes(1) * get<int>(keyValues, "file_size_mb");
+            auto file_size_mb = get<int>(keyValues, "file_size_mb");
+
+            if (!hard_set && file_size_mb == 8)
+                file_size_mb = 256;
+
+            m_options.target_file_size_base = megabytes(file_size_mb);
             m_options.max_bytes_for_level_base =
                 5 * m_options.target_file_size_base;
             m_options.write_buffer_size = 2 * m_options.target_file_size_base;
@@ -174,9 +190,7 @@ public:
         if (keyValues.exists("bbt_options"))
         {
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
-                table_options,
-                get<std::string>(keyValues, "bbt_options"),
-                &table_options);
+                table_options, get(keyValues, "bbt_options"), &table_options);
             if (!s.ok())
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB bbt_options: ") +
@@ -188,7 +202,7 @@ public:
         if (keyValues.exists("options"))
         {
             auto const s = rocksdb::GetOptionsFromString(
-                m_options, get<std::string>(keyValues, "options"), &m_options);
+                m_options, get(keyValues, "options"), &m_options);
             if (!s.ok())
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB options: ") +
@@ -305,12 +319,6 @@ public:
         return status;
     }
 
-    bool
-    canFetchBatch() override
-    {
-        return false;
-    }
-
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256 const*> const& hashes) override
     {
@@ -423,11 +431,6 @@ public:
     writeBatch(Batch const& batch) override
     {
         storeBatch(batch);
-    }
-
-    void
-    verify() override
-    {
     }
 
     /** Returns the number of file descriptors the backend expects to need */

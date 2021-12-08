@@ -48,6 +48,7 @@ ripple.peerfinder > ripple.beast
 ripple.peerfinder > ripple.core
 ripple.peerfinder > ripple.protocol
 ripple.protocol > ripple.beast
+ripple.protocol > ripple.crypto
 ripple.protocol > ripple.json
 ripple.resource > ripple.basics
 ripple.resource > ripple.beast
@@ -117,8 +118,6 @@ test.core > ripple.server
 test.core > test.jtx
 test.core > test.toplevel
 test.core > test.unit_test
-test.crypto > ripple.beast
-test.crypto > ripple.crypto
 test.csf > ripple.basics
 test.csf > ripple.beast
 test.csf > ripple.consensus
@@ -154,6 +153,7 @@ test.nodestore > ripple.basics
 test.nodestore > ripple.beast
 test.nodestore > ripple.core
 test.nodestore > ripple.nodestore
+test.nodestore > ripple.protocol
 test.nodestore > ripple.unity
 test.nodestore > test.jtx
 test.nodestore > test.toplevel
@@ -163,6 +163,7 @@ test.overlay > ripple.basics
 test.overlay > ripple.beast
 test.overlay > ripple.core
 test.overlay > ripple.overlay
+test.overlay > ripple.peerfinder
 test.overlay > ripple.protocol
 test.overlay > ripple.shamap
 test.overlay > test.jtx

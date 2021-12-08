@@ -22,8 +22,6 @@
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/conditions/impl/PreimageSha256.h>
 #include <ripple/conditions/impl/utils.h>
-#include <boost/optional.hpp>
-#include <boost/regex.hpp>
 #include <iostream>
 #include <vector>
 

@@ -21,9 +21,9 @@
 #include <ripple/beast/clock/manual_clock.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/consensus/Validations.h>
-#include <test/csf/Validation.h>
-
 #include <memory>
+#include <test/csf/Validation.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -55,7 +55,7 @@ class Validations_test : public beast::unit_test::suite
         PeerID nodeID_;
         bool trusted_ = true;
         std::size_t signIdx_{1};
-        boost::optional<std::uint32_t> loadFee_;
+        std::optional<std::uint32_t> loadFee_;
 
     public:
         Node(PeerID nodeID, clock_type const& c) : c_(c), nodeID_(nodeID)
@@ -200,7 +200,7 @@ class Validations_test : public beast::unit_test::suite
             return toNetClock(c_);
         }
 
-        boost::optional<Ledger>
+        std::optional<Ledger>
         acquire(Ledger::ID const& id)
         {
             return oracle_.lookup(id);
@@ -304,9 +304,10 @@ class Validations_test : public beast::unit_test::suite
 
             // Cannot re-do the same full validation sequence
             BEAST_EXPECT(
-                ValStatus::badSeq == harness.add(n.validate(ledgerAB)));
+                ValStatus::conflicting == harness.add(n.validate(ledgerAB)));
             // Cannot send the same partial validation sequence
-            BEAST_EXPECT(ValStatus::badSeq == harness.add(n.partial(ledgerAB)));
+            BEAST_EXPECT(
+                ValStatus::conflicting == harness.add(n.partial(ledgerAB)));
 
             // Now trusts the newest ledger too
             harness.clock().advance(1s);
@@ -443,7 +444,7 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 0);
             BEAST_EXPECT(
-                harness.vals().getPreferred(genesisLedger) == boost::none);
+                harness.vals().getPreferred(genesisLedger) == std::nullopt);
         }
     }
 
@@ -702,25 +703,52 @@ class Validations_test : public beast::unit_test::suite
     {
         // Verify expiring clears out validations stored by ledger
         testcase("Expire validations");
+        SuiteJournal j("Validations_test", *this);
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode();
+        Node const a = harness.makeNode();
+        constexpr Ledger::Seq one(1);
+        constexpr Ledger::Seq two(2);
 
-        Ledger ledgerA = h["a"];
+        // simple cases
+        Ledger const ledgerA = h["a"];
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()));
-
-        // Keep the validation from expire
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
+        harness.vals().expire(j);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
-        harness.vals().setSeqToKeep(ledgerA.seq());
-        harness.vals().expire();
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()));
+        harness.vals().expire(j);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 0);
 
-        // Allow the validation to expire
+        // use setSeqToKeep to keep the validation from expire
+        Ledger const ledgerB = h["ab"];
+        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerB)));
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
+        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + one);
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
-        harness.vals().setSeqToKeep(++ledgerA.seq());
-        harness.vals().expire();
-        BEAST_EXPECT(!harness.vals().numTrustedForLedger(ledgerA.id()));
+        harness.vals().expire(j);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
+        // change toKeep
+        harness.vals().setSeqToKeep(ledgerB.seq() + one, ledgerB.seq() + two);
+        // advance clock slowly
+        int const loops = harness.parms().validationSET_EXPIRES /
+                harness.parms().validationFRESHNESS +
+            1;
+        for (int i = 0; i < loops; ++i)
+        {
+            harness.clock().advance(harness.parms().validationFRESHNESS);
+            harness.vals().expire(j);
+        }
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 0);
+
+        // Allow the validation with high seq to expire
+        Ledger const ledgerC = h["abc"];
+        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerC)));
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 1);
+        harness.vals().setSeqToKeep(ledgerC.seq() - one, ledgerC.seq());
+        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.vals().expire(j);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 0);
     }
 
     void
@@ -780,7 +808,7 @@ class Validations_test : public beast::unit_test::suite
         };
 
         // Empty (no ledgers)
-        BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == boost::none);
+        BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == std::nullopt);
 
         // Single ledger
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerB)));
@@ -1014,7 +1042,7 @@ class Validations_test : public beast::unit_test::suite
                 trustedVals.size());
             if (trustedVals.empty())
                 BEAST_EXPECT(
-                    vals.getPreferred(this->genesisLedger) == boost::none);
+                    vals.getPreferred(this->genesisLedger) == std::nullopt);
             else
                 BEAST_EXPECT(
                     vals.getPreferred(this->genesisLedger)->second == testID);
@@ -1083,7 +1111,7 @@ class Validations_test : public beast::unit_test::suite
             // make acquiring ledger available
             h["ab"];
             BEAST_EXPECT(vals.currentTrusted() == trustedVals);
-            BEAST_EXPECT(vals.getPreferred(genesisLedger) == boost::none);
+            BEAST_EXPECT(vals.getPreferred(genesisLedger) == std::nullopt);
             BEAST_EXPECT(
                 vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
         }

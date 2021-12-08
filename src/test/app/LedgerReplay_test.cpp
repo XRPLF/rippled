@@ -25,6 +25,7 @@
 #include <ripple/app/ledger/impl/LedgerDeltaAcquire.h>
 #include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
 #include <ripple/app/ledger/impl/SkipListAcquire.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <test/jtx.h>
@@ -168,7 +169,7 @@ public:
     }
 
     virtual void
-    onStop() override
+    stop() override
     {
     }
 
@@ -245,7 +246,7 @@ public:
             return true;
         return false;
     }
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};
@@ -270,11 +271,6 @@ public:
     {
     }
     bool
-    hasShard(std::uint32_t shardIndex) const override
-    {
-        return false;
-    }
-    bool
     hasTxSet(uint256 const& hash) const override
     {
         return false;
@@ -290,6 +286,23 @@ public:
     }
     bool
     compressionEnabled() const override
+    {
+        return false;
+    }
+    void
+    sendTxQueue() override
+    {
+    }
+    void
+    addTxQueue(const uint256&) override
+    {
+    }
+    void
+    removeTxQueue(const uint256&) override
+    {
+    }
+    bool
+    txReduceRelayEnabled() const override
     {
         return false;
     }
@@ -563,7 +576,6 @@ public:
               inboundBhvr)
         , serverMsgHandler(server.app, server.app.getLedgerReplayer())
         , clientMsgHandler(env.app(), replayer)
-        , stopableParent("replayerStopParent")
         , replayer(
               env.app(),
               inboundLedgers,
@@ -571,8 +583,7 @@ public:
                   clientMsgHandler,
                   serverMsgHandler,
                   behavior,
-                  peerFeature),
-              stopableParent)
+                  peerFeature))
     {
     }
 
@@ -799,7 +810,6 @@ public:
     MagicInboundLedgers inboundLedgers;
     LedgerReplayMsgHandler serverMsgHandler;
     LedgerReplayMsgHandler clientMsgHandler;
-    RootStoppable stopableParent;
     LedgerReplayer replayer;
 };
 
@@ -847,7 +857,7 @@ struct NetworkOfTwo
  * -- replay a range of ledgers and fallback to InboundLedgers because
  *    peers do not support ProtocolFeature::LedgerReplay
  * -- replay a range of ledgers and the network drops or repeats messages
- * -- call onStop() and the tasks and subtasks are removed
+ * -- call stop() and the tasks and subtasks are removed
  * -- process a bad skip list
  * -- process a bad ledger delta
  * -- replay ledger ranges with different overlaps
@@ -1067,7 +1077,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("handshake test");
         auto handshake = [&](bool client, bool server, bool expecting) -> bool {
-            auto request = ripple::makeRequest(true, false, false, client);
+            auto request =
+                ripple::makeRequest(true, false, client, false, false);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();
@@ -1228,9 +1239,9 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     }
 
     void
-    testOnStop()
+    testStop()
     {
-        testcase("onStop before timeout");
+        testcase("stop before timeout");
         int totalReplay = 3;
         NetworkOfTwo net(
             *this,
@@ -1252,9 +1263,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::NotDone,
             deltaStatuses));
 
-        // onStop
         BEAST_EXPECT(net.client.countsAsExpected(1, 1, 0));
-        net.client.replayer.onStop();
+        net.client.replayer.stop();
         BEAST_EXPECT(net.client.countsAsExpected(0, 0, 0));
     }
 
@@ -1276,7 +1286,11 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
         auto skipList = net.client.findSkipListAcquire(finalHash);
-        auto item = std::make_shared<SHAMapItem>(uint256(12345), Blob(55, 55));
+
+        std::uint8_t payload[55] = {
+            0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
+        auto item = std::make_shared<SHAMapItem>(
+            uint256(12345), Slice(payload, sizeof(payload)));
         skipList->processData(l->seq(), item);
 
         std::vector<TaskStatus> deltaStatuses;
@@ -1436,7 +1450,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         testPeerSetBehavior(PeerSetBehavior::Good);
         testPeerSetBehavior(PeerSetBehavior::Drop50);
         testPeerSetBehavior(PeerSetBehavior::Repeat);
-        testOnStop();
+        testStop();
         testSkipListBadReply();
         testLedgerDeltaBadReply();
         testLedgerReplayOverlap();
@@ -1576,7 +1590,7 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerReplay, app, ripple);
-BEAST_DEFINE_TESTSUITE(LedgerReplayer, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, ripple, 1);
 BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
 

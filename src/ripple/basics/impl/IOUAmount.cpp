@@ -34,6 +34,12 @@ static std::int64_t const maxMantissa = 9999999999999999ull;
 static int const minExponent = -96;
 static int const maxExponent = 80;
 
+IOUAmount
+IOUAmount::minPositiveAmount()
+{
+    return IOUAmount(minMantissa, minExponent);
+}
+
 void
 IOUAmount::normalize()
 {
@@ -353,7 +359,7 @@ mulRatio(
         {
             if (!result)
             {
-                return IOUAmount(minMantissa, minExponent);
+                return IOUAmount::minPositiveAmount();
             }
             // This addition cannot overflow because the mantissa is already
             // normalized

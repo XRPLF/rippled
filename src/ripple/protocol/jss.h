@@ -65,6 +65,7 @@ JSS(EscrowFinish);           // transaction type.
 JSS(Fee);                    // in/out: TransactionSign; field.
 JSS(FeeSettings);            // ledger type.
 JSS(Flags);                  // in/out: TransactionSign; field.
+JSS(incomplete_shards);      // out: OverlayImpl, PeerImp
 JSS(Invalid);                //
 JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
@@ -111,6 +112,9 @@ JSS(account_objects);        // out: AccountObjects
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
 JSS(account_sequence_available);  // out: SubmitTransaction
+JSS(account_history_tx_stream);   // in: Subscribe, Unsubscribe
+JSS(account_history_tx_index);    // out: Account txn history subscribe
+JSS(account_history_tx_first);    // out: Account txn history subscribe
 JSS(accounts);                    // in: LedgerEntry, Subscribe,
                                   //     handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
@@ -177,8 +181,11 @@ JSS(complete_shards);        // out: OverlayImpl, PeerImp
 JSS(consensus);              // out: NetworkOPs, LedgerConsensus
 JSS(converge_time);          // out: NetworkOPs
 JSS(converge_time_s);        // out: NetworkOPs
+JSS(cookie);                 // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
+JSS(currentShard);           // out: NodeToShardStatus
+JSS(currentShardIndex);      // out: NodeToShardStatus
 JSS(currency);               // in: paths/PathRequest, STAmount
                              // out: STPathSet, STAmount,
                              //      AccountLines
@@ -245,6 +252,8 @@ JSS(fee_mult_max);          // in: TransactionSign
 JSS(fee_ref);               // out: NetworkOPs
 JSS(fetch_pack);            // out: NetworkOPs
 JSS(first);                 // out: rpc/Version
+JSS(firstSequence);         // out: NodeToShardStatus
+JSS(firstShardIndex);       // out: NodeToShardStatus
 JSS(finished);
 JSS(fix_txns);              // in: LedgerCleaner
 JSS(flags);                 // out: AccountOffers,
@@ -295,6 +304,8 @@ JSS(key);                         // out
 JSS(key_type);                    // in/out: WalletPropose, TransactionSign
 JSS(latency);                     // out: PeerImp
 JSS(last);                        // out: RPCVersion
+JSS(lastSequence);                // out: NodeToShardStatus
+JSS(lastShardIndex);              // out: NodeToShardStatus
 JSS(last_close);                  // out: NetworkOPs
 JSS(last_refresh_time);           // out: ValidatorSite
 JSS(last_refresh_status);         // out: ValidatorSite
@@ -388,6 +399,7 @@ JSS(node_read_retries);          // out: GetCounts
 JSS(node_reads_hit);             // out: GetCounts
 JSS(node_reads_total);           // out: GetCounts
 JSS(node_reads_duration_us);     // out: GetCounts
+JSS(node_size);                  // out: server_info
 JSS(nodestore);                  // out: GetCounts
 JSS(node_writes);                // out: GetCounts
 JSS(node_written_bytes);         // out: GetCounts
@@ -490,6 +502,7 @@ JSS(server_domain);             // out: NetworkOPs
 JSS(server_state);              // out: NetworkOPs
 JSS(server_state_duration_us);  // out: NetworkOPs
 JSS(server_status);             // out: NetworkOPs
+JSS(server_version);            // out: NetworkOPs
 JSS(settle_delay);              // out: AccountChannels
 JSS(severity);                  // in: LogLevel
 JSS(shards);                    // in/out: GetCounts, DownloadShard
@@ -508,28 +521,30 @@ JSS(source_tag);                // out: AccountChannels
 JSS(stand_alone);               // out: NetworkOPs
 JSS(start);                     // in: TxHistory
 JSS(started);
-JSS(state);               // out: Logic.h, ServerState, LedgerData
-JSS(state_accounting);    // out: NetworkOPs
-JSS(state_now);           // in: Subscribe
-JSS(status);              // error
-JSS(stop);                // in: LedgerCleaner
-JSS(streams);             // in: Subscribe, Unsubscribe
-JSS(strict);              // in: AccountCurrencies, AccountInfo
-JSS(sub_index);           // in: LedgerEntry
-JSS(subcommand);          // in: PathFind
-JSS(success);             // rpc
-JSS(supported);           // out: AmendmentTableImpl
-JSS(system_time_offset);  // out: NetworkOPs
-JSS(tag);                 // out: Peers
-JSS(taker);               // in: Subscribe, BookOffers
-JSS(taker_gets);          // in: Subscribe, Unsubscribe, BookOffers
-JSS(taker_gets_funded);   // out: NetworkOPs
-JSS(taker_pays);          // in: Subscribe, Unsubscribe, BookOffers
-JSS(taker_pays_funded);   // out: NetworkOPs
-JSS(threshold);           // in: Blacklist
-JSS(ticket);              // in: AccountObjects
-JSS(ticket_count);        // out: AccountInfo
-JSS(ticket_seq);          // in: LedgerEntry
+JSS(state);                 // out: Logic.h, ServerState, LedgerData
+JSS(state_accounting);      // out: NetworkOPs
+JSS(state_now);             // in: Subscribe
+JSS(status);                // error
+JSS(stop);                  // in: LedgerCleaner
+JSS(stop_history_tx_only);  // in: Unsubscribe, stop history tx stream
+JSS(storedSeqs);            // out: NodeToShardStatus
+JSS(streams);               // in: Subscribe, Unsubscribe
+JSS(strict);                // in: AccountCurrencies, AccountInfo
+JSS(sub_index);             // in: LedgerEntry
+JSS(subcommand);            // in: PathFind
+JSS(success);               // rpc
+JSS(supported);             // out: AmendmentTableImpl
+JSS(system_time_offset);    // out: NetworkOPs
+JSS(tag);                   // out: Peers
+JSS(taker);                 // in: Subscribe, BookOffers
+JSS(taker_gets);            // in: Subscribe, Unsubscribe, BookOffers
+JSS(taker_gets_funded);     // out: NetworkOPs
+JSS(taker_pays);            // in: Subscribe, Unsubscribe, BookOffers
+JSS(taker_pays_funded);     // out: NetworkOPs
+JSS(threshold);             // in: Blacklist
+JSS(ticket);                // in: AccountObjects
+JSS(ticket_count);          // out: AccountInfo
+JSS(ticket_seq);            // in: LedgerEntry
 JSS(time);
 JSS(timeouts);                // out: InboundLedger
 JSS(track);                   // out: PeerImp
@@ -559,6 +574,20 @@ JSS(tx_json);                 // in/out: TransactionSign
 JSS(tx_signing_hash);         // out: TransactionSign
 JSS(tx_unsigned);             // out: TransactionSign
 JSS(txn_count);               // out: NetworkOPs
+JSS(txr_tx_cnt);              // out: protocol message tx's count
+JSS(txr_tx_sz);               // out: protocol message tx's size
+JSS(txr_have_txs_cnt);        // out: protocol message have tx count
+JSS(txr_have_txs_sz);         // out: protocol message have tx size
+JSS(txr_get_ledger_cnt);      // out: protocol message get ledger count
+JSS(txr_get_ledger_sz);       // out: protocol message get ledger size
+JSS(txr_ledger_data_cnt);     // out: protocol message ledger data count
+JSS(txr_ledger_data_sz);      // out: protocol message ledger data size
+JSS(txr_transactions_cnt);    // out: protocol message get object count
+JSS(txr_transactions_sz);     // out: protocol message get object size
+JSS(txr_selected_cnt);        // out: selected peers count
+JSS(txr_suppressed_cnt);      // out: suppressed peers count
+JSS(txr_not_enabled_cnt);     // out: peers with tx reduce-relay disabled count
+JSS(txr_missing_tx_freq);     // out: missing tx frequency average
 JSS(txs);                     // out: TxHistory
 JSS(type);                    // in: AccountObjects
                               // out: NetworkOPs
@@ -578,6 +607,7 @@ JSS(validated);               // out: NetworkOPs, RPCHelpers, AccountTx*
 JSS(validator_list_expires);  // out: NetworkOps, ValidatorList
 JSS(validator_list);          // out: NetworkOps, ValidatorList
 JSS(validators);
+JSS(validated_hash);          // out: NetworkOPs
 JSS(validated_ledger);        // out: NetworkOPs
 JSS(validated_ledger_index);  // out: SubmitTransaction
 JSS(validated_ledgers);       // out: NetworkOPs

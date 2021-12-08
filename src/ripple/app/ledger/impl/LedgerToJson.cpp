@@ -25,8 +25,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 
-#include <date/date.h>
-
 namespace ripple {
 
 namespace {
@@ -211,7 +209,7 @@ fillJsonState(Object& json, LedgerFill const& fill)
 
     for (auto const& sle : ledger.sles)
     {
-        if (fill.type == ltINVALID || sle->getType() == fill.type)
+        if (fill.type == ltANY || sle->getType() == fill.type)
         {
             if (binary)
             {

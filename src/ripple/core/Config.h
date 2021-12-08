@@ -29,11 +29,11 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
@@ -56,7 +56,8 @@ enum class SizedItem : std::size_t {
     txnDBCache,
     lgrDBCache,
     openFinalLimit,
-    burstSize
+    burstSize,
+    ramSizeGB
 };
 
 //  This entire derived class is deprecated.
@@ -116,6 +117,9 @@ private:
     */
     bool signingEnabled_ = false;
 
+    // The amount of RAM, in bytes, that we detected on this system.
+    std::uint64_t const ramSize_;
+
 public:
     bool doImport = false;
     bool nodeToShard = false;
@@ -156,16 +160,25 @@ public:
     std::size_t PEERS_OUT_MAX = 0;
     std::size_t PEERS_IN_MAX = 0;
 
-    std::chrono::seconds WEBSOCKET_PING_FREQ = std::chrono::minutes{5};
-
-    // Path searching
+    // Path searching: these were reasonable default values at some point but
+    //                 further research is needed to decide if they still are
+    //                 and whether all of them are needed.
+    //
+    //                 The performance and resource consumption of a server can
+    //                 be dramatically impacted by changing these configuration
+    //                 options; higher values result in exponentially higher
+    //                 resource usage.
+    //
+    //                 Servers operating as validators disable path finding by
+    //                 default by setting the `PATH_SEARCH_MAX` option to 0
+    //                 unless it is explicitly set in the configuration file.
     int PATH_SEARCH_OLD = 7;
     int PATH_SEARCH = 7;
     int PATH_SEARCH_FAST = 2;
     int PATH_SEARCH_MAX = 10;
 
     // Validation
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
         VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
     XRPAmount FEE_DEFAULT{10};
@@ -176,6 +189,9 @@ public:
     std::uint32_t LEDGER_HISTORY = 256;
     std::uint32_t FETCH_DEPTH = 1000000000;
 
+    // Tunable that adjusts various parameters, typically associated
+    // with hardware parameters (RAM size and CPU cores). The default
+    // is 'tiny'.
     std::size_t NODE_SIZE = 0;
 
     bool SSL_VERIFY = true;
@@ -197,7 +213,13 @@ public:
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
     // Thread pool configuration
-    std::size_t WORKERS = 0;
+    int WORKERS = 0;
+    // Can only be set in code, specifically unit tests
+    bool FORCE_MULTI_THREAD = false;
+
+    // Normally the sweep timer is automatically deduced based on the node
+    // size, but we allow admins to explicitly set it in the config.
+    std::optional<int> SWEEP_INTERVAL;
 
     // Reduce-relay - these parameters are experimental.
     // Enable reduce-relay features
@@ -212,9 +234,24 @@ public:
     // Set log level to debug so that the feature function can be
     // analyzed.
     bool VP_REDUCE_RELAY_SQUELCH = false;
+    // Transaction reduce-relay feature
+    bool TX_REDUCE_RELAY_ENABLE = false;
+    // If tx reduce-relay feature is disabled
+    // and this flag is enabled then some
+    // tx-related metrics is collected. It
+    // is ignored if tx reduce-relay feature is
+    // enabled. It is used in debugging to compare
+    // metrics with the feature disabled/enabled.
+    bool TX_REDUCE_RELAY_METRICS = false;
+    // Minimum peers a server should have before
+    // selecting random peers
+    std::size_t TX_REDUCE_RELAY_MIN_PEERS = 20;
+    // Percentage of peers with the tx reduce-relay feature enabled
+    // to relay to out of total active peers
+    std::size_t TX_RELAY_PERCENTAGE = 25;
 
     // These override the command line client settings
-    boost::optional<beast::IP::Endpoint> rpc_ip;
+    std::optional<beast::IP::Endpoint> rpc_ip;
 
     std::unordered_set<uint256, beast::uhash<>> features;
 
@@ -226,10 +263,11 @@ public:
     // How long can a peer remain in the "diverged" state
     std::chrono::seconds MAX_DIVERGED_TIME{300};
 
+    // Enable the beta API version
+    bool BETA_RPC_API = false;
+
 public:
-    Config() : j_{beast::Journal::getNullSink()}
-    {
-    }
+    Config();
 
     /* Be very careful to make sure these bool params
         are in the right order. */
@@ -314,7 +352,7 @@ public:
               defaults in the code for every case.
     */
     int
-    getValueFor(SizedItem item, boost::optional<std::size_t> node = boost::none)
+    getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
         const;
 };
 

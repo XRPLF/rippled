@@ -21,13 +21,13 @@
 #define RIPPLE_NODESTORE_DATABASESHARD_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/RangeSet.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/nodestore/ShardInfo.h>
 #include <ripple/nodestore/Types.h>
 
-#include <boost/optional.hpp>
-
 #include <memory>
+#include <optional>
 
 namespace ripple {
 namespace NodeStore {
@@ -39,21 +39,17 @@ class DatabaseShard : public Database
 public:
     /** Construct a shard store
 
-        @param name The Stoppable name for this Database
-        @param parent The parent Stoppable
         @param scheduler The scheduler to use for performing asynchronous tasks
         @param readThreads The number of asynchronous read threads to create
         @param config The shard configuration section for the database
         @param journal Destination for logging output
     */
     DatabaseShard(
-        std::string const& name,
-        Stoppable& parent,
         Scheduler& scheduler,
         int readThreads,
         Section const& config,
         beast::Journal journal)
-        : Database(name, parent, scheduler, readThreads, config, journal)
+        : Database(scheduler, readThreads, config, journal)
     {
     }
 
@@ -61,21 +57,22 @@ public:
 
         @return `true` if the database initialized without error
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     init() = 0;
 
     /** Prepare to store a new ledger in the shard being acquired
 
         @param validLedgerSeq The sequence of the maximum valid ledgers
         @return If a ledger should be fetched and stored, then returns the
-        ledger sequence of the ledger to request. Otherwise returns boost::none.
-                Some reasons this may return boost::none are: all shards are
+        ledger sequence of the ledger to request. Otherwise returns
+        std::nullopt.
+                Some reasons this may return std::nullopt are: all shards are
                 stored and full, max allowed disk space would be exceeded, or a
                 ledger was recently requested and not enough time has passed
                 between requests.
         @implNote adds a new writable shard if necessary
     */
-    virtual boost::optional<std::uint32_t>
+    [[nodiscard]] virtual std::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) = 0;
 
     /** Prepare one or more shard indexes to be imported into the database
@@ -83,7 +80,7 @@ public:
         @param shardIndexes Shard indexes to be prepared for import
         @return true if all shard indexes successfully prepared for import
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     prepareShards(std::vector<std::uint32_t> const& shardIndexes) = 0;
 
     /** Remove a previously prepared shard index for import
@@ -97,17 +94,19 @@ public:
 
         @return a string representing the shards prepared for import
     */
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getPreShards() = 0;
 
-    /** Import a shard into the shard database
+    /** Import a shard from the shard archive handler into the
+        shard database. This differs from 'importDatabase' which
+        imports the contents of the NodeStore
 
         @param shardIndex Shard index to import
         @param srcDir The directory to import from
         @return true If the shard was successfully imported
         @implNote if successful, srcDir is moved to the database directory
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     importShard(
         std::uint32_t shardIndex,
         boost::filesystem::path const& srcDir) = 0;
@@ -118,7 +117,7 @@ public:
         @param seq The sequence of the ledger
         @return The ledger if found, nullptr otherwise
     */
-    virtual std::shared_ptr<Ledger>
+    [[nodiscard]] virtual std::shared_ptr<Ledger>
     fetchLedger(uint256 const& hash, std::uint32_t seq) = 0;
 
     /** Notifies the database that the given ledger has been
@@ -129,68 +128,166 @@ public:
     virtual void
     setStored(std::shared_ptr<Ledger const> const& ledger) = 0;
 
-    /** Query which complete shards are stored
+    /** Invoke a callback on the SQLite db holding the
+        corresponding ledger
 
-        @return the indexes of complete shards
+       @return Value returned by callback function.
     */
-    virtual std::string
-    getCompleteShards() = 0;
+    virtual bool
+    callForLedgerSQLByLedgerSeq(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session)> const& callback) = 0;
 
-    /** @return The maximum number of ledgers stored in a shard
+    /** Invoke a callback on the ledger SQLite db for the
+        corresponding shard
+
+       @return Value returned by callback function.
+    */
+    virtual bool
+    callForLedgerSQLByShardIndex(
+        std::uint32_t shardIndex,
+        std::function<bool(soci::session& session)> const& callback) = 0;
+
+    /** Invoke a callback on the transaction SQLite db
+        for the corresponding ledger
+
+       @return Value returned by callback function.
+    */
+    virtual bool
+    callForTransactionSQLByLedgerSeq(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session)> const& callback) = 0;
+
+    /** Invoke a callback on the transaction SQLite db
+        for the corresponding shard
+
+       @return Value returned by callback function.
+    */
+    virtual bool
+    callForTransactionSQLByShardIndex(
+        std::uint32_t shardIndex,
+        std::function<bool(soci::session& session)> const& callback) = 0;
+
+    /**
+     * @brief iterateLedgerSQLsForward Checks out ledger databases for all
+     *        shards in ascending order starting from given shard index until
+     *        shard with the largest index visited or callback returned false.
+     *        For each visited shard calls given callback function passing
+     *        shard index and session with the database to it.
+     * @param minShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
      */
-    virtual std::uint32_t
-    ledgersPerShard() const = 0;
+    virtual bool
+    iterateLedgerSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) = 0;
 
-    /** @return The earliest shard index
+    /**
+     * @brief iterateTransactionSQLsForward Checks out transaction databases for
+     *        all shards in ascending order starting from given shard index
+     *        until shard with the largest index visited or callback returned
+     *        false. For each visited shard calls given callback function
+     *        passing shard index and session with the database to it.
+     * @param minShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
      */
-    virtual std::uint32_t
-    earliestShardIndex() const = 0;
+    virtual bool
+    iterateTransactionSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) = 0;
 
-    /** Calculates the shard index for a given ledger sequence
+    /**
+     * @brief iterateLedgerSQLsBack Checks out ledger databases for
+     *        all shards in descending order starting from given shard index
+     *        until shard with the smallest index visited or callback returned
+     *        false. For each visited shard calls given callback function
+     *        passing shard index and session with the database to it.
+     * @param maxShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
+     */
+    virtual bool
+    iterateLedgerSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) = 0;
 
-        @param seq ledger sequence
-        @return The shard index of the ledger sequence
+    /**
+     * @brief iterateTransactionSQLsBack Checks out transaction databases for
+     *        all shards in descending order starting from given shard index
+     *        until shard with the smallest index visited or callback returned
+     *        false. For each visited shard calls given callback function
+     *        passing shard index and session with the database to it.
+     * @param maxShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param callback Callback function to call.
+     * @return True if each callback function returns true, false otherwise.
+     */
+    virtual bool
+    iterateTransactionSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) = 0;
+
+    /** Query information about shards held
+
+        @return Information about shards held by this node
     */
-    virtual std::uint32_t
-    seqToShardIndex(std::uint32_t seq) const = 0;
-
-    /** Calculates the first ledger sequence for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The first ledger sequence pertaining to the shard index
-    */
-    virtual std::uint32_t
-    firstLedgerSeq(std::uint32_t shardIndex) const = 0;
-
-    /** Calculates the last ledger sequence for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The last ledger sequence pertaining to the shard index
-    */
-    virtual std::uint32_t
-    lastLedgerSeq(std::uint32_t shardIndex) const = 0;
+    [[nodiscard]] virtual std::unique_ptr<ShardInfo>
+    getShardInfo() const = 0;
 
     /** Returns the root database directory
      */
-    virtual boost::filesystem::path const&
+    [[nodiscard]] virtual boost::filesystem::path const&
     getRootDir() const = 0;
 
-    /** The number of ledgers in a shard */
-    static constexpr std::uint32_t ledgersPerShardDefault{16384u};
-};
+    /** Returns a JSON object detailing the status of an ongoing
+        database import if one is running, otherwise an error
+        object.
+     */
+    virtual Json::Value
+    getDatabaseImportStatus() const = 0;
 
-constexpr std::uint32_t
-seqToShardIndex(
-    std::uint32_t ledgerSeq,
-    std::uint32_t ledgersPerShard = DatabaseShard::ledgersPerShardDefault)
-{
-    return (ledgerSeq - 1) / ledgersPerShard;
-}
+    /** Initiates a NodeStore to ShardStore import and returns
+        the result in a JSON object.
+     */
+    virtual Json::Value
+    startNodeToShard() = 0;
+
+    /** Terminates a NodeStore to ShardStore import and returns
+        the result in a JSON object.
+    */
+    virtual Json::Value
+    stopNodeToShard() = 0;
+
+    /** Returns the first ledger sequence of the shard currently being imported
+        from the NodeStore
+
+        @return The ledger sequence or an unseated value if no import is running
+     */
+    virtual std::optional<std::uint32_t>
+    getDatabaseImportSequence() const = 0;
+
+    /** Returns the number of queued tasks
+     */
+    [[nodiscard]] virtual size_t
+    getNumTasks() const = 0;
+};
 
 extern std::unique_ptr<DatabaseShard>
 make_ShardStore(
     Application& app,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     beast::Journal j);

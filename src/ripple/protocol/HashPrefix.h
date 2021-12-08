@@ -84,6 +84,9 @@ enum class HashPrefix : std::uint32_t {
 
     /** Payment Channel Claim */
     paymentChannelClaim = detail::make_hash_prefix('C', 'L', 'M'),
+
+    /** shard info for signing */
+    shardInfo = detail::make_hash_prefix('S', 'H', 'D'),
 };
 
 template <class Hasher>

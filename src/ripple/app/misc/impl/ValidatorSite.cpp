@@ -27,8 +27,6 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
-#include <boost/algorithm/clamp.hpp>
-#include <boost/regex.hpp>
 #include <algorithm>
 
 namespace ripple {
@@ -119,24 +117,32 @@ ValidatorSite::~ValidatorSite()
 }
 
 bool
-ValidatorSite::missingSite()
+ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)
 {
     auto const sites = app_.validators().loadLists();
-    return sites.empty() || load(sites);
+    return sites.empty() || load(sites, lock_sites);
 }
 
 bool
 ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
-    // If no sites are provided, act as if a site failed to load.
-    if (siteURIs.empty())
-    {
-        return missingSite();
-    }
-
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
     std::lock_guard lock{sites_mutex_};
+
+    return load(siteURIs, lock);
+}
+
+bool
+ValidatorSite::load(
+    std::vector<std::string> const& siteURIs,
+    std::lock_guard<std::mutex> const& lock_sites)
+{
+    // If no sites are provided, act as if a site failed to load.
+    if (siteURIs.empty())
+    {
+        return missingSite(lock_sites);
+    }
 
     for (auto const& uri : siteURIs)
     {
@@ -160,9 +166,10 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 void
 ValidatorSite::start()
 {
-    std::lock_guard lock{state_mutex_};
+    std::lock_guard l0{sites_mutex_};
+    std::lock_guard l1{state_mutex_};
     if (timer_.expires_at() == clock_type::time_point{})
-        setTimer(lock);
+        setTimer(l0, l1);
 }
 
 void
@@ -199,10 +206,10 @@ ValidatorSite::stop()
 }
 
 void
-ValidatorSite::setTimer(std::lock_guard<std::mutex>& state_lock)
+ValidatorSite::setTimer(
+    std::lock_guard<std::mutex> const& site_lock,
+    std::lock_guard<std::mutex> const& state_lock)
 {
-    std::lock_guard lock{sites_mutex_};
-
     auto next = std::min_element(
         sites_.begin(), sites_.end(), [](Site const& a, Site const& b) {
             return a.nextRefresh < b.nextRefresh;
@@ -224,7 +231,7 @@ void
 ValidatorSite::makeRequest(
     std::shared_ptr<Site::Resource> resource,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& sites_lock)
+    std::lock_guard<std::mutex> const& sites_lock)
 {
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
@@ -353,7 +360,7 @@ void
 ValidatorSite::parseJsonResponse(
     std::string const& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& sites_lock)
+    std::lock_guard<std::mutex> const& sites_lock)
 {
     Json::Value const body = [&res, siteIdx, this]() {
         Json::Reader r;
@@ -408,7 +415,7 @@ ValidatorSite::parseJsonResponse(
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
 
-    for (auto const [disp, count] : applyResult.dispositions)
+    for (auto const& [disp, count] : applyResult.dispositions)
     {
         switch (disp)
         {
@@ -461,10 +468,10 @@ ValidatorSite::parseJsonResponse(
         body[jss::refresh_interval].isNumeric())
     {
         using namespace std::chrono_literals;
-        std::chrono::minutes const refresh = boost::algorithm::clamp(
+        std::chrono::minutes const refresh = std::clamp(
             std::chrono::minutes{body[jss::refresh_interval].asUInt()},
             1min,
-            24h);
+            std::chrono::minutes{24h});
         sites_[siteIdx].refreshInterval = refresh;
         sites_[siteIdx].nextRefresh =
             clock_type::now() + sites_[siteIdx].refreshInterval;
@@ -475,7 +482,7 @@ std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
     detail::response_type& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& sites_lock)
+    std::lock_guard<std::mutex> const& sites_lock)
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
@@ -524,8 +531,8 @@ ValidatorSite::onSiteFetch(
     detail::response_type&& res,
     std::size_t siteIdx)
 {
+    std::lock_guard lock_sites{sites_mutex_};
     {
-        std::lock_guard lock_sites{sites_mutex_};
         if (endpoint != endpoint_type{})
             sites_[siteIdx].lastRequestEndpoint = endpoint;
         JLOG(j_.debug()) << "Got completion for "
@@ -540,7 +547,7 @@ ValidatorSite::onSiteFetch(
 
             // See if there's a copy saved locally from last time we
             // saw the list.
-            missingSite();
+            missingSite(lock_sites);
         };
         if (ec)
         {
@@ -599,7 +606,7 @@ ValidatorSite::onSiteFetch(
     std::lock_guard lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
-        setTimer(lock_state);
+        setTimer(lock_sites, lock_state);
     cv_.notify_all();
 }
 
@@ -609,8 +616,8 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
+    std::lock_guard lock_sites{sites_mutex_};
     {
-        std::lock_guard lock_sites{sites_mutex_};
         try
         {
             if (ec)
@@ -636,7 +643,7 @@ ValidatorSite::onTextFetch(
     std::lock_guard lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
-        setTimer(lock_state);
+        setTimer(lock_sites, lock_state);
     cv_.notify_all();
 }
 

@@ -58,7 +58,9 @@ public:
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
         }
-        env.close();
+        // Note that calls to env.close() fail without admin permission.
+        if (asAdmin)
+            env.close();
 
         // with no limit specified, we get the max_limit if the total number of
         // accounts is greater than max, which it is here
@@ -107,7 +109,6 @@ public:
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
         }
-        env.close();
 
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
@@ -212,7 +213,6 @@ public:
             Account const bob{std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
         }
-        env.close();
 
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup

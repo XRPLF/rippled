@@ -30,18 +30,23 @@ namespace ripple {
 namespace NodeStore {
 
 Database::Database(
-    std::string name,
-    Stoppable& parent,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
-    : Stoppable(name, parent.getRoot())
-    , j_(journal)
+    : j_(journal)
     , scheduler_(scheduler)
+    , ledgersPerShard_(get<std::uint32_t>(
+          config,
+          "ledgers_per_shard",
+          DEFAULT_LEDGERS_PER_SHARD))
     , earliestLedgerSeq_(
           get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
+    , earliestShardIndex_((earliestLedgerSeq_ - 1) / ledgersPerShard_)
 {
+    if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
+        Throw<std::runtime_error>("Invalid ledgers_per_shard");
+
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
 
@@ -52,37 +57,45 @@ Database::Database(
 Database::~Database()
 {
     // NOTE!
-    // Any derived class should call the stopReadThreads() method in its
+    // Any derived class should call the stop() method in its
     // destructor.  Otherwise, occasionally, the derived class may
     // crash during shutdown when its members are accessed by one of
     // these threads after the derived class is destroyed but before
     // this base class is destroyed.
-    stopReadThreads();
+    stop();
+}
+
+bool
+Database::isStopping() const
+{
+    std::lock_guard lock(readLock_);
+    return readStopping_;
+}
+
+std::uint32_t
+Database::maxLedgers(std::uint32_t shardIndex) const noexcept
+{
+    if (shardIndex > earliestShardIndex_)
+        return ledgersPerShard_;
+
+    if (shardIndex == earliestShardIndex_)
+        return lastLedgerSeq(shardIndex) - firstLedgerSeq(shardIndex) + 1;
+
+    assert(!"Invalid shard index");
+    return 0;
 }
 
 void
-Database::onStop()
+Database::stop()
 {
     // After stop time we can no longer use the JobQueue for background
     // reads.  Join the background read threads.
-    stopReadThreads();
-}
-
-void
-Database::onChildrenStopped()
-{
-    stopped();
-}
-
-void
-Database::stopReadThreads()
-{
     {
         std::lock_guard lock(readLock_);
-        if (readShut_)  // Only stop threads once.
+        if (readStopping_)  // Only stop threads once.
             return;
 
-        readShut_ = true;
+        readStopping_ = true;
         readCondVar_.notify_all();
     }
 
@@ -107,14 +120,14 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
     batch.reserve(batchWritePreallocationSize);
-    auto storeBatch = [&]() {
+    auto storeBatch = [&, fname = __func__]() {
         try
         {
             dstBackend.storeBatch(batch);
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.error()) << "Exception caught in function " << __func__
+            JLOG(j_.error()) << "Exception caught in function " << fname
                              << ". Error: " << e.what();
             return;
         }
@@ -188,7 +201,7 @@ Database::storeLedger(
 
     Batch batch;
     batch.reserve(batchWritePreallocationSize);
-    auto storeBatch = [&]() {
+    auto storeBatch = [&, fname = __func__]() {
         std::uint64_t sz{0};
         for (auto const& nodeObject : batch)
             sz += nodeObject->getData().size();
@@ -200,7 +213,7 @@ Database::storeLedger(
         catch (std::exception const& e)
         {
             fail(
-                std::string("Exception caught in function ") + __func__ +
+                std::string("Exception caught in function ") + fname +
                 ". Error: " + e.what());
             return false;
         }
@@ -280,12 +293,9 @@ Database::threadEntry()
 
         {
             std::unique_lock<std::mutex> lock(readLock_);
-            while (!readShut_ && read_.empty())
-            {
-                // All work is done
-                readCondVar_.wait(lock);
-            }
-            if (readShut_)
+            readCondVar_.wait(
+                lock, [this] { return readStopping_ || !read_.empty(); });
+            if (readStopping_)
                 break;
 
             // Read in key order to make the back end more efficient

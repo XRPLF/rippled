@@ -1437,7 +1437,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        RPC::ApiMaximumSupportedVersion == 1 ?
+        RPC::apiMaximumSupportedVersion == 1 ?
                                              R"({
     "method" : "account_tx",
     "params" : [
@@ -4301,6 +4301,75 @@ static RPCCallTestData const rpcCallTestArray[] = {
     ]
     })"},
 
+    // node_to_shard
+    // -------------------------------------------------------------------
+    {"node_to_shard: status.",
+     __LINE__,
+     {"node_to_shard", "status"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "status"
+      }
+    ]
+    })"},
+    {"node_to_shard: start.",
+     __LINE__,
+     {"node_to_shard", "start"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "start"
+      }
+    ]
+    })"},
+    {"node_to_shard: stop.",
+     __LINE__,
+     {"node_to_shard", "stop"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "stop"
+      }
+    ]
+    })"},
+    {"node_to_shard: too many arguments.",
+     __LINE__,
+     {"node_to_shard", "start", "stop"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+      }
+    ]
+    })"},
+    {"node_to_shard: invalid argument.",
+     __LINE__,
+     {"node_to_shard", "invalid"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "node_to_shard",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "action" : "invalid"
+      }
+    ]
+    })"},
+
     // owner_info
     // ------------------------------------------------------------------
     {"owner_info: minimal.",
@@ -5917,7 +5986,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        RPC::ApiMaximumSupportedVersion == 1 ?
+        RPC::apiMaximumSupportedVersion == 1 ?
                                              R"({
     "method" : "tx_account",
     "params" : [
@@ -6410,7 +6479,7 @@ std::string
 updateAPIVersionString(const char* const req)
 {
     static std::string version_str =
-        std::to_string(RPC::ApiMaximumSupportedVersion);
+        std::to_string(RPC::apiMaximumSupportedVersion);
     static auto place_holder = "%MAX_API_VER%";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);

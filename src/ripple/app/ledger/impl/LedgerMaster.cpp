@@ -34,6 +34,8 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
+#include <ripple/app/rdb/RelationalDBInterface_postgres.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/MathUtilities.h>
@@ -156,7 +158,7 @@ static bool
 shouldAcquire(
     std::uint32_t const currentLedger,
     std::uint32_t const ledgerHistory,
-    boost::optional<LedgerIndex> const minimumOnline,
+    std::optional<LedgerIndex> const minimumOnline,
     std::uint32_t const candidateLedger,
     beast::Journal j)
 {
@@ -182,15 +184,11 @@ shouldAcquire(
 LedgerMaster::LedgerMaster(
     Application& app,
     Stopwatch& stopwatch,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal)
-    : Stoppable("LedgerMaster", parent)
-    , app_(app)
+    : app_(app)
     , m_journal(journal)
     , mLedgerHistory(collector, app)
-    , mLedgerCleaner(
-          detail::make_LedgerCleaner(app, *this, app_.journal("LedgerCleaner")))
     , standalone_(app_.config().standalone())
     , fetch_depth_(
           app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
@@ -275,15 +273,9 @@ LedgerMaster::getValidatedLedgerAge()
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-    {
-        auto age = PgQuery(app_.getPgPool())("SELECT age()");
-        if (!age || age.isNull())
-        {
-            JLOG(m_journal.debug()) << "No ledgers in database";
-            return weeks{2};
-        }
-        return std::chrono::seconds{age.asInt()};
-    }
+        return static_cast<RelationalDBInterfacePostgres*>(
+                   &app_.getRelationalDBInterface())
+            ->getValidatedLedgerAge();
 #endif
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
@@ -304,6 +296,14 @@ bool
 LedgerMaster::isCaughtUp(std::string& reason)
 {
     using namespace std::chrono_literals;
+
+#ifdef RIPPLED_REPORTING
+    if (app_.config().reporting())
+        return static_cast<RelationalDBInterfacePostgres*>(
+                   &app_.getRelationalDBInterface())
+            ->isCaughtUp(reason);
+#endif
+
     if (getPublishedLedgerAge() > 3min)
     {
         reason = "No recently-published ledger";
@@ -328,7 +328,7 @@ void
 LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 {
     std::vector<NetClock::time_point> times;
-    boost::optional<uint256> consensusHash;
+    std::optional<uint256> consensusHash;
 
     if (!standalone_)
     {
@@ -569,13 +569,6 @@ LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
     return mHeldTransactions.popAcctTransaction(tx);
 }
 
-LedgerIndex
-LedgerMaster::getBuildingLedger()
-{
-    // The ledger we are currently building, 0 of none
-    return mBuildingLedgerSeq.load();
-}
-
 void
 LedgerMaster::setBuildingLedger(LedgerIndex i)
 {
@@ -609,13 +602,13 @@ LedgerMaster::getFullValidatedRange(
     if (!maxVal)
         return false;
 
-    boost::optional<std::uint32_t> maybeMin;
+    std::optional<std::uint32_t> maybeMin;
     {
         std::lock_guard sl(mCompleteLock);
         maybeMin = prevMissing(mCompleteLedgers, maxVal);
     }
 
-    if (maybeMin == boost::none)
+    if (maybeMin == std::nullopt)
         minVal = maxVal;
     else
         minVal = 1 + *maybeMin;
@@ -645,11 +638,11 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
             }
             return true;
         }
-        catch (std::exception&)
+        catch (std::exception const& e)
         {
-            JLOG(m_journal.error())
-                << __func__ << " : "
-                << "Error parsing result of getCompleteLedgers()";
+            JLOG(m_journal.error()) << "LedgerMaster::getValidatedRange: "
+                                       "exception parsing complete ledgers: "
+                                    << e.what();
             return false;
         }
     }
@@ -711,7 +704,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
     std::uint32_t seq = ledger->info().seq;
     uint256 prevHash = ledger->info().parentHash;
 
-    std::map<std::uint32_t, std::pair<uint256, uint256>> ledgerHashes;
+    std::map<std::uint32_t, LedgerHashPair> ledgerHashes;
 
     std::uint32_t minHas = seq;
     std::uint32_t maxHas = seq;
@@ -732,7 +725,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
 
         if (it == ledgerHashes.end())
         {
-            if (app_.isShutdown())
+            if (app_.isStopping())
                 return;
 
             {
@@ -740,15 +733,15 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
                 mCompleteLedgers.insert(range(minHas, maxHas));
             }
             maxHas = minHas;
-            ledgerHashes =
-                getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq, app_);
+            ledgerHashes = app_.getRelationalDBInterface().getHashesByIndex(
+                (seq < 500) ? 0 : (seq - 499), seq);
             it = ledgerHashes.find(seq);
 
             if (it == ledgerHashes.end())
                 break;
 
             if (!nodeStore.fetchNodeObject(
-                    ledgerHashes.begin()->second.first,
+                    ledgerHashes.begin()->second.ledgerHash,
                     ledgerHashes.begin()->first))
             {
                 // The ledger is not backed by the node store
@@ -758,10 +751,10 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
             }
         }
 
-        if (it->second.first != prevHash)
+        if (it->second.ledgerHash != prevHash)
             break;
 
-        prevHash = it->second.second;
+        prevHash = it->second.parentHash;
     }
 
     {
@@ -854,7 +847,7 @@ void
 LedgerMaster::fixMismatch(ReadView const& ledger)
 {
     int invalidate = 0;
-    boost::optional<uint256> hash;
+    std::optional<uint256> hash;
 
     for (std::uint32_t lSeq = ledger.info().seq - 1; lSeq > 0; --lSeq)
     {
@@ -924,7 +917,8 @@ LedgerMaster::setFullLedger(
     {
         // Check the SQL database's entry for the sequence before this
         // ledger, if it's not this ledger's parent, invalidate it
-        uint256 prevHash = getHashByIndex(ledger->info().seq - 1, app_);
+        uint256 prevHash = app_.getRelationalDBInterface().getHashByIndex(
+            ledger->info().seq - 1);
         if (prevHash.isNonZero() && prevHash != ledger->info().parentHash)
             clearLedger(ledger->info().seq - 1);
     }
@@ -1272,34 +1266,13 @@ LedgerMaster::consensusBuilt(
     }
 }
 
-void
-LedgerMaster::advanceThread()
-{
-    std::unique_lock sl(m_mutex);
-    assert(!mValidLedger.empty() && mAdvanceThread);
-
-    JLOG(m_journal.trace()) << "advanceThread<";
-
-    try
-    {
-        doAdvance(sl);
-    }
-    catch (std::exception const&)
-    {
-        JLOG(m_journal.fatal()) << "doAdvance throws an exception";
-    }
-
-    mAdvanceThread = false;
-    JLOG(m_journal.trace()) << "advanceThread>";
-}
-
-boost::optional<LedgerHash>
+std::optional<LedgerHash>
 LedgerMaster::getLedgerHashForHistory(
     LedgerIndex index,
     InboundLedger::Reason reason)
 {
     // Try to get the hash of a ledger we need to fetch for history
-    boost::optional<LedgerHash> ret;
+    std::optional<LedgerHash> ret;
     auto const& l{
         reason == InboundLedger::Reason::SHARD ? mShardLedger : mHistLedger};
 
@@ -1470,8 +1443,25 @@ LedgerMaster::tryAdvance()
     if (!mAdvanceThread && !mValidLedger.empty())
     {
         mAdvanceThread = true;
-        app_.getJobQueue().addJob(
-            jtADVANCE, "advanceLedger", [this](Job&) { advanceThread(); });
+        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this](Job&) {
+            std::unique_lock sl(m_mutex);
+
+            assert(!mValidLedger.empty() && mAdvanceThread);
+
+            JLOG(m_journal.trace()) << "advanceThread<";
+
+            try
+            {
+                doAdvance(sl);
+            }
+            catch (std::exception const& ex)
+            {
+                JLOG(m_journal.fatal()) << "doAdvance throws: " << ex.what();
+            }
+
+            mAdvanceThread = false;
+            JLOG(m_journal.trace()) << "advanceThread>";
+        });
     }
 }
 
@@ -1598,7 +1588,7 @@ LedgerMaster::newPFWork(
     }
     // If we're stopping don't give callers the expectation that their
     // request will be fulfilled, even if it may be serviced.
-    return mPathFindThread > 0 && !isStopping();
+    return mPathFindThread > 0 && !app_.isStopping();
 }
 
 std::recursive_mutex&
@@ -1624,10 +1614,10 @@ LedgerMaster::getValidatedLedger()
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
     {
-        auto seq = PgQuery(app_.getPgPool())("SELECT max_ledger()");
-        if (!seq || seq.isNull())
+        auto seq = app_.getRelationalDBInterface().getMaxLedgerSeq();
+        if (!seq)
             return {};
-        return getLedgerBySeq(seq.asInt());
+        return getLedgerBySeq(*seq);
     }
 #endif
     return mValidLedger.get();
@@ -1660,27 +1650,23 @@ LedgerMaster::getCompleteLedgers()
 {
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-    {
-        auto range = PgQuery(app_.getPgPool())("SELECT complete_ledgers()");
-        if (!range)
-            return "error";
-        return range.c_str();
-    }
-
+        return static_cast<RelationalDBInterfacePostgres*>(
+                   &app_.getRelationalDBInterface())
+            ->getCompleteLedgers();
 #endif
     std::lock_guard sl(mCompleteLock);
     return to_string(mCompleteLedgers);
 }
 
-boost::optional<NetClock::time_point>
+std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 {
     uint256 hash = getHashBySeq(ledgerIndex);
     return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex)
-                            : boost::none;
+                            : std::nullopt;
 }
 
-boost::optional<NetClock::time_point>
+std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(
     LedgerHash const& ledgerHash,
     std::uint32_t index)
@@ -1699,7 +1685,7 @@ LedgerMaster::getCloseTimeByHash(
         }
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 uint256
@@ -1710,13 +1696,13 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
     if (hash.isNonZero())
         return hash;
 
-    return getHashByIndex(index, app_);
+    return app_.getRelationalDBInterface().getHashByIndex(index);
 }
 
-boost::optional<LedgerHash>
+std::optional<LedgerHash>
 LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
 {
-    boost::optional<LedgerHash> ledgerHash;
+    std::optional<LedgerHash> ledgerHash;
 
     if (auto referenceLedger = mValidLedger.get())
         ledgerHash = walkHashBySeq(index, referenceLedger, reason);
@@ -1724,7 +1710,7 @@ LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
     return ledgerHash;
 }
 
-boost::optional<LedgerHash>
+std::optional<LedgerHash>
 LedgerMaster::walkHashBySeq(
     std::uint32_t index,
     std::shared_ptr<ReadView const> const& referenceLedger,
@@ -1733,7 +1719,7 @@ LedgerMaster::walkHashBySeq(
     if (!referenceLedger || (referenceLedger->info().seq < index))
     {
         // Nothing we can do. No validated ledger.
-        return boost::none;
+        return std::nullopt;
     }
 
     // See if the hash for the ledger we need is in the reference ledger
@@ -1827,12 +1813,6 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 }
 
 void
-LedgerMaster::doLedgerCleaner(Json::Value const& parameters)
-{
-    mLedgerCleaner->doClean(parameters);
-}
-
-void
 LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 {
     std::lock_guard sl(mCompleteLock);
@@ -1856,12 +1836,6 @@ float
 LedgerMaster::getCacheHitRate()
 {
     return mLedgerHistory.getCacheHitRate();
-}
-
-beast::PropertyStream::Source&
-LedgerMaster::getPropertySource()
-{
-    return *mLedgerCleaner;
 }
 
 void
@@ -1949,7 +1923,8 @@ LedgerMaster::fetchForHistory(
                     fillInProgress = mFillInProgress;
                 }
                 if (fillInProgress == 0 &&
-                    getHashByIndex(seq - 1, app_) == ledger->info().parentHash)
+                    app_.getRelationalDBInterface().getHashByIndex(seq - 1) ==
+                        ledger->info().parentHash)
                 {
                     {
                         // Previous ledger is in DB
@@ -2033,7 +2008,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             {
                 // We are in sync, so can acquire
                 InboundLedger::Reason reason = InboundLedger::Reason::HISTORY;
-                boost::optional<std::uint32_t> missing;
+                std::optional<std::uint32_t> missing;
                 {
                     std::lock_guard sll(mCompleteLock);
                     missing = prevMissing(
@@ -2057,7 +2032,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                             << "advanceThread should acquire";
                     }
                     else
-                        missing = boost::none;
+                        missing = std::nullopt;
                 }
                 if (!missing && mFillInProgress == 0)
                 {
@@ -2121,7 +2096,7 @@ LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
     fetch_packs_.canonicalize_replace_client(hash, data);
 }
 
-boost::optional<Blob>
+std::optional<Blob>
 LedgerMaster::getFetchPack(uint256 const& hash)
 {
     Blob data;
@@ -2131,7 +2106,7 @@ LedgerMaster::getFetchPack(uint256 const& hash)
         if (hash == sha512Half(makeSlice(data)))
             return data;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void
@@ -2341,31 +2316,10 @@ LedgerMaster::getFetchPackCacheSize() const
 }
 
 // Returns the minimum ledger sequence in SQL database, if any.
-boost::optional<LedgerIndex>
+std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
-    if (!app_.config().reporting())
-    {
-        boost::optional<LedgerIndex> seq;
-        auto db = app_.getLedgerDB().checkoutDb();
-        *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
-        return seq;
-    }
-#ifdef RIPPLED_REPORTING
-    {
-        auto seq = PgQuery(app_.getPgPool())("SELECT min_ledger()");
-        if (!seq)
-        {
-            JLOG(m_journal.error())
-                << "Error querying minimum ledger sequence.";
-            return {};
-        }
-        if (seq.isNull())
-            return {};
-        return seq.asInt();
-    }
-#endif
-    return {};
+    return app_.getRelationalDBInterface().getMinLedgerSeq();
 }
 
 }  // namespace ripple

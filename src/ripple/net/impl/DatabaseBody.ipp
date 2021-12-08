@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
+
 namespace ripple {
 
 inline void
@@ -41,51 +43,22 @@ DatabaseBody::value_type::close()
 
 inline void
 DatabaseBody::value_type::open(
-    boost::filesystem::path path,
+    boost::filesystem::path const& path,
     Config const& config,
     boost::asio::io_service& io_service,
     boost::system::error_code& ec)
 {
     strand_.reset(new boost::asio::io_service::strand(io_service));
+    path_ = path;
 
     auto setup = setup_DatabaseCon(config);
     setup.dataDir = path.parent_path();
     setup.useGlobalPragma = false;
 
-    // Downloader ignores the "CommonPragma"
-    conn_ = std::make_unique<DatabaseCon>(
-        setup, "Download", DownloaderDBPragma, DatabaseBodyDBInit);
-
-    path_ = path;
-
-    auto db = conn_->checkoutDb();
-
-    boost::optional<std::string> pathFromDb;
-
-    *db << "SELECT Path FROM Download WHERE Part=0;", soci::into(pathFromDb);
-
-    // Try to reuse preexisting
-    // database.
-    if (pathFromDb)
-    {
-        // Can't resuse - database was
-        // from a different file download.
-        if (pathFromDb != path.string())
-        {
-            *db << "DROP TABLE Download;";
-        }
-
-        // Continuing a file download.
-        else
-        {
-            boost::optional<std::uint64_t> size;
-
-            *db << "SELECT SUM(LENGTH(Data)) FROM Download;", soci::into(size);
-
-            if (size)
-                fileSize_ = size.get();
-        }
-    }
+    auto [conn, size] = openDatabaseBodyDb(setup, path);
+    conn_ = std::move(conn);
+    if (size)
+        fileSize_ = *size;
 }
 
 // This is called from message::payload_size
@@ -183,7 +156,7 @@ DatabaseBody::reader::put(
 }
 
 inline void
-DatabaseBody::reader::do_put(std::string data)
+DatabaseBody::reader::do_put(std::string const& data)
 {
     using namespace boost::asio;
 
@@ -204,64 +177,12 @@ DatabaseBody::reader::do_put(std::string data)
     }
 
     auto path = body_.path_.string();
-    std::uint64_t rowSize = 0;
-    soci::indicator rti;
 
-    std::uint64_t remainingInRow = 0;
-
-    auto db = body_.conn_->checkoutDb();
-
-    auto be = dynamic_cast<soci::sqlite3_session_backend*>(db->get_backend());
-    BOOST_ASSERT(be);
-
-    // This limits how large we can make the blob
-    // in each row. Also subtract a pad value to
-    // account for the other values in the row.
-    auto const blobMaxSize =
-        sqlite_api::sqlite3_limit(be->conn_, SQLITE_LIMIT_LENGTH, -1) -
-        MAX_ROW_SIZE_PAD;
-
-    auto rowInit = [&] {
-        *db << "INSERT INTO Download VALUES (:path, zeroblob(0), 0, :part)",
-            soci::use(path), soci::use(body_.part_);
-
-        remainingInRow = blobMaxSize;
-        rowSize = 0;
-    };
-
-    *db << "SELECT Path,Size,Part FROM Download ORDER BY Part DESC "
-           "LIMIT 1",
-        soci::into(path), soci::into(rowSize), soci::into(body_.part_, rti);
-
-    if (!db->got_data())
-        rowInit();
-    else
-        remainingInRow = blobMaxSize - rowSize;
-
-    auto insert = [&db, &rowSize, &part = body_.part_, &fs = body_.fileSize_](
-                      auto const& data) {
-        std::uint64_t updatedSize = rowSize + data.size();
-
-        *db << "UPDATE Download SET Data = CAST(Data || :data AS blob), "
-               "Size = :size WHERE Part = :part;",
-            soci::use(data), soci::use(updatedSize), soci::use(part);
-
-        fs += data.size();
-    };
-
-    while (remainingInRow < data.size())
     {
-        if (remainingInRow)
-        {
-            insert(data.substr(0, remainingInRow));
-            data.erase(0, remainingInRow);
-        }
-
-        ++body_.part_;
-        rowInit();
+        auto db = body_.conn_->checkoutDb();
+        body_.part_ = databaseBodyDoPut(
+            *db, data, path, body_.fileSize_, body_.part_, MAX_ROW_SIZE_PAD);
     }
-
-    insert(data);
 
     bool const notify = [this] {
         std::lock_guard lock(body_.m_);
@@ -288,17 +209,13 @@ DatabaseBody::reader::finish(boost::system::error_code& ec)
         }
     }
 
-    auto db = body_.conn_->checkoutDb();
-
-    soci::rowset<std::string> rs =
-        (db->prepare << "SELECT Data FROM Download ORDER BY PART ASC;");
-
     std::ofstream fout;
     fout.open(body_.path_.string(), std::ios::binary | std::ios::out);
 
-    // iteration through the resultset:
-    for (auto it = rs.begin(); it != rs.end(); ++it)
-        fout.write(it->data(), it->size());
+    {
+        auto db = body_.conn_->checkoutDb();
+        databaseBodyFinish(*db, fout);
+    }
 
     // Flush any pending data that hasn't
     // been been written to the DB.

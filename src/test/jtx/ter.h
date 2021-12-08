@@ -33,7 +33,7 @@ namespace jtx {
 class ter
 {
 private:
-    boost::optional<TER> v_;
+    std::optional<TER> v_;
 
 public:
     explicit ter(decltype(std::ignore))

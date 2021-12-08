@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/rdb/RelationalDBInterface_shards.h>
 #include <ripple/basics/Archive.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/core/ConfigSections.h>
@@ -45,15 +46,13 @@ ShardArchiveHandler::getDownloadDirectory(Config const& config)
 }
 
 std::unique_ptr<ShardArchiveHandler>
-ShardArchiveHandler::makeShardArchiveHandler(
-    Application& app,
-    Stoppable& parent)
+ShardArchiveHandler::makeShardArchiveHandler(Application& app)
 {
-    return std::make_unique<ShardArchiveHandler>(app, parent);
+    return std::make_unique<ShardArchiveHandler>(app);
 }
 
 std::unique_ptr<ShardArchiveHandler>
-ShardArchiveHandler::tryMakeRecoveryHandler(Application& app, Stoppable& parent)
+ShardArchiveHandler::tryMakeRecoveryHandler(Application& app)
 {
     auto const downloadDir(getDownloadDirectory(app.config()));
 
@@ -62,15 +61,14 @@ ShardArchiveHandler::tryMakeRecoveryHandler(Application& app, Stoppable& parent)
     if (exists(downloadDir / stateDBName) &&
         is_regular_file(downloadDir / stateDBName))
     {
-        return std::make_unique<RecoveryHandler>(app, parent);
+        return std::make_unique<RecoveryHandler>(app);
     }
 
     return nullptr;
 }
 
-ShardArchiveHandler::ShardArchiveHandler(Application& app, Stoppable& parent)
-    : Stoppable("ShardArchiveHandler", parent)
-    , process_(false)
+ShardArchiveHandler::ShardArchiveHandler(Application& app)
+    : process_(false)
     , app_(app)
     , j_(app.journal("ShardArchiveHandler"))
     , downloadDir_(getDownloadDirectory(app.config()))
@@ -92,7 +90,7 @@ ShardArchiveHandler::init()
 {
     std::lock_guard lock(m_);
 
-    if (process_ || downloader_ != nullptr || sqliteDB_ != nullptr)
+    if (process_ || downloader_ != nullptr || sqlDB_ != nullptr)
     {
         JLOG(j_.warn()) << "Archives already being processed";
         return false;
@@ -115,11 +113,7 @@ ShardArchiveHandler::init()
         {
             create_directories(downloadDir_);
 
-            sqliteDB_ = std::make_unique<DatabaseCon>(
-                downloadDir_,
-                stateDBName,
-                DownloaderDBPragma,
-                ShardArchiveHandlerDBInit);
+            sqlDB_ = makeArchiveDB(downloadDir_, stateDBName);
         }
         catch (std::exception const& e)
         {
@@ -144,31 +138,20 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
             exists(downloadDir_ / stateDBName) &&
             is_regular_file(downloadDir_ / stateDBName));
 
-        sqliteDB_ = std::make_unique<DatabaseCon>(
-            downloadDir_,
-            stateDBName,
-            DownloaderDBPragma,
-            ShardArchiveHandlerDBInit);
+        sqlDB_ = makeArchiveDB(downloadDir_, stateDBName);
 
-        auto& session{sqliteDB_->getSession()};
-
-        soci::rowset<soci::row> rs =
-            (session.prepare << "SELECT * FROM State;");
-
-        for (auto it = rs.begin(); it != rs.end(); ++it)
-        {
+        readArchiveDB(*sqlDB_, [&](std::string const& url_, int state) {
             parsedURL url;
 
-            if (!parseUrl(url, it->get<std::string>(1)))
+            if (!parseUrl(url, url_))
             {
-                JLOG(j_.error())
-                    << "Failed to parse url: " << it->get<std::string>(1);
+                JLOG(j_.error()) << "Failed to parse url: " << url_;
 
-                continue;
+                return;
             }
 
-            add(it->get<int>(0), std::move(url), lock);
-        }
+            add(state, std::move(url), lock);
+        });
 
         // Failed to load anything
         // from the state database.
@@ -190,14 +173,15 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
 }
 
 void
-ShardArchiveHandler::onStop()
+ShardArchiveHandler::stop()
 {
+    stopping_ = true;
     {
         std::lock_guard<std::mutex> lock(m_);
 
         if (downloader_)
         {
-            downloader_->onStop();
+            downloader_->stop();
             downloader_.reset();
         }
 
@@ -209,8 +193,6 @@ ShardArchiveHandler::onStop()
 
     timerCounter_.join(
         "ShardArchiveHandler", std::chrono::milliseconds(2000), j_);
-
-    stopped();
 }
 
 bool
@@ -223,10 +205,7 @@ ShardArchiveHandler::add(
     if (!add(shardIndex, std::forward<parsedURL>(url.first), lock))
         return false;
 
-    auto& session{sqliteDB_->getSession()};
-
-    session << "INSERT INTO State VALUES (:index, :url);",
-        soci::use(shardIndex), soci::use(url.second);
+    insertArchiveDB(*sqlDB_, shardIndex, url.second);
 
     return true;
 }
@@ -314,7 +293,7 @@ ShardArchiveHandler::release()
 bool
 ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 {
-    if (isStopping())
+    if (stopping_)
         return false;
 
     if (archives_.empty())
@@ -330,7 +309,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
     // that comes after the last ledger in this shard. A
     // later ledger must be present in order to reliably
     // retrieve the hash of the shard's last ledger.
-    boost::optional<uint256> expectedHash;
+    std::optional<uint256> expectedHash;
     bool shouldHaveHash = false;
     if (auto const seq = app_.getShardStore()->lastLedgerSeq(shardIndex);
         (shouldHaveHash = app_.getLedgerMaster().getValidLedgerIndex() > seq))
@@ -387,7 +366,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 
         if (!downloader_->download(
                 url.domain,
-                std::to_string(url.port.get_value_or(defaultPort)),
+                std::to_string(url.port.value_or(defaultPort)),
                 url.path,
                 11,
                 dstDir / "archive.tar.lz4",
@@ -411,7 +390,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 void
 ShardArchiveHandler::complete(path dstPath)
 {
-    if (isStopping())
+    if (stopping_)
         return;
 
     {
@@ -439,7 +418,7 @@ ShardArchiveHandler::complete(path dstPath)
     // Make lambdas mutable captured vars can be moved from
     auto wrapper =
         jobCounter_.wrap([=, dstPath = std::move(dstPath)](Job&) mutable {
-            if (isStopping())
+            if (stopping_)
                 return;
 
             // If not synced then defer and retry
@@ -476,7 +455,7 @@ ShardArchiveHandler::complete(path dstPath)
 
     if (!wrapper)
     {
-        if (isStopping())
+        if (stopping_)
             return;
 
         JLOG(j_.error()) << "failed to wrap closure for process()";
@@ -537,10 +516,7 @@ ShardArchiveHandler::remove(std::lock_guard<std::mutex> const&)
     app_.getShardStore()->removePreShard(shardIndex);
     archives_.erase(shardIndex);
 
-    auto& session{sqliteDB_->getSession()};
-
-    session << "DELETE FROM State WHERE ShardIndex = :index;",
-        soci::use(shardIndex);
+    deleteFromArchiveDB(*sqlDB_, shardIndex);
 
     auto const dstDir{downloadDir_ / std::to_string(shardIndex)};
     try
@@ -561,13 +537,9 @@ ShardArchiveHandler::doRelease(std::lock_guard<std::mutex> const&)
         app_.getShardStore()->removePreShard(ar.first);
     archives_.clear();
 
-    {
-        auto& session{sqliteDB_->getSession()};
+    dropArchiveDB(*sqlDB_);
 
-        session << "DROP TABLE State;";
-    }
-
-    sqliteDB_.reset();
+    sqlDB_.reset();
 
     // Remove temp root download directory
     try
@@ -589,7 +561,7 @@ ShardArchiveHandler::onClosureFailed(
     std::string const& errorMsg,
     std::lock_guard<std::mutex> const& lock)
 {
-    if (isStopping())
+    if (stopping_)
         return false;
 
     JLOG(j_.error()) << errorMsg;
@@ -604,8 +576,7 @@ ShardArchiveHandler::removeAndProceed(std::lock_guard<std::mutex> const& lock)
     return next(lock);
 }
 
-RecoveryHandler::RecoveryHandler(Application& app, Stoppable& parent)
-    : ShardArchiveHandler(app, parent)
+RecoveryHandler::RecoveryHandler(Application& app) : ShardArchiveHandler(app)
 {
 }
 

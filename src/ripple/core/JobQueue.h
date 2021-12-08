@@ -21,9 +21,9 @@
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
 #include <ripple/basics/LocalValue.h>
+#include <ripple/core/ClosureCounter.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/JobTypes.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/core/impl/Workers.h>
 #include <ripple/json/json_value.h>
 #include <boost/coroutine/all.hpp>
@@ -52,7 +52,7 @@ struct Coro_create_t
     When the JobQueue stops, it waits for all jobs
     and coroutines to finish.
 */
-class JobQueue : public Stoppable, private Workers::Callback
+class JobQueue : private Workers::Callback
 {
 public:
     /** Coroutines must run to completion. */
@@ -141,8 +141,8 @@ public:
     using JobFunction = std::function<void(Job&)>;
 
     JobQueue(
+        int threadCount,
         beast::insight::Collector::ptr const& collector,
-        Stoppable& parent,
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
@@ -165,8 +165,8 @@ public:
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
     {
-        if (auto optionalCountedJob = Stoppable::jobCounter().wrap(
-                std::forward<JobHandler>(jobHandler)))
+        if (auto optionalCountedJob =
+                jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {
             return addRefCountedJob(type, name, std::move(*optionalCountedJob));
         }
@@ -201,11 +201,6 @@ public:
     int
     getJobCountGE(JobType t) const;
 
-    /** Set the number of thread serving the job queue to precisely this number.
-     */
-    void
-    setThreadCount(int c, bool const standaloneMode);
-
     /** Return a scoped LoadEvent.
      */
     std::unique_ptr<LoadEvent>
@@ -224,9 +219,23 @@ public:
     Json::Value
     getJson(int c = 0);
 
-    /** Block until no tasks running. */
+    /** Block until no jobs running. */
     void
     rendezvous();
+
+    void
+    stop();
+
+    bool
+    isStopping() const
+    {
+        return stopping_;
+    }
+
+    // We may be able to move away from this, but we can keep it during the
+    // transition.
+    bool
+    isStopped() const;
 
 private:
     friend class Coro;
@@ -237,6 +246,9 @@ private:
     mutable std::mutex m_mutex;
     std::uint64_t m_lastJob;
     std::set<Job> m_jobSet;
+    JobCounter jobCounter_;
+    std::atomic_bool stopping_{false};
+    std::atomic_bool stopped_{false};
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
 
@@ -261,13 +273,6 @@ private:
     collect();
     JobTypeData&
     getJobTypeData(JobType type);
-
-    void
-    onStop() override;
-
-    // Signals the service stopped if the stopped condition is met.
-    void
-    checkStopped(std::lock_guard<std::mutex> const& lock);
 
     // Adds a reference counted job to the JobQueue.
     //
@@ -354,9 +359,6 @@ private:
     // will be enough.
     int
     getJobLimit(JobType type);
-
-    void
-    onChildrenStopped() override;
 };
 
 /*

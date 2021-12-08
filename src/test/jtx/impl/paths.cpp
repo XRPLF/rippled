@@ -39,7 +39,7 @@ paths::operator()(Env& env, JTx& jt) const
         in_.currency,
         in_.account,
         amount,
-        boost::none,
+        std::nullopt,
         env.app());
     if (!pf.findPaths(depth_))
         return;

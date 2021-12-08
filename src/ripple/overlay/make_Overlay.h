@@ -21,7 +21,6 @@
 #define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 
 #include <ripple/basics/Resolver.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/ServerHandler.h>
@@ -38,7 +37,6 @@ std::unique_ptr<Overlay>
 make_Overlay(
     Application& app,
     Overlay::Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,

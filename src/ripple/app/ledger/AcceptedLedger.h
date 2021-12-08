@@ -69,9 +69,6 @@ public:
         return mMap.size();
     }
 
-    AcceptedLedgerTx::pointer
-    getTxn(int) const;
-
     AcceptedLedger(
         std::shared_ptr<ReadView const> const& ledger,
         Application& app);

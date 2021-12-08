@@ -20,11 +20,13 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <random>
 #include <string>
 #include <test/jtx/Env.h>
@@ -45,144 +47,100 @@ class PerfLog_test : public beast::unit_test::suite
     test::jtx::Env env_{*this};
     beast::Journal j_{env_.app().journal("PerfLog_test")};
 
-    // A PerfLog needs a Parent that is a Stoppable and a function to
-    // call if it wants to shutdown the system.  This class provides both.
-    struct PerfLogParent : public RootStoppable
+    struct Fixture
     {
-        bool stopSignaled{false};
         beast::Journal j_;
+        bool stopSignaled{false};
 
-        explicit PerfLogParent(beast::Journal const& j)
-            : RootStoppable("testRootStoppable"), j_(j)
+        explicit Fixture(beast::Journal j) : j_(j)
         {
         }
 
-        ~PerfLogParent() override
+        ~Fixture()
         {
-            doStop();
-            cleanupPerfLogDir();
+            using namespace boost::filesystem;
+
+            auto const dir{logDir()};
+            auto const file{logFile()};
+            if (exists(file))
+                remove(file);
+
+            if (!exists(dir) || !is_directory(dir) || !is_empty(dir))
+            {
+                return;
+            }
+            remove(dir);
         }
 
-        // Benign replacement for Application::signalStop().
         void
         signalStop()
         {
             stopSignaled = true;
         }
 
-    private:
-        // Interfaces for RootStoppable.  Made private to encourage the use
-        // of doStart() and doStop().
-        void
-        onPrepare() override
-        {
-        }
-
-        void
-        onStart() override
-        {
-        }
-
-        void
-        onStop() override
-        {
-            if (areChildrenStopped())
-                stopped();
-        }
-
-        void
-        onChildrenStopped() override
-        {
-            onStop();
-        }
-
-    public:
-        // Test interfaces to start and stop the PerfLog
-        void
-        doStart()
-        {
-            start();
-        }
-
-        void
-        doStop()
-        {
-            if (started())
-                stop(j_);
-        }
-
-        // Interfaces for PerfLog file management
-        static path
-        getPerfLogPath()
+        path
+        logDir() const
         {
             using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        static path
-        getPerfLogFileName()
+        path
+        logFile() const
         {
-            return {"perf_log.txt"};
+            return logDir() / "perf_log.txt";
         }
 
-        static std::chrono::milliseconds
-        getLogInterval()
+        std::chrono::milliseconds
+        logInterval() const
         {
             return std::chrono::milliseconds{10};
         }
 
-        static perf::PerfLog::Setup
-        getSetup(WithFile withFile)
+        std::unique_ptr<perf::PerfLog>
+        perfLog(WithFile withFile)
         {
-            return perf::PerfLog::Setup{
-                withFile == WithFile::no
-                    ? ""
-                    : getPerfLogPath() / getPerfLogFileName(),
-                getLogInterval()};
+            perf::PerfLog::Setup const setup{
+                withFile == WithFile::no ? "" : logFile(), logInterval()};
+            return perf::make_PerfLog(
+                setup, j_, [this]() { return signalStop(); });
         }
 
-        static void
-        cleanupPerfLogDir()
+        // Block until the log file has grown in size, indicating that the
+        // PerfLog has written new values to the file and _should_ have the
+        // latest update.
+        void
+        wait() const
         {
             using namespace boost::filesystem;
 
-            auto const perfLogPath{getPerfLogPath()};
-            auto const fullPath = perfLogPath / getPerfLogFileName();
-            if (exists(fullPath))
-                remove(fullPath);
-
-            if (!exists(perfLogPath) || !is_directory(perfLogPath) ||
-                !is_empty(perfLogPath))
-            {
+            auto const path = logFile();
+            if (!exists(path))
                 return;
-            }
-            remove(perfLogPath);
+
+            // We wait for the file to change size twice.  The first file size
+            // change may have been in process while we arrived.
+            std::uintmax_t const firstSize{file_size(path)};
+            std::uintmax_t secondSize{firstSize};
+            do
+            {
+                std::this_thread::sleep_for(logInterval());
+                secondSize = file_size(path);
+            } while (firstSize >= secondSize);
+
+            do
+            {
+                std::this_thread::sleep_for(logInterval());
+            } while (secondSize >= file_size(path));
         }
     };
 
-    //------------------------------------------------------------------------------
-
-    // Convenience function to return a PerfLog
-    std::unique_ptr<perf::PerfLog>
-    getPerfLog(PerfLogParent& parent, WithFile withFile)
-    {
-        return perf::make_PerfLog(
-            parent.getSetup(withFile), parent, j_, [&parent]() {
-                return parent.signalStop();
-            });
-    }
-
-    //------------------------------------------------------------------------------
-
-    // Convenience function to return a uint64 given a Json::Value containing
-    // a string.
+    // Return a uint64 from a JSON string.
     static std::uint64_t
     jsonToUint64(Json::Value const& jsonUintAsString)
     {
         return std::stoull(jsonUintAsString.asString());
     }
-
-    //------------------------------------------------------------------------------
 
     // The PerfLog's current state is easier to sort by duration if the
     // duration is converted from string to integer.  The following struct
@@ -226,70 +184,35 @@ class PerfLog_test : public beast::unit_test::suite
         return currents;
     }
 
-    //------------------------------------------------------------------------------
-
-    // Helper function that checks the size of the PerfLog file and then
-    // returns when the file gets bigger.  This indicates that the PerfLog
-    // has written new values to the file and _should_ have the latest
-    // update.
-    static void
-    waitForFileUpdate(PerfLogParent const& parent)
-    {
-        using namespace boost::filesystem;
-
-        auto const path = parent.getPerfLogPath() / parent.getPerfLogFileName();
-        if (!exists(path))
-            return;
-
-        // We wait for the file to change size twice.  The first file size
-        // change may have been in process while we arrived.
-        std::uintmax_t const firstSize{file_size(path)};
-        std::uintmax_t secondSize{firstSize};
-        do
-        {
-            std::this_thread::sleep_for(parent.getLogInterval());
-            secondSize = file_size(path);
-        } while (firstSize >= secondSize);
-
-        do
-        {
-            std::this_thread::sleep_for(parent.getLogInterval());
-        } while (secondSize >= file_size(path));
-    }
-
-    //------------------------------------------------------------------------------
-
 public:
     void
     testFileCreation()
     {
         using namespace boost::filesystem;
 
-        auto const perfLogPath{PerfLogParent::getPerfLogPath()};
-        auto const fullPath = perfLogPath / PerfLogParent::getPerfLogFileName();
         {
             // Verify a PerfLog creates its file when constructed.
-            PerfLogParent parent{j_};
-            BEAST_EXPECT(!exists(perfLogPath));
+            Fixture fixture{j_};
+            BEAST_EXPECT(!exists(fixture.logFile()));
 
-            auto perfLog{getPerfLog(parent, WithFile::yes)};
+            auto perfLog{fixture.perfLog(WithFile::yes)};
 
-            BEAST_EXPECT(parent.stopSignaled == false);
-            BEAST_EXPECT(exists(perfLogPath));
+            BEAST_EXPECT(fixture.stopSignaled == false);
+            BEAST_EXPECT(exists(fixture.logFile()));
         }
         {
             // Create a file where PerfLog wants to put its directory.
             // Make sure that PerfLog tries to shutdown the server since it
             // can't open its file.
-            PerfLogParent parent{j_};
-            if (!BEAST_EXPECT(!exists(perfLogPath)))
+            Fixture fixture{j_};
+            if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
             {
                 // Make a file that prevents PerfLog from creating its file.
                 std::ofstream nastyFile;
                 nastyFile.open(
-                    perfLogPath.c_str(), std::ios::out | std::ios::app);
+                    fixture.logDir().c_str(), std::ios::out | std::ios::app);
                 if (!BEAST_EXPECT(nastyFile))
                     return;
                 nastyFile.close();
@@ -297,32 +220,32 @@ public:
 
             // Now construct a PerfLog.  The PerfLog should attempt to shut
             // down the server because it can't open its file.
-            BEAST_EXPECT(parent.stopSignaled == false);
-            auto perfLog{getPerfLog(parent, WithFile::yes)};
-            BEAST_EXPECT(parent.stopSignaled == true);
+            BEAST_EXPECT(fixture.stopSignaled == false);
+            auto perfLog{fixture.perfLog(WithFile::yes)};
+            BEAST_EXPECT(fixture.stopSignaled == true);
 
             // Start PerfLog and wait long enough for PerfLog::report()
             // to not be able to write to its file.  That should cause no
             // problems.
-            parent.doStart();
-            std::this_thread::sleep_for(parent.getLogInterval() * 10);
-            parent.doStop();
+            perfLog->start();
+            std::this_thread::sleep_for(fixture.logInterval() * 10);
+            perfLog->stop();
 
             // Remove the file.
-            remove(perfLogPath);
+            remove(fixture.logDir());
         }
         {
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
-            PerfLogParent parent{j_};
-            if (!BEAST_EXPECT(!exists(perfLogPath)))
+            Fixture fixture{j_};
+            if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
             // Construct and write protect a file to prevent PerfLog
             // from creating its file.
             boost::system::error_code ec;
-            boost::filesystem::create_directories(perfLogPath, ec);
+            boost::filesystem::create_directories(fixture.logDir(), ec);
             if (!BEAST_EXPECT(!ec))
                 return;
 
@@ -331,17 +254,17 @@ public:
                     .is_open();
             };
 
-            if (!BEAST_EXPECT(fileWriteable(fullPath)))
+            if (!BEAST_EXPECT(fileWriteable(fixture.logFile())))
                 return;
 
             boost::filesystem::permissions(
-                fullPath,
+                fixture.logFile(),
                 perms::remove_perms | perms::owner_write | perms::others_write |
                     perms::group_write);
 
             // If the test is running as root, then the write protect may have
             // no effect.  Make sure write protect worked before proceeding.
-            if (fileWriteable(fullPath))
+            if (fileWriteable(fixture.logFile()))
             {
                 log << "Unable to write protect file.  Test skipped."
                     << std::endl;
@@ -350,20 +273,20 @@ public:
 
             // Now construct a PerfLog.  The PerfLog should attempt to shut
             // down the server because it can't open its file.
-            BEAST_EXPECT(parent.stopSignaled == false);
-            auto perfLog{getPerfLog(parent, WithFile::yes)};
-            BEAST_EXPECT(parent.stopSignaled == true);
+            BEAST_EXPECT(fixture.stopSignaled == false);
+            auto perfLog{fixture.perfLog(WithFile::yes)};
+            BEAST_EXPECT(fixture.stopSignaled == true);
 
             // Start PerfLog and wait long enough for PerfLog::report()
             // to not be able to write to its file.  That should cause no
             // problems.
-            parent.doStart();
-            std::this_thread::sleep_for(parent.getLogInterval() * 10);
-            parent.doStop();
+            perfLog->start();
+            std::this_thread::sleep_for(fixture.logInterval() * 10);
+            perfLog->stop();
 
             // Fix file permissions so the file can be cleaned up.
             boost::filesystem::permissions(
-                fullPath,
+                fixture.logFile(),
                 perms::add_perms | perms::owner_write | perms::others_write |
                     perms::group_write);
         }
@@ -374,9 +297,9 @@ public:
     {
         // Exercise the rpc interfaces of PerfLog.
         // Start up the PerfLog that we'll use for testing.
-        PerfLogParent parent{j_};
-        auto perfLog{getPerfLog(parent, withFile)};
-        parent.doStart();
+        Fixture fixture{j_};
+        auto perfLog{fixture.perfLog(withFile)};
+        perfLog->start();
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
@@ -534,13 +457,12 @@ public:
         validateFinalCurrent(perfLog->currentJson());
 
         // Give the PerfLog enough time to flush it's state to the file.
-        waitForFileUpdate(parent);
+        fixture.wait();
 
         // Politely stop the PerfLog.
-        parent.doStop();
+        perfLog->stop();
 
-        auto const fullPath =
-            parent.getPerfLogPath() / parent.getPerfLogFileName();
+        auto const fullPath = fixture.logFile();
 
         if (withFile == WithFile::no)
         {
@@ -580,9 +502,9 @@ public:
 
         // Exercise the jobs interfaces of PerfLog.
         // Start up the PerfLog that we'll use for testing.
-        PerfLogParent parent{j_};
-        auto perfLog{getPerfLog(parent, withFile)};
-        parent.doStart();
+        Fixture fixture{j_};
+        auto perfLog{fixture.perfLog(withFile)};
+        perfLog->start();
 
         // Get the all the JobTypes we can use to call the jobs interfaces
         // without causing an assert.
@@ -879,14 +801,13 @@ public:
         validateFinalCurrent(perfLog->currentJson());
 
         // Give the PerfLog enough time to flush it's state to the file.
-        waitForFileUpdate(parent);
+        fixture.wait();
 
         // Politely stop the PerfLog.
-        parent.doStop();
+        perfLog->stop();
 
         // Check file contents if that is appropriate.
-        auto const fullPath =
-            parent.getPerfLogPath() / parent.getPerfLogFileName();
+        auto const fullPath = fixture.logFile();
 
         if (withFile == WithFile::no)
         {
@@ -928,9 +849,9 @@ public:
         // the PerLog behaves as well as possible if an invalid ID is passed.
 
         // Start up the PerfLog that we'll use for testing.
-        PerfLogParent parent{j_};
-        auto perfLog{getPerfLog(parent, withFile)};
-        parent.doStart();
+        Fixture fixture{j_};
+        auto perfLog{fixture.perfLog(withFile)};
+        perfLog->start();
 
         // Randomly select a job type and its name.
         JobType jobType;
@@ -1021,14 +942,13 @@ public:
         verifyEmptyCurrent(perfLog->currentJson());
 
         // Give the PerfLog enough time to flush it's state to the file.
-        waitForFileUpdate(parent);
+        fixture.wait();
 
         // Politely stop the PerfLog.
-        parent.doStop();
+        perfLog->stop();
 
         // Check file contents if that is appropriate.
-        auto const fullPath =
-            parent.getPerfLogPath() / parent.getPerfLogFileName();
+        auto const fullPath = fixture.logFile();
 
         if (withFile == WithFile::no)
         {
@@ -1069,54 +989,51 @@ public:
         // the interface and see that it doesn't crash.
         using namespace boost::filesystem;
 
-        auto const perfLogPath{PerfLogParent::getPerfLogPath()};
-        auto const fullPath = perfLogPath / PerfLogParent::getPerfLogFileName();
+        Fixture fixture{j_};
+        BEAST_EXPECT(!exists(fixture.logDir()));
 
-        PerfLogParent parent{j_};
-        BEAST_EXPECT(!exists(perfLogPath));
+        auto perfLog{fixture.perfLog(withFile)};
 
-        auto perfLog{getPerfLog(parent, withFile)};
-
-        BEAST_EXPECT(parent.stopSignaled == false);
+        BEAST_EXPECT(fixture.stopSignaled == false);
         if (withFile == WithFile::no)
         {
-            BEAST_EXPECT(!exists(perfLogPath));
+            BEAST_EXPECT(!exists(fixture.logDir()));
         }
         else
         {
-            BEAST_EXPECT(exists(fullPath));
-            BEAST_EXPECT(file_size(fullPath) == 0);
+            BEAST_EXPECT(exists(fixture.logFile()));
+            BEAST_EXPECT(file_size(fixture.logFile()) == 0);
         }
 
         // Start PerfLog and wait long enough for PerfLog::report()
         // to write to its file.
-        parent.doStart();
-        waitForFileUpdate(parent);
+        perfLog->start();
+        fixture.wait();
 
-        decltype(file_size(fullPath)) firstFileSize{0};
+        decltype(file_size(fixture.logFile())) firstFileSize{0};
         if (withFile == WithFile::no)
         {
-            BEAST_EXPECT(!exists(perfLogPath));
+            BEAST_EXPECT(!exists(fixture.logDir()));
         }
         else
         {
-            firstFileSize = file_size(fullPath);
+            firstFileSize = file_size(fixture.logFile());
             BEAST_EXPECT(firstFileSize > 0);
         }
 
         // Rotate and then wait to make sure more stuff is written to the file.
         perfLog->rotate();
-        waitForFileUpdate(parent);
+        fixture.wait();
 
-        parent.doStop();
+        perfLog->stop();
 
         if (withFile == WithFile::no)
         {
-            BEAST_EXPECT(!exists(perfLogPath));
+            BEAST_EXPECT(!exists(fixture.logDir()));
         }
         else
         {
-            BEAST_EXPECT(file_size(fullPath) > firstFileSize);
+            BEAST_EXPECT(file_size(fixture.logFile()) > firstFileSize);
         }
     }
 

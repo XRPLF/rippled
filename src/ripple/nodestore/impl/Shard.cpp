@@ -19,9 +19,12 @@
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/main/DBInit.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/RelationalDBInterface_shards.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
+#include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <ripple/protocol/digest.h>
 
@@ -53,9 +56,7 @@ Shard::Shard(
     , index_(index)
     , firstSeq_(db.firstLedgerSeq(index))
     , lastSeq_(std::max(firstSeq_, db.lastLedgerSeq(index)))
-    , maxLedgers_(
-          index == db.earliestShardIndex() ? lastSeq_ - firstSeq_ + 1
-                                           : db.ledgersPerShard())
+    , maxLedgers_(db.maxLedgers(index))
     , dir_((dir.empty() ? db.getRootDir() : dir) / std::to_string(index_))
 {
 }
@@ -98,7 +99,7 @@ bool
 Shard::init(Scheduler& scheduler, nudb::context& context)
 {
     Section section{app_.config().section(ConfigSection::shardDatabase())};
-    std::string const type{get<std::string>(section, "type", "nudb")};
+    std::string const type{get(section, "type", "nudb")};
     auto const factory{Manager::instance().find(type)};
     if (!factory)
     {
@@ -117,7 +118,8 @@ Shard::init(Scheduler& scheduler, nudb::context& context)
     backend_ = factory->createInstance(
         NodeObject::keyBytes,
         section,
-        megabytes(app_.config().getValueFor(SizedItem::burstSize, boost::none)),
+        megabytes(
+            app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
         scheduler,
         context,
         j_);
@@ -142,7 +144,7 @@ bool
 Shard::tryClose()
 {
     // Keep database open if being acquired or finalized
-    if (state_ != final)
+    if (state_ != ShardState::finalized)
         return false;
 
     std::lock_guard lock(mutex_);
@@ -182,14 +184,14 @@ Shard::tryClose()
     return true;
 }
 
-boost::optional<std::uint32_t>
+std::optional<std::uint32_t>
 Shard::prepare()
 {
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         JLOG(j_.warn()) << "shard " << index_
                         << " prepare called when not acquiring";
-        return boost::none;
+        return std::nullopt;
     }
 
     std::lock_guard lock(mutex_);
@@ -197,7 +199,7 @@ Shard::prepare()
     {
         JLOG(j_.error()) << "shard " << index_
                          << " missing acquire SQLite database";
-        return boost::none;
+        return std::nullopt;
     }
 
     if (acquireInfo_->storedSeqs.empty())
@@ -208,7 +210,7 @@ Shard::prepare()
 bool
 Shard::storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject)
 {
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         // The import node store case is an exception
         if (nodeObject->getHash() != finalKey)
@@ -292,7 +294,7 @@ Shard::storeLedger(
     std::shared_ptr<Ledger const> const& next)
 {
     StoreLedgerResult result;
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         // Ignore residual calls from InboundLedgers
         JLOG(j_.trace()) << "shard " << index_ << ". Not acquiring";
@@ -414,20 +416,21 @@ Shard::storeLedger(
 bool
 Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
 {
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         // Ignore residual calls from InboundLedgers
         JLOG(j_.trace()) << "shard " << index_ << " not acquiring";
         return false;
     }
 
+    auto fail = [&](std::string const& msg) {
+        JLOG(j_.error()) << "shard " << index_ << ". " << msg;
+        return false;
+    };
+
     auto const ledgerSeq{ledger->info().seq};
     if (ledgerSeq < firstSeq_ || ledgerSeq > lastSeq_)
-    {
-        JLOG(j_.error()) << "shard " << index_ << " invalid ledger sequence "
-                         << ledgerSeq;
-        return false;
-    }
+        return fail("Invalid ledger sequence " + std::to_string(ledgerSeq));
 
     auto const scopedCount{makeBackendCount()};
     if (!scopedCount)
@@ -440,11 +443,8 @@ Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
     {
         std::lock_guard lock(mutex_);
         if (!acquireInfo_)
-        {
-            JLOG(j_.error())
-                << "shard " << index_ << " missing acquire SQLite database";
-            return false;
-        }
+            return fail("Missing acquire SQLite database");
+
         if (boost::icl::contains(acquireInfo_->storedSeqs, ledgerSeq))
         {
             // Ignore redundant calls
@@ -455,7 +455,7 @@ Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
     }
 
     if (!storeSQLite(ledger))
-        return false;
+        return fail("Failed to store ledger");
 
     std::lock_guard lock(mutex_);
 
@@ -487,15 +487,16 @@ Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.fatal()) << "shard " << index_
-                         << ". Exception caught in function " << __func__
-                         << ". Error: " << e.what();
         acquireInfo_->storedSeqs.erase(ledgerSeq);
-        return false;
+        return fail(
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
     }
 
-    if (boost::icl::length(acquireInfo_->storedSeqs) >= maxLedgers_)
-        state_ = complete;
+    // Update progress
+    progress_ = boost::icl::length(acquireInfo_->storedSeqs);
+    if (progress_ == maxLedgers_)
+        state_ = ShardState::complete;
 
     setFileStats(lock);
     JLOG(j_.trace()) << "shard " << index_ << " stored ledger sequence "
@@ -508,7 +509,7 @@ Shard::containsLedger(std::uint32_t ledgerSeq) const
 {
     if (ledgerSeq < firstSeq_ || ledgerSeq > lastSeq_)
         return false;
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
         return true;
 
     std::lock_guard lock(mutex_);
@@ -519,12 +520,6 @@ Shard::containsLedger(std::uint32_t ledgerSeq) const
         return false;
     }
     return boost::icl::contains(acquireInfo_->storedSeqs, ledgerSeq);
-}
-
-void
-Shard::sweep()
-{
-    // nothing to do
 }
 
 std::chrono::steady_clock::time_point
@@ -558,10 +553,12 @@ Shard::isLegacy() const
 }
 
 bool
-Shard::finalize(
-    bool const writeSQLite,
-    boost::optional<uint256> const& expectedHash)
+Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 {
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return false;
+
     uint256 hash{0};
     std::uint32_t ledgerSeq{0};
     auto fail = [&](std::string const& msg) {
@@ -571,28 +568,16 @@ Shard::finalize(
                          << (ledgerSeq == 0 ? ""
                                             : ". Ledger sequence " +
                                      std::to_string(ledgerSeq));
-        state_ = finalizing;
+        state_ = ShardState::finalizing;
+        progress_ = 0;
+        busy_ = false;
         return false;
     };
 
-    auto const scopedCount{makeBackendCount()};
-    if (!scopedCount)
-        return false;
-
     try
     {
-        state_ = finalizing;
-
-        /*
-        TODO MP
-        A lock is required when calling the NuDB verify function. Because
-        this can be a time consuming process, the server may desync.
-        Until this function is modified to work on an open database, we
-        are unable to use it from rippled.
-
-        // Verify backend integrity
-        backend_->verify();
-        */
+        state_ = ShardState::finalizing;
+        progress_ = 0;
 
         // Check if a final key has been stored
         if (std::shared_ptr<NodeObject> nodeObject;
@@ -613,38 +598,27 @@ Shard::finalize(
         else
         {
             // In the absence of a final key, an acquire SQLite database
-            // must be present in order to validate the shard
+            // must be present in order to verify the shard
             if (!acquireInfo_)
                 return fail("missing acquire SQLite database");
 
-            auto session{acquireInfo_->SQLiteDB->checkoutDb()};
-            boost::optional<std::uint32_t> index;
-            boost::optional<std::string> sHash;
-            soci::blob sociBlob(*session);
-            soci::indicator blobPresent;
-            *session << "SELECT ShardIndex, LastLedgerHash, StoredLedgerSeqs "
-                        "FROM Shard "
-                        "WHERE ShardIndex = :index;",
-                soci::into(index), soci::into(sHash),
-                soci::into(sociBlob, blobPresent), soci::use(index_);
+            auto [res, seqshash] = selectAcquireDBLedgerSeqsHash(
+                *acquireInfo_->SQLiteDB->checkoutDb(), index_);
 
-            if (!index || index != index_)
+            if (!res)
                 return fail("missing or invalid ShardIndex");
 
-            if (!sHash)
+            if (!seqshash.hash)
                 return fail("missing LastLedgerHash");
 
-            if (!hash.parseHex(*sHash) || hash.isZero())
+            if (!hash.parseHex(*seqshash.hash) || hash.isZero())
                 return fail("invalid LastLedgerHash");
 
-            if (blobPresent != soci::i_ok)
+            if (!seqshash.sequences)
                 return fail("missing StoredLedgerSeqs");
 
-            std::string s;
-            convert(sociBlob, s);
-
             auto& storedSeqs{acquireInfo_->storedSeqs};
-            if (!from_string(storedSeqs, s) ||
+            if (!from_string(storedSeqs, *seqshash.sequences) ||
                 boost::icl::first(storedSeqs) != firstSeq_ ||
                 boost::icl::last(storedSeqs) != lastSeq_ ||
                 storedSeqs.size() != maxLedgers_)
@@ -660,12 +634,12 @@ Shard::finalize(
             ". Error: " + e.what());
     }
 
-    // Validate the last ledger hash of a downloaded shard
+    // Verify the last ledger hash of a downloaded shard
     // using a ledger hash obtained from the peer network
-    if (expectedHash && *expectedHash != hash)
+    if (referenceHash && *referenceHash != hash)
         return fail("invalid last ledger hash");
 
-    // Validate every ledger stored in the backend
+    // Verify every ledger stored in the backend
     Config const& config{app_.config()};
     std::shared_ptr<Ledger> ledger;
     std::shared_ptr<Ledger const> next;
@@ -677,6 +651,17 @@ Shard::finalize(
     // Reset caches to reduce memory usage
     fullBelowCache->reset();
     treeNodeCache->reset();
+
+    Serializer s;
+    s.add32(version);
+    s.add32(firstSeq_);
+    s.add32(lastSeq_);
+    s.addBitString(lastLedgerHash);
+
+    std::shared_ptr<DeterministicShard> dShard{
+        make_DeterministicShard(app_, dir_, index_, s, j_)};
+    if (!dShard)
+        return fail("Failed to create deterministic shard");
 
     // Start with the last ledger in the shard and walk backwards from
     // child to parent until we reach the first ledger
@@ -714,14 +699,21 @@ Shard::finalize(
             return fail("missing root TXN node");
         }
 
-        if (!verifyLedger(ledger, next))
-            return fail("failed to validate ledger");
+        if (!verifyLedger(ledger, next, dShard))
+            return fail("failed to verify ledger");
+
+        if (!dShard->store(nodeObject))
+            return fail("failed to store node object");
 
         if (writeSQLite && !storeSQLite(ledger))
             return fail("failed storing to SQLite databases");
 
         hash = ledger->info().parentHash;
         next = std::move(ledger);
+
+        // Update progress
+        progress_ = maxLedgers_ - (ledgerSeq - firstSeq_);
+
         --ledgerSeq;
 
         fullBelowCache->reset();
@@ -764,19 +756,31 @@ Shard::finalize(
     }
     */
 
-    // Store final key's value, may already be stored
-    Serializer s;
-    s.add32(version);
-    s.add32(firstSeq_);
-    s.add32(lastSeq_);
-    s.addBitString(lastLedgerHash);
-    auto nodeObject{
+    auto const nodeObject{
         NodeObject::createObject(hotUNKNOWN, std::move(s.modData()), finalKey)};
+    if (!dShard->store(nodeObject))
+        return fail("failed to store node object");
+
     try
     {
+        // Store final key's value, may already be stored
         backend_->store(nodeObject);
 
+        // Do not allow all other threads work with the shard
+        busy_ = true;
+
+        // Wait until all other threads leave the shard
+        while (backendCount_ > 1)
+            std::this_thread::yield();
+
         std::lock_guard lock(mutex_);
+
+        // Close original backend
+        backend_->close();
+
+        // Close SQL databases
+        lgrSQLiteDB_.reset();
+        txSQLiteDB_.reset();
 
         // Remove the acquire SQLite database
         if (acquireInfo_)
@@ -785,13 +789,23 @@ Shard::finalize(
             remove_all(dir_ / AcquireShardDBName);
         }
 
-        lastAccess_ = std::chrono::steady_clock::now();
-        state_ = final;
+        // Close deterministic backend
+        dShard->close();
 
-        if (!initSQLite(lock))
-            return fail("failed to initialize SQLite databases");
+        // Replace original backend with deterministic backend
+        remove(dir_ / "nudb.key");
+        remove(dir_ / "nudb.dat");
+        rename(dShard->getDir() / "nudb.key", dir_ / "nudb.key");
+        rename(dShard->getDir() / "nudb.dat", dir_ / "nudb.dat");
 
-        setFileStats(lock);
+        // Re-open deterministic shard
+        if (!open(lock))
+            return fail("failed to open");
+
+        assert(state_ == ShardState::finalized);
+
+        // Allow all other threads work with the shard
+        busy_ = false;
     }
     catch (std::exception const& e)
     {
@@ -815,7 +829,8 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         txSQLiteDB_.reset();
         acquireInfo_.reset();
 
-        state_ = acquire;
+        state_ = ShardState::acquire;
+        progress_ = 0;
 
         if (!preexist)
             remove_all(dir_);
@@ -827,21 +842,19 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         return false;
     };
     auto createAcquireInfo = [this, &config]() {
-        acquireInfo_ = std::make_unique<AcquireInfo>();
-
         DatabaseCon::Setup setup;
         setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
         setup.standAlone = config.standalone();
         setup.dataDir = dir_;
         setup.useGlobalPragma = true;
 
-        acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
+        acquireInfo_ = std::make_unique<AcquireInfo>();
+        acquireInfo_->SQLiteDB = makeAcquireDB(
             setup,
-            AcquireShardDBName,
-            AcquireShardDBPragma,
-            AcquireShardDBInit,
             DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
-        state_ = acquire;
+
+        state_ = ShardState::acquire;
+        progress_ = 0;
     };
 
     try
@@ -854,35 +867,22 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         {
             // A new shard
             createAcquireInfo();
-            acquireInfo_->SQLiteDB->getSession()
-                << "INSERT INTO Shard (ShardIndex) "
-                   "VALUES (:shardIndex);",
-                soci::use(index_);
+            insertAcquireDBIndex(acquireInfo_->SQLiteDB->getSession(), index_);
         }
         else if (exists(dir_ / AcquireShardDBName))
         {
             // A shard being acquired, backend is likely incomplete
             createAcquireInfo();
+            auto [res, s] = selectAcquireDBLedgerSeqs(
+                acquireInfo_->SQLiteDB->getSession(), index_);
 
-            auto& session{acquireInfo_->SQLiteDB->getSession()};
-            boost::optional<std::uint32_t> index;
-            soci::blob sociBlob(session);
-            soci::indicator blobPresent;
-
-            session << "SELECT ShardIndex, StoredLedgerSeqs "
-                       "FROM Shard "
-                       "WHERE ShardIndex = :index;",
-                soci::into(index), soci::into(sociBlob, blobPresent),
-                soci::use(index_);
-
-            if (!index || index != index_)
+            if (!res)
                 return fail("invalid acquire SQLite database");
 
-            if (blobPresent == soci::i_ok)
+            if (s)
             {
-                std::string s;
                 auto& storedSeqs{acquireInfo_->storedSeqs};
-                if (convert(sociBlob, s); !from_string(storedSeqs, s))
+                if (!from_string(storedSeqs, *s))
                     return fail("invalid StoredLedgerSeqs");
 
                 if (boost::icl::first(storedSeqs) < firstSeq_ ||
@@ -892,14 +892,14 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
                 }
 
                 // Check if backend is complete
-                if (boost::icl::length(storedSeqs) == maxLedgers_)
-                    state_ = complete;
+                progress_ = boost::icl::length(storedSeqs);
+                if (progress_ == maxLedgers_)
+                    state_ = ShardState::complete;
             }
         }
         else
         {
-            // A shard that is final or its backend is complete
-            // and ready to be finalized
+            // A shard with a finalized or complete state
             std::shared_ptr<NodeObject> nodeObject;
             if (backend_->fetch(finalKey.data(), &nodeObject) != Status::ok)
             {
@@ -922,10 +922,12 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
             if (exists(dir_ / LgrDBName) && exists(dir_ / TxDBName))
             {
                 lastAccess_ = std::chrono::steady_clock::now();
-                state_ = final;
+                state_ = ShardState::finalized;
             }
             else
-                state_ = complete;
+                state_ = ShardState::complete;
+
+            progress_ = maxLedgers_;
         }
     }
     catch (std::exception const& e)
@@ -951,7 +953,7 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
         setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
         setup.standAlone = config.standalone();
         setup.dataDir = dir_;
-        setup.useGlobalPragma = (state_ != complete);
+        setup.useGlobalPragma = (state_ != ShardState::complete);
         return setup;
     }();
 
@@ -963,46 +965,48 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
         if (txSQLiteDB_)
             txSQLiteDB_.reset();
 
-        if (state_ == final)
+        switch (state_)
         {
-            lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, FinalShardDBPragma, LgrDBInit);
-            lgrSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(
-                    config.getValueFor(SizedItem::lgrDBCache, boost::none)));
+            case ShardState::complete:
+            case ShardState::finalizing:
+            case ShardState::finalized: {
+                auto [lgr, tx] = makeShardCompleteLedgerDBs(config, setup);
 
-            txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, FinalShardDBPragma, TxDBInit);
-            txSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(
-                    config.getValueFor(SizedItem::txnDBCache, boost::none)));
-        }
-        else
-        {
-            // Non final shards use a Write Ahead Log for performance
-            lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup,
-                LgrDBName,
-                LgrDBPragma,
-                LgrDBInit,
-                DatabaseCon::CheckpointerSetup{
-                    &app_.getJobQueue(), &app_.logs()});
-            lgrSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
+                lgrSQLiteDB_ = std::move(lgr);
+                lgrSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(
+                        SizedItem::lgrDBCache, std::nullopt)));
 
-            txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup,
-                TxDBName,
-                TxDBPragma,
-                TxDBInit,
-                DatabaseCon::CheckpointerSetup{
-                    &app_.getJobQueue(), &app_.logs()});
-            txSQLiteDB_->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config.getValueFor(SizedItem::txnDBCache)));
+                txSQLiteDB_ = std::move(tx);
+                txSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(
+                        SizedItem::txnDBCache, std::nullopt)));
+                break;
+            }
+
+            // case ShardState::acquire:
+            // case ShardState::queued:
+            default: {
+                // Incomplete shards use a Write Ahead Log for performance
+                auto [lgr, tx] = makeShardIncompleteLedgerDBs(
+                    config,
+                    setup,
+                    DatabaseCon::CheckpointerSetup{
+                        &app_.getJobQueue(), &app_.logs()});
+
+                lgrSQLiteDB_ = std::move(lgr);
+                lgrSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
+
+                txSQLiteDB_ = std::move(tx);
+                txSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(SizedItem::txnDBCache)));
+                break;
+            }
         }
     }
     catch (std::exception const& e)
@@ -1022,127 +1026,32 @@ Shard::storeSQLite(std::shared_ptr<Ledger const> const& ledger)
     if (stop_)
         return false;
 
-    auto const ledgerSeq{ledger->info().seq};
-
     try
     {
-        // Update the transactions database
+        auto res = updateLedgerDBs(
+            *txSQLiteDB_->checkoutDb(),
+            *lgrSQLiteDB_->checkoutDb(),
+            ledger,
+            index_,
+            stop_,
+            j_);
+
+        if (!res)
+            return false;
+
+        // Update the acquire database if present
+        if (acquireInfo_)
         {
-            auto session{txSQLiteDB_->checkoutDb()};
-            soci::transaction tr(*session);
+            std::optional<std::string> s;
+            if (!acquireInfo_->storedSeqs.empty())
+                s = to_string(acquireInfo_->storedSeqs);
 
-            *session << "DELETE FROM Transactions "
-                        "WHERE LedgerSeq = :seq;",
-                soci::use(ledgerSeq);
-            *session << "DELETE FROM AccountTransactions "
-                        "WHERE LedgerSeq = :seq;",
-                soci::use(ledgerSeq);
-
-            if (ledger->info().txHash.isNonZero())
-            {
-                auto const sSeq{std::to_string(ledgerSeq)};
-                if (!ledger->txMap().isValid())
-                {
-                    JLOG(j_.error()) << "shard " << index_
-                                     << " has an invalid transaction map"
-                                     << " on sequence " << sSeq;
-                    return false;
-                }
-
-                for (auto const& item : ledger->txs)
-                {
-                    if (stop_)
-                        return false;
-
-                    auto const txID{item.first->getTransactionID()};
-                    auto const sTxID{to_string(txID)};
-                    auto const txMeta{std::make_shared<TxMeta>(
-                        txID, ledger->seq(), *item.second)};
-
-                    *session << "DELETE FROM AccountTransactions "
-                                "WHERE TransID = :txID;",
-                        soci::use(sTxID);
-
-                    auto const& accounts = txMeta->getAffectedAccounts(j_);
-                    if (!accounts.empty())
-                    {
-                        auto const sTxnSeq{std::to_string(txMeta->getIndex())};
-                        auto const s{boost::str(
-                            boost::format("('%s','%s',%s,%s)") % sTxID % "%s" %
-                            sSeq % sTxnSeq)};
-                        std::string sql;
-                        sql.reserve((accounts.size() + 1) * 128);
-                        sql =
-                            "INSERT INTO AccountTransactions "
-                            "(TransID, Account, LedgerSeq, TxnSeq) VALUES ";
-                        sql += boost::algorithm::join(
-                            accounts |
-                                boost::adaptors::transformed(
-                                    [&](AccountID const& accountID) {
-                                        return boost::str(
-                                            boost::format(s) %
-                                            ripple::toBase58(accountID));
-                                    }),
-                            ",");
-                        sql += ';';
-                        *session << sql;
-
-                        JLOG(j_.trace()) << "shard " << index_
-                                         << " account transaction: " << sql;
-                    }
-                    else
-                    {
-                        JLOG(j_.warn())
-                            << "shard " << index_ << " transaction in ledger "
-                            << sSeq << " affects no accounts";
-                    }
-
-                    Serializer s;
-                    item.second->add(s);
-                    *session
-                        << (STTx::getMetaSQLInsertReplaceHeader() +
-                            item.first->getMetaSQL(
-                                ledgerSeq, sqlBlobLiteral(s.modData())) +
-                            ';');
-                }
-            }
-
-            tr.commit();
-        }
-
-        // Update the ledger database
-        {
-            auto const sParentHash{to_string(ledger->info().parentHash)};
-            auto const sDrops{to_string(ledger->info().drops)};
-            auto const sAccountHash{to_string(ledger->info().accountHash)};
-            auto const sTxHash{to_string(ledger->info().txHash)};
-            auto const sHash{to_string(ledger->info().hash)};
-
-            auto session{lgrSQLiteDB_->checkoutDb()};
-            soci::transaction tr(*session);
-
-            *session << "DELETE FROM Ledgers "
-                        "WHERE LedgerSeq = :seq;",
-                soci::use(ledgerSeq);
-            *session
-                << "INSERT OR REPLACE INTO Ledgers ("
-                   "LedgerHash, LedgerSeq, PrevHash, TotalCoins, ClosingTime,"
-                   "PrevClosingTime, CloseTimeRes, CloseFlags, AccountSetHash,"
-                   "TransSetHash)"
-                   "VALUES ("
-                   ":ledgerHash, :ledgerSeq, :prevHash, :totalCoins,"
-                   ":closingTime, :prevClosingTime, :closeTimeRes,"
-                   ":closeFlags, :accountSetHash, :transSetHash);",
-                soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),
-                soci::use(sDrops),
-                soci::use(ledger->info().closeTime.time_since_epoch().count()),
-                soci::use(
-                    ledger->info().parentCloseTime.time_since_epoch().count()),
-                soci::use(ledger->info().closeTimeResolution.count()),
-                soci::use(ledger->info().closeFlags), soci::use(sAccountHash),
-                soci::use(sTxHash);
-
-            tr.commit();
+            updateAcquireDB(
+                acquireInfo_->SQLiteDB->getSession(),
+                ledger,
+                index_,
+                lastSeq_,
+                s);
         }
     }
     catch (std::exception const& e)
@@ -1184,7 +1093,8 @@ Shard::setFileStats(std::lock_guard<std::mutex> const&)
 bool
 Shard::verifyLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    std::shared_ptr<Ledger const> const& next) const
+    std::shared_ptr<Ledger const> const& next,
+    std::shared_ptr<DeterministicShard> const& dShard) const
 {
     auto fail = [j = j_, index = index_, &ledger](std::string const& msg) {
         JLOG(j.error()) << "shard " << index << ". " << msg
@@ -1203,15 +1113,18 @@ Shard::verifyLedger(
         return fail("Invalid ledger account hash");
 
     bool error{false};
-    auto visit = [this, &error](SHAMapTreeNode const& node) {
+    auto visit = [this, &error, &dShard](SHAMapTreeNode const& node) {
         if (stop_)
             return false;
-        if (!verifyFetch(node.getHash().as_uint256()))
+
+        auto nodeObject{verifyFetch(node.getHash().as_uint256())};
+        if (!nodeObject || !dShard->store(nodeObject))
             error = true;
+
         return !error;
     };
 
-    // Validate the state map
+    // Verify the state map
     if (ledger->stateMap().getHash().isNonZero())
     {
         if (!ledger->stateMap().isValid())
@@ -1237,7 +1150,7 @@ Shard::verifyLedger(
             return fail("Invalid state map");
     }
 
-    // Validate the transaction map
+    // Verify the transaction map
     if (ledger->info().txHash.isNonZero())
     {
         if (!ledger->txMap().isValid())
@@ -1253,6 +1166,7 @@ Shard::verifyLedger(
                 std::string(". Exception caught in function ") + __func__ +
                 ". Error: " + e.what());
         }
+
         if (stop_)
             return false;
         if (error)
@@ -1303,24 +1217,41 @@ Shard::verifyFetch(uint256 const& hash) const
 Shard::Count
 Shard::makeBackendCount()
 {
-    if (stop_)
-        return {nullptr};
+    if (stop_ || busy_)
+        return Shard::Count{nullptr};
 
     std::lock_guard lock(mutex_);
     if (!backend_)
     {
         JLOG(j_.error()) << "shard " << index_ << " not initialized";
-        return {nullptr};
+        return Shard::Count{nullptr};
     }
     if (!backend_->isOpen())
     {
         if (!open(lock))
-            return {nullptr};
+            return Shard::Count{nullptr};
     }
-    else if (state_ == final)
+    else if (state_ == ShardState::finalized)
         lastAccess_ = std::chrono::steady_clock::now();
 
     return Shard::Count(&backendCount_);
+}
+
+bool
+Shard::doCallForSQL(
+    std::function<bool(soci::session& session)> const& callback,
+    LockedSociSession&& db)
+{
+    return callback(*db);
+}
+
+bool
+Shard::doCallForSQL(
+    std::function<bool(soci::session& session, std::uint32_t shardIndex)> const&
+        callback,
+    LockedSociSession&& db)
+{
+    return callback(*db, index_);
 }
 
 }  // namespace NodeStore

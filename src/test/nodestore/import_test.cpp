@@ -106,7 +106,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << date::round<nanoseconds>(d).count();
+            os << round<nanoseconds>(d).count();
         }
         os << "ns";
     }
@@ -122,7 +122,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << date::round<microseconds>(d).count();
+            os << round<microseconds>(d).count();
         }
         os << "us";
     }
@@ -138,7 +138,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << date::round<milliseconds>(d).count();
+            os << round<milliseconds>(d).count();
         }
         os << "ms";
     }
@@ -154,7 +154,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << date::round<seconds>(d).count();
+            os << round<seconds>(d).count();
         }
         os << "s";
     }
@@ -170,7 +170,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << date::round<minutes>(d).count();
+            os << round<minutes>(d).count();
         }
         os << "min";
     }
@@ -193,7 +193,7 @@ fmtdur(std::chrono::duration<Period, Rep> const& d)
 class progress
 {
 private:
-    using clock_type = beast::basic_seconds_clock<std::chrono::steady_clock>;
+    using clock_type = beast::basic_seconds_clock;
 
     std::size_t const work_;
     clock_type::time_point start_ = clock_type::now();
@@ -360,7 +360,6 @@ public:
         }
         // Create data file with values
         std::size_t nitems = 0;
-        std::size_t nbytes = 0;
         dat_file_header dh;
         dh.version = currentVersion;
         dh.uid = make_uid();
@@ -420,7 +419,6 @@ public:
                 std::memcpy(os.data(32), key, 32);
                 std::memcpy(os.data(out.second), out.first, out.second);
                 ++nitems;
-                nbytes += size;
             }
             dw.flush(ec);
             if (ec)

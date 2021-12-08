@@ -184,7 +184,7 @@ non_object_in_array(std::string const& item, Json::UInt index)
 
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
-static boost::optional<detail::STVar>
+static std::optional<detail::STVar>
 parseLeaf(
     std::string const& json_name,
     std::string const& fieldName,
@@ -192,7 +192,7 @@ parseLeaf(
     Json::Value const& value,
     Json::Value& error)
 {
-    boost::optional<detail::STVar> ret;
+    std::optional<detail::STVar> ret;
 
     auto const& field = SField::getField(fieldName);
 
@@ -293,37 +293,22 @@ parseLeaf(
                     {
                         if (field == sfTransactionType)
                         {
-                            TxType const txType(
-                                TxFormats::getInstance().findTypeByName(
-                                    strValue));
-
-                            if (txType == ttINVALID)
-                                Throw<std::runtime_error>(
-                                    "Invalid transaction format name");
                             ret = detail::make_stvar<STUInt16>(
-                                field, static_cast<std::uint16_t>(txType));
+                                field,
+                                static_cast<std::uint16_t>(
+                                    TxFormats::getInstance().findTypeByName(
+                                        strValue)));
 
                             if (*name == sfGeneric)
                                 name = &sfTransaction;
                         }
                         else if (field == sfLedgerEntryType)
                         {
-                            LedgerEntryType const type(
-                                LedgerFormats::getInstance().findTypeByName(
-                                    strValue));
-
-                            if (!(0u <= type &&
-                                  type <=
-                                      std::min<unsigned>(
-                                          std::numeric_limits<
-                                              std::uint16_t>::max(),
-                                          std::numeric_limits<
-                                              std::underlying_type_t<
-                                                  LedgerEntryType>>::max())))
-                                Throw<std::runtime_error>(
-                                    "Invalid ledger entry type: out of range");
                             ret = detail::make_stvar<STUInt16>(
-                                field, static_cast<std::uint16_t>(type));
+                                field,
+                                static_cast<std::uint16_t>(
+                                    LedgerFormats::getInstance().findTypeByName(
+                                        strValue)));
 
                             if (*name == sfGeneric)
                                 name = &sfLedgerEntry;
@@ -756,7 +741,7 @@ parseLeaf(
 static const int maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
-static boost::optional<detail::STVar>
+static std::optional<detail::STVar>
 parseArray(
     std::string const& json_name,
     Json::Value const& json,
@@ -764,7 +749,7 @@ parseArray(
     int depth,
     Json::Value& error);
 
-static boost::optional<STObject>
+static std::optional<STObject>
 parseObject(
     std::string const& json_name,
     Json::Value const& json,
@@ -775,13 +760,13 @@ parseObject(
     if (!json.isObjectOrNull())
     {
         error = not_an_object(json_name);
-        return boost::none;
+        return std::nullopt;
     }
 
     if (depth > maxDepth)
     {
         error = too_deep(json_name);
-        return boost::none;
+        return std::nullopt;
     }
 
     try
@@ -797,7 +782,7 @@ parseObject(
             if (field == sfInvalid)
             {
                 error = unknown_field(json_name, fieldName);
-                return boost::none;
+                return std::nullopt;
             }
 
             switch (field.fieldType)
@@ -810,7 +795,7 @@ parseObject(
                     if (!value.isObject())
                     {
                         error = not_an_object(json_name, fieldName);
-                        return boost::none;
+                        return std::nullopt;
                     }
 
                     try
@@ -822,13 +807,13 @@ parseObject(
                             depth + 1,
                             error);
                         if (!ret)
-                            return boost::none;
+                            return std::nullopt;
                         data.emplace_back(std::move(*ret));
                     }
                     catch (std::exception const&)
                     {
                         error = invalid_data(json_name, fieldName);
-                        return boost::none;
+                        return std::nullopt;
                     }
 
                     break;
@@ -843,14 +828,14 @@ parseObject(
                             field,
                             depth + 1,
                             error);
-                        if (array == boost::none)
-                            return boost::none;
+                        if (!array.has_value())
+                            return std::nullopt;
                         data.emplace_back(std::move(*array));
                     }
                     catch (std::exception const&)
                     {
                         error = invalid_data(json_name, fieldName);
-                        return boost::none;
+                        return std::nullopt;
                     }
 
                     break;
@@ -861,7 +846,7 @@ parseObject(
                         parseLeaf(json_name, fieldName, &inName, value, error);
 
                     if (!leaf)
-                        return boost::none;
+                        return std::nullopt;
 
                     data.emplace_back(std::move(*leaf));
                 }
@@ -883,10 +868,10 @@ parseObject(
     {
         error = invalid_data(json_name);
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-static boost::optional<detail::STVar>
+static std::optional<detail::STVar>
 parseArray(
     std::string const& json_name,
     Json::Value const& json,
@@ -897,13 +882,13 @@ parseArray(
     if (!json.isArrayOrNull())
     {
         error = not_an_array(json_name);
-        return boost::none;
+        return std::nullopt;
     }
 
     if (depth > maxDepth)
     {
         error = too_deep(json_name);
-        return boost::none;
+        return std::nullopt;
     }
 
     try
@@ -919,7 +904,7 @@ parseArray(
             {
                 // null values are !singleKey
                 error = singleton_expected(json_name, i);
-                return boost::none;
+                return std::nullopt;
             }
 
             // TODO: There doesn't seem to be a nice way to get just the
@@ -932,7 +917,7 @@ parseArray(
             if (nameField == sfInvalid)
             {
                 error = unknown_field(json_name, objectName);
-                return boost::none;
+                return std::nullopt;
             }
 
             Json::Value const objectFields(json[i][objectName]);
@@ -948,13 +933,13 @@ parseArray(
                 std::string errMsg = error["error_message"].asString();
                 error["error_message"] =
                     "Error at '" + ss.str() + "'. " + errMsg;
-                return boost::none;
+                return std::nullopt;
             }
 
             if (ret->getFName().fieldType != STI_OBJECT)
             {
                 error = non_object_in_array(ss.str(), i);
-                return boost::none;
+                return std::nullopt;
             }
 
             tail.push_back(std::move(*ret));
@@ -965,7 +950,7 @@ parseArray(
     catch (std::exception const&)
     {
         error = invalid_data(json_name);
-        return boost::none;
+        return std::nullopt;
     }
 }
 
@@ -990,12 +975,12 @@ STParsedJSONArray::STParsedJSONArray(
     using namespace STParsedJSONDetail;
     auto arr = parseArray(name, json, sfGeneric, 0, error);
     if (!arr)
-        array = boost::none;
+        array.reset();
     else
     {
         auto p = dynamic_cast<STArray*>(&arr->get());
         if (p == nullptr)
-            array = boost::none;
+            array.reset();
         else
             array = std::move(*p);
     }

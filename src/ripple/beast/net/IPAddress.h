@@ -100,20 +100,6 @@ hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
 }
 }  // namespace beast
 
-namespace std {
-template <>
-struct hash<beast::IP::Address>
-{
-    explicit hash() = default;
-
-    std::size_t
-    operator()(beast::IP::Address const& addr) const
-    {
-        return beast::uhash<>{}(addr);
-    }
-};
-}  // namespace std
-
 namespace boost {
 template <>
 struct hash<::beast::IP::Address>

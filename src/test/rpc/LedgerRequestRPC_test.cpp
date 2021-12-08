@@ -299,7 +299,7 @@ public:
         env.timeKeeper().adjustCloseTime(weeks{3});
         result = env.rpc("ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
-        if (RPC::ApiMaximumSupportedVersion == 1)
+        if (RPC::apiMaximumSupportedVersion == 1)
         {
             BEAST_EXPECT(result[jss::error] == "noCurrent");
             BEAST_EXPECT(
@@ -360,7 +360,6 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
-        env.close();
 
         auto const result = env.rpc("ledger_request", "1")[jss::result];
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here

@@ -86,7 +86,7 @@ Env::AppBundle::AppBundle(
     if (!app->setup())
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
-    app->doStart(false /*don't start timers*/);
+    app->start(false /*don't start timers*/);
     thread = std::thread([&]() { app->run(); });
 
     client = makeJSONRPCClient(app->config());
@@ -120,7 +120,7 @@ Env::closed()
 bool
 Env::close(
     NetClock::time_point closeTime,
-    boost::optional<std::chrono::milliseconds> consensusDelay)
+    std::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
@@ -136,9 +136,15 @@ Env::close(
         auto resp = rpc("ledger_accept");
         if (resp["result"]["status"] != std::string("success"))
         {
-            JLOG(journal.error())
-                << "Env::close() failed: " << resp["result"]["status"]
-                << std::endl;
+            std::string reason = "internal error";
+            if (resp.isMember("error_what"))
+                reason = resp["error_what"].asString();
+            else if (resp.isMember("error_message"))
+                reason = resp["error_message"].asString();
+            else if (resp.isMember("error"))
+                reason = resp["error"].asString();
+
+            JLOG(journal.error()) << "Env::close() failed: " << reason;
             res = false;
         }
     }
@@ -342,8 +348,9 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
     if (jt.ter &&
         !test.expect(
             ter == *jt.ter,
-            "apply: " + transToken(ter) + " (" + transHuman(ter) + ") != " +
-                transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")"))
+            "apply: Got " + transToken(ter) + " (" + transHuman(ter) +
+                "); Expected " + transToken(*jt.ter) + " (" +
+                transHuman(*jt.ter) + ")"))
     {
         test.log << pretty(jt.jv) << std::endl;
         // Don't check postconditions if
@@ -356,7 +363,7 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
             --trace_;
         test.log << pretty(jt.jv) << std::endl;
     }
-    for (auto const& f : jt.requires)
+    for (auto const& f : jt.require)
         f(*this);
 }
 
@@ -422,7 +429,7 @@ Env::st(JTx const& jt)
 {
     // The parse must succeed, since we
     // generated the JSON ourselves.
-    boost::optional<STObject> obj;
+    std::optional<STObject> obj;
     try
     {
         obj = jtx::parse(jt.jv);

@@ -2,12 +2,81 @@
 
 ![XRP](docs/images/xrp-text-mark-black-small@2x.png)
 
-This document contains the release notes for `rippled`, the reference server implementation of the Ripple protocol. To learn more about how to build, run or update a `rippled` server, visit https://xrpl.org/install-rippled.html
+This document contains the release notes for `rippled`, the reference server implementation of the XRP Ledger protocol. To learn more about how to build, run or update a `rippled` server, visit https://xrpl.org/install-rippled.html
 
  
 Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/ripple/rippled/issues/new/choose)
 
+# Change log
+
+- API version 2 will now return `signer_lists` in the root of the `account_info` response, no longer nested under `account_data`.
+
 # Releases
+
+## Version 1.8.0
+Ripple has released version 1.8.0 of rippled, the reference server implementation of the XRP Ledger protocol. This release brings several features and improvements.
+
+### New and Improved Features
+
+- **Improve History Sharding**: Shards of ledger history are now assembled in a deterministic way so that any server can make a binary-identical shard for a given range of ledgers. This makes it possible to retrieve a shard from multiple sources in parallel, then verify its integrity by comparing checksums with peers' checksums for the same shard. Additionally, there's a new admin RPC command to import ledger history from the shard store, and the crawl_shards command has been expanded with more info. ([#2688](https://github.com/ripple/rippled/issues/2688), [#3726](https://github.com/ripple/rippled/pull/3726), [#3875](https://github.com/ripple/rippled/pull/3875))
+- **New CheckCashMakesTrustLine Amendment**: If enabled, this amendment will change the CheckCash transaction type so that cashing a check for an issued token automatically creates a trust line to hold the token, similar to how purchasing a token in the decentralized exchange creates a trust line to hold the token. This change provides a way for issuers to send tokens to a user before that user has set up a trust line, but without forcing anyone to hold tokens they don't want. ([#3823](https://github.com/ripple/rippled/pull/3823))
+- **Automatically determine the node size**: The server now selects an appropriate `[node_size]` configuration value by default if it is not explicitly specified. This parameter tunes various settings to the specs of the hardware that the server is running on, especially the amount of RAM and the number of CPU threads available in the system. Previously the server always chose the smallest value by default.
+- **Improve transaction relaying logic**: Previously, the server relayed every transaction to all its peers (except the one that it received the transaction from). To reduce redundant messages, the server now relays transactions to a subset of peers using a randomized algorithm. Peers can determine whether there are transactions they have not seen and can request them from a peer that has them. It is expected that this feature will further reduce the bandwidth needed to operate a server.
+- **Improve the Byzantine validator detector**: This expands the detection capabilities of the Byzantine validation detector. Previously, the server only monitored validators on its own UNL. Now, the server monitors for Byzantine behavior in all validations it sees.
+- **Experimental tx stream with history for sidechains**: Adds an experimental subscription stream for sidechain federators to track messages on the main chain in canonical order. This stream is expected to change or be replaced in future versions as work on sidechains matures.
+- **Support Debian 11 Bullseye**: This is the first release that is compatible with Debian Linux version 11.x, "Bullseye." The .deb packages now use absolute paths only, for compatibility with Bullseye's stricter package requirements. ([#3909](https://github.com/ripple/rippled/pull/3909))
+- **Improve Cache Performance**: The server uses a new storage structure for several in-memory caches for greatly improved overall performance. The process of purging old data from these caches, called "sweeping", was time-consuming and blocked other important activities necessary for maintaining ledger state and participating in consensus. The new structure divides the caches into smaller partitions that can be swept in parallel.
+- **Amendment default votes:** Introduces variable default votes per amendment. Previously the server always voted "yes" on any new amendment unless an admin explicitly configured a voting preference for that amendment. Now the server's default vote can be "yes" or "no" in the source code. This should allow a safer, more gradual roll-out of new amendments, as new releases can be configured to understand a new amendment but not vote for it by default. ([#3877](https://github.com/ripple/rippled/pull/3877))
+- **More fields in the `validations` stream:** The `validations` subscription stream in the API now reports additional fields that were added to validation messages by the HardenedValidations amendment. These fields make it easier to detect misconfigurations such as multiple servers sharing a validation key pair. ([#3865](https://github.com/ripple/rippled/pull/3865))
+- **Reporting mode supports `validations` and `manifests` streams:** In the API it is now possible to connect to these streams when connected to a servers running in reporting. Previously, attempting to subscribe to these streams on a reporting server failed with the error `reportingUnsupported`. ([#3905](https://github.com/ripple/rippled/pull/3905))
+
+### Bug Fixes
+
+- **Clarify the safety of NetClock::time_point arithmetic**: * NetClock::rep is uint32_t and can be error-prone when   used with subtraction. * Fixes [#3656](https://github.com/ripple/rippled/pull/3656)
+- **Fix out-of-bounds reserve, and some minor optimizations**
+- **Fix nested locks in ValidatorSite**
+- **Fix clang warnings about copies vs references**
+- **Fix reporting mode build issue**
+- **Fix potential deadlock in Validator sites**
+- **Use libsecp256k1 instead of OpenSSL for key derivation**: The deterministic key derivation code was still using calls to OpenSSL. This replaces the OpenSSL-based routines with new libsecp256k1-based implementations
+- **Improve NodeStore to ShardStore imports**: This runs the import process in a background thread while preventing online_delete from removing ledgers pending import
+- **Simplify SHAMapItem construction**: The existing class offered several constructors which were mostly unnecessary. This eliminates all existing constructors and introduces a single new one, taking a `Slice`. The internal buffer is switched from `std::vector` to `Buffer` to save a minimum of 8 bytes (plus the buffer slack that is inherent in `std::vector`) per SHAMapItem instance.
+- **Redesign stoppable objects**: Stoppable is no longer an abstract base class, but a pattern, modeled after the well-understood `std::thread`. The immediate benefits are less code, less synchronization, less runtime work, and (subjectively) more readable code. The end goal is to adhere to RAII in our object design, and this is one necessary step on that path.
+
+## Version 1.7.3
+
+This is the 1.7.3 release of `rippled`, the reference implementation of the XRP Ledger protocol. This release addresses an OOB memory read identified by Guido Vranken, as well as an unrelated issue identified by the Ripple C++ team that could result in incorrect use of SLEs. Additionally, this version also introduces the `NegativeUNL` amendment, which corresponds to the feature which was introduced with the 1.6.0 release.
+
+## Action Required
+
+If you operate an XRP Ledger server, then you should upgrade to version 1.7.3 at your earliest convenience to mitigate the issues addressed in this hotfix. If a sufficient majority of servers on the network upgrade, the `NegativeUNL` amendment may gain a majority, at which point a two week activation countdown will begin. If the `NegativeUNL` amendment activates, servers running versions of `rippled` prior to 1.7.3 will become [amendment blocked](https://xrpl.org/amendments.html#amendment-blocked).
+
+### Bug Fixes
+
+- **Improve SLE usage in check cashing**: Fixes a situation which could result in the incorrect use of SLEs.
+- **Address OOB in base58 decoder**: Corrects a technical flaw that could allow an out-of-bounds memory read in the Base58 decoder.
+- **Add `NegativeUNL` as a supported amendment**: Introduces an amendment for the Negative UNL feature introduced in `rippled` 1.6.0.
+
+## Version 1.7.2
+
+This the 1.7.2 release of rippled, the reference server implementation of the XRP Ledger protocol. This release protects against the security issue [CVE-2021-3499](https://www.openssl.org/news/secadv/20210325.txt) affecting OpenSSL, adds an amendment to fix an issue with small offers not being properly removed from order books in some cases, and includes various other minor fixes.
+Version 1.7.2 supersedes version 1.7.1 and adds fixes for more issues that were discovered during the release cycle.
+
+## Action Required
+
+This release introduces a new amendment to the XRP Ledger protocol: `fixRmSmallIncreasedQOffers`. This amendments is now open for voting according to the XRP Ledger's amendment process, which enables protocol changes following two weeks of >80% support from trusted validators.
+If you operate an XRP Ledger server, then you should upgrade to version 1.7.2 within two weeks, to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+If you operate an XRP Ledger validator, please learn more about this amendment so you can make informed decisions about how your validator votes. If you take no action, your validator begins voting in favor of any new amendments as soon as it has been upgraded. 
+
+### Bug Fixes
+
+- **fixRmSmallIncreasedQOffers Amendment:** This amendment fixes an issue where certain small offers can be left at the tip of an order book without being consumed or removed when appropriate and causes some payments and Offers to fail when they should have succeeded [(#3827)](https://github.com/ripple/rippled/pull/3827).
+- **Adjust OpenSSL defaults and mitigate CVE-2021-3499:** Prior to this fix, servers compiled against a vulnerable version of OpenSSL could have a crash triggered by a malicious network connection. This fix disables renegotiation support in OpenSSL so that the rippled server is not vulnerable to this bug regardless of the OpenSSL version used to compile the server. This also removes support for deprecated TLS versions 1.0 and 1.1 and ciphers that are not part of TLS 1.2 [(#79e69da)](https://github.com/ripple/rippled/pull/3843/commits/79e69da3647019840dca49622621c3d88bc3883f).
+- **Support HTTP health check in reporting mode:** Enables the Health Check special method when running the server in the new Reporting Mode introduced in 1.7.0 [(9c8cadd)](https://github.com/ripple/rippled/pull/3843/commits/9c8caddc5a197bdd642556f8beb14f06d53cdfd3).
+- **Maintain compatibility for forwarded RPC responses:** Fixes a case in API responses from servers in Reporting Mode, where requests that were forwarded to a P2P-mode server would have the result field nested inside another result field [(8579eb0)](https://github.com/ripple/rippled/pull/3843/commits/8579eb0c191005022dcb20641444ab471e277f67).
+- **Add load_factor in reporting mode:** Adds a load_factor value to the server info method response when running the server in Reporting Mode so that the response is compatible with the format returned by servers in P2P mode (the default) [(430802c)](https://github.com/ripple/rippled/pull/3843/commits/430802c1cf6d4179f2249a30bfab9eff8e1fa748).
+- **Properly encode metadata from tx RPC command:** Fixes a problem where transaction metadata in the tx API method response would be in JSON format even when binary was requested [(7311629)](https://github.com/ripple/rippled/pull/3843/commits/73116297aa94c4acbfc74c2593d1aa2323b4cc52).
+- **Updates to Windows builds:** When building on Windows, use vcpkg 2021 by default and add compatibility with MSVC 2019 [(36fe196)](https://github.com/ripple/rippled/pull/3843/commits/36fe1966c3cd37f668693b5d9910fab59c3f8b1f), [(30fd458)](https://github.com/ripple/rippled/pull/3843/commits/30fd45890b1d3d5f372a2091d1397b1e8e29d2ca).
 
 ## Version 1.7.0 
 

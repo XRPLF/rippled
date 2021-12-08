@@ -22,9 +22,9 @@
 
 #include <ripple/basics/base_uint.h>
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
 #include <array>
 #include <bitset>
+#include <optional>
 #include <string>
 
 /**
@@ -32,122 +32,73 @@
  *
  * Steps required to add new features to the code:
  *
- * 1) add the new feature name to the featureNames array below
- * 2) add a uint256 declaration for the feature to the bottom of this file
- * 3) add a uint256 definition for the feature to the corresponding source
- *    file (Feature.cpp)
- * 4) if the feature is going to be supported in the near future, add its
- *    sha512half value and name (matching exactly the featureName here) to
- *    the supportedAmendments in Feature.cpp.
+ * 1) In this file, increment `numFeatures` and add a uint256 declaration
+ *    for the feature at the bottom
+ * 2) Add a uint256 definition for the feature to the corresponding source
+ *    file (Feature.cpp). Use `registerFeature` to create the feature with
+ *    the feature's name, `Supported::no`, and `DefaultVote::no`. This
+ *    should be the only place the feature's name appears in code as a string.
+ * 3) Use the uint256 as the parameter to `view.rules.enabled()` to
+ *    control flow into new code that this feature limits.
+ * 4) If the feature development is COMPLETE, and the feature is ready to be
+ *    SUPPORTED, change the `registerFeature` parameter to Supported::yes.
+ * 5) When the feature is ready to be ENABLED, change the `registerFeature`
+ *    parameter to `DefaultVote::yes`.
+ * In general, any newly supported amendments (`Supported::yes`) should have
+ * a `DefaultVote::no` for at least one full release cycle. High priority
+ * bug fixes can be an exception to this rule of thumb.
+ *
+ * When a feature has been enabled for several years, the conditional code
+ * may be removed, and the feature "retired". To retire a feature:
+ * 1) Remove the uint256 declaration from this file.
+ * 2) MOVE the uint256 definition in Feature.cpp to the "retired features"
+ *    section at the end of the file.
+ * 3) CHANGE the name of the variable to start with "retired".
+ * 4) CHANGE the parameters of the `registerFeature` call to `Supported::yes`
+ *    and `DefaultVote::no`.
+ * The feature must remain registered and supported indefinitely because it
+ * still exists in the ledger, but there is no need to vote for it because
+ * there's nothing to vote for. If it is removed completely from the code, any
+ * instances running that code will get amendment blocked. Removing the
+ * feature from the ledger is beyond the scope of these instructions.
  *
  */
 
 namespace ripple {
 
+enum class DefaultVote : bool { no = false, yes };
+
 namespace detail {
 
-// *NOTE*
-//
-// Features, or Amendments as they are called elsewhere, are enabled on the
-// network at some specific time based on Validator voting.  Features are
-// enabled using run-time conditionals based on the state of the amendment.
-// There is value in retaining that conditional code for some time after
-// the amendment is enabled to make it simple to replay old transactions.
-// However, once an Amendment has been enabled for, say, more than two years
-// then retaining that conditional code has less value since it is
-// uncommon to replay such old transactions.
-//
-// Starting in January of 2020 Amendment conditionals from before January
-// 2018 are being removed.  So replaying any ledger from before January
-// 2018 needs to happen on an older version of the server code.  There's
-// a log message in Application.cpp that warns about replaying old ledgers.
-//
-// At some point in the future someone may wish to remove Amendment
-// conditional code for Amendments that were enabled after January 2018.
-// When that happens then the log message in Application.cpp should be
-// updated.
+// This value SHOULD be equal to the number of amendments registered in
+// Feature.cpp. Because it's only used to reserve storage, and determine how
+// large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
+// the actual number of amendments. A LogicError on startup will verify this.
+static constexpr std::size_t numFeatures = 46;
 
-class FeatureCollections
-{
-    static constexpr char const* const featureNames[] = {
-        "MultiSign",      // Unconditionally supported.
-        "TrustSetAuth",   // Unconditionally supported.
-        "FeeEscalation",  // Unconditionally supported.
-        "OwnerPaysFee",
-        "PayChan",
-        "Flow",  // Unconditionally supported.
-        "CompareTakerFlowCross",
-        "FlowCross",
-        "CryptoConditions",
-        "TickSize",
-        "fix1368",
-        "Escrow",
-        "CryptoConditionsSuite",
-        "fix1373",
-        "EnforceInvariants",
-        "SortedDirectories",
-        "fix1201",
-        "fix1512",
-        "fix1513",
-        "fix1523",
-        "fix1528",
-        "DepositAuth",
-        "Checks",
-        "fix1571",
-        "fix1543",
-        "fix1623",
-        "DepositPreauth",
-        "fix1515",
-        "fix1578",
-        "MultiSignReserve",
-        "fixTakerDryOfferRemoval",
-        "fixMasterKeyAsRegularKey",
-        "fixCheckThreading",
-        "fixPayChanRecipientOwnerDir",
-        "DeletableAccounts",
-        // fixQualityUpperBound should be activated before FlowCross
-        "fixQualityUpperBound",
-        "RequireFullyCanonicalSig",
-        "fix1781",  // XRPEndpointSteps should be included in the circular
-                    // payment check
-        "HardenedValidations",
-        "fixAmendmentMajorityCalc",  // Fix Amendment majority calculation
-        "NegativeUNL",
-        "TicketBatch",
-        "FlowSortStrands",
-        "fixSTAmountCanonicalize",
-    };
-
-    std::vector<uint256> features;
-    boost::container::flat_map<uint256, std::size_t> featureToIndex;
-    boost::container::flat_map<std::string, uint256> nameToFeature;
-
-public:
-    FeatureCollections();
-
-    static constexpr std::size_t
-    numFeatures()
-    {
-        return sizeof(featureNames) / sizeof(featureNames[0]);
-    }
-
-    boost::optional<uint256>
-    getRegisteredFeature(std::string const& name) const;
-
-    std::size_t
-    featureToBitsetIndex(uint256 const& f) const;
-
-    uint256 const&
-    bitsetIndexToFeature(size_t i) const;
-};
-
-/** Amendments that this server supports, but doesn't enable by default */
-std::vector<std::string> const&
+/** Amendments that this server supports and the default voting behavior.
+   Whether they are enabled depends on the Rules defined in the validated
+   ledger */
+std::map<std::string, DefaultVote> const&
 supportedAmendments();
+
+/** Amendments that this server won't vote for by default.
+
+    This function is only used in unit tests.
+*/
+std::size_t
+numDownVotedAmendments();
+
+/** Amendments that this server will vote for by default.
+
+    This function is only used in unit tests.
+*/
+std::size_t
+numUpVotedAmendments();
 
 }  // namespace detail
 
-boost::optional<uint256>
+std::optional<uint256>
 getRegisteredFeature(std::string const& name);
 
 size_t
@@ -156,10 +107,12 @@ featureToBitsetIndex(uint256 const& f);
 uint256
 bitsetIndexToFeature(size_t i);
 
-class FeatureBitset
-    : private std::bitset<detail::FeatureCollections::numFeatures()>
+std::string
+featureToName(uint256 const& f);
+
+class FeatureBitset : private std::bitset<detail::numFeatures>
 {
-    using base = std::bitset<detail::FeatureCollections::numFeatures()>;
+    using base = std::bitset<detail::numFeatures>;
 
     template <class... Fs>
     void
@@ -193,12 +146,14 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
+        assert(b.count() == count());
     }
 
     template <class... Fs>
     explicit FeatureBitset(uint256 const& f, Fs&&... fs)
     {
         initFromFeatures(f, std::forward<Fs>(fs)...);
+        assert(count() == (sizeof...(fs) + 1));
     }
 
     template <class Col>
@@ -206,6 +161,7 @@ public:
     {
         for (auto const& f : fs)
             set(featureToBitsetIndex(f));
+        assert(fs.size() == count());
     }
 
     auto
@@ -349,7 +305,6 @@ foreachFeature(FeatureBitset bs, F&& f)
 
 extern uint256 const featureOwnerPaysFee;
 extern uint256 const featureFlow;
-extern uint256 const featureCompareTakerFlowCross;
 extern uint256 const featureFlowCross;
 extern uint256 const featureCryptoConditionsSuite;
 extern uint256 const fix1513;
@@ -376,6 +331,8 @@ extern uint256 const featureNegativeUNL;
 extern uint256 const featureTicketBatch;
 extern uint256 const featureFlowSortStrands;
 extern uint256 const fixSTAmountCanonicalize;
+extern uint256 const fixRmSmallIncreasedQOffers;
+extern uint256 const featureCheckCashMakesTrustLine;
 
 }  // namespace ripple
 

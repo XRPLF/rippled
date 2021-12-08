@@ -77,16 +77,6 @@ public:
     {
         return mSocket->next_layer();
     }
-    void
-    setSSLOnly()
-    {
-        mSecure = true;
-    }
-    void
-    setPlainOnly()
-    {
-        mBuffer.clear();
-    }
 
     beast::IP::Endpoint
     local_endpoint()

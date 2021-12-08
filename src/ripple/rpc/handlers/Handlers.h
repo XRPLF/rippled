@@ -89,6 +89,8 @@ doLogRotate(RPC::JsonContext&);
 Json::Value
 doManifest(RPC::JsonContext&);
 Json::Value
+doNodeToShard(RPC::JsonContext&);
+Json::Value
 doNoRippleCheck(RPC::JsonContext&);
 Json::Value
 doOwnerInfo(RPC::JsonContext&);
@@ -138,6 +140,8 @@ Json::Value
 doTxJson(RPC::JsonContext&);
 Json::Value
 doTxHistory(RPC::JsonContext&);
+Json::Value
+doTxReduceRelay(RPC::JsonContext&);
 Json::Value
 doUnlList(RPC::JsonContext&);
 Json::Value

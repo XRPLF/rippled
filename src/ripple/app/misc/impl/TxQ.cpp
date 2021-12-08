@@ -26,7 +26,6 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
-#include <boost/algorithm/clamp.hpp>
 #include <algorithm>
 #include <limits>
 #include <numeric>
@@ -63,11 +62,11 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
     return FeeLevel64(std::numeric_limits<std::uint64_t>::max());
 }
 
-static boost::optional<LedgerIndex>
+static std::optional<LedgerIndex>
 getLastLedgerSequence(STTx const& tx)
 {
     if (!tx.isFieldPresent(sfLastLedgerSequence))
-        return boost::none;
+        return std::nullopt;
     return tx.getFieldU32(sfLastLedgerSequence);
 }
 
@@ -111,11 +110,11 @@ TxQ::FeeMetrics::update(
         // Ledgers are taking to long to process,
         // so clamp down on limits.
         auto const cutPct = 100 - setup.slowConsensusDecreasePercent;
-        // upperLimit must be >= minimumTxnCount_ or boost::clamp can give
+        // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
             mulDiv(txnsExpected_, cutPct, 100).second, minimumTxnCount_);
-        txnsExpected_ = boost::algorithm::clamp(
+        txnsExpected_ = std::clamp<std::uint64_t>(
             mulDiv(size, cutPct, 100).second, minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
@@ -348,7 +347,7 @@ TxQ::TxQAccount::remove(SeqProxy seqProx)
 //////////////////////////////////////////////////////////////////////////
 
 TxQ::TxQ(Setup const& setup, beast::Journal j)
-    : setup_(setup), j_(j), feeMetrics_(setup, j), maxSize_(boost::none)
+    : setup_(setup), j_(j), feeMetrics_(setup, j), maxSize_(std::nullopt)
 {
 }
 
@@ -373,7 +372,7 @@ TxQ::canBeHeld(
     OpenView const& view,
     std::shared_ptr<SLE const> const& sleAccount,
     AccountMap::iterator const& accountIter,
-    boost::optional<TxQAccount::TxMap::iterator> const& replacementIter,
+    std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::lock_guard<std::mutex> const& lock)
 {
     // PreviousTxnID is deprecated and should never be used.
@@ -801,10 +800,10 @@ TxQ::apply(
         TxQAccount::TxMap::iterator end;
     };
 
-    boost::optional<TxIter> const txIter =
+    std::optional<TxIter> const txIter =
         [accountIter,
          accountIsInQueue,
-         acctSeqProx]() -> boost::optional<TxIter> {
+         acctSeqProx]() -> std::optional<TxIter> {
         if (!accountIsInQueue)
             return {};
 
@@ -853,7 +852,7 @@ TxQ::apply(
     // If the transaction is intending to replace a transaction in the queue
     // identify the one that might be replaced.
     auto replacedTxIter = [accountIsInQueue, &accountIter, txSeqProx]()
-        -> boost::optional<TxQAccount::TxMap::iterator> {
+        -> std::optional<TxQAccount::TxMap::iterator> {
         if (accountIsInQueue)
         {
             TxQAccount& txQAcct = accountIter->second;
@@ -936,7 +935,7 @@ TxQ::apply(
         }
     };
 
-    boost::optional<MultiTxn> multiTxn;
+    std::optional<MultiTxn> multiTxn;
 
     if (acctTxCount == 0)
     {
@@ -1178,7 +1177,7 @@ TxQ::apply(
             conditions change, but don't waste the effort to clear).
     */
     if (!(flags & tapPREFER_QUEUE) && txSeqProx.isSeq() && txIter &&
-        multiTxn.is_initialized() &&
+        multiTxn.has_value() &&
         txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
         feeLevelPaid > requiredFeeLevel && requiredFeeLevel > baseLevel)
     {
@@ -1693,9 +1692,9 @@ TxQ::tryDirectApply(
     return {};
 }
 
-boost::optional<TxQ::TxQAccount::TxMap::iterator>
+std::optional<TxQ::TxQAccount::TxMap::iterator>
 TxQ::removeFromByFee(
-    boost::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
+    std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
     std::shared_ptr<STTx const> const& tx)
 {
     if (replacedTxIter && tx)
@@ -1710,7 +1709,7 @@ TxQ::removeFromByFee(
 
         erase(deleteIter);
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 TxQ::Metrics
@@ -1885,7 +1884,7 @@ setup_TxQ(Config const& config)
         "normal_consensus_increase_percent",
         section);
     setup.normalConsensusIncreasePercent =
-        boost::algorithm::clamp(setup.normalConsensusIncreasePercent, 0, 1000);
+        std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
     /* If this percentage is outside of the 0-100 range, the results
        are nonsensical (uint overflows happen, so the limit grows
@@ -1895,7 +1894,7 @@ setup_TxQ(Config const& config)
         "slow_consensus_decrease_percent",
         section);
     setup.slowConsensusDecreasePercent =
-        boost::algorithm::clamp(setup.slowConsensusDecreasePercent, 0, 100);
+        std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
     set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
     set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);

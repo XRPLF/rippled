@@ -229,7 +229,7 @@ checkPayment(
                     sendMax.issue().currency,
                     sendMax.issue().account,
                     amount,
-                    boost::none,
+                    std::nullopt,
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
@@ -388,7 +388,7 @@ transactionPreProcessImpl(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(params));
+        getAPIVersionNumber(params, app.config().BETA_RPC_API));
 
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
@@ -496,7 +496,7 @@ transactionPreProcessImpl(
     }
 
     STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
-    if (parsed.object == boost::none)
+    if (!parsed.object.has_value())
     {
         Json::Value err;
         err[jss::error] = parsed.error[jss::error];
@@ -514,7 +514,7 @@ transactionPreProcessImpl(
             sfSigningPubKey,
             signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
 
-        stpTrans = std::make_shared<STTx>(std::move(parsed.object.get()));
+        stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
     catch (STObject::FieldErr& err)
     {
@@ -1066,7 +1066,7 @@ transactionSubmitMultiSigned(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(jvRequest));
+        getAPIVersionNumber(jvRequest, app.config().BETA_RPC_API));
 
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
@@ -1118,7 +1118,7 @@ transactionSubmitMultiSigned(
         try
         {
             stpTrans =
-                std::make_shared<STTx>(std::move(parsedTx_json.object.get()));
+                std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
         catch (STObject::FieldErr& err)
         {

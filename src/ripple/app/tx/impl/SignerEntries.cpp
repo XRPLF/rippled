@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-std::pair<std::vector<SignerEntries::SignerEntry>, NotTEC>
+Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize(
     STObject const& obj,
     beast::Journal journal,
@@ -37,11 +37,10 @@ SignerEntries::deserialize(
     {
         JLOG(journal.trace())
             << "Malformed " << annotation << ": Need signer entry array.";
-        s.second = temMALFORMED;
-        return s;
+        return Unexpected(temMALFORMED);
     }
 
-    auto& accountVec = s.first;
+    std::vector<SignerEntry> accountVec;
     accountVec.reserve(STTx::maxMultiSigners);
 
     STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
@@ -52,8 +51,7 @@ SignerEntries::deserialize(
         {
             JLOG(journal.trace())
                 << "Malformed " << annotation << ": Expected SignerEntry.";
-            s.second = temMALFORMED;
-            return s;
+            return Unexpected(temMALFORMED);
         }
 
         // Extract SignerEntry fields.
@@ -61,9 +59,7 @@ SignerEntries::deserialize(
         std::uint16_t const weight = sEntry.getFieldU16(sfSignerWeight);
         accountVec.emplace_back(account, weight);
     }
-
-    s.second = tesSUCCESS;
-    return s;
+    return accountVec;
 }
 
 }  // namespace ripple

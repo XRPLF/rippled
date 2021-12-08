@@ -30,16 +30,8 @@
 
 namespace ripple {
 
-LoadManager::LoadManager(
-    Application& app,
-    Stoppable& parent,
-    beast::Journal journal)
-    : Stoppable("LoadManager", parent)
-    , app_(app)
-    , journal_(journal)
-    , deadLock_()
-    , armed_(false)
-    , stop_(false)
+LoadManager::LoadManager(Application& app, beast::Journal journal)
+    : app_(app), journal_(journal), deadLock_(), armed_(false)
 {
 }
 
@@ -47,7 +39,7 @@ LoadManager::~LoadManager()
 {
     try
     {
-        onStop();
+        stop();
     }
     catch (std::exception const& ex)
     {
@@ -78,7 +70,7 @@ LoadManager::resetDeadlockDetector()
 //------------------------------------------------------------------------------
 
 void
-LoadManager::onStart()
+LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
     assert(!thread_.joinable());
@@ -87,18 +79,19 @@ LoadManager::onStart()
 }
 
 void
-LoadManager::onStop()
+LoadManager::stop()
 {
+    {
+        std::lock_guard lock(mutex_);
+        stop_ = true;
+        // There is at most one thread waiting on this condition.
+        cv_.notify_all();
+    }
     if (thread_.joinable())
     {
         JLOG(journal_.debug()) << "Stopping";
-        {
-            std::lock_guard sl(mutex_);
-            stop_ = true;
-        }
         thread_.join();
     }
-    stopped();
 }
 
 //------------------------------------------------------------------------------
@@ -109,113 +102,101 @@ LoadManager::run()
     beast::setCurrentThreadName("LoadManager");
 
     using namespace std::chrono_literals;
-    using clock_type = std::chrono::system_clock;
+    using clock_type = std::chrono::steady_clock;
 
     auto t = clock_type::now();
-    bool stop = false;
 
-    while (!(stop || isStopping()))
+    while (true)
     {
+        t += 1s;
+
+        std::unique_lock sl(mutex_);
+        if (cv_.wait_until(sl, t, [this] { return stop_; }))
+            break;
+
+        // Copy out shared data under a lock.  Use copies outside lock.
+        auto const deadLock = deadLock_;
+        auto const armed = armed_;
+        sl.unlock();
+
+        // Measure the amount of time we have been deadlocked, in seconds.
+        using namespace std::chrono;
+        auto const timeSpentDeadlocked =
+            duration_cast<seconds>(steady_clock::now() - deadLock);
+
+        constexpr auto reportingIntervalSeconds = 10s;
+        constexpr auto deadlockFatalLogMessageTimeLimit = 90s;
+        constexpr auto deadlockLogicErrorTimeLimit = 600s;
+
+        if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
         {
-            // Copy out shared data under a lock.  Use copies outside lock.
-            std::unique_lock<std::mutex> sl(mutex_);
-            auto const deadLock = deadLock_;
-            auto const armed = armed_;
-            stop = stop_;
-            sl.unlock();
-
-            // Measure the amount of time we have been deadlocked, in seconds.
-            using namespace std::chrono;
-            auto const timeSpentDeadlocked =
-                duration_cast<seconds>(steady_clock::now() - deadLock);
-
-            constexpr auto reportingIntervalSeconds = 10s;
-            constexpr auto deadlockFatalLogMessageTimeLimit = 90s;
-            constexpr auto deadlockLogicErrorTimeLimit = 600s;
-            if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
+            // Report the deadlocked condition every
+            // reportingIntervalSeconds
+            if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
             {
-                // Report the deadlocked condition every
-                // reportingIntervalSeconds
-                if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
+                if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
                 {
-                    if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
-                    {
-                        JLOG(journal_.warn())
-                            << "Server stalled for "
-                            << timeSpentDeadlocked.count() << " seconds.";
-                    }
-                    else
-                    {
-                        JLOG(journal_.fatal())
-                            << "Deadlock detected. Deadlocked time: "
-                            << timeSpentDeadlocked.count() << "s";
-                        if (app_.getJobQueue().isOverloaded())
-                        {
-                            JLOG(journal_.fatal())
-                                << app_.getJobQueue().getJson(0);
-                        }
-                    }
-                }
-
-                // If we go over the deadlockTimeLimit spent deadlocked, it
-                // means that the deadlock resolution code has failed, which
-                // qualifies as undefined behavior.
-                //
-                if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
-                {
-                    JLOG(journal_.fatal())
-                        << "LogicError: Deadlock detected. Deadlocked time: "
-                        << timeSpentDeadlocked.count() << "s";
+                    JLOG(journal_.warn())
+                        << "Server stalled for " << timeSpentDeadlocked.count()
+                        << " seconds.";
                     if (app_.getJobQueue().isOverloaded())
                     {
-                        JLOG(journal_.fatal()) << app_.getJobQueue().getJson(0);
+                        JLOG(journal_.warn()) << app_.getJobQueue().getJson(0);
                     }
-                    LogicError("Deadlock detected");
+                }
+                else
+                {
+                    JLOG(journal_.fatal())
+                        << "Deadlock detected. Deadlocked time: "
+                        << timeSpentDeadlocked.count() << "s";
+                    JLOG(journal_.fatal())
+                        << "JobQueue: " << app_.getJobQueue().getJson(0);
                 }
             }
-        }
 
-        bool change = false;
-        if (app_.getJobQueue().isOverloaded())
-        {
-            JLOG(journal_.info()) << app_.getJobQueue().getJson(0);
-            change = app_.getFeeTrack().raiseLocalFee();
-        }
-        else
-        {
-            change = app_.getFeeTrack().lowerLocalFee();
-        }
-
-        if (change)
-        {
-            // VFALCO TODO replace this with a Listener / observer and
-            // subscribe in NetworkOPs or Application.
-            app_.getOPs().reportFeeChange();
-        }
-
-        t += 1s;
-        auto const duration = t - clock_type::now();
-
-        if ((duration < 0s) || (duration > 1s))
-        {
-            JLOG(journal_.warn()) << "time jump";
-            t = clock_type::now();
-        }
-        else
-        {
-            alertable_sleep_until(t);
+            // If we go over the deadlockTimeLimit spent deadlocked, it
+            // means that the deadlock resolution code has failed, which
+            // qualifies as undefined behavior.
+            //
+            if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
+            {
+                JLOG(journal_.fatal())
+                    << "LogicError: Deadlock detected. Deadlocked time: "
+                    << timeSpentDeadlocked.count() << "s";
+                JLOG(journal_.fatal())
+                    << "JobQueue: " << app_.getJobQueue().getJson(0);
+                LogicError("Deadlock detected");
+            }
         }
     }
 
-    stopped();
+    bool change;
+
+    if (app_.getJobQueue().isOverloaded())
+    {
+        JLOG(journal_.info()) << "Raising local fee (JQ overload): "
+                              << app_.getJobQueue().getJson(0);
+        change = app_.getFeeTrack().raiseLocalFee();
+    }
+    else
+    {
+        change = app_.getFeeTrack().lowerLocalFee();
+    }
+
+    if (change)
+    {
+        // VFALCO TODO replace this with a Listener / observer and
+        // subscribe in NetworkOPs or Application.
+        app_.getOPs().reportFeeChange();
+    }
 }
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal)
+make_LoadManager(Application& app, beast::Journal journal)
 {
-    return std::unique_ptr<LoadManager>{new LoadManager{app, parent, journal}};
+    return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }
 
 }  // namespace ripple

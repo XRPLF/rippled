@@ -22,10 +22,12 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/basics/random.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
@@ -72,14 +74,16 @@ OverlayImpl::Timer::Timer(OverlayImpl& overlay)
 void
 OverlayImpl::Timer::stop()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    // This method is only ever called from the same strand that calls
+    // Timer::on_timer, ensuring they never execute concurrently.
+    stopping_ = true;
+    timer_.cancel();
 }
 
 void
-OverlayImpl::Timer::run()
+OverlayImpl::Timer::async_wait()
 {
-    timer_.expires_from_now(std::chrono::seconds(1));
+    timer_.expires_after(std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
         &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
 }
@@ -87,7 +91,7 @@ OverlayImpl::Timer::run()
 void
 OverlayImpl::Timer::on_timer(error_code ec)
 {
-    if (ec || overlay_.isStopping())
+    if (ec || stopping_)
     {
         if (ec && ec != boost::asio::error::operation_aborted)
         {
@@ -99,13 +103,13 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.m_peerFinder->once_per_second();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
+    if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
+        overlay_.sendTxQueue();
 
     if ((++overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
-    timer_.expires_from_now(std::chrono::seconds(1));
-    timer_.async_wait(overlay_.strand_.wrap(std::bind(
-        &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
+    async_wait();
 }
 
 //------------------------------------------------------------------------------
@@ -113,24 +117,21 @@ OverlayImpl::Timer::on_timer(error_code ec)
 OverlayImpl::OverlayImpl(
     Application& app,
     Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_service& io_service,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
-    : Overlay(parent)
-    , app_(app)
+    : app_(app)
     , io_service_(io_service)
-    , work_(boost::in_place(std::ref(io_service_)))
+    , work_(std::in_place, std::ref(io_service_))
     , strand_(io_service_)
     , setup_(setup)
     , journal_(app_.journal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
     , m_peerFinder(PeerFinder::make_Manager(
-          *this,
           io_service,
           stopwatch(),
           app_.journal("PeerFinder"),
@@ -139,7 +140,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(app, *this)
+    , slots_(app.logs(), *this)
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -157,19 +158,6 @@ OverlayImpl::OverlayImpl(
 {
     beast::PropertyStream::Source::add(m_peerFinder.get());
 }
-
-OverlayImpl::~OverlayImpl()
-{
-    stop();
-
-    // Block until dependent objects have been destroyed.
-    // This is just to catch improper use of the Stoppable API.
-    //
-    std::unique_lock<decltype(mutex_)> lock(mutex_);
-    cond_.wait(lock, [this] { return list_.empty(); });
-}
-
-//------------------------------------------------------------------------------
 
 Handoff
 OverlayImpl::onHandoff(
@@ -479,22 +467,8 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
     m_peers.erase(iter);
 }
 
-//------------------------------------------------------------------------------
-//
-// Stoppable
-//
-//------------------------------------------------------------------------------
-
-// Caller must hold the mutex
 void
-OverlayImpl::checkStopped()
-{
-    if (isStopping() && areChildrenStopped() && list_.empty())
-        stopped();
-}
-
-void
-OverlayImpl::onPrepare()
+OverlayImpl::start()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
@@ -503,6 +477,7 @@ OverlayImpl::onPrepare()
         setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
+    m_peerFinder->start();
 
     // Populate our boot cache: if there are no entries in [ips] then we use
     // the entries in [ips_fixed].
@@ -566,29 +541,22 @@ OverlayImpl::onPrepare()
                     m_peerFinder->addFixedPeer(name, ips);
             });
     }
-}
-
-void
-OverlayImpl::onStart()
-{
     auto const timer = std::make_shared<Timer>(*this);
     std::lock_guard lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
-    timer->run();
+    timer->async_wait();
 }
 
 void
-OverlayImpl::onStop()
+OverlayImpl::stop()
 {
-    strand_.dispatch(std::bind(&OverlayImpl::stop, this));
-}
-
-void
-OverlayImpl::onChildrenStopped()
-{
-    std::lock_guard lock(mutex_);
-    checkStopped();
+    strand_.dispatch(std::bind(&OverlayImpl::stopChildren, this));
+    {
+        std::unique_lock<decltype(mutex_)> lock(mutex_);
+        cond_.wait(lock, [this] { return list_.empty(); });
+    }
+    m_peerFinder->stop();
 }
 
 //------------------------------------------------------------------------------
@@ -689,15 +657,7 @@ OverlayImpl::onManifests(
                 if (app_.validators().listed(mo->masterKey))
                 {
                     auto db = app_.getWalletDB().checkoutDb();
-
-                    soci::transaction tr(*db);
-                    static const char* const sql =
-                        "INSERT INTO ValidatorManifests (RawData) VALUES "
-                        "(:rawData);";
-                    soci::blob rawData(*db);
-                    convert(serialized, rawData);
-                    *db << sql, soci::use(rawData);
-                    tr.commit();
+                    addValidatorManifest(*db, serialized);
                 }
             }
         }
@@ -724,98 +684,99 @@ OverlayImpl::reportTraffic(
 }
 
 Json::Value
-OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
+OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
 {
     using namespace std::chrono;
-    using namespace std::chrono_literals;
 
     Json::Value jv(Json::objectValue);
-    auto const numPeers{size()};
-    if (numPeers == 0)
+
+    // Add shard info from this server to json result
+    if (auto shardStore = app_.getShardStore())
+    {
+        if (includePublicKey)
+            jv[jss::public_key] =
+                toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
+
+        auto const shardInfo{shardStore->getShardInfo()};
+        if (!shardInfo->finalized().empty())
+            jv[jss::complete_shards] = shardInfo->finalizedToString();
+        if (!shardInfo->incomplete().empty())
+            jv[jss::incomplete_shards] = shardInfo->incompleteToString();
+    }
+
+    if (relays == 0 || size() == 0)
         return jv;
 
-    // If greater than a hop away, we may need to gather or freshen data
-    if (hops > 0)
     {
-        // Prevent crawl spamming
-        clock_type::time_point const last(csLast_.load());
-        if ((clock_type::now() - last) > 60s)
+        protocol::TMGetPeerShardInfoV2 tmGPS;
+        tmGPS.set_relays(relays);
+
+        // Wait if a request is in progress
+        std::unique_lock<std::mutex> csLock{csMutex_};
+        if (!csIDs_.empty())
+            csCV_.wait(csLock);
+
         {
-            auto const timeout(seconds((hops * hops) * 10));
-            std::unique_lock<std::mutex> l{csMutex_};
+            std::lock_guard lock{mutex_};
+            for (auto const& id : ids_)
+                csIDs_.emplace(id.first);
+        }
 
-            // Check if already requested
-            if (csIDs_.empty())
-            {
-                {
-                    std::lock_guard lock{mutex_};
-                    for (auto& id : ids_)
-                        csIDs_.emplace(id.first);
-                }
+        // Request peer shard info
+        foreach(send_always(std::make_shared<Message>(
+            tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2)));
 
-                // Relay request to active peers
-                protocol::TMGetPeerShardInfo tmGPS;
-                tmGPS.set_hops(hops);
-                foreach(send_always(std::make_shared<Message>(
-                    tmGPS, protocol::mtGET_PEER_SHARD_INFO)));
-
-                if (csCV_.wait_for(l, timeout) == std::cv_status::timeout)
-                {
-                    csIDs_.clear();
-                    csCV_.notify_all();
-                }
-                csLast_ = duration_cast<seconds>(
-                    clock_type::now().time_since_epoch());
-            }
-            else
-                csCV_.wait_for(l, timeout);
+        if (csCV_.wait_for(csLock, seconds(60)) == std::cv_status::timeout)
+        {
+            csIDs_.clear();
+            csCV_.notify_all();
         }
     }
 
-    // Combine the shard info from peers and their sub peers
-    hash_map<PublicKey, PeerImp::ShardInfo> peerShardInfo;
-    for_each([&](std::shared_ptr<PeerImp> const& peer) {
-        if (auto psi = peer->getPeerShardInfo())
+    // Combine shard info from peers
+    hash_map<PublicKey, NodeStore::ShardInfo> peerShardInfo;
+    for_each([&](std::shared_ptr<PeerImp>&& peer) {
+        auto const psi{peer->getPeerShardInfos()};
+        for (auto const& [publicKey, shardInfo] : psi)
         {
-            // e is non-const so it may be moved from
-            for (auto& e : *psi)
-            {
-                auto it{peerShardInfo.find(e.first)};
-                if (it != peerShardInfo.end())
-                    // The key exists so join the shard indexes.
-                    it->second.shardIndexes += e.second.shardIndexes;
-                else
-                    peerShardInfo.emplace(std::move(e));
-            }
+            auto const it{peerShardInfo.find(publicKey)};
+            if (it == peerShardInfo.end())
+                peerShardInfo.emplace(publicKey, shardInfo);
+            else if (shardInfo.msgTimestamp() > it->second.msgTimestamp())
+                it->second = shardInfo;
         }
     });
 
-    // Prepare json reply
-    auto& av = jv[jss::peers] = Json::Value(Json::arrayValue);
-    for (auto const& e : peerShardInfo)
+    // Add shard info to json result
+    if (!peerShardInfo.empty())
     {
-        auto& pv{av.append(Json::Value(Json::objectValue))};
-        if (pubKey)
-            pv[jss::public_key] = toBase58(TokenType::NodePublic, e.first);
+        auto& av = jv[jss::peers] = Json::Value(Json::arrayValue);
+        for (auto const& [publicKey, shardInfo] : peerShardInfo)
+        {
+            auto& pv{av.append(Json::Value(Json::objectValue))};
+            if (includePublicKey)
+            {
+                pv[jss::public_key] =
+                    toBase58(TokenType::NodePublic, publicKey);
+            }
 
-        auto const& address{e.second.endpoint.address()};
-        if (!address.is_unspecified())
-            pv[jss::ip] = address.to_string();
-
-        pv[jss::complete_shards] = to_string(e.second.shardIndexes);
+            if (!shardInfo.finalized().empty())
+                pv[jss::complete_shards] = shardInfo.finalizedToString();
+            if (!shardInfo.incomplete().empty())
+                pv[jss::incomplete_shards] = shardInfo.incompleteToString();
+        }
     }
 
     return jv;
 }
 
 void
-OverlayImpl::lastLink(std::uint32_t id)
+OverlayImpl::endOfPeerChain(std::uint32_t id)
 {
-    // Notify threads when every peer has received a last link.
-    // This doesn't account for every node that might reply but
-    // it is adequate.
-    std::lock_guard l{csMutex_};
-    if (csIDs_.erase(id) && csIDs_.empty())
+    // Notify threads if all peers have received a reply from all peer chains
+    std::lock_guard csLock{csMutex_};
+    csIDs_.erase(id);
+    if (csIDs_.empty())
         csCV_.notify_all();
 }
 
@@ -877,8 +838,16 @@ OverlayImpl::getOverlayInfo()
             pv[jss::complete_ledgers] =
                 std::to_string(minSeq) + "-" + std::to_string(maxSeq);
 
-        if (auto shardIndexes = sp->getShardIndexes())
-            pv[jss::complete_shards] = to_string(*shardIndexes);
+        auto const peerShardInfos{sp->getPeerShardInfos()};
+        auto const it{peerShardInfos.find(sp->getNodePublic())};
+        if (it != peerShardInfos.end())
+        {
+            auto const& shardInfo{it->second};
+            if (!shardInfo.finalized().empty())
+                pv[jss::complete_shards] = shardInfo.finalizedToString();
+            if (!shardInfo.incomplete().empty())
+                pv[jss::incomplete_shards] = shardInfo.incompleteToString();
+        }
     });
 
     return jv;
@@ -1079,15 +1048,16 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto info = getServerInfo();
 
     int last_validated_ledger_age = -1;
-    if (info.isMember("validated_ledger"))
-        last_validated_ledger_age = info["validated_ledger"]["age"].asInt();
+    if (info.isMember(jss::validated_ledger))
+        last_validated_ledger_age =
+            info[jss::validated_ledger][jss::age].asInt();
     bool amendment_blocked = false;
-    if (info.isMember("amendment_blocked"))
+    if (info.isMember(jss::amendment_blocked))
         amendment_blocked = true;
-    int number_peers = info["peers"].asInt();
-    std::string server_state = info["server_state"].asString();
-    auto load_factor =
-        info["load_factor"].asDouble() / info["load_base"].asDouble();
+    int number_peers = info[jss::peers].asInt();
+    std::string server_state = info[jss::server_state].asString();
+    auto load_factor = info[jss::load_factor_server].asDouble() /
+        info[jss::load_base].asDouble();
 
     enum { healthy, warning, critical };
     int health = healthy;
@@ -1099,7 +1069,8 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     msg.body()[jss::info] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
-        msg.body()[jss::info]["validated_ledger"] = last_validated_ledger_age;
+        msg.body()[jss::info][jss::validated_ledger] =
+            last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
             set_health(warning);
         else
@@ -1108,13 +1079,13 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (amendment_blocked)
     {
-        msg.body()[jss::info]["amendment_blocked"] = true;
+        msg.body()[jss::info][jss::amendment_blocked] = true;
         set_health(critical);
     }
 
     if (number_peers <= 7)
     {
-        msg.body()[jss::info]["peers"] = number_peers;
+        msg.body()[jss::info][jss::peers] = number_peers;
         if (number_peers != 0)
             set_health(warning);
         else
@@ -1124,7 +1095,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     if (!(server_state == "full" || server_state == "validating" ||
           server_state == "proposing"))
     {
-        msg.body()[jss::info]["server_state"] = server_state;
+        msg.body()[jss::info][jss::server_state] = server_state;
         if (server_state == "syncing" || server_state == "tracking" ||
             server_state == "connected")
         {
@@ -1136,7 +1107,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     if (load_factor > 100)
     {
-        msg.body()[jss::info]["load_factor"] = load_factor;
+        msg.body()[jss::info][jss::load_factor] = load_factor;
         if (load_factor < 1000)
             set_health(warning);
         else
@@ -1178,6 +1149,39 @@ OverlayImpl::getActivePeers() const
     for_each([&ret](std::shared_ptr<PeerImp>&& sp) {
         ret.emplace_back(std::move(sp));
     });
+
+    return ret;
+}
+
+Overlay::PeerSequence
+OverlayImpl::getActivePeers(
+    std::set<Peer::id_t> const& toSkip,
+    std::size_t& active,
+    std::size_t& disabled,
+    std::size_t& enabledInSkip) const
+{
+    Overlay::PeerSequence ret;
+    std::lock_guard lock(mutex_);
+
+    active = ids_.size();
+    disabled = enabledInSkip = 0;
+    ret.reserve(ids_.size());
+
+    for (auto& [id, w] : ids_)
+    {
+        if (auto p = w.lock())
+        {
+            bool const reduceRelayEnabled = p->txReduceRelayEnabled();
+            // tx reduced relay feature disabled
+            if (!reduceRelayEnabled)
+                ++disabled;
+
+            if (toSkip.count(id) == 0)
+                ret.emplace_back(std::move(p));
+            else if (reduceRelayEnabled)
+                ++enabledInSkip;
+        }
+    }
 
     return ret;
 }
@@ -1298,6 +1302,67 @@ OverlayImpl::getManifestsMessage()
     return manifestMessage_;
 }
 
+void
+OverlayImpl::relay(
+    uint256 const& hash,
+    protocol::TMTransaction& m,
+    std::set<Peer::id_t> const& toSkip)
+{
+    auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+    std::size_t total = 0;
+    std::size_t disabled = 0;
+    std::size_t enabledInSkip = 0;
+
+    // total peers excluding peers in toSkip
+    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+    auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+
+    if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
+    {
+        for (auto const& p : peers)
+            p->send(sm);
+        if (app_.config().TX_REDUCE_RELAY_ENABLE ||
+            app_.config().TX_REDUCE_RELAY_METRICS)
+            txMetrics_.addMetrics(total, toSkip.size(), 0);
+        return;
+    }
+
+    // We have more peers than the minimum (disabled + minimum enabled),
+    // relay to all disabled and some randomly selected enabled that
+    // do not have the transaction.
+    auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+        (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
+
+    txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
+
+    if (enabledTarget > enabledInSkip)
+        std::shuffle(peers.begin(), peers.end(), default_prng());
+
+    JLOG(journal_.trace()) << "relaying tx, total peers " << peers.size()
+                           << " selected " << enabledTarget << " skip "
+                           << toSkip.size() << " disabled " << disabled;
+
+    // count skipped peers with the enabled feature towards the quota
+    std::uint16_t enabledAndRelayed = enabledInSkip;
+    for (auto const& p : peers)
+    {
+        // always relay to a peer with the disabled feature
+        if (!p->txReduceRelayEnabled())
+        {
+            p->send(sm);
+        }
+        else if (enabledAndRelayed < enabledTarget)
+        {
+            enabledAndRelayed++;
+            p->send(sm);
+        }
+        else
+        {
+            p->addTxQueue(hash);
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 
 void
@@ -1306,11 +1371,11 @@ OverlayImpl::remove(Child& child)
     std::lock_guard lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
-        checkStopped();
+        cond_.notify_all();
 }
 
 void
-OverlayImpl::stop()
+OverlayImpl::stopChildren()
 {
     // Calling list_[].second->stop() may cause list_ to be modified
     // (OverlayImpl::remove() may be called on this same thread).  So
@@ -1325,7 +1390,7 @@ OverlayImpl::stop()
         std::lock_guard lock(mutex_);
         if (!work_)
             return;
-        work_ = boost::none;
+        work_ = std::nullopt;
 
         children.reserve(list_.size());
         for (auto const& element : list_)
@@ -1365,6 +1430,15 @@ OverlayImpl::sendEndpoints()
         if (peer)
             peer->sendEndpoints(e.second.begin(), e.second.end());
     }
+}
+
+void
+OverlayImpl::sendTxQueue()
+{
+    for_each([](auto const& p) {
+        if (p->txReduceRelayEnabled())
+            p->sendTxQueue();
+    });
 }
 
 std::shared_ptr<Message>
@@ -1568,7 +1642,6 @@ std::unique_ptr<Overlay>
 make_Overlay(
     Application& app,
     Overlay::Setup const& setup,
-    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
@@ -1579,7 +1652,6 @@ make_Overlay(
     return std::make_unique<OverlayImpl>(
         app,
         setup,
-        parent,
         serverHandler,
         resourceManager,
         resolver,

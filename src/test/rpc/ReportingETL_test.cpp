@@ -419,6 +419,14 @@ class ReportingETL_test : public beast::unit_test::suite
             }
         }
 
+        {
+            auto [status, reply] =
+                grpcLedgerData(env.closed()->seq(), "bad marker");
+            BEAST_EXPECT(!status.ok());
+            BEAST_EXPECT(
+                status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        }
+
         num_accounts = 3000;
 
         for (auto i = 0; i < num_accounts; i++)
@@ -1031,7 +1039,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ReportingETL, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(ReportingETL, app, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple

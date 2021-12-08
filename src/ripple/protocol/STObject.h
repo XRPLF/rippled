@@ -32,8 +32,8 @@
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/optional.hpp>
 #include <cassert>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -104,7 +104,7 @@ private:
         using value_type = typename T::value_type;
 
         using optional_type =
-            boost::optional<typename std::decay<value_type>::type>;
+            std::optional<typename std::decay<value_type>::type>;
 
     public:
         OptionalProxy(OptionalProxy const&) = default;
@@ -129,20 +129,20 @@ private:
 
         operator optional_type() const;
 
-        /** Explicit conversion to boost::optional */
+        /** Explicit conversion to std::optional */
         optional_type
         operator~() const;
 
         friend bool
-        operator==(OptionalProxy const& lhs, boost::none_t) noexcept
+        operator==(OptionalProxy const& lhs, std::nullopt_t) noexcept
         {
             return !lhs.engaged();
         }
 
         friend bool
-        operator==(boost::none_t, OptionalProxy const& rhs) noexcept
+        operator==(std::nullopt_t, OptionalProxy const& rhs) noexcept
         {
-            return rhs == boost::none;
+            return rhs == std::nullopt;
         }
 
         friend bool
@@ -170,15 +170,15 @@ private:
         }
 
         friend bool
-        operator!=(OptionalProxy const& lhs, boost::none_t) noexcept
+        operator!=(OptionalProxy const& lhs, std::nullopt_t) noexcept
         {
-            return !(lhs == boost::none);
+            return !(lhs == std::nullopt);
         }
 
         friend bool
-        operator!=(boost::none_t, OptionalProxy const& rhs) noexcept
+        operator!=(std::nullopt_t, OptionalProxy const& rhs) noexcept
         {
-            return !(rhs == boost::none);
+            return !(rhs == std::nullopt);
         }
 
         friend bool
@@ -199,7 +199,7 @@ private:
             return !(lhs == rhs);
         }
 
-        // Emulate boost::optional::value_or
+        // Emulate std::optional::value_or
         value_type
         value_or(value_type val) const
         {
@@ -207,7 +207,7 @@ private:
         }
 
         OptionalProxy&
-        operator=(boost::none_t const&);
+        operator=(std::nullopt_t const&);
         OptionalProxy&
         operator=(optional_type&& v);
         OptionalProxy&
@@ -482,16 +482,16 @@ public:
     typename T::value_type
     operator[](TypedField<T> const& f) const;
 
-    /** Get the value of a field as boost::optional
+    /** Get the value of a field as a std::optional
 
         @param An OptionaledField built from an SField value representing the
            desired object field. In typical use, the OptionaledField will be
            constructed by using the ~ operator on an SField.
-        @return boost::none if the field is not present, else the value of the
-           specified field.
+        @return std::nullopt if the field is not present, else the value of
+           the specified field.
     */
     template <class T>
-    boost::optional<std::decay_t<typename T::value_type>>
+    std::optional<std::decay_t<typename T::value_type>>
     operator[](OptionaledField<T> const& of) const;
 
     /** Get a modifiable field value.
@@ -505,14 +505,14 @@ public:
     ValueProxy<T>
     operator[](TypedField<T> const& f);
 
-    /** Return a modifiable field value as boost::optional
+    /** Return a modifiable field value as std::optional
 
         @param An OptionaledField built from an SField value representing the
             desired object field. In typical use, the OptionaledField will be
             constructed by using the ~ operator on an SField.
         @return Transparent proxy object to an `optional` holding a modifiable
-            reference to the value of the specified field. Returns boost::none
-            if the field is not present.
+            reference to the value of the specified field. Returns
+            std::nullopt if the field is not present.
     */
     template <class T>
     OptionalProxy<T>
@@ -529,16 +529,16 @@ public:
     typename T::value_type
     at(TypedField<T> const& f) const;
 
-    /** Get the value of a field as boost::optional
+    /** Get the value of a field as std::optional
 
         @param An OptionaledField built from an SField value representing the
            desired object field. In typical use, the OptionaledField will be
            constructed by using the ~ operator on an SField.
-        @return boost::none if the field is not present, else the value of the
-           specified field.
+        @return std::nullopt if the field is not present, else the value of
+           the specified field.
     */
     template <class T>
-    boost::optional<std::decay_t<typename T::value_type>>
+    std::optional<std::decay_t<typename T::value_type>>
     at(OptionaledField<T> const& of) const;
 
     /** Get a modifiable field value.
@@ -552,14 +552,14 @@ public:
     ValueProxy<T>
     at(TypedField<T> const& f);
 
-    /** Return a modifiable field value as boost::optional
+    /** Return a modifiable field value as std::optional
 
         @param An OptionaledField built from an SField value representing the
             desired object field. In typical use, the OptionaledField will be
             constructed by using the ~ operator on an SField.
         @return Transparent proxy object to an `optional` holding a modifiable
-            reference to the value of the specified field. Returns boost::none
-            if the field is not present.
+            reference to the value of the specified field. Returns
+            std::nullopt if the field is not present.
     */
     template <class T>
     OptionalProxy<T>
@@ -901,7 +901,7 @@ STObject::OptionalProxy<T>::operator~() const
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(boost::none_t const&) -> OptionalProxy&
+STObject::OptionalProxy<T>::operator=(std::nullopt_t const&) -> OptionalProxy&
 {
     disengage();
     return *this;
@@ -969,7 +969,7 @@ auto
 STObject::OptionalProxy<T>::optional_value() const -> optional_type
 {
     if (!engaged())
-        return boost::none;
+        return std::nullopt;
     return this->value();
 }
 
@@ -983,7 +983,7 @@ STObject::operator[](TypedField<T> const& f) const
 }
 
 template <class T>
-boost::optional<std::decay_t<typename T::value_type>>
+std::optional<std::decay_t<typename T::value_type>>
 STObject::operator[](OptionaledField<T> const& of) const
 {
     return at(of);
@@ -1030,19 +1030,19 @@ STObject::at(TypedField<T> const& f) const
 }
 
 template <class T>
-boost::optional<std::decay_t<typename T::value_type>>
+std::optional<std::decay_t<typename T::value_type>>
 STObject::at(OptionaledField<T> const& of) const
 {
     auto const b = peekAtPField(*of.f);
     if (!b)
-        return boost::none;
+        return std::nullopt;
     auto const u = dynamic_cast<T const*>(b);
     if (!u)
     {
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
         if (mType->style(*of.f) == soeOPTIONAL)
-            return boost::none;
+            return std::nullopt;
         assert(mType->style(*of.f) == soeDEFAULT);
         return typename T::value_type{};
     }

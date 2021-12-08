@@ -55,7 +55,7 @@ struct Handler
 };
 
 Handler const*
-getHandler(unsigned int version, std::string const&);
+getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
 /** Return a Json::objectValue with a single entry. */
 template <class Value>

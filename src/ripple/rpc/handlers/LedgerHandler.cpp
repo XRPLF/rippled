@@ -90,7 +90,7 @@ LedgerHandler::check()
         if (!ledger_ || !ledger_->open())
         {
             // It doesn't make sense to request the queue
-            // with a non-existant or closed/validated ledger.
+            // with a non-existent or closed/validated ledger.
             return rpcINVALID_PARAMS;
         }
 
@@ -110,10 +110,19 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     grpc::Status status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (RPC::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        grpc::Status errorStatus;
+        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        {
+            errorStatus = grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+        }
+        else
+        {
+            errorStatus =
+                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+        }
         return {response, errorStatus};
     }
 
@@ -196,6 +205,13 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 assert(inDesired->size() > 0);
                 obj->set_data(inDesired->data(), inDesired->size());
             }
+            if (inBase && inDesired)
+                obj->set_mod_type(
+                    org::xrpl::rpc::v1::RawLedgerObject::MODIFIED);
+            else if (inBase && !inDesired)
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::DELETED);
+            else
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
         }
         response.set_skiplist_included(true);
     }

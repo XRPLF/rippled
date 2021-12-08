@@ -32,8 +32,6 @@
 #include <ripple/protocol/messages.h>
 #include <boost/regex.hpp>
 
-#include <date/date.h>
-
 #include <cmath>
 #include <mutex>
 #include <numeric>
@@ -101,7 +99,7 @@ void
 ValidatorList::PublisherListStats::mergeDispositions(
     PublisherListStats const& src)
 {
-    for (auto const [disp, count] : src.dispositions)
+    for (auto const& [disp, count] : src.dispositions)
     {
         dispositions[disp] += count;
     }
@@ -123,7 +121,7 @@ ValidatorList::ValidatorList(
     TimeKeeper& timeKeeper,
     std::string const& databasePath,
     beast::Journal j,
-    boost::optional<std::size_t> minimumQuorum)
+    std::optional<std::size_t> minimumQuorum)
     : validatorManifests_(validatorManifests)
     , publisherManifests_(publisherManifests)
     , timeKeeper_(timeKeeper)
@@ -271,7 +269,7 @@ Json::Value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
-    boost::optional<std::uint32_t> forceVersion,
+    std::optional<std::uint32_t> forceVersion,
     beast::Journal j)
 {
     Json::Value value(Json::objectValue);
@@ -508,7 +506,7 @@ splitMessageParts(
     }
     else
     {
-        boost::optional<protocol::TMValidatorListCollection> smallMsg;
+        std::optional<protocol::TMValidatorListCollection> smallMsg;
         smallMsg.emplace();
         smallMsg->set_version(largeMsg.version());
         smallMsg->set_manifest(largeMsg.manifest());
@@ -926,7 +924,7 @@ ValidatorList::applyLists(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    boost::optional<uint256> const& hash /* = {} */)
+    std::optional<uint256> const& hash /* = {} */)
 {
     if (std::count(
             std::begin(supportedListVersions),
@@ -1061,12 +1059,12 @@ ValidatorList::updatePublisherList(
 ValidatorList::PublisherListStats
 ValidatorList::applyList(
     std::string const& globalManifest,
-    boost::optional<std::string> const& localManifest,
+    std::optional<std::string> const& localManifest,
     std::string const& blob,
     std::string const& signature,
     std::uint32_t version,
     std::string siteUri,
-    boost::optional<uint256> const& hash,
+    std::optional<uint256> const& hash,
     ValidatorList::lock_guard const& lock)
 {
     using namespace std::string_literals;
@@ -1159,7 +1157,7 @@ ValidatorList::applyList(
             if (val.isObject() && val.isMember(jss::validation_public_key) &&
                 val[jss::validation_public_key].isString())
             {
-                boost::optional<Blob> const ret =
+                std::optional<Blob> const ret =
                     strUnHex(val[jss::validation_public_key].asString());
 
                 if (!ret || !publicKeyType(makeSlice(*ret)))
@@ -1372,7 +1370,7 @@ ValidatorList::trusted(PublicKey const& identity) const
     return trusted(read_lock, identity);
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 ValidatorList::getListedKey(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
@@ -1380,10 +1378,10 @@ ValidatorList::getListedKey(PublicKey const& identity) const
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     if (keyListings_.find(pubKey) != keyListings_.end())
         return pubKey;
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 ValidatorList::getTrustedKey(
     ValidatorList::shared_lock const&,
     PublicKey const& identity) const
@@ -1391,10 +1389,10 @@ ValidatorList::getTrustedKey(
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end())
         return pubKey;
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 ValidatorList::getTrustedKey(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
@@ -1464,17 +1462,17 @@ ValidatorList::count() const
     return count(read_lock);
 }
 
-boost::optional<TimeKeeper::time_point>
+std::optional<TimeKeeper::time_point>
 ValidatorList::expires(ValidatorList::shared_lock const&) const
 {
-    boost::optional<TimeKeeper::time_point> res{boost::none};
+    std::optional<TimeKeeper::time_point> res{};
     for (auto const& [pubKey, collection] : publisherLists_)
     {
         (void)pubKey;
         // Unfetched
         auto const& current = collection.current;
         if (current.validUntil == TimeKeeper::time_point{})
-            return boost::none;
+            return std::nullopt;
 
         // Find the latest validUntil in a chain where the next validFrom
         // overlaps with the previous validUntil. applyLists has already cleaned
@@ -1498,7 +1496,7 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
     return res;
 }
 
-boost::optional<TimeKeeper::time_point>
+std::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
     std::shared_lock read_lock{mutex_};
@@ -1676,10 +1674,10 @@ ValidatorList::for_each_available(
     }
 }
 
-boost::optional<Json::Value>
+std::optional<Json::Value>
 ValidatorList::getAvailable(
     boost::beast::string_view const& pubKey,
-    boost::optional<std::uint32_t> forceVersion /* = {} */)
+    std::optional<std::uint32_t> forceVersion /* = {} */)
 {
     std::shared_lock read_lock{mutex_};
 

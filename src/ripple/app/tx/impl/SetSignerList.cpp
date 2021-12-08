@@ -58,13 +58,13 @@ SetSignerList::determineOperation(
     {
         auto signers = SignerEntries::deserialize(tx, j, "transaction");
 
-        if (signers.second != tesSUCCESS)
-            return std::make_tuple(signers.second, quorum, sign, op);
+        if (!signers)
+            return std::make_tuple(signers.error(), quorum, sign, op);
 
-        std::sort(signers.first.begin(), signers.first.end());
+        std::sort(signers->begin(), signers->end());
 
         // Save deserialized list for later.
-        sign = std::move(signers.first);
+        sign = std::move(*signers);
         op = set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
@@ -342,13 +342,8 @@ SetSignerList::replaceSignerList()
 
     auto viewJ = ctx_.app.journal("View");
     // Add the signer list to the account's directory.
-    auto const page = dirAdd(
-        ctx_.view(),
-        ownerDirKeylet,
-        signerListKeylet.key,
-        false,
-        describeOwnerDir(account_),
-        viewJ);
+    auto const page = ctx_.view().dirInsert(
+        ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
 
     JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_)
                      << ": " << (page ? "success" : "failure");

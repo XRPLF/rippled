@@ -27,11 +27,8 @@
 
 namespace ripple {
 
-OrderBookDB::OrderBookDB(Application& app, Stoppable& parent)
-    : Stoppable("OrderBookDB", parent)
-    , app_(app)
-    , mSeq(0)
-    , j_(app.journal("OrderBookDB"))
+OrderBookDB::OrderBookDB(Application& app)
+    : app_(app), mSeq(0), j_(app.journal("OrderBookDB"))
 {
 }
 
@@ -65,17 +62,16 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
         mSeq = seq;
     }
 
-    if (app_.config().PATH_SEARCH_MAX == 0)
+    if (app_.config().PATH_SEARCH_MAX != 0)
     {
-        // nothing to do
+        if (app_.config().standalone())
+            update(ledger);
+        else
+            app_.getJobQueue().addJob(
+                jtUPDATE_PF, "OrderBookDB::update", [this, ledger](Job&) {
+                    update(ledger);
+                });
     }
-    else if (app_.config().standalone())
-        update(ledger);
-    else
-        app_.getJobQueue().addJob(
-            jtUPDATE_PF, "OrderBookDB::update", [this, ledger](Job&) {
-                update(ledger);
-            });
 }
 
 void
@@ -101,7 +97,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
     {
         for (auto& sle : ledger->sles)
         {
-            if (isStopping())
+            if (app_.isStopping())
             {
                 JLOG(j_.info())
                     << "OrderBookDB::update exiting due to isStopping";

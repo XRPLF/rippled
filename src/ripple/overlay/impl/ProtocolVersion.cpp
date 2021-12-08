@@ -36,7 +36,6 @@ namespace ripple {
 // clang-format off
 constexpr ProtocolVersion const supportedProtocolList[]
 {
-    {1, 2},
     {2, 0},
     {2, 1},
     {2, 2}
@@ -73,11 +72,6 @@ static_assert(
 std::string
 to_string(ProtocolVersion const& p)
 {
-    // The legacy protocol uses a different name. This can be removed when we
-    // migrate away from it and require 2.0 or later.
-    if (p == ProtocolVersion{1, 2})
-        return "RTXP/1.2";
-
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
 }
 
@@ -100,12 +94,6 @@ parseProtocolVersions(boost::beast::string_view const& value)
 
     for (auto const& s : beast::rfc2616::split_commas(value))
     {
-        if (s == "RTXP/1.2")
-        {
-            result.push_back(make_protocol(1, 2));
-            continue;
-        }
-
         boost::smatch m;
 
         if (boost::regex_match(s, m, re))
@@ -134,10 +122,10 @@ parseProtocolVersions(boost::beast::string_view const& value)
     return result;
 }
 
-boost::optional<ProtocolVersion>
+std::optional<ProtocolVersion>
 negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 {
-    boost::optional<ProtocolVersion> result;
+    std::optional<ProtocolVersion> result;
 
     // The protocol version we want to negotiate is the largest item in the
     // intersection of the versions supported by us and the peer. Since the
@@ -157,7 +145,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     return result;
 }
 
-boost::optional<ProtocolVersion>
+std::optional<ProtocolVersion>
 negotiateProtocolVersion(boost::beast::string_view const& versions)
 {
     auto const them = parseProtocolVersions(versions);

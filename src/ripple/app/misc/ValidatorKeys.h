@@ -36,10 +36,12 @@ class Config;
 class ValidatorKeys
 {
 public:
+    PublicKey masterPublicKey;
     PublicKey publicKey;
     SecretKey secretKey;
     NodeID nodeID;
     std::string manifest;
+    std::uint32_t sequence = 0;
 
     ValidatorKeys(Config const& config, beast::Journal j);
 

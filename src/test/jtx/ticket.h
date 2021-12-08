@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TEST_JTX_TICKET_H_INCLUDED
 #define RIPPLE_TEST_JTX_TICKET_H_INCLUDED
 
-#include <boost/optional.hpp>
-#include <cstdint>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
+
+#include <cstdint>
 
 namespace ripple {
 namespace test {

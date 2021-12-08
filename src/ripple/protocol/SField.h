@@ -292,7 +292,7 @@ struct TypedField : SField
     }
 };
 
-/** Indicate boost::optional field semantics. */
+/** Indicate std::optional field semantics. */
 template <class T>
 struct OptionaledField
 {

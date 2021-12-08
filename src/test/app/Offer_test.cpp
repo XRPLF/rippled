@@ -223,13 +223,7 @@ public:
         env.close();
 
         BEAST_EXPECT(isOffer(env, alice, XRP(222), USD(111)));
-        {
-            Json::Value cancelOffer;
-            cancelOffer[jss::Account] = alice.human();
-            cancelOffer[jss::OfferSequence] = offer4Seq;
-            cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            env(cancelOffer);
-        }
+        env(offer_cancel(alice, offer4Seq));
         env.close();
         BEAST_EXPECT(env.seq(alice) == offer4Seq + 2);
 
@@ -320,17 +314,20 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10000), alice, bob, carol, dan, erin, gw);
+        env.close();
         env.trust(USD(1000), alice, bob, carol, dan, erin);
+        env.close();
         env(pay(gw, carol, USD(0.99999)));
         env(pay(gw, dan, USD(1)));
         env(pay(gw, erin, USD(1)));
+        env.close();
 
         // Carol doesn't quite have enough funds for this offer
         // The amount left after this offer is taken will cause
         // STAmount to incorrectly round to zero when the next offer
-        // (at a good quality) is considered. (when the
-        // stAmountCalcSwitchover2 patch is inactive)
-        env(offer(carol, drops(1), USD(1)));
+        // (at a good quality) is considered. (when the now removed
+        // stAmountCalcSwitchover2 patch was inactive)
+        env(offer(carol, drops(1), USD(0.99999)));
         // Offer at a quality poor enough so when the input xrp is
         // calculated  in the reverse pass, the amount is not zero.
         env(offer(dan, XRP(100), USD(1)));
@@ -340,9 +337,9 @@ public:
         // It is considered after the offer from carol, which leaves a
         // tiny amount left to pay. When calculating the amount of xrp
         // needed for this offer, it will incorrectly compute zero in both
-        // the forward and reverse passes (when the stAmountCalcSwitchover2
-        // is inactive.)
-        env(offer(erin, drops(2), USD(2)));
+        // the forward and reverse passes (when the now removed
+        // stAmountCalcSwitchover2 was inactive.)
+        env(offer(erin, drops(2), USD(1)));
 
         env(pay(alice, bob, USD(1)),
             path(~USD),
@@ -354,6 +351,317 @@ public:
         // offer was correctly consumed. There is still some
         // liquidity left on that offer.
         env.require(balance(erin, USD(0.99999)), offers(erin, 1));
+    }
+
+    void
+    testRmSmallIncreasedQOffersXRP(FeatureBitset features)
+    {
+        testcase("Rm small increased q offers XRP");
+
+        // Carol places an offer, but cannot fully fund the offer. When her
+        // funding is taken into account, the offer's quality drops below its
+        // initial quality and has an input amount of 1 drop. This is removed as
+        // an offer that may block offer books.
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const gw = Account{"gw"};
+
+        auto const USD = gw["USD"];
+
+        // Test offer crossing
+        for (auto crossBothOffers : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            // underfund carol's offer
+            auto initialCarolUSD = USD(0.499);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, drops(1), USD(1)));
+            env.close();
+            // offer at a lower quality
+            env(offer(bob, drops(2), USD(1), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            // alice places an offer that crosses carol's; depending on
+            // "crossBothOffers" it may cross bob's as well
+            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            env(offer(alice, USD(1), aliceTakerGets));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                env.require(
+                    offers(carol, 0),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                if (crossBothOffers)
+                {
+                    env.require(
+                        offers(alice, 0),
+                        balance(alice, USD(1)));  // alice's offer is crossed
+                }
+                else
+                {
+                    env.require(
+                        offers(alice, 1),
+                        balance(
+                            alice, USD(0)));  // alice's offer is not crossed
+                }
+            }
+            else
+            {
+                env.require(
+                    offers(alice, 1),
+                    offers(bob, 1),
+                    offers(carol, 1),
+                    balance(alice, USD(0)),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is not crossed at all
+            }
+        }
+
+        // Test payments
+        for (auto partialPayment : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.close();
+            auto const initialCarolUSD = USD(0.999);
+            env(pay(gw, carol, initialCarolUSD));
+            env.close();
+            env(pay(gw, bob, USD(100)));
+            env.close();
+            env(offer(carol, drops(1), USD(1)));
+            env.close();
+            env(offer(bob, drops(2), USD(2), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            std::uint32_t const flags = partialPayment
+                ? (tfNoRippleDirect | tfPartialPayment)
+                : tfNoRippleDirect;
+
+            TER const expectedTer =
+                partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
+
+            env(pay(alice, bob, USD(5)),
+                path(~USD),
+                sendmax(XRP(1)),
+                txflags(flags),
+                ter(expectedTer));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                if (expectedTer == tesSUCCESS)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                }
+                else
+                {
+                    // TODO: Offers are not removed when payments fail
+                    // If that is addressed, the test should show that carol's
+                    // offer is removed but not taken, as in the other branch of
+                    // this if statement
+                }
+            }
+            else
+            {
+                if (partialPayment)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(
+                        balance(carol, USD(0)));  // offer is removed and taken
+                }
+                else
+                {
+                    // offer is not removed or taken
+                    BEAST_EXPECT(isOffer(env, carol, drops(1), USD(1)));
+                }
+            }
+        }
+    }
+
+    void
+    testRmSmallIncreasedQOffersIOU(FeatureBitset features)
+    {
+        testcase("Rm small increased q offers IOU");
+
+        // Carol places an offer, but cannot fully fund the offer. When her
+        // funding is taken into account, the offer's quality drops below its
+        // initial quality and has an input amount of 1 drop. This is removed as
+        // an offer that may block offer books.
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const gw = Account{"gw"};
+
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
+            STAmount amt(
+                iou.issue(),
+                /*mantissa*/ 1,
+                /*exponent*/ -81);
+            return PrettyAmount(amt, iou.account.name());
+        };
+
+        // Test offer crossing
+        for (auto crossBothOffers : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.trust(EUR(1000), alice, bob, carol);
+            // underfund carol's offer
+            auto initialCarolUSD = tinyAmount(USD);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, EUR(1), USD(10)));
+            env.close();
+            // offer at a lower quality
+            env(offer(bob, EUR(1), USD(5), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            // alice places an offer that crosses carol's; depending on
+            // "crossBothOffers" it may cross bob's as well
+            // Whatever
+            auto aliceTakerGets = crossBothOffers ? EUR(0.2) : EUR(0.1);
+            env(offer(alice, USD(1), aliceTakerGets));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                env.require(
+                    offers(carol, 0),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                if (crossBothOffers)
+                {
+                    env.require(
+                        offers(alice, 0),
+                        balance(alice, USD(1)));  // alice's offer is crossed
+                }
+                else
+                {
+                    env.require(
+                        offers(alice, 1),
+                        balance(
+                            alice, USD(0)));  // alice's offer is not crossed
+                }
+            }
+            else
+            {
+                env.require(
+                    offers(alice, 1),
+                    offers(bob, 1),
+                    offers(carol, 1),
+                    balance(alice, USD(0)),
+                    balance(
+                        carol,
+                        initialCarolUSD));  // offer is not crossed at all
+            }
+        }
+
+        // Test payments
+        for (auto partialPayment : {false, true})
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob, carol);
+            env.trust(EUR(1000), alice, bob, carol);
+            env.close();
+            // underfund carol's offer
+            auto const initialCarolUSD = tinyAmount(USD);
+            env(pay(gw, carol, initialCarolUSD));
+            env(pay(gw, bob, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
+            // This offer is underfunded
+            env(offer(carol, EUR(1), USD(2)));
+            env.close();
+            env(offer(bob, EUR(2), USD(4), tfPassive));
+            env.close();
+            env.require(offers(bob, 1), offers(carol, 1));
+
+            std::uint32_t const flags = partialPayment
+                ? (tfNoRippleDirect | tfPartialPayment)
+                : tfNoRippleDirect;
+
+            TER const expectedTer =
+                partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
+
+            env(pay(alice, bob, USD(5)),
+                path(~USD),
+                sendmax(EUR(10)),
+                txflags(flags),
+                ter(expectedTer));
+            env.close();
+
+            if (features[fixRmSmallIncreasedQOffers])
+            {
+                if (expectedTer == tesSUCCESS)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(balance(
+                        carol,
+                        initialCarolUSD));  // offer is removed but not taken
+                }
+                else
+                {
+                    // TODO: Offers are not removed when payments fail
+                    // If that is addressed, the test should show that carol's
+                    // offer is removed but not taken, as in the other branch of
+                    // this if statement
+                }
+            }
+            else
+            {
+                if (partialPayment)
+                {
+                    env.require(offers(carol, 0));
+                    env.require(
+                        balance(carol, USD(0)));  // offer is removed and taken
+                }
+                else
+                {
+                    // offer is not removed or taken
+                    BEAST_EXPECT(isOffer(env, carol, EUR(1), USD(2)));
+                }
+            }
+        }
     }
 
     void
@@ -568,7 +876,7 @@ public:
         //
         // fix1578 changes the return code.  Verify expected behavior
         // without and with fix1578.
-        for (auto const tweakedFeatures :
+        for (auto const& tweakedFeatures :
              {features - fix1578, features | fix1578})
         {
             Env env{*this, tweakedFeatures};
@@ -1068,13 +1376,9 @@ public:
         }
 
         // cancel that lingering second offer so that it doesn't interfere
-        // with the next set of offers we test. this will not be needed once
+        // with the next set of offers we test. This will not be needed once
         // the bridging bug is fixed
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = account_to_test.human();
-        cancelOffer[jss::OfferSequence] = secondLegSeq;
-        cancelOffer[jss::TransactionType] = jss::OfferCancel;
-        env(cancelOffer);
+        env(offer_cancel(account_to_test, secondLegSeq));
         env.require(offers(account_to_test, 0));
 
         // PART 2:
@@ -1297,11 +1601,7 @@ public:
         env(offer(env.master, XRP(500), USD(100)));
         env.close();
 
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = env.master.human();
-        cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = jss::OfferCancel;
-        env(cancelOffer);
+        env(offer_cancel(env.master, nextOfferSeq));
         BEAST_EXPECT(env.seq(env.master) == nextOfferSeq + 2);
 
         // ledger_accept, call twice and verify no odd behavior
@@ -1324,19 +1624,14 @@ public:
         auto const nextOfferSeq = env.seq(env.master);
         env.fund(XRP(10000), alice);
 
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = env.master.human();
-        cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = jss::OfferCancel;
-        env(cancelOffer);
+        env(offer_cancel(env.master, nextOfferSeq));
 
-        cancelOffer[jss::OfferSequence] = env.seq(env.master);
-        env(cancelOffer, ter(temBAD_SEQUENCE));
+        env(offer_cancel(env.master, env.seq(env.master)),
+            ter(temBAD_SEQUENCE));
 
-        cancelOffer[jss::OfferSequence] = env.seq(env.master) + 1;
-        env(cancelOffer, ter(temBAD_SEQUENCE));
+        env(offer_cancel(env.master, env.seq(env.master) + 1),
+            ter(temBAD_SEQUENCE));
 
-        env.close();
         env.close();
     }
 
@@ -2053,389 +2348,50 @@ public:
             int owners;               // Owners on account
         };
 
+        // clang-format off
         TestData const tests[]{
-            // acct                             fundXrp  bookAmt      preTrust
-            // offerAmt                     tec       spentXrp    balanceUSD
-            // offers  owners
-            {"ann",
-             reserve(env, 0) + 0 * f,
-             1,
-             noPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             f,
-             USD(0),
-             0,
-             0},  // Account is at the reserve, and will dip below once fees are
-                  // subtracted.
-            {"bev",
-             reserve(env, 0) + 1 * f,
-             1,
-             noPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             f,
-             USD(0),
-             0,
-             0},  // Account has just enough for the reserve and the fee.
-            {"cam",
-             reserve(env, 0) + 2 * f,
-             0,
-             noPreTrust,
-             1000,
-             tecINSUF_RESERVE_OFFER,
-             f,
-             USD(0),
-             0,
-             0},  // Account has enough for the reserve, the fee and the offer,
-                  // and a bit more, but not enough for the reserve after the
-                  // offer is placed.
-            {"deb",
-             reserve(env, 0) + 2 * f,
-             1,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             2 * f,
-             USD(0.00001),
-             0,
-             1},  // Account has enough to buy a little USD then the offer runs
-                  // dry.
-            {"eve",
-             reserve(env, 1) + 0 * f,
-             0,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             f,
-             USD(0),
-             1,
-             1},  // No offer to cross
-            {"flo",
-             reserve(env, 1) + 0 * f,
-             1,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + f,
-             USD(1),
-             0,
-             1},
-            {"gay",
-             reserve(env, 1) + 1 * f,
-             1000,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(50) + f,
-             USD(50),
-             0,
-             1},
-            {"hye",
-             XRP(1000) + 1 * f,
-             1000,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(800) + f,
-             USD(800),
-             0,
-             1},
-            {"ivy",
-             XRP(1) + reserve(env, 1) + 1 * f,
-             1,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + f,
-             USD(1),
-             0,
-             1},
-            {"joy",
-             XRP(1) + reserve(env, 2) + 1 * f,
-             1,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + f,
-             USD(1),
-             1,
-             2},
-            {"kim",
-             XRP(900) + reserve(env, 2) + 1 * f,
-             999,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(999) + f,
-             USD(999),
-             0,
-             1},
-            {"liz",
-             XRP(998) + reserve(env, 0) + 1 * f,
-             999,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(998) + f,
-             USD(998),
-             0,
-             1},
-            {"meg",
-             XRP(998) + reserve(env, 1) + 1 * f,
-             999,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(999) + f,
-             USD(999),
-             0,
-             1},
-            {"nia",
-             XRP(998) + reserve(env, 2) + 1 * f,
-             999,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(999) + f,
-             USD(999),
-             1,
-             2},
-            {"ova",
-             XRP(999) + reserve(env, 0) + 1 * f,
-             1000,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(999) + f,
-             USD(999),
-             0,
-             1},
-            {"pam",
-             XRP(999) + reserve(env, 1) + 1 * f,
-             1000,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1000) + f,
-             USD(1000),
-             0,
-             1},
-            {"rae",
-             XRP(999) + reserve(env, 2) + 1 * f,
-             1000,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1000) + f,
-             USD(1000),
-             0,
-             1},
-            {"sue",
-             XRP(1000) + reserve(env, 2) + 1 * f,
-             0,
-             noPreTrust,
-             1000,
-             tesSUCCESS,
-             f,
-             USD(0),
-             1,
-             1},
+            // acct                     fundXrp        bookAmt   preTrust  offerAmt                   tec     spentXrp       balanceUSD offers  owners
+            {"ann",             reserve(env, 0) + 0 * f,    1,   noPreTrust, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},  // Account is at the reserve, and will dip below once fees are subtracted.
+            {"bev",             reserve(env, 0) + 1 * f,    1,   noPreTrust, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},  // Account has just enough for the reserve and the fee.
+            {"cam",             reserve(env, 0) + 2 * f,    0,   noPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, USD(      0),    0, 0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
+            {"deb",             reserve(env, 0) + 2 * f,    1,   noPreTrust, 1000,             tesSUCCESS,           2 * f, USD(0.00001),    0, 1},  // Account has enough to buy a little USD then the offer runs dry.
+            {"eve",             reserve(env, 1) + 0 * f,    0,   noPreTrust, 1000,             tesSUCCESS,               f, USD(      0),    1, 1},  // No offer to cross
+            {"flo",             reserve(env, 1) + 0 * f,    1,   noPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, USD(      1),    0, 1},
+            {"gay",             reserve(env, 1) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP(  50)   + f, USD(     50),    0, 1},
+            {"hye", XRP(1000)                   + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP( 800)   + f, USD(    800),    0, 1},
+            {"ivy", XRP(   1) + reserve(env, 1) + 1 * f,    1,   noPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, USD(      1),    0, 1},
+            {"joy", XRP(   1) + reserve(env, 2) + 1 * f,    1,   noPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, USD(      1),    1, 2},
+            {"kim", XRP( 900) + reserve(env, 2) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    0, 1},
+            {"liz", XRP( 998) + reserve(env, 0) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 998)   + f, USD(    998),    0, 1},
+            {"meg", XRP( 998) + reserve(env, 1) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    0, 1},
+            {"nia", XRP( 998) + reserve(env, 2) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    1, 2},
+            {"ova", XRP( 999) + reserve(env, 0) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    0, 1},
+            {"pam", XRP( 999) + reserve(env, 1) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, USD(   1000),    0, 1},
+            {"rae", XRP( 999) + reserve(env, 2) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, USD(   1000),    0, 1},
+            {"sue", XRP(1000) + reserve(env, 2) + 1 * f,    0,   noPreTrust, 1000,             tesSUCCESS,               f, USD(      0),    1, 1},
+            //---------------- Pre-established trust lines ---------------------
+            {"abe",             reserve(env, 0) + 0 * f,    1,   gwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},
+            {"bud",             reserve(env, 0) + 1 * f,    1,   gwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},
+            {"che",             reserve(env, 0) + 2 * f,    0,   gwPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, USD(      0),    0, 0},
+            {"dan",             reserve(env, 0) + 2 * f,    1,   gwPreTrust, 1000,             tesSUCCESS,           2 * f, USD(0.00001),    0, 0},
+            {"eli", XRP(  20) + reserve(env, 0) + 1 * f, 1000,   gwPreTrust, 1000,             tesSUCCESS, XRP(20) + 1 * f, USD(     20),    0, 0},
+            {"fyn",             reserve(env, 1) + 0 * f,    0,   gwPreTrust, 1000,             tesSUCCESS,               f, USD(      0),    1, 1},
+            {"gar",             reserve(env, 1) + 0 * f,    1,   gwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, USD(      1),    1, 1},
+            {"hal",             reserve(env, 1) + 1 * f,    1,   gwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, USD(      1),    1, 1},
 
-            //---------------------Pre-established trust lines
-            //-----------------------------
-            {"abe",
-             reserve(env, 0) + 0 * f,
-             1,
-             gwPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             f,
-             USD(0),
-             0,
-             0},
-            {"bud",
-             reserve(env, 0) + 1 * f,
-             1,
-             gwPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             f,
-             USD(0),
-             0,
-             0},
-            {"che",
-             reserve(env, 0) + 2 * f,
-             0,
-             gwPreTrust,
-             1000,
-             tecINSUF_RESERVE_OFFER,
-             f,
-             USD(0),
-             0,
-             0},
-            {"dan",
-             reserve(env, 0) + 2 * f,
-             1,
-             gwPreTrust,
-             1000,
-             tesSUCCESS,
-             2 * f,
-             USD(0.00001),
-             0,
-             0},
-            {"eli",
-             XRP(20) + reserve(env, 0) + 1 * f,
-             1000,
-             gwPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(20) + 1 * f,
-             USD(20),
-             0,
-             0},
-            {"fyn",
-             reserve(env, 1) + 0 * f,
-             0,
-             gwPreTrust,
-             1000,
-             tesSUCCESS,
-             f,
-             USD(0),
-             1,
-             1},
-            {"gar",
-             reserve(env, 1) + 0 * f,
-             1,
-             gwPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + f,
-             USD(1),
-             1,
-             1},
-            {"hal",
-             reserve(env, 1) + 1 * f,
-             1,
-             gwPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + f,
-             USD(1),
-             1,
-             1},
-
-            {"ned",
-             reserve(env, 1) + 0 * f,
-             1,
-             acctPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             2 * f,
-             USD(0),
-             0,
-             1},
-            {"ole",
-             reserve(env, 1) + 1 * f,
-             1,
-             acctPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             2 * f,
-             USD(0),
-             0,
-             1},
-            {"pat",
-             reserve(env, 1) + 2 * f,
-             0,
-             acctPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             2 * f,
-             USD(0),
-             0,
-             1},
-            {"quy",
-             reserve(env, 1) + 2 * f,
-             1,
-             acctPreTrust,
-             1000,
-             tecUNFUNDED_OFFER,
-             2 * f,
-             USD(0),
-             0,
-             1},
-            {"ron",
-             reserve(env, 1) + 3 * f,
-             0,
-             acctPreTrust,
-             1000,
-             tecINSUF_RESERVE_OFFER,
-             2 * f,
-             USD(0),
-             0,
-             1},
-            {"syd",
-             reserve(env, 1) + 3 * f,
-             1,
-             acctPreTrust,
-             1000,
-             tesSUCCESS,
-             3 * f,
-             USD(0.00001),
-             0,
-             1},
-            {"ted",
-             XRP(20) + reserve(env, 1) + 2 * f,
-             1000,
-             acctPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(20) + 2 * f,
-             USD(20),
-             0,
-             1},
-            {"uli",
-             reserve(env, 2) + 0 * f,
-             0,
-             acctPreTrust,
-             1000,
-             tecINSUF_RESERVE_OFFER,
-             2 * f,
-             USD(0),
-             0,
-             1},
-            {"vic",
-             reserve(env, 2) + 0 * f,
-             1,
-             acctPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + 2 * f,
-             USD(1),
-             0,
-             1},
-            {"wes",
-             reserve(env, 2) + 1 * f,
-             0,
-             acctPreTrust,
-             1000,
-             tesSUCCESS,
-             2 * f,
-             USD(0),
-             1,
-             2},
-            {"xan",
-             reserve(env, 2) + 1 * f,
-             1,
-             acctPreTrust,
-             1000,
-             tesSUCCESS,
-             XRP(1) + 2 * f,
-             USD(1),
-             1,
-             2},
+            {"ned",             reserve(env, 1) + 0 * f,    1, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
+            {"ole",             reserve(env, 1) + 1 * f,    1, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
+            {"pat",             reserve(env, 1) + 2 * f,    0, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
+            {"quy",             reserve(env, 1) + 2 * f,    1, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
+            {"ron",             reserve(env, 1) + 3 * f,    0, acctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, USD(      0),    0, 1},
+            {"syd",             reserve(env, 1) + 3 * f,    1, acctPreTrust, 1000,             tesSUCCESS,           3 * f, USD(0.00001),    0, 1},
+            {"ted", XRP(  20) + reserve(env, 1) + 2 * f, 1000, acctPreTrust, 1000,             tesSUCCESS, XRP(20) + 2 * f, USD(     20),    0, 1},
+            {"uli",             reserve(env, 2) + 0 * f,    0, acctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, USD(      0),    0, 1},
+            {"vic",             reserve(env, 2) + 0 * f,    1, acctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, USD(      1),    0, 1},
+            {"wes",             reserve(env, 2) + 1 * f,    0, acctPreTrust, 1000,             tesSUCCESS,           2 * f, USD(      0),    1, 2},
+            {"xan",             reserve(env, 2) + 1 * f,    1, acctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, USD(      1),    1, 2},
         };
+        // clang-format on
 
         for (auto const& t : tests)
         {
@@ -2912,203 +2868,29 @@ public:
             }
         };
 
+        // clang-format off
         TestData const tests[]{
             // acct pays XRP
-            // acct                           fundXrp  fundUSD   gwGets   gwPays
-            // acctGets  acctPays                      tec         spentXrp
-            // finalUSD  offers  owners  takerGets  takerPays
-            {"ann",
-             XRP(10) + reserve(env, 0) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(5),
-             USD(10),
-             XRP(10),
-             tecINSUF_RESERVE_OFFER,
-             XRP(0) + (1 * f),
-             USD(0),
-             0,
-             0},
-            {"bev",
-             XRP(10) + reserve(env, 1) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(5),
-             USD(10),
-             XRP(10),
-             tesSUCCESS,
-             XRP(0) + (1 * f),
-             USD(0),
-             1,
-             1,
-             XRP(10),
-             USD(10)},
-            {"cam",
-             XRP(10) + reserve(env, 0) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(10),
-             USD(10),
-             XRP(10),
-             tesSUCCESS,
-             XRP(10) + (1 * f),
-             USD(10),
-             0,
-             1},
-            {"deb",
-             XRP(10) + reserve(env, 0) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(20),
-             USD(10),
-             XRP(10),
-             tesSUCCESS,
-             XRP(10) + (1 * f),
-             USD(20),
-             0,
-             1},
-            {"eve",
-             XRP(10) + reserve(env, 0) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(20),
-             USD(5),
-             XRP(5),
-             tesSUCCESS,
-             XRP(5) + (1 * f),
-             USD(10),
-             0,
-             1},
-            {"flo",
-             XRP(10) + reserve(env, 0) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(20),
-             USD(20),
-             XRP(20),
-             tesSUCCESS,
-             XRP(10) + (1 * f),
-             USD(20),
-             0,
-             1},
-            {"gay",
-             XRP(20) + reserve(env, 1) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(20),
-             USD(20),
-             XRP(20),
-             tesSUCCESS,
-             XRP(10) + (1 * f),
-             USD(20),
-             0,
-             1},
-            {"hye",
-             XRP(20) + reserve(env, 2) + 1 * f,
-             USD(0),
-             XRP(10),
-             USD(20),
-             USD(20),
-             XRP(20),
-             tesSUCCESS,
-             XRP(10) + (1 * f),
-             USD(20),
-             1,
-             2,
-             XRP(10),
-             USD(10)},
+            // acct                           fundXrp  fundUSD   gwGets   gwPays acctGets acctPays                     tec            spentXrp  finalUSD offers  owners  takerGets  takerPays
+            {"ann", XRP(10) + reserve(env, 0) + 1 * f, USD( 0), XRP(10), USD( 5), USD(10), XRP(10), tecINSUF_RESERVE_OFFER, XRP(  0) + (1 * f), USD( 0),      0,      0},
+            {"bev", XRP(10) + reserve(env, 1) + 1 * f, USD( 0), XRP(10), USD( 5), USD(10), XRP(10),             tesSUCCESS, XRP(  0) + (1 * f), USD( 0),      1,      1,   XRP(10), USD(10)},
+            {"cam", XRP(10) + reserve(env, 0) + 1 * f, USD( 0), XRP(10), USD(10), USD(10), XRP(10),             tesSUCCESS, XRP( 10) + (1 * f), USD(10),      0,      1},
+            {"deb", XRP(10) + reserve(env, 0) + 1 * f, USD( 0), XRP(10), USD(20), USD(10), XRP(10),             tesSUCCESS, XRP( 10) + (1 * f), USD(20),      0,      1},
+            {"eve", XRP(10) + reserve(env, 0) + 1 * f, USD( 0), XRP(10), USD(20), USD( 5), XRP( 5),             tesSUCCESS, XRP(  5) + (1 * f), USD(10),      0,      1},
+            {"flo", XRP(10) + reserve(env, 0) + 1 * f, USD( 0), XRP(10), USD(20), USD(20), XRP(20),             tesSUCCESS, XRP( 10) + (1 * f), USD(20),      0,      1},
+            {"gay", XRP(20) + reserve(env, 1) + 1 * f, USD( 0), XRP(10), USD(20), USD(20), XRP(20),             tesSUCCESS, XRP( 10) + (1 * f), USD(20),      0,      1},
+            {"hye", XRP(20) + reserve(env, 2) + 1 * f, USD( 0), XRP(10), USD(20), USD(20), XRP(20),             tesSUCCESS, XRP( 10) + (1 * f), USD(20),      1,      2,   XRP(10), USD(10)},
             // acct pays USD
-            {"meg",
-             reserve(env, 1) + 2 * f,
-             USD(10),
-             USD(10),
-             XRP(5),
-             XRP(10),
-             USD(10),
-             tecINSUF_RESERVE_OFFER,
-             XRP(0) + (2 * f),
-             USD(10),
-             0,
-             1},
-            {"nia",
-             reserve(env, 2) + 2 * f,
-             USD(10),
-             USD(10),
-             XRP(5),
-             XRP(10),
-             USD(10),
-             tesSUCCESS,
-             XRP(0) + (2 * f),
-             USD(10),
-             1,
-             2,
-             USD(10),
-             XRP(10)},
-            {"ova",
-             reserve(env, 1) + 2 * f,
-             USD(10),
-             USD(10),
-             XRP(10),
-             XRP(10),
-             USD(10),
-             tesSUCCESS,
-             XRP(-10) + (2 * f),
-             USD(0),
-             0,
-             1},
-            {"pam",
-             reserve(env, 1) + 2 * f,
-             USD(10),
-             USD(10),
-             XRP(20),
-             XRP(10),
-             USD(10),
-             tesSUCCESS,
-             XRP(-20) + (2 * f),
-             USD(0),
-             0,
-             1},
-            {"qui",
-             reserve(env, 1) + 2 * f,
-             USD(10),
-             USD(20),
-             XRP(40),
-             XRP(10),
-             USD(10),
-             tesSUCCESS,
-             XRP(-20) + (2 * f),
-             USD(0),
-             0,
-             1},
-            {"rae",
-             reserve(env, 2) + 2 * f,
-             USD(10),
-             USD(5),
-             XRP(5),
-             XRP(10),
-             USD(10),
-             tesSUCCESS,
-             XRP(-5) + (2 * f),
-             USD(5),
-             1,
-             2,
-             USD(5),
-             XRP(5)},
-            {"sue",
-             reserve(env, 2) + 2 * f,
-             USD(10),
-             USD(5),
-             XRP(10),
-             XRP(10),
-             USD(10),
-             tesSUCCESS,
-             XRP(-10) + (2 * f),
-             USD(5),
-             1,
-             2,
-             USD(5),
-             XRP(5)},
+            {"meg",           reserve(env, 1) + 2 * f, USD(10), USD(10), XRP( 5), XRP(10), USD(10), tecINSUF_RESERVE_OFFER, XRP(  0) + (2 * f), USD(10),      0,      1},
+            {"nia",           reserve(env, 2) + 2 * f, USD(10), USD(10), XRP( 5), XRP(10), USD(10),             tesSUCCESS, XRP(  0) + (2 * f), USD(10),      1,      2,   USD(10), XRP(10)},
+            {"ova",           reserve(env, 1) + 2 * f, USD(10), USD(10), XRP(10), XRP(10), USD(10),             tesSUCCESS, XRP(-10) + (2 * f), USD( 0),      0,      1},
+            {"pam",           reserve(env, 1) + 2 * f, USD(10), USD(10), XRP(20), XRP(10), USD(10),             tesSUCCESS, XRP(-20) + (2 * f), USD( 0),      0,      1},
+            {"qui",           reserve(env, 1) + 2 * f, USD(10), USD(20), XRP(40), XRP(10), USD(10),             tesSUCCESS, XRP(-20) + (2 * f), USD( 0),      0,      1},
+            {"rae",           reserve(env, 2) + 2 * f, USD(10), USD( 5), XRP( 5), XRP(10), USD(10),             tesSUCCESS, XRP( -5) + (2 * f), USD( 5),      1,      2,   USD( 5), XRP( 5)},
+            {"sue",           reserve(env, 2) + 2 * f, USD(10), USD( 5), XRP(10), XRP(10), USD(10),             tesSUCCESS, XRP(-10) + (2 * f), USD( 5),      1,      2,   USD( 5), XRP( 5)},
         };
+        // clang-format on
+
         auto const zeroUsd = USD(0);
         for (auto const& t : tests)
         {
@@ -3662,46 +3444,17 @@ public:
             TER secondOfferTec;  // tec code on second offer
         };
 
+        // clang-format off
         TestData const tests[]{
-            // acct               fundXRP    fundUSD    fundEUR firstOfferTec
-            // secondOfferTec
-            {"ann",
-             reserve(env, 3) + f * 4,
-             USD(1000),
-             EUR(1000),
-             tesSUCCESS,
-             tesSUCCESS},
-            {"bev",
-             reserve(env, 3) + f * 4,
-             USD(1),
-             EUR(1000),
-             tesSUCCESS,
-             tesSUCCESS},
-            {"cam",
-             reserve(env, 3) + f * 4,
-             USD(1000),
-             EUR(1),
-             tesSUCCESS,
-             tesSUCCESS},
-            {"deb",
-             reserve(env, 3) + f * 4,
-             USD(0),
-             EUR(1),
-             tesSUCCESS,
-             tecUNFUNDED_OFFER},
-            {"eve",
-             reserve(env, 3) + f * 4,
-             USD(1),
-             EUR(0),
-             tecUNFUNDED_OFFER,
-             tesSUCCESS},
-            {"flo",
-             reserve(env, 3) + 0,
-             USD(1000),
-             EUR(1000),
-             tecINSUF_RESERVE_OFFER,
-             tecINSUF_RESERVE_OFFER},
+            // acct                 fundXRP   fundUSD    fundEUR            firstOfferTec           secondOfferTec
+            {"ann", reserve(env, 3) + f * 4, USD(1000), EUR(1000),             tesSUCCESS,             tesSUCCESS},
+            {"bev", reserve(env, 3) + f * 4, USD(   1), EUR(1000),             tesSUCCESS,             tesSUCCESS},
+            {"cam", reserve(env, 3) + f * 4, USD(1000), EUR(   1),             tesSUCCESS,             tesSUCCESS},
+            {"deb", reserve(env, 3) + f * 4, USD(   0), EUR(   1),             tesSUCCESS,      tecUNFUNDED_OFFER},
+            {"eve", reserve(env, 3) + f * 4, USD(   1), EUR(   0),      tecUNFUNDED_OFFER,             tesSUCCESS},
+            {"flo", reserve(env, 3) +     0, USD(1000), EUR(1000), tecINSUF_RESERVE_OFFER, tecINSUF_RESERVE_OFFER},
         };
+        //clang-format on
 
         for (auto const& t : tests)
         {
@@ -4278,47 +4031,15 @@ public:
             std::vector<Actor> actors;
         };
 
+        // clang-format off
         TestData const tests[]{
-            //         btcStart    --------------------- actor[0]
-            //         ---------------------    -------------------- actor[1]
-            //         -------------------
-            {0,
-             0,
-             1,
-             BTC(20),
-             {{"ann", 0, drops(3899999999960), BTC(20.0), USD(3000)},
-              {"abe", 0, drops(4099999999970), BTC(0), USD(750)}}},  // no BTC
-                                                                     // xfer fee
-            {0,
-             1,
-             0,
-             BTC(20),
-             {{"bev", 0, drops(4099999999960), BTC(7.5), USD(2000)},
-              {"bob", 0, drops(3899999999970), BTC(10), USD(0)}}},  // no USD
-                                                                    // xfer fee
-            {0,
-             0,
-             0,
-             BTC(20),
-             {{"cam",
-               0,
-               drops(3999999999950),
-               BTC(20.0),
-               USD(2000)}}},  // no xfer fee
-            // { 0, 0, 1, BTC( 5), { {"deb", 0, drops(3899999999960), BTC( 5.0),
-            // USD(3000)}, {"dan", 0, drops(4099999999970), BTC( 0), USD(750)} }
-            // }, // no BTC xfer fee
-            {0,
-             1,
-             0,
-             BTC(5),
-             {{"eve", 1, drops(4039999999960), BTC(0.0), USD(2000)},
-              {"eli", 1, drops(3959999999970), BTC(4), USD(0)}}},  // no USD
-                                                                   // xfer fee
-            // { 0, 0, 0, BTC( 5), { {"flo", 0, drops(3999999999950), BTC( 5.0),
-            // USD(2000)}                                                      }
-            // }  // no xfer fee
+            //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
+            {0, 0, 1, BTC(20), {{"ann", 0, drops(3899999999960), BTC(20.0), USD(3000)}, {"abe", 0, drops(4099999999970), BTC( 0), USD(750)}}},  // no BTC xfer fee
+            {0, 1, 0, BTC(20), {{"bev", 0, drops(4099999999960), BTC( 7.5), USD(2000)}, {"bob", 0, drops(3899999999970), BTC(10), USD(  0)}}},  // no USD xfer fee
+            {0, 0, 0, BTC(20), {{"cam", 0, drops(3999999999950), BTC(20.0), USD(2000)}                                                     }},  // no xfer fee
+            {0, 1, 0, BTC( 5), {{"deb", 1, drops(4039999999960), BTC( 0.0), USD(2000)}, {"dan", 1, drops(3959999999970), BTC( 4), USD(  0)}}},  // no USD xfer fee
         };
+        // clang-format on
 
         for (auto const& t : tests)
         {
@@ -4460,46 +4181,19 @@ public:
             std::vector<Actor> actors;
         };
 
+        // clang-format off
         TestData const takerTests[]{
-            //         btcStart    ------------------- actor[0]
-            //         --------------------    ------------------- actor[1]
-            //         --------------------
-            {0,
-             0,
-             1,
-             BTC(5),
-             {{"deb", 0, drops(3899999999960), BTC(5), USD(3000)},
-              {"dan", 0, drops(4099999999970), BTC(0), USD(750)}}},  // no BTC
-                                                                     // xfer fee
-            {0,
-             0,
-             0,
-             BTC(5),
-             {{"flo", 0, drops(3999999999950), BTC(5), USD(2000)}}}  // no xfer
-                                                                     // fee
+            //      btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
+            {0, 0, 1, BTC(5), {{"deb", 0, drops(3899999999960), BTC(5), USD(3000)}, {"dan", 0, drops(4099999999970), BTC(0), USD(750)}}}, // no BTC xfer fee
+            {0, 0, 0, BTC(5), {{"flo", 0, drops(3999999999950), BTC(5), USD(2000)}                                                    }}  // no xfer fee
         };
 
         TestData const flowTests[]{
-            //         btcStart    ------------------- actor[0]
-            //         --------------------    ------------------- actor[1]
-            //         --------------------
-            {0,
-             0,
-             1,
-             BTC(5),
-             {{"gay", 1, drops(3949999999960), BTC(5), USD(2500)},
-              {"gar",
-               1,
-               drops(4049999999970),
-               BTC(0),
-               USD(1375)}}},  // no BTC xfer fee
-            {0,
-             0,
-             0,
-             BTC(5),
-             {{"hye", 2, drops(3999999999950), BTC(5), USD(2000)}}}  // no xfer
-                                                                     // fee
+            //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
+            {0, 0, 1, BTC(5), {{"gay", 1, drops(3949999999960), BTC(5), USD(2500)}, {"gar", 1, drops(4049999999970), BTC(0), USD(1375)}}}, // no BTC xfer fee
+            {0, 0, 0, BTC(5), {{"hye", 2, drops(3999999999950), BTC(5), USD(2000)}                                                     }}  // no xfer fee
         };
+        // clang-format on
 
         // Pick the right tests.
         auto const& tests = features[featureFlowCross] ? flowTests : takerTests;
@@ -5387,7 +5081,7 @@ public:
     {
         // An assert was falsely triggering when computing rates for offers.
         // This unit test would trigger that assert (which has been removed).
-        testcase("false assert");
+        testcase("incorrect assert fixed");
         using namespace jtx;
 
         Env env{*this};
@@ -5459,6 +5153,8 @@ public:
         testTickSize(features);
         testTicketOffer(features);
         testTicketCancelOffer(features);
+        testRmSmallIncreasedQOffersXRP(features);
+        testRmSmallIncreasedQOffersIOU(features);
     }
 
     void
@@ -5468,10 +5164,12 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
+        FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
 
         testAll(all - takerDryOffer);
         testAll(all - flowCross - takerDryOffer);
         testAll(all - flowCross);
+        testAll(all - rmSmallIncreasedQOffers);
         testAll(all);
         testFalseAssert();
     }

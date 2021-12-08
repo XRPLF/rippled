@@ -22,7 +22,6 @@
 
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/ledger/ApplyView.h>
-#include <ripple/ledger/CashDiff.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
@@ -60,10 +59,10 @@ public:
     bool
     exists(Keylet const& k) const override;
 
-    boost::optional<key_type>
+    std::optional<key_type>
     succ(
         key_type const& key,
-        boost::optional<key_type> const& last = boost::none) const override;
+        std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
@@ -119,13 +118,6 @@ public:
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;
-
-    friend CashDiff
-    cashFlowDiff(
-        CashFilter lhsFilter,
-        ApplyViewBase const& lhs,
-        CashFilter rhsFilter,
-        ApplyViewBase const& rhs);
 
 protected:
     ApplyFlags flags_;

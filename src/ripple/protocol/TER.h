@@ -23,7 +23,7 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <ostream>
 #include <string>
 
@@ -349,7 +349,10 @@ public:
     }
 
     // Trait tells enable_if which types are allowed for construction.
-    template <typename T, typename = std::enable_if_t<Trait<T>::value>>
+    template <
+        typename T,
+        typename = std::enable_if_t<
+            Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
     constexpr TERSubset(T rhs) : code_(TERtoInt(rhs))
     {
     }
@@ -598,7 +601,7 @@ transToken(TER code);
 std::string
 transHuman(TER code);
 
-boost::optional<TER>
+std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace ripple

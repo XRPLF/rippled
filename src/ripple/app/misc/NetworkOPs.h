@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -23,16 +23,14 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/STValidation.h>
+#include <ripple/protocol/messages.h>
 #include <boost/asio.hpp>
 #include <deque>
 #include <memory>
 #include <tuple>
-
-#include <ripple/protocol/messages.h>
 
 namespace ripple {
 
@@ -87,9 +85,6 @@ enum class OperatingMode {
 */
 class NetworkOPs : public InfoSub::Source
 {
-protected:
-    explicit NetworkOPs(Stoppable& parent);
-
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -102,6 +97,9 @@ public:
 
 public:
     ~NetworkOPs() override = default;
+
+    virtual void
+    stop() = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -238,11 +236,8 @@ public:
     */
     virtual std::uint32_t
     acceptLedger(
-        boost::optional<std::chrono::milliseconds> consensusDelay =
-            boost::none) = 0;
-
-    virtual uint256
-    getConsensusLCL() = 0;
+        std::optional<std::chrono::milliseconds> consensusDelay =
+            std::nullopt) = 0;
 
     virtual void
     reportFeeChange() = 0;
@@ -251,60 +246,6 @@ public:
     updateLocalTx(ReadView const& newValidLedger) = 0;
     virtual std::size_t
     getLocalTxCount() = 0;
-
-    struct AccountTxMarker
-    {
-        uint32_t ledgerSeq = 0;
-        uint32_t txnSeq = 0;
-    };
-
-    // client information retrieval functions
-    using AccountTx =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
-    using AccountTxs = std::vector<AccountTx>;
-
-    virtual AccountTxs
-    getAccountTxs(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool descending,
-        std::uint32_t offset,
-        int limit,
-        bool bUnlimited) = 0;
-
-    virtual AccountTxs
-    getTxsAccount(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool forward,
-        std::optional<AccountTxMarker>& marker,
-        int limit,
-        bool bUnlimited) = 0;
-
-    using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
-    using MetaTxsList = std::vector<txnMetaLedgerType>;
-
-    virtual MetaTxsList
-    getAccountTxsB(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool descending,
-        std::uint32_t offset,
-        int limit,
-        bool bUnlimited) = 0;
-
-    virtual MetaTxsList
-    getTxsAccountB(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool forward,
-        std::optional<AccountTxMarker>& marker,
-        int limit,
-        bool bUnlimited) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -320,6 +261,10 @@ public:
     virtual void
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
+    virtual void
+    forwardValidation(Json::Value const& jvObj) = 0;
+    virtual void
+    forwardManifest(Json::Value const& jvObj) = 0;
     virtual void
     forwardProposedTransaction(Json::Value const& jvObj) = 0;
     virtual void
@@ -337,7 +282,6 @@ make_NetworkOPs(
     bool start_valid,
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
-    Stoppable& parent,
     ValidatorKeys const& validatorKeys,
     boost::asio::io_service& io_svc,
     beast::Journal journal,

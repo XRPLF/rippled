@@ -27,10 +27,8 @@ namespace ripple {
 LedgerReplayer::LedgerReplayer(
     Application& app,
     InboundLedgers& inboundLedgers,
-    std::unique_ptr<PeerSetBuilder> peerSetBuilder,
-    Stoppable& parent)
-    : Stoppable("LedgerReplayer", parent)
-    , app_(app)
+    std::unique_ptr<PeerSetBuilder> peerSetBuilder)
+    : app_(app)
     , inboundLedgers_(inboundLedgers)
     , peerSetBuilder_(std::move(peerSetBuilder))
     , j_(app.journal("LedgerReplayer"))
@@ -61,7 +59,7 @@ LedgerReplayer::replay(
     bool newSkipList = false;
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        if (isStopping())
+        if (app_.isStopping())
             return;
         if (tasks_.size() >= LedgerReplayParameters::MAX_TASKS)
         {
@@ -145,7 +143,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
             bool newDelta = false;
             {
                 std::lock_guard<std::mutex> lock(mtx_);
-                if (isStopping())
+                if (app_.isStopping())
                     return;
                 auto i = deltas_.find(*skipListItem);
                 if (i != deltas_.end())
@@ -220,43 +218,51 @@ LedgerReplayer::gotReplayDelta(
 void
 LedgerReplayer::sweep()
 {
-    std::lock_guard<std::mutex> lock(mtx_);
-    JLOG(j_.debug()) << "Sweeping, LedgerReplayer has " << tasks_.size()
-                     << " tasks, " << skipLists_.size() << " skipLists, and "
-                     << deltas_.size() << " deltas.";
+    auto const start = std::chrono::steady_clock::now();
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        JLOG(j_.debug()) << "Sweeping, LedgerReplayer has " << tasks_.size()
+                         << " tasks, " << skipLists_.size()
+                         << " skipLists, and " << deltas_.size() << " deltas.";
 
-    tasks_.erase(
-        std::remove_if(
-            tasks_.begin(),
-            tasks_.end(),
-            [this](auto const& t) -> bool {
-                if (t->finished())
-                {
-                    JLOG(j_.debug())
-                        << "Sweep task " << t->getTaskParameter().finishHash_;
-                    return true;
-                }
-                return false;
-            }),
-        tasks_.end());
+        tasks_.erase(
+            std::remove_if(
+                tasks_.begin(),
+                tasks_.end(),
+                [this](auto const& t) -> bool {
+                    if (t->finished())
+                    {
+                        JLOG(j_.debug()) << "Sweep task "
+                                         << t->getTaskParameter().finishHash_;
+                        return true;
+                    }
+                    return false;
+                }),
+            tasks_.end());
 
-    auto removeCannotLocked = [](auto& subTasks) {
-        for (auto it = subTasks.begin(); it != subTasks.end();)
-        {
-            if (auto item = it->second.lock(); !item)
+        auto removeCannotLocked = [](auto& subTasks) {
+            for (auto it = subTasks.begin(); it != subTasks.end();)
             {
-                it = subTasks.erase(it);
+                if (auto item = it->second.lock(); !item)
+                {
+                    it = subTasks.erase(it);
+                }
+                else
+                    ++it;
             }
-            else
-                ++it;
-        }
-    };
-    removeCannotLocked(skipLists_);
-    removeCannotLocked(deltas_);
+        };
+        removeCannotLocked(skipLists_);
+        removeCannotLocked(deltas_);
+    }
+    JLOG(j_.debug()) << " LedgerReplayer sweep lock duration "
+                     << std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now() - start)
+                            .count()
+                     << "ms";
 }
 
 void
-LedgerReplayer::onStop()
+LedgerReplayer::stop()
 {
     JLOG(j_.info()) << "Stopping...";
     {
@@ -276,7 +282,6 @@ LedgerReplayer::onStop()
         deltas_.clear();
     }
 
-    stopped();
     JLOG(j_.info()) << "Stopped";
 }
 

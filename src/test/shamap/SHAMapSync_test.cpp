@@ -41,8 +41,7 @@ public:
 
         for (int d = 0; d < 3; ++d)
             s.add32(rand_int<std::uint32_t>(eng_));
-
-        return std::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
+        return std::make_shared<SHAMapItem>(s.getSHA512Half(), s.slice());
     }
 
     bool

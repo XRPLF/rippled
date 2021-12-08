@@ -33,7 +33,6 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/TER.h>
-#include <boost/optional.hpp>
 #include <functional>
 #include <map>
 #include <memory>
@@ -126,30 +125,6 @@ transferRate(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] bool
 dirIsEmpty(ReadView const& view, Keylet const& k);
 
-// Return the first entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
-bool
-cdirFirst(
-    ReadView const& view,
-    uint256 const& uRootIndex,            // --> Root of directory.
-    std::shared_ptr<SLE const>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,              // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
-
-// Return the current entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
-bool
-cdirNext(
-    ReadView const& view,
-    uint256 const& uRootIndex,            // --> Root of directory
-    std::shared_ptr<SLE const>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,              // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
-
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
 getEnabledAmendments(ReadView const& view);
@@ -164,11 +139,11 @@ getMajorityAmendments(ReadView const& view);
     in the passed ledger. As the skip list is limited
     in size, if the requested ledger sequence number is
     out of the range of ledgers represented in the skip
-    list, then boost::none is returned.
+    list, then std::nullopt is returned.
     @return The hash of the ledger with the
-            given sequence number or boost::none.
+            given sequence number or std::nullopt.
 */
-[[nodiscard]] boost::optional<uint256>
+[[nodiscard]] std::optional<uint256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal);
 
 /** Find a ledger index from which we could easily get the requested ledger
@@ -223,42 +198,72 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j);
 
-// Return the first entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
+/** @{ */
+/** Returns the first entry in the directory, advancing the index
+
+    @deprecated These are legacy function that are considered deprecated
+                and will soon be replaced with an iterator-based model
+                that is easier to use. You should not use them in new code.
+
+    @param view The view against which to operate
+    @param root The root (i.e. first page) of the directory to iterate
+    @param page The current page
+    @param index The index inside the current page
+    @param entry The entry at the current index
+
+    @return true if the directory isn't empty; false otherwise
+ */
+bool
+cdirFirst(
+    ReadView const& view,
+    uint256 const& root,
+    std::shared_ptr<SLE const>& page,
+    unsigned int& index,
+    uint256& entry);
+
 bool
 dirFirst(
     ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory.
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry);
+/** @} */
 
-// Return the current entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
+/** @{ */
+/** Returns the next entry in the directory, advancing the index
+
+    @deprecated These are legacy function that are considered deprecated
+                and will soon be replaced with an iterator-based model
+                that is easier to use. You should not use them in new code.
+
+    @param view The view against which to operate
+    @param root The root (i.e. first page) of the directory to iterate
+    @param page The current page
+    @param index The index inside the current page
+    @param entry The entry at the current index
+
+    @return true if the directory isn't empty; false otherwise
+ */
+bool
+cdirNext(
+    ReadView const& view,
+    uint256 const& root,
+    std::shared_ptr<SLE const>& page,
+    unsigned int& index,
+    uint256& entry);
+
 bool
 dirNext(
     ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry);
+/** @} */
 
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
-
-// deprecated
-boost::optional<std::uint64_t>
-dirAdd(
-    ApplyView& view,
-    Keylet const& uRootIndex,
-    uint256 const& uLedgerIndex,
-    bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
-    beast::Journal j);
 
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.

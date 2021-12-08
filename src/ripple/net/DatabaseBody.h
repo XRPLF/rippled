@@ -105,7 +105,7 @@ public:
     */
     void
     open(
-        boost::filesystem::path path,
+        boost::filesystem::path const& path,
         Config const& config,
         boost::asio::io_service& io_service,
         boost::system::error_code& ec);
@@ -145,6 +145,9 @@ public:
     // the payload size (`content_length`) which we can
     // optionally use for optimization.
     //
+    // Note: boost::Beast calls init() and requires a
+    // boost::optional (not a std::optional) as the
+    // parameter.
     void
     init(boost::optional<std::uint64_t> const&, boost::system::error_code& ec);
 
@@ -156,7 +159,7 @@ public:
     put(ConstBufferSequence const& buffers, boost::system::error_code& ec);
 
     void
-    do_put(std::string data);
+    do_put(std::string const& data);
 
     // This function is called when writing is complete.
     // It is an opportunity to perform any final actions

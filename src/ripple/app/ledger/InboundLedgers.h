@@ -21,7 +21,6 @@
 #define RIPPLE_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
 
 #include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <memory>
 
@@ -83,14 +82,13 @@ public:
     sweep() = 0;
 
     virtual void
-    onStop() = 0;
+    stop() = 0;
 };
 
 std::unique_ptr<InboundLedgers>
 make_InboundLedgers(
     Application& app,
     InboundLedgers::clock_type& clock,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace ripple

@@ -23,7 +23,6 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -141,7 +140,7 @@ class ApplyView : public ReadView
 {
 private:
     /** Add an entry to a directory using the specified insert strategy */
-    boost::optional<std::uint64_t>
+    std::optional<std::uint64_t>
     dirAdd(
         bool preserveOrder,
         Keylet const& directory,
@@ -265,7 +264,7 @@ public:
         @param key the entry to insert
         @param describe callback to add required entries to a new page
 
-        @return a \c boost::optional which, if insertion was successful,
+        @return a \c std::optional which, if insertion was successful,
                 will contain the page number in which the item was stored.
 
         @note this function may create a page (including a root page), if no
@@ -274,22 +273,19 @@ public:
               allowable pages.
     */
     /** @{ */
-    boost::optional<std::uint64_t>
-    dirAppend(
-        Keylet const& directory,
-        uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
-    {
-        return dirAdd(true, directory, key, describe);
-    }
-
-    boost::optional<std::uint64_t>
+    std::optional<std::uint64_t>
     dirAppend(
         Keylet const& directory,
         Keylet const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
-        return dirAppend(directory, key.key, describe);
+        if (key.type != ltOFFER)
+        {
+            assert(!"Only Offers are appended to book directories.  "
+                "Call dirInsert() instead.");
+            return std::nullopt;
+        }
+        return dirAdd(true, directory, key.key, describe);
     }
     /** @} */
 
@@ -302,7 +298,7 @@ public:
         @param key the entry to insert
         @param describe callback to add required entries to a new page
 
-        @return a \c boost::optional which, if insertion was successful,
+        @return a \c std::optional which, if insertion was successful,
                 will contain the page number in which the item was stored.
 
         @note this function may create a page (including a root page), if no
@@ -311,7 +307,7 @@ public:
               allowable pages.
     */
     /** @{ */
-    boost::optional<std::uint64_t>
+    std::optional<std::uint64_t>
     dirInsert(
         Keylet const& directory,
         uint256 const& key,
@@ -320,13 +316,13 @@ public:
         return dirAdd(false, directory, key, describe);
     }
 
-    boost::optional<std::uint64_t>
+    std::optional<std::uint64_t>
     dirInsert(
         Keylet const& directory,
         Keylet const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
-        return dirInsert(directory, key.key, describe);
+        return dirAdd(false, directory, key.key, describe);
     }
     /** @} */
 

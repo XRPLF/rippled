@@ -236,7 +236,14 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
 
     if (ledger && meta)
     {
-        result.meta = meta;
+        if (args.binary)
+        {
+            result.meta = meta->getAsObject().getSerializer().getData();
+        }
+        else
+        {
+            result.meta = meta;
+        }
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
     }
@@ -449,12 +456,14 @@ doTxGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest>& context)
 
     TxArgs args;
 
-    std::string const& hashBytes = request.hash();
-    args.hash = uint256::fromVoid(hashBytes.data());
-    if (args.hash.size() != hashBytes.size())
+    if (auto hash = uint256::fromVoidChecked(request.hash()))
+    {
+        args.hash = *hash;
+    }
+    else
     {
         grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "ledger hash malformed"};
+            grpc::StatusCode::INVALID_ARGUMENT, "tx hash malformed"};
         return {response, errorStatus};
     }
 

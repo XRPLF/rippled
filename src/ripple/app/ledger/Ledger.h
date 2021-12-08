@@ -24,14 +24,13 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/ledger/CachedView.h>
-#include <ripple/ledger/TxMeta.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/Serializer.h>
+#include <ripple/protocol/TxMeta.h>
 #include <ripple/shamap/SHAMap.h>
-#include <boost/optional.hpp>
 #include <mutex>
 
 namespace ripple {
@@ -175,8 +174,8 @@ public:
     bool
     exists(uint256 const& key) const;
 
-    boost::optional<uint256>
-    succ(uint256 const& key, boost::optional<uint256> const& last = boost::none)
+    std::optional<uint256>
+    succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt)
         const override;
 
     std::shared_ptr<SLE const>
@@ -207,7 +206,7 @@ public:
     // DigestAwareReadView
     //
 
-    boost::optional<digest_type>
+    std::optional<digest_type>
     digest(key_type const& key) const override;
 
     //
@@ -361,7 +360,7 @@ public:
      *
      * @return the public key if any
      */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     validatorToDisable() const;
 
     /**
@@ -369,7 +368,7 @@ public:
      *
      * @return the public key if any
      */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     validatorToReEnable() const;
 
     /**
@@ -432,30 +431,14 @@ pendSaveValidated(
     bool isSynchronous,
     bool isCurrent);
 
-extern std::shared_ptr<Ledger>
+std::shared_ptr<Ledger>
+loadLedgerHelper(LedgerInfo const& sinfo, Application& app, bool acquire);
+
+std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire = true);
 
-extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
-loadLedgerHelper(
-    std::string const& sqlSuffix,
-    Application& app,
-    bool acquire = true);
-
-extern std::shared_ptr<Ledger>
+std::shared_ptr<Ledger>
 loadByHash(uint256 const& ledgerHash, Application& app, bool acquire = true);
-
-extern uint256
-getHashByIndex(std::uint32_t index, Application& app);
-
-extern bool
-getHashesByIndex(
-    std::uint32_t index,
-    uint256& ledgerHash,
-    uint256& parentHash,
-    Application& app);
-
-extern std::map<std::uint32_t, std::pair<uint256, uint256>>
-getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app);
 
 // Fetch the ledger with the highest sequence contained in the database
 extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>

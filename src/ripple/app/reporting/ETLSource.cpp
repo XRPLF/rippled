@@ -63,14 +63,28 @@ ETLSource::ETLSource(
     , app_(etl_.getApplication())
     , timer_(ioc_)
 {
+    std::string connectionString;
+    try
+    {
+        connectionString =
+            beast::IP::Endpoint(
+                boost::asio::ip::make_address(ip_), std::stoi(grpcPort_))
+                .to_string();
+
+        JLOG(journal_.info())
+            << "Using IP to connect to ETL source: " << connectionString;
+    }
+    catch (std::exception const&)
+    {
+        connectionString = "dns:" + ip_ + ":" + grpcPort_;
+        JLOG(journal_.info())
+            << "Using DNS to connect to ETL source: " << connectionString;
+    }
     try
     {
         stub_ = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(
-                beast::IP::Endpoint(
-                    boost::asio::ip::make_address(ip_), std::stoi(grpcPort_))
-                    .to_string(),
-                grpc::InsecureChannelCredentials()));
+                connectionString, grpc::InsecureChannelCredentials()));
         JLOG(journal_.info()) << "Made stub for remote = " << toString();
     }
     catch (std::exception const& e)
@@ -110,9 +124,9 @@ ETLSource::reconnect(boost::beast::error_code ec)
     size_t waitTime = std::min(pow(2, numFailures_), 30.0);
     numFailures_++;
     timer_.expires_after(boost::asio::chrono::seconds(waitTime));
-    timer_.async_wait([this](auto ec) {
+    timer_.async_wait([this, fname = __func__](auto ec) {
         bool startAgain = (ec != boost::asio::error::operation_aborted);
-        JLOG(journal_.trace()) << __func__ << " async_wait : ec = " << ec;
+        JLOG(journal_.trace()) << fname << " async_wait : ec = " << ec;
         close(startAgain);
     });
 }
@@ -133,11 +147,11 @@ ETLSource::close(bool startAgain)
             closing_ = true;
             ws_->async_close(
                 boost::beast::websocket::close_code::normal,
-                [this, startAgain](auto ec) {
+                [this, startAgain, fname = __func__](auto ec) {
                     if (ec)
                     {
                         JLOG(journal_.error())
-                            << __func__ << " async_close : "
+                            << fname << " async_close : "
                             << "error code = " << ec << " - " << toString();
                     }
                     closing_ = false;
@@ -247,6 +261,10 @@ ETLSource::onHandshake(boost::beast::error_code ec)
         jv["streams"].append(ledgerStream);
         Json::Value txnStream("transactions_proposed");
         jv["streams"].append(txnStream);
+        Json::Value validationStream("validations");
+        jv["streams"].append(validationStream);
+        Json::Value manifestStream("manifests");
+        jv["streams"].append(manifestStream);
         Json::FastWriter fastWriter;
 
         JLOG(journal_.trace()) << "Sending subscribe stream message";
@@ -338,15 +356,28 @@ ETLSource::handleMessage()
         }
         else
         {
-            if (response.isMember(jss::transaction))
+            if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
             {
-                if (etl_.getETLLoadBalancer().shouldPropagateTxnStream(this))
+                if (response.isMember(jss::transaction))
                 {
                     etl_.getApplication().getOPs().forwardProposedTransaction(
                         response);
                 }
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "validationReceived")
+                {
+                    etl_.getApplication().getOPs().forwardValidation(response);
+                }
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "manifestReceived")
+                {
+                    etl_.getApplication().getOPs().forwardManifest(response);
+                }
             }
-            else
+
+            if (response.isMember("type") && response["type"] == "ledgerClosed")
             {
                 JLOG(journal_.debug())
                     << __func__ << " : "
@@ -481,11 +512,14 @@ public:
 
         for (auto& obj : cur_->ledger_objects().objects())
         {
-            auto key = uint256::fromVoid(obj.key().data());
+            auto key = uint256::fromVoidChecked(obj.key());
+            if (!key)
+                throw std::runtime_error("Received malformed object ID");
+
             auto& data = obj.data();
 
             SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, key);
+            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
 
             queue.push(sle);
         }
@@ -907,7 +941,7 @@ ETLLoadBalancer::execute(Func f, uint32_t ledgerSequence)
                     << "Error executing function. "
                     << " Tried all sources, but ledger was found in db."
                     << " Sequence = " << ledgerSequence;
-                break;
+                return false;
             }
             JLOG(journal_.error())
                 << __func__ << " : "

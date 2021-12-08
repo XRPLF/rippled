@@ -88,10 +88,10 @@ public:
         return base_.rules();
     }
 
-    boost::optional<key_type>
+    std::optional<key_type>
     succ(
         key_type const& key,
-        boost::optional<key_type> const& last = boost::none) const override
+        std::optional<key_type> const& last = std::nullopt) const override
     {
         return base_.succ(key, last);
     }
@@ -142,7 +142,7 @@ public:
     // DigestAwareReadView
     //
 
-    boost::optional<digest_type>
+    std::optional<digest_type>
     digest(key_type const& key) const override
     {
         return base_.digest(key);

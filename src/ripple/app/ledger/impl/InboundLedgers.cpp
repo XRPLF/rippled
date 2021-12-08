@@ -30,10 +30,11 @@
 #include <ripple/protocol/jss.h>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 namespace ripple {
 
-class InboundLedgersImp : public InboundLedgers, public Stoppable
+class InboundLedgersImp : public InboundLedgers
 {
 private:
     Application& app_;
@@ -49,11 +50,9 @@ public:
     InboundLedgersImp(
         Application& app,
         clock_type& clock,
-        Stoppable& parent,
         beast::insight::Collector::ptr const& collector,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
-        : Stoppable("InboundLedgers", parent)
-        , app_(app)
+        : app_(app)
         , fetchRate_(clock.now())
         , j_(app.journal("InboundLedger"))
         , m_clock(clock)
@@ -74,13 +73,15 @@ public:
         assert(
             reason != InboundLedger::Reason::SHARD ||
             (seq != 0 && app_.getShardStore()));
-        if (isStopping())
-            return {};
 
         bool isNew = true;
         std::shared_ptr<InboundLedger> inbound;
         {
             ScopedLockType sl(mLock);
+            if (stopping_)
+            {
+                return {};
+            }
             auto it = mLedgers.find(hash);
             if (it != mLedgers.end())
             {
@@ -231,7 +232,6 @@ public:
     void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
-        const uint256 uZero;
         Serializer s;
         try
         {
@@ -348,27 +348,29 @@ public:
     void
     sweep() override
     {
-        clock_type::time_point const now(m_clock.now());
+        auto const start = m_clock.now();
 
         // Make a list of things to sweep, while holding the lock
         std::vector<MapType::mapped_type> stuffToSweep;
         std::size_t total;
+
         {
             ScopedLockType sl(mLock);
             MapType::iterator it(mLedgers.begin());
             total = mLedgers.size();
+
             stuffToSweep.reserve(total);
 
             while (it != mLedgers.end())
             {
-                if (it->second->getLastAction() > now)
+                auto const la = it->second->getLastAction();
+
+                if (la > start)
                 {
                     it->second->touch();
                     ++it;
                 }
-                else if (
-                    (it->second->getLastAction() + std::chrono::minutes(1)) <
-                    now)
+                else if ((la + std::chrono::minutes(1)) < start)
                 {
                     stuffToSweep.push_back(it->second);
                     // shouldn't cause the actual final delete
@@ -384,19 +386,22 @@ public:
             beast::expire(mRecentFailures, kReacquireInterval);
         }
 
-        JLOG(j_.debug()) << "Swept " << stuffToSweep.size() << " out of "
-                         << total << " inbound ledgers.";
+        JLOG(j_.debug())
+            << "Swept " << stuffToSweep.size() << " out of " << total
+            << " inbound ledgers. Duration: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   m_clock.now() - start)
+                   .count()
+            << "ms";
     }
 
     void
-    onStop() override
+    stop() override
     {
         ScopedLockType lock(mLock);
-
+        stopping_ = true;
         mLedgers.clear();
         mRecentFailures.clear();
-
-        stopped();
     }
 
 private:
@@ -405,6 +410,7 @@ private:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
     std::recursive_mutex mLock;
 
+    bool stopping_ = false;
     using MapType = hash_map<uint256, std::shared_ptr<InboundLedger>>;
     MapType mLedgers;
 
@@ -421,11 +427,10 @@ std::unique_ptr<InboundLedgers>
 make_InboundLedgers(
     Application& app,
     InboundLedgers::clock_type& clock,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<InboundLedgersImp>(
-        app, clock, parent, collector, make_PeerSetBuilder(app));
+        app, clock, collector, make_PeerSetBuilder(app));
 }
 
 }  // namespace ripple

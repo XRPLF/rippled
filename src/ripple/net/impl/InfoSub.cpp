@@ -33,15 +33,6 @@ namespace ripple {
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-//------------------------------------------------------------------------------
-
-InfoSub::Source::Source(char const* name, Stoppable& parent)
-    : Stoppable(name, parent)
-{
-}
-
-//------------------------------------------------------------------------------
-
 InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
 {
 }
@@ -69,6 +60,9 @@ InfoSub::~InfoSub()
 
     if (!normalSubscriptions_.empty())
         m_source.unsubAccountInternal(mSeq, normalSubscriptions_, false);
+
+    for (auto const& account : accountHistorySubscriptions_)
+        m_source.unsubAccountHistoryInternal(mSeq, account, false);
 }
 
 Resource::Consumer&
@@ -108,6 +102,20 @@ InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
         realTimeSubscriptions_.erase(account);
     else
         normalSubscriptions_.erase(account);
+}
+
+bool
+InfoSub::insertSubAccountHistory(AccountID const& account)
+{
+    std::lock_guard sl(mLock);
+    return accountHistorySubscriptions_.insert(account).second;
+}
+
+void
+InfoSub::deleteSubAccountHistory(AccountID const& account)
+{
+    std::lock_guard sl(mLock);
+    accountHistorySubscriptions_.erase(account);
 }
 
 void

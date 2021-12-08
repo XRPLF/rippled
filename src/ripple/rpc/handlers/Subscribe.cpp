@@ -138,8 +138,6 @@ doSubscribe(RPC::JsonContext& context)
             }
             else if (streamName == "manifests")
             {
-                if (context.app.config().reporting())
-                    return rpcError(rpcREPORTING_UNSUPPORTED);
                 context.netOps.subManifests(ispSub);
             }
             else if (streamName == "transactions")
@@ -154,8 +152,6 @@ doSubscribe(RPC::JsonContext& context)
             }
             else if (streamName == "validations")
             {
-                if (context.app.config().reporting())
-                    return rpcError(rpcREPORTING_UNSUPPORTED);
                 context.netOps.subValidations(ispSub);
             }
             else if (streamName == "peer_status")
@@ -203,6 +199,33 @@ doSubscribe(RPC::JsonContext& context)
             return rpcError(rpcACT_MALFORMED);
         context.netOps.subAccount(ispSub, ids, false);
         JLOG(context.j.debug()) << "doSubscribe: accounts: " << ids.size();
+    }
+
+    if (context.params.isMember(jss::account_history_tx_stream))
+    {
+        if (!context.app.config().useTxTables())
+            return rpcError(rpcNOT_ENABLED);
+
+        context.loadType = Resource::feeMediumBurdenRPC;
+        auto const& req = context.params[jss::account_history_tx_stream];
+        if (!req.isMember(jss::account) || !req[jss::account].isString())
+            return rpcError(rpcINVALID_PARAMS);
+
+        auto const id = parseBase58<AccountID>(req[jss::account].asString());
+        if (!id)
+            return rpcError(rpcINVALID_PARAMS);
+
+        if (auto result = context.netOps.subAccountHistory(ispSub, *id);
+            result != rpcSUCCESS)
+        {
+            return rpcError(result);
+        }
+
+        jvResult[jss::warning] =
+            "account_history_tx_stream is an experimental feature and likely "
+            "to be removed in the future";
+        JLOG(context.j.debug())
+            << "doSubscribe: account_history_tx_stream: " << toBase58(*id);
     }
 
     if (context.params.isMember(jss::books))
@@ -273,7 +296,7 @@ doSubscribe(RPC::JsonContext& context)
                 return rpcError(rpcBAD_MARKET);
             }
 
-            boost::optional<AccountID> takerID;
+            std::optional<AccountID> takerID;
 
             if (j.isMember(jss::taker))
             {

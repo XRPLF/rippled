@@ -27,6 +27,7 @@
 #   Examples:
 #    https://vl.ripple.com
 #    https://vl.coil.com
+#    https://vl.xrplf.org
 #    http://127.0.0.1:8000
 #    file:///etc/opt/ripple/vl.txt
 #
@@ -54,9 +55,13 @@
 
 [validator_list_sites]
 https://vl.ripple.com
+https://vl.xrplf.org
 
 [validator_list_keys]
+#vl.ripple.com
 ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
+# vl.xrplf.org
+ED45D1840EE724BE327ABE9146503D5848EFD5F38B6D5FEDE71E80ACCE5E6E738B
 
 # To use the test network (see https://xrpl.org/connect-your-rippled-to-the-xrp-test-net.html),
 # use the following configuration instead:

@@ -21,7 +21,6 @@
 #define RIPPLE_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
 
 #include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/shamap/SHAMap.h>
 #include <memory>
@@ -85,12 +84,14 @@ public:
      */
     virtual void
     newRound(std::uint32_t seq) = 0;
+
+    virtual void
+    stop() = 0;
 };
 
 std::unique_ptr<InboundTransactions>
 make_InboundTransactions(
     Application& app,
-    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);
 

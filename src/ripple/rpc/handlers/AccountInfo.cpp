@@ -109,8 +109,19 @@ doAccountInfo(RPC::JsonContext& context)
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 
-            result[jss::account_data][jss::signer_lists] =
-                std::move(jvSignerList);
+            // Documentation states this is returned as part of the account_info
+            // response, but previously the code put it under account_data. We
+            // can move this to the documentated location from apiVersion 2
+            // onwards.
+            if (context.apiVersion == 1)
+            {
+                result[jss::account_data][jss::signer_lists] =
+                    std::move(jvSignerList);
+            }
+            else
+            {
+                result[jss::signer_lists] = std::move(jvSignerList);
+            }
         }
         // Return queue info if that is requested
         if (queue)
@@ -129,10 +140,10 @@ doAccountInfo(RPC::JsonContext& context)
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
-                boost::optional<std::uint32_t> lowestSeq;
-                boost::optional<std::uint32_t> highestSeq;
-                boost::optional<std::uint32_t> lowestTicket;
-                boost::optional<std::uint32_t> highestTicket;
+                std::optional<std::uint32_t> lowestSeq;
+                std::optional<std::uint32_t> highestSeq;
+                std::optional<std::uint32_t> lowestTicket;
+                std::optional<std::uint32_t> highestTicket;
                 bool anyAuthChanged = false;
                 XRPAmount totalSpend(0);
 

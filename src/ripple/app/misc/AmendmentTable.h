@@ -22,8 +22,11 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STValidation.h>
+
+#include <optional>
 
 namespace ripple {
 
@@ -34,6 +37,19 @@ namespace ripple {
 class AmendmentTable
 {
 public:
+    struct FeatureInfo
+    {
+        FeatureInfo() = delete;
+        FeatureInfo(std::string const& n, uint256 const& f, DefaultVote v)
+            : name(n), feature(f), vote(v)
+        {
+        }
+
+        std::string const name;
+        uint256 const feature;
+        DefaultVote const vote;
+    };
+
     virtual ~AmendmentTable() = default;
 
     virtual uint256
@@ -61,7 +77,7 @@ public:
     virtual bool
     hasUnsupportedEnabled() const = 0;
 
-    virtual boost::optional<NetClock::time_point>
+    virtual std::optional<NetClock::time_point>
     firstUnsupportedExpected() const = 0;
 
     virtual Json::Value
@@ -157,7 +173,7 @@ public:
             initialPosition->addGiveItem(
                 SHAMapNodeType::tnTRANSACTION_NM,
                 std::make_shared<SHAMapItem>(
-                    amendTx.getTransactionID(), s.peekData()));
+                    amendTx.getTransactionID(), s.slice()));
         }
     }
 };
@@ -166,7 +182,7 @@ std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
     Application& app,
     std::chrono::seconds majorityTime,
-    Section const& supported,
+    std::vector<AmendmentTable::FeatureInfo> const& supported,
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal);

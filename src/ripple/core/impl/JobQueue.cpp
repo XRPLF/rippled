@@ -20,25 +20,27 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/JobQueue.h>
+#include <mutex>
 
 namespace ripple {
 
 JobQueue::JobQueue(
+    int threadCount,
     beast::insight::Collector::ptr const& collector,
-    Stoppable& parent,
     beast::Journal journal,
     Logs& logs,
     perf::PerfLog& perfLog)
-    : Stoppable("JobQueue", parent)
-    , m_journal(journal)
+    : m_journal(journal)
     , m_lastJob(0)
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
-    , m_workers(*this, &perfLog, "JobQueue", 0)
-    , m_cancelCallback(std::bind(&Stoppable::isStopping, this))
+    , m_workers(*this, &perfLog, "JobQueue", threadCount)
+    , m_cancelCallback(std::bind(&JobQueue::isStopping, this))
     , perfLog_(perfLog)
     , m_collector(collector)
 {
+    JLOG(m_journal.info()) << "Using " << threadCount << "  threads";
+
     hook = m_collector->make_hook(std::bind(&JobQueue::collect, this));
     job_count = m_collector->make_gauge("job_count");
 
@@ -96,24 +98,8 @@ JobQueue::addRefCountedJob(
 
     {
         std::lock_guard lock(m_mutex);
-
-        // If this goes off it means that a child didn't follow
-        // the Stoppable API rules. A job may only be added if:
-        //
-        //  - The JobQueue has NOT stopped
-        //          AND
-        //      * We are currently processing jobs
-        //          OR
-        //      * We have have pending jobs
-        //          OR
-        //      * Not all children are stopped
-        //
-        assert(
-            !isStopped() &&
-            (m_processCount > 0 || !m_jobSet.empty() || !areChildrenStopped()));
-
-        std::pair<std::set<Job>::iterator, bool> result(m_jobSet.insert(
-            Job(type, name, ++m_lastJob, data.load(), func, m_cancelCallback)));
+        auto result = m_jobSet.emplace(
+            type, name, ++m_lastJob, data.load(), func, m_cancelCallback);
         queueJob(*result.first, lock);
     }
     return true;
@@ -154,29 +140,6 @@ JobQueue::getJobCountGE(JobType t) const
     }
 
     return ret;
-}
-
-void
-JobQueue::setThreadCount(int c, bool const standaloneMode)
-{
-    if (standaloneMode)
-    {
-        c = 1;
-    }
-    else if (c == 0)
-    {
-        c = static_cast<int>(std::thread::hardware_concurrency());
-        c = 2 + std::min(c, 4);  // I/O will bottleneck
-        JLOG(m_journal.info()) << "Auto-tuning to " << c
-                               << " validation/transaction/proposal threads.";
-    }
-    else
-    {
-        JLOG(m_journal.info()) << "Configured " << c
-                               << " validation/transaction/proposal threads.";
-    }
-
-    m_workers.setNumberOfThreads(c);
 }
 
 std::unique_ptr<LoadEvent>
@@ -278,7 +241,7 @@ void
 JobQueue::rendezvous()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-    cv_.wait(lock, [&] { return m_processCount == 0 && m_jobSet.empty(); });
+    cv_.wait(lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
 }
 
 JobTypeData&
@@ -296,28 +259,31 @@ JobQueue::getJobTypeData(JobType type)
 }
 
 void
-JobQueue::onStop()
+JobQueue::stop()
 {
-    // onStop must be defined and empty here,
-    // otherwise the base class will do the wrong thing.
+    stopping_ = true;
+    using namespace std::chrono_literals;
+    jobCounter_.join("JobQueue", 1s, m_journal);
+    {
+        // After the JobCounter is joined, all jobs have finished executing
+        // (i.e. returned from `Job::doJob`) and no more are being accepted,
+        // but there may still be some threads between the return of
+        // `Job::doJob` and the return of `JobQueue::processTask`. That is why
+        // we must wait on the condition variable to make these assertions.
+        std::unique_lock<std::mutex> lock(m_mutex);
+        cv_.wait(
+            lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
+        assert(m_processCount == 0);
+        assert(m_jobSet.empty());
+        assert(nSuspend_ == 0);
+        stopped_ = true;
+    }
 }
 
-void
-JobQueue::checkStopped(std::lock_guard<std::mutex> const& lock)
+bool
+JobQueue::isStopped() const
 {
-    // We are stopped when all of the following are true:
-    //
-    //  1. A stop notification was received
-    //  2. All Stoppable children have stopped
-    //  3. There are no executing calls to processTask
-    //  4. There are no remaining Jobs in the job set
-    //  5. There are no suspended coroutines
-    //
-    if (isStopping() && areChildrenStopped() && (m_processCount == 0) &&
-        m_jobSet.empty() && nSuspend_ == 0)
-    {
-        stopped();
-    }
+    return stopped_;
 }
 
 void
@@ -417,14 +383,14 @@ JobQueue::processTask(int instance)
 
             // The amount of time that the job was in the queue
             auto const q_time =
-                date::ceil<microseconds>(start_time - job.queue_time());
+                ceil<microseconds>(start_time - job.queue_time());
             perfLog_.jobStart(type, q_time, start_time, instance);
 
             job.doJob();
 
             // The amount of time it took to execute the job
             auto const x_time =
-                date::ceil<microseconds>(Job::clock_type::now() - start_time);
+                ceil<microseconds>(Job::clock_type::now() - start_time);
 
             if (x_time >= 10ms || q_time >= 10ms)
             {
@@ -437,13 +403,12 @@ JobQueue::processTask(int instance)
 
     {
         std::lock_guard lock(m_mutex);
-        // Job should be destroyed before calling checkStopped
+        // Job should be destroyed before stopping
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.
         finishJob(type);
         if (--m_processCount == 0 && m_jobSet.empty())
             cv_.notify_all();
-        checkStopped(lock);
     }
 
     // Note that when Job::~Job is called, the last reference
@@ -457,13 +422,6 @@ JobQueue::getJobLimit(JobType type)
     assert(j.type() != jtINVALID);
 
     return j.limit();
-}
-
-void
-JobQueue::onChildrenStopped()
-{
-    std::lock_guard lock(m_mutex);
-    checkStopped(lock);
 }
 
 }  // namespace ripple

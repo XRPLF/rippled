@@ -26,7 +26,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/protocol/STTx.h>
-#include <boost/optional.hpp>
+#include <optional>
 #include <utility>
 
 namespace ripple {
@@ -123,7 +123,7 @@ private:
 
     OpenView& base_;
     ApplyFlags flags_;
-    boost::optional<ApplyViewImpl> view_;
+    std::optional<ApplyViewImpl> view_;
 };
 
 }  // namespace ripple

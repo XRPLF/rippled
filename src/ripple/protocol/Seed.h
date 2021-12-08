@@ -23,8 +23,8 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/tokens.h>
-#include <boost/optional.hpp>
 #include <array>
+#include <optional>
 
 namespace ripple {
 
@@ -113,11 +113,11 @@ generateSeed(std::string const& passPhrase);
 
 /** Parse a Base58 encoded string into a seed */
 template <>
-boost::optional<Seed>
+std::optional<Seed>
 parseBase58(std::string const& s);
 
 /** Attempt to parse a string as a seed */
-boost::optional<Seed>
+std::optional<Seed>
 parseGenericSeed(std::string const& str);
 
 /** Encode a Seed in RFC1751 format */

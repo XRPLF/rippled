@@ -28,6 +28,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     testCorrectOrder()
     {
         using namespace jtx;
+        testcase("Correct Order");
 
         Env env(*this);
         auto const alice = Account("alice");
@@ -69,8 +70,13 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        Env env(*this);
-        env.app().getJobQueue().setThreadCount(0, false);
+        testcase("Incorrect order");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = false;
+            return cfg;
+        }));
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), noripple(alice));
 
@@ -109,8 +115,13 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        Env env(*this);
-        env.app().getJobQueue().setThreadCount(0, false);
+        testcase("Incorrect order multiple intermediaries");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), noripple(alice));
 

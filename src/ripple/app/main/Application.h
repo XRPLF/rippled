@@ -52,7 +52,19 @@ class ShardArchiveHandler;
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
-class CachedSLEs;
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+class TaggedCache;
+class STLedgerEntry;
+using SLE = STLedgerEntry;
+using CachedSLEs = TaggedCache<uint256, SLE const>;
+
 class CollectorManager;
 class Family;
 class HashRouter;
@@ -64,6 +76,7 @@ class InboundTransactions;
 class AcceptedLedger;
 class Ledger;
 class LedgerMaster;
+class LedgerCleaner;
 class LedgerReplayer;
 class LoadManager;
 class ManifestCache;
@@ -74,7 +87,6 @@ class OrderBookDB;
 class Overlay;
 class PathRequests;
 class PendingSaves;
-class PgPool;
 class PublicKey;
 class SecretKey;
 class AccountIDCache;
@@ -87,6 +99,7 @@ class ValidatorList;
 class ValidatorSite;
 class Cluster;
 
+class RelationalDBInterface;
 class DatabaseCon;
 class SHAMapStore;
 
@@ -125,17 +138,17 @@ public:
     virtual bool
     setup() = 0;
     virtual void
-    doStart(bool withTimers) = 0;
+    start(bool withTimers) = 0;
     virtual void
     run() = 0;
-    virtual bool
-    isShutdown() = 0;
     virtual void
     signalStop() = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
+    virtual bool
+    isStopping() const = 0;
 
     //
     // ---
@@ -205,6 +218,8 @@ public:
 
     virtual LedgerMaster&
     getLedgerMaster() = 0;
+    virtual LedgerCleaner&
+    getLedgerCleaner() = 0;
     virtual LedgerReplayer&
     getLedgerReplayer() = 0;
     virtual NetworkOPs&
@@ -236,10 +251,8 @@ public:
     openLedger() = 0;
     virtual OpenLedger const&
     openLedger() const = 0;
-    virtual DatabaseCon&
-    getTxnDB() = 0;
-    virtual DatabaseCon&
-    getLedgerDB() = 0;
+    virtual RelationalDBInterface&
+    getRelationalDBInterface() = 0;
 
     virtual std::chrono::milliseconds
     getIOLatency() = 0;
@@ -249,11 +262,6 @@ public:
 
     virtual bool
     serverOkay(std::string& reason) = 0;
-
-#ifdef RIPPLED_REPORTING
-    virtual std::shared_ptr<PgPool> const&
-    getPgPool() = 0;
-#endif
 
     virtual beast::Journal
     journal(std::string const& name) = 0;

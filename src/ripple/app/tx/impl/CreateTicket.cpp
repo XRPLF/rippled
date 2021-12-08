@@ -117,23 +117,19 @@ CreateTicket::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-
-        SLE::pointer sleTicket = std::make_shared<SLE>(
-            ltTICKET, getTicketIndex(account_, curTicketSeq));
+        Keylet const ticketKeylet = keylet::ticket(account_, curTicketSeq);
+        SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, account_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
         view().insert(sleTicket);
 
-        auto const page = dirAdd(
-            view(),
+        auto const page = view().dirInsert(
             keylet::ownerDir(account_),
-            sleTicket->key(),
-            false,
-            describeOwnerDir(account_),
-            viewJ);
+            ticketKeylet,
+            describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Creating ticket " << to_string(sleTicket->key())
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key)
                          << ": " << (page ? "success" : "failure");
 
         if (!page)

@@ -23,10 +23,11 @@
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
-#include <functional>
-#include <memory>
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
+
+#include <functional>
+#include <memory>
 #include <vector>
 
 namespace ripple {
@@ -41,8 +42,8 @@ class Env;
 struct JTx
 {
     Json::Value jv;
-    requires_t requires;
-    boost::optional<TER> ter = TER{tesSUCCESS};
+    requires_t require;
+    std::optional<TER> ter = TER{tesSUCCESS};
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;

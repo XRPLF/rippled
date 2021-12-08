@@ -24,7 +24,9 @@
 #include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/nodestore/ShardInfo.h>
 #include <ripple/overlay/Squelch.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
@@ -37,14 +39,15 @@
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/optional.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <cstdint>
+#include <optional>
 #include <queue>
 
 namespace ripple {
 
 struct ValidatorBlobInfo;
+class SHAMap;
 
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
@@ -53,12 +56,6 @@ class PeerImp : public Peer,
 public:
     /** Whether the peer's view of the ledger converges or diverges from ours */
     enum class Tracking { diverged, unknown, converged };
-
-    struct ShardInfo
-    {
-        beast::IP::Endpoint endpoint;
-        RangeSet<std::uint32_t> shardIndexes;
-    };
 
 private:
     using clock_type = std::chrono::steady_clock;
@@ -114,8 +111,8 @@ private:
     boost::circular_buffer<uint256> recentLedgers_{128};
     boost::circular_buffer<uint256> recentTxSets_{128};
 
-    boost::optional<std::chrono::milliseconds> latency_;
-    boost::optional<std::uint32_t> lastPingSeq_;
+    std::optional<std::chrono::milliseconds> latency_;
+    std::optional<std::uint32_t> lastPingSeq_;
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
@@ -166,10 +163,18 @@ private:
     // been sent to or received from this peer.
     hash_map<PublicKey, std::size_t> publisherListSequences_;
 
+    // Any known shard info from this peer and its sub peers
+    hash_map<PublicKey, NodeStore::ShardInfo> shardInfos_;
     std::mutex mutable shardInfoMutex_;
-    hash_map<PublicKey, ShardInfo> shardInfo_;
 
     Compressed compressionEnabled_ = Compressed::Off;
+
+    // Queue of transactions' hashes that have not been
+    // relayed. The hashes are sent once a second to a peer
+    // and the peer requests missing transactions from the node.
+    hash_set<uint256> txQueue_;
+    // true if tx reduce-relay feature is enabled on the peer.
+    bool txReduceRelayEnabled_ = false;
     // true if validation/proposal reduce-relay feature is enabled
     // on the peer.
     bool vpReduceRelayEnabled_ = false;
@@ -258,7 +263,7 @@ public:
     }
 
     // Work-around for calling shared_from_this in constructors
-    void
+    virtual void
     run();
 
     // Called when Overlay gets a stop request.
@@ -271,6 +276,22 @@ public:
 
     void
     send(std::shared_ptr<Message> const& m) override;
+
+    /** Send aggregated transactions' hashes */
+    void
+    sendTxQueue() override;
+
+    /** Add transaction's hash to the transactions' hashes queue
+       @param hash transaction's hash
+     */
+    void
+    addTxQueue(uint256 const& hash) override;
+
+    /** Remove transaction's hash from the transactions' hashes queue
+       @param hash transaction's hash
+     */
+    void
+    removeTxQueue(uint256 const& hash) override;
 
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
@@ -339,7 +360,7 @@ public:
     bool
     supportsFeature(ProtocolFeature f) const override;
 
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
         std::lock_guard<std::mutex> sl(recentLock_);
@@ -376,9 +397,6 @@ public:
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override;
 
     bool
-    hasShard(std::uint32_t shardIndex) const override;
-
-    bool
     hasTxSet(uint256 const& hash) const override;
 
     void
@@ -397,18 +415,20 @@ public:
     void
     fail(std::string const& reason);
 
-    /** Return a range set of known shard indexes from this peer. */
-    boost::optional<RangeSet<std::uint32_t>>
-    getShardIndexes() const;
-
-    /** Return any known shard info from this peer and its sub peers. */
-    boost::optional<hash_map<PublicKey, ShardInfo>>
-    getPeerShardInfo() const;
+    // Return any known shard info from this peer and its sub peers
+    [[nodiscard]] hash_map<PublicKey, NodeStore::ShardInfo> const
+    getPeerShardInfos() const;
 
     bool
     compressionEnabled() const override
     {
         return compressionEnabled_ == Compressed::On;
+    }
+
+    bool
+    txReduceRelayEnabled() const override
+    {
+        return txReduceRelayEnabled_;
     }
 
 private:
@@ -447,9 +467,6 @@ private:
     std::string
     domain() const;
 
-    std::optional<std::uint32_t>
-    networkID() const;
-
     //
     // protocol message loop
     //
@@ -465,6 +482,29 @@ private:
     // Called when protocol messages bytes are sent
     void
     onWriteMessage(error_code ec, std::size_t bytes_transferred);
+
+    /** Called from onMessage(TMTransaction(s)).
+       @param m Transaction protocol message
+       @param eraseTxQueue is true when called from onMessage(TMTransaction)
+       and is false when called from onMessage(TMTransactions). If true then
+       the transaction hash is erased from txQueue_. Don't need to erase from
+       the queue when called from onMessage(TMTransactions) because this
+       message is a response to the missing transactions request and the queue
+       would not have any of these transactions.
+     */
+    void
+    handleTransaction(
+        std::shared_ptr<protocol::TMTransaction> const& m,
+        bool eraseTxQueue);
+
+    /** Handle protocol message with hashes of transactions that have not
+       been relayed by an upstream node down to its peers - request
+       transactions, which have not been relayed to this peer.
+       @param m protocol message with transactions' hashes
+     */
+    void
+    handleHaveTransactions(
+        std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
     // Check if reduce-relay feature is enabled and
     // reduce_relay::WAIT_ON_BOOTUP time passed since the start
@@ -501,13 +541,13 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMCluster> const& m);
     void
-    onMessage(std::shared_ptr<protocol::TMGetShardInfo> const& m);
-    void
-    onMessage(std::shared_ptr<protocol::TMShardInfo> const& m);
-    void
     onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMGetPeerShardInfoV2> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMEndpoints> const& m);
     void
@@ -530,6 +570,10 @@ public:
     onMessage(std::shared_ptr<protocol::TMValidation> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMTransactions> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMSquelch> const& m);
     void
@@ -560,6 +604,13 @@ private:
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs);
 
+    /** Process peer's request to send missing transactions. The request is
+        sent in response to TMHaveTransactions.
+        @param packet protocol message containing missing transactions' hashes.
+     */
+    void
+    doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
+
     void
     checkTransaction(
         int flags,
@@ -578,7 +629,18 @@ private:
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
-    getLedger(std::shared_ptr<protocol::TMGetLedger> const& packet);
+    sendLedgerBase(
+        std::shared_ptr<Ledger const> const& ledger,
+        protocol::TMLedgerData& ledgerData);
+
+    std::shared_ptr<Ledger const>
+    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+    std::shared_ptr<SHAMap const>
+    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
+
+    void
+    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
 };
 
 //------------------------------------------------------------------------------
@@ -630,6 +692,10 @@ PeerImp::PeerImp(
               app_.config().COMPRESSION)
               ? Compressed::On
               : Compressed::Off)
+    , txReduceRelayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_TXRR,
+          app_.config().TX_REDUCE_RELAY_ENABLE))
     , vpReduceRelayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_VPRR,
@@ -642,11 +708,13 @@ PeerImp::PeerImp(
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.debug()) << "compression enabled "
-                           << (compressionEnabled_ == Compressed::On)
-                           << " vp reduce-relay enabled "
-                           << vpReduceRelayEnabled_ << " on " << remote_address_
-                           << " " << id_;
+    JLOG(journal_.info()) << "compression enabled "
+                          << (compressionEnabled_ == Compressed::On)
+                          << " vp reduce-relay enabled "
+                          << vpReduceRelayEnabled_
+                          << " tx reduce-relay enabled "
+                          << txReduceRelayEnabled_ << " on " << remote_address_
+                          << " " << id_;
 }
 
 template <class FwdIt, class>

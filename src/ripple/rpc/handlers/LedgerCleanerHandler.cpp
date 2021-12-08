@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/json/json_value.h>
 #include <ripple/rpc/Context.h>
@@ -28,7 +28,7 @@ namespace ripple {
 Json::Value
 doLedgerCleaner(RPC::JsonContext& context)
 {
-    context.app.getLedgerMaster().doLedgerCleaner(context.params);
+    context.app.getLedgerCleaner().clean(context.params);
     return RPC::makeObjectValue("Cleaner configured");
 }
 

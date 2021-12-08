@@ -377,23 +377,31 @@ doLedgerEntryGrpc(
     grpc::Status status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (RPC::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        grpc::Status errorStatus;
+        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        {
+            errorStatus = grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+        }
+        else
+        {
+            errorStatus =
+                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+        }
         return {response, errorStatus};
     }
 
-    std::string const& keyBytes = request.key();
-    auto key = uint256::fromVoid(keyBytes.data());
-    if (keyBytes.size() != key.size())
+    auto key = uint256::fromVoidChecked(request.key());
+    if (!key)
     {
         grpc::Status errorStatus{
             grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
         return {response, errorStatus};
     }
 
-    auto const sleNode = ledger->read(keylet::unchecked(key));
+    auto const sleNode = ledger->read(keylet::unchecked(*key));
     if (!sleNode)
     {
         grpc::Status errorStatus{

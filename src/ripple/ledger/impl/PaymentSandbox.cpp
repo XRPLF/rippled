@@ -23,7 +23,6 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STAccount.h>
-#include <boost/optional.hpp>
 
 #include <cassert>
 
@@ -100,13 +99,13 @@ DeferredCredits::ownerCount(
     }
 }
 
-boost::optional<std::uint32_t>
+std::optional<std::uint32_t>
 DeferredCredits::ownerCount(AccountID const& id) const
 {
     auto i = ownerCounts_.find(id);
     if (i != ownerCounts_.end())
         return i->second;
-    return boost::none;
+    return std::nullopt;
 }
 
 // Get the adjustments for the balance between main and other.
@@ -114,9 +113,9 @@ auto
 DeferredCredits::adjustments(
     AccountID const& main,
     AccountID const& other,
-    Currency const& currency) const -> boost::optional<Adjustment>
+    Currency const& currency) const -> std::optional<Adjustment>
 {
-    boost::optional<Adjustment> result;
+    std::optional<Adjustment> result;
 
     Key const k = makeKey(main, other, currency);
     auto i = credits_.find(k);

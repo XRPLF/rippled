@@ -31,11 +31,12 @@ private:
     JobType const m_type;
     std::string const m_name;
 
-    /** The limit on the number of running jobs for this job type. */
-    int const m_limit;
+    /** The limit on the number of running jobs for this job type.
 
-    /** Special jobs are not dispatched via the job queue */
-    bool const m_special;
+        A limit of 0 marks this as a "special job" which is not
+        dispatched via the job queue.
+     */
+    int const m_limit;
 
     /** Average and peak latencies for this job type. 0 is none specified */
     std::chrono::milliseconds const m_avgLatency;
@@ -49,13 +50,11 @@ public:
         JobType type,
         std::string name,
         int limit,
-        bool special,
         std::chrono::milliseconds avgLatency,
         std::chrono::milliseconds peakLatency)
         : m_type(type)
         , m_name(std::move(name))
         , m_limit(limit)
-        , m_special(special)
         , m_avgLatency(avgLatency)
         , m_peakLatency(peakLatency)
     {
@@ -82,7 +81,7 @@ public:
     bool
     special() const
     {
-        return m_special;
+        return m_limit == 0;
     }
 
     std::chrono::milliseconds

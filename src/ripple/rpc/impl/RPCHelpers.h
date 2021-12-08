@@ -21,7 +21,7 @@
 #define RIPPLE_RPC_RPCHELPERS_H_INCLUDED
 
 #include <ripple/beast/core/SemanticVersion.h>
-#include <ripple/ledger/TxMeta.h>
+#include <ripple/protocol/TxMeta.h>
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
@@ -29,7 +29,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <boost/optional.hpp>
+#include <optional>
 #include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 
 namespace Json {
@@ -46,7 +46,7 @@ namespace RPC {
 struct JsonContext;
 
 /** Get an AccountID from an account ID or public key. */
-boost::optional<AccountID>
+std::optional<AccountID>
 accountFromStringStrict(std::string const&);
 
 // --> strIdent: public key, account ID, or regular seed.
@@ -84,7 +84,7 @@ bool
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
-    boost::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
     uint256 const& entryIndex,
     std::uint32_t const limit,
@@ -174,16 +174,16 @@ injectSLE(Json::Value& jv, SLE const& sle);
 
     If there is an error, return it as JSON.
 */
-boost::optional<Json::Value>
+std::optional<Json::Value>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const&,
     JsonContext const&);
 
-boost::optional<Seed>
+std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
 
-boost::optional<Seed>
+std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
 std::pair<PublicKey, SecretKey>
@@ -200,38 +200,52 @@ extern beast::SemanticVersion const lastVersion;
  * API version numbers used in later API versions
  *
  * Requests with a version number in the range
- * [ApiMinimumSupportedVersion, ApiMaximumSupportedVersion]
+ * [apiMinimumSupportedVersion, apiMaximumSupportedVersion]
+ * are supported.
+ *
+ * If [beta_rpc_api] is enabled in config, the version numbers
+ * in the range [apiMinimumSupportedVersion, apiBetaVersion]
  * are supported.
  *
  * Network Requests without explicit version numbers use
- * APIVersionIfUnspecified. APIVersionIfUnspecified is 1,
+ * apiVersionIfUnspecified. apiVersionIfUnspecified is 1,
  * because all the RPC requests with a version >= 2 must
  * explicitly specify the version in the requests.
- * Note that APIVersionIfUnspecified will be lower than
- * ApiMinimumSupportedVersion when we stop supporting API
+ * Note that apiVersionIfUnspecified will be lower than
+ * apiMinimumSupportedVersion when we stop supporting API
  * version 1.
  *
- * Command line Requests use ApiMaximumSupportedVersion.
+ * Command line Requests use apiMaximumSupportedVersion.
  */
 
-constexpr unsigned int APIInvalidVersion = 0;
-constexpr unsigned int APIVersionIfUnspecified = 1;
-constexpr unsigned int ApiMinimumSupportedVersion = 1;
-constexpr unsigned int ApiMaximumSupportedVersion = 1;
-constexpr unsigned int APINumberVersionSupported =
-    ApiMaximumSupportedVersion - ApiMinimumSupportedVersion + 1;
+constexpr unsigned int apiInvalidVersion = 0;
+constexpr unsigned int apiVersionIfUnspecified = 1;
+constexpr unsigned int apiMinimumSupportedVersion = 1;
+constexpr unsigned int apiMaximumSupportedVersion = 1;
+constexpr unsigned int apiBetaVersion = 2;
 
-static_assert(ApiMinimumSupportedVersion >= APIVersionIfUnspecified);
-static_assert(ApiMaximumSupportedVersion >= ApiMinimumSupportedVersion);
+static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
+static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
+static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 
 template <class Object>
 void
-setVersion(Object& parent)
+setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
 {
+    assert(apiVersion != apiInvalidVersion);
     auto&& object = addObject(parent, jss::version);
-    object[jss::first] = firstVersion.print();
-    object[jss::good] = goodVersion.print();
-    object[jss::last] = lastVersion.print();
+    if (apiVersion == apiVersionIfUnspecified)
+    {
+        object[jss::first] = firstVersion.print();
+        object[jss::good] = goodVersion.print();
+        object[jss::last] = lastVersion.print();
+    }
+    else
+    {
+        object[jss::first] = apiMinimumSupportedVersion;
+        object[jss::last] =
+            betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
+    }
 }
 
 std::pair<RPC::Status, LedgerEntryType>
@@ -248,10 +262,11 @@ chooseLedgerEntryType(Json::Value const& params);
  *
  * @param value a Json value that may or may not specifies
  *        the api version number
+ * @param betaEnabled if the beta API version is enabled
  * @return the api version number
  */
 unsigned int
-getAPIVersionNumber(const Json::Value& value);
+getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
 
 }  // namespace RPC
 }  // namespace ripple

@@ -30,6 +30,7 @@
 #include <ripple/overlay/Slot.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/overlay/impl/TrafficCount.h>
+#include <ripple/overlay/impl/TxMetrics.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/ServerHandler.h>
@@ -39,7 +40,6 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/optional.hpp>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -47,6 +47,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 
 namespace ripple {
@@ -81,6 +82,7 @@ private:
     struct Timer : Child, std::enable_shared_from_this<Timer>
     {
         boost::asio::basic_waitable_timer<clock_type> timer_;
+        bool stopping_{false};
 
         explicit Timer(OverlayImpl& overlay);
 
@@ -88,7 +90,7 @@ private:
         stop() override;
 
         void
-        run();
+        async_wait();
 
         void
         on_timer(error_code ec);
@@ -96,7 +98,7 @@ private:
 
     Application& app_;
     boost::asio::io_service& io_service_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
     std::condition_variable_any cond_;
@@ -117,16 +119,18 @@ private:
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
 
-    // Last time we crawled peers for shard info. 'cs' = crawl shards
-    std::atomic<std::chrono::seconds> csLast_{std::chrono::seconds{0}};
+    // 'cs' = crawl shards
     std::mutex csMutex_;
     std::condition_variable csCV_;
     // Peer IDs expecting to receive a last link notification
     std::set<std::uint32_t> csIDs_;
 
-    boost::optional<std::uint32_t> networkID_;
+    std::optional<std::uint32_t> networkID_;
 
     reduce_relay::Slots<UptimeClock> slots_;
+
+    // Transaction reduce-relay metrics
+    metrics::TxMetrics txMetrics_;
 
     // A message with the list of manifests we send to peers
     std::shared_ptr<Message> manifestMessage_;
@@ -141,7 +145,6 @@ public:
     OverlayImpl(
         Application& app,
         Setup const& setup,
-        Stoppable& parent,
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
@@ -149,11 +152,15 @@ public:
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
-    ~OverlayImpl();
-
     OverlayImpl(OverlayImpl const&) = delete;
     OverlayImpl&
     operator=(OverlayImpl const&) = delete;
+
+    void
+    start() override;
+
+    void
+    stop() override;
 
     PeerFinder::Manager&
     peerFinder()
@@ -165,12 +172,6 @@ public:
     resourceManager()
     {
         return m_resourceManager;
-    }
-
-    ServerHandler&
-    serverHandler()
-    {
-        return serverHandler_;
     }
 
     Setup const&
@@ -200,6 +201,22 @@ public:
     PeerSequence
     getActivePeers() const override;
 
+    /** Get active peers excluding peers in toSkip.
+       @param toSkip peers to skip
+       @param active a number of active peers
+       @param disabled a number of peers with tx reduce-relay
+           feature disabled
+       @param enabledInSkip a number of peers with tx reduce-relay
+           feature enabled and in toSkip
+       @return active peers less peers in toSkip
+     */
+    PeerSequence
+    getActivePeers(
+        std::set<Peer::id_t> const& toSkip,
+        std::size_t& active,
+        std::size_t& disabled,
+        std::size_t& enabledInSkip) const;
+
     void checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
@@ -225,6 +242,12 @@ public:
         protocol::TMValidation& m,
         uint256 const& uid,
         PublicKey const& validator) override;
+
+    void
+    relay(
+        uint256 const&,
+        protocol::TMTransaction& m,
+        std::set<Peer::id_t> const& skip) override;
 
     std::shared_ptr<Message>
     getManifestsMessage();
@@ -365,21 +388,21 @@ public:
         return peerDisconnectsCharges_;
     }
 
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     networkID() const override
     {
         return networkID_;
     }
 
     Json::Value
-    crawlShards(bool pubKey, std::uint32_t hops) override;
+    crawlShards(bool includePublicKey, std::uint32_t relays) override;
 
-    /** Called when the last link from a peer chain is received.
+    /** Called when the reply from the last peer in a peer chain is received.
 
         @param id peer id that received the shard info.
     */
     void
-    lastLink(std::uint32_t id);
+    endOfPeerChain(std::uint32_t id);
 
     /** Updates message count for validator/peer. Sends TMSquelch if the number
      * of messages for N peers reaches threshold T. A message is counted
@@ -413,6 +436,25 @@ public:
      */
     void
     deletePeer(Peer::id_t id);
+
+    Json::Value
+    txMetrics() const override
+    {
+        return txMetrics_.json();
+    }
+
+    /** Add tx reduce-relay metrics. */
+    template <typename... Args>
+    void
+    addTxMetrics(Args... args)
+    {
+        if (!strand_.running_in_this_thread())
+            return post(
+                strand_,
+                std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+
+        txMetrics_.addMetrics(args...);
+    }
 
 private:
     void
@@ -501,25 +543,6 @@ private:
     //--------------------------------------------------------------------------
 
     //
-    // Stoppable
-    //
-
-    void
-    checkStopped();
-
-    void
-    onPrepare() override;
-
-    void
-    onStart() override;
-
-    void
-    onStop() override;
-
-    void
-    onChildrenStopped() override;
-
-    //
     // PropertyStream
     //
 
@@ -532,13 +555,17 @@ private:
     remove(Child& child);
 
     void
-    stop();
+    stopChildren();
 
     void
     autoConnect();
 
     void
     sendEndpoints();
+
+    /** Send once a second transactions' hashes aggregated by peers. */
+    void
+    sendTxQueue();
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */

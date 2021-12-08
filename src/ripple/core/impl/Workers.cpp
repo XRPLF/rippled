@@ -44,7 +44,7 @@ Workers::Workers(
 
 Workers::~Workers()
 {
-    pauseAllThreadsAndWait();
+    stop();
 
     deleteWorkers(m_everyone);
 }
@@ -111,7 +111,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
 }
 
 void
-Workers::pauseAllThreadsAndWait()
+Workers::stop()
 {
     setNumberOfThreads(0);
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/reporting/DBHelpers.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
 #include <ripple/app/reporting/ReportingETL.h>
 
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -27,6 +27,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
+#include <cctype>
+#include <charconv>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -165,8 +167,9 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
         if (app_.config().reporting())
         {
 #ifdef RIPPLED_REPORTING
-            writeToPostgres(
-                ledger->info(), accountTxData, app_.getPgPool(), journal_);
+            dynamic_cast<RelationalDBInterfacePostgres*>(
+                &app_.getRelationalDBInterface())
+                ->writeLedgerAndTransactions(ledger->info(), accountTxData);
 #endif
         }
     }
@@ -332,11 +335,11 @@ ReportingETL::publishLedger(uint32_t ledgerSequence, uint32_t maxAttempts)
             continue;
         }
 
-        publishStrand_.post([this, ledger]() {
+        publishStrand_.post([this, ledger, fname = __func__]() {
             app_.getOPs().pubLedger(ledger);
             setLastPublish();
             JLOG(journal_.info())
-                << __func__ << " : "
+                << fname << " : "
                 << "Published ledger. " << detail::toString(ledger->info());
         });
         return true;
@@ -402,32 +405,35 @@ ReportingETL::buildNextLedger(
 
     for (auto& obj : rawData.ledger_objects().objects())
     {
-        auto key = uint256::fromVoid(obj.key().data());
+        auto key = uint256::fromVoidChecked(obj.key());
+        if (!key)
+            throw std::runtime_error("Recevied malformed object ID");
+
         auto& data = obj.data();
 
         // indicates object was deleted
         if (data.size() == 0)
         {
             JLOG(journal_.trace()) << __func__ << " : "
-                                   << "Erasing object = " << key;
-            if (next->exists(key))
-                next->rawErase(key);
+                                   << "Erasing object = " << *key;
+            if (next->exists(*key))
+                next->rawErase(*key);
         }
         else
         {
             SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, key);
+            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
 
-            if (next->exists(key))
+            if (next->exists(*key))
             {
                 JLOG(journal_.trace()) << __func__ << " : "
-                                       << "Replacing object = " << key;
+                                       << "Replacing object = " << *key;
                 next->rawReplace(sle);
             }
             else
             {
                 JLOG(journal_.trace()) << __func__ << " : "
-                                       << "Inserting object = " << key;
+                                       << "Inserting object = " << *key;
                 next->rawInsert(sle);
             }
         }
@@ -518,14 +524,6 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
             auto start = std::chrono::system_clock::now();
             std::optional<org::xrpl::rpc::v1::GetLedgerResponse> fetchResponse{
                 fetchLedgerDataAndDiff(currentSequence)};
-            auto end = std::chrono::system_clock::now();
-
-            auto time = ((end - start).count()) / 1000000000.0;
-            auto tps =
-                fetchResponse->transactions_list().transactions_size() / time;
-
-            JLOG(journal_.debug()) << "Extract phase time = " << time
-                                   << " . Extract phase tps = " << tps;
             // if the fetch is unsuccessful, stop. fetchLedger only returns
             // false if the server is shutting down, or if the ledger was
             // found in the database (which means another process already
@@ -537,6 +535,14 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
             {
                 break;
             }
+            auto end = std::chrono::system_clock::now();
+
+            auto time = ((end - start).count()) / 1000000000.0;
+            auto tps =
+                fetchResponse->transactions_list().transactions_size() / time;
+
+            JLOG(journal_.debug()) << "Extract phase time = " << time
+                                   << " . Extract phase tps = " << tps;
 
             transformQueue.push(std::move(fetchResponse));
             ++currentSequence;
@@ -589,69 +595,69 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
         loadQueue.push({});
     }};
 
-    std::thread loader{[this,
-                        &lastPublishedSequence,
-                        &loadQueue,
-                        &writeConflict]() {
-        beast::setCurrentThreadName("rippled: ReportingETL load");
-        size_t totalTransactions = 0;
-        double totalTime = 0;
-        while (!writeConflict)
-        {
-            std::optional<std::pair<
-                std::shared_ptr<Ledger>,
-                std::vector<AccountTransactionsData>>>
-                result{loadQueue.pop()};
-            // if result is an empty optional, the transformer thread has
-            // stopped and the loader should stop as well
-            if (!result)
-                break;
-            if (isStopping())
-                continue;
+    std::thread loader{
+        [this, &lastPublishedSequence, &loadQueue, &writeConflict]() {
+            beast::setCurrentThreadName("rippled: ReportingETL load");
+            size_t totalTransactions = 0;
+            double totalTime = 0;
+            while (!writeConflict)
+            {
+                std::optional<std::pair<
+                    std::shared_ptr<Ledger>,
+                    std::vector<AccountTransactionsData>>>
+                    result{loadQueue.pop()};
+                // if result is an empty optional, the transformer thread has
+                // stopped and the loader should stop as well
+                if (!result)
+                    break;
+                if (isStopping())
+                    continue;
 
-            auto& ledger = result->first;
-            auto& accountTxData = result->second;
+                auto& ledger = result->first;
+                auto& accountTxData = result->second;
 
-            auto start = std::chrono::system_clock::now();
-            // write to the key-value store
-            flushLedger(ledger);
+                auto start = std::chrono::system_clock::now();
+                // write to the key-value store
+                flushLedger(ledger);
 
-            auto mid = std::chrono::system_clock::now();
+                auto mid = std::chrono::system_clock::now();
             // write to RDBMS
             // if there is a write conflict, some other process has already
             // written this ledger and has taken over as the ETL writer
 #ifdef RIPPLED_REPORTING
-            if (!writeToPostgres(
-                    ledger->info(), accountTxData, app_.getPgPool(), journal_))
-                writeConflict = true;
+                if (!dynamic_cast<RelationalDBInterfacePostgres*>(
+                         &app_.getRelationalDBInterface())
+                         ->writeLedgerAndTransactions(
+                             ledger->info(), accountTxData))
+                    writeConflict = true;
 #endif
+                auto end = std::chrono::system_clock::now();
 
-            auto end = std::chrono::system_clock::now();
+                if (!writeConflict)
+                {
+                    publishLedger(ledger);
+                    lastPublishedSequence = ledger->info().seq;
+                }
+                // print some performance numbers
+                auto kvTime = ((mid - start).count()) / 1000000000.0;
+                auto relationalTime = ((end - mid).count()) / 1000000000.0;
 
-            if (!writeConflict)
-            {
-                publishLedger(ledger);
-                lastPublishedSequence = ledger->info().seq;
+                size_t numTxns = accountTxData.size();
+                totalTime += kvTime;
+                totalTransactions += numTxns;
+                JLOG(journal_.info())
+                    << "Load phase of etl : "
+                    << "Successfully published ledger! Ledger info: "
+                    << detail::toString(ledger->info())
+                    << ". txn count = " << numTxns
+                    << ". key-value write time = " << kvTime
+                    << ". relational write time = " << relationalTime
+                    << ". key-value tps = " << numTxns / kvTime
+                    << ". relational tps = " << numTxns / relationalTime
+                    << ". total key-value tps = "
+                    << totalTransactions / totalTime;
             }
-            // print some performance numbers
-            auto kvTime = ((mid - start).count()) / 1000000000.0;
-            auto relationalTime = ((end - mid).count()) / 1000000000.0;
-
-            size_t numTxns = accountTxData.size();
-            totalTime += kvTime;
-            totalTransactions += numTxns;
-            JLOG(journal_.info())
-                << "Load phase of etl : "
-                << "Successfully published ledger! Ledger info: "
-                << detail::toString(ledger->info())
-                << ". txn count = " << numTxns
-                << ". key-value write time = " << kvTime
-                << ". relational write time = " << relationalTime
-                << ". key-value tps = " << numTxns / kvTime
-                << ". relational tps = " << numTxns / relationalTime
-                << ". total key-value tps = " << totalTransactions / totalTime;
-        }
-    }};
+        }};
 
     // wait for all of the threads to stop
     loader.join();
@@ -825,9 +831,8 @@ ReportingETL::doWork()
     });
 }
 
-ReportingETL::ReportingETL(Application& app, Stoppable& parent)
-    : Stoppable("ReportingETL", parent)
-    , app_(app)
+ReportingETL::ReportingETL(Application& app)
+    : app_(app)
     , journal_(app.journal("ReportingETL"))
     , publishStrand_(app_.getIOService())
     , loadBalancer_(*this)
@@ -855,29 +860,26 @@ ReportingETL::ReportingETL(Application& app, Stoppable& parent)
             JLOG(journal_.debug()) << "val is " << v;
             Section source = app_.config().section(v);
 
-            std::pair<std::string, bool> ipPair = source.find("source_ip");
-            if (!ipPair.second)
+            auto optIp = source.get("source_ip");
+            if (!optIp)
                 continue;
 
-            std::pair<std::string, bool> wsPortPair =
-                source.find("source_ws_port");
-            if (!wsPortPair.second)
+            auto optWsPort = source.get("source_ws_port");
+            if (!optWsPort)
                 continue;
 
-            std::pair<std::string, bool> grpcPortPair =
-                source.find("source_grpc_port");
-            if (!grpcPortPair.second)
+            auto optGrpcPort = source.get("source_grpc_port");
+            if (!optGrpcPort)
             {
                 // add source without grpc port
                 // used in read-only mode to detect when new ledgers have
                 // been validated. Used for publishing
                 if (app_.config().reportingReadOnly())
-                    loadBalancer_.add(ipPair.first, wsPortPair.first);
+                    loadBalancer_.add(*optIp, *optWsPort);
                 continue;
             }
 
-            loadBalancer_.add(
-                ipPair.first, wsPortPair.first, grpcPortPair.first);
+            loadBalancer_.add(*optIp, *optWsPort, *optGrpcPort);
         }
 
         // this is true iff --reportingReadOnly was passed via command line
@@ -887,37 +889,65 @@ ReportingETL::ReportingETL(Application& app, Stoppable& parent)
         // file. Command line takes precedence
         if (!readOnly_)
         {
-            std::pair<std::string, bool> ro = section.find("read_only");
-            if (ro.second)
+            auto const optRO = section.get("read_only");
+            if (optRO)
             {
-                readOnly_ = (ro.first == "true" || ro.first == "1");
+                readOnly_ = (*optRO == "true" || *optRO == "1");
                 app_.config().setReportingReadOnly(readOnly_);
             }
         }
 
+        // lambda throws a useful message if string to integer conversion fails
+        auto asciiToIntThrows =
+            [](auto& dest, std::string const& src, char const* onError) {
+                char const* const srcEnd = src.data() + src.size();
+                auto [ptr, err] = std::from_chars(src.data(), srcEnd, dest);
+
+                if (err == std::errc())
+                    // skip whitespace at end of string
+                    while (ptr != srcEnd &&
+                           std::isspace(static_cast<unsigned char>(*ptr)))
+                        ++ptr;
+
+                // throw if
+                //  o conversion error or
+                //  o entire string is not consumed
+                if (err != std::errc() || ptr != srcEnd)
+                    Throw<std::runtime_error>(onError + src);
+            };
+
         // handle command line arguments
         if (app_.config().START_UP == Config::StartUpType::FRESH && !readOnly_)
         {
-            startSequence_ = std::stol(app_.config().START_LEDGER);
+            asciiToIntThrows(
+                *startSequence_,
+                app_.config().START_LEDGER,
+                "Expected integral START_LEDGER command line argument. Got: ");
         }
         // if not passed via command line, check config for start sequence
         if (!startSequence_)
         {
-            std::pair<std::string, bool> start = section.find("start_sequence");
-            if (start.second)
-            {
-                startSequence_ = std::stoi(start.first);
-            }
+            auto const optStartSeq = section.get("start_sequence");
+            if (optStartSeq)
+                asciiToIntThrows(
+                    *startSequence_,
+                    *optStartSeq,
+                    "Expected integral start_sequence config entry. Got: ");
         }
 
-        std::pair<std::string, bool> flushInterval =
-            section.find("flush_interval");
-        if (flushInterval.second)
-            flushInterval_ = std::stoi(flushInterval.first);
+        auto const optFlushInterval = section.get("flush_interval");
+        if (optFlushInterval)
+            asciiToIntThrows(
+                flushInterval_,
+                *optFlushInterval,
+                "Expected integral flush_interval config entry.  Got: ");
 
-        std::pair<std::string, bool> numMarkers = section.find("num_markers");
-        if (numMarkers.second)
-            numMarkers_ = std::stoi(numMarkers.first);
+        auto const optNumMarkers = section.get("num_markers");
+        if (optNumMarkers)
+            asciiToIntThrows(
+                numMarkers_,
+                *optNumMarkers,
+                "Expected integral num_markers config entry.  Got: ");
     }
 }
 

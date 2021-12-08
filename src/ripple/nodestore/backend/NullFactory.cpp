@@ -60,12 +60,6 @@ public:
         return notFound;
     }
 
-    bool
-    canFetchBatch() override
-    {
-        return false;
-    }
-
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256 const*> const& hashes) override
     {
@@ -100,11 +94,6 @@ public:
 
     void
     setDeletePath() override
-    {
-    }
-
-    void
-    verify() override
     {
     }
 

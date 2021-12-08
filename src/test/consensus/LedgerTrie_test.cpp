@@ -362,8 +362,8 @@ class LedgerTrie_test : public beast::unit_test::suite
         // Empty
         {
             LedgerTrie<Ledger> t;
-            BEAST_EXPECT(t.getPreferred(Seq{0}) == boost::none);
-            BEAST_EXPECT(t.getPreferred(Seq{2}) == boost::none);
+            BEAST_EXPECT(t.getPreferred(Seq{0}) == std::nullopt);
+            BEAST_EXPECT(t.getPreferred(Seq{2}) == std::nullopt);
         }
         // Genesis support is NOT empty
         {
@@ -373,7 +373,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(genesis);
             BEAST_EXPECT(t.getPreferred(Seq{0})->id == genesis.id());
             BEAST_EXPECT(t.remove(genesis));
-            BEAST_EXPECT(t.getPreferred(Seq{0}) == boost::none);
+            BEAST_EXPECT(t.getPreferred(Seq{0}) == std::nullopt);
             BEAST_EXPECT(!t.remove(genesis));
         }
         // Single node no children

@@ -108,7 +108,7 @@ public:
 
         for (auto const& i : d)
         {
-            SociConfig sc(c, i.first);
+            DBConfig sc(c, i.first);
             BEAST_EXPECT(
                 boost::ends_with(sc.connectionString(), i.first + i.second));
         }
@@ -119,7 +119,7 @@ public:
         testcase("open");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        SociConfig sc(c, "SociTestDB");
+        DBConfig sc(c, "SociTestDB");
         std::vector<std::string> const stringData(
             {"String1", "String2", "String3"});
         std::vector<int> const intData({1, 2, 3});
@@ -180,7 +180,7 @@ public:
         testcase("select");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        SociConfig sc(c, "SociTestDB");
+        DBConfig sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
             {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
@@ -223,6 +223,8 @@ public:
             }
             try
             {
+                // SOCI requires boost::optional (not std::optional) as
+                // parameters.
                 boost::optional<std::int32_t> ig;
                 boost::optional<std::uint32_t> uig;
                 boost::optional<std::int64_t> big;
@@ -310,7 +312,7 @@ public:
         testcase("deleteWithSubselect");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        SociConfig sc(c, "SociTestDB");
+        DBConfig sc(c, "SociTestDB");
         {
             soci::session s;
             sc.open(s);

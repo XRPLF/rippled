@@ -23,17 +23,20 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
-#include <boost/asio.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
-#include <chrono>
-#include <stdexcept>
+
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
+
+#include <boost/asio.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+#include <boost/utility/in_place_factory.hpp>
+
+#include <chrono>
+#include <optional>
+#include <stdexcept>
 #include <thread>
 
 namespace ripple {
@@ -49,19 +52,19 @@ public:
     {
     private:
         boost::asio::io_service io_service_;
-        boost::optional<boost::asio::io_service::work> work_;
+        std::optional<boost::asio::io_service::work> work_;
         std::thread thread_;
 
     public:
         TestThread()
-            : work_(boost::in_place(std::ref(io_service_)))
+            : work_(std::in_place, std::ref(io_service_))
             , thread_([&]() { this->io_service_.run(); })
         {
         }
 
         ~TestThread()
         {
-            work_ = boost::none;
+            work_.reset();
             thread_.join();
         }
 

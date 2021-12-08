@@ -324,8 +324,7 @@ Pg::clear()
 
 //-----------------------------------------------------------------------------
 
-PgPool::PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j)
-    : Stoppable("PgPool", parent), j_(j)
+PgPool::PgPool(Section const& pgConfig, beast::Journal j) : j_(j)
 {
     // Make sure that boost::asio initializes the SSL library.
     {
@@ -348,7 +347,7 @@ PgPool::PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j)
 
     // The connection object must be freed using the libpq API PQfinish() call.
     pg_connection_type conn(
-        PQconnectdb(get<std::string>(pgConfig, "conninfo").c_str()),
+        PQconnectdb(get(pgConfig, "conninfo").c_str()),
         [](PGconn* conn) { PQfinish(conn); });
     if (!conn)
         Throw<std::runtime_error>("Can't create DB connection.");
@@ -501,13 +500,12 @@ PgPool::setup()
 }
 
 void
-PgPool::onStop()
+PgPool::stop()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     stop_ = true;
     cond_.notify_all();
     idle_.clear();
-    stopped();
     JLOG(j_.info()) << "stopped";
 }
 
@@ -595,9 +593,9 @@ PgPool::checkin(std::unique_ptr<Pg>& pg)
 //-----------------------------------------------------------------------------
 
 std::shared_ptr<PgPool>
-make_PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j)
+make_PgPool(Section const& pgConfig, beast::Journal j)
 {
-    auto ret = std::make_shared<PgPool>(pgConfig, parent, j);
+    auto ret = std::make_shared<PgPool>(pgConfig, j);
     ret->setup();
     return ret;
 }

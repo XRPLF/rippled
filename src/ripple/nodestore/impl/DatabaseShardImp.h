@@ -42,16 +42,19 @@ public:
 
     DatabaseShardImp(
         Application& app,
-        Stoppable& parent,
-        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
         beast::Journal j);
 
+    ~DatabaseShardImp()
+    {
+        stop();
+    }
+
     [[nodiscard]] bool
     init() override;
 
-    [[nodiscard]] boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) override;
 
     bool
@@ -73,43 +76,11 @@ public:
     void
     setStored(std::shared_ptr<Ledger const> const& ledger) override;
 
-    std::string
-    getCompleteShards() override;
+    std::unique_ptr<ShardInfo>
+    getShardInfo() const override;
 
-    std::uint32_t
-    ledgersPerShard() const override
-    {
-        return ledgersPerShard_;
-    }
-
-    std::uint32_t
-    earliestShardIndex() const override
-    {
-        return earliestShardIndex_;
-    }
-
-    std::uint32_t
-    seqToShardIndex(std::uint32_t ledgerSeq) const override
-    {
-        assert(ledgerSeq >= earliestLedgerSeq());
-        return NodeStore::seqToShardIndex(ledgerSeq, ledgersPerShard_);
-    }
-
-    std::uint32_t
-    firstLedgerSeq(std::uint32_t shardIndex) const override
-    {
-        assert(shardIndex >= earliestShardIndex_);
-        if (shardIndex <= earliestShardIndex_)
-            return earliestLedgerSeq();
-        return 1 + (shardIndex * ledgersPerShard_);
-    }
-
-    std::uint32_t
-    lastLedgerSeq(std::uint32_t shardIndex) const override
-    {
-        assert(shardIndex >= earliestShardIndex_);
-        return (shardIndex + 1) * ledgersPerShard_;
-    }
+    size_t
+    getNumTasks() const override;
 
     boost::filesystem::path const&
     getRootDir() const override
@@ -124,17 +95,17 @@ public:
     }
 
     void
-    onStop() override;
-
-    void
-    onChildrenStopped() override;
+    stop() override;
 
     /** Import the application local node store
 
         @param source The application node store.
     */
     void
-    import(Database& source) override;
+    importDatabase(Database& source) override;
+
+    void
+    doImportDatabase();
 
     std::int32_t
     getWriteLoad() const override;
@@ -161,14 +132,104 @@ public:
     void
     sweep() override;
 
+    Json::Value
+    getDatabaseImportStatus() const override;
+
+    Json::Value
+    startNodeToShard() override;
+
+    Json::Value
+    stopNodeToShard() override;
+
+    std::optional<std::uint32_t>
+    getDatabaseImportSequence() const override;
+
+    bool
+    callForLedgerSQLByLedgerSeq(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session)> const& callback) override;
+
+    bool
+    callForLedgerSQLByShardIndex(
+        std::uint32_t const shardIndex,
+        std::function<bool(soci::session& session)> const& callback) override;
+
+    bool
+    callForTransactionSQLByLedgerSeq(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session)> const& callback) override;
+
+    bool
+    callForTransactionSQLByShardIndex(
+        std::uint32_t const shardIndex,
+        std::function<bool(soci::session& session)> const& callback) override;
+
+    bool
+    iterateLedgerSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) override;
+
+    bool
+    iterateTransactionSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) override;
+
+    bool
+    iterateLedgerSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) override;
+
+    bool
+    iterateTransactionSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback) override;
+
 private:
     enum class PathDesignation : uint8_t {
         none,       // No path specified
         historical  // Needs a historical path
     };
 
+    struct DatabaseImportStatus
+    {
+        DatabaseImportStatus(
+            std::uint32_t const earliestIndex,
+            std::uint32_t const latestIndex,
+            std::uint32_t const currentIndex)
+            : earliestIndex(earliestIndex)
+            , latestIndex(latestIndex)
+            , currentIndex(currentIndex)
+        {
+        }
+
+        // Index of the first shard to be imported
+        std::uint32_t earliestIndex{0};
+
+        // Index of the last shard to be imported
+        std::uint32_t latestIndex{0};
+
+        // Index of the shard currently being imported
+        std::uint32_t currentIndex{0};
+
+        // First ledger sequence of the current shard
+        std::uint32_t firstSeq{0};
+
+        // Last ledger sequence of the current shard
+        std::uint32_t lastSeq{0};
+
+        // The shard currently being imported
+        std::weak_ptr<Shard> currentShard;
+    };
+
     Application& app_;
-    Stoppable& parent_;
     mutable std::mutex mutex_;
     bool init_{false};
 
@@ -176,12 +237,12 @@ private:
     std::unique_ptr<nudb::context> ctx_;
 
     // Queue of background tasks to be performed
-    std::unique_ptr<TaskQueue> taskQueue_;
+    TaskQueue taskQueue_;
 
     // Shards held by this server
-    std::unordered_map<std::uint32_t, std::shared_ptr<Shard>> shards_;
+    std::map<std::uint32_t, std::shared_ptr<Shard>> shards_;
 
-    // Shard indexes being imported
+    // Shard indexes being imported from the shard archive handler
     std::set<std::uint32_t> preparedIndexes_;
 
     // Shard index being acquired from the peer network
@@ -192,9 +253,6 @@ private:
 
     // If new shards can be stored
     bool canAdd_{true};
-
-    // Complete shard indexes
-    std::string status_;
 
     // The name associated with the backend used with the shard store
     std::string backendName_;
@@ -208,14 +266,6 @@ private:
     // Storage space utilized by the shard store (in bytes)
     std::uint64_t fileSz_{0};
 
-    // Each shard stores 16384 ledgers. The earliest shard may store
-    // less if the earliest ledger sequence truncates its beginning.
-    // The value should only be altered for unit tests.
-    std::uint32_t ledgersPerShard_ = ledgersPerShardDefault;
-
-    // The earliest shard index
-    std::uint32_t earliestShardIndex_;
-
     // Average storage space required by a shard (in bytes)
     std::uint64_t avgShardFileSz_;
 
@@ -223,17 +273,26 @@ private:
     std::uint32_t const openFinalLimit_;
 
     // File name used to mark shards being imported from node store
-    static constexpr auto importMarker_ = "import";
+    static constexpr auto databaseImportMarker_ = "database_import";
 
     // latestShardIndex_ and secondLatestShardIndex hold the indexes
     // of the shards most recently confirmed by the network. These
     // values are not updated in real time and are modified only
     // when adding shards to the database, in order to determine where
     // pending shards will be stored on the filesystem. A value of
-    // boost::none indicates that the corresponding shard is not held
+    // std::nullopt indicates that the corresponding shard is not held
     // by the database.
-    boost::optional<std::uint32_t> latestShardIndex_;
-    boost::optional<std::uint32_t> secondLatestShardIndex_;
+    std::optional<std::uint32_t> latestShardIndex_;
+    std::optional<std::uint32_t> secondLatestShardIndex_;
+
+    // Struct used for node store import progress
+    std::unique_ptr<DatabaseImportStatus> databaseImportStatus_;
+
+    // Thread for running node store import
+    std::thread databaseImporter_;
+
+    // Indicates whether the import should stop
+    std::atomic_bool haltDatabaseImport_{false};
 
     // Initialize settings from the configuration file
     // Lock must be held
@@ -249,12 +308,12 @@ private:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        Throw<std::runtime_error>("Shard store import not supported");
+        Throw<std::runtime_error>("Import from shard store not supported");
     }
 
     // Randomly select a shard index not stored
     // Lock must be held
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     findAcquireIndex(
         std::uint32_t validLedgerSeq,
         std::lock_guard<std::mutex> const&);
@@ -265,18 +324,13 @@ private:
     finalizeShard(
         std::shared_ptr<Shard>& shard,
         bool writeSQLite,
-        boost::optional<uint256> const& expectedHash);
+        std::optional<uint256> const& expectedHash);
 
-    // Set storage and file descriptor usage stats
+    // Update storage and file descriptor usage stats
     void
-    setFileStats();
+    updateFileStats();
 
-    // Update status string
-    // Lock must be held
-    void
-    updateStatus(std::lock_guard<std::mutex> const&);
-
-    // Returns true if the filesystem has enough storage
+    // Returns true if the file system has enough storage
     // available to hold the specified number of shards.
     // The value of pathDesignation determines whether
     // the shard(s) in question are historical and thus
@@ -312,11 +366,11 @@ private:
 
     // Checks whether the shard can be stored. If
     // the new shard can't be stored, returns
-    // boost::none. Otherwise returns an enum
+    // std::nullopt. Otherwise returns an enum
     // indicating whether the new shard should be
     // placed in a separate directory for historical
     // shards.
-    boost::optional<PathDesignation>
+    std::optional<PathDesignation>
     prepareForNewShard(
         std::uint32_t shardIndex,
         std::uint32_t numHistoricalShards,
@@ -325,8 +379,47 @@ private:
     boost::filesystem::path
     chooseHistoricalPath(std::lock_guard<std::mutex> const&) const;
 
+    /**
+     * @brief iterateShardsForward Visits all shards starting from given
+     *        in ascending order and calls given callback function to each
+     *        of them passing shard as parameter.
+     * @param minShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param visit Callback function to call.
+     * @return True if each callback function returned true, false otherwise.
+     */
     bool
-    checkHistoricalPaths() const;
+    iterateShardsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<bool(Shard& shard)> const& visit);
+
+    /**
+     * @brief iterateShardsBack Visits all shards starting from given
+     *        in descending order and calls given callback function to each
+     *        of them passing shard as parameter.
+     * @param maxShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param visit Callback function to call.
+     * @return True if each callback function returned true, false otherwise.
+     */
+    bool
+    iterateShardsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<bool(Shard& shard)> const& visit);
+
+    bool
+    checkHistoricalPaths(std::lock_guard<std::mutex> const&) const;
+
+    std::unique_ptr<ShardInfo>
+    getShardInfo(std::lock_guard<std::mutex> const&) const;
+
+    // Update peers with the status of every complete and incomplete shard
+    void
+    updatePeers(std::lock_guard<std::mutex> const& lock) const;
+
+    // Start the node store import process
+    void
+    startDatabaseImportThread(std::lock_guard<std::mutex> const&);
 };
 
 }  // namespace NodeStore

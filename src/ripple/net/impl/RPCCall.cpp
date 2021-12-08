@@ -42,7 +42,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/string.hpp>
-#include <boost/optional.hpp>
 #include <boost/regex.hpp>
 
 #include <array>
@@ -316,8 +315,8 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows ApiMaximumSupportedVersion
-                if (RPC::ApiMaximumSupportedVersion == 1)
+                // The command line always follows apiMaximumSupportedVersion
+                if (RPC::apiMaximumSupportedVersion == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -389,8 +388,8 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows ApiMaximumSupportedVersion
-                if (RPC::ApiMaximumSupportedVersion == 1)
+                // The command line always follows apiMaximumSupportedVersion
+                if (RPC::apiMaximumSupportedVersion == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -937,6 +936,15 @@ private:
         return jvRequest;
     }
 
+    Json::Value
+    parseNodeToShard(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest;
+        jvRequest[jss::action] = jvParams[0u].asString();
+
+        return jvRequest;
+    }
+
     // peer_reservations_add <public_key> [<name>]
     Json::Value
     parsePeerReservationsAdd(Json::Value const& jvParams)
@@ -1258,6 +1266,7 @@ public:
             {"log_level", &RPCParser::parseLogLevel, 0, 2},
             {"logrotate", &RPCParser::parseAsIs, 0, 0},
             {"manifest", &RPCParser::parseManifest, 1, 1},
+            {"node_to_shard", &RPCParser::parseNodeToShard, 1, 1},
             {"owner_info", &RPCParser::parseAccountItems, 1, 3},
             {"peers", &RPCParser::parseAsIs, 0, 0},
             {"ping", &RPCParser::parseAsIs, 0, 0},
@@ -1402,7 +1411,8 @@ struct RPCCallImp
 
             // Parse reply
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
-            if (strData.find("Unable to parse request") == 0)
+            if (strData.find("Unable to parse request") == 0 ||
+                strData.find(jss::invalid_API_version.c_str()) == 0)
                 Throw<RequestNotParseable>(strData);
             Json::Reader reader;
             Json::Value jvReply;
@@ -1473,7 +1483,7 @@ rpcCmdLineToJson(
         if (jr.isObject() && !jr.isMember(jss::error) &&
             !jr.isMember(jss::api_version))
         {
-            jr[jss::api_version] = RPC::ApiMaximumSupportedVersion;
+            jr[jss::api_version] = RPC::apiMaximumSupportedVersion;
         }
     };
 

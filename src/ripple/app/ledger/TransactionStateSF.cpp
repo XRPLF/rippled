@@ -38,7 +38,7 @@ TransactionStateSF::gotNode(
         ledgerSeq);
 }
 
-boost::optional<Blob>
+std::optional<Blob>
 TransactionStateSF::getNode(SHAMapHash const& nodeHash) const
 {
     return fp_.getFetchPack(nodeHash.as_uint256());

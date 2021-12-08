@@ -36,7 +36,7 @@ env:
     - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
     - PARALLEL_TESTS=true
     # this is NOT used by linux container based builds (which already have boost installed)
-    - BOOST_URL='https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2'
+    - BOOST_URL='https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz'
     # Alternate dowload location
     - BOOST_URL2='https://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
     # Travis downloader doesn't seem to have updated certs. Using this option
@@ -122,6 +122,25 @@ matrix:
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dcoverage=ON"
         - TARGET=coverage_report
+        - SKIP_TESTS=true
+    # test-free builds
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: gcc-8
+      name: no-tests-unity, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dtests=OFF"
+        - SKIP_TESTS=true
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: clang-8
+      name: no-tests-non-unity, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dtests=OFF -Dunity=OFF"
         - SKIP_TESTS=true
     # nounity
     - <<: *linux
@@ -439,4 +458,3 @@ cache:
 
 notifications:
   email: false
-

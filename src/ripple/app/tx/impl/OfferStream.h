@@ -76,7 +76,7 @@ protected:
     NetClock::time_point const expire_;
     BookTip tip_;
     TOffer<TIn, TOut> offer_;
-    boost::optional<TOut> ownerFunds_;
+    std::optional<TOut> ownerFunds_;
     StepCounter& counter_;
 
     void
@@ -84,6 +84,10 @@ protected:
 
     virtual void
     permRmOffer(uint256 const& offerIndex) = 0;
+
+    template <class TTakerPays, class TTakerGets>
+    bool
+    shouldRmSmallIncreasedQOffer() const;
 
 public:
     TOfferStreamBase(

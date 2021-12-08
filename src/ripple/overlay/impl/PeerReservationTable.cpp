@@ -19,8 +19,9 @@
 
 #include <ripple/overlay/PeerReservationTable.h>
 
+#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/jss.h>
@@ -72,43 +73,17 @@ PeerReservationTable::load(DatabaseCon& connection)
     std::lock_guard lock(mutex_);
 
     connection_ = &connection;
-    auto db = connection_->checkoutDb();
-
-    boost::optional<std::string> valPubKey, valDesc;
-    // We should really abstract the table and column names into constants,
-    // but no one else does. Because it is too tedious? It would be easy if we
-    // had a jOOQ for C++.
-    soci::statement st =
-        (db->prepare << "SELECT PublicKey, Description FROM PeerReservations;",
-         soci::into(valPubKey),
-         soci::into(valDesc));
-    st.execute();
-    while (st.fetch())
-    {
-        if (!valPubKey || !valDesc)
-        {
-            // This represents a `NULL` in a `NOT NULL` column. It should be
-            // unreachable.
-            continue;
-        }
-        auto const optNodeId =
-            parseBase58<PublicKey>(TokenType::NodePublic, *valPubKey);
-        if (!optNodeId)
-        {
-            JLOG(journal_.warn()) << "load: not a public key: " << valPubKey;
-            continue;
-        }
-        table_.insert(PeerReservation{*optNodeId, *valDesc});
-    }
+    auto db = connection.checkoutDb();
+    auto table = getPeerReservationTable(*db, journal_);
+    table_.insert(table.begin(), table.end());
 
     return true;
 }
 
-auto
+std::optional<PeerReservation>
 PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
-    -> boost::optional<PeerReservation>
 {
-    boost::optional<PeerReservation> previous;
+    std::optional<PeerReservation> previous;
 
     std::lock_guard lock(mutex_);
 
@@ -134,21 +109,15 @@ PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
     table_.insert(hint, reservation);
 
     auto db = connection_->checkoutDb();
-    *db << "INSERT INTO PeerReservations (PublicKey, Description) "
-           "VALUES (:nodeId, :desc) "
-           "ON CONFLICT (PublicKey) DO UPDATE SET "
-           "Description=excluded.Description",
-        soci::use(toBase58(TokenType::NodePublic, reservation.nodeId)),
-        soci::use(reservation.description);
+    insertPeerReservation(*db, reservation.nodeId, reservation.description);
 
     return previous;
 }
 
-auto
+std::optional<PeerReservation>
 PeerReservationTable::erase(PublicKey const& nodeId)
-    -> boost::optional<PeerReservation>
 {
-    boost::optional<PeerReservation> previous;
+    std::optional<PeerReservation> previous;
 
     std::lock_guard lock(mutex_);
 
@@ -158,8 +127,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
         previous = *it;
         table_.erase(it);
         auto db = connection_->checkoutDb();
-        *db << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",
-            soci::use(toBase58(TokenType::NodePublic, nodeId));
+        deletePeerReservation(*db, nodeId);
     }
 
     return previous;

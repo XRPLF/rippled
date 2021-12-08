@@ -74,7 +74,7 @@ public:
     void
     operator()(Env&, JTx& jt) const
     {
-        jt.requires.emplace_back(cond_);
+        jt.require.emplace_back(cond_);
     }
 };
 

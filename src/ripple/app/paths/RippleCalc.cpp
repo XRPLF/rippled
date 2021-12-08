@@ -19,7 +19,6 @@
 
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/impl/FlowDebugInfo.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
@@ -76,21 +75,21 @@ RippleCalc::rippleCalculate(
         bool const partialPayment =
             !pInputs ? false : pInputs->partialPaymentAllowed;
 
-        auto const limitQuality = [&]() -> boost::optional<Quality> {
+        auto const limitQuality = [&]() -> std::optional<Quality> {
             if (pInputs && pInputs->limitQuality &&
                 saMaxAmountReq > beast::zero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
-            return boost::none;
+            return std::nullopt;
         }();
 
-        auto const sendMax = [&]() -> boost::optional<STAmount> {
+        auto const sendMax = [&]() -> std::optional<STAmount> {
             if (saMaxAmountReq >= beast::zero ||
                 saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;
             }
-            return boost::none;
+            return std::nullopt;
         }();
 
         bool const ownerPaysTransferFee =

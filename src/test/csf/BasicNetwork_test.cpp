@@ -49,7 +49,7 @@ public:
             auto t = scheduler.in(1s, [&] { set.insert(0); });
             if (id == 0)
             {
-                for (auto const& link : net.links(this))
+                for (auto const link : net.links(this))
                     net.send(this, link.target, [&, to = link.target] {
                         to->receive(net, this, 1);
                     });
@@ -68,7 +68,7 @@ public:
             ++m;
             if (m < 5)
             {
-                for (auto const& link : net.links(this))
+                for (auto const link : net.links(this))
                     net.send(this, link.target, [&, mm = m, to = link.target] {
                         to->receive(net, this, mm);
                     });

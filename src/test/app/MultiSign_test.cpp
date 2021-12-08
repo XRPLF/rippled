@@ -1026,11 +1026,7 @@ public:
         // Now multisign a ttOFFER_CANCEL canceling the offer we just created.
         {
             aliceSeq = env.seq(alice);
-            Json::Value cancelOffer;
-            cancelOffer[jss::Account] = alice.human();
-            cancelOffer[jss::OfferSequence] = offerSeq;
-            cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            env(cancelOffer,
+            env(offer_cancel(alice, offerSeq),
                 seq(aliceSeq),
                 msig(becky, bogie),
                 fee(3 * baseFee));

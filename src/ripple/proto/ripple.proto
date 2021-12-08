@@ -6,29 +6,33 @@ package protocol;
 // conflict. Even if you're sure, it's probably best to assign a new type.
 enum MessageType
 {
-    mtMANIFESTS             = 2;
-    mtPING                  = 3;
-    mtCLUSTER               = 5;
-    mtENDPOINTS             = 15;
-    mtTRANSACTION           = 30;
-    mtGET_LEDGER            = 31;
-    mtLEDGER_DATA           = 32;
-    mtPROPOSE_LEDGER        = 33;
-    mtSTATUS_CHANGE         = 34;
-    mtHAVE_SET              = 35;
-    mtVALIDATION            = 41;
-    mtGET_OBJECTS           = 42;
-    mtGET_SHARD_INFO        = 50;
-    mtSHARD_INFO            = 51;
-    mtGET_PEER_SHARD_INFO   = 52;
-    mtPEER_SHARD_INFO       = 53;
-    mtVALIDATORLIST         = 54;
-    mtSQUELCH               = 55;
-    mtVALIDATORLISTCOLLECTION = 56;
-    mtPROOF_PATH_REQ        = 57;
-    mtPROOF_PATH_RESPONSE   = 58;
-    mtREPLAY_DELTA_REQ      = 59;
-    mtREPLAY_DELTA_RESPONSE = 60;
+    mtMANIFESTS                 = 2;
+    mtPING                      = 3;
+    mtCLUSTER                   = 5;
+    mtENDPOINTS                 = 15;
+    mtTRANSACTION               = 30;
+    mtGET_LEDGER                = 31;
+    mtLEDGER_DATA               = 32;
+    mtPROPOSE_LEDGER            = 33;
+    mtSTATUS_CHANGE             = 34;
+    mtHAVE_SET                  = 35;
+    mtVALIDATION                = 41;
+    mtGET_OBJECTS               = 42;
+    mtGET_SHARD_INFO            = 50;
+    mtSHARD_INFO                = 51;
+    mtGET_PEER_SHARD_INFO       = 52;
+    mtPEER_SHARD_INFO           = 53;
+    mtVALIDATORLIST             = 54;
+    mtSQUELCH                   = 55;
+    mtVALIDATORLISTCOLLECTION   = 56;
+    mtPROOF_PATH_REQ            = 57;
+    mtPROOF_PATH_RESPONSE       = 58;
+    mtREPLAY_DELTA_REQ          = 59;
+    mtREPLAY_DELTA_RESPONSE     = 60;
+    mtGET_PEER_SHARD_INFO_V2    = 61;
+    mtPEER_SHARD_INFO_V2        = 62;
+    mtHAVE_TRANSACTIONS         = 63;
+    mtTRANSACTIONS              = 64;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -79,46 +83,75 @@ message TMCluster
     repeated TMLoadSource    loadSources     = 2;
 }
 
-// Request info on shards held
-message TMGetShardInfo
-{
-    required uint32 hops            = 1 [deprecated=true]; // number of hops to travel
-    optional bool lastLink          = 2 [deprecated=true]; // true if last link in the peer chain
-    repeated uint32 peerchain       = 3 [deprecated=true]; // IDs used to route messages
-}
-
-// Info about shards held
-message TMShardInfo
-{
-    required string shardIndexes    = 1 [deprecated=true]; // rangeSet of shard indexes
-    optional bytes nodePubKey       = 2 [deprecated=true]; // The node's public key
-    optional string endpoint        = 3 [deprecated=true]; // ipv6 or ipv4 address
-    optional bool lastLink          = 4 [deprecated=true]; // true if last link in the peer chain
-    repeated uint32 peerchain       = 5 [deprecated=true]; // IDs used to route messages
-}
-
 // Node public key
 message TMLink
 {
-    required bytes nodePubKey       = 1; // node public key
+    required bytes nodePubKey       = 1 [deprecated=true]; // node public key
 }
 
 // Request info on shards held
 message TMGetPeerShardInfo
 {
-    required uint32 hops            = 1; // number of hops to travel
-    optional bool lastLink          = 2; // true if last link in the peer chain
-    repeated TMLink peerChain       = 3; // public keys used to route messages
+    required uint32 hops            = 1 [deprecated=true]; // number of hops to travel
+    optional bool lastLink          = 2 [deprecated=true]; // true if last link in the peer chain
+    repeated TMLink peerChain       = 3 [deprecated=true]; // public keys used to route messages
 }
 
 // Info about shards held
 message TMPeerShardInfo
 {
-    required string shardIndexes    = 1; // rangeSet of shard indexes
-    optional bytes nodePubKey       = 2; // node public key
-    optional string endpoint        = 3; // ipv6 or ipv4 address
-    optional bool lastLink          = 4; // true if last link in the peer chain
-    repeated TMLink peerChain       = 5; // public keys used to route messages
+    required string shardIndexes    = 1 [deprecated=true]; // rangeSet of shard indexes
+    optional bytes nodePubKey       = 2 [deprecated=true]; // node public key
+    optional string endpoint        = 3 [deprecated=true]; // ipv6 or ipv4 address
+    optional bool lastLink          = 4 [deprecated=true]; // true if last link in the peer chain
+    repeated TMLink peerChain       = 5 [deprecated=true]; // public keys used to route messages
+}
+
+// Peer public key
+message TMPublicKey
+{
+    required bytes publicKey = 1;
+}
+
+// Request peer shard information
+message TMGetPeerShardInfoV2
+{
+    // Peer public keys used to route messages
+    repeated TMPublicKey peerChain = 1;
+
+    // Remaining times to relay
+    required uint32 relays = 2;
+}
+
+// Peer shard information
+message TMPeerShardInfoV2
+{
+    message TMIncomplete
+    {
+        required uint32 shardIndex = 1;
+        required uint32 state = 2;
+
+        // State completion percent, 1 - 100
+        optional uint32 progress = 3;
+    }
+
+    // Message creation time
+    required uint32 timestamp = 1;
+
+    // Incomplete shards being acquired or verified
+    repeated TMIncomplete incomplete = 2;
+
+    // Verified immutable shards (RangeSet)
+    optional string finalized = 3;
+
+    // Public key of node that authored the shard info
+    required bytes publicKey = 4;
+
+    // Digital signature of node that authored the shard info
+    required bytes signature = 5;
+
+    // Peer public keys used to route messages
+    repeated TMPublicKey peerChain = 6;
 }
 
 // A transaction can have only one input and one output.
@@ -143,6 +176,11 @@ message TMTransaction
     required TransactionStatus status       = 2;
     optional uint64 receiveTimestamp        = 3;
     optional bool deferred                  = 4;    // not applied to open ledger
+}
+
+message TMTransactions
+{
+    repeated TMTransaction transactions = 1;
 }
 
 
@@ -285,6 +323,7 @@ message TMGetObjectByHash
         otSTATE_NODE        = 4;
         otCAS_OBJECT        = 5;
         otFETCH_PACK        = 6;
+        otTRANSACTIONS      = 7;
     }
 
     required ObjectType type            = 1;
@@ -404,5 +443,10 @@ message TMReplayDeltaResponse
     optional bytes ledgerHeader = 2;
     repeated bytes transaction = 3;
     optional TMReplyError error = 4;
+}
+
+message TMHaveTransactions
+{
+    repeated bytes hashes = 1;
 }
 

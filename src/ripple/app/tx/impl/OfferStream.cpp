@@ -19,6 +19,7 @@
 
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 
@@ -133,6 +134,73 @@ accountFundsHelper(
 }
 
 template <class TIn, class TOut>
+template <class TTakerPays, class TTakerGets>
+bool
+TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
+{
+    static_assert(
+        std::is_same_v<TTakerPays, IOUAmount> ||
+            std::is_same_v<TTakerPays, XRPAmount>,
+        "STAmount is not supported");
+
+    static_assert(
+        std::is_same_v<TTakerGets, IOUAmount> ||
+            std::is_same_v<TTakerGets, XRPAmount>,
+        "STAmount is not supported");
+
+    static_assert(
+        !std::is_same_v<TTakerPays, XRPAmount> ||
+            !std::is_same_v<TTakerGets, XRPAmount>,
+        "Cannot have XRP/XRP offers");
+
+    if (!view_.rules().enabled(fixRmSmallIncreasedQOffers))
+        return false;
+
+    // Consider removing the offer if:
+    //  o `TakerPays` is XRP (because of XRP drops granularity) or
+    //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
+    constexpr bool const inIsXRP = std::is_same_v<TTakerPays, XRPAmount>;
+    constexpr bool const outIsXRP = std::is_same_v<TTakerGets, XRPAmount>;
+
+    if constexpr (outIsXRP)
+    {
+        // If `TakerGets` is XRP, the worst this offer's quality can change is
+        // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
+        // remarkably good quality for any realistic asset, so these offers
+        // don't need this extra check.
+        return false;
+    }
+
+    TAmounts<TTakerPays, TTakerGets> const ofrAmts{
+        toAmount<TTakerPays>(offer_.amount().in),
+        toAmount<TTakerGets>(offer_.amount().out)};
+
+    if constexpr (!inIsXRP && !outIsXRP)
+    {
+        if (ofrAmts.in >= ofrAmts.out)
+            return false;
+    }
+
+    TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
+
+    auto const effectiveAmounts = [&] {
+        if (offer_.owner() != offer_.issueOut().account &&
+            ownerFunds < ofrAmts.out)
+        {
+            // adjust the amounts by owner funds
+            return offer_.quality().ceil_out(ofrAmts, ownerFunds);
+        }
+        return ofrAmts;
+    }();
+
+    if (effectiveAmounts.in > TTakerPays::minPositiveAmount())
+        return false;
+
+    Quality const effectiveQuality{effectiveAmounts};
+    return effectiveQuality < offer_.quality();
+}
+
+template <class TIn, class TOut>
 bool
 TOfferStreamBase<TIn, TOut>::step()
 {
@@ -144,7 +212,7 @@ TOfferStreamBase<TIn, TOut>::step()
 
     for (;;)
     {
-        ownerFunds_ = boost::none;
+        ownerFunds_ = std::nullopt;
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
         if (!tip_.step(j_))
@@ -222,6 +290,68 @@ TOfferStreamBase<TIn, TOut>::step()
                     << "Removing became unfunded offer " << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
+            // See comment at top of loop for how the offer is removed
+            continue;
+        }
+
+        bool const rmSmallIncreasedQOffer = [&] {
+            bool const inIsXRP = isXRP(offer_.issueIn());
+            bool const outIsXRP = isXRP(offer_.issueOut());
+            if (inIsXRP && !outIsXRP)
+            {
+                // Without the `if constexpr`, the
+                // `shouldRmSmallIncreasedQOffer` template will be instantiated
+                // even if it is never used. This can cause compiler errors in
+                // some cases, hence the `if constexpr` guard.
+                // Note that TIn can be XRPAmount or STAmount, and TOut can be
+                // IOUAmount or STAmount.
+                if constexpr (!(std::is_same_v<TIn, IOUAmount> ||
+                                std::is_same_v<TOut, XRPAmount>))
+                    return shouldRmSmallIncreasedQOffer<XRPAmount, IOUAmount>();
+            }
+            if (!inIsXRP && outIsXRP)
+            {
+                // See comment above for `if constexpr` rationale
+                if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
+                                std::is_same_v<TOut, IOUAmount>))
+                    return shouldRmSmallIncreasedQOffer<IOUAmount, XRPAmount>();
+            }
+            if (!inIsXRP && !outIsXRP)
+            {
+                // See comment above for `if constexpr` rationale
+                if constexpr (!(std::is_same_v<TIn, XRPAmount> ||
+                                std::is_same_v<TOut, XRPAmount>))
+                    return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();
+            }
+            assert(0);  // xrp/xrp offer!?! should never happen
+            return false;
+        }();
+
+        if (rmSmallIncreasedQOffer)
+        {
+            auto const original_funds = accountFundsHelper(
+                cancelView_,
+                offer_.owner(),
+                amount.out,
+                offer_.issueOut(),
+                fhZERO_IF_FROZEN,
+                j_);
+
+            if (original_funds == *ownerFunds_)
+            {
+                permRmOffer(entry->key());
+                JLOG(j_.trace())
+                    << "Removing tiny offer due to reduced quality "
+                    << entry->key();
+            }
+            else
+            {
+                JLOG(j_.trace()) << "Removing tiny offer that became tiny due "
+                                    "to reduced quality "
+                                 << entry->key();
+            }
+            offer_ = TOffer<TIn, TOut>{};
+            // See comment at top of loop for how the offer is removed
             continue;
         }
 

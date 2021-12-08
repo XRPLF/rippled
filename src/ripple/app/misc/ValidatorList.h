@@ -121,7 +121,7 @@ struct ValidatorBlobInfo
     std::string signature;
     // base-64 or hex-encoded manifest containing the publisher's master and
     // signing public keys
-    boost::optional<std::string> manifest;
+    std::optional<std::string> manifest;
 };
 
 /**
@@ -187,7 +187,7 @@ class ValidatorList
         std::string rawSignature;
         // base-64 or hex-encoded manifest containing the publisher's master and
         // signing public keys
-        boost::optional<std::string> rawManifest;
+        std::optional<std::string> rawManifest;
         uint256 hash;
     };
 
@@ -214,7 +214,7 @@ class ValidatorList
         date.
         */
         std::map<std::size_t, PublisherList> remaining;
-        boost::optional<std::size_t> maxSequence;
+        std::optional<std::size_t> maxSequence;
         // The hash of the full set if sent in a single message
         uint256 fullHash;
         std::string rawManifest;
@@ -231,7 +231,7 @@ class ValidatorList
     using shared_lock = std::shared_lock<decltype(mutex_)>;
 
     std::atomic<std::size_t> quorum_;
-    boost::optional<std::size_t> minimumQuorum_;
+    std::optional<std::size_t> minimumQuorum_;
 
     // Published lists stored by publisher master public key
     hash_map<PublicKey, PublisherListCollection> publisherLists_;
@@ -267,7 +267,7 @@ public:
         TimeKeeper& timeKeeper,
         std::string const& databasePath,
         beast::Journal j,
-        boost::optional<std::size_t> minimumQuorum = boost::none);
+        std::optional<std::size_t> minimumQuorum = std::nullopt);
     ~ValidatorList() = default;
 
     /** Describes the result of processing a Validator List (UNL),
@@ -295,7 +295,7 @@ public:
         // Tracks the dispositions of each processed list and how many times it
         // occurred
         std::map<ListDisposition, std::size_t> dispositions;
-        boost::optional<PublicKey> publisherKey;
+        std::optional<PublicKey> publisherKey;
         PublisherStatus status = PublisherStatus::unavailable;
         std::size_t sequence = 0;
     };
@@ -438,7 +438,7 @@ public:
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
         std::string siteUri,
-        boost::optional<uint256> const& hash = {});
+        std::optional<uint256> const& hash = {});
 
     /* Attempt to read previously stored list files. Expected to only be
        called when loading from URL fails.
@@ -520,26 +520,26 @@ public:
 
         @param identity Validation public key
 
-        @return `boost::none` if key is not trusted
+        @return `std::nullopt` if key is not trusted
 
         @par Thread Safety
 
         May be called concurrently
     */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     getTrustedKey(PublicKey const& identity) const;
 
     /** Returns listed master public if public key is included on any lists
 
         @param identity Validation public key
 
-        @return `boost::none` if key is not listed
+        @return `std::nullopt` if key is not listed
 
         @par Thread Safety
 
         May be called concurrently
     */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     getListedKey(PublicKey const& identity) const;
 
     /** Returns `true` if public key is a trusted publisher
@@ -620,10 +620,10 @@ public:
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
     */
-    boost::optional<Json::Value>
+    std::optional<Json::Value>
     getAvailable(
         boost::beast::string_view const& pubKey,
-        boost::optional<std::uint32_t> forceVersion = {});
+        std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
     std::size_t
@@ -632,13 +632,13 @@ public:
     /** Return the time when the validator list will expire
 
         @note This may be a time in the past if a published list has not
-        been updated since its validUntil. It will be boost::none if any
+        been updated since its validUntil. It will be std::nullopt if any
         configured published list has not been fetched.
 
         @par Thread Safety
         May be called concurrently
     */
-    boost::optional<TimeKeeper::time_point>
+    std::optional<TimeKeeper::time_point>
     expires() const;
 
     /** Return a JSON representation of the state of the validator list
@@ -712,25 +712,25 @@ private:
 
     @param identity Validation public key
 
-    @return `boost::none` if key is not trusted
+    @return `std::nullopt` if key is not trusted
 
     @par Thread Safety
 
     May be called concurrently
     */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     getTrustedKey(shared_lock const&, PublicKey const& identity) const;
 
     /** Return the time when the validator list will expire
 
     @note This may be a time in the past if a published list has not
-    been updated since its expiration. It will be boost::none if any
+    been updated since its expiration. It will be std::nullopt if any
     configured published list has not been fetched.
 
     @par Thread Safety
     May be called concurrently
     */
-    boost::optional<TimeKeeper::time_point>
+    std::optional<TimeKeeper::time_point>
     expires(shared_lock const&) const;
 
     /** Apply published list of public keys
@@ -758,12 +758,12 @@ private:
     PublisherListStats
     applyList(
         std::string const& globalManifest,
-        boost::optional<std::string> const& localManifest,
+        std::optional<std::string> const& localManifest,
         std::string const& blob,
         std::string const& signature,
         std::uint32_t version,
         std::string siteUri,
-        boost::optional<uint256> const& hash,
+        std::optional<uint256> const& hash,
         lock_guard const&);
 
     void
@@ -825,7 +825,7 @@ private:
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
-        boost::optional<std::uint32_t> forceVersion,
+        std::optional<std::uint32_t> forceVersion,
         beast::Journal j);
 
     template <class Hasher>

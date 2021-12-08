@@ -58,22 +58,22 @@ namespace ripple {
     expiration time, the XRP can only be returned to the sender.
 
     For more details on escrow, including examples, diagrams and more please
-    visit https://ripple.com/build/escrow/#escrow
+    visit https://xrpl.org/escrow.html
 
     For details on specific transactions, including fields and validation rules
     please see:
 
     `EscrowCreate`
     --------------
-        See: https://ripple.com/build/transactions/#escrowcreate
+        See: https://xrpl.org/escrowcreate.html
 
     `EscrowFinish`
     --------------
-        See: https://ripple.com/build/transactions/#escrowfinish
+        See: https://xrpl.org/escrowfinish.html
 
     `EscrowCancel`
     --------------
-        See: https://ripple.com/build/transactions/#escrowcancel
+        See: https://xrpl.org/escrowcancel.html
 */
 
 //------------------------------------------------------------------------------
@@ -231,8 +231,9 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    auto const slep = std::make_shared<SLE>(
-        keylet::escrow(account, ctx_.tx.getSeqProxy().value()));
+    Keylet const escrowKeylet =
+        keylet::escrow(account, ctx_.tx.getSeqProxy().value());
+    auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     (*slep)[sfAccount] = account;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
@@ -246,13 +247,8 @@ EscrowCreate::doApply()
 
     // Add escrow to sender's owner directory
     {
-        auto page = dirAdd(
-            ctx_.view(),
-            keylet::ownerDir(account),
-            slep->key(),
-            false,
-            describeOwnerDir(account),
-            ctx_.app.journal("View"));
+        auto page = ctx_.view().dirInsert(
+            keylet::ownerDir(account), escrowKeylet, describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -261,13 +257,8 @@ EscrowCreate::doApply()
     // If it's not a self-send, add escrow to recipient's owner directory.
     if (auto const dest = ctx_.tx[sfDestination]; dest != ctx_.tx[sfAccount])
     {
-        auto page = dirAdd(
-            ctx_.view(),
-            keylet::ownerDir(dest),
-            slep->key(),
-            false,
-            describeOwnerDir(dest),
-            ctx_.app.journal("View"));
+        auto page = ctx_.view().dirInsert(
+            keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfDestinationNode] = *page;

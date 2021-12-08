@@ -21,11 +21,15 @@
 #define RIPPLE_NODESTORE_SHARD_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/KeyCache.h>
+#include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
+#include <ripple/nodestore/impl/DeterministicShard.h>
 
 #include <boost/filesystem.hpp>
 #include <nudb/nudb.hpp>
@@ -36,7 +40,7 @@ namespace ripple {
 namespace NodeStore {
 
 using PCache = TaggedCache<uint256, NodeObject>;
-using NCache = KeyCache<uint256>;
+using NCache = KeyCache;
 class DatabaseShard;
 
 /* A range of historical ledgers backed by a node store.
@@ -50,17 +54,19 @@ class DatabaseShard;
 class Shard final
 {
 public:
-    enum class State {
-        acquire,     // Being acquired
-        complete,    // Backend contains all ledgers but is not yet final
-        finalizing,  // Being finalized
-        final        // Database verified, shard is immutable
-    };
+    /// Copy constructor (disallowed)
+    Shard(Shard const&) = delete;
 
-    static constexpr State acquire = State::acquire;
-    static constexpr State complete = State::complete;
-    static constexpr State finalizing = State::finalizing;
-    static constexpr State final = State::final;
+    /// Move constructor (disallowed)
+    Shard(Shard&&) = delete;
+
+    // Copy assignment (disallowed)
+    Shard&
+    operator=(Shard const&) = delete;
+
+    // Move assignment (disallowed)
+    Shard&
+    operator=(Shard&&) = delete;
 
     Shard(
         Application& app,
@@ -100,12 +106,12 @@ public:
     /** Notify shard to prepare for shutdown.
      */
     void
-    stop()
+    stop() noexcept
     {
         stop_ = true;
     }
 
-    [[nodiscard]] boost::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     prepare();
 
     [[nodiscard]] bool
@@ -138,17 +144,14 @@ public:
     [[nodiscard]] bool
     containsLedger(std::uint32_t ledgerSeq) const;
 
-    void
-    sweep();
-
     [[nodiscard]] std::uint32_t
-    index() const
+    index() const noexcept
     {
         return index_;
     }
 
     [[nodiscard]] boost::filesystem::path const&
-    getDir() const
+    getDir() const noexcept
     {
         return dir_;
     }
@@ -162,10 +165,19 @@ public:
     [[nodiscard]] std::pair<std::uint64_t, std::uint32_t>
     getFileInfo() const;
 
-    [[nodiscard]] State
-    getState() const
+    [[nodiscard]] ShardState
+    getState() const noexcept
     {
         return state_;
+    }
+
+    /** Returns a percent signifying how complete
+        the current state of the shard is.
+     */
+    [[nodiscard]] std::uint32_t
+    getPercentProgress() const noexcept
+    {
+        return calculatePercent(progress_, maxLedgers_);
     }
 
     [[nodiscard]] std::int32_t
@@ -176,7 +188,8 @@ public:
     [[nodiscard]] bool
     isLegacy() const;
 
-    /** Finalize shard by walking its ledgers and verifying each Merkle tree.
+    /** Finalize shard by walking its ledgers, verifying each Merkle tree and
+       creating a deterministic backend.
 
         @param writeSQLite If true, SQLite entries will be rewritten using
         verified backend data.
@@ -184,16 +197,47 @@ public:
         of the last ledger in the shard.
     */
     [[nodiscard]] bool
-    finalize(
-        bool const writeSQLite,
-        boost::optional<uint256> const& referenceHash);
+    finalize(bool writeSQLite, std::optional<uint256> const& referenceHash);
 
     /** Enables removal of the shard directory on destruction.
      */
     void
-    removeOnDestroy()
+    removeOnDestroy() noexcept
     {
         removeOnDestroy_ = true;
+    }
+
+    std::string
+    getStoredSeqs()
+    {
+        if (!acquireInfo_)
+            return "";
+
+        return to_string(acquireInfo_->storedSeqs);
+    }
+
+    /** Invoke a callback on the ledger SQLite db
+
+        @param callback Callback function to call.
+        @return Value returned by callback function.
+    */
+    template <typename... Args>
+    bool
+    callForLedgerSQL(std::function<bool(Args... args)> const& callback)
+    {
+        return callForSQL(callback, lgrSQLiteDB_->checkoutDb());
+    }
+
+    /** Invoke a callback on the transaction SQLite db
+
+        @param callback Callback function to call.
+        @return Value returned by callback function.
+    */
+    template <typename... Args>
+    bool
+    callForTransactionSQL(std::function<bool(Args... args)> const& callback)
+    {
+        return callForSQL(callback, txSQLiteDB_->checkoutDb());
     }
 
     // Current shard version
@@ -210,28 +254,29 @@ private:
     public:
         Count(Count const&) = delete;
         Count&
-        operator=(Count&&) = delete;
-        Count&
         operator=(Count const&) = delete;
+        Count&
+        operator=(Count&&) = delete;
 
-        Count(Count&& other) : counter_(other.counter_)
+        Count(Count&& other) noexcept : counter_(other.counter_)
         {
             other.counter_ = nullptr;
         }
 
-        Count(std::atomic<std::uint32_t>* counter) : counter_(counter)
+        explicit Count(std::atomic<std::uint32_t>* counter) noexcept
+            : counter_(counter)
         {
             if (counter_)
                 ++(*counter_);
         }
 
-        ~Count()
+        ~Count() noexcept
         {
             if (counter_)
                 --(*counter_);
         }
 
-        operator bool() const
+        explicit operator bool() const noexcept
         {
             return counter_ != nullptr;
         }
@@ -288,7 +333,7 @@ private:
     std::unique_ptr<DatabaseCon> txSQLiteDB_;
 
     // Tracking information used only when acquiring a shard from the network.
-    // If the shard is final, this member will be null.
+    // If the shard is finalized, this member will be null.
     std::unique_ptr<AcquireInfo> acquireInfo_;
 
     // Older shard without an acquire database or final key
@@ -298,12 +343,19 @@ private:
     // Determines if the shard needs to stop processing for shutdown
     std::atomic<bool> stop_{false};
 
-    std::atomic<State> state_{State::acquire};
+    // Determines if the shard busy with replacing by deterministic one
+    std::atomic<bool> busy_{false};
+
+    // State of the shard
+    std::atomic<ShardState> state_{ShardState::acquire};
+
+    // Number of ledgers processed for the current shard state
+    std::atomic<std::uint32_t> progress_{0};
 
     // Determines if the shard directory should be removed in the destructor
     std::atomic<bool> removeOnDestroy_{false};
 
-    // The time of the last access of a shard that has a final state
+    // The time of the last access of a shard with a finalized state
     std::chrono::steady_clock::time_point lastAccess_;
 
     // Open shard databases
@@ -324,11 +376,13 @@ private:
     void
     setFileStats(std::lock_guard<std::mutex> const&);
 
-    // Validate this ledger by walking its SHAMaps and verifying Merkle trees
+    // Verify this ledger by walking its SHAMaps and verifying its Merkle trees
+    // Every node object verified will be stored in the deterministic shard
     [[nodiscard]] bool
     verifyLedger(
         std::shared_ptr<Ledger const> const& ledger,
-        std::shared_ptr<Ledger const> const& next) const;
+        std::shared_ptr<Ledger const> const& next,
+        std::shared_ptr<DeterministicShard> const& dShard) const;
 
     // Fetches from backend and log errors based on status codes
     [[nodiscard]] std::shared_ptr<NodeObject>
@@ -337,6 +391,35 @@ private:
     // Open databases if they are closed
     [[nodiscard]] Shard::Count
     makeBackendCount();
+
+    // Invoke a callback on the supplied session parameter
+    template <typename... Args>
+    bool
+    callForSQL(
+        std::function<bool(Args... args)> const& callback,
+        LockedSociSession&& db)
+    {
+        auto const scopedCount{makeBackendCount()};
+        if (!scopedCount)
+            return false;
+
+        return doCallForSQL(callback, std::move(db));
+    }
+
+    // Invoke a callback that accepts a SQLite session parameter
+    bool
+    doCallForSQL(
+        std::function<bool(soci::session& session)> const& callback,
+        LockedSociSession&& db);
+
+    // Invoke a callback that accepts a SQLite session and the
+    // shard index as parameters
+    bool
+    doCallForSQL(
+        std::function<
+            bool(soci::session& session, std::uint32_t shardIndex)> const&
+            callback,
+        LockedSociSession&& db);
 };
 
 }  // namespace NodeStore

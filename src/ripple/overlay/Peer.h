@@ -32,8 +32,8 @@ namespace Resource {
 class Charge;
 }
 
-// Maximum hops to attempt when crawling shards. cs = crawl shards
-static constexpr std::uint32_t csHopLimit = 3;
+// Maximum hops to relay the peer shard info request
+static constexpr std::uint32_t relayLimit = 3;
 
 enum class ProtocolFeature {
     ValidatorListPropagation,
@@ -66,6 +66,18 @@ public:
     virtual beast::IP::Endpoint
     getRemoteAddress() const = 0;
 
+    /** Send aggregated transactions' hashes. */
+    virtual void
+    sendTxQueue() = 0;
+
+    /** Aggregate transaction's hash. */
+    virtual void
+    addTxQueue(uint256 const&) = 0;
+
+    /** Remove hash from the transactions' hashes queue. */
+    virtual void
+    removeTxQueue(uint256 const&) = 0;
+
     /** Adjust this peer's load balance based on the type of load imposed. */
     virtual void
     charge(Resource::Charge const& fee) = 0;
@@ -96,7 +108,7 @@ public:
     virtual bool
     supportsFeature(ProtocolFeature f) const = 0;
 
-    virtual boost::optional<std::size_t>
+    virtual std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const = 0;
 
     virtual void
@@ -113,8 +125,6 @@ public:
     virtual void
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
     virtual bool
-    hasShard(std::uint32_t shardIndex) const = 0;
-    virtual bool
     hasTxSet(uint256 const& hash) const = 0;
     virtual void
     cycleStatus() = 0;
@@ -123,6 +133,9 @@ public:
 
     virtual bool
     compressionEnabled() const = 0;
+
+    virtual bool
+    txReduceRelayEnabled() const = 0;
 };
 
 }  // namespace ripple

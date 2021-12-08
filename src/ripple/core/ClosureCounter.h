@@ -21,21 +21,35 @@
 #define RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
 
 #include <ripple/basics/Log.h>
-#include <boost/optional.hpp>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <type_traits>
 
 namespace ripple {
 
-// A class that does reference counting for postponed closures -- a closure
-// who's execution is delayed by a timer or queue.  The reference counting
-// allows a Stoppable to assure that all such postponed closures are
-// completed before the Stoppable declares itself stopped().
-//
-// Ret_t is the type that the counted closure returns.
-// Args_t are the types of the arguments that will be passed to the closure.
+/**
+ * The role of a `ClosureCounter` is to assist in shutdown by letting callers
+ * wait for the completion of callbacks (of a single type signature) that they
+ * previously scheduled. The lifetime of a `ClosureCounter` consists of two
+ * phases: the initial expanding "fork" phase, and the subsequent shrinking
+ * "join" phase.
+ *
+ * In the fork phase, callers register a callback by passing the callback and
+ * receiving a substitute in return. The substitute has the same callable
+ * interface as the callback, and it informs the `ClosureCounter` whenever it
+ * is copied or destroyed, so that it can keep an accurate count of copies.
+ *
+ * The transition to the join phase is made by a call to `join`. In this
+ * phase, every substitute returned going forward will be empty, signaling to
+ * the caller that they should just drop the callback and cancel their
+ * asynchronous operation. `join` blocks until all existing callback
+ * substitutes are destroyed.
+ *
+ * \tparam Ret_t The return type of the closure.
+ * \tparam Args_t The argument types of the closure.
+ */
 template <typename Ret_t, typename... Args_t>
 class ClosureCounter
 {
@@ -71,10 +85,10 @@ private:
     }
 
     // A private template class that helps count the number of closures
-    // in flight.  This allows Stoppables to hold off declaring stopped()
-    // until all their postponed closures are dispatched.
+    // in flight. This allows callers to block until all their postponed
+    // closures are dispatched.
     template <typename Closure>
-    class Wrapper
+    class Substitute
     {
     private:
         ClosureCounter& counter_;
@@ -86,33 +100,33 @@ private:
             "Closure arguments don't match ClosureCounter Ret_t or Args_t");
 
     public:
-        Wrapper() = delete;
+        Substitute() = delete;
 
-        Wrapper(Wrapper const& rhs)
+        Substitute(Substitute const& rhs)
             : counter_(rhs.counter_), closure_(rhs.closure_)
         {
             ++counter_;
         }
 
-        Wrapper(Wrapper&& rhs) noexcept(
+        Substitute(Substitute&& rhs) noexcept(
             std::is_nothrow_move_constructible<Closure>::value)
             : counter_(rhs.counter_), closure_(std::move(rhs.closure_))
         {
             ++counter_;
         }
 
-        Wrapper(ClosureCounter& counter, Closure&& closure)
+        Substitute(ClosureCounter& counter, Closure&& closure)
             : counter_(counter), closure_(std::forward<Closure>(closure))
         {
             ++counter_;
         }
 
-        Wrapper&
-        operator=(Wrapper const& rhs) = delete;
-        Wrapper&
-        operator=(Wrapper&& rhs) = delete;
+        Substitute&
+        operator=(Substitute const& rhs) = delete;
+        Substitute&
+        operator=(Substitute&& rhs) = delete;
 
-        ~Wrapper()
+        ~Substitute()
         {
             --counter_;
         }
@@ -169,15 +183,15 @@ public:
     /** Wrap the passed closure with a reference counter.
 
         @param closure Closure that accepts Args_t parameters and returns Ret_t.
-        @return If join() has been called returns boost::none.  Otherwise
-                returns a boost::optional that wraps closure with a
+        @return If join() has been called returns std::nullopt.  Otherwise
+                returns a std::optional that wraps closure with a
                 reference counter.
     */
     template <class Closure>
-    boost::optional<Wrapper<Closure>>
+    std::optional<Substitute<Closure>>
     wrap(Closure&& closure)
     {
-        boost::optional<Wrapper<Closure>> ret;
+        std::optional<Substitute<Closure>> ret;
 
         std::lock_guard lock{mutex_};
         if (!waitForClosures_)

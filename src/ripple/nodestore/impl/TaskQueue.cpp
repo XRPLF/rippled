@@ -24,26 +24,31 @@
 namespace ripple {
 namespace NodeStore {
 
-TaskQueue::TaskQueue(Stoppable& parent)
-    : Stoppable("TaskQueue", parent)
-    , workers_(*this, nullptr, "Shard store taskQueue", 1)
+TaskQueue::TaskQueue() : workers_(*this, nullptr, "Shard store taskQueue", 1)
 {
 }
 
 void
-TaskQueue::onStop()
+TaskQueue::stop()
 {
-    workers_.pauseAllThreadsAndWait();
-    stopped();
+    workers_.stop();
 }
 
 void
 TaskQueue::addTask(std::function<void()> task)
 {
-    std::lock_guard lock{mutex_};
-
-    tasks_.emplace(std::move(task));
+    {
+        std::lock_guard lock{mutex_};
+        tasks_.emplace(std::move(task));
+    }
     workers_.addTask();
+}
+
+size_t
+TaskQueue::size() const
+{
+    std::lock_guard lock{mutex_};
+    return tasks_.size() + processing_;
 }
 
 void
@@ -53,13 +58,18 @@ TaskQueue::processTask(int instance)
 
     {
         std::lock_guard lock{mutex_};
-        assert(!tasks_.empty());
 
+        assert(!tasks_.empty());
         task = std::move(tasks_.front());
         tasks_.pop();
+
+        ++processing_;
     }
 
     task();
+
+    std::lock_guard lock{mutex_};
+    --processing_;
 }
 
 }  // namespace NodeStore

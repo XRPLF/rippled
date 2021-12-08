@@ -27,8 +27,8 @@
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/consensus/LedgerTrie.h>
 #include <ripple/protocol/PublicKey.h>
-#include <boost/optional.hpp>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -130,6 +130,7 @@ public:
         return seq_;
     }
 };
+
 /** Whether a validation is still current
 
     Determines whether a validation can still be considered the current
@@ -151,7 +152,9 @@ isCurrent(
     // Because this can be called on untrusted, possibly
     // malicious validations, we do our math in a way
     // that avoids any chance of overflowing or underflowing
-    // the signing time.
+    // the signing time.  All of the expressions below are
+    // promoted from unsigned 32 bit to signed 64 bit prior
+    // to computation.
 
     return (signTime > (now - p.validationCURRENT_EARLY)) &&
         (signTime < (now + p.validationCURRENT_WALL)) &&
@@ -159,8 +162,7 @@ isCurrent(
          (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
 
-/** Status of newly received validation
- */
+/** Status of validation we received */
 enum class ValStatus {
     /// This was a new validation and was added
     current,
@@ -168,9 +170,9 @@ enum class ValStatus {
     stale,
     /// A validation violates the increasing seq requirement
     badSeq,
-    /// Multiple validations for the same ledger from multiple validators
+    /// Multiple validations by a validator for the same ledger
     multiple,
-    /// Multiple validations for different ledgers by a single validator
+    /// Multiple validations by a validator for different ledgers
     conflicting
 };
 
@@ -272,7 +274,7 @@ to_string(ValStatus m)
         NetClock::time_point now() const;
 
         // Attempt to acquire a specific ledger.
-        boost::optional<Ledger> acquire(Ledger::ID const & ledgerID);
+        std::optional<Ledger> acquire(Ledger::ID const & ledgerID);
 
         // ... implementation specific
     };
@@ -322,8 +324,13 @@ class Validations
         beast::uhash<>>
         bySequence_;
 
-    // Sequence of the earliest validation to keep from expire
-    boost::optional<Seq> toKeep_;
+    // A range [low_, high_) of validations to keep from expire
+    struct KeepRange
+    {
+        Seq low_;
+        Seq high_;
+    };
+    std::optional<KeepRange> toKeep_;
 
     // Represents the ancestry of validated ledgers
     LedgerTrie<Ledger> trie_;
@@ -376,7 +383,7 @@ private:
     {
         for (auto it = acquiring_.begin(); it != acquiring_.end();)
         {
-            if (boost::optional<Ledger> ledger =
+            if (std::optional<Ledger> ledger =
                     adaptor_.acquire(it->first.second))
             {
                 for (NodeID const& nodeID : it->second)
@@ -423,7 +430,7 @@ private:
         std::lock_guard<Mutex> const& lock,
         NodeID const& nodeID,
         Validation const& val,
-        boost::optional<std::pair<Seq, ID>> prior)
+        std::optional<std::pair<Seq, ID>> prior)
     {
         assert(val.trusted());
 
@@ -449,8 +456,7 @@ private:
         }
         else
         {
-            if (boost::optional<Ledger> ledger =
-                    adaptor_.acquire(val.ledgerID()))
+            if (std::optional<Ledger> ledger = adaptor_.acquire(val.ledgerID()))
                 updateTrie(lock, nodeID, *ledger);
             else
                 acquiring_[valPair].insert(nodeID);
@@ -641,7 +647,7 @@ public:
             }
 
             // Enforce monotonically increasing sequences for validations
-            // by a given node:
+            // by a given node, and run the active Byzantine detector:
             if (auto& enf = seqEnforcers_[nodeID]; !enf(now, val.seq(), parms_))
             {
                 // If the validation is for the same sequence as one we are
@@ -652,6 +658,13 @@ public:
                     // ledgers. This could be the result of misconfiguration
                     // but it can also mean a Byzantine validator.
                     if (seqit->second.ledgerID() != val.ledgerID())
+                        return ValStatus::conflicting;
+
+                    // Two validations for the same sequence and for the same
+                    // ledger with different sign times. This could be the
+                    // result of a misconfiguration but it can also mean a
+                    // Byzantine validator.
+                    if (seqit->second.signTime() != val.signTime())
                         return ValStatus::conflicting;
 
                     // Two validations for the same sequence but with different
@@ -682,7 +695,7 @@ public:
             }
             else if (val.trusted())
             {
-                updateTrie(lock, nodeID, val, boost::none);
+                updateTrie(lock, nodeID, val, std::nullopt);
             }
         }
 
@@ -690,14 +703,17 @@ public:
     }
 
     /**
-     * Set the smallest sequence number of validations to keep from expire
-     * @param s the sequence number
+     * Set the range [low, high) of validations to keep from expire
+     * @param low the lower sequence number
+     * @param high the higher sequence number
+     * @note high must be greater than low
      */
     void
-    setSeqToKeep(Seq const& s)
+    setSeqToKeep(Seq const& low, Seq const& high)
     {
         std::lock_guard lock{mutex_};
-        toKeep_ = s;
+        assert(low < high);
+        toKeep_ = {low, high};
     }
 
     /** Expire old validation sets
@@ -706,32 +722,59 @@ public:
         validationSET_EXPIRES ago and were not asked to keep.
     */
     void
-    expire()
+    expire(beast::Journal& j)
     {
-        std::lock_guard lock{mutex_};
-        if (toKeep_)
+        auto const start = std::chrono::steady_clock::now();
         {
-            for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
+            std::lock_guard lock{mutex_};
+            if (toKeep_)
             {
-                auto const& validationMap = i->second;
-                if (!validationMap.empty() &&
-                    validationMap.begin()->second.seq() >= toKeep_)
+                // We only need to refresh the keep range when it's just about
+                // to expire. Track the next time we need to refresh.
+                static std::chrono::steady_clock::time_point refreshTime;
+                if (auto const now = byLedger_.clock().now();
+                    refreshTime <= now)
                 {
-                    byLedger_.touch(i);
+                    // The next refresh time is shortly before the expiration
+                    // time from now.
+                    refreshTime = now + parms_.validationSET_EXPIRES -
+                        parms_.validationFRESHNESS;
+
+                    for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
+                    {
+                        auto const& validationMap = i->second;
+                        if (!validationMap.empty())
+                        {
+                            auto const seq =
+                                validationMap.begin()->second.seq();
+                            if (toKeep_->low_ <= seq && seq < toKeep_->high_)
+                            {
+                                byLedger_.touch(i);
+                            }
+                        }
+                    }
+
+                    for (auto i = bySequence_.begin(); i != bySequence_.end();
+                         ++i)
+                    {
+                        if (toKeep_->low_ <= i->first &&
+                            i->first < toKeep_->high_)
+                        {
+                            bySequence_.touch(i);
+                        }
+                    }
                 }
             }
 
-            for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
-            {
-                if (i->first >= toKeep_)
-                {
-                    bySequence_.touch(i);
-                }
-            }
+            beast::expire(byLedger_, parms_.validationSET_EXPIRES);
+            beast::expire(bySequence_, parms_.validationSET_EXPIRES);
         }
-
-        beast::expire(byLedger_, parms_.validationSET_EXPIRES);
-        beast::expire(bySequence_, parms_.validationSET_EXPIRES);
+        JLOG(j.debug())
+            << "Validations sets sweep lock duration "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::steady_clock::now() - start)
+                   .count()
+            << "ms";
     }
 
     /** Update trust status of validations
@@ -753,7 +796,7 @@ public:
             if (added.find(nodeId) != added.end())
             {
                 validation.setTrusted();
-                updateTrie(lock, nodeId, validation, boost::none);
+                updateTrie(lock, nodeId, validation, std::nullopt);
             }
             else if (removed.find(nodeId) != removed.end())
             {
@@ -795,14 +838,14 @@ public:
         @param curr The local node's current working ledger
 
         @return The sequence and id of the preferred working ledger,
-                or boost::none if no trusted validations are available to
+                or std::nullopt if no trusted validations are available to
                 determine the preferred ledger.
     */
-    boost::optional<std::pair<Seq, ID>>
+    std::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
         std::lock_guard lock{mutex_};
-        boost::optional<SpanTip<Ledger>> preferred =
+        std::optional<SpanTip<Ledger>> preferred =
             withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
                 return trie.getPreferred(localSeqEnforcer_.largest());
             });
@@ -827,7 +870,7 @@ public:
                 });
             if (it != acquiring_.end())
                 return it->first;
-            return boost::none;
+            return std::nullopt;
         }
 
         // If we are the parent of the preferred ledger, stick with our
@@ -862,7 +905,7 @@ public:
     ID
     getPreferred(Ledger const& curr, Seq minValidSeq)
     {
-        boost::optional<std::pair<Seq, ID>> preferred = getPreferred(curr);
+        std::optional<std::pair<Seq, ID>> preferred = getPreferred(curr);
         if (preferred && preferred->first >= minValidSeq)
             return preferred->second;
         return curr.id();
@@ -890,7 +933,7 @@ public:
         Seq minSeq,
         hash_map<ID, std::uint32_t> const& peerCounts)
     {
-        boost::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
+        std::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
         // Trusted validations exist, but stick with local preferred ledger if
         // preferred is in the past
@@ -1041,7 +1084,7 @@ public:
             [&](NodeID const&, Validation const& v) {
                 if (v.trusted() && v.full())
                 {
-                    boost::optional<std::uint32_t> loadFee = v.loadFee();
+                    std::optional<std::uint32_t> loadFee = v.loadFee();
                     if (loadFee)
                         res.push_back(*loadFee);
                     else

@@ -76,7 +76,7 @@ chmod 644 /etc/logrotate.d/rippled
 chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 
 %files
-%doc rippled/README.md rippled/LICENSE
+%doc rippled/README.md rippled/LICENSE.md
 %{_bindir}/rippled
 /usr/local/bin/rippled
 %{_bindir}/update-rippled.sh

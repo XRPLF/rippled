@@ -56,7 +56,6 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
     {
         while (pos < 16)
         {
-            uint256 childHash;
             if (!node->isEmptyBranch(pos))
             {
                 std::shared_ptr<SHAMapTreeNode> child =
@@ -697,7 +696,7 @@ SHAMap::deepCompare(SHAMap& other) const
                 static_cast<SHAMapLeafNode*>(otherNode)->peekItem();
             if (nodePeek->key() != otherNodePeek->key())
                 return false;
-            if (nodePeek->peekData() != otherNodePeek->peekData())
+            if (nodePeek->slice() != otherNodePeek->slice())
                 return false;
         }
         else if (node->isInner())

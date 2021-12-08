@@ -21,10 +21,10 @@
 #define RIPPLE_APP_REPORTING_REPORTINGETL_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/app/reporting/ETLHelpers.h>
 #include <ripple/app/reporting/ETLSource.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Charge.h>
@@ -50,7 +50,7 @@
 #include <chrono>
 namespace ripple {
 
-struct AccountTransactionsData;
+using AccountTransactionsData = RelationalDBInterface::AccountTransactionsData;
 
 /**
  * This class is responsible for continuously extracting data from a
@@ -67,7 +67,7 @@ struct AccountTransactionsData;
  * monitoring to writing and from writing to monitoring, based on the activity
  * of other processes running on different machines.
  */
-class ReportingETL : Stoppable
+class ReportingETL
 {
 private:
     Application& app_;
@@ -266,7 +266,7 @@ private:
         ThreadSafeQueue<std::shared_ptr<SLE>>& writeQueue);
 
 public:
-    ReportingETL(Application& app, Stoppable& parent);
+    explicit ReportingETL(Application& app);
 
     ~ReportingETL()
     {
@@ -279,7 +279,7 @@ public:
     }
 
     bool
-    isStopping()
+    isStopping() const
     {
         return stopping_;
     }
@@ -315,14 +315,15 @@ public:
         result["is_writer"] = writing_.load();
         auto last = getLastPublish();
         if (last.time_since_epoch().count() != 0)
-            result["last_publish_time"] = to_string(
-                date::floor<std::chrono::microseconds>(getLastPublish()));
+            result["last_publish_time"] =
+                to_string(std::chrono::floor<std::chrono::microseconds>(
+                    getLastPublish()));
         return result;
     }
 
     /// start all of the necessary components and begin ETL
     void
-    run()
+    start()
     {
         JLOG(journal_.info()) << "Starting reporting etl";
         assert(app_.config().reporting());
@@ -335,9 +336,8 @@ public:
         doWork();
     }
 
-    /// Stop all the necessary components
     void
-    onStop() override
+    stop()
     {
         JLOG(journal_.info()) << "onStop called";
         JLOG(journal_.debug()) << "Stopping Reporting ETL";
@@ -350,7 +350,6 @@ public:
             worker_.join();
 
         JLOG(journal_.debug()) << "Joined worker thread";
-        stopped();
     }
 
     ETLLoadBalancer&

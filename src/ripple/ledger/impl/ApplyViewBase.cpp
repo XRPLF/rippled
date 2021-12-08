@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
-#include <ripple/ledger/CashDiff.h>
 #include <ripple/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
@@ -62,8 +61,8 @@ ApplyViewBase::exists(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::succ(key_type const& key, boost::optional<key_type> const& last)
-    const -> boost::optional<key_type>
+ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last)
+    const -> std::optional<key_type>
 {
     return items_.succ(*base_, key, last);
 }
@@ -173,19 +172,6 @@ void
 ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
 {
     items_.destroyXRP(fee);
-}
-
-//---
-
-CashDiff
-cashFlowDiff(
-    CashFilter lhsFilter,
-    ApplyViewBase const& lhs,
-    CashFilter rhsFilter,
-    ApplyViewBase const& rhs)
-{
-    assert(lhs.base_ == rhs.base_);
-    return CashDiff{*lhs.base_, lhsFilter, lhs.items_, rhsFilter, rhs.items_};
 }
 
 }  // namespace detail

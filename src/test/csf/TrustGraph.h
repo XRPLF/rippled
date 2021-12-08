@@ -21,11 +21,11 @@
 #define RIPPLE_TEST_CSF_UNL_H_INCLUDED
 
 #include <boost/container/flat_set.hpp>
-#include <boost/optional.hpp>
+#include <test/csf/random.h>
+
 #include <chrono>
 #include <numeric>
 #include <random>
-#include <test/csf/random.h>
 #include <vector>
 
 namespace ripple {
@@ -126,7 +126,7 @@ public:
 
         using UNL = std::set<Peer>;
         std::set<UNL> unique;
-        for (Peer const& peer : graph_.outVertices())
+        for (Peer const peer : graph_.outVertices())
         {
             unique.emplace(
                 std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));

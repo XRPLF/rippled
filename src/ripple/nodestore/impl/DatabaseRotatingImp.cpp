@@ -25,15 +25,13 @@ namespace ripple {
 namespace NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
-    std::string const& name,
     Scheduler& scheduler,
     int readThreads,
-    Stoppable& parent,
     std::shared_ptr<Backend> writableBackend,
     std::shared_ptr<Backend> archiveBackend,
     Section const& config,
     beast::Journal j)
-    : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
+    : DatabaseRotating(scheduler, readThreads, config, j)
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
 {
@@ -41,7 +39,6 @@ DatabaseRotatingImp::DatabaseRotatingImp(
         fdRequired_ += writableBackend_->fdRequired();
     if (archiveBackend_)
         fdRequired_ += archiveBackend_->fdRequired();
-    setParent(parent);
 }
 
 void
@@ -72,7 +69,7 @@ DatabaseRotatingImp::getWriteLoad() const
 }
 
 void
-DatabaseRotatingImp::import(Database& source)
+DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
         std::lock_guard lock(mutex_);

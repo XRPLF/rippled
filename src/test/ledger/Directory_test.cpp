@@ -279,12 +279,8 @@ struct Directory_test : public beast::unit_test::suite
         {
             for (int i = 0; i < dirNodeMaxEntries; ++i)
             {
-                Json::Value cancelOffer;
-                cancelOffer[jss::Account] = alice.human();
-                cancelOffer[jss::OfferSequence] =
-                    Json::UInt(firstOfferSeq + page * dirNodeMaxEntries + i);
-                cancelOffer[jss::TransactionType] = jss::OfferCancel;
-                env(cancelOffer);
+                env(offer_cancel(
+                    alice, firstOfferSeq + page * dirNodeMaxEntries + i));
                 env.close();
             }
         }
@@ -325,12 +321,10 @@ struct Directory_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        uint256 base;
-        (void)base.parseHex(
+        constexpr uint256 base(
             "fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
-        uint256 item;
-        (void)item.parseHex(
+        constexpr uint256 item(
             "bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {

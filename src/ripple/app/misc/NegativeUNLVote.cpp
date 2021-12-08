@@ -120,7 +120,7 @@ NegativeUNLVote::addTx(
     negUnlTx.add(s);
     if (!initialSet->addGiveItem(
             SHAMapNodeType::tnTRANSACTION_NM,
-            std::make_shared<SHAMapItem>(txID, s.peekData())))
+            std::make_shared<SHAMapItem>(txID, s.slice())))
     {
         JLOG(j_.warn()) << "N-UNL: ledger seq=" << seq
                         << ", add ttUNL_MODIFY tx failed";
@@ -167,7 +167,7 @@ NegativeUNLVote::buildScoreTable(
     // Ask the validation container to keep enough validation message history
     // for next time.
     auto const seq = prevLedger->info().seq + 1;
-    validations.setSeqToKeep(seq - 1);
+    validations.setSeqToKeep(seq - 1, seq + FLAG_LEDGER_INTERVAL);
 
     // Find FLAG_LEDGER_INTERVAL (i.e. 256) previous ledger hashes
     auto const hashIndex = prevLedger->read(keylet::skip());

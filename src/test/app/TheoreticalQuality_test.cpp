@@ -40,7 +40,7 @@ struct RippleCalcTestParams
     AccountID dstAccount;
 
     STAmount dstAmt;
-    boost::optional<STAmount> sendMax;
+    std::optional<STAmount> sendMax;
 
     STPathSet paths;
 
@@ -69,22 +69,22 @@ struct RippleCalcTestParams
                         p.emplace_back(
                             *parseBase58<AccountID>(
                                 pe[jss::account].asString()),
-                            boost::none,
-                            boost::none);
+                            std::nullopt,
+                            std::nullopt);
                     }
                     else if (
                         pe.isMember(jss::currency) && pe.isMember(jss::issuer))
                     {
                         auto const currency =
                             to_currency(pe[jss::currency].asString());
-                        boost::optional<AccountID> issuer;
+                        std::optional<AccountID> issuer;
                         if (!isXRP(currency))
                             issuer = *parseBase58<AccountID>(
                                 pe[jss::issuer].asString());
                         else
                             assert(isXRP(*parseBase58<AccountID>(
                                 pe[jss::issuer].asString())));
-                        p.emplace_back(boost::none, currency, issuer);
+                        p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
                     {
@@ -242,14 +242,14 @@ class TheoreticalQuality_test : public beast::unit_test::suite
     testCase(
         RippleCalcTestParams const& rcp,
         std::shared_ptr<ReadView const> closed,
-        boost::optional<Quality> const& expectedQ = {})
+        std::optional<Quality> const& expectedQ = {})
     {
         PaymentSandbox sb(closed.get(), tapNONE);
 
-        auto const sendMaxIssue = [&rcp]() -> boost::optional<Issue> {
+        auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
             if (rcp.sendMax)
                 return rcp.sendMax->issue();
-            return boost::none;
+            return std::nullopt;
         }();
 
         beast::Journal dummyJ{beast::Journal::getNullSink()};
@@ -259,7 +259,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             rcp.srcAccount,
             rcp.dstAccount,
             rcp.dstAmt.issue(),
-            /*limitQuality*/ boost::none,
+            /*limitQuality*/ std::nullopt,
             sendMaxIssue,
             rcp.paths,
             /*defaultPaths*/ rcp.paths.empty(),
@@ -312,7 +312,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
 
 public:
     void
-    testDirectStep(boost::optional<int> const& reqNumIterations)
+    testDirectStep(std::optional<int> const& reqNumIterations)
     {
         testcase("Direct Step");
 
@@ -404,7 +404,7 @@ public:
     }
 
     void
-    testBookStep(boost::optional<int> const& reqNumIterations)
+    testBookStep(std::optional<int> const& reqNumIterations)
     {
         testcase("Book Step");
         using namespace jtx;
@@ -527,20 +527,20 @@ public:
     {
         // Use the command line argument `--unittest-arg=500 ` to change the
         // number of iterations to 500
-        auto const numIterations = [s = arg()]() -> boost::optional<int> {
+        auto const numIterations = [s = arg()]() -> std::optional<int> {
             if (s.empty())
-                return boost::none;
+                return std::nullopt;
             try
             {
                 std::size_t pos;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
-                    return boost::none;
+                    return std::nullopt;
                 return r;
             }
             catch (...)
             {
-                return boost::none;
+                return std::nullopt;
             }
         }();
         testRelativeQDistance();
@@ -549,7 +549,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TheoreticalQuality, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, ripple, 3);
 
 }  // namespace test
 }  // namespace ripple

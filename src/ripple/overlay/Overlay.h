@@ -21,7 +21,6 @@
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
 #include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/PeerSet.h>
@@ -33,9 +32,9 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/optional.hpp>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 namespace boost {
@@ -49,7 +48,7 @@ class context;
 namespace ripple {
 
 /** Manages the set of connected peers. */
-class Overlay : public Stoppable, public beast::PropertyStream::Source
+class Overlay : public beast::PropertyStream::Source
 {
 protected:
     using socket_type = boost::beast::tcp_stream;
@@ -57,10 +56,8 @@ protected:
 
     // VFALCO NOTE The requirement of this constructor is an
     //             unfortunate problem with the API for
-    //             Stoppable and PropertyStream
-    //
-    Overlay(Stoppable& parent)
-        : Stoppable("Overlay", parent), beast::PropertyStream::Source("peers")
+    //             PropertyStream
+    Overlay() : beast::PropertyStream::Source("peers")
     {
     }
 
@@ -82,6 +79,16 @@ public:
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
 
     virtual ~Overlay() = default;
+
+    virtual void
+    start()
+    {
+    }
+
+    virtual void
+    stop()
+    {
+    }
 
     /** Conditionally accept an incoming HTTP request. */
     virtual Handoff
@@ -166,6 +173,19 @@ public:
         uint256 const& uid,
         PublicKey const& validator) = 0;
 
+    /** Relay a transaction. If the tx reduce-relay feature is enabled then
+     * randomly select peers to relay to and queue transaction's hash
+     * for the rest of the peers.
+     * @param hash transaction's hash
+     * @param m transaction's protocol message to relay
+     * @param toSkip peers which have already seen this transaction
+     */
+    virtual void
+    relay(
+        uint256 const& hash,
+        protocol::TMTransaction& m,
+        std::set<Peer::id_t> const& toSkip) = 0;
+
     /** Visit every active peer.
      *
      * The visitor must be invocable as:
@@ -201,11 +221,12 @@ public:
 
     /** Returns information reported to the crawl shard RPC command.
 
+        @param includePublicKey include peer public keys in the result.
         @param hops the maximum jumps the crawler will attempt.
         The number of hops achieved is not guaranteed.
     */
     virtual Json::Value
-    crawlShards(bool pubKey, std::uint32_t hops) = 0;
+    crawlShards(bool includePublicKey, std::uint32_t hops) = 0;
 
     /** Returns the ID of the network this server is configured for, if any.
 
@@ -215,8 +236,14 @@ public:
         @return The numerical identifier configured by the administrator of the
                 server. An unseated optional, otherwise.
     */
-    virtual boost::optional<std::uint32_t>
+    virtual std::optional<std::uint32_t>
     networkID() const = 0;
+
+    /** Returns tx reduce-relay metrics
+        @return json value of tx reduce-relay metrics
+     */
+    virtual Json::Value
+    txMetrics() const = 0;
 };
 
 }  // namespace ripple

@@ -18,15 +18,18 @@
 //==============================================================================
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/unit_test.h>
+
+#include <beast/test/yield_to.hpp>
+
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/optional.hpp>
+
 #include <algorithm>
-#include <beast/test/yield_to.hpp>
 #include <chrono>
 #include <mutex>
 #include <numeric>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -60,7 +63,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         {
             using namespace std::chrono;
             boost::asio::io_service ios;
-            boost::optional<boost::asio::io_service::work> work{ios};
+            std::optional<boost::asio::io_service::work> work{ios};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
             elapsed_times_.reserve(num_samples);
@@ -86,7 +89,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
                 });
                 cv.wait(mainlock, [&done] { return done; });
             }
-            work = boost::none;
+            work.reset();
             worker.join();
             if (wait_err)
                 boost::asio::detail::throw_error(wait_err, "wait");

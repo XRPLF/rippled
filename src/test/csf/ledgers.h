@@ -21,11 +21,12 @@
 
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/comparators.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_value.h>
 #include <boost/bimap/bimap.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include <set>
 #include <test/csf/Tx.h>
 
@@ -242,7 +243,9 @@ private:
  */
 class LedgerOracle
 {
-    using InstanceMap = boost::bimaps::bimap<Ledger::Instance, Ledger::ID>;
+    using InstanceMap = boost::bimaps::bimap<
+        boost::bimaps::set_of<Ledger::Instance, ripple::less<Ledger::Instance>>,
+        boost::bimaps::set_of<Ledger::ID, ripple::less<Ledger::ID>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned
@@ -256,7 +259,7 @@ public:
     LedgerOracle();
 
     /** Find the ledger with the given ID */
-    boost::optional<Ledger>
+    std::optional<Ledger>
     lookup(Ledger::ID const& id) const;
 
     /** Accept the given txs and generate a new ledger

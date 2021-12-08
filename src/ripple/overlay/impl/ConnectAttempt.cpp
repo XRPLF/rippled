@@ -204,8 +204,9 @@ ConnectAttempt::onHandshake(error_code ec)
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
         app_.config().COMPRESSION,
-        app_.config().VP_REDUCE_RELAY_ENABLE,
-        app_.config().LEDGER_REPLAY);
+        app_.config().LEDGER_REPLAY,
+        app_.config().TX_REDUCE_RELAY_ENABLE,
+        app_.config().VP_REDUCE_RELAY_ENABLE);
 
     buildHandshake(
         req_,
@@ -293,7 +294,7 @@ ConnectAttempt::processResponse()
         Json::Reader r;
         std::string s;
         s.reserve(boost::asio::buffer_size(response_.body().data()));
-        for (auto const& buffer : response_.body().data())
+        for (auto const buffer : response_.body().data())
             s.append(
                 boost::asio::buffer_cast<char const*>(buffer),
                 boost::asio::buffer_size(buffer));
@@ -333,7 +334,7 @@ ConnectAttempt::processResponse()
 
     // Just because our peer selected a particular protocol version doesn't
     // mean that it's acceptable to us. Check that it is:
-    boost::optional<ProtocolVersion> negotiatedProtocol;
+    std::optional<ProtocolVersion> negotiatedProtocol;
 
     {
         auto const pvs = parseProtocolVersions(response_["Upgrade"]);

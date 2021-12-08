@@ -195,6 +195,101 @@ struct base_uint_test : beast::unit_test::suite
             BEAST_EXPECT(tmp.parseHex(s1));
             BEAST_EXPECT(to_string(tmp) == s1);
         }
+
+        // Constexpr constructors
+        {
+            static_assert(test96{}.signum() == 0);
+            static_assert(test96("0").signum() == 0);
+            static_assert(test96("000000000000000000000000").signum() == 0);
+            static_assert(test96("000000000000000000000001").signum() == 1);
+            static_assert(test96("800000000000000000000000").signum() == 1);
+
+// Everything within the #if should fail during compilation.
+#if 0
+            // Too few characters
+            static_assert(test96("00000000000000000000000").signum() == 0);
+
+            // Too many characters
+            static_assert(test96("0000000000000000000000000").signum() == 0);
+
+            // Non-hex characters
+            static_assert(test96("00000000000000000000000 ").signum() == 1);
+            static_assert(test96("00000000000000000000000/").signum() == 1);
+            static_assert(test96("00000000000000000000000:").signum() == 1);
+            static_assert(test96("00000000000000000000000@").signum() == 1);
+            static_assert(test96("00000000000000000000000G").signum() == 1);
+            static_assert(test96("00000000000000000000000`").signum() == 1);
+            static_assert(test96("00000000000000000000000g").signum() == 1);
+            static_assert(test96("00000000000000000000000~").signum() == 1);
+#endif  // 0
+
+            // Using the constexpr constructor in a non-constexpr context
+            // with an error in the parsing throws an exception.
+            {
+                // Invalid length for string.
+                bool caught = false;
+                try
+                {
+                    // Try to prevent constant evaluation.
+                    std::vector<char> str(23, '7');
+                    std::string_view sView(str.data(), str.size());
+                    [[maybe_unused]] test96 t96(sView);
+                }
+                catch (std::invalid_argument const& e)
+                {
+                    BEAST_EXPECT(
+                        e.what() ==
+                        std::string("invalid length for hex string"));
+                    caught = true;
+                }
+                BEAST_EXPECT(caught);
+            }
+            {
+                // Invalid character in string.
+                bool caught = false;
+                try
+                {
+                    // Try to prevent constant evaluation.
+                    std::vector<char> str(23, '7');
+                    str.push_back('G');
+                    std::string_view sView(str.data(), str.size());
+                    [[maybe_unused]] test96 t96(sView);
+                }
+                catch (std::range_error const& e)
+                {
+                    BEAST_EXPECT(
+                        e.what() == std::string("invalid hex character"));
+                    caught = true;
+                }
+                BEAST_EXPECT(caught);
+            }
+
+            // Verify that constexpr base_uints interpret a string the same
+            // way parseHex() does.
+            struct StrBaseUint
+            {
+                char const* const str;
+                test96 tst;
+
+                constexpr StrBaseUint(char const* s) : str(s), tst(s)
+                {
+                }
+            };
+            constexpr StrBaseUint testCases[] = {
+                "000000000000000000000000",
+                "000000000000000000000001",
+                "fedcba9876543210ABCDEF91",
+                "19FEDCBA0123456789abcdef",
+                "800000000000000000000000",
+                "fFfFfFfFfFfFfFfFfFfFfFfF"};
+
+            for (StrBaseUint const& t : testCases)
+            {
+                test96 t96;
+                BEAST_EXPECT(t96.parseHex(t.str));
+                BEAST_EXPECT(t96 == t.tst);
+            }
+        }
     }
 };
 

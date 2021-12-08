@@ -44,7 +44,7 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const override;
 
-    boost::optional<Blob>
+    std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
 
 private:

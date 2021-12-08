@@ -72,14 +72,14 @@ populate(
     Section const& section,
     std::string const& field,
     std::ostream& log,
-    boost::optional<std::vector<beast::IP::Address>>& ips,
+    std::optional<std::vector<beast::IP::Address>>& ips,
     bool allowAllIps,
     std::vector<beast::IP::Address> const& admin_ip)
 {
-    auto const result = section.find(field);
-    if (result.second)
+    auto const optResult = section.get(field);
+    if (optResult)
     {
-        std::stringstream ss(result.first);
+        std::stringstream ss(*optResult);
         std::string ip;
         bool has_any(false);
 
@@ -139,30 +139,29 @@ void
 parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 {
     {
-        auto result = section.find("ip");
-        if (result.second)
+        auto const optResult = section.get("ip");
+        if (optResult)
         {
             try
             {
-                port.ip = boost::asio::ip::address::from_string(result.first);
+                port.ip = boost::asio::ip::address::from_string(*optResult);
             }
             catch (std::exception const&)
             {
-                log << "Invalid value '" << result.first
-                    << "' for key 'ip' in [" << section.name() << "]";
+                log << "Invalid value '" << *optResult << "' for key 'ip' in ["
+                    << section.name() << "]";
                 Rethrow();
             }
         }
     }
 
     {
-        auto const result = section.find("port");
-        if (result.second)
+        auto const optResult = section.get("port");
+        if (optResult)
         {
             try
             {
-                port.port =
-                    beast::lexicalCastThrow<std::uint16_t>(result.first);
+                port.port = beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
                 // Port 0 is not supported
                 if (*port.port == 0)
@@ -170,7 +169,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             }
             catch (std::exception const&)
             {
-                log << "Invalid value '" << result.first << "' for key "
+                log << "Invalid value '" << *optResult << "' for key "
                     << "'port' in [" << section.name() << "]";
                 Rethrow();
             }
@@ -178,11 +177,11 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const result = section.find("protocol");
-        if (result.second)
+        auto const optResult = section.get("protocol");
+        if (optResult)
         {
             for (auto const& s : beast::rfc2616::split_commas(
-                     result.first.begin(), result.first.end()))
+                     optResult->begin(), optResult->end()))
                 port.protocol.insert(s);
         }
     }
@@ -207,13 +206,13 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const result = section.find("send_queue_limit");
-        if (result.second)
+        auto const optResult = section.get("send_queue_limit");
+        if (optResult)
         {
             try
             {
                 port.ws_queue_limit =
-                    beast::lexicalCastThrow<std::uint16_t>(result.first);
+                    beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
                 // Queue must be greater than 0
                 if (port.ws_queue_limit == 0)
@@ -221,7 +220,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             }
             catch (std::exception const&)
             {
-                log << "Invalid value '" << result.first << "' for key "
+                log << "Invalid value '" << *optResult << "' for key "
                     << "'send_queue_limit' in [" << section.name() << "]";
                 Rethrow();
             }
@@ -240,7 +239,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
         log,
         port.secure_gateway_ip,
         false,
-        port.admin_ip.get_value_or({}));
+        port.admin_ip.value_or(std::vector<beast::IP::Address>{}));
 
     set(port.user, "user", section);
     set(port.password, "password", section);

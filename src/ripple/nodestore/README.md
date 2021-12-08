@@ -48,7 +48,7 @@ contains. The fields are as follows:
 |0...7  |unused               |                          |
 |8      |type                 |NodeObjectType enumeration|
 |9...end|data                 |body of the object data   |
----    
+---
 The `NodeStore` provides an interface that stores, in a persistent database, a
 collection of NodeObjects that rippled uses as its primary representation of
 ledger entries. All ledger entries are stored as NodeObjects and as such, need
@@ -200,7 +200,7 @@ skip list by calling `LedgerMaster::walkHashBySeq` and providing the sequence of
 a shard's last ledger:
 
 ```C++
-boost::optional<uint256> expectedHash;
+std::optional<uint256> expectedHash;
 expectedHash =
     app_.getLedgerMaster().walkHashBySeq(lastLedgerSeq(shardIndex));
 ```
@@ -275,9 +275,9 @@ and several paths for historical storage:
 
 ```dosini
 # This is the persistent datastore for shards. It is important for the health
-# of the ripple network that rippled operators shard as much as practical.
-# NuDB requires SSD storage. Helpful information can be found here
-# https://ripple.com/build/history-sharding
+# of the network that server operators shard as much as practical.
+# NuDB requires SSD storage. Helpful information can be found on
+# https://xrpl.org/history-sharding.html
 [shard_db]
 type=NuDB
 

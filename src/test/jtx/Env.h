@@ -73,8 +73,9 @@ supported_amendments()
         auto const& sa = ripple::detail::supportedAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
-        for (auto const& s : sa)
+        for (auto const& [s, vote] : sa)
         {
+            (void)vote;
             if (auto const f = getRegisteredFeature(s))
                 feats.push_back(*f);
             else
@@ -254,7 +255,7 @@ public:
         return *bundle_.timeKeeper;
     }
 
-    /** Returns the current Ripple Network Time
+    /** Returns the current network time
 
         @note This is manually advanced when ledgers
               close or by callers.
@@ -333,8 +334,7 @@ public:
     bool
     close(
         NetClock::time_point closeTime,
-        boost::optional<std::chrono::milliseconds> consensusDelay =
-            boost::none);
+        std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /** Close and advance the ledger.
 

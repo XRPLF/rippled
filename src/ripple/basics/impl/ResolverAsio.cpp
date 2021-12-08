@@ -218,7 +218,6 @@ public:
         override
     {
         assert(m_stop_called == false);
-        assert(m_stopped == true);
         assert(!names.empty());
 
         // TODO NIKB use rvalue references to construct and move

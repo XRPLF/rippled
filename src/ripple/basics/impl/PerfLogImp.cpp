@@ -24,13 +24,13 @@
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
-#include <boost/optional.hpp>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -288,7 +288,7 @@ PerfLogImp::report()
     lastLog_ = present;
 
     Json::Value report(Json::objectValue);
-    report[jss::time] = to_string(date::floor<microseconds>(present));
+    report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
     {
         std::lock_guard lock{counters_.jobsMutex_};
         report[jss::workers] =
@@ -303,20 +303,16 @@ PerfLogImp::report()
 
 PerfLogImp::PerfLogImp(
     Setup const& setup,
-    Stoppable& parent,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-    : Stoppable("PerfLogImp", parent)
-    , setup_(setup)
-    , j_(journal)
-    , signalStop_(std::move(signalStop))
+    : setup_(setup), j_(journal), signalStop_(std::move(signalStop))
 {
     openLog();
 }
 
 PerfLogImp::~PerfLogImp()
 {
-    onStop();
+    stop();
 }
 
 void
@@ -448,14 +444,14 @@ PerfLogImp::rotate()
 }
 
 void
-PerfLogImp::onStart()
+PerfLogImp::start()
 {
     if (setup_.perfLog.size())
         thread_ = std::thread(&PerfLogImp::run, this);
 }
 
 void
-PerfLogImp::onStop()
+PerfLogImp::stop()
 {
     if (thread_.joinable())
     {
@@ -466,12 +462,6 @@ PerfLogImp::onStop()
         }
         thread_.join();
     }
-}
-
-void
-PerfLogImp::onChildrenStopped()
-{
-    stopped();
 }
 
 //-----------------------------------------------------------------------------
@@ -501,12 +491,10 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
 std::unique_ptr<PerfLog>
 make_PerfLog(
     PerfLog::Setup const& setup,
-    Stoppable& parent,
     beast::Journal journal,
     std::function<void()>&& signalStop)
 {
-    return std::make_unique<PerfLogImp>(
-        setup, parent, journal, std::move(signalStop));
+    return std::make_unique<PerfLogImp>(setup, journal, std::move(signalStop));
 }
 
 }  // namespace perf

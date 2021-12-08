@@ -29,7 +29,7 @@ public:
     void
     run() override
     {
-        basic_seconds_clock<std::chrono::steady_clock>::now();
+        basic_seconds_clock::now();
         pass();
     }
 };

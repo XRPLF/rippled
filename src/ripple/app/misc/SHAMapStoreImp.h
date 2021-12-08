@@ -22,8 +22,9 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
 #include <chrono>
@@ -34,22 +35,15 @@ namespace ripple {
 
 class NetworkOPs;
 
-class SHAMapStoreImp : public Stoppable, public SHAMapStore
+class SHAMapStoreImp : public SHAMapStore
 {
 private:
-    struct SavedState
-    {
-        std::string writableDb;
-        std::string archiveDb;
-        LedgerIndex lastRotated;
-    };
-
     enum Health : std::uint8_t { ok = 0, stopping, unhealthy };
 
     class SavedStateDB
     {
     public:
-        soci::session session_;
+        soci::session sqlDb_;
         std::mutex mutex_;
         beast::Journal const journal_;
 
@@ -115,7 +109,7 @@ private:
     /// for this time and check again so the node can
     /// recover.
     /// See also: "recovery_wait_seconds" in rippled-example.cfg
-    boost::optional<std::chrono::seconds> recoveryWaitTime_;
+    std::optional<std::chrono::seconds> recoveryWaitTime_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
@@ -123,23 +117,14 @@ private:
     LedgerMaster* ledgerMaster_ = nullptr;
     FullBelowCache* fullBelowCache_ = nullptr;
     TreeNodeCache* treeNodeCache_ = nullptr;
-    DatabaseCon* transactionDb_ = nullptr;
-    DatabaseCon* ledgerDb_ = nullptr;
 
     static constexpr auto nodeStoreName_ = "NodeStore";
 
 public:
     SHAMapStoreImp(
         Application& app,
-        Stoppable& parent,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal);
-
-    ~SHAMapStoreImp()
-    {
-        if (thread_.joinable())
-            thread_.join();
-    }
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
@@ -149,7 +134,7 @@ public:
     }
 
     std::unique_ptr<NodeStore::Database>
-    makeNodeStore(std::string const& name, std::int32_t readThreads) override;
+    makeNodeStore(std::int32_t readThreads) override;
 
     LedgerIndex
     setCanDelete(LedgerIndex seq) override
@@ -189,7 +174,7 @@ public:
     int
     fdRequired() const override;
 
-    boost::optional<LedgerIndex>
+    std::optional<LedgerIndex>
     minimumOnline() const override;
 
 private:
@@ -226,10 +211,10 @@ private:
      */
     void
     clearSql(
-        DatabaseCon& database,
         LedgerIndex lastRotated,
-        std::string const& minQuery,
-        std::string const& deleteQuery);
+        std::string const& TableName,
+        std::function<std::optional<LedgerIndex>()> const& getMinSeq,
+        std::function<void(LedgerIndex)> const& deleteBeforeSeq);
     void
     clearCaches(LedgerIndex validatedSeq);
     void
@@ -248,20 +233,16 @@ private:
     Health
     health();
 
-    //
-    // Stoppable
-    //
+public:
     void
-    onStart() override
+    start() override
     {
         if (deleteInterval_)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 
-    // Called when the application begins shutdown
     void
-    onStop() override;
-    // Called when all child Stoppable objects have stoped
+    stop() override;
 };
 
 }  // namespace ripple

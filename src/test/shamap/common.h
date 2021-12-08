@@ -39,7 +39,6 @@ private:
 
     TestStopwatch clock_;
     NodeStore::DummyScheduler scheduler_;
-    RootStoppable parent_;
 
     beast::Journal const j_;
 
@@ -47,21 +46,21 @@ public:
     TestNodeFamily(beast::Journal j)
         : fbCache_(std::make_shared<FullBelowCache>(
               "App family full below cache",
-              clock_))
+              clock_,
+              j))
         , tnCache_(std::make_shared<TreeNodeCache>(
               "App family tree node cache",
               65536,
               std::chrono::minutes{1},
               clock_,
               j))
-        , parent_("TestRootStoppable")
         , j_(j)
     {
         Section testSection;
         testSection.set("type", "memory");
-        testSection.set("Path", "SHAMap_test");
+        testSection.set("path", "SHAMap_test");
         db_ = NodeStore::Manager::instance().make_Database(
-            "test", megabytes(4), scheduler_, 1, parent_, testSection, j);
+            megabytes(4), scheduler_, 1, testSection, j);
     }
 
     NodeStore::Database&
