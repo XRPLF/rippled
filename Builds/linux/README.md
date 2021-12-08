@@ -6,9 +6,8 @@ builds, including docker based builds for those distributions, please consult
 the [rippled-package-builder](https://github.com/ripple/rippled-package-builder)
 repository. 
 
-For non Ubuntu distributions, the steps below should work be
-installing the appropriate dependencies using that distribution's package
-management tools.
+For non Ubuntu distributions, the steps below should work by installing the 
+appropriate dependencies using that distribution's package management tools.
 
 ## Dependencies
 
