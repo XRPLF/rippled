@@ -32,9 +32,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <xrpl.pb.h>
 #include <type_traits>
 #include <vector>
+#include <xrpl.pb.h>
 
 namespace ripple {
 
