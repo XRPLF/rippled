@@ -30,7 +30,7 @@ cd openssl-${OPENSSL_VER}
 SSLDIR=$(openssl version -d | cut -d: -f2 | tr -d [:space:]\")
 ./config -fPIC --prefix=/opt/local/openssl --openssldir=${SSLDIR} zlib shared
 make -j$(nproc) >> make_output.txt 2>&1
-make install
+make install >> make_output.txt 2>&1
 cd ..
 rm -f openssl-${OPENSSL_VER}.tar.gz
 rm -rf openssl-${OPENSSL_VER}
@@ -43,7 +43,7 @@ cd libarchive-3.4.1
 mkdir _bld && cd _bld
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j$(nproc) >> make_output.txt 2>&1
-make install
+make install >> make_output.txt 2>&1
 cd ../..
 rm -f libarchive-3.4.1.tar.gz
 rm -rf libarchive-3.4.1
@@ -55,7 +55,7 @@ cd protobuf-3.10.1
 ./autogen.sh
 ./configure
 make -j$(nproc) >> make_output.txt 2>&1
-make install
+make install >> make_output.txt 2>&1
 ldconfig
 cd ..
 rm -f protobuf-all-3.10.1.tar.gz
@@ -78,7 +78,7 @@ cmake \
   -DCARES_BUILD_CONTAINER_TESTS=OFF \
   ..
 make -j$(nproc) >> make_output.txt 2>&1
-make install
+make install >> make_output.txt 2>&1
 cd ../..
 rm -f c-ares-1.15.0.tar.gz
 rm -rf c-ares-1.15.0
@@ -98,7 +98,7 @@ cmake \
   -DProtobuf_USE_STATIC_LIBS=ON \
   ..
 make -j$(nproc) >> make_output.txt 2>&1
-make install
+make install >> make_output.txt 2>&1
 cd ../..
 rm -f xf v1.25.0.tar.gz
 rm -rf grpc-1.25.0
@@ -115,7 +115,7 @@ if [ "${CI_USE}" = true ] ; then
     cd build
     cmake -G "Unix Makefiles" ..
     make -j$(nproc) >> make_output.txt 2>&1
-    make install
+    make install >> make_output.txt 2>&1
     cd ../..
     rm -f Release_1_8_16.tar.gz
     rm -rf doxygen-Release_1_8_16
@@ -136,8 +136,8 @@ if [ "${CI_USE}" = true ] ; then
     tar xf ccache-3.7.6.tar.gz
     cd ccache-3.7.6
     ./configure --prefix=/usr/local
-    make
-    make install
+    make >> make_output.txt 2>&1
+    make install >> make_output.txt 2>&1
     cd ..
     rm -f ccache-3.7.6.tar.gz
     rm -rf ccache-3.7.6

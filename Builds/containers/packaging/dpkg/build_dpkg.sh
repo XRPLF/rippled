@@ -4,7 +4,7 @@ set -ex
 # make sure pkg source files are up to date with repo
 cd /opt/rippled_bld/pkg
 cp -fpru rippled/Builds/containers/packaging/dpkg/debian/. debian/
-cp -fpu rippled/Builds/containers/shared/rippled.service debian/
+cp -fpu rippled/Builds/containers/shared/rippled*.service debian/
 cp -fpu rippled/Builds/containers/shared/update_sources.sh .
 source update_sources.sh
 
@@ -52,14 +52,15 @@ rc=$?; if [[ $rc != 0 ]]; then
     error "error building dpkg"
 fi
 cd ..
-ls -latr
 
 # copy artifacts
 cp rippled-dev_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
+cp rippled-reporting_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}.dsc ${PKG_OUTDIR}
 # dbgsym suffix is ddeb under newer debuild, but just deb under earlier
 cp rippled-dbgsym_${RIPPLED_DPKG_FULL_VERSION}_amd64.* ${PKG_OUTDIR}
+cp rippled-reporting-dbgsym_${RIPPLED_DPKG_FULL_VERSION}_amd64.* ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.changes ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.build ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_VERSION}.orig.tar.gz ${PKG_OUTDIR}
@@ -81,15 +82,20 @@ DEB_SHA256=$(cat shasums | \
     grep "rippled_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
 DBG_SHA256=$(cat shasums | \
     grep "rippled-dbgsym_${RIPPLED_DPKG_VERSION}-1_amd64.*" | cut -d " " -f 1)
+REPORTING_DBG_SHA256=$(cat shasums | \
+    grep "rippled-reporting-dbgsym_${RIPPLED_DPKG_VERSION}-1_amd64.*" | cut -d " " -f 1)
 DEV_SHA256=$(cat shasums | \
     grep "rippled-dev_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
+REPORTING_SHA256=$(cat shasums | \
+    grep "rippled-reporting_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
 SRC_SHA256=$(cat shasums | \
     grep "rippled_${RIPPLED_DPKG_VERSION}.orig.tar.gz" | cut -d " " -f 1)
 echo "deb_sha256=${DEB_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "dbg_sha256=${DBG_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "dev_sha256=${DEV_SHA256}" >> ${PKG_OUTDIR}/build_vars
+echo "reporting_sha256=${REPORTING_SHA256}" >> ${PKG_OUTDIR}/build_vars
+echo "reporting_dbg_sha256=${REPORTING_DBG_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "src_sha256=${SRC_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "rippled_version=${RIPPLED_VERSION}" >> ${PKG_OUTDIR}/build_vars
 echo "dpkg_version=${RIPPLED_DPKG_VERSION}" >> ${PKG_OUTDIR}/build_vars
 echo "dpkg_full_version=${RIPPLED_DPKG_FULL_VERSION}" >> ${PKG_OUTDIR}/build_vars
-
