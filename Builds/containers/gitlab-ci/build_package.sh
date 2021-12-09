@@ -22,6 +22,7 @@ time cmake \
   -Dpackages_only=ON \
   -Dcontainer_label="${container_tag}" \
   -Dhave_package_container=ON \
-  -DCMAKE_VERBOSE_MAKEFILE=OFF \
+  -DCMAKE_VERBOSE_MAKEFILE=ON \
+  -Dunity=OFF \
   -G Ninja ../..
-time cmake --build . --target ${pkgtype}
+time cmake --build . --target ${pkgtype} -- -v

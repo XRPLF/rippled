@@ -989,9 +989,12 @@ if (is_ci)
   target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
 endif ()
 
-if (reporting)
-    target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
-endif ()
+if(reporting)
+set_target_properties(rippled PROPERTIES OUTPUT_NAME rippled-reporting)
+get_target_property(BIN_NAME rippled OUTPUT_NAME)
+message(STATUS "Reporting mode build: rippled renamed ${BIN_NAME}")
+  target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
+endif()
 
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
   # any files that don't play well with unity should be added here

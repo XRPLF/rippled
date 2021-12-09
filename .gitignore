@@ -104,3 +104,5 @@ Builds/VisualStudio2015/*.sdf
 CMakeSettings.json
 compile_commands.json
 .clangd
+packages
+pkg_out

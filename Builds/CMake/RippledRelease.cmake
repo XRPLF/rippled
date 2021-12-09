@@ -48,12 +48,15 @@ if (is_root_project)
         Builds/containers/centos-builder/Dockerfile
         Builds/containers/centos-builder/centos_setup.sh
         Builds/containers/centos-builder/extras.sh
-        Builds/containers/shared/build_deps.sh
-        Builds/containers/shared/rippled.service
-        Builds/containers/shared/update_sources.sh
         Builds/containers/shared/update-rippled.sh
+        Builds/containers/shared/update_sources.sh
+        Builds/containers/shared/rippled.service
+        Builds/containers/shared/rippled-reporting.service
+        Builds/containers/shared/build_deps.sh
         Builds/containers/packaging/rpm/rippled.spec
         Builds/containers/packaging/rpm/build_rpm.sh
+        Builds/containers/packaging/rpm/50-rippled.preset
+        Builds/containers/packaging/rpm/50-rippled-reporting.preset
         bin/getRippledInfo
     )
     exclude_from_default (rpm_container)
@@ -86,7 +89,7 @@ if (is_root_project)
     add_custom_target (dpkg_container
       docker build
         --pull
-        --build-arg DIST_TAG=16.04
+        --build-arg DIST_TAG=18.04
         --build-arg GIT_COMMIT=${commit_hash}
         -t rippled-dpkg-builder:${container_label}
         $<$<BOOL:${dpkg_cache_from}>:--cache-from=${dpkg_cache_from}>
@@ -96,28 +99,40 @@ if (is_root_project)
       USES_TERMINAL
       COMMAND_EXPAND_LISTS
       SOURCES
+        Builds/containers/packaging/dpkg/debian/rippled-reporting.links
+        Builds/containers/packaging/dpkg/debian/copyright
+        Builds/containers/packaging/dpkg/debian/rules
+        Builds/containers/packaging/dpkg/debian/rippled-reporting.install
+        Builds/containers/packaging/dpkg/debian/rippled-reporting.postinst
+        Builds/containers/packaging/dpkg/debian/rippled.links
+        Builds/containers/packaging/dpkg/debian/rippled.prerm
+        Builds/containers/packaging/dpkg/debian/rippled.postinst
+        Builds/containers/packaging/dpkg/debian/rippled-dev.install
+        Builds/containers/packaging/dpkg/debian/dirs
+        Builds/containers/packaging/dpkg/debian/rippled.postrm
+        Builds/containers/packaging/dpkg/debian/rippled.conffiles
+        Builds/containers/packaging/dpkg/debian/compat
+        Builds/containers/packaging/dpkg/debian/source/format
+        Builds/containers/packaging/dpkg/debian/source/local-options
+        Builds/containers/packaging/dpkg/debian/README.Debian
+        Builds/containers/packaging/dpkg/debian/rippled.install
+        Builds/containers/packaging/dpkg/debian/rippled.preinst
+        Builds/containers/packaging/dpkg/debian/docs
+        Builds/containers/packaging/dpkg/debian/control
+        Builds/containers/packaging/dpkg/debian/rippled-reporting.dirs
+        Builds/containers/packaging/dpkg/build_dpkg.sh
         Builds/containers/ubuntu-builder/Dockerfile
         Builds/containers/ubuntu-builder/ubuntu_setup.sh
+        bin/getRippledInfo
+        Builds/containers/shared/install_cmake.sh
+        Builds/containers/shared/install_boost.sh
+        Builds/containers/shared/update-rippled.sh
+        Builds/containers/shared/update_sources.sh
         Builds/containers/shared/build_deps.sh
         Builds/containers/shared/rippled.service
-        Builds/containers/shared/update_sources.sh
-        Builds/containers/shared/update-rippled.sh
-        Builds/containers/packaging/dpkg/build_dpkg.sh
-        Builds/containers/packaging/dpkg/debian/README.Debian
-        Builds/containers/packaging/dpkg/debian/conffiles
-        Builds/containers/packaging/dpkg/debian/control
-        Builds/containers/packaging/dpkg/debian/copyright
-        Builds/containers/packaging/dpkg/debian/dirs
-        Builds/containers/packaging/dpkg/debian/docs
-        Builds/containers/packaging/dpkg/debian/rippled-dev.install
-        Builds/containers/packaging/dpkg/debian/rippled.install
-        Builds/containers/packaging/dpkg/debian/rippled.links
-        Builds/containers/packaging/dpkg/debian/rippled.postinst
-        Builds/containers/packaging/dpkg/debian/rippled.postrm
-        Builds/containers/packaging/dpkg/debian/rippled.preinst
-        Builds/containers/packaging/dpkg/debian/rippled.prerm
-        Builds/containers/packaging/dpkg/debian/rules
-        bin/getRippledInfo
+        Builds/containers/shared/rippled-reporting.service
+        Builds/containers/shared/rippled-logrotate
+        Builds/containers/shared/update-rippled-cron
     )
     exclude_from_default (dpkg_container)
     add_custom_target (dpkg
@@ -187,4 +202,3 @@ if (is_root_project)
     message (STATUS "docker NOT found -- won't be able to build containers for packaging")
   endif ()
 endif ()
-

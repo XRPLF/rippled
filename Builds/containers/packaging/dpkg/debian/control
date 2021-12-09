@@ -12,6 +12,12 @@ Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: rippled daemon
 
+Package: rippled-reporting
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: rippled reporting daemon
+
 Package: rippled-dev
 Section: devel
 Recommends: rippled (= ${binary:Version})

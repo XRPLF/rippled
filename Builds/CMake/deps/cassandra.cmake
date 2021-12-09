@@ -112,6 +112,8 @@ if(reporting)
             -DLIBUV_LIBARY=${BINARY_DIR}/libuv_a.a
             -DLIBUV_INCLUDE_DIR=${SOURCE_DIR}/include
             -DCASS_BUILD_STATIC=ON
+            -DCASS_BUILD_SHARED=OFF
+            -DOPENSSL_ROOT_DIR=/opt/local/openssl
             INSTALL_COMMAND ""
             BUILD_BYPRODUCTS <BINARY_DIR>/${ep_lib_prefix}cassandra_static.a
             LOG_BUILD TRUE
