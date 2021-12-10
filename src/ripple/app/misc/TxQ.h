@@ -96,13 +96,13 @@ public:
         FeeLevel64 minimumEscalationMultiplier = baseLevel * 500;
         /// Minimum number of transactions to allow into the ledger
         /// before escalation, regardless of the prior ledger's size.
-        std::uint32_t minimumTxnInLedger = 5;
+        std::uint32_t minimumTxnInLedger = 32;
         /// Like @ref minimumTxnInLedger for standalone mode.
         /// Primarily so that tests don't need to worry about queuing.
         std::uint32_t minimumTxnInLedgerSA = 1000;
         /// Number of transactions per ledger that fee escalation "works
         /// towards".
-        std::uint32_t targetTxnInLedger = 50;
+        std::uint32_t targetTxnInLedger = 256;
         /** Optional maximum allowed value of transactions per ledger before
             fee escalation kicks in. By default, the maximum is an emergent
             property of network, validator, and consensus performance. This
