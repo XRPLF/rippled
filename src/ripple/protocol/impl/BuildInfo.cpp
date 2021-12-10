@@ -37,6 +37,9 @@ char const* const versionString = "1.8.1"
 // clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)
+#ifdef GIT_COMMIT_HASH
+    "-" GIT_COMMIT_HASH
+#endif
     "+"
 #ifdef DEBUG
     "DEBUG"
