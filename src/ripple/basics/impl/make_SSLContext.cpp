@@ -22,6 +22,11 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/container/aged_unordered_set.h>
 #include <cstdint>
+#include <openssl/bn.h>
+#include <openssl/dh.h>
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
 #include <sstream>
 #include <stdexcept>
 
