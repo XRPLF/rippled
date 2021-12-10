@@ -6,6 +6,15 @@ endif ()
 
 project (rippled)
 
+# make GIT_COMMIT_HASH define available to all sources
+find_package(Git)
+if(Git_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --abbrev=40
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE GIT_COMMIT_HASH)
+    message(STATUS gch: ${GIT_COMMIT_HASH})
+    add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
+endif() #git
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/deps")
 
