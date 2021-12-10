@@ -1469,6 +1469,7 @@ public:
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger_standalone", "2"},
+                     {"minimum_txn_in_ledger", "5"},
                      {"target_txn_in_ledger", "4"},
                      {"maximum_txn_in_ledger", "5"}}));
 
