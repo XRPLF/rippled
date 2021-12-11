@@ -299,8 +299,8 @@ matrix:
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_mac/
       stage: build
       os: osx
-      osx_image: xcode11.2
-      name: xcode11.2, debug
+      osx_image: xcode13.1
+      name: xcode13.1, debug
       env:
         # put NIH in non-cache location since it seems to
         # cause failures when homebrew updates
@@ -338,7 +338,7 @@ matrix:
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
         - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}
     - <<: *macos
-      name: xcode11.2, release
+      name: xcode13.1, release
       before_script:
         - export BLD_CONFIG=Release
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dassert=ON"
@@ -347,8 +347,8 @@ matrix:
       before_script:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
-      osx_image: xcode11.2
-      name: xcode11.2, debug
+      osx_image: xcode13.1
+      name: xcode13.1, debug
     # windows
     - &windows
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_win/
