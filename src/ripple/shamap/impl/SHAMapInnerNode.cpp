@@ -182,7 +182,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
         auto const hash = si.getBitString<256>();
         auto const pos = si.get8();
 
-        if ((pos < 0) || (pos >= branchFactor))
+        if (pos >= branchFactor)
             Throw<std::runtime_error>("invalid CI node");
 
         hashes[pos].as_uint256() = hash;
