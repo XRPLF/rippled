@@ -2575,8 +2575,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 l[jss::close_time_offset] = closeOffset.count();
 
 #if RIPPLED_REPORTING
-            std::int64_t const dbAge = std::max(m_ledgerMaster.getValidatedLedgerAge().count(),
-                0L);
+            std::int64_t const dbAge =
+                std::max(m_ledgerMaster.getValidatedLedgerAge().count(), 0L);
             l[jss::age] = Json::UInt(dbAge);
 #else
             constexpr std::chrono::seconds highAgeThreshold{1000000};
