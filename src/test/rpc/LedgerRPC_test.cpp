@@ -1539,10 +1539,11 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         const std::string txid1 = [&]() {
+            auto const& parentHash = env.current()->info().parentHash;
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
             {
-                const std::string txid0 = [&]() {
-                    auto const& txj = jrr[jss::queue_data][0u];
+                const std::string txid1 = [&]() {
+                    auto const& txj = jrr[jss::queue_data][1u];
                     BEAST_EXPECT(txj[jss::account] == alice.human());
                     BEAST_EXPECT(txj[jss::fee_level] == "256");
                     BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
@@ -1554,7 +1555,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                     return tx[jss::hash].asString();
                 }();
 
-                auto const& txj = jrr[jss::queue_data][1u];
+                auto const& txj = jrr[jss::queue_data][0u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());
                 BEAST_EXPECT(txj[jss::fee_level] == "256");
                 BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
@@ -1563,9 +1564,12 @@ class LedgerRPC_test : public beast::unit_test::suite
                 auto const& tx = txj[jss::tx];
                 BEAST_EXPECT(tx[jss::Account] == alice.human());
                 BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);
-                const auto txid1 = tx[jss::hash].asString();
-                BEAST_EXPECT(txid0 < txid1);
-                return txid1;
+                const auto txid0 = tx[jss::hash].asString();
+                uint256 tx0, tx1;
+                BEAST_EXPECT(tx0.parseHex(txid0));
+                BEAST_EXPECT(tx1.parseHex(txid1));
+                BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
+                return txid0;
             }
             return std::string{};
         }();
@@ -1577,6 +1581,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
         {
+            auto const& parentHash = env.current()->info().parentHash;
             auto const txid0 = [&]() {
                 auto const& txj = jrr[jss::queue_data][0u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());
@@ -1593,7 +1598,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
             BEAST_EXPECT(txj.isMember(jss::tx));
             BEAST_EXPECT(txj[jss::tx] == txid1);
-            BEAST_EXPECT(txid0 < txid1);
+            uint256 tx0, tx1;
+            BEAST_EXPECT(tx0.parseHex(txid0));
+            BEAST_EXPECT(tx1.parseHex(txid1));
+            BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
         }
 
         env.close();
