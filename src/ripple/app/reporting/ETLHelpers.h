@@ -43,7 +43,7 @@ class NetworkValidatedLedgers
 
     mutable std::mutex m_;
 
-    std::condition_variable cv_;
+    mutable std::condition_variable cv_;
 
     bool stopping_ = false;
 
@@ -64,7 +64,7 @@ public:
     /// @return sequence of most recently validated ledger. empty optional if
     /// the datastructure has been stopped
     std::optional<uint32_t>
-    getMostRecent()
+    getMostRecent() const
     {
         std::unique_lock lck(m_);
         cv_.wait(lck, [this]() { return max_ || stopping_; });
@@ -75,8 +75,9 @@ public:
     /// @return sequence of most recently validated ledger, or empty optional
     /// if no ledgers are known to have been validated.
     std::optional<uint32_t>
-    tryGetMostRecent()
+    tryGetMostRecent() const
     {
+        std::unique_lock lk(m_);
         return max_;
     }
 

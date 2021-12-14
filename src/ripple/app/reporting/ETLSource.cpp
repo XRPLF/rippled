@@ -774,7 +774,7 @@ ETLLoadBalancer::forwardToP2p(RPC::JsonContext& context) const
             increment();
             continue;
         }
-        res = sources_[sourceIdx]->forwardToP2p(context);
+        res = src->forwardToP2p(context);
         if (!res.isMember("forwarded") || res["forwarded"] != true)
         {
             increment();
