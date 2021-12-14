@@ -128,8 +128,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             Json::Value jvQueueData = Json::objectValue;
 
-            auto const txs =
-                context.app.getTxQ().getAccountTxs(accountID, *ledger);
+            auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
                 jvQueueData[jss::txn_count] =
@@ -298,7 +297,7 @@ doAccountInfoGrpc(
                 return {result, errorStatus};
             }
             std::vector<TxQ::TxDetails> const txs =
-                context.app.getTxQ().getAccountTxs(accountID, *ledger);
+                context.app.getTxQ().getAccountTxs(accountID);
             org::xrpl::rpc::v1::QueueData& queueData =
                 *result.mutable_queue_data();
             RPC::convert(queueData, txs);

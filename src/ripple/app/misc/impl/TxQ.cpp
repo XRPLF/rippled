@@ -265,6 +265,8 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     return totalFeeLevel;
 }
 
+LedgerHash TxQ::MaybeTx::parentHashComp{};
+
 TxQ::MaybeTx::MaybeTx(
     std::shared_ptr<STTx const> const& txn_,
     TxID const& txID_,
@@ -467,13 +469,12 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
 
     // Check if the next transaction for this account is earlier in the queue,
     // which means we skipped it earlier, and need to try it again.
-    OrderCandidates o;
     auto const feeNextIter = std::next(candidateIter);
     bool const useAccountNext =
         accountNextIter != txQAccount.transactions.end() &&
         accountNextIter->first > candidateIter->seqProxy &&
         (feeNextIter == byFee_.end() ||
-         o(accountNextIter->second, *feeNextIter));
+         byFee_.value_comp()(accountNextIter->second, *feeNextIter));
 
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
@@ -1529,6 +1530,37 @@ TxQ::accept(Application& app, OpenView& view)
         }
     }
 
+    // All transactions that can be moved out of the queue into the open
+    // ledger have been. Rebuild the queue using the open ledger's
+    // parent hash, so that transactions paying the same fee are
+    // reordered.
+    LedgerHash const& parentHash = view.info().parentHash;
+#if !NDEBUG
+    auto const startingSize = byFee_.size();
+    assert(parentHash != parentHash_);
+    parentHash_ = parentHash;
+#endif
+    // byFee_ doesn't "own" the candidate objects inside it, so it's
+    // perfectly safe to wipe it and start over, repopulating from
+    // byAccount_.
+    //
+    // In the absence of a "re-sort the list in place" function, this
+    // was the fastest method tried to repopulate the list.
+    // Other methods included: create a new list and moving items over one at a
+    // time, create a new list and merge the old list into it.
+    byFee_.clear();
+
+    MaybeTx::parentHashComp = parentHash;
+
+    for (auto& [_, account] : byAccount_)
+    {
+        for (auto& [_, candidate] : account.transactions)
+        {
+            byFee_.insert(candidate);
+        }
+    }
+    assert(byFee_.size() == startingSize);
+
     return ledgerChanged;
 }
 
@@ -1740,7 +1772,7 @@ TxQ::getTxRequiredFeeAndSeq(
 }
 
 std::vector<TxQ::TxDetails>
-TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
+TxQ::getAccountTxs(AccountID const& account) const
 {
     std::vector<TxDetails> result;
 
@@ -1761,7 +1793,7 @@ TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
 }
 
 std::vector<TxQ::TxDetails>
-TxQ::getTxs(ReadView const& view) const
+TxQ::getTxs() const
 {
     std::vector<TxDetails> result;
 

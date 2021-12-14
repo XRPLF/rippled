@@ -23,6 +23,7 @@
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/ledger/OpenView.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/TER.h>
@@ -340,7 +341,7 @@ public:
         in the queue.
     */
     std::vector<TxDetails>
-    getAccountTxs(AccountID const& account, ReadView const& view) const;
+    getAccountTxs(AccountID const& account) const;
 
     /** Returns information about all transactions currently
         in the queue.
@@ -349,7 +350,7 @@ public:
         in the queue.
     */
     std::vector<TxDetails>
-    getTxs(ReadView const& view) const;
+    getTxs() const;
 
     /** Summarize current fee metrics for the `fee` RPC command.
 
@@ -575,6 +576,16 @@ private:
         */
         static constexpr int retriesAllowed = 10;
 
+        /** The hash of the parent ledger.
+
+           This is used to pseudo-randomize the transaction order when
+           populating byFee_, by XORing it with the transaction hash (txID).
+           Using a single static and doing the XOR operation every time was
+           tested to be as fast or faster than storing the computed "sort key",
+           and obviously uses less memory.
+         */
+        static LedgerHash parentHashComp;
+
     public:
         /// Constructor
         MaybeTx(
@@ -621,22 +632,26 @@ private:
         explicit OrderCandidates() = default;
 
         /** Sort @ref MaybeTx by `feeLevel` descending, then by
-         * transaction ID ascending
+         * pseudo-randomized transaction ID ascending
          *
          * The transaction queue is ordered such that transactions
          * paying a higher fee are in front of transactions paying
          * a lower fee, giving them an opportunity to be processed into
          * the open ledger first. Within transactions paying the same
-         * fee, order by the arbitrary but consistent transaction ID.
-         * This allows validators to build similar queues in the same
-         * order, and thus have more similar initial proposals.
+         * fee, order by the arbitrary but consistent pseudo-randomized
+         * transaction ID. The ID is pseudo-randomized by XORing it with
+         * the open ledger's parent hash, which is deterministic, but
+         * unpredictable. This allows validators to build similar queues
+         * in the same order, and thus have more similar initial
+         * proposals.
          *
          */
         bool
         operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
         {
             if (lhs.feeLevel == rhs.feeLevel)
-                return lhs.txID < rhs.txID;
+                return (lhs.txID ^ MaybeTx::parentHashComp) <
+                    (rhs.txID ^ MaybeTx::parentHashComp);
             return lhs.feeLevel > rhs.feeLevel;
         }
     };
@@ -769,6 +784,14 @@ private:
         locked mutex_
     */
     std::optional<size_t> maxSize_;
+
+#if !NDEBUG
+    /**
+        parentHash_ checks that no unexpected ledger transitions
+        happen, and is only checked via debug asserts.
+    */
+    LedgerHash parentHash_{beast::zero};
+#endif
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.
