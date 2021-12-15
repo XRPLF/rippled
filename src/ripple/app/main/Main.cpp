@@ -632,17 +632,12 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
         config->START_UP = Config::LOAD_FILE;
     }
-    else if (vm.count("load"))
+    else if (vm.count("load") || config->FAST_LOAD)
     {
         config->START_UP = Config::LOAD;
     }
 
-    if (vm.count("valid"))
-    {
-        config->START_VALID = true;
-    }
-
-    if (vm.count("net"))
+    if (vm.count("net") && !config->FAST_LOAD)
     {
         if ((config->START_UP == Config::LOAD) ||
             (config->START_UP == Config::REPLAY))
@@ -653,6 +648,11 @@ run(int argc, char** argv)
         }
 
         config->START_UP = Config::NETWORK;
+    }
+
+    if (vm.count("valid"))
+    {
+        config->START_VALID = true;
     }
 
     // Override the RPC destination IP address. This must

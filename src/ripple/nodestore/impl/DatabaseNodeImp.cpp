@@ -47,7 +47,8 @@ std::shared_ptr<NodeObject>
 DatabaseNodeImp::fetchNodeObject(
     uint256 const& hash,
     std::uint32_t,
-    FetchReport& fetchReport)
+    FetchReport& fetchReport,
+    bool duplicate)
 {
     std::shared_ptr<NodeObject> nodeObject{
         cache_ ? cache_->fetch(hash) : nullptr};
@@ -70,13 +71,8 @@ DatabaseNodeImp::fetchNodeObject(
         switch (status)
         {
             case ok:
-                ++fetchHitCount_;
-                if (nodeObject)
-                {
-                    fetchSz_ += nodeObject->getData().size();
-                    if (cache_)
-                        cache_->canonicalize_replace_client(hash, nodeObject);
-                }
+                if (nodeObject && cache_)
+                    cache_->canonicalize_replace_client(hash, nodeObject);
                 break;
             case notFound:
                 break;

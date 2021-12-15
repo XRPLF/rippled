@@ -269,6 +269,9 @@ public:
     forwardProposedTransaction(Json::Value const& jvObj) = 0;
     virtual void
     forwardProposedAccountTransaction(Json::Value const& jvObj) = 0;
+
+    virtual void
+    stateAccounting(Json::Value& obj) = 0;
 };
 
 //------------------------------------------------------------------------------

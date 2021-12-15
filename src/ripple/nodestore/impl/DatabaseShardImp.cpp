@@ -1384,7 +1384,8 @@ std::shared_ptr<NodeObject>
 DatabaseShardImp::fetchNodeObject(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
-    FetchReport& fetchReport)
+    FetchReport& fetchReport,
+    bool duplicate)
 {
     auto const shardIndex{seqToShardIndex(ledgerSeq)};
     std::shared_ptr<Shard> shard;

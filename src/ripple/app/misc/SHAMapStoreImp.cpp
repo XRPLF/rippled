@@ -27,6 +27,8 @@
 #include <ripple/core/Pg.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 
+#include <ripple/nodestore/Scheduler.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
@@ -242,7 +244,11 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(node.getHash().as_uint256());
+    dbRotating_->fetchNodeObject(
+        node.getHash().as_uint256(),
+        0,
+        NodeStore::FetchType::synchronous,
+        true);
     if (!(++nodeCount % checkHealthInterval_))
     {
         if (health())

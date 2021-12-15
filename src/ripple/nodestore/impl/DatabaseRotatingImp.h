@@ -88,7 +88,8 @@ private:
     fetchNodeObject(
         uint256 const& hash,
         std::uint32_t,
-        FetchReport& fetchReport) override;
+        FetchReport& fetchReport,
+        bool duplicate) override;
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;

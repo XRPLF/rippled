@@ -29,7 +29,6 @@ ripple.net > ripple.beast
 ripple.net > ripple.json
 ripple.net > ripple.protocol
 ripple.net > ripple.resource
-ripple.nodestore > ripple.basics
 ripple.nodestore > ripple.beast
 ripple.nodestore > ripple.core
 ripple.nodestore > ripple.json

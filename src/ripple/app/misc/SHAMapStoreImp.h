@@ -26,6 +26,8 @@
 #include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
+
+#include <ripple/nodestore/Scheduler.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -197,7 +199,8 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key);
+            dbRotating_->fetchNodeObject(
+                key, 0, NodeStore::FetchType::synchronous, true);
             if (!(++check % checkHealthInterval_) && health())
                 return true;
         }

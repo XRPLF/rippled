@@ -8,7 +8,7 @@ Loop: ripple.app ripple.net
   ripple.app > ripple.net
 
 Loop: ripple.app ripple.nodestore
-  ripple.nodestore ~= ripple.app
+  ripple.app > ripple.nodestore
 
 Loop: ripple.app ripple.overlay
   ripple.overlay ~= ripple.app
@@ -27,6 +27,9 @@ Loop: ripple.basics ripple.core
 
 Loop: ripple.basics ripple.json
   ripple.json ~= ripple.basics
+
+Loop: ripple.basics ripple.nodestore
+  ripple.nodestore > ripple.basics
 
 Loop: ripple.basics ripple.protocol
   ripple.protocol > ripple.basics
