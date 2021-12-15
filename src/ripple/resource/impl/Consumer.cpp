@@ -120,7 +120,7 @@ Consumer::disconnect(beast::Journal const& j)
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {
-        JLOG(j.debug()) << "disconnecting " << entry().to_string();
+        JLOG(j.debug()) << "disconnecting " << m_entry->to_string();
     }
     return d;
 }
