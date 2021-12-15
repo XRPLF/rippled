@@ -426,6 +426,9 @@ Config::setup(
     std::string ledgerTxDbType;
     Section ledgerTxTablesSection = section("ledger_tx_tables");
     get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
+
+    Section& nodeDbSection{section(ConfigSection::nodeDatabase())};
+    get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
 void

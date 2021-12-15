@@ -271,6 +271,9 @@ public:
     // Enable the beta API version
     bool BETA_RPC_API = false;
 
+    // First, attempt to load the latest ledger directly from disk.
+    bool FAST_LOAD = false;
+
 public:
     Config();
 

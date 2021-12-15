@@ -158,14 +158,17 @@ std::shared_ptr<NodeObject>
 Database::fetchNodeObject(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
-    FetchType fetchType)
+    FetchType fetchType,
+    bool duplicate)
 {
     FetchReport fetchReport(fetchType);
 
     using namespace std::chrono;
     auto const begin{steady_clock::now()};
 
-    auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport)};
+    auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
+    auto dur = steady_clock::now() - begin;
+    fetchDurationUs_ += duration_cast<microseconds>(dur).count();
     if (nodeObject)
     {
         ++fetchHitCount_;
@@ -173,8 +176,7 @@ Database::fetchNodeObject(
     }
     ++fetchTotalCount_;
 
-    fetchReport.elapsed =
-        duration_cast<milliseconds>(steady_clock::now() - begin);
+    fetchReport.elapsed = duration_cast<milliseconds>(dur);
     scheduler_.onFetch(fetchReport);
     return nodeObject;
 }

@@ -20,6 +20,10 @@
 #include <ripple/basics/contract.h>
 #include <ripple/shamap/SHAMap.h>
 
+#include <array>
+#include <stack>
+#include <vector>
+
 namespace ripple {
 
 // This code is used to compare another node's transaction tree
@@ -284,6 +288,83 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
             }
         }
     }
+}
+
+void
+SHAMap::walkMapParallel(
+    std::vector<SHAMapMissingNode>& missingNodes,
+    int maxMissing) const
+{
+    if (!root_->isInner())  // root_ is only node, and we have it
+        return;
+
+    using StackEntry = std::shared_ptr<SHAMapInnerNode>;
+    std::array<std::shared_ptr<SHAMapTreeNode>, 16> topChildren;
+    {
+        auto const& innerRoot =
+            std::static_pointer_cast<SHAMapInnerNode>(root_);
+        for (int i = 0; i < 16; ++i)
+        {
+            if (!innerRoot->isEmptyBranch(i))
+                topChildren[i] = descendNoStore(innerRoot, i);
+        }
+    }
+    std::vector<std::thread> workers;
+    workers.reserve(16);
+
+    std::array<std::stack<StackEntry, std::vector<StackEntry>>, 16> nodeStacks;
+
+    for (int rootChildIndex = 0; rootChildIndex < 16; ++rootChildIndex)
+    {
+        auto const& child = topChildren[rootChildIndex];
+        if (!child || !child->isInner())
+            continue;
+
+        nodeStacks[rootChildIndex].push(
+            std::static_pointer_cast<SHAMapInnerNode>(child));
+
+        JLOG(journal_.debug()) << "starting worker " << rootChildIndex;
+        std::mutex m;
+        workers.push_back(std::thread(
+            [&m, &missingNodes, &maxMissing, this](
+                std::stack<StackEntry, std::vector<StackEntry>> nodeStack) {
+                while (!nodeStack.empty())
+                {
+                    std::shared_ptr<SHAMapInnerNode> node =
+                        std::move(nodeStack.top());
+                    assert(node);
+                    nodeStack.pop();
+
+                    for (int i = 0; i < 16; ++i)
+                    {
+                        if (node->isEmptyBranch(i))
+                            continue;
+                        std::shared_ptr<SHAMapTreeNode> nextNode =
+                            descendNoStore(node, i);
+
+                        if (nextNode)
+                        {
+                            if (nextNode->isInner())
+                                nodeStack.push(
+                                    std::static_pointer_cast<SHAMapInnerNode>(
+                                        nextNode));
+                        }
+                        else
+                        {
+                            std::lock_guard l{m};
+                            missingNodes.emplace_back(
+                                type_, node->getChildHash(i));
+                            if (--maxMissing <= 0)
+                                return;
+                        }
+                    }
+                }
+            },
+            std::move(nodeStacks[rootChildIndex])));
+    }
+
+    for (std::thread& worker : workers)
+        worker.join();
 }
 
 }  // namespace ripple

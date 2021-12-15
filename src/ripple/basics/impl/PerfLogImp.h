@@ -123,6 +123,7 @@ class PerfLogImp : public PerfLog
     };
 
     Setup const setup_;
+    Application& app_;
     beast::Journal const j_;
     std::function<void()> const signalStop_;
     Counters counters_{ripple::RPC::getHandlerNames(), JobTypes::instance()};
@@ -150,6 +151,7 @@ class PerfLogImp : public PerfLog
 public:
     PerfLogImp(
         Setup const& setup,
+        Application& app,
         beast::Journal journal,
         std::function<void()>&& signalStop);
 
