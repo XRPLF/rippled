@@ -1033,8 +1033,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // degenerate case
             auto const r = testLimit(env, alice, 0);
-            BEAST_EXPECT(r.isMember(jss::marker));
-            BEAST_EXPECT(r[jss::channels].size() == 0);
+            BEAST_EXPECT(r.isMember(jss::error_message));
         }
     }
 
