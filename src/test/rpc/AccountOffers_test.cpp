@@ -81,7 +81,8 @@ public:
             "json", "account_offers", jvParams.toStyledString())[jss::result];
         auto const& jro_l = jrr_l[jss::offers];
         BEAST_EXPECT(checkMarker(jrr_l));
-        BEAST_EXPECT(checkArraySize(jro_l, 10u));
+        // 9u is the expected size, since one account object is a trustline
+        BEAST_EXPECT(checkArraySize(jro_l, 9u));
     }
 
     void
@@ -173,6 +174,7 @@ public:
 
                 // last item...with previous marker passed
                 jvParams[jss::marker] = jrr_l_2[jss::marker];
+                jvParams[jss::limit] = 10u;
                 auto const jrr_l_3 = env.rpc(
                     "json",
                     "account_offers",
@@ -203,9 +205,17 @@ public:
                 "account_offers",
                 jvParams.toStyledString())[jss::result];
             auto const& jro = jrr[jss::offers];
-            BEAST_EXPECT(checkArraySize(jro, asAdmin ? 0u : 3u));
-            BEAST_EXPECT(
-                asAdmin ? checkMarker(jrr) : (!jrr.isMember(jss::marker)));
+            if (asAdmin)
+            {
+                // limit == 0 is invalid
+                BEAST_EXPECT(jrr.isMember(jss::error_message));
+            }
+            else
+            {
+                // Call should enforce min limit of 10
+                BEAST_EXPECT(checkArraySize(jro, 3u));
+                BEAST_EXPECT(!jrr.isMember(jss::marker));
+            }
         }
     }
 

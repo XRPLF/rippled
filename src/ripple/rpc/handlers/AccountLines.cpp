@@ -130,6 +130,9 @@ doAccountLines(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
         return *err;
 
+    if (limit == 0)
+        return rpcError(rpcINVALID_PARAMS);
+
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
     bool ignoreDefault = params.isMember(jss::ignore_default) &&
@@ -138,75 +141,59 @@ doAccountLines(RPC::JsonContext& context)
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
     VisitData visitData = {
         {}, accountID, hasPeer, raPeerAccount, ignoreDefault, 0, nullptr};
-    unsigned int reserve(limit);
-    uint256 startAfter;
-    std::uint64_t startHint;
+    uint256 startAfter = beast::zero;
+    std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
     {
-        // We have a start point. Use limit - 1 from the result and use the
-        // very last one for the resume.
-        Json::Value const& marker(params[jss::marker]);
-
-        if (!marker.isString())
+        if (!params[jss::marker].isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        if (!startAfter.parseHex(marker.asString()))
+        // Marker is composed of a comma separated index and start hint. The
+        // former will be read as hex, and the latter using boost lexical cast.
+        std::stringstream marker(params[jss::marker].asString());
+        std::string value;
+        if (!std::getline(marker, value, ','))
             return rpcError(rpcINVALID_PARAMS);
 
-        auto const sleLine = ledger->read({ltRIPPLE_STATE, startAfter});
-
-        if (!sleLine)
+        if (!startAfter.parseHex(value))
             return rpcError(rpcINVALID_PARAMS);
 
-        bool isDefault = false;
-        if (sleLine->getFieldAmount(sfLowLimit).getIssuer() == accountID)
-        {
-            startHint = sleLine->getFieldU64(sfLowNode);
-            isDefault = !(sleLine->getFieldU32(sfFlags) & lsfLowReserve);
-        }
-        else if (sleLine->getFieldAmount(sfHighLimit).getIssuer() == accountID)
-        {
-            startHint = sleLine->getFieldU64(sfHighNode);
-            isDefault = !(sleLine->getFieldU32(sfFlags) & lsfHighReserve);
-        }
-        else
+        if (!std::getline(marker, value, ','))
             return rpcError(rpcINVALID_PARAMS);
 
-        // Caller provided the first line (startAfter), add it as first result
-        // (but only if it meets inclusion criteria)
-
-        if (isDefault && ignoreDefault)
+        try
         {
-            // even though we're starting our search here we don't include the
-            // first entry in this edge case
-            visitData.items.reserve(++reserve);
+            startHint = boost::lexical_cast<std::uint64_t>(value);
         }
-        else
+        catch (boost::bad_lexical_cast&)
         {
-            auto const line = RippleState::makeItem(accountID, sleLine);
-            if (line == nullptr)
-                return rpcError(rpcINVALID_PARAMS);
-
-            addLine(jsonLines, *line);
-            visitData.items.reserve(reserve);
+            return rpcError(rpcINVALID_PARAMS);
         }
-    }
-    else
-    {
-        startHint = 0;
-        // We have no start point, limit should be one higher than requested.
-        visitData.items.reserve(++reserve);
+
+        // We then must check if the object pointed to by the marker is actually
+        // owned by the account in the request.
+        auto const sle = ledger->read({ltANY, startAfter});
+
+        if (!sle)
+            return rpcError(rpcINVALID_PARAMS);
+
+        if (!RPC::isOwnedByAccount(*ledger, sle, accountID))
+            return rpcError(rpcINVALID_PARAMS);
     }
 
+    auto count = 0;
+    std::optional<uint256> marker = {};
+    std::uint64_t nextHint = 0;
     {
         if (!forEachItemAfter(
                 *ledger,
                 accountID,
                 startAfter,
                 startHint,
-                reserve,
-                [&visitData](std::shared_ptr<SLE const> const& sleCur) {
+                limit + 1,
+                [&visitData, &count, &marker, &limit, &nextHint](
+                    std::shared_ptr<SLE const> const& sleCur) {
                     bool ignore = false;
                     if (visitData.ignoreDefault)
                     {
@@ -219,42 +206,48 @@ doAccountLines(RPC::JsonContext& context)
                                 sleCur->getFieldU32(sfFlags) & lsfHighReserve);
                     }
 
-                    auto const line =
-                        RippleState::makeItem(visitData.accountID, sleCur);
-                    if (line != nullptr &&
-                        (!visitData.hasPeer ||
-                         visitData.raPeerAccount == line->getAccountIDPeer()))
+                    if (!sleCur)
                     {
-                        if (!ignore)
-                            visitData.items.emplace_back(line);
-
-                        visitData.lastFound = line;
-                        visitData.foundCount++;
-
-                        return true;
+                        assert(false);
+                        return false;
                     }
 
-                    return false;
+                    if (++count == limit)
+                    {
+                        marker = sleCur->key();
+                        nextHint =
+                            RPC::getStartHint(sleCur, visitData.accountID);
+                    }
+
+                    if (!ignore && count <= limit)
+                    {
+                        auto const line =
+                            RippleState::makeItem(visitData.accountID, sleCur);
+
+                        if (line != nullptr &&
+                            (!visitData.hasPeer ||
+                             visitData.raPeerAccount ==
+                                 line->getAccountIDPeer()))
+                        {
+                            visitData.items.emplace_back(line);
+                        }
+                    }
+
+                    return true;
                 }))
         {
             return rpcError(rpcINVALID_PARAMS);
         }
     }
 
-    // RH Note:
-    // If ignore_default flag is present all lines must still be iterated, the
-    // flag only suppresses output. It does not change how iteration works. This
-    // means the RPC call may return an empty set AND a marker. In this case
-    // another query must be made until iteration is complete if a complete set
-    // of non-default state lines are required.
-    if (visitData.items.size() == reserve || visitData.foundCount >= reserve)
+    // Both conditions need to be checked because marker is set on the limit-th
+    // item, but if there is no item on the limit + 1 iteration, then there is
+    // no need to return a marker.
+    if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-
-        RippleState::pointer line(visitData.lastFound);
-        result[jss::marker] = to_string(line->key());
-        if (visitData.items.back() == visitData.lastFound)
-            visitData.items.pop_back();
+        result[jss::marker] =
+            to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     result[jss::account] = context.app.accountIDCache().toBase58(accountID);
