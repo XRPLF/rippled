@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/paths/RippleState.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
@@ -89,6 +90,47 @@ accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
         return Json::objectValue;
 }
 
+std::uint64_t
+getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+            return sle->getFieldU64(sfLowNode);
+        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+            return sle->getFieldU64(sfHighNode);
+    }
+
+    if (!sle->isFieldPresent(sfOwnerNode))
+        return 0;
+
+    return sle->getFieldU64(sfOwnerNode);
+}
+
+bool
+isOwnedByAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
+            (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
+    }
+    else if (sle->isFieldPresent(sfAccount))
+    {
+        return sle->getAccountID(sfAccount) == accountID;
+    }
+    else if (sle->getType() == ltSIGNER_LIST)
+    {
+        Keylet const accountSignerList = keylet::signers(accountID);
+        return sle->key() == accountSignerList.key;
+    }
+
+    return false;
+}
+
 bool
 getAccountObjects(
     ReadView const& ledger,
@@ -144,19 +186,19 @@ getAccountObjects(
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
+            }
 
-                if (++i == limit)
+            if (++i == limit)
+            {
+                if (++iter != entries.end())
                 {
-                    if (++iter != entries.end())
-                    {
-                        jvResult[jss::limit] = limit;
-                        jvResult[jss::marker] =
-                            to_string(dirIndex) + ',' + to_string(*iter);
-                        return true;
-                    }
-
-                    break;
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] =
+                        to_string(dirIndex) + ',' + to_string(*iter);
+                    return true;
                 }
+
+                break;
             }
         }
 

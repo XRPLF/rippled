@@ -71,6 +71,25 @@ accountFromStringWithCode(
     std::string const& strIdent,
     bool bStrict = false);
 
+/** Gets the start hint for traversing account objects
+ * @param sle - Ledger entry defined by the marker passed into the RPC.
+ * @param accountID - The ID of the account whose objects you are traversing.
+ */
+std::uint64_t
+getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+
+/**
+ * Tests if a SLE is owned by accountID.
+ * @param ledger - The ledger used to search for the sle.
+ * @param sle - The SLE to test for ownership.
+ * @param account - The account being tested for SLE ownership.
+ */
+bool
+isOwnedByAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID);
+
 /** Gathers all objects for an account in a ledger.
     @param ledger Ledger to search account objects.
     @param account AccountID to find objects for.
