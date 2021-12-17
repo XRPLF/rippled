@@ -29,7 +29,7 @@ cd openssl-${OPENSSL_VER}
 # NOTE: add -g to the end of the following line if we want debug symbols for openssl
 SSLDIR=$(openssl version -d | cut -d: -f2 | tr -d [:space:]\")
 ./config -fPIC --prefix=/opt/local/openssl --openssldir=${SSLDIR} zlib shared
-make -j$(nproc)
+make -j$(nproc) >> make_output.txt 2>&1
 make install
 cd ..
 rm -f openssl-${OPENSSL_VER}.tar.gz
@@ -42,7 +42,7 @@ tar xzf libarchive-3.4.1.tar.gz
 cd libarchive-3.4.1
 mkdir _bld && cd _bld
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j$(nproc)
+make -j$(nproc) >> make_output.txt 2>&1
 make install
 cd ../..
 rm -f libarchive-3.4.1.tar.gz
@@ -54,7 +54,7 @@ tar xf protobuf-all-3.10.1.tar.gz
 cd protobuf-3.10.1
 ./autogen.sh
 ./configure
-make -j$(nproc)
+make -j$(nproc) >> make_output.txt 2>&1
 make install
 ldconfig
 cd ..
@@ -77,7 +77,7 @@ cmake \
   -DCARES_BUILD_TESTS=OFF \
   -DCARES_BUILD_CONTAINER_TESTS=OFF \
   ..
-make -j$(nproc)
+make -j$(nproc) >> make_output.txt 2>&1
 make install
 cd ../..
 rm -f c-ares-1.15.0.tar.gz
@@ -97,7 +97,7 @@ cmake \
   -DgRPC_PROTOBUF_PROVIDER=package \
   -DProtobuf_USE_STATIC_LIBS=ON \
   ..
-make -j$(nproc)
+make -j$(nproc) >> make_output.txt 2>&1
 make install
 cd ../..
 rm -f xf v1.25.0.tar.gz
@@ -114,7 +114,7 @@ if [ "${CI_USE}" = true ] ; then
     mkdir build
     cd build
     cmake -G "Unix Makefiles" ..
-    make -j$(nproc)
+    make -j$(nproc) >> make_output.txt 2>&1
     make install
     cd ../..
     rm -f Release_1_8_16.tar.gz
