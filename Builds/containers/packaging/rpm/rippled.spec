@@ -32,15 +32,15 @@ core library for development of standalone applications that sign transactions.
 cd rippled
 mkdir -p bld.release
 cd bld.release
-cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -DCMAKE_UNITY_BUILD_BATCH_SIZE=10 -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON -Dvalidator_keys=ON
-cmake --build . --parallel --target rippled --target validator-keys -- -v
+cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -Dstatic=true -Dunity=OFF -DCMAKE_VERBOSE_MAKEFILE=OFF -Dvalidator_keys=ON
+cmake --build . --parallel --target rippled --target validator-keys
 
 %pre
 test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
 
 %install
 rm -rf $RPM_BUILD_ROOT
-DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.release --target install -- -v
+DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.release --target install
 rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/lib64/cmake/date
 install -d ${RPM_BUILD_ROOT}/etc/opt/ripple
 install -d ${RPM_BUILD_ROOT}/usr/local/bin
@@ -110,4 +110,3 @@ chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 
 * Thu Jun 02 2016 Brandon Wilson <bwilson@ripple.com>
 - Install validators.txt
-
