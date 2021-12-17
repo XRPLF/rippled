@@ -67,10 +67,10 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p>Here are main principles of Relational DB interface:</p>
 <p>1) All SQL hard code is in the files described below in Files section. No hard-coded SQL should be added to any other file in rippled, except related to tests for specific SQL implementations. 2) Pure interface class <code>RelationalDBInterface</code> can have several implementations for different relational database types. 3) For future use, if the node database is absent, then shard databases will be used.</p>
-<h1><a class="anchor" id="autotoc_md129"></a>
+<h1><a class="anchor" id="autotoc_md130"></a>
 Configuration</h1>
 <p>Section <code>[relational_db]</code> of the configuration file contains parameter <code>backend</code>. The value of this parameter is the name of relational database implementation used for node or shard databases. At the present, the only valid value of this parameter is <code>sqlite</code>.</p>
-<h1><a class="anchor" id="autotoc_md130"></a>
+<h1><a class="anchor" id="autotoc_md131"></a>
 Files</h1>
 <p>The following source files are related to Relational DB interface:</p>
 <ul>
@@ -89,21 +89,21 @@ Files</h1>
 <li><code><a class="el" href="RelationalDBInterface__postgres_8h_source.html">ripple/app/rdb/RelationalDBInterface_postgres.h</a></code> - definitions of internal methods for postgres databases;</li>
 <li><code><a class="el" href="RelationalDBInterface__postgres_8cpp_source.html">ripple/app/rdb/impl/RelationalDBInterface_postgres.cpp</a></code> - implementations of internal methods for postgres databases;</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md131"></a>
+<h1><a class="anchor" id="autotoc_md132"></a>
 Classes</h1>
 <p>The main class of the interface is <code>class RelationalDBInterface</code>. It is defined in the file <code><a class="el" href="RelationalDBInterface_8h_source.html">RelationalDBInterface.h</a></code>. This class has static method <code>init()</code> which allow to create proper <code>RelationalDBInterface</code>-derived class specified in the config. All other methods are pure virtual. These methods do not use database as a parameter. It assumed that implementation of class derived from <code>RelationalDBInterface</code> holds all database pointers inside and uses appropriate databases (nodes or shards) to get return values required by each method.</p>
 <p>At the present, there are two implementations of the derived classes - <code>class RelationalDBInterfaceSqlite</code> for sqlite database (it is located in the file <code><a class="el" href="RelationalDBInterfaceSqlite_8cpp_source.html">RelationalDBInterfaceSqlite.cpp</a></code>) and <code>class RelationalDBInterfacePostgres</code> for postgres database (it is located in the file <code><a class="el" href="RelationalDBInterfacePostgres_8cpp_source.html">RelationalDBInterfacePostgres.cpp</a></code>)</p>
-<h1><a class="anchor" id="autotoc_md132"></a>
+<h1><a class="anchor" id="autotoc_md133"></a>
 Methods</h1>
 <p>There are 3 types of methods for SQL interface:</p>
 <p>1) Global methods for work with all databases except of node. In particular, methods related to shards datavases only. These methods are sqlite-specific. They use <code>soci::session</code> as database pointer parameter. Defined and implemented in files <code>RelationalDBInterface_global.*</code> and <code>RelationalDBInterface_shard.*</code>.</p>
 <p>2) Global methods for work with node databases, and also with shard databases. For sqlite case, these methods are internal for <code>RelationalDBInterfaceSqlite</code> implementation of the class <code>RelationalDBInterface</code>. They use <code>soci::session</code> as database pointer parameter. Defined and implemented in files <code>RelationalDBInterface_nodes.*</code>. For postgres case, these methods are internal for <code>RelationalDBInterfacePostgres</code> implementation of the class <code>RelationalDBInterface</code>. They use <code><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title="STL class.">std::shared_ptr</a>&lt;PgPool&gt;</code> as database pointer parameter. Defined and implemented in files <code>RelationalDBInterface_postgres.*</code>.</p>
 <p>3) Virtual methods of class <code>RelationalDBInterface</code> and also derived classes <code>RelationalDBInterfaceSqlite</code> and <code>RelationalDBInterfacePostgres</code>. Calling such a method resulted in calling corresponding method from <code>RelationalDBInterface</code>-derived class. For sqlite case, such a method tries to retrieve information from node database, and if this database not exists - then from shard databases. For both node and shard databases, calls to global methods of type 2) performed. For postgres case, such a method retrieves information only from node database by calling a global method of type 2).</p>
-<h1><a class="anchor" id="autotoc_md133"></a>
+<h1><a class="anchor" id="autotoc_md134"></a>
 Methods lists</h1>
-<h2><a class="anchor" id="autotoc_md134"></a>
+<h2><a class="anchor" id="autotoc_md135"></a>
 Type 1 methods</h2>
-<h3><a class="anchor" id="autotoc_md135"></a>
+<h3><a class="anchor" id="autotoc_md136"></a>
 Files RelationalDBInterface_global.*</h3>
 <p>Wallet DB methods: </p><div class="fragment"><div class="line">makeWalletDB</div>
 <div class="line">makeTestWalletDB</div>
@@ -131,7 +131,7 @@ Files RelationalDBInterface_global.*</h3>
 <div class="line">updatePeerFinderDB</div>
 <div class="line">readPeerFinderDB</div>
 <div class="line">savePeerFinderDB</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md136"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md137"></a>
 Files RelationalDBInterface_shards.*</h3>
 <p>Shards DB methods: </p><div class="fragment"><div class="line">makeShardCompleteLedgerDBs</div>
 <div class="line">makeShardIncompleteLedgerDBs</div>
@@ -146,9 +146,9 @@ Files RelationalDBInterface_shards.*</h3>
 <div class="line">insertArchiveDB</div>
 <div class="line">deleteFromArchiveDB</div>
 <div class="line">dropArchiveDB</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md137"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md138"></a>
 Type 2 methods</h2>
-<h3><a class="anchor" id="autotoc_md138"></a>
+<h3><a class="anchor" id="autotoc_md139"></a>
 Files RelationalDBInterface_nodes.*</h3>
 <div class="fragment"><div class="line">makeLedgerDBs</div>
 <div class="line">getMinLedgerSeq</div>
@@ -176,7 +176,7 @@ Files RelationalDBInterface_nodes.*</h3>
 <div class="line">newestAccountTxPage</div>
 <div class="line">getTransaction</div>
 <div class="line">DbHasSpace</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md139"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md140"></a>
 Files RelationalDBInterface_postgres.*</h3>
 <div class="fragment"><div class="line">getMinLedgerSeq</div>
 <div class="line">getMaxLedgerSeq</div>
@@ -192,9 +192,9 @@ Files RelationalDBInterface_postgres.*</h3>
 <div class="line">locateTransaction</div>
 <div class="line">writeLedgerAndTransactions</div>
 <div class="line">getTxHistory</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md140"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md141"></a>
 Type 3 methods</h2>
-<h3><a class="anchor" id="autotoc_md141"></a>
+<h3><a class="anchor" id="autotoc_md142"></a>
 Files RelationalDBInterface.*</h3>
 <div class="fragment"><div class="line">init</div>
 <div class="line">getMinLedgerSeq</div>
@@ -207,7 +207,7 @@ Files RelationalDBInterface.*</h3>
 <div class="line">getTxHistory</div>
 <div class="line">ledgerDbHasSpace</div>
 <div class="line">transactionDbHasSpace</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md142"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md143"></a>
 Files backend/RelationalDBInterfaceSqlite.*</h3>
 <div class="fragment"><div class="line">getTransactionsMinLedgerSeq</div>
 <div class="line">getAccountTransactionsMinLedgerSeq</div>
@@ -233,7 +233,7 @@ Files backend/RelationalDBInterfaceSqlite.*</h3>
 <div class="line">getKBUsedAll</div>
 <div class="line">getKBUsedLedger</div>
 <div class="line">getKBUsedTransaction</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md143"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md144"></a>
 Files backend/RelationalDBInterfacePostgres.*</h3>
 <div class="fragment"><div class="line">sweep</div>
 <div class="line">getCompleteLedgers</div>

@@ -145,14 +145,14 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html">FeeMetrics</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Track and use the fee escalation metrics of the current open ledger.  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1GreaterFee.html">GreaterFee</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Used for sorting <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a> by <code>feeLevel</code>  <a href="classripple_1_1TxQ_1_1GreaterFee.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents a transaction in the queue which may be applied later to the open ledger.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Metrics.html">Metrics</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure returned by <a class="el" href="classripple_1_1TxQ.html#a2a08d6cdb1e6700a24dc0f71eb3ef7ed">TxQ::getMetrics</a>, expressed in reference fee level units.  <a href="structripple_1_1TxQ_1_1Metrics.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1OrderCandidates.html">OrderCandidates</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Used for sorting <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a>.  <a href="classripple_1_1TxQ_1_1OrderCandidates.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html">Setup</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure used to customize <a class="el" href="classripple_1_1TxQ.html">TxQ</a> behavior.  <a href="structripple_1_1TxQ_1_1Setup.html#details">More...</a><br /></td></tr>
@@ -210,8 +210,8 @@ Static Public Attributes</h2></td></tr>
 Private Types</h2></td></tr>
 <tr class="memitem:a6bb6f93b4d95b63dfc55fae4246b38b8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">FeeHook</a> = boost::intrusive::member_hook&lt; <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a>, boost::intrusive::set_member_hook&lt;&gt;, &amp;<a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a4bf9e0ab6525122a6cd2d16270ada692">MaybeTx::byFeeListHook</a> &gt;</td></tr>
 <tr class="separator:a6bb6f93b4d95b63dfc55fae4246b38b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5d1c2c494387c1f59c1d71259724bc6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#aa5d1c2c494387c1f59c1d71259724bc6">FeeMultiSet</a> = boost::intrusive::multiset&lt; <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a>, <a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">FeeHook</a>, boost::intrusive::compare&lt; <a class="el" href="classripple_1_1TxQ_1_1GreaterFee.html">GreaterFee</a> &gt; &gt;</td></tr>
-<tr class="separator:aa5d1c2c494387c1f59c1d71259724bc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ce340269d77d8ef2d85513d9545c815"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a0ce340269d77d8ef2d85513d9545c815">FeeMultiSet</a> = boost::intrusive::multiset&lt; <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a>, <a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">FeeHook</a>, boost::intrusive::compare&lt; <a class="el" href="classripple_1_1TxQ_1_1OrderCandidates.html">OrderCandidates</a> &gt; &gt;</td></tr>
+<tr class="separator:a0ce340269d77d8ef2d85513d9545c815"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ccee3a88bdb094c8eb33a9fbe436c8d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a5ccee3a88bdb094c8eb33a9fbe436c8d">AccountMap</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="classripple_1_1TxQ_1_1TxQAccount.html">TxQAccount</a> &gt;</td></tr>
 <tr class="separator:a5ccee3a88bdb094c8eb33a9fbe436c8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -256,7 +256,7 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a937b5c79cd012b25e31442e7390e5df5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html">FeeMetrics</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a937b5c79cd012b25e31442e7390e5df5">feeMetrics_</a></td></tr>
 <tr class="memdesc:a937b5c79cd012b25e31442e7390e5df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tracks the current state of the queue.  <a href="classripple_1_1TxQ.html#a937b5c79cd012b25e31442e7390e5df5">More...</a><br /></td></tr>
 <tr class="separator:a937b5c79cd012b25e31442e7390e5df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a26f78ddb330368dea5c95a9bf8d218"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TxQ.html#aa5d1c2c494387c1f59c1d71259724bc6">FeeMultiSet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a3a26f78ddb330368dea5c95a9bf8d218">byFee_</a></td></tr>
+<tr class="memitem:a3a26f78ddb330368dea5c95a9bf8d218"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TxQ.html#a0ce340269d77d8ef2d85513d9545c815">FeeMultiSet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a3a26f78ddb330368dea5c95a9bf8d218">byFee_</a></td></tr>
 <tr class="memdesc:a3a26f78ddb330368dea5c95a9bf8d218"><td class="mdescLeft">&#160;</td><td class="mdescRight">The queue itself: the collection of transactions ordered by fee level.  <a href="classripple_1_1TxQ.html#a3a26f78ddb330368dea5c95a9bf8d218">More...</a><br /></td></tr>
 <tr class="separator:a3a26f78ddb330368dea5c95a9bf8d218"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ab1707fecc84164c74360094d1bc03d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TxQ.html#a5ccee3a88bdb094c8eb33a9fbe436c8d">AccountMap</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a6ab1707fecc84164c74360094d1bc03d">byAccount_</a></td></tr>
@@ -298,12 +298,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00722">722</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00735">735</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
-<a id="aa5d1c2c494387c1f59c1d71259724bc6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5d1c2c494387c1f59c1d71259724bc6">&#9670;&nbsp;</a></span>FeeMultiSet</h2>
+<a id="a0ce340269d77d8ef2d85513d9545c815"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ce340269d77d8ef2d85513d9545c815">&#9670;&nbsp;</a></span>FeeMultiSet</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -312,7 +312,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TxQ.html#aa5d1c2c494387c1f59c1d71259724bc6">ripple::TxQ::FeeMultiSet</a> =  boost::intrusive:: multiset&lt;<a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a>, <a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">FeeHook</a>, boost::intrusive::compare&lt;<a class="el" href="classripple_1_1TxQ_1_1GreaterFee.html">GreaterFee</a>&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TxQ.html#a0ce340269d77d8ef2d85513d9545c815">ripple::TxQ::FeeMultiSet</a> =  boost::intrusive:: multiset&lt;<a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html">MaybeTx</a>, <a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">FeeHook</a>, boost::intrusive::compare&lt;<a class="el" href="classripple_1_1TxQ_1_1OrderCandidates.html">OrderCandidates</a>&gt; &gt;</td>
         </tr>
       </table>
   </td>
@@ -322,7 +322,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00725">725</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00738">738</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -346,7 +346,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00727">727</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00740">740</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -379,7 +379,7 @@ Private Attributes</h2></td></tr>
 
 <p>Constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00349">349</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00348">348</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +408,7 @@ Private Attributes</h2></td></tr>
 
 <p>Destructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00354">354</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00353">353</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -460,7 +460,7 @@ Private Attributes</h2></td></tr>
 <p>Add a new transaction to the open ledger, hold it in the queue, or reject it. </p>
 <dl class="section return"><dt>Returns</dt><dd>A pair with the <code>TER</code> and a <code>bool</code> indicating whether or not the transaction was applied to the open ledger. If the transaction is queued, will return <code>{ terQUEUED, false }</code>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00725">725</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00709">709</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -494,7 +494,7 @@ Private Attributes</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd>As more transactions are applied to the ledger, the required fee may increase. The required fee may rise above the fee level of the queued items before the queue is emptied, which will end the process, leaving those in the queue for the next open ledger.</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether any transactions were added to the <code>view</code>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01409">1409</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01399">1399</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -533,7 +533,7 @@ Private Attributes</h2></td></tr>
 <p>Update fee metrics and clean up the queue in preparation for the next ledger. </p>
 <dl class="section note"><dt>Note</dt><dd>Fee metrics are updated based on the fee levels of the txs in the validated ledger and whether consensus is slow. Maximum queue size is adjusted to be enough to hold <code>ledgersInQueue</code> ledgers or <code>queueSizeMin</code> transactions. Any transactions for which the <code>LastLedgerSequence</code> has passed are removed from the queue, and any account objects that have no candidates under them are removed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01340">1340</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01330">1330</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -555,7 +555,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return the next sequence that would go in the <a class="el" href="classripple_1_1TxQ.html" title="Transaction Queue.">TxQ</a> for an account. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01549">1549</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01539">1539</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -577,7 +577,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns fee metrics in reference fee level units. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01716">1716</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01700">1700</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -617,7 +617,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>minimum required fee, first sequence in the ledger and first available sequence </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01738">1738</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01722">1722</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -650,7 +650,7 @@ Private Attributes</h2></td></tr>
 <p>Returns information about the transactions currently in the queue for the account. </p>
 <dl class="section return"><dt>Returns</dt><dd>Empty <code>vector</code> if the account has no transactions in the queue. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01759">1759</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01743">1743</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -673,7 +673,7 @@ Private Attributes</h2></td></tr>
 <p>Returns information about all transactions currently in the queue. </p>
 <dl class="section return"><dt>Returns</dt><dd>Empty <code>vector</code> if there are no transactions in the queue. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01780">1780</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01764">1764</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -696,7 +696,7 @@ Private Attributes</h2></td></tr>
 <p>Summarize current fee metrics for the <code>fee</code> <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command. </p>
 <dl class="section return"><dt>Returns</dt><dd>a <code><a class="el" href="namespaceJson.html" title="JSON (JavaScript Object Notation).">Json</a> objectvalue</code> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01795">1795</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01779">1779</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -734,7 +734,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01562">1562</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01552">1552</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -784,7 +784,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01609">1609</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01599">1599</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -840,7 +840,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01625">1625</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01609">1609</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -878,7 +878,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01696">1696</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l01680">1680</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -906,7 +906,7 @@ template&lt;size_t fillPercentage&gt; </div>
 
 <p>Is the queue at least <code>fillPercentage</code> full? </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00361">361</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00360">360</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -976,7 +976,7 @@ template&lt;size_t fillPercentage&gt; </div>
 
 <p>Checks if the indicated transaction fits the conditions for being stored in the queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00369">369</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00368">368</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -1035,7 +1035,7 @@ template&lt;size_t fillPercentage&gt; </div>
 <p>Erase and return the next entry for the account (if fee level is higher), or next entry in byFee_ (lower fee level). </p>
 <p>Used to get the next "applyable" <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html" title="Represents a transaction in the queue which may be applied later to the open ledger.">MaybeTx</a> for <a class="el" href="classripple_1_1TxQ.html#ac83649e59014572a908ab144bef86bb2" title="Fill the new open ledger with transactions from the queue.">accept()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00452">452</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00451">451</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -1174,7 +1174,7 @@ template&lt;size_t fillPercentage&gt; </div>
 <p>All-or-nothing attempt to try to apply the queued txs for <code>accountIter</code> up to and including <code>tx</code>. </p>
 <p>Transactions following <code>tx</code> are not cleared. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00515">515</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00499">499</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -1227,7 +1227,7 @@ template&lt;size_t fillPercentage&gt; </div>
 
 <p><a class="el" href="structripple_1_1TxQ_1_1Setup.html" title="Structure used to customize TxQ behavior.">Setup</a> parameters used to control the behavior of the queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00730">730</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00743">743</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1253,7 +1253,7 @@ template&lt;size_t fillPercentage&gt; </div>
 
 <p>Journal. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00732">732</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00745">745</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1280,7 +1280,7 @@ template&lt;size_t fillPercentage&gt; </div>
 <p>Tracks the current state of the queue. </p>
 <dl class="section note"><dt>Note</dt><dd>This member must always and only be accessed under locked mutex_ </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00738">738</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00751">751</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1294,7 +1294,7 @@ template&lt;size_t fillPercentage&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TxQ.html#aa5d1c2c494387c1f59c1d71259724bc6">FeeMultiSet</a> ripple::TxQ::byFee_</td>
+          <td class="memname"><a class="el" href="classripple_1_1TxQ.html#a0ce340269d77d8ef2d85513d9545c815">FeeMultiSet</a> ripple::TxQ::byFee_</td>
         </tr>
       </table>
   </td>
@@ -1307,7 +1307,7 @@ template&lt;size_t fillPercentage&gt; </div>
 <p>The queue itself: the collection of transactions ordered by fee level. </p>
 <dl class="section note"><dt>Note</dt><dd>This member must always and only be accessed under locked mutex_ </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00744">744</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00757">757</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1334,7 +1334,7 @@ template&lt;size_t fillPercentage&gt; </div>
 <p>All of the accounts which currently have any transactions in the queue. </p>
 <p>Entries are created and destroyed dynamically as transactions are added and removed. </p><dl class="section note"><dt>Note</dt><dd>This member must always and only be accessed under locked mutex_ </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00751">751</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00764">764</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1361,7 +1361,7 @@ template&lt;size_t fillPercentage&gt; </div>
 <p>Maximum number of transactions allowed in the queue based on the current metrics. </p>
 <p>If uninitialized, there is no limit, but that condition cannot last for long in practice. </p><dl class="section note"><dt>Note</dt><dd>This member must always and only be accessed under locked mutex_ </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00758">758</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00771">771</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1387,7 +1387,7 @@ template&lt;size_t fillPercentage&gt; </div>
 
 <p>Most queue operations are done under the master lock, but use this mutex for the <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> "fee" command, which isn't. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00763">763</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00776">776</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>

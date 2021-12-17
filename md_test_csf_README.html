@@ -66,7 +66,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>The Consensus Simulation Framework is a set of software components for describing, running and analyzing simulations of the consensus algorithm in a controlled manner. It is also used to unit test the generic Ripple consensus algorithm implementation. The framework is in its early stages, so the design and supported features are subject to change.</p>
-<h1><a class="anchor" id="autotoc_md299"></a>
+<h1><a class="anchor" id="autotoc_md300"></a>
 Overview</h1>
 <p>The simulation framework focuses on simulating the core consensus and validation algorithms as a <a href="https://en.wikipedia.org/wiki/Discrete_event_simulation">discrete event simulation</a>. It is completely abstracted from the details of the XRP ledger and transactions. In the simulation, a ledger is simply a set of observed integers and transactions are single integers. The consensus process works to agree on the set of integers to include in the next ledger.</p>
 <div class="image">
@@ -82,7 +82,7 @@ CSF Overview</div></div>
 <li><code>Collector</code>s that aggregate, filter and analyze data from the simulation. Typically, this is used to monitor invariants or generate reports.</li>
 </ul>
 <p>Once specified, the simulation runs using a single <code>Scheduler</code> that manages the global clock and sequencing of activity. During the course of simulation, <code>Peer</code>s generate <code>Ledger</code>s and <code>Validation</code>s as a result of consensus, eventually fully validating the consensus history of accepted transactions. Each <code>Peer</code> also issues various <code>Event</code>s during the simulation, which are analyzed by the registered <code>Collector</code>s.</p>
-<h1><a class="anchor" id="autotoc_md300"></a>
+<h1><a class="anchor" id="autotoc_md301"></a>
 Example Simulation</h1>
 <p>Below is a basic simulation we can walk through to get an understanding of the framework. This simulation is for a set of 5 validators that aren't directly connected but rely on a single hub node for communication.</p>
 <div class="image">
@@ -118,7 +118,7 @@ Example Sim</div></div>
 <div class="line"> </div>
 <div class="line">std::cout &lt;&lt; (simDur.stop - simDur.start).count() &lt;&lt; std::endl;</div>
 <div class="line">assert(sim.synchronized());</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md301"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md302"></a>
 &lt;tt&gt;Sim&lt;/tt&gt; and &lt;tt&gt;PeerGroup&lt;/tt&gt;</h2>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">Sim sim;</div>
@@ -128,7 +128,7 @@ Example Sim</div></div>
 <div class="line">center[0]-&gt;runAsValidator = false;</div>
 </div><!-- fragment --><p>The simulation code starts by creating a single instance of the <a href="./Sim.h"><code>Sim</code> class</a>. This class is used to manage the overall simulation and internally owns most other components, including the <code>Peer</code>s, <code>Scheduler</code>, <code>BasicNetwork</code> and <code>TrustGraph</code>. The next two lines create two differ <code>PeerGroup</code>s of size 5 and 1 . A <a href="./PeerGroup.h"><code>PeerGroup</code></a> is a convenient way for configuring a set of related peers together and internally has a vector of pointers to the <code>Peer</code>s which are owned by the <code>Sim</code>. <code>PeerGroup</code>s can be combined using <code>+/-</code> operators to configure more complex relationships of nodes as shown by <code>PeerGroup network</code>. Note that each call to <code>createGroup</code> adds that many new <code>Peer</code>s to the simulation, but does not specify any trust or network relationships for the new <code>Peer</code>s.</p>
 <p>Lastly, the single <code>Peer</code> in the size 1 <code>center</code> group is switched from running as a validator (the default) to running as a tracking peer. The <a href="./Peer.h"><code>Peer</code> class</a> has a variety of configurable parameters that control how it behaves during the simulation.</p>
-<h1><a class="anchor" id="autotoc_md302"></a>
+<h1><a class="anchor" id="autotoc_md303"></a>
 &lt;tt&gt;trust&lt;/tt&gt; and &lt;tt&gt;connect&lt;/tt&gt;</h1>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">validators.trust(validators);</div>
@@ -139,7 +139,7 @@ Example Sim</div></div>
 <div class="line">validators.connect(center, delay);</div>
 </div><!-- fragment --><p>Although the <code>sim</code> object has accessible instances of <a href="./TrustGraph.h">TrustGraph</a> and <a href="./BasicNetwork.h">BasicNetwork</a>, it is more convenient to manage the graphs via the <code>PeerGroup</code>s. The first two lines create a trust topology in which all <code>Peer</code>s trust the 5 validating <code>Peer</code>s. Or in the UNL perspective, all <code>Peer</code>s are configured with the same UNL listing the 5 validating <code>Peer</code>s. The two lines could've been rewritten as <code>network.trust(validators)</code>.</p>
 <p>The next lines create the network communication topology. Each of the validating <code>Peer</code>s connects to the central hub <code>Peer</code> with a fixed delay of 200ms. Note that the network connections are really undirected, but are represented internally in a directed graph using edge pairs of inbound and outbound connections.</p>
-<h1><a class="anchor" id="autotoc_md303"></a>
+<h1><a class="anchor" id="autotoc_md304"></a>
 Collectors</h1>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">SimDurationCollector simDur;</div>
@@ -148,14 +148,14 @@ Collectors</h1>
 <p>Note that the collector lifetime is independent of the simulation and is added to the simulation by reference. This is intentional, since collectors might be used across several simulations to collect more complex combinations of data. At the end of the simulation, we print out the total duration by subtracting <code>simDur</code> members.</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">std::cout &lt;&lt; (simDur.stop - simDur.start).count() &lt;&lt; std::endl;</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md304"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md305"></a>
 Transaction submission</h1>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">// everyone submits their own ID as a TX and relay it to peers</div>
 <div class="line">for (Peer * p : validators)</div>
 <div class="line">    p-&gt;submit(Tx(static_cast&lt;std::uint32_t&gt;(p-&gt;id)));</div>
 </div><!-- fragment --><p>In this basic example, we explicitly submit a single transaction to each validator. For larger simulations, clients can use a <a href="./submitters.h">Submitter</a> to send transactions in at fixed or random intervals to fixed or random <code>Peer</code>s.</p>
-<h1><a class="anchor" id="autotoc_md305"></a>
+<h1><a class="anchor" id="autotoc_md306"></a>
 Run</h1>
 <p>The example has two calls to <code>sim.run(1)</code>. This call runs the simulation until each <code>Peer</code> has closed one additional ledger. After closing the additional ledger, the <code>Peer</code> stops participating in consensus. The first call is used to ensure a more useful prior state of all <code>Peer</code>s. After the transaction submission, the second call to <code>run</code> results in one additional ledger that accepts those transactions.</p>
 <p>Alternatively, you can specify a duration to run the simulation, e.g. <code>sim.run(10s)</code> which would have <code>Peer</code>s continuously run consensus until the scheduler has elapsed 10 additional seconds. The <code>sim.scheduler.in</code> or <code>sim.scheduler.at</code> methods can schedule arbitrary code to execute at a later time in the simulation, for example removing a network connection or modifying the trust graph. </p>

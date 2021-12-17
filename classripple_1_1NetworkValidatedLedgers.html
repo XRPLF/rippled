@@ -93,9 +93,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abe15bf08a473b19240bec14ca04733be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkValidatedLedgers.html#abe15bf08a473b19240bec14ca04733be">push</a> (uint32_t idx)</td></tr>
 <tr class="memdesc:abe15bf08a473b19240bec14ca04733be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notify the datastructure that idx has been validated by the network.  <a href="classripple_1_1NetworkValidatedLedgers.html#abe15bf08a473b19240bec14ca04733be">More...</a><br /></td></tr>
 <tr class="separator:abe15bf08a473b19240bec14ca04733be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c61e431f03ffc32a12e65b661ad6a02"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkValidatedLedgers.html#a7c61e431f03ffc32a12e65b661ad6a02">getMostRecent</a> ()</td></tr>
-<tr class="memdesc:a7c61e431f03ffc32a12e65b661ad6a02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get most recently validated sequence.  <a href="classripple_1_1NetworkValidatedLedgers.html#a7c61e431f03ffc32a12e65b661ad6a02">More...</a><br /></td></tr>
-<tr class="separator:a7c61e431f03ffc32a12e65b661ad6a02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae43bbc96bf99fd723a14627c67d8ec6b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkValidatedLedgers.html#ae43bbc96bf99fd723a14627c67d8ec6b">getMostRecent</a> () const</td></tr>
+<tr class="memdesc:ae43bbc96bf99fd723a14627c67d8ec6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get most recently validated sequence.  <a href="classripple_1_1NetworkValidatedLedgers.html#ae43bbc96bf99fd723a14627c67d8ec6b">More...</a><br /></td></tr>
+<tr class="separator:ae43bbc96bf99fd723a14627c67d8ec6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c3eaeed333efcaeb7dcb193aed71c73"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkValidatedLedgers.html#a0c3eaeed333efcaeb7dcb193aed71c73">tryGetMostRecent</a> () const</td></tr>
+<tr class="memdesc:a0c3eaeed333efcaeb7dcb193aed71c73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get most recently validated sequence.  <a href="classripple_1_1NetworkValidatedLedgers.html#a0c3eaeed333efcaeb7dcb193aed71c73">More...</a><br /></td></tr>
+<tr class="separator:a0c3eaeed333efcaeb7dcb193aed71c73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d66290bf2455b1a4841a48d65941dc0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkValidatedLedgers.html#a9d66290bf2455b1a4841a48d65941dc0">waitUntilValidatedByNetwork</a> (uint32_t sequence)</td></tr>
 <tr class="memdesc:a9d66290bf2455b1a4841a48d65941dc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Waits for the sequence to be validated by the network.  <a href="classripple_1_1NetworkValidatedLedgers.html#a9d66290bf2455b1a4841a48d65941dc0">More...</a><br /></td></tr>
 <tr class="separator:a9d66290bf2455b1a4841a48d65941dc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -148,8 +151,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a7c61e431f03ffc32a12e65b661ad6a02"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c61e431f03ffc32a12e65b661ad6a02">&#9670;&nbsp;</a></span>getMostRecent()</h2>
+<a id="ae43bbc96bf99fd723a14627c67d8ec6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae43bbc96bf99fd723a14627c67d8ec6b">&#9670;&nbsp;</a></span>getMostRecent()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -158,7 +161,7 @@ Private Attributes</h2></td></tr>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;uint32_t&gt; ripple::NetworkValidatedLedgers::getMostRecent </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td> const</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -167,6 +170,28 @@ Private Attributes</h2></td></tr>
 <p>If no ledgers are known to have been validated, this function waits until the next ledger is validated </p><dl class="section return"><dt>Returns</dt><dd>sequence of most recently validated ledger. empty optional if the datastructure has been stopped </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="ETLHelpers_8h_source.html#l00067">67</a> of file <a class="el" href="ETLHelpers_8h_source.html">ETLHelpers.h</a>.</p>
+
+</div>
+</div>
+<a id="a0c3eaeed333efcaeb7dcb193aed71c73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c3eaeed333efcaeb7dcb193aed71c73">&#9670;&nbsp;</a></span>tryGetMostRecent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;uint32_t&gt; ripple::NetworkValidatedLedgers::tryGetMostRecent </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get most recently validated sequence. </p>
+<dl class="section return"><dt>Returns</dt><dd>sequence of most recently validated ledger, or empty optional if no ledgers are known to have been validated. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ETLHelpers_8h_source.html#l00078">78</a> of file <a class="el" href="ETLHelpers_8h_source.html">ETLHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -195,7 +220,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if sequence was validated, false otherwise a return value of false means the datastructure has been stopped </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ETLHelpers_8h_source.html#l00079">79</a> of file <a class="el" href="ETLHelpers_8h_source.html">ETLHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLHelpers_8h_source.html#l00089">89</a> of file <a class="el" href="ETLHelpers_8h_source.html">ETLHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -216,7 +241,7 @@ Private Attributes</h2></td></tr>
 
 <p>Puts the datastructure in the stopped state Future calls to this datastructure will not block This operation cannot be reversed. </p>
 
-<p class="definition">Definition at line <a class="el" href="ETLHelpers_8h_source.html#l00092">92</a> of file <a class="el" href="ETLHelpers_8h_source.html">ETLHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ETLHelpers_8h_source.html#l00102">102</a> of file <a class="el" href="ETLHelpers_8h_source.html">ETLHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +309,7 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

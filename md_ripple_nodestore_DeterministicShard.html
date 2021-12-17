@@ -66,7 +66,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>This doc describes the standard way to assemble the database shard. A shard assembled using this approach becomes deterministic i.e. if two independent sides assemble a shard consisting of the same ledgers, accounts and transactions, then they will obtain the same shard files <code>nudb.dat</code> and <code>nudb.key</code>. The approach deals with the <code>NuDB</code> database format only, refer to <code><a href="https://github.com/vinniefalco/NuDB">https://github.com/vinniefalco/NuDB</a></code>.</p>
-<h1><a class="anchor" id="autotoc_md172"></a>
+<h1><a class="anchor" id="autotoc_md173"></a>
 Headers</h1>
 <p>Due to NuDB database definition, the following headers are used for database files:</p>
 <p>nudb.key: </p><div class="fragment"><div class="line">char[8]         Type            The characters &quot;nudb.key&quot;</div>
@@ -106,7 +106,7 @@ Headers</h1>
 <div class="line">digest(1) = H[8] &lt;&lt; 56 | H[9] &lt;&lt; 48 | ... | H[15] &lt;&lt; 0,</div>
 <div class="line">digest(2) = H[16] &lt;&lt; 24 | H[17] &lt;&lt; 16 | ... | H[19] &lt;&lt; 0,</div>
 </div><!-- fragment --><p>where <code>H[i]</code> denotes <code>i</code>-th byte of hash <code>H</code>.</p>
-<h1><a class="anchor" id="autotoc_md173"></a>
+<h1><a class="anchor" id="autotoc_md174"></a>
 Contents</h1>
 <p>After deterministic shard is created using the above mentioned headers, it filled with objects using the following steps.</p>
 <ol type="1">
@@ -122,13 +122,13 @@ Contents</h1>
 </div><!-- fragment --></li>
 <li>Finally, objects added to the deterministic shard group by group in the sorted order within each group from low to high hashes.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md174"></a>
+<h1><a class="anchor" id="autotoc_md175"></a>
 Order of visiting objects</h1>
 <p>The shard consists of 16384 ledgers and the final key with the hash 0. Each ledger has the header object and two SMAmaps: state and transaction. SHAmap is a rooted tree in which each node has maximum of 16 descendants enumerating by indexes 0..15. Visiting each node in the SHAmap is performing by functions visitNodes and visitDifferences implemented in the file <code>ripple/shamap/impl/ShaMapSync.cpp</code>.</p>
 <p>Here is how the function visitNodes works: it visit the root at first. Then it visit all nodes in the 1st layer, i. e. the nodes which are immediately descendants of the root sequentially from index 0 to 15. Then it visit all nodes in 2nd layer i.e. the nodes which are immediately descendants the nodes from 1st layer. The order of visiting 2nd layer nodes is the following. First, descendants of the 1st layer node with index 0 are visited sequintially from index 0 to 15. Then descendents of 1st layer node with index 1 are visited etc. After visiting all nodes of 2nd layer the nodes from 3rd layer are visited etc.</p>
 <p>The function visitDifferences works similar to visitNodes with the following exceptions. The first exception is that visitDifferences get 2 arguments: current SHAmap and previous SHAmap and visit only the nodes from current SHAmap which and not present in previous SHAmap. The second exception is that visitDifferences visits all non-leaf nodes in the order of visitNodes function, but all leaf nodes are visited immedeately after visiting of their parent node sequentially from index 0 to 15.</p>
 <p>Finally, all objects within the shard are visited in the following order. All ledgers are visited from the ledger with high index to the ledger with low index in descending order. For each ledger the state SHAmap is visited first using visitNode function for the ledger with highest index and visitDifferences function for other ledgers. Then transaction SHAmap is visited using visitNodes function. At last, the ledger header object is visited. Final key of the shard is visited at the end.</p>
-<h1><a class="anchor" id="autotoc_md175"></a>
+<h1><a class="anchor" id="autotoc_md176"></a>
 Tests</h1>
 <p>To perform test to deterministic shards implementation one can enter the following command: </p><div class="fragment"><div class="line">rippled --unittest ripple.NodeStore.DatabaseShard</div>
 </div><!-- fragment --><p>The following is the right output of deterministic shards test: </p><div class="fragment"><div class="line">ripple.NodeStore.DatabaseShard DatabaseShard deterministic_shard</div>

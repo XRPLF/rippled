@@ -103,7 +103,7 @@ Fee Escalation</h1>
 Transaction Queue</h1>
 <p>An integral part of making fee escalation work for users of the network is the transaction queue. The queue allows legitimate transactions to be considered by the network for future ledgers if the escalated open ledger fee gets too high. This allows users to submit low priority transactions with a low fee, and wait for high fees to drop. It also allows legitimate users to continue submitting transactions during high traffic periods, and give those transactions a much better chance to succeed.</p>
 <ol type="1">
-<li>If an incoming transaction meets both the base <a href="#fee-level">fee level</a> and the load fee minimum, but does not have a high enough <a href="#fee-level">fee level</a> to immediately go into the open ledger, it is instead put into the queue and broadcast to peers. Each peer will then make an independent decision about whether to put the transaction into its open ledger or the queue. In principle, peers with identical open ledgers will come to identical decisions. Any discrepancies will be resolved as usual during consensus.</li>
+<li>If an incoming transaction meets both the base <a href="#fee-level">fee level</a> and the <a href="#load-fee">load fee</a> minimum, but does not have a high enough <a href="#fee-level">fee level</a> to immediately go into the open ledger, it is instead put into the queue and broadcast to peers. Each peer will then make an independent decision about whether to put the transaction into its open ledger or the queue. In principle, peers with identical open ledgers will come to identical decisions. Any discrepancies will be resolved as usual during consensus.</li>
 <li>When consensus completes, the open ledger limit is adjusted, and the required <a href="#fee-level">fee level</a> drops back to the base <a href="#fee-level">fee level</a>. Before the ledger is made available to external transactions, transactions are applied from the queue to the ledger from highest <a href="#fee-level">fee level</a> to lowest. These transactions count against the open ledger limit, so the required <a href="#fee-level">fee level</a> may start rising during this process.</li>
 <li>Once the queue is empty, or the required <a href="#fee-level">fee level</a> rises too high for the remaining transactions in the queue, the ledger is opened up for normal transaction processing.</li>
 <li>A transaction in the queue can stay there indefinitely in principle, but in practice, either<ul>
@@ -136,13 +136,16 @@ Fee Level</h2>
 </ol>
 <p>This demonstrates that a simpler transaction paying less XRP can be more likely to get into the open ledger, or be sorted earlier in the queue than a more complex transaction paying more XRP.</p>
 <h2><a class="anchor" id="autotoc_md113"></a>
+Load Fee</h2>
+<p>Each rippled server maintains a minimum cost threshold based on its current load. If you submit a transaction with a fee that is lower than the current load-based transaction cost of the rippled server, the server neither applies nor relays the transaction to its peers. A transaction is very unlikely to survive the consensus process unless its transaction fee value meets the requirements of a majority of servers.</p>
+<h2><a class="anchor" id="autotoc_md114"></a>
 Reference Transaction</h2>
 <p>In this document, a "Reference Transaction" is any currently implemented single-signed transaction (eg. Payment, Account Set, Offer Create, etc) that requires a fee.</p>
 <p>In the future, there may be other transaction types that require more (or less) work for rippled to process. Those transactions may have a higher (or lower) base fee, requiring a correspondingly higher (or lower) fee to get into the same position as a reference transaction.</p>
-<h2><a class="anchor" id="autotoc_md114"></a>
+<h2><a class="anchor" id="autotoc_md115"></a>
 Consensus Health</h2>
 <p>For consensus to be considered healthy, the consensus process must take less than 5 seconds. This time limit was chosen based on observed past behavior of the network. Note that this is not necessarily the time between ledger closings, as consensus usually starts some amount of time after a ledger opens.</p>
-<h2><a class="anchor" id="autotoc_md115"></a>
+<h2><a class="anchor" id="autotoc_md116"></a>
 Other Constants</h2>
 <ul>
 <li><em>Base fee transaction limit per ledger</em>. The minimum value of 5 was chosen to ensure the limit never gets so small that the ledger becomes unusable. The "target" value of 50 was chosen so the limit never gets large enough to invite abuse, but keeps up if the network stays healthy and active. These exact values were chosen experimentally, and can easily change in the future.</li>
@@ -154,7 +157,7 @@ Other Constants</h2>
 <li><em>Minimum last ledger sequence buffer</em>. If a transaction has a <code>LastLedgerSequence</code> value, and cannot be processed into the open ledger, that <code>LastLedgerSequence</code> must be at least 2 more than the sequence number of the open ledger to be considered for the queue. The value was chosen to provide a balance between letting the user control the lifespan of the transaction, and giving a queued transaction a chance to get processed out of the queue before getting discarded, particularly since it may have dependent transactions also in the queue, which will never succeed if this one is discarded.</li>
 <li><em>Replaced transaction fee increase</em>. Any transaction in the queue can be replaced by another transaction with the same sequence number and at least a 25% higher fee level. The 25% increase is intended to cover the resource cost incurred by broadcasting the original transaction to the network. This value was chosen experimentally, and can easily change in the future.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md116"></a>
+<h2><a class="anchor" id="autotoc_md117"></a>
 &lt;tt&gt;fee&lt;/tt&gt; command</h2>
 <p><b>The <code>fee</code> RPC and WebSocket command is still experimental, and may change without warning.</b></p>
 <p><code>fee</code> takes no parameters, and returns information about the current local <a href="#fee-escalation">fee escalation</a> and <a href="#transaction-queue">transaction queue</a> state as both fee levels and drops. The drop values assume a single-singed reference transaction. It is up to the user to compute the necessary fees for other types of transactions. (E.g. multiply all drop values by 5 for a multi-signed transaction with 4 signatures.)</p>
@@ -180,7 +183,7 @@ Other Constants</h2>
 <div class="line">      }</div>
 <div class="line">   }</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md117"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md118"></a>
 &lt;a href="https://xrpl.org/server_info.html"&gt;&lt;tt&gt;server_info&lt;/tt&gt;&lt;/a&gt; command</h2>
 <p><b>The fields listed here are still experimental, and may change without warning.</b></p>
 <p>Up to two fields in <code>server_info</code> output are related to fee escalation.</p>
@@ -189,7 +192,7 @@ Other Constants</h2>
 <li><code>load_factor_fee_queue</code>: If the queue is full, this is the factor on base transaction cost that a transaction must pay to get into the queue. If not full, the value is 1, so will not be returned.</li>
 </ol>
 <p>In all cases, the transaction fee must be high enough to overcome both <code>load_factor_fee_queue</code> and <code>load_factor</code> to be considered. It does not need to overcome <code>load_factor_fee_escalation</code>, though if it does not, it is more likely to be queued than immediately processed into the open ledger.</p>
-<h2><a class="anchor" id="autotoc_md118"></a>
+<h2><a class="anchor" id="autotoc_md119"></a>
 &lt;a href="https://xrpl.org/server_state.html"&gt;&lt;tt&gt;server_state&lt;/tt&gt;&lt;/a&gt; command</h2>
 <p><b>The fields listed here are still experimental, and may change without warning.</b></p>
 <p>Three fields in <code>server_state</code> output are related to fee escalation.</p>

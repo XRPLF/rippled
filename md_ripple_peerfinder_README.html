@@ -65,14 +65,14 @@ $(function() {
 <div class="title">PeerFinder </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md235"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md236"></a>
 Introduction</h1>
 <p>The <em>Ripple payment network</em> consists of a collection of <em>peers</em> running the <b>rippled software</b>. Each peer maintains multiple outgoing connections and optional incoming connections to other peers. These connections are made over both the public Internet and private local area networks. This network defines a fully connected directed graph of nodes. Peers send and receive messages to other connected peers. This peer to peer network, layered on top of the public and private Internet, forms an <a href="http://en.wikipedia.org/wiki/Overlay_network"><em>overlay network</em></a>.</p>
-<h1><a class="anchor" id="autotoc_md236"></a>
+<h1><a class="anchor" id="autotoc_md237"></a>
 Bootstrapping</h1>
 <p>When a peer comes online it needs a set of IP addresses to connect to in order to gain initial entry into the overlay in a process called <em>bootstrapping</em>. Once they have established an initial set of these outbound peer connections, they need to gain additional addresses to establish more outbound peer connections until the desired limit is reached. Furthermore, they need a mechanism to advertise their IP address to new or existing peers in the overlay so they may receive inbound connections up to some desired limit. And finally, they need a mechanism to provide inbound connection requests with an alternate set of IP addresses to try when they have already reached their desired maximum number of inbound connections.</p>
 <p>PeerFinder is a self contained module that provides these services, along with some additional overlay network management services such as <em>fixed slots</em> and <em>cluster slots</em>.</p>
-<h1><a class="anchor" id="autotoc_md237"></a>
+<h1><a class="anchor" id="autotoc_md238"></a>
 Features</h1>
 <p>PeerFinder has these responsibilities</p>
 <ul>
@@ -86,18 +86,18 @@ Features</h1>
 <li>Prevent duplicate connections and connections to self.</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md239"></a>
+<h1><a class="anchor" id="autotoc_md240"></a>
 Concepts</h1>
-<h2><a class="anchor" id="autotoc_md240"></a>
+<h2><a class="anchor" id="autotoc_md241"></a>
 Manager</h2>
 <p>The <code>Manager</code> is an application singleton which provides the primary interface to interaction with the PeerFinder.</p>
-<h3><a class="anchor" id="autotoc_md241"></a>
+<h3><a class="anchor" id="autotoc_md242"></a>
 Autoconnect</h3>
 <p>The Autoconnect feature of PeerFinder automatically establishes outgoing connections using addresses learned from various sources including the configuration file, the result of domain name lookups, and messages received from the overlay itself.</p>
-<h3><a class="anchor" id="autotoc_md242"></a>
+<h3><a class="anchor" id="autotoc_md243"></a>
 Callback</h3>
 <p>PeerFinder is an isolated code module with few external dependencies. To perform socket specific activities such as establishing outgoing connections or sending messages to connected peers, the Manager is constructed with an abstract interface called the <code>Callback</code>. An instance of this interface performs the actual required operations, making PeerFinder independent of the calling code.</p>
-<h3><a class="anchor" id="autotoc_md243"></a>
+<h3><a class="anchor" id="autotoc_md244"></a>
 Config</h3>
 <p>The <code>Config</code> structure defines the operational parameters of the PeerFinder. Some values come from the configuration file while others are calculated via tuned heuristics. The fields are as follows:</p>
 <ul>
@@ -119,14 +119,14 @@ Config</h3>
 </ul>
 <p>Here's an example of how the network might be structured with a fractional value for outPeers:</p>
 <p>**(Need example here)**</p>
-<h3><a class="anchor" id="autotoc_md244"></a>
+<h3><a class="anchor" id="autotoc_md245"></a>
 Livecache</h3>
 <p>The Livecache holds relayed IP addresses that have been received recently in the form of Endpoint messages via the peer to peer overlay. A peer periodically broadcasts the Endpoint message to its neighbors when it has open inbound connection slots. Peers store these messages in the Livecache and periodically forward their neighbors a handful of random entries from their Livecache, with an incremented hop count for each forwarded entry.</p>
 <p>The algorithm for sending a neighbor a set of Endpoint messages chooses evenly from all available hop counts on each send. This ensures that each peer will see some entries with the farthest hops at each iteration. The result is to expand a peer's horizon with respect to which overlay endpoints are visible. This is designed to force the overlay to become highly connected and reduce the network diameter with each connection establishment.</p>
 <p>When a peer receives an Endpoint message that originates from a neighbor (identified by a hop count of zero) for the first time, it performs an incoming connection test on that neighbor by initiating an outgoing connection to the remote IP address as seen on the connection combined with the port advertised in the Endpoint message. If the test fails, then the peer considers its neighbor firewalled (intentionally or due to misconfiguration) and not forward neighbor endpoint in Endpoint messages. This prevents poor quality unconnectible addresses from landing in the caches. If the incoming connection test passes, then the peer fills in the Endpoint message with the remote address as seen on the connection before storing it in its cache and forwarding it to other peers. This relieves the neighbor from the responsibility of knowing its own IP address before it can start receiving incoming connections.</p>
 <p>Livecache entries expire quickly. Since a peer stops advertising itself when it no longer has available inbound slots, its address will shortly after stop being handed out by other peers. Livecache entries are very likely to result in both a successful connection establishment and the acquisition of an active outbound slot. Compare this with Bootcache addresses, which are very likely to be connectible but unlikely to have an open slot.</p>
 <p>Because entries in the Livecache are ephemeral, they are not persisted across launches in the database. The Livecache is continually updated and expired as Endpoint messages are received from the overlay over time.</p>
-<h3><a class="anchor" id="autotoc_md245"></a>
+<h3><a class="anchor" id="autotoc_md246"></a>
 Bootcache</h3>
 <p>The <code>Bootcache</code> stores IP addresses useful for gaining initial connections. Each address is associated with the following metadata:</p>
 <ul>
@@ -137,10 +137,10 @@ Bootcache</h3>
 <p>When choosing addresses from the boot cache for the purpose of establishing outgoing connections, addresses are ranked in decreasing order of valence. The Bootcache is persistent. Entries are periodically inserted and updated in the corresponding SQLite database during program operation. When <b>rippled</b> is launched, the existing Bootcache database data is accessed and loaded to accelerate the bootstrap process.</p>
 <p>Desirable entries in the Bootcache are addresses for servers which are known to have high uptimes, and for which connection attempts usually succeed. However, these servers do not necessarily have available inbound connection slots. However, it is assured that these servers will have a well populated Livecache since they will have moved towards the core of the overlay over their high uptime. When a connected server is full it will return a handful of new addresses from its Livecache and gracefully close the connection. Addresses from the Livecache are highly likely to have inbound connection slots and be connectible.</p>
 <p>For security, all information that contributes to the ranking of Bootcache entries is observed locally. PeerFinder never trusts external sources of information.</p>
-<h3><a class="anchor" id="autotoc_md246"></a>
+<h3><a class="anchor" id="autotoc_md247"></a>
 Slot</h3>
 <p>Each TCP/IP socket that can participate in the peer to peer overlay occupies a slot. Slots have properties and state associated with them:</p>
-<h4><a class="anchor" id="autotoc_md247"></a>
+<h4><a class="anchor" id="autotoc_md248"></a>
 State (Slot)</h4>
 <p>The slot state represents the current stage of the connection as it passes through the business logic for establishing peer connections.</p>
 <ul>
@@ -160,7 +160,7 @@ State (Slot)</h4>
 <p class="startli">The Closing state represents a connected socket in the process of being gracefully closed.</p>
 </li>
 </ul>
-<h4><a class="anchor" id="autotoc_md248"></a>
+<h4><a class="anchor" id="autotoc_md249"></a>
 Properties (Slot)</h4>
 <p>Slot properties may be combined and are not mutually exclusive.</p>
 <ul>
@@ -177,19 +177,19 @@ Properties (Slot)</h4>
 <p class="startli">A superpeer slot is a connection to a peer which can accept incoming connections, meets certain resource availaibility requirements (such as bandwidth, CPU, and storage capacity), and operates full duplex in the overlay. Connections which are not superpeers are by definition leaves. A leaf slot is a connection to a peer which does not route overlay messages to other peers, and operates in a partial half duplex fashion in the overlay.</p>
 </li>
 </ul>
-<h4><a class="anchor" id="autotoc_md249"></a>
+<h4><a class="anchor" id="autotoc_md250"></a>
 Fixed Slots</h4>
 <p>Fixed slots are identified by IP address and set up during the initialization of the Manager, usually from the configuration file. The Logic will always make outgoing connection attempts to each fixed slot which is not currently connected. If we receive an inbound connection from an endpoint whose address portion (without port) matches a fixed slot address, we consider the fixed slot to be connected.</p>
-<h4><a class="anchor" id="autotoc_md250"></a>
+<h4><a class="anchor" id="autotoc_md251"></a>
 Cluster Slots</h4>
 <p>Cluster slots are identified by the public key and set up during the initialization of the manager or discovered upon receipt of messages in the overlay from trusted connections.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md252"></a>
+<h1><a class="anchor" id="autotoc_md253"></a>
 Algorithms</h1>
-<h2><a class="anchor" id="autotoc_md253"></a>
+<h2><a class="anchor" id="autotoc_md254"></a>
 Connection Strategy</h2>
 <p>The <em>Connection Strategy</em> applies the configuration settings to establish desired outbound connections. It runs periodically and progresses through a series of stages, remaining in each stage until a condition is met</p>
-<h3><a class="anchor" id="autotoc_md254"></a>
+<h3><a class="anchor" id="autotoc_md255"></a>
 Stage 1: Fixed Slots</h3>
 <p>This stage is invoked when the number of active fixed connections is below the number of fixed connections specified in the configuration, and one of the following is true:</p>
 <ul>
@@ -198,7 +198,7 @@ Stage 1: Fixed Slots</h3>
 </ul>
 <p>Each fixed address is associated with a retry timer. On a fixed connection failure, the timer is reset so that the address is not tried for some amount of time, which increases according to a scheduled sequence up to some maximum which is currently set to approximately one hour between retries. A fixed address is considered eligible if we are not currently connected or attempting the address, and its retry timer has expired.</p>
 <p>The PeerFinder makes its best effort to become fully connected to the fixed addresses specified in the configuration file before moving on to establish outgoing connections to foreign peers. This security feature helps rippled establish itself with a trusted set of peers first before accepting untrusted data from the network.</p>
-<h3><a class="anchor" id="autotoc_md255"></a>
+<h3><a class="anchor" id="autotoc_md256"></a>
 Stage 2: Livecache</h3>
 <p>The Livecache is invoked when Stage 1 is not active, autoconnect is enabled, and the number of active outbound connections is below the number desired. The stage remains active while:</p>
 <ul>
@@ -206,7 +206,7 @@ Stage 2: Livecache</h3>
 <li>Any outbound connection attempts are in progress</li>
 </ul>
 <p>PeerFinder makes its best effort to exhaust addresses in the Livecache before moving on to the Bootcache, because Livecache addresses are highly likely to be connectible (since they are known to have been online within the last minute), and highly likely to have an open slot for an incoming connection (because peers only advertise themselves in the Livecache when they have open slots).</p>
-<h3><a class="anchor" id="autotoc_md256"></a>
+<h3><a class="anchor" id="autotoc_md257"></a>
 Stage 3: Bootcache</h3>
 <p>The Bootcache is invoked when Stage 1 and Stage 2 are not active, autoconnect is enabled, and the number of active outbound connections is below the number desired. The stage remains active while:</p>
 <ul>
@@ -214,7 +214,7 @@ Stage 3: Bootcache</h3>
 </ul>
 <p>Entries in the Bootcache are ranked, with highly connectible addresses preferred over others. Connection attempts to Bootcache addresses are very likely to succeed but unlikely to produce an active connection since the peers likely do not have open slots. Before the remote peer closes the connection it will send a handful of addresses from its Livecache to help the new peer coming online obtain connections.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md258"></a>
+<h1><a class="anchor" id="autotoc_md259"></a>
 References</h1>
 <p>Much of the work in PeerFinder was inspired by earlier work in Gnutella:</p>
 <p><a href="http://rfc-gnutella.sourceforge.net/src/pong-caching.html">Revised Gnutella Ping Pong Scheme</a><br  />

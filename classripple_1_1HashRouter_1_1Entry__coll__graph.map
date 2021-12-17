@@ -1,7 +1,7 @@
 <map id="ripple::HashRouter::Entry" name="ripple::HashRouter::Entry">
-<area shape="rect" id="node1" title="An entry in the routing table." alt="" coords="504,84,647,125"/>
+<area shape="rect" id="node1" title="An entry in the routing table." alt="" coords="504,71,647,112"/>
 <area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="204,5,367,47"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,103,108,130"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="195,134,376,161"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="192,185,379,227"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="192,71,379,112"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="195,137,376,163"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,137,108,163"/>
 </map>

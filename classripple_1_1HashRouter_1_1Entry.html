@@ -91,11 +91,11 @@ Collaboration diagram for ripple::HashRouter::Entry:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1HashRouter_1_1Entry__coll__graph.png" border="0" usemap="#ripple_1_1HashRouter_1_1Entry_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1HashRouter_1_1Entry_coll__map" id="ripple_1_1HashRouter_1_1Entry_coll__map">
-<area shape="rect" title="An entry in the routing table." alt="" coords="504,84,647,125"/>
+<area shape="rect" title="An entry in the routing table." alt="" coords="504,71,647,112"/>
 <area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="204,5,367,47"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,103,108,130"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="195,134,376,161"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="192,185,379,227"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="192,71,379,112"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="195,137,376,163"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,137,108,163"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -118,9 +118,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae85e2de8779710b38416628fb2367a0b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#ae85e2de8779710b38416628fb2367a0b">shouldRelay</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> const &amp;now, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> holdTime)</td></tr>
 <tr class="memdesc:ae85e2de8779710b38416628fb2367a0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines if this item should be relayed.  <a href="classripple_1_1HashRouter_1_1Entry.html#ae85e2de8779710b38416628fb2367a0b">More...</a><br /></td></tr>
 <tr class="separator:ae85e2de8779710b38416628fb2367a0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac420f2656888a047571bc80b9e3f8b85"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#ac420f2656888a047571bc80b9e3f8b85">shouldRecover</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> limit)</td></tr>
-<tr class="memdesc:ac420f2656888a047571bc80b9e3f8b85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines if this item should be recovered from the open ledger.  <a href="classripple_1_1HashRouter_1_1Entry.html#ac420f2656888a047571bc80b9e3f8b85">More...</a><br /></td></tr>
-<tr class="separator:ac420f2656888a047571bc80b9e3f8b85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3ed6d0bdd0825f0f1c301e4b729cfa4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#ae3ed6d0bdd0825f0f1c301e4b729cfa4">shouldProcess</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> now, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> interval)</td></tr>
 <tr class="separator:ae3ed6d0bdd0825f0f1c301e4b729cfa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -139,8 +136,6 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a82f61eb94a00aa72e190b640d181324b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3627e95c8e5ecd63162b87d682df148a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a3627e95c8e5ecd63162b87d682df148a">processed_</a></td></tr>
 <tr class="separator:a3627e95c8e5ecd63162b87d682df148a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1a4a3a03ca6e0aea5ed3db7f11a3224"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#ac1a4a3a03ca6e0aea5ed3db7f11a3224">recoveries_</a> = 0</td></tr>
-<tr class="separator:ac1a4a3a03ca6e0aea5ed3db7f11a3224"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An entry in the routing table. </p>
@@ -302,30 +297,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ac420f2656888a047571bc80b9e3f8b85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac420f2656888a047571bc80b9e3f8b85">&#9670;&nbsp;</a></span>shouldRecover()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::HashRouter::Entry::shouldRecover </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>limit</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Determines if this item should be recovered from the open ledger. </p>
-<p>Counts the number of times the item has been recovered. Every <code>limit</code> times the function is called, return false. Else return true.</p>
-<dl class="section note"><dt>Note</dt><dd>The limit must be &gt; 0 </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00128">128</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
-
-</div>
-</div>
 <a id="ae3ed6d0bdd0825f0f1c301e4b729cfa4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae3ed6d0bdd0825f0f1c301e4b729cfa4">&#9670;&nbsp;</a></span>shouldProcess()</h2>
 
@@ -352,7 +323,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00134">134</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00120">120</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -401,7 +372,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00143">143</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00129">129</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -425,7 +396,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00144">144</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00130">130</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -449,7 +420,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00147">147</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00133">133</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -473,31 +444,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00148">148</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
-
-</div>
-</div>
-<a id="ac1a4a3a03ca6e0aea5ed3db7f11a3224"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1a4a3a03ca6e0aea5ed3db7f11a3224">&#9670;&nbsp;</a></span>recoveries_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::HashRouter::Entry::recoveries_ = 0</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00149">149</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00134">134</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>

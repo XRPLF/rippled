@@ -116,13 +116,13 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a55017181a586c0c09a9b487a4b003c52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#a55017181a586c0c09a9b487a4b003c52">minimumEscalationMultiplier</a> = <a class="el" href="classripple_1_1TxQ.html#acfc1afed59fb7f9d2404f479d7cbeef6">baseLevel</a> * 500</td></tr>
 <tr class="memdesc:a55017181a586c0c09a9b487a4b003c52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum value of the escalation multiplier, regardless of the prior ledger's median fee level.  <a href="structripple_1_1TxQ_1_1Setup.html#a55017181a586c0c09a9b487a4b003c52">More...</a><br /></td></tr>
 <tr class="separator:a55017181a586c0c09a9b487a4b003c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b11f9f54cac17f8f23c30e978742786"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#a2b11f9f54cac17f8f23c30e978742786">minimumTxnInLedger</a> = 5</td></tr>
+<tr class="memitem:a2b11f9f54cac17f8f23c30e978742786"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#a2b11f9f54cac17f8f23c30e978742786">minimumTxnInLedger</a> = 32</td></tr>
 <tr class="memdesc:a2b11f9f54cac17f8f23c30e978742786"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum number of transactions to allow into the ledger before escalation, regardless of the prior ledger's size.  <a href="structripple_1_1TxQ_1_1Setup.html#a2b11f9f54cac17f8f23c30e978742786">More...</a><br /></td></tr>
 <tr class="separator:a2b11f9f54cac17f8f23c30e978742786"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb7f76ef24c80a9a26bc94701001eec5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#acb7f76ef24c80a9a26bc94701001eec5">minimumTxnInLedgerSA</a> = 1000</td></tr>
 <tr class="memdesc:acb7f76ef24c80a9a26bc94701001eec5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Like <a class="el" href="structripple_1_1TxQ_1_1Setup.html#a2b11f9f54cac17f8f23c30e978742786">minimumTxnInLedger</a> for standalone mode.  <a href="structripple_1_1TxQ_1_1Setup.html#acb7f76ef24c80a9a26bc94701001eec5">More...</a><br /></td></tr>
 <tr class="separator:acb7f76ef24c80a9a26bc94701001eec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1bbdbb893cafa2a5ef126f72644321c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72644321c">targetTxnInLedger</a> = 50</td></tr>
+<tr class="memitem:aa1bbdbb893cafa2a5ef126f72644321c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72644321c">targetTxnInLedger</a> = 256</td></tr>
 <tr class="memdesc:aa1bbdbb893cafa2a5ef126f72644321c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of transactions per ledger that fee escalation "works
 towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72644321c">More...</a><br /></td></tr>
 <tr class="separator:aa1bbdbb893cafa2a5ef126f72644321c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -261,7 +261,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::TxQ::Setup::minimumTxnInLedger = 5</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::TxQ::Setup::minimumTxnInLedger = 32</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -298,7 +298,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::TxQ::Setup::targetTxnInLedger = 50</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::TxQ::Setup::targetTxnInLedger = 256</td>
         </tr>
       </table>
 </div><div class="memdoc">
