@@ -96,13 +96,13 @@ public:
         FeeLevel64 minimumEscalationMultiplier = baseLevel * 500;
         /// Minimum number of transactions to allow into the ledger
         /// before escalation, regardless of the prior ledger's size.
-        std::uint32_t minimumTxnInLedger = 5;
+        std::uint32_t minimumTxnInLedger = 32;
         /// Like @ref minimumTxnInLedger for standalone mode.
         /// Primarily so that tests don't need to worry about queuing.
         std::uint32_t minimumTxnInLedgerSA = 1000;
         /// Number of transactions per ledger that fee escalation "works
         /// towards".
-        std::uint32_t targetTxnInLedger = 50;
+        std::uint32_t targetTxnInLedger = 256;
         /** Optional maximum allowed value of transactions per ledger before
             fee escalation kicks in. By default, the maximum is an emergent
             property of network, validator, and consensus performance. This
@@ -613,17 +613,30 @@ private:
         }
     };
 
-    /// Used for sorting @ref MaybeTx by `feeLevel`
-    class GreaterFee
+    /// Used for sorting @ref MaybeTx
+    class OrderCandidates
     {
     public:
         /// Default constructor
-        explicit GreaterFee() = default;
+        explicit OrderCandidates() = default;
 
-        /// Is the fee level of `lhs` greater than the fee level of `rhs`?
+        /** Sort @ref MaybeTx by `feeLevel` descending, then by
+         * transaction ID ascending
+         *
+         * The transaction queue is ordered such that transactions
+         * paying a higher fee are in front of transactions paying
+         * a lower fee, giving them an opportunity to be processed into
+         * the open ledger first. Within transactions paying the same
+         * fee, order by the arbitrary but consistent transaction ID.
+         * This allows validators to build similar queues in the same
+         * order, and thus have more similar initial proposals.
+         *
+         */
         bool
         operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
         {
+            if (lhs.feeLevel == rhs.feeLevel)
+                return lhs.txID < rhs.txID;
             return lhs.feeLevel > rhs.feeLevel;
         }
     };
@@ -722,7 +735,7 @@ private:
         &MaybeTx::byFeeListHook>;
 
     using FeeMultiSet = boost::intrusive::
-        multiset<MaybeTx, FeeHook, boost::intrusive::compare<GreaterFee>>;
+        multiset<MaybeTx, FeeHook, boost::intrusive::compare<OrderCandidates>>;
 
     using AccountMap = std::map<AccountID, TxQAccount>;
 

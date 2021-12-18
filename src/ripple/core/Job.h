@@ -39,34 +39,41 @@ enum JobType {
     // earlier jobs having lower priority than later jobs. If you wish to
     // insert a job at a specific priority, simply add it at the right location.
 
-    jtPACK,           // Make a fetch pack for a peer
-    jtPUBOLDLEDGER,   // An old ledger has been accepted
-    jtCLIENT,         // A websocket command from the client
-    jtRPC,            // A websocket command from the client
-    jtVALIDATION_ut,  // A validation from an untrusted source
-    jtUPDATE_PF,      // Update pathfinding requests
-    jtTRANSACTION_l,  // A local transaction
-    jtREPLAY_REQ,     // Peer request a ledger delta or a skip list
-    jtLEDGER_REQ,     // Peer request ledger/txnset data
-    jtPROPOSAL_ut,    // A proposal from an untrusted source
-    jtREPLAY_TASK,    // A Ledger replay task/subtask
-    jtLEDGER_DATA,    // Received data for a ledger we're acquiring
-    jtSWEEP,          // Sweep for stale structures
-    jtTRANSACTION,    // A transaction received from the network
-    jtMISSING_TXN,    // Request missing transactions
-    jtREQUESTED_TXN,  // Reply with requested transactions
-    jtBATCH,          // Apply batched transactions
-    jtADVANCE,        // Advance validated/acquired ledgers
-    jtPUBLEDGER,      // Publish a fully-accepted ledger
-    jtTXN_DATA,       // Fetch a proposed set
-    jtWAL,            // Write-ahead logging
-    jtVALIDATION_t,   // A validation from a trusted source
-    jtWRITE,          // Write out hashed objects
-    jtACCEPT,         // Accept a consensus ledger
-    jtPROPOSAL_t,     // A proposal from a trusted source
-    jtNETOP_CLUSTER,  // NetworkOPs cluster peer report
-    jtNETOP_TIMER,    // NetworkOPs net timer processing
-    jtADMIN,          // An administrative operation
+    jtPACK,               // Make a fetch pack for a peer
+    jtPUBOLDLEDGER,       // An old ledger has been accepted
+    jtCLIENT,             // A placeholder for the priority of all jtCLIENT jobs
+    jtCLIENT_SUBSCRIBE,   // A websocket subscription by a client
+    jtCLIENT_FEE_CHANGE,  // Subscription for fee change by a client
+    jtCLIENT_CONSENSUS,   // Subscription for consensus state change by a client
+    jtCLIENT_ACCT_HIST,   // Subscription for account history by a client
+    jtCLIENT_SHARD,       // Client request for shard archiving
+    jtCLIENT_RPC,         // Client RPC request
+    jtCLIENT_WEBSOCKET,   // Client websocket request
+    jtRPC,                // A websocket command from the client
+    jtSWEEP,              // Sweep for stale structures
+    jtVALIDATION_ut,      // A validation from an untrusted source
+    jtUPDATE_PF,          // Update pathfinding requests
+    jtTRANSACTION_l,      // A local transaction
+    jtREPLAY_REQ,         // Peer request a ledger delta or a skip list
+    jtLEDGER_REQ,         // Peer request ledger/txnset data
+    jtPROPOSAL_ut,        // A proposal from an untrusted source
+    jtREPLAY_TASK,        // A Ledger replay task/subtask
+    jtLEDGER_DATA,        // Received data for a ledger we're acquiring
+    jtTRANSACTION,        // A transaction received from the network
+    jtMISSING_TXN,        // Request missing transactions
+    jtREQUESTED_TXN,      // Reply with requested transactions
+    jtBATCH,              // Apply batched transactions
+    jtADVANCE,            // Advance validated/acquired ledgers
+    jtPUBLEDGER,          // Publish a fully-accepted ledger
+    jtTXN_DATA,           // Fetch a proposed set
+    jtWAL,                // Write-ahead logging
+    jtVALIDATION_t,       // A validation from a trusted source
+    jtWRITE,              // Write out hashed objects
+    jtACCEPT,             // Accept a consensus ledger
+    jtPROPOSAL_t,         // A proposal from a trusted source
+    jtNETOP_CLUSTER,      // NetworkOPs cluster peer report
+    jtNETOP_TIMER,        // NetworkOPs net timer processing
+    jtADMIN,              // An administrative operation
 
     // Special job types which are not dispatched by the job pool
     jtPEER,

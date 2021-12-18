@@ -342,8 +342,8 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee)
 {
-    if ((usage_.charge(fee) == Resource::drop) && usage_.disconnect() &&
-        strand_.running_in_this_thread())
+    if ((usage_.charge(fee) == Resource::drop) &&
+        usage_.disconnect(p_journal_) && strand_.running_in_this_thread())
     {
         // Sever the connection
         overlay_.incPeerDisconnectCharges();
@@ -1929,10 +1929,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
+    // RH TODO: when isTrusted = false we should probably also cache a key
+    // suppression for 30 seconds to avoid doing a relatively expensive lookup
+    // every time a spam packet is received
+    PublicKey const publicKey{makeSlice(set.nodepubkey())};
+    auto const isTrusted = app_.validators().trusted(publicKey);
+
+    // If the operator has specified that untrusted proposals be dropped then
+    // this happens here I.e. before further wasting CPU verifying the signature
+    // of an untrusted key
+    if (!isTrusted && app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
+        return;
+
     uint256 const proposeHash{set.currenttxhash()};
     uint256 const prevLedger{set.previousledger()};
 
-    PublicKey const publicKey{makeSlice(set.nodepubkey())};
     NetClock::time_point const closeTime{NetClock::duration{set.closetime()}};
 
     uint256 const suppression = proposalUniqueId(
@@ -1956,8 +1967,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
         return;
     }
-
-    auto const isTrusted = app_.validators().trusted(publicKey);
 
     if (!isTrusted)
     {
@@ -2543,6 +2552,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
+        // RH TODO: when isTrusted = false we should probably also cache a key
+        // suppression for 30 seconds to avoid doing a relatively expensive
+        // lookup every time a spam packet is received
+        auto const isTrusted =
+            app_.validators().trusted(val->getSignerPublic());
+
+        // If the operator has specified that untrusted validations be dropped
+        // then this happens here I.e. before further wasting CPU verifying the
+        // signature of an untrusted key
+        if (!isTrusted && app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
+            return;
+
         auto key = sha512Half(makeSlice(m->validation()));
         if (auto [added, relayed] =
                 app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
@@ -2559,9 +2580,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;
         }
-
-        auto const isTrusted =
-            app_.validators().trusted(val->getSignerPublic());
 
         if (!isTrusted && (tracking_.load() == Tracking::diverged))
         {
@@ -3106,7 +3124,7 @@ PeerImp::checkPropose(
     if (isTrusted)
         relay = app_.getOPs().processTrustedProposal(peerPos);
     else
-        relay = app_.config().RELAY_UNTRUSTED_PROPOSALS || cluster();
+        relay = app_.config().RELAY_UNTRUSTED_PROPOSALS == 1 || cluster();
 
     if (relay)
     {

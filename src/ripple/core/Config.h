@@ -146,8 +146,10 @@ public:
     std::size_t NETWORK_QUORUM = 1;
 
     // Peer networking parameters
-    bool RELAY_UNTRUSTED_VALIDATIONS = true;
-    bool RELAY_UNTRUSTED_PROPOSALS = false;
+    // 1 = relay, 0 = do not relay (but process), -1 = drop completely (do NOT
+    // process)
+    int RELAY_UNTRUSTED_VALIDATIONS = 1;
+    int RELAY_UNTRUSTED_PROPOSALS = 0;
 
     // True to ask peers not to relay current IP.
     bool PEER_PRIVATE = false;
@@ -212,8 +214,11 @@ public:
     // Amendment majority time
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
-    // Thread pool configuration
-    int WORKERS = 0;
+    // Thread pool configuration (0 = choose for me)
+    int WORKERS = 0;           // jobqueue thread count. default: upto 6
+    int IO_WORKERS = 0;        // io svc thread count. default: 2
+    int PREFETCH_WORKERS = 0;  // prefetch thread count. default: 4
+
     // Can only be set in code, specifically unit tests
     bool FORCE_MULTI_THREAD = false;
 

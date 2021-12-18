@@ -280,6 +280,7 @@ JSS(hotwallet);             // in: GatewayBalances
 JSS(id);                    // websocket.
 JSS(ident);                 // in: AccountCurrencies, AccountInfo,
                             //     OwnerInfo
+JSS(ignore_default);        // in: AccountLines
 JSS(inLedger);              // out: tx/Transaction
 JSS(inbound);               // out: PeerImp
 JSS(index);                 // in: LedgerEntry, DownloadShard

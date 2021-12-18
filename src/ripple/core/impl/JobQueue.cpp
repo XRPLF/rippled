@@ -94,7 +94,9 @@ JobQueue::addRefCountedJob(
 
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
-    assert(type == jtCLIENT || m_workers.getNumberOfThreads() > 0);
+    assert(
+        (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) ||
+        m_workers.getNumberOfThreads() > 0);
 
     {
         std::lock_guard lock(m_mutex);
@@ -168,15 +170,9 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 bool
 JobQueue::isOverloaded()
 {
-    int count = 0;
-
-    for (auto& x : m_jobData)
-    {
-        if (x.second.load().isOver())
-            ++count;
-    }
-
-    return count > 0;
+    return std::any_of(m_jobData.begin(), m_jobData.end(), [](auto& entry) {
+        return entry.second.load().isOver();
+    });
 }
 
 Json::Value

@@ -246,6 +246,10 @@ public:
 #if RIPPLE_SINGLE_IO_SERVICE_THREAD
         return 1;
 #else
+
+        if (config.IO_WORKERS > 0)
+            return config.IO_WORKERS;
+
         auto const cores = std::thread::hardware_concurrency();
 
         // Use a single thread when running on under-provisioned systems
@@ -342,7 +346,8 @@ public:
               m_collectorManager->collector(),
               logs_->journal("Resource")))
 
-        , m_nodeStore(m_shaMapStore->makeNodeStore(4))
+        , m_nodeStore(m_shaMapStore->makeNodeStore(
+              config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
 
         , nodeFamily_(*this, *m_collectorManager)
 
@@ -443,8 +448,7 @@ public:
 
         , hashRouter_(std::make_unique<HashRouter>(
               stopwatch(),
-              HashRouter::getDefaultHoldTime(),
-              HashRouter::getDefaultRecoverLimit()))
+              HashRouter::getDefaultHoldTime()))
 
         , mValidations(
               ValidationParms(),
