@@ -60,11 +60,11 @@ enum JobType {
     jtLEDGER_REQ,         // Peer request ledger/txnset data
     jtPROPOSAL_ut,        // A proposal from an untrusted source
     jtREPLAY_TASK,        // A Ledger replay task/subtask
-    jtLEDGER_DATA,        // Received data for a ledger we're acquiring
     jtTRANSACTION,        // A transaction received from the network
     jtMISSING_TXN,        // Request missing transactions
     jtREQUESTED_TXN,      // Reply with requested transactions
     jtBATCH,              // Apply batched transactions
+    jtLEDGER_DATA,        // Received data for a ledger we're acquiring
     jtADVANCE,            // Advance validated/acquired ledgers
     jtPUBLEDGER,          // Publish a fully-accepted ledger
     jtTXN_DATA,           // Fetch a proposed set

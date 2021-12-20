@@ -238,7 +238,7 @@ public:
     void
     visitDifferences(
         SHAMap const* have,
-        std::function<bool(SHAMapTreeNode const&)>) const;
+        std::function<bool(SHAMapTreeNode const&)> const&) const;
 
     /**  Visit every leaf node in this SHAMap
 
@@ -267,8 +267,7 @@ public:
     bool
     getNodeFat(
         SHAMapNodeID const& wanted,
-        std::vector<SHAMapNodeID>& nodeIDs,
-        std::vector<Blob>& rawNodes,
+        std::vector<std::pair<SHAMapNodeID, Blob>>& data,
         bool fatLeaves,
         std::uint32_t depth) const;
 

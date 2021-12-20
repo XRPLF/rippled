@@ -74,6 +74,12 @@ public:
             reason != InboundLedger::Reason::SHARD ||
             (seq != 0 && app_.getShardStore()));
 
+        // probably not the right rule
+        if (app_.getOPs().isNeedNetworkLedger() &&
+            (reason != InboundLedger::Reason::GENERIC) &&
+            (reason != InboundLedger::Reason::CONSENSUS))
+            return {};
+
         bool isNew = true;
         std::shared_ptr<InboundLedger> inbound;
         {
@@ -82,6 +88,7 @@ public:
             {
                 return {};
             }
+
             auto it = mLedgers.find(hash);
             if (it != mLedgers.end())
             {
