@@ -65,26 +65,33 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
 
 /**
  * @param in Compressed data
- * @param inSize Size of compressed data
+ * @param inSizeUnchecked Size of compressed data
  * @param decompressed Buffer to hold decompressed data
- * @param decompressedSize Size of the decompressed buffer
+ * @param decompressedSizeUnchecked Size of the decompressed buffer
  * @return size of the decompressed data
  */
 inline std::size_t
 lz4Decompress(
     std::uint8_t const* in,
-    std::size_t inSize,
+    std::size_t inSizeUnchecked,
     std::uint8_t* decompressed,
-    std::size_t decompressedSize)
+    std::size_t decompressedSizeUnchecked)
 {
-    auto ret = LZ4_decompress_safe(
-        reinterpret_cast<const char*>(in),
-        reinterpret_cast<char*>(decompressed),
-        inSize,
-        decompressedSize);
+    int const inSize = static_cast<int>(inSizeUnchecked);
+    int const decompressedSize = static_cast<int>(decompressedSizeUnchecked);
 
-    if (ret <= 0 || ret != decompressedSize)
-        Throw<std::runtime_error>("lz4 decompress: failed");
+    if (inSize <= 0)
+        Throw<std::runtime_error>("lz4Decompress: integer overflow (input)");
+
+    if (decompressedSize <= 0)
+        Throw<std::runtime_error>("lz4Decompress: integer overflow (output)");
+
+    if (LZ4_decompress_safe(
+            reinterpret_cast<const char*>(in),
+            reinterpret_cast<char*>(decompressed),
+            inSize,
+            decompressedSize) != decompressedSize)
+        Throw<std::runtime_error>("lz4Decompress: failed");
 
     return decompressedSize;
 }
