@@ -603,7 +603,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -1341,7 +1341,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m)
                 // case ShardState::finalized:
                 default:
                     return badData("Invalid incomplete shard state");
-            };
+            }
             s.add32(incomplete.state());
 
             // Verify progress
@@ -3527,8 +3527,8 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     {
         auto const queryDepth{
             m->has_querydepth() ? m->querydepth() : (isHighLatency() ? 2 : 1)};
-        std::vector<SHAMapNodeID> nodeIds;
-        std::vector<Blob> rawNodes;
+
+        std::vector<std::pair<SHAMapNodeID, Blob>> data;
 
         for (int i = 0; i < m->nodeids_size() &&
              ledgerData.nodes_size() < Tuning::softMaxReplyNodes;
@@ -3536,30 +3536,22 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         {
             auto const shaMapNodeId{deserializeSHAMapNodeID(m->nodeids(i))};
 
-            nodeIds.clear();
-            rawNodes.clear();
+            data.clear();
+            data.reserve(Tuning::softMaxReplyNodes);
+
             try
             {
-                if (map->getNodeFat(
-                        *shaMapNodeId,
-                        nodeIds,
-                        rawNodes,
-                        fatLeaves,
-                        queryDepth))
+                if (map->getNodeFat(*shaMapNodeId, data, fatLeaves, queryDepth))
                 {
-                    assert(nodeIds.size() == rawNodes.size());
                     JLOG(p_journal_.trace())
                         << "processLedgerRequest: getNodeFat got "
-                        << rawNodes.size() << " nodes";
+                        << data.size() << " nodes";
 
-                    auto rawNodeIter{rawNodes.begin()};
-                    for (auto const& nodeId : nodeIds)
+                    for (auto const& d : data)
                     {
                         protocol::TMLedgerNode* node{ledgerData.add_nodes()};
-                        node->set_nodeid(nodeId.getRawString());
-                        node->set_nodedata(
-                            &rawNodeIter->front(), rawNodeIter->size());
-                        ++rawNodeIter;
+                        node->set_nodeid(d.first.getRawString());
+                        node->set_nodedata(d.second.data(), d.second.size());
                     }
                 }
                 else
@@ -3611,9 +3603,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             << ledgerData.nodes_size() << " nodes";
     }
 
-    auto message{
-        std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
-    send(message);
+    send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
 }
 
 int

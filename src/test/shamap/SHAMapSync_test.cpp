@@ -124,24 +124,18 @@ public:
         destination.setSynching();
 
         {
-            std::vector<SHAMapNodeID> gotNodeIDs_a;
-            std::vector<Blob> gotNodes_a;
+            std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
             BEAST_EXPECT(source.getNodeFat(
-                SHAMapNodeID(),
-                gotNodeIDs_a,
-                gotNodes_a,
-                rand_bool(eng_),
-                rand_int(eng_, 2)));
+                SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
 
-            unexpected(gotNodes_a.size() < 1, "NodeSize");
+            unexpected(a.size() < 1, "NodeSize");
 
-            BEAST_EXPECT(destination
-                             .addRootNode(
-                                 source.getHash(),
-                                 makeSlice(*gotNodes_a.begin()),
-                                 nullptr)
-                             .isGood());
+            BEAST_EXPECT(
+                destination
+                    .addRootNode(
+                        source.getHash(), makeSlice(a[0].second), nullptr)
+                    .isGood());
         }
 
         do
@@ -155,8 +149,7 @@ public:
                 break;
 
             // get as many nodes as possible based on this information
-            std::vector<SHAMapNodeID> gotNodeIDs_b;
-            std::vector<Blob> gotNodes_b;
+            std::vector<std::pair<SHAMapNodeID, Blob>> b;
 
             for (auto& it : nodesMissing)
             {
@@ -164,29 +157,24 @@ public:
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
                 if (!source.getNodeFat(
-                        it.first,
-                        gotNodeIDs_b,
-                        gotNodes_b,
-                        rand_bool(eng_),
-                        rand_int(eng_, 2)))
+                        it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
                     fail("", __FILE__, __LINE__);
             }
 
             // Don't use BEAST_EXPECT here b/c it will be called a
             // non-deterministic number of times and the number of tests run
             // should be deterministic
-            if (gotNodeIDs_b.size() != gotNodes_b.size() ||
-                gotNodeIDs_b.empty())
+            if (b.empty())
                 fail("", __FILE__, __LINE__);
 
-            for (std::size_t i = 0; i < gotNodeIDs_b.size(); ++i)
+            for (std::size_t i = 0; i < b.size(); ++i)
             {
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
                 if (!destination
                          .addKnownNode(
-                             gotNodeIDs_b[i], makeSlice(gotNodes_b[i]), nullptr)
+                             b[i].first, makeSlice(b[i].second), nullptr)
                          .isUseful())
                     fail("", __FILE__, __LINE__);
             }
