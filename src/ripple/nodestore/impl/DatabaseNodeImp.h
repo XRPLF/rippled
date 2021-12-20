@@ -45,6 +45,7 @@ public:
         , backend_(std::move(backend))
     {
         std::optional<int> cacheSize, cacheAge;
+
         if (config.exists("cache_size"))
         {
             cacheSize = get<int>(config, "cache_size");
@@ -54,6 +55,7 @@ public:
                     "Specified negative value for cache_size");
             }
         }
+
         if (config.exists("cache_age"))
         {
             cacheAge = get<int>(config, "cache_age");
@@ -63,19 +65,17 @@ public:
                     "Specified negative value for cache_age");
             }
         }
-        if (cacheSize || cacheAge)
+
+        if (cacheSize != 0 || cacheAge != 0)
         {
-            if (!cacheSize || *cacheSize == 0)
-                cacheSize = 16384;
-            if (!cacheAge || *cacheAge == 0)
-                cacheAge = 5;
             cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
                 "DatabaseNodeImp",
-                cacheSize.value(),
-                std::chrono::minutes{cacheAge.value()},
+                cacheSize.value_or(0),
+                std::chrono::minutes(cacheAge.value_or(0)),
                 stopwatch(),
                 j);
         }
+
         assert(backend_);
     }
 

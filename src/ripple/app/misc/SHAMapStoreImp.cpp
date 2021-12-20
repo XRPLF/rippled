@@ -168,7 +168,23 @@ SHAMapStoreImp::SHAMapStoreImp(
 std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
 {
+    auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
+
+    // Provide default values:
+    if (!nscfg.exists("cache_size"))
+        nscfg.set(
+            "cache_size",
+            std::to_string(app_.config().getValueFor(
+                SizedItem::treeCacheSize, std::nullopt)));
+
+    if (!nscfg.exists("cache_age"))
+        nscfg.set(
+            "cache_age",
+            std::to_string(app_.config().getValueFor(
+                SizedItem::treeCacheAge, std::nullopt)));
+
     std::unique_ptr<NodeStore::Database> db;
+
     if (deleteInterval_)
     {
         if (app_.config().reporting())
@@ -187,13 +203,14 @@ SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
             state_db_.setState(state);
         }
 
-        // Create NodeStore with two backends to allow online deletion of data
+        // Create NodeStore with two backends to allow online deletion of
+        // data
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler_,
             readThreads,
             std::move(writableBackend),
             std::move(archiveBackend),
-            app_.config().section(ConfigSection::nodeDatabase()),
+            nscfg,
             app_.logs().journal(nodeStoreName_));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
@@ -206,7 +223,7 @@ SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
                 app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
             scheduler_,
             readThreads,
-            app_.config().section(ConfigSection::nodeDatabase()),
+            nscfg,
             app_.logs().journal(nodeStoreName_));
         fdRequired_ += db->fdRequired();
     }

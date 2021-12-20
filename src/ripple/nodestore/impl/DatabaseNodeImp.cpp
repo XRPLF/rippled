@@ -31,9 +31,9 @@ DatabaseNodeImp::store(
     uint256 const& hash,
     std::uint32_t)
 {
-    auto nObj = NodeObject::createObject(type, std::move(data), hash);
-    backend_->store(nObj);
-    storeStats(1, nObj->getData().size());
+    storeStats(1, data.size());
+
+    backend_->store(NodeObject::createObject(type, std::move(data), hash));
 }
 
 void
@@ -50,12 +50,14 @@ DatabaseNodeImp::fetchNodeObject(
     FetchReport& fetchReport,
     bool duplicate)
 {
-    std::shared_ptr<NodeObject> nodeObject{
-        cache_ ? cache_->fetch(hash) : nullptr};
+    std::shared_ptr<NodeObject> nodeObject =
+        cache_ ? cache_->fetch(hash) : nullptr;
+
     if (!nodeObject)
     {
-        JLOG(j_.trace())
-            << "DatabaseNodeImp::fetchNodeObject - record not in cache";
+        JLOG(j_.trace()) << "fetchNodeObject " << hash << ": record not "
+                         << (cache_ ? "cached" : "found");
+
         Status status;
 
         try
@@ -64,7 +66,9 @@ DatabaseNodeImp::fetchNodeObject(
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.fatal()) << "Exception, " << e.what();
+            JLOG(j_.fatal())
+                << "fetchNodeObject " << hash
+                << ": Exception fetching from backend: " << e.what();
             Rethrow();
         }
 
@@ -77,17 +81,20 @@ DatabaseNodeImp::fetchNodeObject(
             case notFound:
                 break;
             case dataCorrupt:
-                JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
+                JLOG(j_.fatal()) << "fetchNodeObject " << hash
+                                 << ": nodestore data is corrupted";
                 break;
             default:
-                JLOG(j_.warn()) << "Unknown status=" << status;
+                JLOG(j_.warn())
+                    << "fetchNodeObject " << hash
+                    << ": backend returns unknown result " << status;
                 break;
         }
     }
     else
     {
-        JLOG(j_.trace())
-            << "DatabaseNodeImp::fetchNodeObject - record in cache";
+        JLOG(j_.trace()) << "fetchNodeObject " << hash
+                         << ": record found in cache";
     }
 
     if (nodeObject)
@@ -126,7 +133,7 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
         }
     }
 
-    JLOG(j_.debug()) << "DatabaseNodeImp::fetchBatch - cache hits = "
+    JLOG(j_.debug()) << "fetchBatch - cache hits = "
                      << (hashes.size() - cacheMisses.size())
                      << " - cache misses = " << cacheMisses.size();
     auto dbResults = backend_->fetchBatch(cacheMisses).first;
@@ -147,7 +154,7 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
         else
         {
             JLOG(j_.error())
-                << "DatabaseNodeImp::fetchBatch - "
+                << "fetchBatch - "
                 << "record not found in db or cache. hash = " << strHex(hash);
         }
     }
