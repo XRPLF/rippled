@@ -30,7 +30,7 @@
 #include <boost/beast/http.hpp>
 #include <algorithm>
 #include <array>
-#include <beast/test/yield_to.hpp>
+#include <ripple/beast/extras/test/yield_to.hpp>
 #include <random>
 #include <regex>
 #include <test/jtx.h>

@@ -120,10 +120,7 @@ add_library (Ripple::xrpl_core ALIAS xrpl_core)
 target_include_directories (xrpl_core
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-    # this one is for beast/legacy files:
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/beast/extras>
     $<INSTALL_INTERFACE:include>)
-
 
 target_compile_definitions(xrpl_core
   PUBLIC
@@ -294,23 +291,23 @@ install (
 if (tests)
   install (
     FILES
-      src/beast/extras/beast/unit_test/amount.hpp
-      src/beast/extras/beast/unit_test/dstream.hpp
-      src/beast/extras/beast/unit_test/global_suites.hpp
-      src/beast/extras/beast/unit_test/match.hpp
-      src/beast/extras/beast/unit_test/recorder.hpp
-      src/beast/extras/beast/unit_test/reporter.hpp
-      src/beast/extras/beast/unit_test/results.hpp
-      src/beast/extras/beast/unit_test/runner.hpp
-      src/beast/extras/beast/unit_test/suite.hpp
-      src/beast/extras/beast/unit_test/suite_info.hpp
-      src/beast/extras/beast/unit_test/suite_list.hpp
-      src/beast/extras/beast/unit_test/thread.hpp
-    DESTINATION include/beast/unit_test)
+      src/ripple/beast/extras/unit_test/amount.hpp
+      src/ripple/beast/extras/unit_test/dstream.hpp
+      src/ripple/beast/extras/unit_test/global_suites.hpp
+      src/ripple/beast/extras/unit_test/match.hpp
+      src/ripple/beast/extras/unit_test/recorder.hpp
+      src/ripple/beast/extras/unit_test/reporter.hpp
+      src/ripple/beast/extras/unit_test/results.hpp
+      src/ripple/beast/extras/unit_test/runner.hpp
+      src/ripple/beast/extras/unit_test/suite.hpp
+      src/ripple/beast/extras/unit_test/suite_info.hpp
+      src/ripple/beast/extras/unit_test/suite_list.hpp
+      src/ripple/beast/extras/unit_test/thread.hpp
+    DESTINATION include/ripple/beast/extras/unit_test)
   install (
     FILES
-      src/beast/extras/beast/unit_test/detail/const_container.hpp
-    DESTINATION include/beast/unit_test/detail)
+      src/ripple/beast/extras/unit_test/detail/const_container.hpp
+    DESTINATION include/ripple/beast/extras/unit_test/detail)
 endif () #tests
 #[===================================================================[
    rippled executable

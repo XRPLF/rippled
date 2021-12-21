@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/unit_test/suite.hpp>
+#include <ripple/beast/extras/unit_test/suite.hpp>
 
 #include <exception>
 

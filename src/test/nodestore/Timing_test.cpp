@@ -28,7 +28,7 @@
 #include <ripple/unity/rocksdb.h>
 #include <boost/algorithm/string.hpp>
 #include <atomic>
-#include <beast/unit_test/thread.hpp>
+#include <ripple/beast/extras/unit_test/thread.hpp>
 #include <chrono>
 #include <iterator>
 #include <limits>
