@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_RESULTS_HPP
 #define BEAST_UNIT_TEST_RESULTS_HPP
 
-#include <beast/unit_test/detail/const_container.hpp>
+#include <ripple/beast/unit_test/detail/const_container.hpp>
 
 #include <string>
 #include <vector>

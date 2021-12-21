@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 #define RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 
+#include <ripple/beast/type_name.h>
 #include <atomic>
-#include <beast/type_name.h>
 #include <string>
 #include <utility>
 #include <vector>

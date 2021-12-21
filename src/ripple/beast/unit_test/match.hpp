@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_MATCH_HPP
 #define BEAST_UNIT_TEST_MATCH_HPP
 
-#include <beast/unit_test/suite_info.hpp>
+#include <ripple/beast/unit_test/suite_info.hpp>
 #include <string>
 
 namespace beast {
