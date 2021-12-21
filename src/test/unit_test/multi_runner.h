@@ -20,9 +20,9 @@
 #ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
 #define TEST_UNIT_TEST_MULTI_RUNNER_H
 
+#include <ripple/beast/unit_test/global_suites.hpp>
+#include <ripple/beast/unit_test/runner.hpp>
 #include <boost/beast/core/static_string.hpp>
-#include <beast/unit_test/global_suites.hpp>
-#include <beast/unit_test/runner.hpp>
 
 #include <boost/container/static_vector.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>

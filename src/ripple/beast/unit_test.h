@@ -20,16 +20,16 @@
 #ifndef BEAST_UNIT_TEST_H_INCLUDED
 #define BEAST_UNIT_TEST_H_INCLUDED
 
-#include <beast/unit_test/amount.hpp>
-#include <beast/unit_test/global_suites.hpp>
-#include <beast/unit_test/match.hpp>
-#include <beast/unit_test/recorder.hpp>
-#include <beast/unit_test/reporter.hpp>
-#include <beast/unit_test/results.hpp>
-#include <beast/unit_test/runner.hpp>
-#include <beast/unit_test/suite.hpp>
-#include <beast/unit_test/suite_info.hpp>
-#include <beast/unit_test/suite_list.hpp>
+#include <ripple/beast/unit_test/amount.hpp>
+#include <ripple/beast/unit_test/global_suites.hpp>
+#include <ripple/beast/unit_test/match.hpp>
+#include <ripple/beast/unit_test/recorder.hpp>
+#include <ripple/beast/unit_test/reporter.hpp>
+#include <ripple/beast/unit_test/results.hpp>
+#include <ripple/beast/unit_test/runner.hpp>
+#include <ripple/beast/unit_test/suite.hpp>
+#include <ripple/beast/unit_test/suite_info.hpp>
+#include <ripple/beast/unit_test/suite_list.hpp>
 
 #ifndef BEAST_EXPECT
 #define BEAST_EXPECT_S1(x) #x

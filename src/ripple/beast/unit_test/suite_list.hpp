@@ -8,8 +8,8 @@
 #ifndef BEAST_UNIT_TEST_SUITE_LIST_HPP
 #define BEAST_UNIT_TEST_SUITE_LIST_HPP
 
-#include <beast/unit_test/suite_info.hpp>
-#include <beast/unit_test/detail/const_container.hpp>
+#include <ripple/beast/unit_test/suite_info.hpp>
+#include <ripple/beast/unit_test/detail/const_container.hpp>
 #include <boost/assert.hpp>
 #include <typeindex>
 #include <set>
@@ -76,4 +76,3 @@ suite_list::insert(
 } // beast
 
 #endif
-

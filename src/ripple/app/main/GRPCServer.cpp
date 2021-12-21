@@ -22,7 +22,7 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/resource/Fees.h>
 
-#include <beast/net/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 
 namespace ripple {
 

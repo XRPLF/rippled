@@ -21,10 +21,10 @@
 #define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 
 #include <ripple/basics/contract.h>
+#include <ripple/beast/type_name.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <boost/container/flat_map.hpp>
 #include <algorithm>
-#include <beast/type_name.h>
 #include <forward_list>
 
 namespace ripple {
