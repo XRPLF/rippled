@@ -45,6 +45,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang
   # TODO min AppleClang version check ?
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set (is_gcc TRUE)
+  ProcessorCount(N)
+  math(EXPR n ${N}-2)
+  set(msg "Using ${n} of ${N} Cores available")
+  message(STATUS ${msg})
+  set (CMAKE_BUILD_PARALLEL_LEVEL ${n})
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
     message (FATAL_ERROR "This project requires GCC 7 or later")
   endif ()
