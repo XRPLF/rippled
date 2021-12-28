@@ -485,6 +485,7 @@ SHAMapStoreImp::dbPaths()
     bool writableDbExists = false;
     bool archiveDbExists = false;
 
+    std::vector<boost::filesystem::path> pathsToDelete;
     for (boost::filesystem::directory_iterator it(dbPath);
          it != boost::filesystem::directory_iterator();
          ++it)
@@ -494,7 +495,7 @@ SHAMapStoreImp::dbPaths()
         else if (!state.archiveDb.compare(it->path().string()))
             archiveDbExists = true;
         else if (!dbPrefix_.compare(it->path().stem().string()))
-            boost::filesystem::remove_all(it->path());
+            pathsToDelete.push_back(it->path());
     }
 
     if ((!writableDbExists && state.writableDb.size()) ||
@@ -524,6 +525,10 @@ SHAMapStoreImp::dbPaths()
 
         Throw<std::runtime_error>("state db error");
     }
+
+    // The necessary directories exist. Now, remove any others.
+    for (boost::filesystem::path& p : pathsToDelete)
+        boost::filesystem::remove_all(p);
 }
 
 std::unique_ptr<NodeStore::Backend>
