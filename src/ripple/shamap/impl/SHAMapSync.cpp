@@ -305,6 +305,7 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
     }
 
     mn.finishedReads_.clear();
+    mn.finishedReads_.reserve(mn.maxDefer_);
     mn.deferred_ = 0;
 }
 
@@ -321,7 +322,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     MissingNodes mn(
         max,
         filter,
-        4096,  // number of async reads per pass
+        512,  // number of async reads per pass
         f_.getFullBelowCache(ledgerSeq_)->getGeneration());
 
     if (!root_->isInner() ||
