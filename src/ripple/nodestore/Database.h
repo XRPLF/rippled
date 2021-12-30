@@ -156,7 +156,7 @@ public:
                 object is stored, used by the shard store.
         @param callback Callback function when read completes
     */
-    void
+    virtual void
     asyncFetch(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
