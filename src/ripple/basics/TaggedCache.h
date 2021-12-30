@@ -300,19 +300,16 @@ public:
 
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param replace `true` if `data` is the up to date version of the object.
+        @param replace Function that decides if cache should be replaced
 
         @return `true` If the key already existed.
     */
-private:
-    template <bool replace>
+public:
     bool
     canonicalize(
         const key_type& key,
-        std::conditional_t<
-            replace,
-            std::shared_ptr<T> const,
-            std::shared_ptr<T>>& data)
+        std::shared_ptr<T>& data,
+        std::function<bool(std::shared_ptr<T> const&)>&& replace)
     {
         // Return canonical value, store if needed, refresh in cache
         // Return values: true=we had the data already
@@ -335,7 +332,7 @@ private:
 
         if (entry.isCached())
         {
-            if constexpr (replace)
+            if (replace(entry.ptr))
             {
                 entry.ptr = data;
                 entry.weak_ptr = data;
@@ -352,7 +349,7 @@ private:
 
         if (cachedData)
         {
-            if constexpr (replace)
+            if (replace(entry.ptr))
             {
                 entry.ptr = data;
                 entry.weak_ptr = data;
@@ -374,19 +371,22 @@ private:
         return false;
     }
 
-public:
     bool
     canonicalize_replace_cache(
         const key_type& key,
         std::shared_ptr<T> const& data)
     {
-        return canonicalize<true>(key, data);
+        return canonicalize(
+            key,
+            const_cast<std::shared_ptr<T>&>(data),
+            [](std::shared_ptr<T> const&) { return true; });
     }
 
     bool
     canonicalize_replace_client(const key_type& key, std::shared_ptr<T>& data)
     {
-        return canonicalize<false>(key, data);
+        return canonicalize(
+            key, data, [](std::shared_ptr<T> const&) { return false; });
     }
 
     std::shared_ptr<T>

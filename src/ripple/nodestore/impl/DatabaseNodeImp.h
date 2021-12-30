@@ -111,6 +111,7 @@ public:
         // only one database
         return true;
     }
+
     void
     sync() override
     {
@@ -119,6 +120,13 @@ public:
 
     std::vector<std::shared_ptr<NodeObject>>
     fetchBatch(std::vector<uint256> const& hashes);
+
+    void
+    asyncFetch(
+        uint256 const& hash,
+        std::uint32_t ledgerSeq,
+        std::function<void(std::shared_ptr<NodeObject> const&)>&& callback)
+        override;
 
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
