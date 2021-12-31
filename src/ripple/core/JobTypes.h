@@ -74,10 +74,10 @@ private:
         add(jtVALIDATION_ut,     "untrustedValidation",  maxLimit,  2000ms,  5000ms);
         add(jtTRANSACTION_l,     "localTransaction",     maxLimit,   100ms,   500ms);
         add(jtREPLAY_REQ,        "ledgerReplayRequest",        10,   250ms,  1000ms);
-        add(jtLEDGER_REQ,        "ledgerRequest",               4,     0ms,     0ms);
+        add(jtLEDGER_REQ,        "ledgerRequest",               3,     0ms,     0ms);
         add(jtPROPOSAL_ut,       "untrustedProposal",    maxLimit,   500ms,  1250ms);
         add(jtREPLAY_TASK,       "ledgerReplayTask",     maxLimit,     0ms,     0ms);
-        add(jtLEDGER_DATA,       "ledgerData",                  4,     0ms,     0ms);
+        add(jtLEDGER_DATA,       "ledgerData",                  3,     0ms,     0ms);
         add(jtCLIENT,            "clientCommand",        maxLimit,  2000ms,  5000ms);
         add(jtCLIENT_SUBSCRIBE,  "clientSubscribe",      maxLimit,  2000ms,  5000ms);
         add(jtCLIENT_FEE_CHANGE, "clientFeeChange",      maxLimit,  2000ms,  5000ms);
