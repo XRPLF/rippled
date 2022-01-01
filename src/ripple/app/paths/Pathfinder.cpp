@@ -1126,16 +1126,14 @@ Pathfinder::addLink(
                 if (continueCallback && !continueCallback())
                     return;
                 if (!currentPath.hasSeen(
-                        xrpAccount(),
-                        book->getCurrencyOut(),
-                        book->getIssuerOut()) &&
-                    !issueMatchesOrigin(book->book().out) &&
+                        xrpAccount(), book.out.currency, book.out.account) &&
+                    !issueMatchesOrigin(book.out) &&
                     (!bDestOnly ||
-                     (book->getCurrencyOut() == mDstAmount.getCurrency())))
+                     (book.out.currency == mDstAmount.getCurrency())))
                 {
                     STPath newPath(currentPath);
 
-                    if (book->getCurrencyOut().isZero())
+                    if (book.out.currency.isZero())
                     {  // to XRP
 
                         // add the order book itself
@@ -1158,9 +1156,9 @@ Pathfinder::addLink(
                             incompletePaths.push_back(newPath);
                     }
                     else if (!currentPath.hasSeen(
-                                 book->getIssuerOut(),
-                                 book->getCurrencyOut(),
-                                 book->getIssuerOut()))
+                                 book.out.account,
+                                 book.out.currency,
+                                 book.out.account))
                     {
                         // Don't want the book if we've already seen the issuer
                         // book -> account -> book
@@ -1173,8 +1171,8 @@ Pathfinder::addLink(
                                 STPathElement::typeCurrency |
                                     STPathElement::typeIssuer,
                                 xrpAccount(),
-                                book->getCurrencyOut(),
-                                book->getIssuerOut());
+                                book.out.currency,
+                                book.out.account);
                         }
                         else
                         {
@@ -1183,19 +1181,19 @@ Pathfinder::addLink(
                                 STPathElement::typeCurrency |
                                     STPathElement::typeIssuer,
                                 xrpAccount(),
-                                book->getCurrencyOut(),
-                                book->getIssuerOut());
+                                book.out.currency,
+                                book.out.account);
                         }
 
                         if (hasEffectiveDestination &&
-                            book->getIssuerOut() == mDstAccount &&
-                            book->getCurrencyOut() == mDstAmount.getCurrency())
+                            book.out.account == mDstAccount &&
+                            book.out.currency == mDstAmount.getCurrency())
                         {
                             // We skipped a required issuer
                         }
                         else if (
-                            book->getIssuerOut() == mEffectiveDst &&
-                            book->getCurrencyOut() == mDstAmount.getCurrency())
+                            book.out.account == mEffectiveDst &&
+                            book.out.currency == mDstAmount.getCurrency())
                         {  // with the destination account, this path is
                            // complete
                             JLOG(j_.trace())
@@ -1210,9 +1208,9 @@ Pathfinder::addLink(
                                 newPath,
                                 STPathElement(
                                     STPathElement::typeAccount,
-                                    book->getIssuerOut(),
-                                    book->getCurrencyOut(),
-                                    book->getIssuerOut()));
+                                    book.out.account,
+                                    book.out.currency,
+                                    book.out.account));
                         }
                     }
                 }

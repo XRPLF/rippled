@@ -23,7 +23,6 @@
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/app/ledger/BookListeners.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/OrderBook.h>
 #include <mutex>
 
 namespace ripple {
@@ -37,15 +36,13 @@ public:
     setup(std::shared_ptr<ReadView const> const& ledger);
     void
     update(std::shared_ptr<ReadView const> const& ledger);
-    void
-    invalidate();
 
     void
     addOrderBook(Book const&);
 
     /** @return a list of all orderbooks that want this issuerID and currencyID.
      */
-    OrderBook::List
+    std::vector<Book>
     getBooksByTakerPays(Issue const&);
 
     /** @return a count of all orderbooks that want this issuerID and
@@ -68,22 +65,14 @@ public:
         const AcceptedLedgerTx& alTx,
         Json::Value const& jvObj);
 
-    using IssueToOrderBook = hash_map<Issue, OrderBook::List>;
-
 private:
-    void
-    rawAddBook(Book const&);
-
     Application& app_;
 
-    // by ci/ii
-    IssueToOrderBook mSourceMap;
-
-    // by co/io
-    IssueToOrderBook mDestMap;
+    // Maps order books by "issue in" to "issue out":
+    hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
 
     // does an order book to XRP exist
-    hash_set<Issue> mXRPBooks;
+    hash_set<Issue> xrpBooks_;
 
     std::recursive_mutex mLock;
 
@@ -91,7 +80,7 @@ private:
 
     BookToListenersMap mListeners;
 
-    std::uint32_t mSeq;
+    std::atomic<std::uint32_t> seq_;
 
     beast::Journal const j_;
 };
