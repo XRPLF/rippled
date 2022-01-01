@@ -3074,7 +3074,8 @@ NetworkOPsImp::pubValidatedTransaction(
                 it = mStreamMaps[sRTTransactions].erase(it);
         }
     }
-    app_.getOrderBookDB().processTxn(alAccepted, alTx, jvObj);
+    if (alTx.getResult() == tesSUCCESS)
+        app_.getOrderBookDB().processTxn(alAccepted, alTx, jvObj);
     pubAccountTransaction(alAccepted, alTx, true);
 }
 
