@@ -24,7 +24,9 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
+
 #include <optional>
+#include <shared_mutex>
 #include <string>
 
 namespace ripple {
@@ -223,9 +225,8 @@ class DatabaseCon;
 class ManifestCache
 {
 private:
-    beast::Journal mutable j_;
-    std::mutex apply_mutex_;
-    std::mutex mutable read_mutex_;
+    beast::Journal j_;
+    std::shared_mutex mutable mutex_;
 
     /** Active manifests stored by master public key. */
     hash_map<PublicKey, Manifest> map_;
@@ -378,8 +379,10 @@ public:
 
     /** Invokes the callback once for every populated manifest.
 
-        @note Undefined behavior results when calling ManifestCache members from
-        within the callback
+        @note Do not call ManifestCache member functions from
+        within the callback. This can deadlock.
+        @note Do not write ManifestCache member variables from
+        within the callback. This can lead to data races.
 
         @param f Function called for each manifest
 
@@ -391,7 +394,7 @@ public:
     void
     for_each_manifest(Function&& f) const
     {
-        std::lock_guard lock{read_mutex_};
+        std::shared_lock lock{mutex_};
         for (auto const& [_, manifest] : map_)
         {
             (void)_;
@@ -401,8 +404,10 @@ public:
 
     /** Invokes the callback once for every populated manifest.
 
-        @note Undefined behavior results when calling ManifestCache members from
-        within the callback
+        @note Do not call ManifestCache member functions from
+        within the callback. This will likely will deadlock.
+        @note Do not write ManifestCache member variables from
+        within the callback. This can lead to data races.
 
         @param pf Pre-function called with the maximum number of times f will be
             called (useful for memory allocations)
@@ -417,7 +422,7 @@ public:
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::lock_guard lock{read_mutex_};
+        std::shared_lock lock{mutex_};
         pf(map_.size());
         for (auto const& [_, manifest] : map_)
         {

@@ -28,8 +28,11 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
+
 #include <boost/algorithm/string/trim.hpp>
+
 #include <numeric>
+#include <shared_mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -283,7 +286,7 @@ loadValidatorToken(std::vector<std::string> const& blob)
 PublicKey
 ManifestCache::getSigningKey(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -295,7 +298,7 @@ ManifestCache::getSigningKey(PublicKey const& pk) const
 PublicKey
 ManifestCache::getMasterKey(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
 
     if (auto const iter = signingToMasterKeys_.find(pk);
         iter != signingToMasterKeys_.end())
@@ -307,7 +310,7 @@ ManifestCache::getMasterKey(PublicKey const& pk) const
 std::optional<std::uint32_t>
 ManifestCache::getSequence(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -319,7 +322,7 @@ ManifestCache::getSequence(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getDomain(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -331,7 +334,7 @@ ManifestCache::getDomain(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getManifest(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -343,7 +346,7 @@ ManifestCache::getManifest(PublicKey const& pk) const
 bool
 ManifestCache::revoked(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end())
@@ -355,7 +358,7 @@ ManifestCache::revoked(PublicKey const& pk) const
 ManifestDisposition
 ManifestCache::applyManifest(Manifest m)
 {
-    std::lock_guard applyLock{apply_mutex_};
+    std::unique_lock lock{mutex_};
 
     // Before we spend time checking the signature, make sure the
     // sequence number is newer than any we have.
@@ -395,8 +398,6 @@ ManifestCache::applyManifest(Manifest m)
 
     if (auto stream = j_.warn(); stream && revoked)
         logMftAct(stream, "Revoked", m.masterKey, m.sequence);
-
-    std::lock_guard readLock{read_mutex_};
 
     // Sanity check: the master key of this manifest should not be used as
     // the ephemeral key of another manifest:
@@ -543,7 +544,7 @@ ManifestCache::save(
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted)
 {
-    std::lock_guard lock{apply_mutex_};
+    std::shared_lock lock{mutex_};
     auto db = dbCon.checkoutDb();
 
     saveManifests(*db, dbTable, isTrusted, map_, j_);
