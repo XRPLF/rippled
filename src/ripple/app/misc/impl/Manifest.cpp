@@ -28,8 +28,11 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
+
 #include <boost/algorithm/string/trim.hpp>
+
 #include <numeric>
+#include <shared_mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -283,7 +286,7 @@ loadValidatorToken(std::vector<std::string> const& blob)
 PublicKey
 ManifestCache::getSigningKey(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -295,7 +298,7 @@ ManifestCache::getSigningKey(PublicKey const& pk) const
 PublicKey
 ManifestCache::getMasterKey(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
 
     if (auto const iter = signingToMasterKeys_.find(pk);
         iter != signingToMasterKeys_.end())
@@ -307,7 +310,7 @@ ManifestCache::getMasterKey(PublicKey const& pk) const
 std::optional<std::uint32_t>
 ManifestCache::getSequence(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -319,7 +322,7 @@ ManifestCache::getSequence(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getDomain(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -331,7 +334,7 @@ ManifestCache::getDomain(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getManifest(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -343,7 +346,7 @@ ManifestCache::getManifest(PublicKey const& pk) const
 bool
 ManifestCache::revoked(PublicKey const& pk) const
 {
-    std::lock_guard lock{read_mutex_};
+    std::shared_lock lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end())
@@ -355,86 +358,114 @@ ManifestCache::revoked(PublicKey const& pk) const
 ManifestDisposition
 ManifestCache::applyManifest(Manifest m)
 {
-    std::lock_guard applyLock{apply_mutex_};
+    // Check the manifest against the conditions that do not require a
+    // `unique_lock` (write lock) on the `mutext_`. Since the signature can be
+    // relatively expensive, the `checkSignature` parameter determines if the
+    // signature should be checked. Since `prewriteCheck` is run twice (see
+    // comment below), `checkSignature` only needs to be set to true on the
+    // first run.
+    auto prewriteCheck =
+        [this, &m](auto const& iter, bool checkSignature, auto const& lock)
+        -> std::optional<ManifestDisposition> {
+        (void)lock;  // not used. parameter is present to insure the mutex is
+                     // locked when the lambda is called.
+        if (iter != map_.end() && m.sequence <= iter->second.sequence)
+        {
+            // We received a manifest whose sequence number is not strictly
+            // greater than the one we already know about. This can happen in
+            // several cases including when we receive manifests from a peer who
+            // doesn't have the latest data.
+            if (auto stream = j_.debug())
+                logMftAct(
+                    stream,
+                    "Stale",
+                    m.masterKey,
+                    m.sequence,
+                    iter->second.sequence);
+            return ManifestDisposition::stale;
+        }
 
-    // Before we spend time checking the signature, make sure the
-    // sequence number is newer than any we have.
-    auto const iter = map_.find(m.masterKey);
+        if (checkSignature && !m.verify())
+        {
+            if (auto stream = j_.warn())
+                logMftAct(stream, "Invalid", m.masterKey, m.sequence);
+            return ManifestDisposition::invalid;
+        }
 
-    if (iter != map_.end() && m.sequence <= iter->second.sequence)
-    {
-        // We received a manifest whose sequence number is not strictly greater
-        // than the one we already know about. This can happen in several cases
-        // including when we receive manifests from a peer who doesn't have the
-        // latest data.
-        if (auto stream = j_.debug())
-            logMftAct(
-                stream,
-                "Stale",
-                m.masterKey,
-                m.sequence,
-                iter->second.sequence);
-        return ManifestDisposition::stale;
-    }
+        // If the master key associated with a manifest is or might be
+        // compromised and is, therefore, no longer trustworthy.
+        //
+        // A manifest revocation essentially marks a manifest as compromised. By
+        // setting the sequence number to the highest value possible, the
+        // manifest is effectively neutered and cannot be superseded by a forged
+        // one.
+        bool const revoked = m.revoked();
 
-    // Now check the signature
-    if (!m.verify())
-    {
-        if (auto stream = j_.warn())
-            logMftAct(stream, "Invalid", m.masterKey, m.sequence);
-        return ManifestDisposition::invalid;
-    }
+        if (auto stream = j_.warn(); stream && revoked)
+            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
 
-    // If the master key associated with a manifest is or might be compromised
-    // and is, therefore, no longer trustworthy.
-    //
-    // A manifest revocation essentially marks a manifest as compromised. By
-    // setting the sequence number to the highest value possible, the manifest
-    // is effectively neutered and cannot be superseded by a forged one.
-    bool const revoked = m.revoked();
-
-    if (auto stream = j_.warn(); stream && revoked)
-        logMftAct(stream, "Revoked", m.masterKey, m.sequence);
-
-    std::lock_guard readLock{read_mutex_};
-
-    // Sanity check: the master key of this manifest should not be used as
-    // the ephemeral key of another manifest:
-    if (auto const x = signingToMasterKeys_.find(m.masterKey);
-        x != signingToMasterKeys_.end())
-    {
-        JLOG(j_.warn()) << to_string(m)
-                        << ": Master key already used as ephemeral key for "
-                        << toBase58(TokenType::NodePublic, x->second);
-
-        return ManifestDisposition::badMasterKey;
-    }
-
-    if (!revoked)
-    {
-        // Sanity check: the ephemeral key of this manifest should not be used
-        // as the master or ephemeral key of another manifest:
-        if (auto const x = signingToMasterKeys_.find(m.signingKey);
+        // Sanity check: the master key of this manifest should not be used as
+        // the ephemeral key of another manifest:
+        if (auto const x = signingToMasterKeys_.find(m.masterKey);
             x != signingToMasterKeys_.end())
         {
-            JLOG(j_.warn())
-                << to_string(m)
-                << ": Ephemeral key already used as ephemeral key for "
-                << toBase58(TokenType::NodePublic, x->second);
+            JLOG(j_.warn()) << to_string(m)
+                            << ": Master key already used as ephemeral key for "
+                            << toBase58(TokenType::NodePublic, x->second);
 
-            return ManifestDisposition::badEphemeralKey;
+            return ManifestDisposition::badMasterKey;
         }
 
-        if (auto const x = map_.find(m.signingKey); x != map_.end())
+        if (!revoked)
         {
-            JLOG(j_.warn())
-                << to_string(m) << ": Ephemeral key used as master key for "
-                << to_string(x->second);
+            // Sanity check: the ephemeral key of this manifest should not be
+            // used as the master or ephemeral key of another manifest:
+            if (auto const x = signingToMasterKeys_.find(m.signingKey);
+                x != signingToMasterKeys_.end())
+            {
+                JLOG(j_.warn())
+                    << to_string(m)
+                    << ": Ephemeral key already used as ephemeral key for "
+                    << toBase58(TokenType::NodePublic, x->second);
 
-            return ManifestDisposition::badEphemeralKey;
+                return ManifestDisposition::badEphemeralKey;
+            }
+
+            if (auto const x = map_.find(m.signingKey); x != map_.end())
+            {
+                JLOG(j_.warn())
+                    << to_string(m) << ": Ephemeral key used as master key for "
+                    << to_string(x->second);
+
+                return ManifestDisposition::badEphemeralKey;
+            }
         }
+
+        return std::nullopt;
+    };
+
+    {
+        std::shared_lock sl{mutex_};
+        if (auto d =
+                prewriteCheck(map_.find(m.masterKey), /*checkSig*/ true, sl))
+            return *d;
     }
 
+    std::unique_lock sl{mutex_};
+    auto const iter = map_.find(m.masterKey);
+    // Since we released the previously held read lock, it's possible that the
+    // collections have been written to. This means we need to run
+    // `prewriteCheck` again. This re-does work, but `prewriteCheck` is
+    // relatively inexpensive to run, and doing it this way allows us to run
+    // `prewriteCheck` under a `shared_lock` above.
+    // Note, the signature has already been checked above, so it
+    // doesn't need to happen again (signature checks are somewhat expensive).
+    // Note: It's a mistake to use an upgradable lock. This is a recipe for
+    // deadlock.
+    if (auto d = prewriteCheck(iter, /*checkSig*/ false, sl))
+        return *d;
+
+    bool const revoked = m.revoked();
     // This is the first manifest we are seeing for a master key. This should
     // only ever happen once per validator run.
     if (iter == map_.end())
@@ -543,7 +574,7 @@ ManifestCache::save(
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted)
 {
-    std::lock_guard lock{apply_mutex_};
+    std::shared_lock lock{mutex_};
     auto db = dbCon.checkoutDb();
 
     saveManifests(*db, dbTable, isTrusted, map_, j_);
