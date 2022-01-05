@@ -603,7 +603,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -1067,10 +1067,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     if (s > 100)
         fee_ = Resource::feeMediumBurdenPeer;
 
-    // VFALCO What's the right job type?
-    auto that = shared_from_this();
     app_.getJobQueue().addJob(
-        jtVALIDATION_ut, "receiveManifests", [this, that, m]() {
+        jtMANIFEST, "receiveManifests", [this, that = shared_from_this(), m]() {
             overlay_.onManifests(m, that);
         });
 }
