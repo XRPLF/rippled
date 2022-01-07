@@ -13,6 +13,31 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Releases
 
+## Version 1.8.3
+This is the 1.8.3 release of `rippled`, the reference implementation of the XRP Ledger protocol.
+
+This release implements changes that improve the syncing performance of peers on the network, adds countermeasures to several routines involving LZ4 to defend against CVE-2021-3520, corrects a minor technical flaw that would result in the server not using a cache for nodestore operations, and adjusts tunable values to optimize disk I/O.
+
+### Summary of Issues
+Recently, servers in the XRP Ledger network have been taking a really long time to sync back to the network after the restart. This is one of several releases which will be made to improve on this issue. 
+
+
+### Bug Fixes
+
+- **Parallel ledger loader & I/O performance improvements**: This commit makes several changes that, together, should decrease the time needed for a server to sync to the network. To make full use of this change, `rippled` needs to be running a high IOPS machine and operators need to explicitly enable this by adding the following to their config file, under the `[node_db]` stanza:
+
+    [node_db]
+    ...
+    fast_load=1
+
+- **Detect CVE-2021-3520 when decompressing using LZ4**: This commit adds code to detect LZ4 payloads that may result in out-of-bounds memory accesses.
+
+- **Provide sensible default values for nodestore cache:**: The nodestore includes a built-in cache to reduce the disk I/O load but, by default, this cache was not initialized unless it was explicitly configured by the server operator. This commit introduces sensible defaults based on the server's configured node size. 
+
+- **Adjust the number of concurrent ledger data jobs**: Processing a large amount of data at once can effectively bottleneck a server's I/O subsystem. This commits helps optimize I/O performance by controlling how many jobs can concurrently process ledger data.
+
+- **Two small SHAMapSync improvements**: This commit makes minor changes to optimize the way memory is used and control the amount of background I/O performed when attempting to fetch missing `SHAMap` nodes.
+
 ## Version 1.8.2
 Ripple has released version 1.8.2 of rippled, the reference server implementation of the XRP Ledger protocol.  This release addresses the full transaction queues and elevated transaction fees issue observed on the XRP ledger, and also provides some optimizations and small fixes to improve the server's performance overall.
 
