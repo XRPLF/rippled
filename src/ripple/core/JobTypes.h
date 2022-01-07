@@ -72,6 +72,7 @@ private:
         add(jtPACK,              "makeFetchPack",               1,     0ms,     0ms);
         add(jtPUBOLDLEDGER,      "publishAcqLedger",            2, 10000ms, 15000ms);
         add(jtVALIDATION_ut,     "untrustedValidation",  maxLimit,  2000ms,  5000ms);
+        add(jtMANIFEST,          "manifest",             maxLimit,  2000ms,  5000ms);
         add(jtTRANSACTION_l,     "localTransaction",     maxLimit,   100ms,   500ms);
         add(jtREPLAY_REQ,        "ledgerReplayRequest",        10,   250ms,  1000ms);
         add(jtLEDGER_REQ,        "ledgerRequest",               4,     0ms,     0ms);

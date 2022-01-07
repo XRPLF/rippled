@@ -1070,7 +1070,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     // VFALCO What's the right job type?
     auto that = shared_from_this();
     app_.getJobQueue().addJob(
-        jtVALIDATION_ut, "receiveManifests", [this, that, m](Job&) {
+        jtMANIFEST, "receiveManifests", [this, that, m](Job&) {
             overlay_.onManifests(m, that);
         });
 }
