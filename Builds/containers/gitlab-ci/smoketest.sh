@@ -16,7 +16,7 @@ case ${ID} in
     ubuntu|debian)
         pkgtype="dpkg"
         ;;
-    fedora|centos|rhel|scientific)
+    fedora|centos|rhel|scientific|rocky)
         pkgtype="rpm"
         ;;
     *)
@@ -95,5 +95,3 @@ fi
 # run unit tests
 /opt/ripple/bin/rippled --unittest --unittest-jobs $(nproc)
 /opt/ripple/bin/validator-keys --unittest
-
-
