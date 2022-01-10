@@ -19,7 +19,7 @@ RIPPLED_DBG_PKG=$(ls rippled-dbgsym_*.deb)
 # TODO - where to upload src tgz?
 RIPPLED_SRC=$(ls rippled_*.orig.tar.gz)
 DEB_MATRIX=";deb.component=${COMPONENT};deb.architecture=amd64"
-for dist in stretch buster xenial bionic disco focal ; do
+for dist in stretch buster bullseye bionic focal jammy; do
     DEB_MATRIX="${DEB_MATRIX};deb.distribution=${dist}"
 done
 echo "{ \"debs\": {" > "${TOPDIR}/files.info"
@@ -88,4 +88,3 @@ JSON
 )
     curl ${SLACK_NOTIFY_URL} --data-urlencode "${CONTENT}"
 fi
-
