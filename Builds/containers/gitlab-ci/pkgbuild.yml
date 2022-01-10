@@ -9,7 +9,7 @@
 # can be overridden by project or group variables as needed.
 variables:
   # these containers are built manually using the rippled
-  # cmake build (container targets) and tagged/pushed so they 
+  # cmake build (container targets) and tagged/pushed so they
   # can be used here
   RPM_CONTAINER_TAG: "2020-02-10"
   RPM_CONTAINER_NAME: "rippled-rpm-builder"
@@ -184,43 +184,22 @@ centos_7_smoketest:
     name: artifactory.ops.ripple.com/centos:7
   <<: *run_local_smoketest
 
-fedora_29_smoketest:
+fedora_34_smoketest:
   stage: smoketest
   dependencies:
     - rpm_build
     - rpm_sign
   image:
-    name: artifactory.ops.ripple.com/fedora:29
+    name: artifactory.ops.ripple.com/fedora:34
   <<: *run_local_smoketest
 
-fedora_28_smoketest:
+fedora_35_smoketest:
   stage: smoketest
   dependencies:
     - rpm_build
     - rpm_sign
   image:
-    name: artifactory.ops.ripple.com/fedora:28
-  <<: *run_local_smoketest
-
-fedora_27_smoketest:
-  stage: smoketest
-  dependencies:
-    - rpm_build
-    - rpm_sign
-  image:
-    name: artifactory.ops.ripple.com/fedora:27
-  <<: *run_local_smoketest
-
-## this one is not LTS, but we
-## get some extra coverage by including it
-## consider dropping it when 20.04 is ready
-ubuntu_20_smoketest:
-  stage: smoketest
-  dependencies:
-    - dpkg_build
-    - dpkg_sign
-  image:
-    name: artifactory.ops.ripple.com/ubuntu:20.04
+    name: artifactory.ops.ripple.com/fedora:35
   <<: *run_local_smoketest
 
 ubuntu_18_smoketest:
@@ -232,14 +211,24 @@ ubuntu_18_smoketest:
     name: artifactory.ops.ripple.com/ubuntu:18.04
   <<: *run_local_smoketest
 
-ubuntu_16_smoketest:
+ubuntu_20_smoketest:
   stage: smoketest
   dependencies:
     - dpkg_build
     - dpkg_sign
   image:
-    name: artifactory.ops.ripple.com/ubuntu:16.04
+    name: artifactory.ops.ripple.com/ubuntu:20.04
   <<: *run_local_smoketest
+
+ubuntu_22_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+    - dpkg_sign
+  image:
+    name: artifactory.ops.ripple.com/ubuntu:22.04
+  <<: *run_local_smoketest
+  allow_failure: true
 
 debian_9_smoketest:
   stage: smoketest
@@ -248,6 +237,33 @@ debian_9_smoketest:
     - dpkg_sign
   image:
     name: artifactory.ops.ripple.com/debian:9
+  <<: *run_local_smoketest
+
+debian_10_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+    - dpkg_sign
+  image:
+    name: artifactory.ops.ripple.com/debian:10
+  <<: *run_local_smoketest
+
+debian_11_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+    - dpkg_sign
+  image:
+    name: artifactory.ops.ripple.com/debian:11
+  <<: *run_local_smoketest
+
+rocky_8_smoketest:
+  stage: smoketest
+  dependencies:
+    - rpm_build
+    - rpm_sign
+  image:
+    name: rockylinux/rockylinux:8
   <<: *run_local_smoketest
 
 #########################################################################
@@ -346,48 +362,25 @@ centos_7_verify_repo_test:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-fedora_29_verify_repo_test:
+fedora_34_verify_repo_test:
   stage: verify_from_test
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: artifactory.ops.ripple.com/fedora:29
+    name: artifactory.ops.ripple.com/fedora:34
   dependencies:
     - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
-fedora_28_verify_repo_test:
+fedora_35_verify_repo_test:
   stage: verify_from_test
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: artifactory.ops.ripple.com/fedora:28
+    name: artifactory.ops.ripple.com/fedora:35
   dependencies:
     - rpm_sign
-  <<: *only_primary
-  <<: *run_repo_smoketest
-
-fedora_27_verify_repo_test:
-  stage: verify_from_test
-  variables:
-    RPM_REPO: "rippled-rpm-test-mirror"
-  image:
-    name: artifactory.ops.ripple.com/fedora:27
-  dependencies:
-    - rpm_sign
-  <<: *only_primary
-  <<: *run_repo_smoketest
-
-ubuntu_20_verify_repo_test:
-  stage: verify_from_test
-  variables:
-    DISTRO: "focal"
-    DEB_REPO: "rippled-deb-test-mirror"
-  image:
-    name: artifactory.ops.ripple.com/ubuntu:20.04
-  dependencies:
-    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -403,17 +396,30 @@ ubuntu_18_verify_repo_test:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-ubuntu_16_verify_repo_test:
+ubuntu_20_verify_repo_test:
   stage: verify_from_test
   variables:
-    DISTRO: "xenial"
+    DISTRO: "focal"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: artifactory.ops.ripple.com/ubuntu:16.04
+    name: artifactory.ops.ripple.com/ubuntu:20.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
+
+ubuntu_22_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "jammy"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: artifactory.ops.ripple.com/ubuntu:22.04
+  dependencies:
+    - dpkg_sign
+  <<: *only_primary
+  <<: *run_repo_smoketest
+  allow_failure: true
 
 debian_9_verify_repo_test:
   stage: verify_from_test
@@ -422,6 +428,30 @@ debian_9_verify_repo_test:
     DEB_REPO: "rippled-deb-test-mirror"
   image:
     name: artifactory.ops.ripple.com/debian:9
+  dependencies:
+    - dpkg_sign
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+debian_10_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "buster"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: artifactory.ops.ripple.com/debian:10
+  dependencies:
+    - dpkg_sign
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+debian_11_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "bullseye"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: artifactory.ops.ripple.com/debian:11
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -492,48 +522,25 @@ centos_7_verify_repo_prod:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-fedora_29_verify_repo_prod:
+fedora_34_verify_repo_prod:
   stage: verify_from_prod
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: artifactory.ops.ripple.com/fedora:29
+    name: artifactory.ops.ripple.com/fedora:34
   dependencies:
     - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
-fedora_28_verify_repo_prod:
+fedora_35_verify_repo_prod:
   stage: verify_from_prod
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: artifactory.ops.ripple.com/fedora:28
+    name: artifactory.ops.ripple.com/fedora:35
   dependencies:
     - rpm_sign
-  <<: *only_primary
-  <<: *run_repo_smoketest
-
-fedora_27_verify_repo_prod:
-  stage: verify_from_prod
-  variables:
-    RPM_REPO: "rippled-rpm"
-  image:
-    name: artifactory.ops.ripple.com/fedora:27
-  dependencies:
-    - rpm_sign
-  <<: *only_primary
-  <<: *run_repo_smoketest
-
-ubuntu_20_verify_repo_prod:
-  stage: verify_from_prod
-  variables:
-    DISTRO: "focal"
-    DEB_REPO: "rippled-deb"
-  image:
-    name: artifactory.ops.ripple.com/ubuntu:20.04
-  dependencies:
-    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -549,17 +556,30 @@ ubuntu_18_verify_repo_prod:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-ubuntu_16_verify_repo_prod:
+ubuntu_20_verify_repo_prod:
   stage: verify_from_prod
   variables:
-    DISTRO: "xenial"
+    DISTRO: "focal"
     DEB_REPO: "rippled-deb"
   image:
-    name: artifactory.ops.ripple.com/ubuntu:16.04
+    name: artifactory.ops.ripple.com/ubuntu:20.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
+
+ubuntu_22_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "jammy"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: artifactory.ops.ripple.com/ubuntu:22.04
+  dependencies:
+    - dpkg_sign
+  <<: *only_primary
+  <<: *run_repo_smoketest
+  allow_failure: true
 
 debian_9_verify_repo_prod:
   stage: verify_from_prod
@@ -568,6 +588,30 @@ debian_9_verify_repo_prod:
     DEB_REPO: "rippled-deb"
   image:
     name: artifactory.ops.ripple.com/debian:9
+  dependencies:
+    - dpkg_sign
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+debian_10_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "buster"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: artifactory.ops.ripple.com/debian:10
+  dependencies:
+    - dpkg_sign
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+debian_11_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "bullseye"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: artifactory.ops.ripple.com/debian:11
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -622,5 +666,3 @@ build_ubuntu_container:
   script:
     - . ./Builds/containers/gitlab-ci/build_container.sh dpkg
   allow_failure: true
-
-
