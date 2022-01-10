@@ -338,7 +338,7 @@ matrix:
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
         - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}
     - <<: *macos
-      name: xcode11.2, release
+      name: xcode13.1, release
       before_script:
         - export BLD_CONFIG=Release
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dassert=ON"
