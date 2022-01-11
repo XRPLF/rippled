@@ -76,7 +76,12 @@ else
         yum -y install ${rpm_version_release}
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
-        yum install -y yum-utils openssl-static zlib-static
+        pkgs=("yum-utils openssl-static zlib-static")
+        if [ "$ID" = "rocky" ]; then
+            yum config-manager --set-enabled powertools
+            pkgs="${pkgs[@]/openssl-static}"
+        fi
+        yum install -y "$pkgs"
         rm -f build/rpm/packages/rippled-debug*.rpm
         rm -f build/rpm/packages/*.src.rpm
         rpm -i build/rpm/packages/*.rpm
