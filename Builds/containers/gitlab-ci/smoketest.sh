@@ -81,7 +81,7 @@ else
             yum config-manager --set-enabled powertools
             pkgs="${pkgs[@]/openssl-static}"
         fi
-        yum install -y "$pkgs"
+        yum install -y $pkgs
         rm -f build/rpm/packages/rippled-debug*.rpm
         rm -f build/rpm/packages/*.src.rpm
         rpm -i build/rpm/packages/*.rpm
