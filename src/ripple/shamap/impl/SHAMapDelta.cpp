@@ -314,6 +314,10 @@ SHAMap::walkMapParallel(
 
     std::array<std::stack<StackEntry, std::vector<StackEntry>>, 16> nodeStacks;
 
+    // This mutex is used inside the worker threads to protect `missingNodes`
+    // and `maxMissing` from race conditions
+    std::mutex m;
+
     for (int rootChildIndex = 0; rootChildIndex < 16; ++rootChildIndex)
     {
         auto const& child = topChildren[rootChildIndex];
@@ -324,7 +328,6 @@ SHAMap::walkMapParallel(
             std::static_pointer_cast<SHAMapInnerNode>(child));
 
         JLOG(journal_.debug()) << "starting worker " << rootChildIndex;
-        std::mutex m;
         workers.push_back(std::thread(
             [&m, &missingNodes, &maxMissing, this](
                 std::stack<StackEntry, std::vector<StackEntry>> nodeStack) {
