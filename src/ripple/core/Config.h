@@ -174,10 +174,10 @@ public:
     //                 Servers operating as validators disable path finding by
     //                 default by setting the `PATH_SEARCH_MAX` option to 0
     //                 unless it is explicitly set in the configuration file.
-    int PATH_SEARCH_OLD = 7;
-    int PATH_SEARCH = 7;
+    int PATH_SEARCH_OLD = 2;
+    int PATH_SEARCH = 2;
     int PATH_SEARCH_FAST = 2;
-    int PATH_SEARCH_MAX = 10;
+    int PATH_SEARCH_MAX = 3;
 
     // Validation
     std::optional<std::size_t>
