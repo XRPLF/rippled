@@ -13,22 +13,35 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Releases
 
+## Version 1.8.4
+This is the 1.8.4 release of `rippled`, the reference implementation of the XRP Ledger protocol.
+
+This release corrects a technical flaw introduced with 1.8.3 that may result in failures if the newly-introduced 'fast loading' is enabled. The release also adjusts default parameters used to configure the pathfinding engine to reduce resource usage.
+
+### Bug Fixes
+- **Adjust mutex scope in `walkMapParallel`**: This commit corrects a technical flaw introduced with commit 7c12f0135897361398917ad2c8cda888249d42ae that would result in undefined behavior if the server operator configured their server to use the 'fast loading' mechanism introduced with 1.8.3.
+
+- **Adjust pathfinding configuration defaults**: This commit adjusts the default configuration of the pathfinding engine, to account for the size of the XRP Ledger mainnet. Unless explicitly overriden, the changes mean that pathfinding operations will return fewer, shallower paths than previous releases.
+
+
 ## Version 1.8.3
 This is the 1.8.3 release of `rippled`, the reference implementation of the XRP Ledger protocol.
 
 This release implements changes that improve the syncing performance of peers on the network, adds countermeasures to several routines involving LZ4 to defend against CVE-2021-3520, corrects a minor technical flaw that would result in the server not using a cache for nodestore operations, and adjusts tunable values to optimize disk I/O.
 
 ### Summary of Issues
-Recently, servers in the XRP Ledger network have been taking a really long time to sync back to the network after the restart. This is one of several releases which will be made to improve on this issue. 
+Recently, servers in the XRP Ledger network have been taking an increasingly long time to sync back to the network after restartiningg. This is one of several releases which will be made to improve on this issue. 
 
 
 ### Bug Fixes
 
-- **Parallel ledger loader & I/O performance improvements**: This commit makes several changes that, together, should decrease the time needed for a server to sync to the network. To make full use of this change, `rippled` needs to be running a high IOPS machine and operators need to explicitly enable this by adding the following to their config file, under the `[node_db]` stanza:
+- **Parallel ledger loader & I/O performance improvements**: This commit makes several changes that, together, should decrease the time needed for a server to sync to the network. To make full use of this change, `rippled` needs to be using storage with high IOPS and operators need to explicitly enable this behavior by adding the following to their config file, under the `[node_db]` stanza:
 
     [node_db]
     ...
     fast_load=1
+
+Note that when 'fast loading' is enabled the server will not open RPC and WebSocket interfaces until after the initial load is completed. Because of this, it may appear unresponsive or down.
 
 - **Detect CVE-2021-3520 when decompressing using LZ4**: This commit adds code to detect LZ4 payloads that may result in out-of-bounds memory accesses.
 
