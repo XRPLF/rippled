@@ -29,6 +29,7 @@ ripple.net > ripple.beast
 ripple.net > ripple.json
 ripple.net > ripple.protocol
 ripple.net > ripple.resource
+ripple.nodestore > ripple.basics
 ripple.nodestore > ripple.beast
 ripple.nodestore > ripple.core
 ripple.nodestore > ripple.json
@@ -46,6 +47,13 @@ ripple.peerfinder > ripple.basics
 ripple.peerfinder > ripple.beast
 ripple.peerfinder > ripple.core
 ripple.peerfinder > ripple.protocol
+ripple.perflog > ripple.basics
+ripple.perflog > ripple.beast
+ripple.perflog > ripple.core
+ripple.perflog > ripple.json
+ripple.perflog > ripple.nodestore
+ripple.perflog > ripple.protocol
+ripple.perflog > ripple.rpc
 ripple.protocol > ripple.beast
 ripple.protocol > ripple.crypto
 ripple.protocol > ripple.json
@@ -53,6 +61,7 @@ ripple.resource > ripple.basics
 ripple.resource > ripple.beast
 ripple.resource > ripple.json
 ripple.resource > ripple.protocol
+ripple.rpc > ripple.basics
 ripple.rpc > ripple.beast
 ripple.rpc > ripple.core
 ripple.rpc > ripple.crypto
