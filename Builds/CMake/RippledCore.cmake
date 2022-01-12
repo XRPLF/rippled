@@ -438,7 +438,6 @@ target_sources (rippled PRIVATE
   #]===============================]
   src/ripple/basics/impl/Archive.cpp
   src/ripple/basics/impl/BasicConfig.cpp
-  src/ripple/basics/impl/PerfLogImp.cpp
   src/ripple/basics/impl/ResolverAsio.cpp
   src/ripple/basics/impl/UptimeClock.cpp
   src/ripple/basics/impl/make_SSLContext.cpp
@@ -636,6 +635,11 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
+  #[===============================[
+     main sources:
+       subdir: perflog
+  #]===============================]
+  src/ripple/perflog/impl/PerfLogImp.cpp
 
   #[===============================[
      main sources:
