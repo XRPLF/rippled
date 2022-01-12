@@ -1339,8 +1339,6 @@ ApplicationImp::setup()
                 {
                     // Fall back to syncing from the network, such as
                     // when there's no existing data.
-                    if (startUp == Config::NETWORK && !config_->standalone())
-                        m_networkOPs->setNeedNetworkLedger();
                     startGenesisLedger();
                 }
                 else
