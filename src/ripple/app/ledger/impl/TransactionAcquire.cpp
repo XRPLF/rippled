@@ -65,7 +65,7 @@ TransactionAcquire::done()
 
     if (failed_)
     {
-        JLOG(journal_.warn()) << "Failed to acquire TX set " << hash_;
+        JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
     }
     else
     {
@@ -176,8 +176,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 
 SHAMapAddNode
 TransactionAcquire::takeNodes(
-    const std::list<SHAMapNodeID>& nodeIDs,
-    const std::list<Blob>& data,
+    std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
     std::shared_ptr<Peer> const& peer)
 {
     ScopedLockType sl(mtx_);
@@ -196,24 +195,20 @@ TransactionAcquire::takeNodes(
 
     try
     {
-        if (nodeIDs.empty())
+        if (data.empty())
             return SHAMapAddNode::invalid();
 
-        std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin();
-        std::list<Blob>::const_iterator nodeDatait = data.begin();
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
 
-        while (nodeIDit != nodeIDs.end())
+        for (auto const& d : data)
         {
-            if (nodeIDit->isRoot())
+            if (d.first.isRoot())
             {
                 if (mHaveRoot)
                     JLOG(journal_.debug())
                         << "Got root TXS node, already have it";
                 else if (!mMap->addRootNode(
-                                  SHAMapHash{hash_},
-                                  makeSlice(*nodeDatait),
-                                  nullptr)
+                                  SHAMapHash{hash_}, d.second, nullptr)
                               .isGood())
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
@@ -221,24 +216,22 @@ TransactionAcquire::takeNodes(
                 else
                     mHaveRoot = true;
             }
-            else if (!mMap->addKnownNode(*nodeIDit, makeSlice(*nodeDatait), &sf)
-                          .isGood())
+            else if (!mMap->addKnownNode(d.first, d.second, &sf).isGood())
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid();
             }
-
-            ++nodeIDit;
-            ++nodeDatait;
         }
 
         trigger(peer);
         progress_ = true;
         return SHAMapAddNode::useful();
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(journal_.error()) << "Peer sends us junky transaction node data";
+        JLOG(journal_.error())
+            << "Peer " << peer->id()
+            << " sent us junky transaction node data: " << ex.what();
         return SHAMapAddNode::invalid();
     }
 }

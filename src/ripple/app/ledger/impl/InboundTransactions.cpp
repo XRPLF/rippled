@@ -71,6 +71,7 @@ public:
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
         , m_peerSetBuilder(std::move(peerSetBuilder))
+        , j_(app_.journal("InboundTransactions"))
     {
         m_zeroSet.mSet = std::make_shared<SHAMap>(
             SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
@@ -99,9 +100,7 @@ public:
         {
             std::lock_guard sl(mLock);
 
-            auto it = m_map.find(hash);
-
-            if (it != m_map.end())
+            if (auto it = m_map.find(hash); it != m_map.end())
             {
                 if (acquire)
                 {
@@ -140,11 +139,8 @@ public:
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
-        JLOG(app_.journal("InboundLedger").trace())
-            << "Got data (" << packet.nodes().size()
-            << ") "
-               "for acquiring ledger: "
-            << hash;
+        JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
+                         << ") for acquiring ledger: " << hash;
 
         TransactionAcquire::pointer ta = getAcquire(hash);
 
@@ -154,8 +150,9 @@ public:
             return;
         }
 
-        std::list<SHAMapNodeID> nodeIDs;
-        std::list<Blob> nodeData;
+        std::vector<std::pair<SHAMapNodeID, Slice>> data;
+        data.reserve(packet.nodes().size());
+
         for (auto const& node : packet.nodes())
         {
             if (!node.has_nodeid() || !node.has_nodedata())
@@ -172,12 +169,10 @@ public:
                 return;
             }
 
-            nodeIDs.emplace_back(*id);
-            nodeData.emplace_back(
-                node.nodedata().begin(), node.nodedata().end());
+            data.emplace_back(std::make_pair(*id, makeSlice(node.nodedata())));
         }
 
-        if (!ta->takeNodes(nodeIDs, nodeData, peer).isUseful())
+        if (!ta->takeNodes(data, peer).isUseful())
             peer->charge(Resource::feeUnwantedData);
     }
 
@@ -262,6 +257,8 @@ private:
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> m_gotSet;
 
     std::unique_ptr<PeerSetBuilder> m_peerSetBuilder;
+
+    beast::Journal j_;
 };
 
 //------------------------------------------------------------------------------
