@@ -1221,7 +1221,6 @@ public:
 
         struct Command
         {
-            const char* name;
             parseFuncPtr parse;
             int minParams;
             int maxParams;
