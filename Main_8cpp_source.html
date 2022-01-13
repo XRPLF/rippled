@@ -703,27 +703,27 @@ $(function() {
 <div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;        config-&gt;START_LEDGER = vm[<span class="stringliteral">&quot;ledgerfile&quot;</span>].as&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;();</div>
 <div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1">Config::LOAD_FILE</a>;</div>
 <div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;    }</div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;load&quot;</span>))</div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;load&quot;</span>) || config-&gt;FAST_LOAD)</div>
 <div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;    {</div>
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>;</div>
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;    }</div>
 <div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160; </div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;valid&quot;</span>))</div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;net&quot;</span>) &amp;&amp; !config-&gt;FAST_LOAD)</div>
 <div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;    {</div>
-<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;        config-&gt;START_VALID = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;    }</div>
-<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160; </div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;net&quot;</span>))</div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;    {</div>
-<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;        <span class="keywordflow">if</span> ((config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>) ||</div>
-<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;            (config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">Config::REPLAY</a>))</div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;        {</div>
-<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Net and load/replay options are incompatible&quot;</span></div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;            <span class="keywordflow">return</span> -1;</div>
-<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        }</div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160; </div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea50338de0064b157025d2811e1655e663">Config::NETWORK</a>;</div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;        <span class="keywordflow">if</span> ((config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea284d5f0a707f419bfb8f3c74f3ff7ec7">Config::LOAD</a>) ||</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;            (config-&gt;START_UP == <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea33211dccd4e6e97872b39719a141e10c">Config::REPLAY</a>))</div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;        {</div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Net and load/replay options are incompatible&quot;</span></div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;                      &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;            <span class="keywordflow">return</span> -1;</div>
+<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;        }</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160; </div>
+<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;        config-&gt;START_UP = <a class="code" href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea50338de0064b157025d2811e1655e663">Config::NETWORK</a>;</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;    }</div>
+<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160; </div>
+<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;    <span class="keywordflow">if</span> (vm.count(<span class="stringliteral">&quot;valid&quot;</span>))</div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;    {</div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        config-&gt;START_VALID = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;    }</div>
 <div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160; </div>
 <div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;    <span class="comment">// Override the RPC destination IP address. This must</span></div>
@@ -933,7 +933,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Config_html_a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1"><div class="ttname"><a href="classripple_1_1Config.html#a6d275f46c1bb19d9a85917de5ca1b99ea99e70e98c78e9c336dbf5fa9e54405b1">ripple::Config::LOAD_FILE</a></div><div class="ttdeci">@ LOAD_FILE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00132">Config.h:132</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/data.html">std::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html_a0d6ba5509dc00fbf39e8b91e5f267a87"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html#a0d6ba5509dc00fbf39e8b91e5f267a87">beast::IP::Endpoint::from_string_checked</a></div><div class="ttdeci">static std::optional&lt; Endpoint &gt; from_string_checked(std::string const &amp;s)</div><div class="ttdoc">Create an Endpoint from a string.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8cpp_source.html#l00035">IPEndpoint.cpp:35</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a37eda33d77f068d8788e5a5a81a7cc77"><div class="ttname"><a href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">ripple::make_Application</a></div><div class="ttdeci">std::unique_ptr&lt; Application &gt; make_Application(std::unique_ptr&lt; Config &gt; config, std::unique_ptr&lt; Logs &gt; logs, std::unique_ptr&lt; TimeKeeper &gt; timeKeeper)</div><div class="ttdef"><b>Definition:</b> <a href="Application_8cpp_source.html#l02171">Application.cpp:2171</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a37eda33d77f068d8788e5a5a81a7cc77"><div class="ttname"><a href="namespaceripple.html#a37eda33d77f068d8788e5a5a81a7cc77">ripple::make_Application</a></div><div class="ttdeci">std::unique_ptr&lt; Application &gt; make_Application(std::unique_ptr&lt; Config &gt; config, std::unique_ptr&lt; Logs &gt; logs, std::unique_ptr&lt; TimeKeeper &gt; timeKeeper)</div><div class="ttdef"><b>Definition:</b> <a href="Application_8cpp_source.html#l02184">Application.cpp:2184</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb"><div class="ttname"><a href="namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4ae4894ca167b08880bfc35862f18575eb">ripple::PublisherStatus::available</a></div><div class="ttdeci">@ available</div></div>
 <div class="ttc" id="astructripple_1_1ConfigSection_html_a44ee859a6705ddcac4e318602f8fe6ac"><div class="ttname"><a href="structripple_1_1ConfigSection.html#a44ee859a6705ddcac4e318602f8fe6ac">ripple::ConfigSection::nodeDatabase</a></div><div class="ttdeci">static std::string nodeDatabase()</div><div class="ttdef"><b>Definition:</b> <a href="ConfigSections_8h_source.html#l00033">ConfigSections.h:33</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::exception::what</a></div><div class="ttdeci">T what(T... args)</div></div>

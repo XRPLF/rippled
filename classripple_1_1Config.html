@@ -249,13 +249,13 @@ Public Attributes</h2></td></tr>
 <tr class="separator:af722ebb601d71b9e56145ac49fc85280"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a521c6cb417d606254ecb78c4933af418"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a521c6cb417d606254ecb78c4933af418">PEERS_IN_MAX</a> = 0</td></tr>
 <tr class="separator:a521c6cb417d606254ecb78c4933af418"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22e402f03909935b07b56ffeb7069b0f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a22e402f03909935b07b56ffeb7069b0f">PATH_SEARCH_OLD</a> = 7</td></tr>
+<tr class="memitem:a22e402f03909935b07b56ffeb7069b0f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a22e402f03909935b07b56ffeb7069b0f">PATH_SEARCH_OLD</a> = 2</td></tr>
 <tr class="separator:a22e402f03909935b07b56ffeb7069b0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1494da718290b7938506ced557f5d71d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a1494da718290b7938506ced557f5d71d">PATH_SEARCH</a> = 7</td></tr>
+<tr class="memitem:a1494da718290b7938506ced557f5d71d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a1494da718290b7938506ced557f5d71d">PATH_SEARCH</a> = 2</td></tr>
 <tr class="separator:a1494da718290b7938506ced557f5d71d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7abcd82f19d7506fc18019df86a31984"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a7abcd82f19d7506fc18019df86a31984">PATH_SEARCH_FAST</a> = 2</td></tr>
 <tr class="separator:a7abcd82f19d7506fc18019df86a31984"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a757dbe77ad46c6e6e3a549c33fbd4f8e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a757dbe77ad46c6e6e3a549c33fbd4f8e">PATH_SEARCH_MAX</a> = 10</td></tr>
+<tr class="memitem:a757dbe77ad46c6e6e3a549c33fbd4f8e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a757dbe77ad46c6e6e3a549c33fbd4f8e">PATH_SEARCH_MAX</a> = 3</td></tr>
 <tr class="separator:a757dbe77ad46c6e6e3a549c33fbd4f8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f7c7672fc4808f9658d61cf82c496d4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a1f7c7672fc4808f9658d61cf82c496d4">VALIDATION_QUORUM</a></td></tr>
 <tr class="separator:a1f7c7672fc4808f9658d61cf82c496d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -319,6 +319,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:aac747943f79d948ec042dfa588b3e80c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60e194c37b2e6e2a6cbaab170579fd15"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> = false</td></tr>
 <tr class="separator:a60e194c37b2e6e2a6cbaab170579fd15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8df6fc2c4e473d354bc1ec1640294bf6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Config.html#a8df6fc2c4e473d354bc1ec1640294bf6">FAST_LOAD</a> = false</td></tr>
+<tr class="separator:a8df6fc2c4e473d354bc1ec1640294bf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -440,7 +442,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns the full path and filename of the debug log file. </p>
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00953">953</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00956">956</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -467,7 +469,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00432">432</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00435">435</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -573,7 +575,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00454">454</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00457">457</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -592,7 +594,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00298">298</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00301">301</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -611,7 +613,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00303">303</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00306">306</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -630,7 +632,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00308">308</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00311">311</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -649,7 +651,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00313">313</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00316">316</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -668,7 +670,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00319">319</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00322">322</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -687,7 +689,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00325">325</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00328">328</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -707,7 +709,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00331">331</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00334">334</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +728,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00337">337</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00340">340</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
@@ -773,7 +775,7 @@ Private Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>The value for the requested item.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The defaults are selected so as to be reasonable, but the node size is an imprecise metric that combines multiple aspects of the underlying system; this means that we can't provide optimal defaults in the code for every case. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00987">987</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00990">990</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -1791,7 +1793,7 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ripple::Config::PATH_SEARCH_OLD = 7</td>
+          <td class="memname">int ripple::Config::PATH_SEARCH_OLD = 2</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1807,7 +1809,7 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ripple::Config::PATH_SEARCH = 7</td>
+          <td class="memname">int ripple::Config::PATH_SEARCH = 2</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1839,7 +1841,7 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ripple::Config::PATH_SEARCH_MAX = 10</td>
+          <td class="memname">int ripple::Config::PATH_SEARCH_MAX = 3</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2389,6 +2391,22 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00272">272</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
+
+</div>
+</div>
+<a id="a8df6fc2c4e473d354bc1ec1640294bf6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8df6fc2c4e473d354bc1ec1640294bf6">&#9670;&nbsp;</a></span>FAST_LOAD</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::Config::FAST_LOAD = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00275">275</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
 
 </div>
 </div>
