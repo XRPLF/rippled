@@ -44,8 +44,7 @@ public:
 
     SHAMapAddNode
     takeNodes(
-        const std::list<SHAMapNodeID>& IDs,
-        const std::list<Blob>& data,
+        std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
         std::shared_ptr<Peer> const&);
 
     void
