@@ -155,7 +155,7 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
     // Once the below call returns, all data has been pushed into the queue
     loadBalancer_.loadInitialLedger(startingSequence, writeQueue);
 
-    // null is used to respresent the end of the queue
+    // null is used to represent the end of the queue
     std::shared_ptr<SLE> null;
     writeQueue.push(null);
     // wait for the writer to finish
