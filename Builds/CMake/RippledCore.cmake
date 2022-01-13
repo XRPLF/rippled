@@ -324,7 +324,7 @@ endif () #tests
 #]=========================================================]
 add_executable (rippled src/ripple/app/main/Application.h)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.14)
-  install(CODE "execute_process(COMMAND strip $<TARGET_FILE:rippled>)")
+  install(CODE "execute_process(COMMAND strip --remove-section=.comment --remove-section=.note $<TARGET_FILE:rippled>)")
 endif()
 if (unity)
   set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
