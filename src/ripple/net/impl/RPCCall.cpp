@@ -1228,8 +1228,7 @@ public:
             int maxParams;
         };
 
-        // FIXME: replace this with a function-static std::map and the lookup
-        // code with std::map::find when the problem with magic statics on
+       
         // Visual Studio is fixed.
         static const std::map<std::string_view, Command> command = {
             // Request-response methods
