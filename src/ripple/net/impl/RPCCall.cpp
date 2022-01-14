@@ -1228,9 +1228,10 @@ public:
             int maxParams;
         };
 
-       
+
         // Visual Studio is fixed.
-        static const std::map<std::string_view, Command> command = {
+        static const std::map<std::string_view, Command> command = 
+        {
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
