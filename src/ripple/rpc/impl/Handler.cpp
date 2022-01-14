@@ -82,7 +82,11 @@ Handler const handlerArray[]{
      Role::USER,
      NO_CONDITION},
     {"download_shard", byRef(&doDownloadShard), Role::ADMIN, NO_CONDITION},
+#ifdef RIPPLED_REPORTING
+    {"gateway_balances", byRef(&doGatewayBalances), Role::ADMIN, NO_CONDITION},
+#else
     {"gateway_balances", byRef(&doGatewayBalances), Role::USER, NO_CONDITION},
+#endif
     {"get_counts", byRef(&doGetCounts), Role::ADMIN, NO_CONDITION},
     {"feature", byRef(&doFeature), Role::ADMIN, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
