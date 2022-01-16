@@ -17,5 +17,5 @@ Section: devel
 Recommends: rippled (= ${binary:Version})
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends}, ${shlibs:Depends}, libprotobuf-dev, libssl-dev
+Depends: ${misc:Depends}, ${shlibs:Depends}, libprotobuf-dev, libprotoc-dev, protobuf-compiler, libssl-dev
 Description: development files for applications using xrpl core library (serialize + sign)
