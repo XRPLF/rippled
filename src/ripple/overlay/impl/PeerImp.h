@@ -26,6 +26,9 @@
 #include <ripple/basics/RangeSet.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
+#include <ripple/collectors/ResourceUsage.h>
+#endif
 #include <ripple/nodestore/ShardInfo.h>
 #include <ripple/overlay/Squelch.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -215,6 +218,10 @@ private:
         Metrics sent;
         Metrics recv;
     } metrics_;
+
+#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
+    collectors::ResourceUsage m_resourceUsage;
+#endif
 
 public:
     PeerImp(PeerImp const&) = delete;
@@ -478,6 +485,8 @@ private:
     // Called when protocol message bytes are received
     void
     onReadMessage(error_code ec, std::size_t bytes_transferred);
+    void
+    onReadMessageInternal(error_code ec, std::size_t bytes_transferred);
 
     // Called when protocol messages bytes are sent
     void
@@ -540,6 +549,8 @@ public:
     onMessage(std::shared_ptr<protocol::TMPing> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMCluster> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMResourceReport> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m);
     void
@@ -641,6 +652,11 @@ private:
 
     void
     processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
+    void
+    sendResourceReport();
+#endif
 };
 
 //------------------------------------------------------------------------------
@@ -705,6 +721,9 @@ PeerImp::PeerImp(
           FEATURE_LEDGER_REPLAY,
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
+#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
+    , m_resourceUsage(p_journal_)
+#endif
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));

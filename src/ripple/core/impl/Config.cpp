@@ -550,6 +550,11 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_SSL_VERIFY, strTemp, j_))
         SSL_VERIFY = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (getSingleSection(secConfig, SECTION_RESOURCE_REPORT, strTemp, j_))
+    {
+        RESOURCE_REPORT = beast::lexicalCastThrow<bool>(strTemp);
+    }
+
     if (getSingleSection(secConfig, SECTION_RELAY_VALIDATIONS, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))

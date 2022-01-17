@@ -120,6 +120,9 @@ private:
     // The amount of RAM, in bytes, that we detected on this system.
     std::uint64_t const ramSize_;
 
+    // Whether the resource report timer should be started.
+    bool RESOURCE_REPORT = false;
+
 public:
     bool doImport = false;
     bool nodeToShard = false;
@@ -359,6 +362,12 @@ public:
     int
     getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
         const;
+
+    bool
+    resourceReport() const
+    {
+        return RESOURCE_REPORT;
+    }
 };
 
 }  // namespace ripple

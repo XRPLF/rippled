@@ -33,6 +33,7 @@ enum MessageType
     mtPEER_SHARD_INFO_V2        = 62;
     mtHAVE_TRANSACTIONS         = 63;
     mtTRANSACTIONS              = 64;
+    mtRESOURCE_REPORT           = 65;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -450,3 +451,8 @@ message TMHaveTransactions
     repeated bytes hashes = 1;
 }
 
+message TMResourceReport
+{
+    required string nodeName = 1;
+    map<string, string> resourceReportMap = 2;
+}

@@ -102,6 +102,7 @@ Message::compress()
             case protocol::mtGET_PEER_SHARD_INFO_V2:
             case protocol::mtPEER_SHARD_INFO_V2:
             case protocol::mtHAVE_TRANSACTIONS:
+            case protocol::mtRESOURCE_REPORT:
                 break;
         }
         return false;

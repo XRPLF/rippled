@@ -142,7 +142,8 @@ target_link_libraries (xrpl_core
     NIH::secp256k1
     NIH::ed25519-donna
     date::date
-    Ripple::opts)
+    Ripple::opts
+    gmp)
 #[=================================[
    main/core headers installation
 #]=================================]
@@ -662,6 +663,16 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/ShardFamily.cpp)
 
   #[===============================[
+     main sources:
+       subdir: collectors
+  #]===============================]
+if (resource_report)
+  target_sources (rippled PRIVATE
+  src/ripple/collectors/impl/ResourceUsage.cpp
+  src/ripple/collectors/impl/ResourceUsageImpl.cpp)
+endif() # resource_report
+
+  #[===============================[
      test sources:
        subdir: app
   #]===============================]
@@ -991,6 +1002,10 @@ endif ()
 
 if (reporting)
     target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
+endif ()
+
+if (resource_report)
+    target_compile_definitions(rippled PRIVATE RIPPLED_RESOURCE_REPORT)
 endif ()
 
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)

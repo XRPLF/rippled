@@ -27,7 +27,7 @@ TrafficCount::categorize(
     int type,
     bool inbound)
 {
-    if ((type == protocol::mtPING) || (type == protocol::mtSTATUS_CHANGE))
+    if ((type == protocol::mtPING) || (type == protocol::mtSTATUS_CHANGE) || (type == protocol::mtRESOURCE_REPORT))
         return TrafficCount::category::base;
 
     if (type == protocol::mtCLUSTER)
