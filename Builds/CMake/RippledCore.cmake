@@ -323,7 +323,7 @@ endif () #tests
    add_executable with no sources
 #]=========================================================]
 add_executable (rippled src/ripple/app/main/Application.h)
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.14)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.14 AND is_linux)
   install(CODE "execute_process(COMMAND strip --remove-section=.comment --remove-section=.note $<TARGET_FILE:rippled>)")
 endif()
 if (unity)
