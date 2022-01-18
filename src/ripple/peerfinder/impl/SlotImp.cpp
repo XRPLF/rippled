@@ -102,7 +102,7 @@ SlotImp::recent_t::recent_t(clock_type& clock) : cache(clock)
 }
 
 void
-SlotImp::recent_t::insert(beast::IP::Endpoint const& ep, int hops)
+SlotImp::recent_t::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
     auto const result(cache.emplace(ep, hops));
     if (!result.second)
@@ -117,7 +117,7 @@ SlotImp::recent_t::insert(beast::IP::Endpoint const& ep, int hops)
 }
 
 bool
-SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, int hops)
+SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
     auto const iter(cache.find(ep));
     if (iter == cache.end())

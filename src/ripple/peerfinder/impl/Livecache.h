@@ -363,7 +363,7 @@ public:
 
         // Reinsert e at a new hops
         void
-        reinsert(Element& e, int hops);
+        reinsert(Element& e, std::uint32_t hops);
 
         void
         remove(Element& e);
@@ -444,8 +444,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     // when redirecting.
     //
     assert(ep.hops <= (Tuning::maxHops + 1));
-    std::pair<typename cache_type::iterator, bool> result(
-        m_cache.emplace(ep.address, ep));
+    auto result = m_cache.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
     {
@@ -522,12 +521,14 @@ template <class Allocator>
 std::string
 Livecache<Allocator>::hops_t::histogram() const
 {
-    std::stringstream ss;
-    for (typename decltype(m_hist)::size_type i(0); i < m_hist.size(); ++i)
+    std::string s;
+    for (auto const& h : m_hist)
     {
-        ss << m_hist[i] << ((i < Tuning::maxHops + 1) ? ", " : "");
+        if (!s.empty())
+            s += ", ";
+        s += std::to_string(h);
     }
-    return ss.str();
+    return s;
 }
 
 template <class Allocator>
@@ -540,7 +541,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::hops_t::insert(Element& e)
 {
-    assert(e.endpoint.hops >= 0 && e.endpoint.hops <= Tuning::maxHops + 1);
+    assert(e.endpoint.hops <= Tuning::maxHops + 1);
     // This has security implications without a shuffle
     m_lists[e.endpoint.hops].push_front(e);
     ++m_hist[e.endpoint.hops];
@@ -548,11 +549,13 @@ Livecache<Allocator>::hops_t::insert(Element& e)
 
 template <class Allocator>
 void
-Livecache<Allocator>::hops_t::reinsert(Element& e, int numHops)
+Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
 {
-    assert(numHops >= 0 && numHops <= Tuning::maxHops + 1);
-    list_type& list(m_lists[e.endpoint.hops]);
+    assert(numHops <= Tuning::maxHops + 1);
+
+    auto& list = m_lists[e.endpoint.hops];
     list.erase(list.iterator_to(e));
+
     --m_hist[e.endpoint.hops];
 
     e.endpoint.hops = numHops;
@@ -564,7 +567,8 @@ void
 Livecache<Allocator>::hops_t::remove(Element& e)
 {
     --m_hist[e.endpoint.hops];
-    list_type& list(m_lists[e.endpoint.hops]);
+
+    auto& list = m_lists[e.endpoint.hops];
     list.erase(list.iterator_to(e));
 }
 

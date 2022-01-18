@@ -32,9 +32,6 @@ namespace PeerFinder {
 
 class SlotImp : public Slot
 {
-private:
-    using recent_type = beast::aged_unordered_map<beast::IP::Endpoint, int>;
-
 public:
     using ptr = std::shared_ptr<SlotImp>;
 
@@ -155,18 +152,18 @@ public:
             sending a slot the same address too frequently.
         */
         void
-        insert(beast::IP::Endpoint const& ep, int hops);
+        insert(beast::IP::Endpoint const& ep, std::uint32_t hops);
 
         /** Returns `true` if we should not send endpoint to the slot. */
         bool
-        filter(beast::IP::Endpoint const& ep, int hops);
+        filter(beast::IP::Endpoint const& ep, std::uint32_t hops);
 
     private:
         void
         expire();
 
         friend class SlotImp;
-        recent_type cache;
+        beast::aged_unordered_map<beast::IP::Endpoint, std::uint32_t> cache;
     } recent;
 
     void

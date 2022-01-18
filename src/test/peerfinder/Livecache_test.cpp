@@ -48,7 +48,7 @@ public:
     // Add the address as an endpoint
     template <class C>
     inline void
-    add(beast::IP::Endpoint ep, C& c, int hops = 0)
+    add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
     {
         Endpoint cep{ep, hops};
         c.insert(cep);
@@ -139,7 +139,7 @@ public:
         for (auto i = 0; i < num_eps; ++i)
             add(beast::IP::randomEP(true),
                 c,
-                ripple::rand_int(0, safe_cast<int>(Tuning::maxHops + 1)));
+                ripple::rand_int<std::uint32_t>());
         auto h = c.hops.histogram();
         if (!BEAST_EXPECT(!h.empty()))
             return;
@@ -163,7 +163,7 @@ public:
         for (auto i = 0; i < 100; ++i)
             add(beast::IP::randomEP(true),
                 c,
-                ripple::rand_int(0, safe_cast<int>(Tuning::maxHops + 1)));
+                ripple::rand_int(Tuning::maxHops + 1));
 
         using at_hop = std::vector<ripple::PeerFinder::Endpoint>;
         using all_hops = std::array<at_hop, 1 + Tuning::maxHops + 1>;

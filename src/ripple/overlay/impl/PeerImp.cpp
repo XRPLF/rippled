@@ -1480,16 +1480,26 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
     if (tracking_.load() != Tracking::converged || m->version() != 2)
         return;
 
+    // The number is arbitrary and doesn't have any real significance or
+    // implication for the protocol.
+    if (m->endpoints_v2().size() >= 1024)
+    {
+        charge(Resource::feeBadData);
+        return;
+    }
+
     std::vector<PeerFinder::Endpoint> endpoints;
     endpoints.reserve(m->endpoints_v2().size());
 
     for (auto const& tm : m->endpoints_v2())
     {
         auto result = beast::IP::Endpoint::from_string_checked(tm.endpoint());
+
         if (!result)
         {
             JLOG(p_journal_.error()) << "failed to parse incoming endpoint: {"
                                      << tm.endpoint() << "}";
+            charge(Resource::feeBadData);
             continue;
         }
 
@@ -1499,10 +1509,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
         // time, then we'll verify that their listener can receive incoming
         // by performing a connectivity test.  if hops > 0, then we just
         // take the address/port we were given
+        if (tm.hops() == 0)
+            result = remote_address_.at_port(result->port());
 
-        endpoints.emplace_back(
-            tm.hops() > 0 ? *result : remote_address_.at_port(result->port()),
-            tm.hops());
+        endpoints.emplace_back(*result, tm.hops());
     }
 
     if (!endpoints.empty())
