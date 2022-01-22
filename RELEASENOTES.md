@@ -13,13 +13,36 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Releases
 
+## Version 1.8.5
+This is the 1.8.5 release of `rippled`, the reference implementation of the XRP Ledger protocol. This release includes fixes and updates for stability and security, and improvements to build scripts. There are no user-facing API or protocol changes in this release.
+
+### Bug Fixes
+
+This release contains the following bug fixes and under-the-hood improvements:
+
+- **Correct TaggedPointer move constructor:** Fixes a bug in unused code for the TaggedPointer class. The old code would fail if a caller explicitly tried to remove a child that is not actually part of the node. (227a12d)
+
+- **Ensure protocol buffer prerequisites are present:** The build scripts and packages now properly handle Protobuf packages and various packages. Prior to this change, building on Ubuntu 21.10 Impish Indri would fail unless the `libprotoc-dev` package was installed. (e06465f)
+
+- **Improve handling of endpoints during peer discovery.** This hardens and improves handling of incoming messages on the peer protocol. (289bc0a)
+
+- **Run tests on updated linux distros:** Test builds now run on Rocky Linux 8, Fedora 34 and 35, Ubuntu 18, 20, and 22, and Debian 9, 10, and 11. (a9ee802)
+
+- **Avoid dereferencing empty optional in ReportingETL:** Fixes a bug in Reporting Mode that could dereference an empty optional value when throwing an error. (cdc215d)
+
+- **Correctly add GIT_COMMIT_HASH into version string:** When building the server from a non-tagged release, the build files now add the commit ID in a way that follows the semantic-versioning standard, and correctly handle the case where the commit hash ID cannot be retrieved. (d23d37f)
+
+- **Update RocksDB to version 6.27.3:** Updates the version of RocksDB included in the server from 6.7.3 (which was released on 2020-03-18) to 6.27.3 (released 2021-12-10).
+
+
+
 ## Version 1.8.4
 This is the 1.8.4 release of `rippled`, the reference implementation of the XRP Ledger protocol.
 
 This release corrects a technical flaw introduced with 1.8.3 that may result in failures if the newly-introduced 'fast loading' is enabled. The release also adjusts default parameters used to configure the pathfinding engine to reduce resource usage.
 
 ### Bug Fixes
-- **Adjust mutex scope in `walkMapParallel`**: This commit corrects a technical flaw introduced with commit 7c12f0135897361398917ad2c8cda888249d42ae that would result in undefined behavior if the server operator configured their server to use the 'fast loading' mechanism introduced with 1.8.3.
+- **Adjust mutex scope in `walkMapParallel`**: This commit corrects a technical flaw introduced with commit [7c12f0135897361398917ad2c8cda888249d42ae] that would result in undefined behavior if the server operator configured their server to use the 'fast loading' mechanism introduced with 1.8.3.
 
 - **Adjust pathfinding configuration defaults**: This commit adjusts the default configuration of the pathfinding engine, to account for the size of the XRP Ledger mainnet. Unless explicitly overriden, the changes mean that pathfinding operations will return fewer, shallower paths than previous releases.
 
