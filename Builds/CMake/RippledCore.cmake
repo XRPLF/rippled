@@ -395,7 +395,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/Pathfinder.cpp
   src/ripple/app/paths/RippleCalc.cpp
   src/ripple/app/paths/RippleLineCache.cpp
-  src/ripple/app/paths/RippleState.cpp
+  src/ripple/app/paths/TrustLine.cpp
   src/ripple/app/paths/impl/BookStep.cpp
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp

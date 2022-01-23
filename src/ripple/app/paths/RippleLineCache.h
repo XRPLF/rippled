@@ -21,8 +21,10 @@
 #define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/TrustLine.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/hardened_hash.h>
+
 #include <cstddef>
 #include <memory>
 #include <mutex>
@@ -31,7 +33,7 @@
 namespace ripple {
 
 // Used by Pathfinder
-class RippleLineCache
+class RippleLineCache : public CountedObject<RippleLineCache>
 {
 public:
     explicit RippleLineCache(std::shared_ptr<ReadView const> const& l);
@@ -42,7 +44,7 @@ public:
         return mLedger;
     }
 
-    std::vector<RippleState::pointer> const&
+    std::vector<PathFindTrustLine> const&
     getRippleLines(AccountID const& accountID);
 
 private:
@@ -90,7 +92,7 @@ private:
         };
     };
 
-    hash_map<AccountKey, std::vector<RippleState::pointer>, AccountKey::Hash>
+    hash_map<AccountKey, std::vector<PathFindTrustLine>, AccountKey::Hash>
         lines_;
 };
 

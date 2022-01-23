@@ -20,7 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/TrustLine.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
