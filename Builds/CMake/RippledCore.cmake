@@ -478,6 +478,12 @@ target_sources (rippled PRIVATE
   src/ripple/consensus/Consensus.cpp
   #[===============================[
      main sources:
+       subdir: collectors
+  #]===============================]
+  src/ripple/collectors/impl/ResourceUsageCollectorBase.cpp
+  src/ripple/collectors/impl/default/ResourceUsageCollectorDefault.cpp
+  #[===============================[
+     main sources:
        subdir: ledger
   #]===============================]
   src/ripple/ledger/impl/ApplyStateTable.cpp
@@ -666,10 +672,9 @@ target_sources (rippled PRIVATE
      main sources:
        subdir: collectors
   #]===============================]
-if (resource_report)
+if (resource_report AND is_linux)
   target_sources (rippled PRIVATE
-  src/ripple/collectors/impl/ResourceUsage.cpp
-  src/ripple/collectors/impl/ResourceUsageImpl.cpp)
+  src/ripple/collectors/impl/linux/ResourceUsageCollectorLinux.cpp)
 endif() # resource_report
 
   #[===============================[

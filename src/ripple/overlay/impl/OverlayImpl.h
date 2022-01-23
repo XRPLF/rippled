@@ -24,6 +24,7 @@
 #include <ripple/basics/Resolver.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/collectors/ResourceUsageCollectorBase.h>
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/Overlay.h>
@@ -150,7 +151,8 @@ public:
         Resolver& resolver,
         boost::asio::io_service& io_service,
         BasicConfig const& config,
-        beast::insight::Collector::ptr const& collector);
+        beast::insight::Collector::ptr const& collector,
+        std::shared_ptr<collectors::ResourceUsageCollectorBase> const& resourceUsageCollector);
 
     OverlayImpl(OverlayImpl const&) = delete;
     OverlayImpl&
@@ -456,6 +458,11 @@ public:
         txMetrics_.addMetrics(args...);
     }
 
+    std::shared_ptr<collectors::ResourceUsageCollectorBase> resourceUsageCollector() const
+    {
+        return m_resourceUsageCollector;
+    }
+
 private:
     void
     squelch(
@@ -611,6 +618,8 @@ private:
 
     Stats m_stats;
     std::mutex m_statsMutex;
+
+    std::shared_ptr<collectors::ResourceUsageCollectorBase> m_resourceUsageCollector;
 
 private:
     void

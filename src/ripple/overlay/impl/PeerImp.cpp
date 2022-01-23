@@ -34,9 +34,6 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
-#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
-#include <boost/lexical_cast.hpp>
-#endif
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/PeerImp.h>
@@ -47,6 +44,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #include <memory>
@@ -124,9 +122,6 @@ PeerImp::PeerImp(
           FEATURE_LEDGER_REPLAY,
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
-#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
-    , m_resourceUsage(p_journal_)
-#endif
 {
     JLOG(journal_.info()) << "compression enabled "
                           << (compressionEnabled_ == Compressed::On)
@@ -755,12 +750,7 @@ PeerImp::onTimer(error_code const& ec)
 
     send(std::make_shared<Message>(message, protocol::mtPING));
 
-#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
-    if (app_.config().resourceReport())
-    {
-        sendResourceReport();
-    }
-#endif
+    sendResourceReport();
 
     setTimer();
 }
@@ -910,16 +900,6 @@ PeerImp::doProtocolStart()
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
-    this->onReadMessageInternal(ec, bytes_transferred);
-    if (ec)
-    {
-        JLOG(journal_.trace()) << "onReadMessage error: " << ec.message();
-    }
-}
-
-void
-PeerImp::onReadMessageInternal(error_code ec, std::size_t bytes_transferred)
-{
     if (!socket_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
@@ -1031,7 +1011,6 @@ void
 PeerImp::onMessageUnknown(std::uint16_t type)
 {
     // TODO
-    JLOG(journal_.debug()) << "onMessageUnknown: " << type;
 }
 
 void
@@ -3734,39 +3713,31 @@ PeerImp::reduceRelayReady()
     return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
 
-#if (RIPPLED_RESOURCE_REPORT && BOOST_OS_LINUX)
 void
 PeerImp::sendResourceReport()
 {
-    try
+    if ((nullptr == overlay_.resourceUsageCollector()) || !app_.config().resourceReport())
     {
-        protocol::TMResourceReport report;
-        report.set_nodename(makePrefix(id_));
-        auto& reportMap = *report.mutable_resourcereportmap();
+        return;
+    }
 
-        auto resultMap = m_resourceUsage.getResourceUsage();
-        for (const auto& kvp : resultMap)
-        {
-            reportMap[kvp.first] = boost::lexical_cast<std::string>(kvp.second);
-        }
+    auto resultMap = overlay_.resourceUsageCollector()->resultMap();
+    if (resultMap.empty())
+    {
+        return;
+    }
 
-        send(
-            std::make_shared<Message>(report, protocol::mtRESOURCE_REPORT));
-    }
-    catch (const std::exception& exc)
+    protocol::TMResourceReport report;
+    report.set_nodename(makePrefix(id_));
+    auto& reportMap = *report.mutable_resourcereportmap();
+    for (const auto& kvp : resultMap)
     {
-        JLOG(p_journal_.error())
-            << "Exception during NetworkOPsImp::processResourceReportTimer(): "
-            << exc.what();
+        reportMap[kvp.first] = boost::lexical_cast<std::string>(kvp.second);
     }
-    catch (...)
-    {
-        JLOG(p_journal_.error())
-            << "Unknown exception during "
-               "NetworkOPsImp::processResourceReportTimer()";
-    }
+
+    send(
+        std::make_shared<Message>(report, protocol::mtRESOURCE_REPORT));
 }
-#endif
 
 void
 PeerImp::Metrics::add_message(std::uint64_t bytes)

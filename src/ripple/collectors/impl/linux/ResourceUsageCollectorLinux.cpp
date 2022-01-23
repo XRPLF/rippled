@@ -1,36 +1,40 @@
-#include <ripple/basics/Log.h>
-#include <ripple/collectors/impl/ResourceUsageImpl.h>
+#include <ripple/collectors/impl/linux/ResourceUsageCollectorLinux.h>
 #include <exception>
 
-namespace ripple {
-namespace collectors {
+using namespace ripple::collectors;
 
-ResourceUsageImpl::ResourceUsageImpl(beast::Journal journal)
-    : m_journal(journal)
+ResourceUsageCollectorLinux::ResourceUsageCollectorLinux(
+    beast::Journal journal,
+    boost::asio::io_service& io_service)
+    : ResourceUsageCollectorBase(journal, io_service)
+    , m_startTime(std::chrono::system_clock::now())
     , m_pfs()
     , m_procStat(m_pfs.get_stat())
     , m_task(m_pfs.get_task())
     , m_taskStat(m_task.get_stat())
-    , m_startTime(std::chrono::system_clock::now())
 {
+    JLOG(this->journal().info())
+        << "Constructed ResourceUsageCollector for linux.";
 }
 
-ResourceUsageImpl::~ResourceUsageImpl() = default;
+ResourceUsageCollectorLinux::~ResourceUsageCollectorLinux() = default;
 
-ResultMap
-ResourceUsageImpl::getResourceUsage()
+void
+ResourceUsageCollectorLinux::collect()
 {
+    JLOG(journal.debug())
+        << "Collecting system and process resource usage metrics.";
     ResultMap resultMap;
     this->getStatMetrics(resultMap);
     this->getLoadAvgMetrics(resultMap);
     this->getMemInfoMetrics(resultMap);
     this->getStatusMetrics(resultMap);
     this->getUptimeMetrics(resultMap);
-    return resultMap;
+    this->setResultMap(resultMap);
 }
 
 void
-ResourceUsageImpl::getStatMetrics(ResultMap& resultMap)
+ResourceUsageCollectorLinux::getStatMetrics(ResultMap& resultMap)
 {
     try
     {
@@ -62,19 +66,19 @@ ResourceUsageImpl::getStatMetrics(ResultMap& resultMap)
     }
     catch (const std::exception& exc)
     {
-        JLOG(m_journal.error())
-            << "Error during ResourceUsageImpl::getStatMetrics(): "
+        JLOG(this->journal().error())
+            << "Error during ResourceUsageCollectorLinux::getStatMetrics(): "
             << exc.what();
     }
     catch (...)
     {
-        JLOG(m_journal.error())
-            << "Unknown error during ResourceUsageImpl::getStatMetrics()";
+        JLOG(this->journal().error())
+            << "Unknown error during ResourceUsageCollectorLinux::getStatMetrics()";
     }
 }
 
 void
-ResourceUsageImpl::getLoadAvgMetrics(ResultMap& resultMap)
+ResourceUsageCollectorLinux::getLoadAvgMetrics(ResultMap& resultMap)
 {
     try
     {
@@ -85,19 +89,19 @@ ResourceUsageImpl::getLoadAvgMetrics(ResultMap& resultMap)
     }
     catch (const std::exception& exc)
     {
-        JLOG(m_journal.error())
-            << "Error during ResourceUsageImpl::getLoadAvgMetrics(): "
+        JLOG(this->journal().error())
+            << "Error during ResourceUsageCollectorLinux::getLoadAvgMetrics(): "
             << exc.what();
     }
     catch (...)
     {
-        JLOG(m_journal.error())
-            << "Unknown error during ResourceUsageImpl::getLoadAvgMetrics()";
+        JLOG(this->journal().error())
+            << "Unknown error during ResourceUsageCollectorLinux::getLoadAvgMetrics()";
     }
 }
 
 void
-ResourceUsageImpl::getMemInfoMetrics(ResultMap& resultMap)
+ResourceUsageCollectorLinux::getMemInfoMetrics(ResultMap& resultMap)
 {
     try
     {
@@ -110,19 +114,19 @@ ResourceUsageImpl::getMemInfoMetrics(ResultMap& resultMap)
     }
     catch (const std::exception& exc)
     {
-        JLOG(m_journal.error())
-            << "Error during ResourceUsageImpl::getMemInfoMetrics(): "
+        JLOG(this->journal().error())
+            << "Error during ResourceUsageCollectorLinux::getMemInfoMetrics(): "
             << exc.what();
     }
     catch (...)
     {
-        JLOG(m_journal.error())
-            << "Unknown error during ResourceUsageImpl::getMemInfoMetrics()";
+        JLOG(this->journal().error())
+            << "Unknown error during ResourceUsageCollectorLinux::getMemInfoMetrics()";
     }
 }
 
 void
-ResourceUsageImpl::getStatusMetrics(ResultMap& resultMap)
+ResourceUsageCollectorLinux::getStatusMetrics(ResultMap& resultMap)
 {
     try
     {
@@ -133,19 +137,19 @@ ResourceUsageImpl::getStatusMetrics(ResultMap& resultMap)
     }
     catch (const std::exception& exc)
     {
-        JLOG(m_journal.error())
-            << "Error during ResourceUsageImpl::getStatusMetrics(): "
+        JLOG(this->journal().error())
+            << "Error during ResourceUsageCollectorLinux::getStatusMetrics(): "
             << exc.what();
     }
     catch (...)
     {
-        JLOG(m_journal.error())
-            << "Unknown error during ResourceUsageImpl::getStatusMetrics()";
+        JLOG(this->journal().error())
+            << "Unknown error during ResourceUsageCollectorLinux::getStatusMetrics()";
     }
 }
 
 void
-ResourceUsageImpl::getUptimeMetrics(ResultMap& resultMap)
+ResourceUsageCollectorLinux::getUptimeMetrics(ResultMap& resultMap)
 {
     try
     {
@@ -163,16 +167,13 @@ ResourceUsageImpl::getUptimeMetrics(ResultMap& resultMap)
     }
     catch (const std::exception& exc)
     {
-        JLOG(m_journal.error())
-            << "Error during ResourceUsageImpl::getUptimeMetrics(): "
+        JLOG(this->journal().error())
+            << "Error during ResourceUsageCollectorLinux::getUptimeMetrics(): "
             << exc.what();
     }
     catch (...)
     {
-        JLOG(m_journal.error())
-            << "Unknown error during ResourceUsageImpl::getUptimeMetrics()";
+        JLOG(this->journal().error())
+            << "Unknown error during ResourceUsageCollectorLinux::getUptimeMetrics()";
     }
 }
-
-}  // namespace collectors
-}  // namespace ripple
