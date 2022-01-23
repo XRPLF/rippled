@@ -28,31 +28,30 @@ namespace ripple {
 std::optional<RippleState>
 RippleState::makeItem(
     AccountID const& accountID,
-    std::shared_ptr<SLE const> sle)
+    std::shared_ptr<SLE const> const& sle)
 {
     // VFALCO Does this ever happen in practice?
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
-    return std::optional{RippleState{std::move(sle), accountID}};
+    return std::optional{RippleState{sle, accountID}};
 }
 
 RippleState::RippleState(
-    std::shared_ptr<SLE const>&& sle,
+    std::shared_ptr<SLE const> const& sle,
     AccountID const& viewAccount)
-    : sle_(std::move(sle))
-    , mFlags(sle_->getFieldU32(sfFlags))
-    , mLowLimit(sle_->getFieldAmount(sfLowLimit))
-    , mHighLimit(sle_->getFieldAmount(sfHighLimit))
+    : key_(sle->key())
+    , mLowLimit(sle->getFieldAmount(sfLowLimit))
+    , mHighLimit(sle->getFieldAmount(sfHighLimit))
     , mLowID(mLowLimit.getIssuer())
     , mHighID(mHighLimit.getIssuer())
-    , lowQualityIn_(sle_->getFieldU32(sfLowQualityIn))
-    , lowQualityOut_(sle_->getFieldU32(sfLowQualityOut))
-    , highQualityIn_(sle_->getFieldU32(sfHighQualityIn))
-    , highQualityOut_(sle_->getFieldU32(sfHighQualityOut))
-    , mBalance(sle_->getFieldAmount(sfBalance))
+    , lowQualityIn_(sle->getFieldU32(sfLowQualityIn))
+    , lowQualityOut_(sle->getFieldU32(sfLowQualityOut))
+    , highQualityIn_(sle->getFieldU32(sfHighQualityIn))
+    , highQualityOut_(sle->getFieldU32(sfHighQualityOut))
+    , mBalance(sle->getFieldAmount(sfBalance))
+    , mFlags(sle->getFieldU32(sfFlags))
+    , mViewLowest(mLowID == viewAccount)
 {
-    mViewLowest = (mLowID == viewAccount);
-
     if (!mViewLowest)
         mBalance.negate();
 }

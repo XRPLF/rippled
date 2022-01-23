@@ -38,24 +38,24 @@ namespace ripple {
     a chosen account on the line.
 */
 // VFALCO TODO Rename to TrustLine
-class RippleState
+class RippleState final
 {
 public:
     RippleState() = delete;
 
-    virtual ~RippleState() = default;
-
     static std::optional<RippleState>
-    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> sle);
+    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
 
     // Must be public, for make_shared
-    RippleState(std::shared_ptr<SLE const>&& sle, AccountID const& viewAccount);
+    RippleState(
+        std::shared_ptr<SLE const> const& sle,
+        AccountID const& viewAccount);
 
     /** Returns the state map key for the ledger entry. */
-    uint256
+    uint256 const&
     key() const
     {
-        return sle_->key();
+        return key_;
     }
 
     // VFALCO Take off the "get" from each function name
@@ -151,17 +151,13 @@ public:
     getJson(int);
 
 private:
-    std::shared_ptr<SLE const> sle_;
+    uint256 key_;
 
-    bool mViewLowest;
+    STAmount const mLowLimit;
+    STAmount const mHighLimit;
 
-    std::uint32_t mFlags;
-
-    STAmount const& mLowLimit;
-    STAmount const& mHighLimit;
-
-    AccountID const& mLowID;
-    AccountID const& mHighID;
+    AccountID const mLowID;
+    AccountID const mHighID;
 
     Rate lowQualityIn_;
     Rate lowQualityOut_;
@@ -169,6 +165,10 @@ private:
     Rate highQualityOut_;
 
     STAmount mBalance;
+
+    std::uint32_t mFlags;
+
+    bool mViewLowest;
 };
 
 std::vector<RippleState>
