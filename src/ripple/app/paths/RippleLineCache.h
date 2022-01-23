@@ -42,7 +42,7 @@ public:
         return mLedger;
     }
 
-    std::vector<RippleState::pointer> const&
+    std::vector<RippleState> const&
     getRippleLines(AccountID const& accountID);
 
 private:
@@ -90,8 +90,7 @@ private:
         };
     };
 
-    hash_map<AccountKey, std::vector<RippleState::pointer>, AccountKey::Hash>
-        lines_;
+    hash_map<AccountKey, std::vector<RippleState>, AccountKey::Hash> lines_;
 };
 
 }  // namespace ripple

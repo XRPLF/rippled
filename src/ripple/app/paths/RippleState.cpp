@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-RippleState::pointer
+std::optional<RippleState>
 RippleState::makeItem(
     AccountID const& accountID,
     std::shared_ptr<SLE const> sle)
@@ -33,7 +33,7 @@ RippleState::makeItem(
     // VFALCO Does this ever happen in practice?
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
-    return std::make_shared<RippleState>(std::move(sle), accountID);
+    return std::optional{RippleState{std::move(sle), accountID}};
 }
 
 RippleState::RippleState(
@@ -66,17 +66,17 @@ RippleState::getJson(int)
     return ret;
 }
 
-std::vector<RippleState::pointer>
+std::vector<RippleState>
 getRippleStateItems(AccountID const& accountID, ReadView const& view)
 {
-    std::vector<RippleState::pointer> items;
+    std::vector<RippleState> items;
     forEachItem(
         view,
         accountID,
         [&items, &accountID](std::shared_ptr<SLE const> const& sleCur) {
             auto ret = RippleState::makeItem(accountID, sleCur);
             if (ret)
-                items.push_back(ret);
+                items.push_back(std::move(*ret));
         });
 
     return items;

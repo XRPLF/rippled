@@ -30,15 +30,14 @@ RippleLineCache::RippleLineCache(std::shared_ptr<ReadView const> const& ledger)
     mLedger = std::make_shared<OpenView>(&*ledger, ledger);
 }
 
-std::vector<RippleState::pointer> const&
+std::vector<RippleState> const&
 RippleLineCache::getRippleLines(AccountID const& accountID)
 {
     AccountKey key(accountID, hasher_(accountID));
 
     std::lock_guard sl(mLock);
 
-    auto [it, inserted] =
-        lines_.emplace(key, std::vector<RippleState::pointer>());
+    auto [it, inserted] = lines_.emplace(key, std::vector<RippleState>());
 
     if (inserted)
         it->second = getRippleStateItems(accountID, *mLedger);

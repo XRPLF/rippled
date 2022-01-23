@@ -32,14 +32,13 @@ namespace ripple {
 
 struct VisitData
 {
-    std::vector<RippleState::pointer> items;
+    std::vector<RippleState> items;
     AccountID const& accountID;
     bool hasPeer;
     AccountID const& raPeerAccount;
 
     bool ignoreDefault;
     uint32_t foundCount;
-    RippleState::pointer lastFound;
 };
 
 void
@@ -140,7 +139,7 @@ doAccountLines(RPC::JsonContext& context)
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
     VisitData visitData = {
-        {}, accountID, hasPeer, raPeerAccount, ignoreDefault, 0, nullptr};
+        {}, accountID, hasPeer, raPeerAccount, ignoreDefault, 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
@@ -224,12 +223,12 @@ doAccountLines(RPC::JsonContext& context)
                         auto const line =
                             RippleState::makeItem(visitData.accountID, sleCur);
 
-                        if (line != nullptr &&
+                        if (line &&
                             (!visitData.hasPeer ||
                              visitData.raPeerAccount ==
                                  line->getAccountIDPeer()))
                         {
-                            visitData.items.emplace_back(line);
+                            visitData.items.emplace_back(*line);
                         }
                     }
 
@@ -253,7 +252,7 @@ doAccountLines(RPC::JsonContext& context)
     result[jss::account] = context.app.accountIDCache().toBase58(accountID);
 
     for (auto const& item : visitData.items)
-        addLine(jsonLines, *item.get());
+        addLine(jsonLines, item);
 
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
