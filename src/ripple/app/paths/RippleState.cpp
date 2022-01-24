@@ -42,15 +42,13 @@ RippleState::RippleState(
     : key_(sle->key())
     , mLowLimit(sle->getFieldAmount(sfLowLimit))
     , mHighLimit(sle->getFieldAmount(sfHighLimit))
-    , mLowID(mLowLimit.getIssuer())
-    , mHighID(mHighLimit.getIssuer())
+    , mBalance(sle->getFieldAmount(sfBalance))
     , lowQualityIn_(sle->getFieldU32(sfLowQualityIn))
     , lowQualityOut_(sle->getFieldU32(sfLowQualityOut))
     , highQualityIn_(sle->getFieldU32(sfHighQualityIn))
     , highQualityOut_(sle->getFieldU32(sfHighQualityOut))
-    , mBalance(sle->getFieldAmount(sfBalance))
     , mFlags(sle->getFieldU32(sfFlags))
-    , mViewLowest(mLowID == viewAccount)
+    , mViewLowest(mLowLimit.getIssuer() == viewAccount)
 {
     if (!mViewLowest)
         mBalance.negate();
@@ -60,8 +58,8 @@ Json::Value
 RippleState::getJson(int)
 {
     Json::Value ret(Json::objectValue);
-    ret["low_id"] = to_string(mLowID);
-    ret["high_id"] = to_string(mHighID);
+    ret["low_id"] = to_string(mLowLimit.getIssuer());
+    ret["high_id"] = to_string(mHighLimit.getIssuer());
     return ret;
 }
 

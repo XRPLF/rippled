@@ -63,13 +63,13 @@ public:
     AccountID const&
     getAccountID() const
     {
-        return mViewLowest ? mLowID : mHighID;
+        return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
     }
 
     AccountID const&
     getAccountIDPeer() const
     {
-        return !mViewLowest ? mLowID : mHighID;
+        return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
     }
 
     // True, Provided auth to peer.
@@ -156,15 +156,12 @@ private:
     STAmount const mLowLimit;
     STAmount const mHighLimit;
 
-    AccountID const mLowID;
-    AccountID const mHighID;
+    STAmount mBalance;
 
     Rate lowQualityIn_;
     Rate lowQualityOut_;
     Rate highQualityIn_;
     Rate highQualityOut_;
-
-    STAmount mBalance;
 
     std::uint32_t mFlags;
 
