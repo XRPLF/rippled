@@ -44,6 +44,8 @@ doServerInfo(RPC::JsonContext& context)
     {
         Json::Value const proxied = forwardToP2p(context);
         auto const lf = proxied[jss::result][jss::info][jss::load_factor];
+        auto const vq = proxied[jss::result][jss::info][jss::validation_quorum];
+        ret[jss::info][jss::validation_quorum] = vq.isNull() ? 1 : vq;
         ret[jss::info][jss::load_factor] = lf.isNull() ? 1 : lf;
     }
     return ret;
