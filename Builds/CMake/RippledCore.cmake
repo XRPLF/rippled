@@ -2,6 +2,11 @@
    xrpl_core
    core functionality, useable by some client software perhaps
 #]===================================================================]
+if(POLICY CMP0083)
+  cmake_policy(SET CMP0083 NEW)
+  include(CheckPIESupported)
+  check_pie_supported()
+endif()
 
 file (GLOB_RECURSE rb_headers
   src/ripple/beast/*.h

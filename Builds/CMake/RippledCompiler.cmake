@@ -111,6 +111,7 @@ else ()
       $<$<BOOL:${is_gcc}>:
         -Wno-unused-but-set-variable
         -Wno-deprecated
+        -pie
       >
       $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
       # tweak gcc optimization for debug
