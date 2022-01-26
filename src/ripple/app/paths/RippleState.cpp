@@ -25,17 +25,6 @@
 
 namespace ripple {
 
-std::optional<RippleState>
-RippleState::makeItem(
-    AccountID const& accountID,
-    std::shared_ptr<SLE const> const& sle)
-{
-    // VFALCO Does this ever happen in practice?
-    if (!sle || sle->getType() != ltRIPPLE_STATE)
-        return {};
-    return std::optional{RippleState{sle, accountID}};
-}
-
 RippleState::RippleState(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& viewAccount)
@@ -52,6 +41,17 @@ RippleState::RippleState(
 {
     if (!mViewLowest)
         mBalance.negate();
+}
+
+std::optional<RippleState>
+RippleState::makeItem(
+    AccountID const& accountID,
+    std::shared_ptr<SLE const> const& sle)
+{
+    // VFALCO Does this ever happen in practice?
+    if (!sle || sle->getType() != ltRIPPLE_STATE)
+        return {};
+    return std::optional{RippleState{sle, accountID}};
 }
 
 Json::Value

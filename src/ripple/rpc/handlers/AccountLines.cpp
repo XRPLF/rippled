@@ -193,18 +193,6 @@ doAccountLines(RPC::JsonContext& context)
                 limit + 1,
                 [&visitData, &count, &marker, &limit, &nextHint](
                     std::shared_ptr<SLE const> const& sleCur) {
-                    bool ignore = false;
-                    if (visitData.ignoreDefault)
-                    {
-                        if (sleCur->getFieldAmount(sfLowLimit).getIssuer() ==
-                            visitData.accountID)
-                            ignore =
-                                !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
-                        else
-                            ignore = !(
-                                sleCur->getFieldU32(sfFlags) & lsfHighReserve);
-                    }
-
                     if (!sleCur)
                     {
                         assert(false);
@@ -216,6 +204,21 @@ doAccountLines(RPC::JsonContext& context)
                         marker = sleCur->key();
                         nextHint =
                             RPC::getStartHint(sleCur, visitData.accountID);
+                    }
+
+                    if (sleCur->getType() != ltRIPPLE_STATE)
+                        return true;
+
+                    bool ignore = false;
+                    if (visitData.ignoreDefault)
+                    {
+                        if (sleCur->getFieldAmount(sfLowLimit).getIssuer() ==
+                            visitData.accountID)
+                            ignore =
+                                !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
+                        else
+                            ignore = !(
+                                sleCur->getFieldU32(sfFlags) & lsfHighReserve);
                     }
 
                     if (!ignore && count <= limit)
