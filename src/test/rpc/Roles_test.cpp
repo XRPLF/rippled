@@ -269,6 +269,30 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["ip"] == "::11:22:33:44:45.55.65.75");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
         }
+
+        {
+            Env env{*this, envconfig(admin_localnet)};
+            BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
+            BEAST_EXPECT(makeWSClient(env.app().config())
+                             ->invoke("ping")["result"]["unlimited"]
+                             .asBool());
+        }
+
+        {
+            Env env{*this, envconfig(secure_gateway_localnet)};
+            BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
+            auto wsRes =
+                makeWSClient(env.app().config())->invoke("ping")["result"];
+            BEAST_EXPECT(
+                !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
+
+            std::unordered_map<std::string, std::string> headers;
+            headers["X-Forwarded-For"] = "12.34.56.78";
+            Json::Value rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "12.34.56.78");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+        }
     }
 
     void

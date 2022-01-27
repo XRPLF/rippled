@@ -83,6 +83,24 @@ secure_gateway(std::unique_ptr<Config> cfg)
     return cfg;
 }
 
+std::unique_ptr<Config>
+admin_localnet(std::unique_ptr<Config> cfg)
+{
+    (*cfg)["port_rpc"].set("admin", "127.0.0.0/8");
+    (*cfg)["port_ws"].set("admin", "127.0.0.0/8");
+    return cfg;
+}
+
+std::unique_ptr<Config>
+secure_gateway_localnet(std::unique_ptr<Config> cfg)
+{
+    (*cfg)["port_rpc"].set("admin", "");
+    (*cfg)["port_ws"].set("admin", "");
+    (*cfg)["port_rpc"].set("secure_gateway", "127.0.0.0/8");
+    (*cfg)["port_ws"].set("secure_gateway", "127.0.0.0/8");
+    return cfg;
+}
+
 auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>

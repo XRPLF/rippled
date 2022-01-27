@@ -23,13 +23,14 @@
 #include <boost/beast/http/rfc7230.hpp>
 #include <boost/utility/string_view.hpp>
 #include <algorithm>
+#include <tuple>
 
 namespace ripple {
 
 bool
 passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
 {
-    assert(!port.admin_ip.empty());
+    assert(!(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()));
     bool const passwordRequired =
         (!port.admin_user.empty() || !port.admin_password.empty());
 
@@ -43,14 +44,40 @@ passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
 bool
 ipAllowed(
     beast::IP::Address const& remoteIp,
-    std::vector<beast::IP::Address> const& adminIp)
+    std::vector<boost::asio::ip::network_v4> const& nets4,
+    std::vector<boost::asio::ip::network_v6> const& nets6)
 {
-    return std::find_if(
-               adminIp.begin(),
-               adminIp.end(),
-               [&remoteIp](beast::IP::Address const& ip) {
-                   return ip.is_unspecified() || ip == remoteIp;
-               }) != adminIp.end();
+    // To test whether the remoteIP is part of one of the configured
+    // subnets, first convert it to a subnet definition. For ipv4,
+    // this means appending /32. For ipv6, /128. Then based on protocol
+    // check for whether the resulting network is either a subnet of or
+    // equal to each configured subnet, based on boost::asio's reasoning.
+    // For example, 10.1.2.3 is a subnet of 10.1.2.0/24, but 10.1.2.0 is
+    // not. However, 10.1.2.0 is equal to the network portion of 10.1.2.0/24.
+
+    std::string addrString = remoteIp.to_string();
+    if (remoteIp.is_v4())
+    {
+        addrString += "/32";
+        auto ipNet = boost::asio::ip::make_network_v4(addrString);
+        for (auto const& net : nets4)
+        {
+            if (ipNet.is_subnet_of(net) || ipNet == net)
+                return true;
+        }
+    }
+    else
+    {
+        addrString += "/128";
+        auto ipNet = boost::asio::ip::make_network_v6(addrString);
+        for (auto const& net : nets6)
+        {
+            if (ipNet.is_subnet_of(net) || ipNet == net)
+                return true;
+        }
+    }
+
+    return false;
 }
 
 bool
@@ -59,7 +86,7 @@ isAdmin(
     Json::Value const& params,
     beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_ip) &&
+    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
 
@@ -77,7 +104,10 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(remoteIp.address(), port.secure_gateway_ip))
+    if (ipAllowed(
+            remoteIp.address(),
+            port.secure_gateway_nets_v4,
+            port.secure_gateway_nets_v6))
     {
         if (user.size())
             return Role::IDENTIFIED;
