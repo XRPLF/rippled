@@ -20,10 +20,12 @@
 #ifndef RIPPLE_APP_MISC_ORDERBOOK_H_INCLUDED
 #define RIPPLE_APP_MISC_ORDERBOOK_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
+
 namespace ripple {
 
 /** Describes a serialized ledger entry for an order book. */
-class OrderBook
+class OrderBook : public CountedObject<OrderBook>
 {
 public:
     using pointer = std::shared_ptr<OrderBook>;

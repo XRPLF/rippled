@@ -223,7 +223,8 @@ checkPayment(
             if (auto ledger = app.openLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(ledger),
+                    std::make_shared<RippleLineCache>(
+                        ledger, app.journal("RippleLineCache")),
                     srcAddressID,
                     *dstAccountID,
                     sendMax.issue().currency,

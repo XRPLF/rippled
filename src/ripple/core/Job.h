@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_JOB_H_INCLUDED
 #define RIPPLE_CORE_JOB_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/core/ClosureCounter.h>
 #include <ripple/core/LoadMonitor.h>
 #include <functional>
@@ -92,7 +93,7 @@ enum JobType {
     jtNS_WRITE,
 };
 
-class Job
+class Job : public CountedObject<Job>
 {
 public:
     using clock_type = std::chrono::steady_clock;

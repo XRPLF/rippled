@@ -119,21 +119,21 @@ InfoSub::deleteSubAccountHistory(AccountID const& account)
 }
 
 void
-InfoSub::clearPathRequest()
+InfoSub::clearRequest()
 {
-    mPathRequest.reset();
+    request_.reset();
 }
 
 void
-InfoSub::setPathRequest(const std::shared_ptr<PathRequest>& req)
+InfoSub::setRequest(const std::shared_ptr<InfoSubRequest>& req)
 {
-    mPathRequest = req;
+    request_ = req;
 }
 
-const std::shared_ptr<PathRequest>&
-InfoSub::getPathRequest()
+const std::shared_ptr<InfoSubRequest>&
+InfoSub::getRequest()
 {
-    return mPathRequest;
+    return request_;
 }
 
 }  // namespace ripple

@@ -51,6 +51,9 @@ public:
     void
     updateAll(std::shared_ptr<ReadView const> const& ledger);
 
+    bool
+    requestsPending() const;
+
     std::shared_ptr<RippleLineCache>
     getLineCache(
         std::shared_ptr<ReadView const> const& ledger,
@@ -109,11 +112,11 @@ private:
     std::vector<PathRequest::wptr> requests_;
 
     // Use a RippleLineCache
-    std::shared_ptr<RippleLineCache> mLineCache;
+    std::weak_ptr<RippleLineCache> lineCache_;
 
     std::atomic<int> mLastIdentifier;
 
-    std::recursive_mutex mLock;
+    std::recursive_mutex mutable mLock;
 };
 
 }  // namespace ripple

@@ -33,10 +33,13 @@
 namespace ripple {
 
 // Used by Pathfinder
-class RippleLineCache : public CountedObject<RippleLineCache>
+class RippleLineCache final : public CountedObject<RippleLineCache>
 {
 public:
-    explicit RippleLineCache(std::shared_ptr<ReadView const> const& l);
+    explicit RippleLineCache(
+        std::shared_ptr<ReadView const> const& l,
+        beast::Journal j);
+    ~RippleLineCache();
 
     std::shared_ptr<ReadView const> const&
     getLedger() const
@@ -53,7 +56,9 @@ private:
     ripple::hardened_hash<> hasher_;
     std::shared_ptr<ReadView const> mLedger;
 
-    struct AccountKey
+    beast::Journal journal_;
+
+    struct AccountKey final : public CountedObject<AccountKey>
     {
         AccountID account_;
         std::size_t hash_value_;

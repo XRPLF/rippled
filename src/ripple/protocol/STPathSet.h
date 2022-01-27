@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
 #define RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
@@ -30,7 +31,7 @@
 
 namespace ripple {
 
-class STPathElement
+class STPathElement final : public CountedObject<STPathElement>
 {
     unsigned int mType;
     AccountID mAccountID;
@@ -114,7 +115,7 @@ private:
     get_hash(STPathElement const& element);
 };
 
-class STPath
+class STPath final : public CountedObject<STPath>
 {
     std::vector<STPathElement> mPath;
 
@@ -172,7 +173,7 @@ public:
 //------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
-class STPathSet final : public STBase
+class STPathSet final : public STBase, public CountedObject<STPathSet>
 {
     std::vector<STPath> value;
 

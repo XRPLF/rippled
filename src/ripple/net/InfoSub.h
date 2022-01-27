@@ -33,7 +33,18 @@ namespace ripple {
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
-class PathRequest;
+class InfoSubRequest
+{
+public:
+    using pointer = std::shared_ptr<InfoSubRequest>;
+
+    virtual ~InfoSubRequest() = default;
+
+    virtual Json::Value
+    doClose() = 0;
+    virtual Json::Value
+    doStatus(Json::Value const&) = 0;
+};
 
 /** Manages a client's subscription to data feeds.
  */
@@ -205,13 +216,13 @@ public:
     deleteSubAccountHistory(AccountID const& account);
 
     void
-    clearPathRequest();
+    clearRequest();
 
     void
-    setPathRequest(const std::shared_ptr<PathRequest>& req);
+    setRequest(const std::shared_ptr<InfoSubRequest>& req);
 
-    std::shared_ptr<PathRequest> const&
-    getPathRequest();
+    std::shared_ptr<InfoSubRequest> const&
+    getRequest();
 
 protected:
     std::mutex mLock;
@@ -221,7 +232,7 @@ private:
     Source& m_source;
     hash_set<AccountID> realTimeSubscriptions_;
     hash_set<AccountID> normalSubscriptions_;
-    std::shared_ptr<PathRequest> mPathRequest;
+    std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t mSeq;
     hash_set<AccountID> accountHistorySubscriptions_;
 

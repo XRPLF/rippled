@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STPathSet.h>
@@ -34,7 +35,7 @@ namespace ripple {
 
     @see RippleCalc
 */
-class Pathfinder
+class Pathfinder : public CountedObject<Pathfinder>
 {
 public:
     /** Construct a pathfinder without an issuer.*/
@@ -56,11 +57,15 @@ public:
     initPathTable();
 
     bool
-    findPaths(int searchLevel);
+    findPaths(
+        int searchLevel,
+        std::function<bool(void)> const& continueCallback = {});
 
     /** Compute the rankings of the paths. */
     void
-    computePathRanks(int maxPaths);
+    computePathRanks(
+        int maxPaths,
+        std::function<bool(void)> const& continueCallback = {});
 
     /* Get the best paths, up to maxPaths in number, from mCompletePaths.
 
@@ -72,7 +77,8 @@ public:
         int maxPaths,
         STPath& fullLiquidityPath,
         STPathSet const& extraPaths,
-        AccountID const& srcIssuer);
+        AccountID const& srcIssuer,
+        std::function<bool(void)> const& continueCallback = {});
 
     enum NodeType {
         nt_SOURCE,     // The source account: with an issuer account, if needed.
@@ -127,7 +133,9 @@ private:
 
     // Add all paths of one type to mCompletePaths.
     STPathSet&
-    addPathsForType(PathType const& type);
+    addPathsForType(
+        PathType const& type,
+        std::function<bool(void)> const& continueCallback);
 
     bool
     issueMatchesOrigin(Issue const&);
@@ -137,20 +145,23 @@ private:
         Currency const& currency,
         AccountID const& account,
         bool isDestCurrency,
-        AccountID const& dest);
+        AccountID const& dest,
+        std::function<bool(void)> const& continueCallback);
 
     void
     addLink(
         STPath const& currentPath,
         STPathSet& incompletePaths,
-        int addFlags);
+        int addFlags,
+        std::function<bool(void)> const& continueCallback);
 
     // Call addLink() for each path in currentPaths.
     void
     addLinks(
         STPathSet const& currentPaths,
         STPathSet& incompletePaths,
-        int addFlags);
+        int addFlags,
+        std::function<bool(void)> const& continueCallback);
 
     // Compute the liquidity for a path.  Return tesSUCCESS if it has has enough
     // liquidity to be worth keeping, otherwise an error.
@@ -178,7 +189,8 @@ private:
     rankPaths(
         int maxPaths,
         STPathSet const& paths,
-        std::vector<PathRank>& rankedPaths);
+        std::vector<PathRank>& rankedPaths,
+        std::function<bool(void)> const& continueCallback);
 
     AccountID mSrcAccount;
     AccountID mDstAccount;

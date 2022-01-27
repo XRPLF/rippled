@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/XRPAmount.h>
@@ -40,7 +41,7 @@ namespace ripple {
 // Wire form:
 // High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
 // Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-class STAmount : public STBase
+class STAmount final : public STBase, public CountedObject<STAmount>
 {
 public:
     using mantissa_type = std::uint64_t;

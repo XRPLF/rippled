@@ -733,6 +733,7 @@ if (tests)
     src/test/basics/contract_test.cpp
     src/test/basics/FeeUnits_test.cpp
     src/test/basics/hardened_hash_test.cpp
+    src/test/basics/join_test.cpp
     src/test/basics/mulDiv_test.cpp
     src/test/basics/tagged_integer_test.cpp
     #[===============================[
