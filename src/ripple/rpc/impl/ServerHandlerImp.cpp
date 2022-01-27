@@ -1060,10 +1060,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         Throw<std::exception>();
     }
     p.port = *parsed.port;
-    if (parsed.admin_ip)
-        p.admin_ip = *parsed.admin_ip;
-    if (parsed.secure_gateway_ip)
-        p.secure_gateway_ip = *parsed.secure_gateway_ip;
 
     if (parsed.protocol.empty())
     {
@@ -1083,6 +1079,10 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     p.pmd_options = parsed.pmd_options;
     p.ws_queue_limit = parsed.ws_queue_limit;
     p.limit = parsed.limit;
+    p.admin_nets_v4 = parsed.admin_nets_v4;
+    p.admin_nets_v6 = parsed.admin_nets_v6;
+    p.secure_gateway_nets_v4 = parsed.secure_gateway_nets_v4;
+    p.secure_gateway_nets_v6 = parsed.secure_gateway_nets_v6;
 
     return p;
 }
