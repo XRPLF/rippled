@@ -210,8 +210,16 @@ public:
     peekItem(uint256 const& id, SHAMapHash& hash) const;
 
     // traverse functions
+
+    // finds the object in the tree with the smallest object id greater than the
+    // input id
     const_iterator
     upper_bound(uint256 const& id) const;
+
+    // finds the object in the tree with the greatest object id smaller than the
+    // input id
+    const_iterator
+    lower_bound(uint256 const& id) const;
 
     /**  Visit every node in this SHAMap
 
@@ -400,11 +408,30 @@ private:
     std::shared_ptr<SHAMapTreeNode>
     writeNode(NodeObjectType t, std::shared_ptr<SHAMapTreeNode> node) const;
 
+    // returns the first item at or below this node
     SHAMapLeafNode*
     firstBelow(
         std::shared_ptr<SHAMapTreeNode>,
         SharedPtrNodeStack& stack,
         int branch = 0) const;
+
+    // returns the last item at or below this node
+    SHAMapLeafNode*
+    lastBelow(
+        std::shared_ptr<SHAMapTreeNode> node,
+        SharedPtrNodeStack& stack,
+        int branch = branchFactor) const;
+
+    // helper function for firstBelow and lastBelow
+    SHAMapLeafNode*
+    belowHelper(
+        std::shared_ptr<SHAMapTreeNode> node,
+        SharedPtrNodeStack& stack,
+        int branch,
+        std::tuple<
+            int,
+            std::function<bool(int)>,
+            std::function<void(int&)>> const& loopParams) const;
 
     // Simple descent
     // Get a child of the specified node
