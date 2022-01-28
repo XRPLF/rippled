@@ -475,6 +475,45 @@ SHAMap::firstBelow(
     }
     return nullptr;
 }
+SHAMapLeafNode*
+SHAMap::lastBelow(
+    std::shared_ptr<SHAMapTreeNode> node,
+    SharedPtrNodeStack& stack,
+    int branch) const
+{
+    // Return the first item at or below this node
+    if (node->isLeaf())
+    {
+        auto n = std::static_pointer_cast<SHAMapLeafNode>(node);
+        stack.push({node, {leafDepth, n->peekItem()->key()}});
+        return n.get();
+    }
+    auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
+    if (stack.empty())
+        stack.push({inner, SHAMapNodeID{}});
+    else
+        stack.push({inner, stack.top().second.getChildNodeID(branch)});
+    for (int i = branchFactor; i >= 0;)
+    {
+        if (!inner->isEmptyBranch(i))
+        {
+            node = descendThrow(inner, i);
+            assert(!stack.empty());
+            if (node->isLeaf())
+            {
+                auto n = std::static_pointer_cast<SHAMapLeafNode>(node);
+                stack.push({n, {leafDepth, n->peekItem()->key()}});
+                return n.get();
+            }
+            inner = std::static_pointer_cast<SHAMapInnerNode>(node);
+            stack.push({inner, stack.top().second.getChildNodeID(branch)});
+            i = branchFactor;  // scan all 16 branches of this new node
+        }
+        else
+            --i;  // scan next branch
+    }
+    return nullptr;
+}
 
 static const std::shared_ptr<SHAMapItem const> no_item;
 
@@ -617,6 +656,43 @@ SHAMap::upper_bound(uint256 const& id) const
         }
         stack.pop();
     }
+    return end();
+}
+SHAMap::const_iterator
+SHAMap::lower_bound(uint256 const& id) const
+{
+    SharedPtrNodeStack stack;
+    walkTowardsKey(id, &stack);
+    while (!stack.empty())
+    {
+        auto [node, nodeID] = stack.top();
+        if (node->isLeaf())
+        {
+            auto leaf = static_cast<SHAMapLeafNode*>(node.get());
+            if (leaf->peekItem()->key() < id)
+                return const_iterator(
+                    this, leaf->peekItem().get(), std::move(stack));
+        }
+        else
+        {
+            auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
+            for (int branch = selectBranch(nodeID, id) - 1; branch >= 0;
+                 --branch)
+            {
+                if (!inner->isEmptyBranch(branch))
+                {
+                    node = descendThrow(inner, branch);
+                    auto leaf = lastBelow(node, stack, branch);
+                    if (!leaf)
+                        Throw<SHAMapMissingNode>(type_, id);
+                    return const_iterator(
+                        this, leaf->peekItem().get(), std::move(stack));
+                }
+            }
+        }
+        stack.pop();
+    }
+    // TODO: what to return here?
     return end();
 }
 

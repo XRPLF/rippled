@@ -55,10 +55,29 @@ message RawLedgerObject
     }
 
     ModificationType mod_type = 3;
+
+    bytes predecessor = 4;
+
+    bytes successor = 5;
+
+    bool is_first_book_dir = 6;
+
+    bool was_first_book_dir = 7;
+
+    bytes new_first_book_dir = 8;
 }
 
 message RawLedgerObjects
 {
     repeated RawLedgerObject objects = 1;
 }
+
+message BookSuccessor {
+
+    bytes book_base = 1;
+
+    // empty value here means the entire book is deleted
+    bytes first_book = 2;
+
+};
 

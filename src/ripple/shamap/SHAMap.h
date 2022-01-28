@@ -213,6 +213,10 @@ public:
     const_iterator
     upper_bound(uint256 const& id) const;
 
+    // traverse functions
+    const_iterator
+    lower_bound(uint256 const& id) const;
+
     /**  Visit every node in this SHAMap
 
          @param function called with every node visited.
@@ -405,6 +409,11 @@ private:
         std::shared_ptr<SHAMapTreeNode>,
         SharedPtrNodeStack& stack,
         int branch = 0) const;
+    SHAMapLeafNode*
+    lastBelow(
+        std::shared_ptr<SHAMapTreeNode> node,
+        SharedPtrNodeStack& stack,
+        int branch = branchFactor) const;
 
     // Simple descent
     // Get a child of the specified node
