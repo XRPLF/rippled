@@ -385,6 +385,273 @@ class View_test : public beast::unit_test::suite
     }
 
     void
+    testUpperAndLowerBound()
+    {
+        using namespace jtx;
+        Env env(*this);
+        Config config;
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis,
+            config,
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger = std::make_shared<Ledger>(
+            *genesis, env.app().timeKeeper().closeTime());
+
+        auto setup = [&ledger](std::vector<int> const& vec) {
+            wipe(*ledger);
+            for (auto x : vec)
+            {
+                ledger->rawInsert(sle(x));
+            }
+        };
+        {
+            setup({1, 2, 3});
+            BEAST_EXPECT(sles(*ledger) == list(1, 2, 3));
+            auto e = ledger->stateMap().end();
+            auto b1 = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(1)) == e);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(2)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(3)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(4)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(5)) == b1);
+            b1 = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(0)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(1)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(2)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(3)) == e);
+        }
+
+        {
+            setup({2, 4, 6});
+            BEAST_EXPECT(sles(*ledger) == list(2, 4, 6));
+            auto e = ledger->stateMap().end();
+            auto b1 = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(1)) == e);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(2)) == e);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(3)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(4)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(5)) == b1);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(6)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(7)) == b1);
+            b1 = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(1)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(2)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(3)) == b1);
+            ++b1;
+
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(4)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(5)) == b1);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(6)) == e);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(7)) == e);
+        }
+        {
+            setup({2, 3, 5, 6, 10, 15});
+            BEAST_EXPECT(sles(*ledger) == list(2, 3, 5, 6, 10, 15));
+            auto e = ledger->stateMap().end();
+            auto b = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(1)) == e);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(2)) == e);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(3)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(4)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(5)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(6)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(7)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(8)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(9)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(10)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(11)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(12)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(13)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(14)) == b);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(15)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(16)) == b);
+            b = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(0)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(1)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(2)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(3)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(4)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(5)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(6)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(7)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(8)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(9)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(10)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(11)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(12)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(13)) == b);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(14)) == b);
+            ++b;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(15)) == e);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(16)) == e);
+        }
+        {
+            // some full trees, some empty trees, etc
+            setup({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+                   13, 14, 15, 16, 20, 25, 30, 32, 33, 34, 35, 36, 37,
+                   38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 66, 100});
+            BEAST_EXPECT(
+                sles(*ledger) ==
+                list(
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    10,
+                    11,
+                    12,
+                    13,
+                    14,
+                    15,
+                    16,
+                    20,
+                    25,
+                    30,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    37,
+                    38,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44,
+                    45,
+                    46,
+                    47,
+                    48,
+                    66,
+                    100));
+            auto b = ledger->stateMap().begin();
+            auto e = ledger->stateMap().end();
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(0)) == e);
+            BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(1)) == b);
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(5))->key() ==
+                uint256(4));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(15))->key() ==
+                uint256(14));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(16))->key() ==
+                uint256(15));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(19))->key() ==
+                uint256(16));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(20))->key() ==
+                uint256(16));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(24))->key() ==
+                uint256(20));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(31))->key() ==
+                uint256(30));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(32))->key() ==
+                uint256(30));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(40))->key() ==
+                uint256(39));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(47))->key() ==
+                uint256(46));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(48))->key() ==
+                uint256(47));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(64))->key() ==
+                uint256(48));
+
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(90))->key() ==
+                uint256(66));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(96))->key() ==
+                uint256(66));
+            BEAST_EXPECT(
+                ledger->stateMap().lower_bound(uint256(100))->key() ==
+                uint256(66));
+
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(0))->key() ==
+                uint256(1));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(5))->key() ==
+                uint256(6));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(15))->key() ==
+                uint256(16));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(16))->key() ==
+                uint256(20));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(18))->key() ==
+                uint256(20));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(20))->key() ==
+                uint256(25));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(31))->key() ==
+                uint256(32));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(32))->key() ==
+                uint256(33));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(47))->key() ==
+                uint256(48));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(48))->key() ==
+                uint256(66));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(53))->key() ==
+                uint256(66));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(66))->key() ==
+                uint256(100));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(70))->key() ==
+                uint256(100));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(85))->key() ==
+                uint256(100));
+            BEAST_EXPECT(
+                ledger->stateMap().upper_bound(uint256(98))->key() ==
+                uint256(100));
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(100)) == e);
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(155)) == e);
+        }
+    }
+
+    void
     testSles()
     {
         using namespace jtx;
@@ -811,6 +1078,7 @@ class View_test : public beast::unit_test::suite
         testStacked();
         testContext();
         testSles();
+        testUpperAndLowerBound();
         testFlags();
         testTransferRate();
         testAreCompatible();

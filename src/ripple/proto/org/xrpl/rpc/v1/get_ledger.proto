@@ -32,6 +32,10 @@ message GetLedgerRequest
     // coming from a secure_gateway host, then the client is not subject to
     // resource controls
     string user = 6;
+
+    // For every object in the diff, get the object's predecessor and successor
+    // in the state map. Only used if get_objects is also true.
+    bool get_object_neighbors = 7;
 }
 
 message GetLedgerResponse
@@ -58,6 +62,18 @@ message GetLedgerResponse
 
     // True if request was exempt from resource controls
     bool is_unlimited = 7;
+
+    // True if the response contains the state map diff
+    bool objects_included = 8;
+
+    // True if the response contains key of objects adjacent to objects in state
+    // map diff
+    bool object_neighbors_included = 9;
+
+
+    // Successor information for book directories modified as part of this
+    // ledger
+    repeated BookSuccessor book_successors = 10;
 }
 
 message TransactionHashList
