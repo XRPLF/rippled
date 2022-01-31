@@ -341,6 +341,7 @@ extern SF_UINT8 const sfMethod;
 extern SF_UINT8 const sfTransactionResult;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
+extern SF_UINT8 const sfHookResult;
 
 // 16-bit integers
 extern SF_UINT16 const sfLedgerEntryType;
@@ -349,6 +350,10 @@ extern SF_UINT16 const sfSignerWeight;
 
 // 16-bit integers (uncommon)
 extern SF_UINT16 const sfVersion;
+extern SF_UINT16 const sfHookStateChangeCount;
+extern SF_UINT16 const sfHookEmitCount;
+extern SF_UINT16 const sfHookExecutionIndex;
+extern SF_UINT16 const sfHookApiVersion;
 
 // 32-bit integers (common)
 extern SF_UINT32 const sfFlags;
@@ -392,6 +397,8 @@ extern SF_UINT32 const sfSignerListID;
 extern SF_UINT32 const sfSettleDelay;
 extern SF_UINT32 const sfTicketCount;
 extern SF_UINT32 const sfTicketSequence;
+extern SF_UINT32 const sfHookStateCount;
+extern SF_UINT32 const sfEmitGeneration;
 
 // 64-bit integers
 extern SF_UINT64 const sfIndexNext;
@@ -405,6 +412,11 @@ extern SF_UINT64 const sfHighNode;
 extern SF_UINT64 const sfDestinationNode;
 extern SF_UINT64 const sfCookie;
 extern SF_UINT64 const sfServerVersion;
+extern SF_UINT64 const sfHookOn;
+extern SF_UINT64 const sfHookInstructionCount;
+extern SF_UINT64 const sfEmitBurden;
+extern SF_UINT64 const sfHookReturnCode;
+extern SF_UINT64 const sfReferenceCount;
 
 // 128-bit
 extern SF_HASH128 const sfEmailHash;
@@ -425,6 +437,9 @@ extern SF_HASH256 const sfLedgerIndex;
 extern SF_HASH256 const sfWalletLocator;
 extern SF_HASH256 const sfRootIndex;
 extern SF_HASH256 const sfAccountTxnID;
+extern SF_HASH256 const sfEmitParentTxnID;
+extern SF_HASH256 const sfEmitNonce;
+extern SF_HASH256 const sfEmitHookHash;
 
 // 256-bit (uncommon)
 extern SF_HASH256 const sfBookDirectory;
@@ -436,6 +451,10 @@ extern SF_HASH256 const sfChannel;
 extern SF_HASH256 const sfConsensusHash;
 extern SF_HASH256 const sfCheckID;
 extern SF_HASH256 const sfValidatedHash;
+extern SF_HASH256 const sfHookStateKey;
+extern SF_HASH256 const sfHookHash;
+extern SF_HASH256 const sfHookNamespace;
+extern SF_HASH256 const sfHookSetTxnID;
 
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;
@@ -476,6 +495,10 @@ extern SF_VL const sfMasterSignature;
 extern SF_VL const sfUNLModifyValidator;
 extern SF_VL const sfValidatorToDisable;
 extern SF_VL const sfValidatorToReEnable;
+extern SF_VL const sfHookStateData;
+extern SF_VL const sfHookReturnString;
+extern SF_VL const sfHookParameterName;
+extern SF_VL const sfHookParameterValue;
 
 // account
 extern SF_ACCOUNT const sfAccount;
@@ -486,6 +509,10 @@ extern SF_ACCOUNT const sfAuthorize;
 extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfTarget;
 extern SF_ACCOUNT const sfRegularKey;
+extern SF_ACCOUNT const sfEmitCallback;
+
+// account (uncommon)
+extern SF_ACCOUNT const sfHookAccount;
 
 // path set
 extern SField const sfPaths;
@@ -510,6 +537,11 @@ extern SField const sfSignerEntry;
 extern SField const sfSigner;
 extern SField const sfMajority;
 extern SField const sfDisabledValidator;
+extern SField const sfEmittedTxn;
+extern SField const sfHook;
+extern SField const sfHookDefinition;
+extern SField const sfHookParameter;
+extern SField const sfHookGrant;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -523,6 +555,13 @@ extern SField const sfAffectedNodes;
 extern SField const sfMemos;
 extern SField const sfMajorities;
 extern SField const sfDisabledValidators;
+extern SField const sfEmitDetails;
+extern SField const sfHookExecutions;
+extern SField const sfHookExecution;
+extern SField const sfHookParameters;
+extern SField const sfHooks;
+extern SField const sfHookGrants;
+
 //------------------------------------------------------------------------------
 
 }  // namespace ripple
