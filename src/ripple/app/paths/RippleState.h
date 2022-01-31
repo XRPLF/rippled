@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Rate.h>
 #include <ripple/protocol/STAmount.h>
@@ -38,7 +39,7 @@ namespace ripple {
     a chosen account on the line.
 */
 // VFALCO TODO Rename to TrustLine
-class RippleState final
+class RippleState final : public CountedObject<RippleState>
 {
 public:
     RippleState() = delete;

@@ -22,7 +22,9 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/RippleState.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/hardened_hash.h>
+
 #include <cstddef>
 #include <memory>
 #include <mutex>
@@ -31,7 +33,7 @@
 namespace ripple {
 
 // Used by Pathfinder
-class RippleLineCache
+class RippleLineCache : public CountedObject<RippleLineCache>
 {
 public:
     explicit RippleLineCache(std::shared_ptr<ReadView const> const& l);
