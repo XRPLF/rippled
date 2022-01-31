@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/PathFindTrustLine.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>

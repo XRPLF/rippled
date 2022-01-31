@@ -37,18 +37,21 @@ namespace ripple {
     "low" account and a "high" account. This wraps the
     SLE and expresses its data from the perspective of
     a chosen account on the line.
+
+    This wrapper is primarily used in the path finder and there can easily be
+    tens of millions of instances of this class. When modifying this class think
+    carefully about the memory implications.
 */
-// VFALCO TODO Rename to TrustLine
-class RippleState final : public CountedObject<RippleState>
+class PathFindTrustLine final : public CountedObject<PathFindTrustLine>
 {
 public:
-    RippleState() = delete;
+    PathFindTrustLine() = delete;
 
-    static std::optional<RippleState>
+    static std::optional<PathFindTrustLine>
     makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
 
     // Must be public, for make_shared
-    RippleState(
+    PathFindTrustLine(
         std::shared_ptr<SLE const> const& sle,
         AccountID const& viewAccount);
 
@@ -169,7 +172,7 @@ private:
     bool mViewLowest;
 };
 
-std::vector<RippleState>
+std::vector<PathFindTrustLine>
 getRippleStateItems(AccountID const& accountID, ReadView const& view);
 
 }  // namespace ripple

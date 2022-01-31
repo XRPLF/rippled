@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/PathFindTrustLine.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -32,7 +32,7 @@ namespace ripple {
 
 struct VisitData
 {
-    std::vector<RippleState> items;
+    std::vector<PathFindTrustLine> items;
     AccountID const& accountID;
     bool hasPeer;
     AccountID const& raPeerAccount;
@@ -42,7 +42,7 @@ struct VisitData
 };
 
 void
-addLine(Json::Value& jsonLines, RippleState const& line)
+addLine(Json::Value& jsonLines, PathFindTrustLine const& line)
 {
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
@@ -223,8 +223,8 @@ doAccountLines(RPC::JsonContext& context)
 
                     if (!ignore && count <= limit)
                     {
-                        auto const line =
-                            RippleState::makeItem(visitData.accountID, sleCur);
+                        auto const line = PathFindTrustLine::makeItem(
+                            visitData.accountID, sleCur);
 
                         if (line &&
                             (!visitData.hasPeer ||

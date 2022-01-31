@@ -18,14 +18,14 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/PathFindTrustLine.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>
 #include <memory>
 
 namespace ripple {
 
-RippleState::RippleState(
+PathFindTrustLine::PathFindTrustLine(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& viewAccount)
     : key_(sle->key())
@@ -43,19 +43,19 @@ RippleState::RippleState(
         mBalance.negate();
 }
 
-std::optional<RippleState>
-RippleState::makeItem(
+std::optional<PathFindTrustLine>
+PathFindTrustLine::makeItem(
     AccountID const& accountID,
     std::shared_ptr<SLE const> const& sle)
 {
     // VFALCO Does this ever happen in practice?
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
-    return std::optional{RippleState{sle, accountID}};
+    return std::optional{PathFindTrustLine{sle, accountID}};
 }
 
 Json::Value
-RippleState::getJson(int)
+PathFindTrustLine::getJson(int)
 {
     Json::Value ret(Json::objectValue);
     ret["low_id"] = to_string(mLowLimit.getIssuer());
@@ -63,15 +63,15 @@ RippleState::getJson(int)
     return ret;
 }
 
-std::vector<RippleState>
+std::vector<PathFindTrustLine>
 getRippleStateItems(AccountID const& accountID, ReadView const& view)
 {
-    std::vector<RippleState> items;
+    std::vector<PathFindTrustLine> items;
     forEachItem(
         view,
         accountID,
         [&items, &accountID](std::shared_ptr<SLE const> const& sleCur) {
-            auto ret = RippleState::makeItem(accountID, sleCur);
+            auto ret = PathFindTrustLine::makeItem(accountID, sleCur);
             if (ret)
                 items.push_back(std::move(*ret));
         });

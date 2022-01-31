@@ -21,7 +21,7 @@
 #define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/PathFindTrustLine.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/hardened_hash.h>
 
@@ -44,7 +44,7 @@ public:
         return mLedger;
     }
 
-    std::vector<RippleState> const&
+    std::vector<PathFindTrustLine> const&
     getRippleLines(AccountID const& accountID);
 
 private:
@@ -92,7 +92,8 @@ private:
         };
     };
 
-    hash_map<AccountKey, std::vector<RippleState>, AccountKey::Hash> lines_;
+    hash_map<AccountKey, std::vector<PathFindTrustLine>, AccountKey::Hash>
+        lines_;
 };
 
 }  // namespace ripple
