@@ -21,7 +21,7 @@
 #define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/PathFindTrustLine.h>
+#include <ripple/app/paths/TrustLine.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/hardened_hash.h>
 

@@ -27,7 +27,6 @@
 #include <ripple/protocol/STLedgerEntry.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace ripple {
@@ -42,19 +41,22 @@ namespace ripple {
     tens of millions of instances of this class. When modifying this class think
     carefully about the memory implications.
 */
-class PathFindTrustLine final : public CountedObject<PathFindTrustLine>
+class TrustLineBase
 {
-public:
-    PathFindTrustLine() = delete;
-
-    static std::optional<PathFindTrustLine>
-    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
-
-    // Must be public, for make_shared
-    PathFindTrustLine(
+protected:
+    // This class should not be instantiated directly. Use one of the derived
+    // classes.
+    TrustLineBase(
         std::shared_ptr<SLE const> const& sle,
         AccountID const& viewAccount);
 
+    ~TrustLineBase() = default;
+    TrustLineBase(TrustLineBase const&) = default;
+    TrustLineBase&
+    operator=(TrustLineBase const&) = delete;
+    TrustLineBase(TrustLineBase&&) = default;
+
+public:
     /** Returns the state map key for the ledger entry. */
     uint256 const&
     key() const
@@ -139,6 +141,52 @@ public:
         return !mViewLowest ? mLowLimit : mHighLimit;
     }
 
+    Json::Value
+    getJson(int);
+
+protected:
+    uint256 key_;
+
+    STAmount const mLowLimit;
+    STAmount const mHighLimit;
+
+    STAmount mBalance;
+
+    std::uint32_t mFlags;
+
+    bool mViewLowest;
+};
+
+// This wrapper is used for the path finder
+class PathFindTrustLine final : public TrustLineBase,
+                                public CountedObject<PathFindTrustLine>
+{
+    using TrustLineBase::TrustLineBase;
+
+public:
+    PathFindTrustLine() = delete;
+
+    static std::optional<PathFindTrustLine>
+    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
+
+    static std::vector<PathFindTrustLine>
+    getItems(AccountID const& accountID, ReadView const& view);
+};
+
+// This wrapper is used for the `AccountLines` command and includes the quality
+// in and quality out values.
+class RPCTrustLine final : public TrustLineBase,
+                           public CountedObject<RPCTrustLine>
+{
+    using TrustLineBase::TrustLineBase;
+
+public:
+    RPCTrustLine() = delete;
+
+    RPCTrustLine(
+        std::shared_ptr<SLE const> const& sle,
+        AccountID const& viewAccount);
+
     Rate const&
     getQualityIn() const
     {
@@ -151,29 +199,18 @@ public:
         return mViewLowest ? lowQualityOut_ : highQualityOut_;
     }
 
-    Json::Value
-    getJson(int);
+    static std::optional<RPCTrustLine>
+    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
+
+    static std::vector<RPCTrustLine>
+    getItems(AccountID const& accountID, ReadView const& view);
 
 private:
-    uint256 key_;
-
-    STAmount const mLowLimit;
-    STAmount const mHighLimit;
-
-    STAmount mBalance;
-
     Rate lowQualityIn_;
     Rate lowQualityOut_;
     Rate highQualityIn_;
     Rate highQualityOut_;
-
-    std::uint32_t mFlags;
-
-    bool mViewLowest;
 };
-
-std::vector<PathFindTrustLine>
-getRippleStateItems(AccountID const& accountID, ReadView const& view);
 
 }  // namespace ripple
 

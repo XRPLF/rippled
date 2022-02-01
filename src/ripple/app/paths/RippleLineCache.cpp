@@ -19,6 +19,7 @@
 
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/ledger/OpenView.h>
+#include "app/paths/TrustLine.h"
 
 namespace ripple {
 
@@ -40,7 +41,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID)
     auto [it, inserted] = lines_.emplace(key, std::vector<PathFindTrustLine>());
 
     if (inserted)
-        it->second = getRippleStateItems(accountID, *mLedger);
+        it->second = PathFindTrustLine::getItems(accountID, *mLedger);
 
     return it->second;
 }

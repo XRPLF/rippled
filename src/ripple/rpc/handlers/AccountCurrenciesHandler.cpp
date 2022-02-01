@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/paths/PathFindTrustLine.h>
+#include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -58,7 +58,7 @@ doAccountCurrencies(RPC::JsonContext& context)
         return rpcError(rpcACT_NOT_FOUND);
 
     std::set<Currency> send, receive;
-    for (auto const& rspEntry : getRippleStateItems(accountID, *ledger))
+    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
     {
         STAmount const& saBalance = rspEntry.getBalance();
 

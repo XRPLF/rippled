@@ -18,24 +18,20 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/paths/PathFindTrustLine.h>
+#include <ripple/app/paths/TrustLine.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>
 #include <memory>
 
 namespace ripple {
 
-PathFindTrustLine::PathFindTrustLine(
+TrustLineBase::TrustLineBase(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& viewAccount)
     : key_(sle->key())
     , mLowLimit(sle->getFieldAmount(sfLowLimit))
     , mHighLimit(sle->getFieldAmount(sfHighLimit))
     , mBalance(sle->getFieldAmount(sfBalance))
-    , lowQualityIn_(sle->getFieldU32(sfLowQualityIn))
-    , lowQualityOut_(sle->getFieldU32(sfLowQualityOut))
-    , highQualityIn_(sle->getFieldU32(sfHighQualityIn))
-    , highQualityOut_(sle->getFieldU32(sfHighQualityOut))
     , mFlags(sle->getFieldU32(sfFlags))
     , mViewLowest(mLowLimit.getIssuer() == viewAccount)
 {
@@ -43,19 +39,8 @@ PathFindTrustLine::PathFindTrustLine(
         mBalance.negate();
 }
 
-std::optional<PathFindTrustLine>
-PathFindTrustLine::makeItem(
-    AccountID const& accountID,
-    std::shared_ptr<SLE const> const& sle)
-{
-    // VFALCO Does this ever happen in practice?
-    if (!sle || sle->getType() != ltRIPPLE_STATE)
-        return {};
-    return std::optional{PathFindTrustLine{sle, accountID}};
-}
-
 Json::Value
-PathFindTrustLine::getJson(int)
+TrustLineBase::getJson(int)
 {
     Json::Value ret(Json::objectValue);
     ret["low_id"] = to_string(mLowLimit.getIssuer());
@@ -63,20 +48,66 @@ PathFindTrustLine::getJson(int)
     return ret;
 }
 
-std::vector<PathFindTrustLine>
-getRippleStateItems(AccountID const& accountID, ReadView const& view)
+std::optional<PathFindTrustLine>
+PathFindTrustLine::makeItem(
+    AccountID const& accountID,
+    std::shared_ptr<SLE const> const& sle)
 {
-    std::vector<PathFindTrustLine> items;
+    if (!sle || sle->getType() != ltRIPPLE_STATE)
+        return {};
+    return std::optional{PathFindTrustLine{sle, accountID}};
+}
+
+namespace detail {
+template <class T>
+std::vector<T>
+getTrustLineItems(AccountID const& accountID, ReadView const& view)
+{
+    std::vector<T> items;
     forEachItem(
         view,
         accountID,
         [&items, &accountID](std::shared_ptr<SLE const> const& sleCur) {
-            auto ret = PathFindTrustLine::makeItem(accountID, sleCur);
+            auto ret = T::makeItem(accountID, sleCur);
             if (ret)
                 items.push_back(std::move(*ret));
         });
 
     return items;
+}
+}  // namespace detail
+
+std::vector<PathFindTrustLine>
+PathFindTrustLine::getItems(AccountID const& accountID, ReadView const& view)
+{
+    return detail::getTrustLineItems<PathFindTrustLine>(accountID, view);
+}
+
+RPCTrustLine::RPCTrustLine(
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& viewAccount)
+    : TrustLineBase(sle, viewAccount)
+    , lowQualityIn_(sle->getFieldU32(sfLowQualityIn))
+    , lowQualityOut_(sle->getFieldU32(sfLowQualityOut))
+    , highQualityIn_(sle->getFieldU32(sfHighQualityIn))
+    , highQualityOut_(sle->getFieldU32(sfHighQualityOut))
+{
+}
+
+std::optional<RPCTrustLine>
+RPCTrustLine::makeItem(
+    AccountID const& accountID,
+    std::shared_ptr<SLE const> const& sle)
+{
+    if (!sle || sle->getType() != ltRIPPLE_STATE)
+        return {};
+    return std::optional{RPCTrustLine{sle, accountID}};
+}
+
+std::vector<RPCTrustLine>
+RPCTrustLine::getItems(AccountID const& accountID, ReadView const& view)
+{
+    return detail::getTrustLineItems<RPCTrustLine>(accountID, view);
 }
 
 }  // namespace ripple
