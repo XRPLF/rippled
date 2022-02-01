@@ -56,3 +56,4 @@ git-subtree. See those directories' README files for more details.
 * [XRP Ledger Dev Portal](https://xrpl.org/)
 * [Setup and Installation](https://xrpl.org/install-rippled.html)
 * [Source Documentation (Doxygen)](https://ripple.github.io/rippled)
+* [Learn more about the XRP Ledger (YouTube)](https://www.youtube.com/playlist?list=PLJQ55Tj1hIVZtJ_JdTvSum2qMTsedWkNi)
