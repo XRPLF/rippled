@@ -372,7 +372,7 @@ inline TaggedPointer::TaggedPointer(
                     ++srcDstIndex;
                 }
             }
-            else if (!inDst && !inDst)
+            else if (!inSrc && !inDst)
             {
                 // in neither
                 if (srcDstIsDense)
@@ -433,7 +433,7 @@ inline TaggedPointer::TaggedPointer(
                     ++srcIndex;
                 }
             }
-            else if (!inDst && !inDst)
+            else if (!inSrc && !inDst)
             {
                 // in neither
                 if (dstIsDense)
