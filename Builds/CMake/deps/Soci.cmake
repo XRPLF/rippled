@@ -70,6 +70,7 @@ else()
       -DSOCI_LIBDIR=lib
       -DSOCI_SHARED=OFF
       -DSOCI_TESTS=OFF
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
       # hacks to workaround the fact that soci doesn't currently use
       # boost imported targets in its cmake. If they switch to
       # proper imported targets, this next line can be removed

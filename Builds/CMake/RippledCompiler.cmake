@@ -113,6 +113,9 @@ else ()
         -Wno-deprecated
         -pie
       >
+      $<$<BOOL:${is_clang}>:
+        -fPIE
+      >
       $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
       # tweak gcc optimization for debug
       $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
