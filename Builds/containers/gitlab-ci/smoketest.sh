@@ -51,7 +51,7 @@ if [ "${pkgtype}" = "dpkg" ] ; then
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
         updateWithRetry
-        apt-get -y install libprotobuf-dev libssl-dev
+        apt-get -y install libprotobuf-dev libprotoc-dev protobuf-compiler libssl-dev
         rm -f build/dpkg/packages/rippled-dbgsym*.*
         dpkg --no-debsig -i build/dpkg/packages/*.deb
     else
