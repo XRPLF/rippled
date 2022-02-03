@@ -210,10 +210,14 @@ public:
     peekItem(uint256 const& id, SHAMapHash& hash) const;
 
     // traverse functions
+
+    // finds the object in the tree with the smallest object id greater than the
+    // input id
     const_iterator
     upper_bound(uint256 const& id) const;
 
-    // traverse functions
+    // finds the object in the tree with the greatest object id smaller than the
+    // input id
     const_iterator
     lower_bound(uint256 const& id) const;
 
