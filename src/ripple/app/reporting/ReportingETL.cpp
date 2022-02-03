@@ -929,10 +929,14 @@ ReportingETL::ReportingETL(Application& app)
         {
             auto const optStartSeq = section.get("start_sequence");
             if (optStartSeq)
+            {
+                // set a value so we can dereference
+                startSequence_ = 0;
                 asciiToIntThrows(
                     *startSequence_,
                     *optStartSeq,
                     "Expected integral start_sequence config entry. Got: ");
+            }
         }
 
         auto const optFlushInterval = section.get("flush_interval");
