@@ -214,8 +214,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             else
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
             auto blob = inDesired ? inDesired->slice() : inBase->slice();
-            LedgerEntryType objectType =
-                LedgerEntryType{(uint16_t)(blob[1] << 8 | blob[2])};
+            auto const objectType =
+                static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
 
             if (request.get_object_neighbors())
             {
