@@ -318,9 +318,11 @@ public:
     {
         using namespace test::jtx;
         using namespace std::chrono_literals;
-        Env env{*this};
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->NODE_SIZE = 0;
+                    return cfg;
+                })};
         Account const gw{"gateway"};
-        env.app().getLedgerMaster().tune(0, 1h);
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 

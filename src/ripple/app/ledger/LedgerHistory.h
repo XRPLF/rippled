@@ -70,13 +70,6 @@ public:
     LedgerHash
     getLedgerHash(LedgerIndex ledgerIndex);
 
-    /** Set the history cache's parameters
-        @param size The target size of the cache
-        @param age The target age of the cache, in seconds
-    */
-    void
-    tune(int size, std::chrono::seconds age);
-
     /** Remove stale cache entries
      */
     void

@@ -1588,6 +1588,9 @@ LedgerMaster::newPFWork(
     const char* name,
     std::unique_lock<std::recursive_mutex>&)
 {
+    if (app_.isStopping())
+        return false;
+
     if (mPathFindThread < 2)
     {
         if (app_.getJobQueue().addJob(
@@ -1830,12 +1833,6 @@ LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 }
 
 void
-LedgerMaster::tune(int size, std::chrono::seconds age)
-{
-    mLedgerHistory.tune(size, age);
-}
-
-void
 LedgerMaster::sweep()
 {
     mLedgerHistory.sweep();
@@ -2075,7 +2072,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
         {
             JLOG(m_journal.trace()) << "tryAdvance found " << pubLedgers.size()
                                     << " ledgers to publish";
-            for (auto ledger : pubLedgers)
+            for (auto const& ledger : pubLedgers)
             {
                 {
                     ScopedUnlock sul{sl};

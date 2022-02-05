@@ -34,7 +34,6 @@ namespace ripple {
 Json::Value
 doLedgerAccept(RPC::JsonContext& context)
 {
-    std::unique_lock lock{context.app.getMasterMutex()};
     Json::Value jvResult;
 
     if (!context.app.config().standalone() || context.app.config().reporting())
@@ -43,8 +42,8 @@ doLedgerAccept(RPC::JsonContext& context)
     }
     else
     {
+        std::unique_lock lock{context.app.getMasterMutex()};
         context.netOps.acceptLedger();
-
         jvResult[jss::ledger_current_index] =
             context.ledgerMaster.getCurrentLedgerIndex();
     }
