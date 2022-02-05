@@ -1624,7 +1624,8 @@ LedgerMaster::newPFWork(
     const char* name,
     std::unique_lock<std::recursive_mutex>&)
 {
-    if (mPathFindThread < 2 && app_.getPathRequests().requestsPending())
+    if (!app_.isStopping() && mPathFindThread < 2 &&
+        app_.getPathRequests().requestsPending())
     {
         JLOG(m_journal.debug())
             << "newPFWork: Creating job. path find threads: "
@@ -1869,12 +1870,6 @@ LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 }
 
 void
-LedgerMaster::tune(int size, std::chrono::seconds age)
-{
-    mLedgerHistory.tune(size, age);
-}
-
-void
 LedgerMaster::sweep()
 {
     mLedgerHistory.sweep();
@@ -2114,7 +2109,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
         {
             JLOG(m_journal.trace()) << "tryAdvance found " << pubLedgers.size()
                                     << " ledgers to publish";
-            for (auto ledger : pubLedgers)
+            for (auto const& ledger : pubLedgers)
             {
                 {
                     ScopedUnlock sul{sl};

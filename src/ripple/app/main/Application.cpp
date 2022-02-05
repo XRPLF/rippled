@@ -962,13 +962,6 @@ public:
                            << "' took " << elapsed.count() << " seconds.";
         }
 
-        // tune caches
-        using namespace std::chrono;
-
-        m_ledgerMaster->tune(
-            config_->getValueFor(SizedItem::ledgerSize),
-            seconds{config_->getValueFor(SizedItem::ledgerAge)});
-
         return true;
     }
 

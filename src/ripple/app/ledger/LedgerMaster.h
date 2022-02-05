@@ -220,8 +220,6 @@ public:
     getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal);
 
     void
-    tune(int size, std::chrono::seconds age);
-    void
     sweep();
     float
     getCacheHitRate();
