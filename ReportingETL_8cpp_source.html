@@ -999,29 +999,33 @@ $(function() {
 <div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160;        {</div>
 <div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> optStartSeq = section.<a class="code" href="classripple_1_1Section.html#a5ef3a8f0a6f47e26003e0b2f93f49921">get</a>(<span class="stringliteral">&quot;start_sequence&quot;</span>);</div>
 <div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160;            <span class="keywordflow">if</span> (optStartSeq)</div>
-<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;                asciiToIntThrows(</div>
-<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;                    *<a class="code" href="classripple_1_1ReportingETL.html#a046a79acf905dcc11d0618d2afab7df5">startSequence_</a>,</div>
-<div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;                    *optStartSeq,</div>
-<div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;                    <span class="stringliteral">&quot;Expected integral start_sequence config entry. Got: &quot;</span>);</div>
-<div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;        }</div>
-<div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160; </div>
-<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> optFlushInterval = section.<a class="code" href="classripple_1_1Section.html#a5ef3a8f0a6f47e26003e0b2f93f49921">get</a>(<span class="stringliteral">&quot;flush_interval&quot;</span>);</div>
-<div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160;        <span class="keywordflow">if</span> (optFlushInterval)</div>
-<div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160;            asciiToIntThrows(</div>
-<div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160;                <a class="code" href="classripple_1_1ReportingETL.html#ade4fa846f12c209192fa2e87e94bb7d2">flushInterval_</a>,</div>
-<div class="line"><a name="l00942"></a><span class="lineno">  942</span>&#160;                *optFlushInterval,</div>
-<div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;                <span class="stringliteral">&quot;Expected integral flush_interval config entry.  Got: &quot;</span>);</div>
-<div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160; </div>
-<div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> optNumMarkers = section.<a class="code" href="classripple_1_1Section.html#a5ef3a8f0a6f47e26003e0b2f93f49921">get</a>(<span class="stringliteral">&quot;num_markers&quot;</span>);</div>
-<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;        <span class="keywordflow">if</span> (optNumMarkers)</div>
-<div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160;            asciiToIntThrows(</div>
-<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;                <a class="code" href="classripple_1_1ReportingETL.html#aecb81f86df5bbad3cd94d5f038f39ca4">numMarkers_</a>,</div>
-<div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;                *optNumMarkers,</div>
-<div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160;                <span class="stringliteral">&quot;Expected integral num_markers config entry.  Got: &quot;</span>);</div>
-<div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;    }</div>
-<div class="line"><a name="l00952"></a><span class="lineno">  952</span>&#160;}</div>
-<div class="line"><a name="l00953"></a><span class="lineno">  953</span>&#160; </div>
-<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;            {</div>
+<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;                <span class="comment">// set a value so we can dereference</span></div>
+<div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;                <a class="code" href="classripple_1_1ReportingETL.html#a046a79acf905dcc11d0618d2afab7df5">startSequence_</a> = 0;</div>
+<div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;                asciiToIntThrows(</div>
+<div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;                    *<a class="code" href="classripple_1_1ReportingETL.html#a046a79acf905dcc11d0618d2afab7df5">startSequence_</a>,</div>
+<div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160;                    *optStartSeq,</div>
+<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;                    <span class="stringliteral">&quot;Expected integral start_sequence config entry. Got: &quot;</span>);</div>
+<div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160;            }</div>
+<div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160;        }</div>
+<div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160; </div>
+<div class="line"><a name="l00942"></a><span class="lineno">  942</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> optFlushInterval = section.<a class="code" href="classripple_1_1Section.html#a5ef3a8f0a6f47e26003e0b2f93f49921">get</a>(<span class="stringliteral">&quot;flush_interval&quot;</span>);</div>
+<div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;        <span class="keywordflow">if</span> (optFlushInterval)</div>
+<div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160;            asciiToIntThrows(</div>
+<div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;                <a class="code" href="classripple_1_1ReportingETL.html#ade4fa846f12c209192fa2e87e94bb7d2">flushInterval_</a>,</div>
+<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;                *optFlushInterval,</div>
+<div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160;                <span class="stringliteral">&quot;Expected integral flush_interval config entry.  Got: &quot;</span>);</div>
+<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160; </div>
+<div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> optNumMarkers = section.<a class="code" href="classripple_1_1Section.html#a5ef3a8f0a6f47e26003e0b2f93f49921">get</a>(<span class="stringliteral">&quot;num_markers&quot;</span>);</div>
+<div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160;        <span class="keywordflow">if</span> (optNumMarkers)</div>
+<div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;            asciiToIntThrows(</div>
+<div class="line"><a name="l00952"></a><span class="lineno">  952</span>&#160;                <a class="code" href="classripple_1_1ReportingETL.html#aecb81f86df5bbad3cd94d5f038f39ca4">numMarkers_</a>,</div>
+<div class="line"><a name="l00953"></a><span class="lineno">  953</span>&#160;                *optNumMarkers,</div>
+<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;                <span class="stringliteral">&quot;Expected integral num_markers config entry.  Got: &quot;</span>);</div>
+<div class="line"><a name="l00955"></a><span class="lineno">  955</span>&#160;    }</div>
+<div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;}</div>
+<div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160; </div>
+<div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_afdcc25285fc9cb83eab4ed36d95be527"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#afdcc25285fc9cb83eab4ed36d95be527">ripple::NetworkOPs::pubLedger</a></div><div class="ttdeci">virtual void pubLedger(std::shared_ptr&lt; ReadView const &gt; const &amp;lpAccepted)=0</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>

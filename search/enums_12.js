@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['validity_25923',['Validity',['../namespaceripple.html#abcad59b0151763334cc398263373bcdd',1,'ripple']]],
-  ['valstatus_25924',['ValStatus',['../namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eb',1,'ripple']]],
-  ['valuetype_25925',['ValueType',['../namespaceJson.html#a7d654b75c16a57007925868e38212b4e',1,'Json']]]
+  ['validity_25924',['Validity',['../namespaceripple.html#abcad59b0151763334cc398263373bcdd',1,'ripple']]],
+  ['valstatus_25925',['ValStatus',['../namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eb',1,'ripple']]],
+  ['valuetype_25926',['ValueType',['../namespaceJson.html#a7d654b75c16a57007925868e38212b4e',1,'Json']]]
 ];

@@ -1,9 +1,8 @@
 var searchData=
 [
-  ['datacorrupt_26000',['dataCorrupt',['../namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350ca915a2fc67fa0633b4995f8c1e4d54bdf',1,'ripple::NodeStore']]],
-  ['decaywindowseconds_26001',['decayWindowSeconds',['../namespaceripple_1_1Resource.html#a05fb3b8e52cf545fd127f4ee01d435ebaa5aade0547994081e153dd3412dba471',1,'ripple::Resource']]],
-  ['defaultcachetargetsize_26002',['defaultCacheTargetSize',['../classripple_1_1detail_1_1BasicFullBelowCache.html#a6e0eeda7864e33e83a5a6a61e1b66c88adbd74677e86b456da79f7220ac9608b7',1,'ripple::detail::BasicFullBelowCache']]],
-  ['defaultmaxpeercount_26003',['defaultMaxPeerCount',['../namespaceripple_1_1PeerFinder_1_1Tuning.html#af021a2643b7b5a3db6c40004942a3ba5a5b646e3a9bd4d9507b9b5996987083f9',1,'ripple::PeerFinder::Tuning']]],
+  ['datacorrupt_26001',['dataCorrupt',['../namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350ca915a2fc67fa0633b4995f8c1e4d54bdf',1,'ripple::NodeStore']]],
+  ['decaywindowseconds_26002',['decayWindowSeconds',['../namespaceripple_1_1Resource.html#a05bf166fe1bb1548325e028a80ebbdc8aa5aade0547994081e153dd3412dba471',1,'ripple::Resource']]],
+  ['defaultcachetargetsize_26003',['defaultCacheTargetSize',['../classripple_1_1detail_1_1BasicFullBelowCache.html#af260db103d51972a6b6bd18460ec8b25adbd74677e86b456da79f7220ac9608b7',1,'ripple::detail::BasicFullBelowCache']]],
   ['defaultmaxpeers_26004',['defaultMaxPeers',['../namespaceripple_1_1PeerFinder_1_1Tuning.html#a2ad6eef9f47f6d98246d0a51059b5bb8ae2613c88dfdb6971e3738f1f7ef8f295',1,'ripple::PeerFinder::Tuning']]],
   ['deposit_5fpreauth_26005',['DEPOSIT_PREAUTH',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba3327bcb6bb4b74aec018c7cf6efa8b3a',1,'ripple']]],
   ['destroy_26006',['destroy',['../classripple_1_1SetSignerList.html#a6a367d4aa89f471f6d9b44eb6a49e2d4a8d0fd977dbcf1fe471613a825e916913',1,'ripple::SetSignerList']]],
@@ -20,7 +19,7 @@ var searchData=
   ['dropledgerdeltareply_26017',['DropLedgerDeltaReply',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1a0cf51aa72b773c64178a944bf85ef503',1,'ripple::test']]],
   ['dropsendqueue_26018',['dropSendQueue',['../namespaceripple_1_1Tuning.html#a728589bd52b8426227390d5640782a10ac53e07d6dbec8160ba8b4631a39fe84f',1,'ripple::Tuning']]],
   ['dropskiplistreply_26019',['DropSkipListReply',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1a1c680e775b81946aa93a83b6ad8e87d7',1,'ripple::test']]],
-  ['dropthreshold_26020',['dropThreshold',['../namespaceripple_1_1Resource.html#a05fb3b8e52cf545fd127f4ee01d435eba5c408bda92d525f5d989365db1d6c1e3',1,'ripple::Resource']]],
+  ['dropthreshold_26020',['dropThreshold',['../namespaceripple_1_1Resource.html#a05bf166fe1bb1548325e028a80ebbdc8a5c408bda92d525f5d989365db1d6c1e3',1,'ripple::Resource']]],
   ['dumpqueue_26021',['dumpQueue',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b',1,'ripple::LedgerFill']]],
   ['dumpstate_26022',['dumpState',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8',1,'ripple::LedgerFill']]],
   ['dumptxrp_26023',['dumpTxrp',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34',1,'ripple::LedgerFill']]],

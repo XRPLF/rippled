@@ -103,12 +103,12 @@ Collaboration diagram for ripple::PeerFinder::SlotImp::recent_t:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a3c7d8089093e513b3f426f8059826901"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a3c7d8089093e513b3f426f8059826901">recent_t</a> (<a class="el" href="namespaceripple_1_1PeerFinder.html#af4627ce974986eba7f69f7c89666d3fa">clock_type</a> &amp;clock)</td></tr>
 <tr class="separator:a3c7d8089093e513b3f426f8059826901"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21e9e3b724b7e05b681aba72445cb6da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a21e9e3b724b7e05b681aba72445cb6da">insert</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;ep, int hops)</td></tr>
-<tr class="memdesc:a21e9e3b724b7e05b681aba72445cb6da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called for each valid endpoint received for a slot.  <a href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a21e9e3b724b7e05b681aba72445cb6da">More...</a><br /></td></tr>
-<tr class="separator:a21e9e3b724b7e05b681aba72445cb6da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a418ec1cbd4983abee140fc88ba124fa1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a418ec1cbd4983abee140fc88ba124fa1">filter</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;ep, int hops)</td></tr>
-<tr class="memdesc:a418ec1cbd4983abee140fc88ba124fa1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if we should not send endpoint to the slot.  <a href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a418ec1cbd4983abee140fc88ba124fa1">More...</a><br /></td></tr>
-<tr class="separator:a418ec1cbd4983abee140fc88ba124fa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adeb37a9344fa2f87ba68485bc4842558"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#adeb37a9344fa2f87ba68485bc4842558">insert</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;ep, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> hops)</td></tr>
+<tr class="memdesc:adeb37a9344fa2f87ba68485bc4842558"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called for each valid endpoint received for a slot.  <a href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#adeb37a9344fa2f87ba68485bc4842558">More...</a><br /></td></tr>
+<tr class="separator:adeb37a9344fa2f87ba68485bc4842558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9edb0da1c4fa6d4c395eae05e08aae8a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a9edb0da1c4fa6d4c395eae05e08aae8a">filter</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;ep, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> hops)</td></tr>
+<tr class="memdesc:a9edb0da1c4fa6d4c395eae05e08aae8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if we should not send endpoint to the slot.  <a href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a9edb0da1c4fa6d4c395eae05e08aae8a">More...</a><br /></td></tr>
+<tr class="separator:a9edb0da1c4fa6d4c395eae05e08aae8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -117,8 +117,8 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a716be57b70a11f1d919ea3b1a405e042"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp.html#aa145d3124150a1f2598a989ac81f5b96">recent_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#a716be57b70a11f1d919ea3b1a405e042">cache</a></td></tr>
-<tr class="separator:a716be57b70a11f1d919ea3b1a405e042"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba6ab2b1b13b0c85a2d3cd83f4a58b9e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacebeast.html#af6181fa93ab6095c2364cc166ad6eca3">beast::aged_unordered_map</a>&lt; <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html#aba6ab2b1b13b0c85a2d3cd83f4a58b9e">cache</a></td></tr>
+<tr class="separator:aba6ab2b1b13b0c85a2d3cd83f4a58b9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
@@ -127,7 +127,7 @@ Friends</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SlotImp_8h_source.html#l00148">148</a> of file <a class="el" href="SlotImp_8h_source.html">SlotImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SlotImp_8h_source.html#l00145">145</a> of file <a class="el" href="SlotImp_8h_source.html">SlotImp.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3c7d8089093e513b3f426f8059826901"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3c7d8089093e513b3f426f8059826901">&#9670;&nbsp;</a></span>recent_t()</h2>
@@ -158,8 +158,8 @@ Friends</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a21e9e3b724b7e05b681aba72445cb6da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21e9e3b724b7e05b681aba72445cb6da">&#9670;&nbsp;</a></span>insert()</h2>
+<a id="adeb37a9344fa2f87ba68485bc4842558"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adeb37a9344fa2f87ba68485bc4842558">&#9670;&nbsp;</a></span>insert()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -173,7 +173,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>hops</em>&#160;</td>
         </tr>
         <tr>
@@ -191,8 +191,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a418ec1cbd4983abee140fc88ba124fa1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a418ec1cbd4983abee140fc88ba124fa1">&#9670;&nbsp;</a></span>filter()</h2>
+<a id="a9edb0da1c4fa6d4c395eae05e08aae8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9edb0da1c4fa6d4c395eae05e08aae8a">&#9670;&nbsp;</a></span>filter()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -206,7 +206,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>hops</em>&#160;</td>
         </tr>
         <tr>
@@ -271,13 +271,13 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SlotImp_8h_source.html#l00168">168</a> of file <a class="el" href="SlotImp_8h_source.html">SlotImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SlotImp_8h_source.html#l00165">165</a> of file <a class="el" href="SlotImp_8h_source.html">SlotImp.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a716be57b70a11f1d919ea3b1a405e042"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a716be57b70a11f1d919ea3b1a405e042">&#9670;&nbsp;</a></span>cache</h2>
+<a id="aba6ab2b1b13b0c85a2d3cd83f4a58b9e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba6ab2b1b13b0c85a2d3cd83f4a58b9e">&#9670;&nbsp;</a></span>cache</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -286,7 +286,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1PeerFinder_1_1SlotImp.html#aa145d3124150a1f2598a989ac81f5b96">recent_type</a> ripple::PeerFinder::SlotImp::recent_t::cache</td>
+          <td class="memname"><a class="el" href="namespacebeast.html#af6181fa93ab6095c2364cc166ad6eca3">beast::aged_unordered_map</a>&lt;<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt; ripple::PeerFinder::SlotImp::recent_t::cache</td>
         </tr>
       </table>
   </td>
@@ -296,7 +296,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SlotImp_8h_source.html#l00169">169</a> of file <a class="el" href="SlotImp_8h_source.html">SlotImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SlotImp_8h_source.html#l00166">166</a> of file <a class="el" href="SlotImp_8h_source.html">SlotImp.h</a>.</p>
 
 </div>
 </div>
