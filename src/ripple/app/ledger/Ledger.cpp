@@ -774,7 +774,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     else
     {
         if (parallel)
-            stateMap_->walkMapParallel(missingNodes1, 32);
+            return stateMap_->walkMapParallel(missingNodes1, 32);
         else
             stateMap_->walkMap(missingNodes1, 32);
     }
