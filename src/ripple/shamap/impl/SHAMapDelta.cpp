@@ -290,13 +290,13 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
     }
 }
 
-void
+bool
 SHAMap::walkMapParallel(
     std::vector<SHAMapMissingNode>& missingNodes,
     int maxMissing) const
 {
     if (!root_->isInner())  // root_ is only node, and we have it
-        return;
+        return false;
 
     using StackEntry = std::shared_ptr<SHAMapInnerNode>;
     std::array<std::shared_ptr<SHAMapTreeNode>, 16> topChildren;
@@ -311,6 +311,8 @@ SHAMap::walkMapParallel(
     }
     std::vector<std::thread> workers;
     workers.reserve(16);
+    std::vector<SHAMapMissingNode> exceptions;
+    exceptions.reserve(16);
 
     std::array<std::stack<StackEntry, std::vector<StackEntry>>, 16> nodeStacks;
 
@@ -329,38 +331,45 @@ SHAMap::walkMapParallel(
 
         JLOG(journal_.debug()) << "starting worker " << rootChildIndex;
         workers.push_back(std::thread(
-            [&m, &missingNodes, &maxMissing, this](
+            [&m, &missingNodes, &maxMissing, &exceptions, this](
                 std::stack<StackEntry, std::vector<StackEntry>> nodeStack) {
-                while (!nodeStack.empty())
+                try
                 {
-                    std::shared_ptr<SHAMapInnerNode> node =
-                        std::move(nodeStack.top());
-                    assert(node);
-                    nodeStack.pop();
-
-                    for (int i = 0; i < 16; ++i)
+                    while (!nodeStack.empty())
                     {
-                        if (node->isEmptyBranch(i))
-                            continue;
-                        std::shared_ptr<SHAMapTreeNode> nextNode =
-                            descendNoStore(node, i);
+                        std::shared_ptr<SHAMapInnerNode> node =
+                            std::move(nodeStack.top());
+                        assert(node);
+                        nodeStack.pop();
 
-                        if (nextNode)
+                        for (int i = 0; i < 16; ++i)
                         {
-                            if (nextNode->isInner())
-                                nodeStack.push(
-                                    std::static_pointer_cast<SHAMapInnerNode>(
-                                        nextNode));
-                        }
-                        else
-                        {
-                            std::lock_guard l{m};
-                            missingNodes.emplace_back(
-                                type_, node->getChildHash(i));
-                            if (--maxMissing <= 0)
-                                return;
+                            if (node->isEmptyBranch(i))
+                                continue;
+                            std::shared_ptr<SHAMapTreeNode> nextNode =
+                                descendNoStore(node, i);
+
+                            if (nextNode)
+                            {
+                                if (nextNode->isInner())
+                                    nodeStack.push(std::static_pointer_cast<
+                                                   SHAMapInnerNode>(nextNode));
+                            }
+                            else
+                            {
+                                std::lock_guard l{m};
+                                missingNodes.emplace_back(
+                                    type_, node->getChildHash(i));
+                                if (--maxMissing <= 0)
+                                    return;
+                            }
                         }
                     }
+                }
+                catch (SHAMapMissingNode const& e)
+                {
+                    std::lock_guard l(m);
+                    exceptions.push_back(e);
                 }
             },
             std::move(nodeStacks[rootChildIndex])));
@@ -368,6 +377,16 @@ SHAMap::walkMapParallel(
 
     for (std::thread& worker : workers)
         worker.join();
+
+    std::lock_guard l(m);
+    if (exceptions.empty())
+        return true;
+    std::stringstream ss;
+    ss << "Exception(s) in ledger load: ";
+    for (auto const& e : exceptions)
+        ss << e.what() << ", ";
+    JLOG(journal_.error()) << ss.str();
+    return false;
 }
 
 }  // namespace ripple

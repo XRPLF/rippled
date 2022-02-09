@@ -328,7 +328,7 @@ public:
 
     void
     walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const;
-    void
+    bool
     walkMapParallel(
         std::vector<SHAMapMissingNode>& missingNodes,
         int maxMissing) const;
