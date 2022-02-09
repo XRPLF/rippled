@@ -626,6 +626,7 @@ private:
     void
     checkValidation(
         std::shared_ptr<STValidation> const& val,
+        uint256 const& key,
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void

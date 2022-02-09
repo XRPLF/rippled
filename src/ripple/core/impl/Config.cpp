@@ -115,19 +115,19 @@ sizedItems
     //        what they control and whether there exists an explicit
     //        config option that can be used to override the default.
 
-    //                                tiny    small   medium    large      huge
-    {SizedItem::sweepInterval,   {{     10,      30,      60,      90,      120 }}},
-    {SizedItem::treeCacheSize,   {{ 128000,  256000,  512000,  768000,  2048000 }}},
-    {SizedItem::treeCacheAge,    {{     30,      60,      90,     120,      900 }}},
-    {SizedItem::ledgerSize,      {{     32,     128,     256,     384,      768 }}},
-    {SizedItem::ledgerAge,       {{     30,      90,     180,     240,      900 }}},
-    {SizedItem::ledgerFetch,     {{      2,       3,       4,       5,        8 }}},
-    {SizedItem::hashNodeDBCache, {{      4,      12,      24,      64,      128 }}},
-    {SizedItem::txnDBCache,      {{      4,      12,      24,      64,      128 }}},
-    {SizedItem::lgrDBCache,      {{      4,       8,      16,      32,      128 }}},
-    {SizedItem::openFinalLimit,  {{      8,      16,      32,      64,      128 }}},
-    {SizedItem::burstSize,       {{      4,       8,      16,      32,       48 }}},
-    {SizedItem::ramSizeGB,       {{      8,      12,      16,      24,       32 }}},
+    //                                tiny    small   medium    large     huge
+    {SizedItem::sweepInterval,   {{     10,      30,      60,      90,     120 }}},
+    {SizedItem::treeCacheSize,   {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
+    {SizedItem::treeCacheAge,    {{     30,      60,      90,     120,     900 }}},
+    {SizedItem::ledgerSize,      {{     32,     128,     256,     384,     768 }}},
+    {SizedItem::ledgerAge,       {{     30,      90,     180,     240,     900 }}},
+    {SizedItem::ledgerFetch,     {{      2,       3,       4,       5,       8 }}},
+    {SizedItem::hashNodeDBCache, {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::txnDBCache,      {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::lgrDBCache,      {{      4,       8,      16,      32,     128 }}},
+    {SizedItem::openFinalLimit,  {{      8,      16,      32,      64,     128 }}},
+    {SizedItem::burstSize,       {{      4,       8,      16,      32,      48 }}},
+    {SizedItem::ramSizeGB,       {{      8,      12,      16,      24,      32 }}},
 }};
 
 // Ensure that the order of entries in the table corresponds to the

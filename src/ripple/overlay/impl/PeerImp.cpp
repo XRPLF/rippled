@@ -1589,16 +1589,17 @@ PeerImp::handleTransaction(
             }
         }
 
-        if (app_.getJobQueue().getJobCount(jtTRANSACTION) >
+        if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
+        {
+            JLOG(p_journal_.trace())
+                << "No new transactions until synchronized";
+        }
+        else if (
+            app_.getJobQueue().getJobCount(jtTRANSACTION) >
             app_.config().MAX_TRANSACTIONS)
         {
             overlay_.incJqTransOverflow();
             JLOG(p_journal_.info()) << "Transaction queue is full";
-        }
-        else if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
-        {
-            JLOG(p_journal_.trace())
-                << "No new transactions until synchronized";
         }
         else
         {
@@ -2575,6 +2576,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
 
         auto key = sha512Half(makeSlice(m->validation()));
+
         if (auto [added, relayed] =
                 app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
             !added)
@@ -2594,22 +2596,36 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         if (!isTrusted && (tracking_.load() == Tracking::diverged))
         {
             JLOG(p_journal_.debug())
-                << "Validation: dropping untrusted from diverged peer";
+                << "Dropping untrusted validation from diverged peer";
         }
-        if (isTrusted || cluster() || !app_.getFeeTrack().isLoadedLocal())
+        else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
+            std::string const name = [isTrusted, val]() {
+                std::string ret =
+                    isTrusted ? "Trusted validation" : "Untrusted validation";
+
+#ifdef DEBUG
+                ret += " " +
+                    std::to_string(val->getFieldU32(sfLedgerSequence)) + ": " +
+                    to_string(val->getNodeID());
+#endif
+
+                return ret;
+            }();
+
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
-                "recvValidation->checkValidation",
-                [weak, val, m](Job&) {
+                name,
+                [weak, val, m, key](Job&) {
                     if (auto peer = weak.lock())
-                        peer->checkValidation(val, m);
+                        peer->checkValidation(val, key, m);
                 });
         }
         else
         {
-            JLOG(p_journal_.debug()) << "Validation: Dropping UNTRUSTED (load)";
+            JLOG(p_journal_.debug())
+                << "Dropping untrusted validation for load";
         }
     }
     catch (std::exception const& e)
@@ -3156,12 +3172,13 @@ PeerImp::checkPropose(
 void
 PeerImp::checkValidation(
     std::shared_ptr<STValidation> const& val,
+    uint256 const& key,
     std::shared_ptr<protocol::TMValidation> const& packet)
 {
-    if (!cluster() && !val->isValid())
+    if (!val->isValid())
     {
         JLOG(p_journal_.debug()) << "Validation forwarded by peer is invalid";
-        charge(Resource::feeInvalidRequest);
+        charge(Resource::feeInvalidSignature);
         return;
     }
 
@@ -3171,18 +3188,16 @@ PeerImp::checkValidation(
         if (app_.getOPs().recvValidation(val, std::to_string(id())) ||
             cluster())
         {
-            auto const suppression =
-                sha512Half(makeSlice(val->getSerialized()));
             // haveMessage contains peers, which are suppressed; i.e. the peers
             // are the source of the message, consequently the message should
             // not be relayed to these peers. But the message must be counted
             // as part of the squelch logic.
             auto haveMessage =
-                overlay_.relay(*packet, suppression, val->getSignerPublic());
+                overlay_.relay(*packet, key, val->getSignerPublic());
             if (reduceRelayReady() && !haveMessage.empty())
             {
                 overlay_.updateSlotAndSquelch(
-                    suppression,
+                    key,
                     val->getSignerPublic(),
                     std::move(haveMessage),
                     protocol::mtVALIDATION);
