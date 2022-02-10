@@ -43,6 +43,12 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         Account const ali{"ali", KeyType::secp256k1};
         env.fund(XRP(10000), alice, bob, gw);
         env.memoize(ali);
+        // This close() ensures that all the accounts get created and their
+        // default ripple flag gets set before the trust lines are created.
+        // Without it, the ordering manages to create alice's trust line with
+        // noRipple set on gw's end. The existing tests pass either way, but
+        // better to do it right.
+        env.close();
         env.trust(USD(600), alice);
         env.trust(USD(700), bob);
         env(pay(gw, alice, USD(70)));

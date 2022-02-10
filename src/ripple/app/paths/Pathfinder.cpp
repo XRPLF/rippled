@@ -708,6 +708,7 @@ int
 Pathfinder::getPathsOut(
     Currency const& currency,
     AccountID const& account,
+    bool outgoing,
     bool isDstCurrency,
     AccountID const& dstAccount,
     std::function<bool(void)> const& continueCallback)
@@ -735,7 +736,7 @@ Pathfinder::getPathsOut(
     {
         count = app_.getOrderBookDB().getBookSize(issue);
 
-        for (auto const& rspEntry : mRLCache->getRippleLines(account))
+        for (auto const& rspEntry : mRLCache->getRippleLines(account, outgoing))
         {
             if (currency != rspEntry.getLimit().getCurrency())
             {
@@ -976,7 +977,8 @@ Pathfinder::addLink(
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly(addFlags & afAC_LAST);
 
-                auto& rippleLines(mRLCache->getRippleLines(uEndAccount));
+                auto& rippleLines(
+                    mRLCache->getRippleLines(uEndAccount, !bIsNoRippleOut));
 
                 AccountCandidates candidates;
                 candidates.reserve(rippleLines.size());
@@ -986,6 +988,7 @@ Pathfinder::addLink(
                     if (continueCallback && !continueCallback())
                         return;
                     auto const& acct = rs.getAccountIDPeer();
+                    bool const outgoing = !rs.getNoRipplePeer();
 
                     if (hasEffectiveDestination && (acct == mDstAccount))
                     {
@@ -1047,6 +1050,7 @@ Pathfinder::addLink(
                             int out = getPathsOut(
                                 uEndCurrency,
                                 acct,
+                                outgoing,
                                 bIsEndCurrency,
                                 mEffectiveDst,
                                 continueCallback);

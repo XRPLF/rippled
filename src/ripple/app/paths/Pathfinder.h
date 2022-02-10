@@ -144,6 +144,7 @@ private:
     getPathsOut(
         Currency const& currency,
         AccountID const& account,
+        bool outgoing,
         bool isDestCurrency,
         AccountID const& dest,
         std::function<bool(void)> const& continueCallback);
