@@ -170,7 +170,7 @@ public:
     makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
 
     static std::vector<PathFindTrustLine>
-    getItems(AccountID const& accountID, ReadView const& view);
+    getItems(AccountID const& accountID, ReadView const& view, bool outgoing);
 };
 
 // This wrapper is used for the `AccountLines` command and includes the quality

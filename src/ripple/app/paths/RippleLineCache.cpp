@@ -42,16 +42,17 @@ RippleLineCache::~RippleLineCache()
 }
 
 std::vector<PathFindTrustLine> const&
-RippleLineCache::getRippleLines(AccountID const& accountID)
+RippleLineCache::getRippleLines(AccountID const& accountID, bool outgoing)
 {
-    AccountKey key(accountID, hasher_(accountID));
+    AccountKey key(
+        accountID, outgoing, hasher_(std::pair{accountID, outgoing}));
 
     std::lock_guard sl(mLock);
 
     auto [it, inserted] = lines_.emplace(key, std::vector<PathFindTrustLine>());
 
     if (inserted)
-        it->second = PathFindTrustLine::getItems(accountID, *mLedger);
+        it->second = PathFindTrustLine::getItems(accountID, *mLedger, outgoing);
 
     JLOG(journal_.debug()) << "RippleLineCache getRippleLines for ledger "
                            << mLedger->info().seq << " found "

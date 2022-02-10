@@ -748,6 +748,8 @@ PathRequest::doUpdate(
         jvStatus = newStatus;
     }
 
+    JLOG(m_journal.debug())
+        << iIdentifier << " update finished " << (fast ? "fast" : "normal");
     return newStatus;
 }
 
