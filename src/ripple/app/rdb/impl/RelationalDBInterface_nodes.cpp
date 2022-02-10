@@ -222,7 +222,7 @@ saveValidatedLedger(
             hotLEDGER, std::move(s.modData()), ledger->info().hash, seq);
     }
 
-    AcceptedLedger::pointer aLedger;
+    std::shared_ptr<AcceptedLedger> aLedger;
     try
     {
         aLedger = app.getAcceptedLedgerCache().fetch(ledger->info().hash);
@@ -269,9 +269,8 @@ saveValidatedLedger(
 
             std::string const ledgerSeq(std::to_string(seq));
 
-            for (auto const& [_, acceptedLedgerTx] : aLedger->getMap())
+            for (auto const& acceptedLedgerTx : *aLedger)
             {
-                (void)_;
                 uint256 transactionID = acceptedLedgerTx->getTransactionID();
 
                 std::string const txnId(to_string(transactionID));
@@ -317,7 +316,7 @@ saveValidatedLedger(
                     JLOG(j.trace()) << "ActTx: " << sql;
                     *db << sql;
                 }
-                else if (auto const sleTxn = acceptedLedgerTx->getTxn();
+                else if (auto const& sleTxn = acceptedLedgerTx->getTxn();
                          !isPseudoTx(*sleTxn))
                 {
                     // It's okay for pseudo transactions to not affect any

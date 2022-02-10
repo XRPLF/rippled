@@ -41,6 +41,7 @@ namespace jss {
    error: Common properties of RPC error responses.
 */
 
+JSS(AL_size);                // out: GetCounts
 JSS(AL_hit_rate);            // out: GetCounts
 JSS(Account);                // in: TransactionSign; field.
 JSS(AccountDelete);          // transaction type.

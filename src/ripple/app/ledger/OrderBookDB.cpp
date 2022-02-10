@@ -245,10 +245,7 @@ OrderBookDB::processTxn(
     // single client has subscribed to those books.
     hash_set<std::uint64_t> havePublished;
 
-    // Check if this is an offer or an offer cancel or a payment that
-    // consumes an offer.
-    // Check to see what the meta looks like.
-    for (auto& node : alTx.getMeta()->getNodes())
+    for (auto const& node : alTx.getMeta().getNodes())
     {
         try
         {

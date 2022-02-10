@@ -19,8 +19,7 @@
 
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
+#include <algorithm>
 
 namespace ripple {
 
@@ -29,29 +28,34 @@ AcceptedLedger::AcceptedLedger(
     Application& app)
     : mLedger(ledger)
 {
+    transactions_.reserve(256);
+
     auto insertAll = [&](auto const& txns) {
+        auto const& idcache = app.accountIDCache();
+
         for (auto const& item : txns)
-        {
-            insert(std::make_shared<AcceptedLedgerTx>(
-                ledger,
-                item.first,
-                item.second,
-                app.accountIDCache(),
-                app.logs()));
-        }
+            transactions_.emplace_back(std::make_unique<AcceptedLedgerTx>(
+                ledger, item.first, item.second, idcache));
     };
 
     if (app.config().reporting())
-        insertAll(flatFetchTransactions(*ledger, app));
+    {
+        auto const txs = flatFetchTransactions(*ledger, app);
+        transactions_.reserve(txs.size());
+        insertAll(txs);
+    }
     else
+    {
+        transactions_.reserve(256);
         insertAll(ledger->txs);
-}
+    }
 
-void
-AcceptedLedger::insert(AcceptedLedgerTx::ref at)
-{
-    assert(mMap.find(at->getIndex()) == mMap.end());
-    mMap.insert(std::make_pair(at->getIndex(), at));
+    std::sort(
+        transactions_.begin(),
+        transactions_.end(),
+        [](auto const& a, auto const& b) {
+            return a->getTxnSeq() < b->getTxnSeq();
+        });
 }
 
 }  // namespace ripple

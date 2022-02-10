@@ -125,7 +125,7 @@ public:
             TxMeta const& meta,
             uint256 const& nodestoreHash,
             beast::Journal j)
-            : accounts(meta.getAffectedAccounts(j))
+            : accounts(meta.getAffectedAccounts())
             , ledgerSequence(meta.getLgrSeq())
             , transactionIndex(meta.getIndex())
             , txHash(meta.getTxID())
