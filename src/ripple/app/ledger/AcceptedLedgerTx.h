@@ -39,40 +39,22 @@ class Logs;
         - Which accounts are affected
           * This is used by InfoSub to report to clients
         - Cached stuff
-
-    @code
-    @endcode
-
-    @see {uri}
-
-    @ingroup ripple_ledger
 */
-class AcceptedLedgerTx
+class AcceptedLedgerTx : public CountedObject<AcceptedLedgerTx>
 {
-public:
-    using pointer = std::shared_ptr<AcceptedLedgerTx>;
-    using ref = const pointer&;
-
 public:
     AcceptedLedgerTx(
         std::shared_ptr<ReadView const> const& ledger,
         std::shared_ptr<STTx const> const&,
         std::shared_ptr<STObject const> const&,
-        AccountIDCache const&,
-        Logs&);
-    AcceptedLedgerTx(
-        std::shared_ptr<ReadView const> const&,
-        std::shared_ptr<STTx const> const&,
-        TER,
-        AccountIDCache const&,
-        Logs&);
+        AccountIDCache const&);
 
     std::shared_ptr<STTx const> const&
     getTxn() const
     {
         return mTxn;
     }
-    std::shared_ptr<TxMeta> const&
+    TxMeta const&
     getMeta() const
     {
         return mMeta;
@@ -97,45 +79,28 @@ public:
     TER
     getResult() const
     {
-        return mResult;
+        return mMeta.getResultTER();
     }
     std::uint32_t
     getTxnSeq() const
     {
-        return mMeta->getIndex();
-    }
-
-    bool
-    isApplied() const
-    {
-        return bool(mMeta);
-    }
-    int
-    getIndex() const
-    {
-        return mMeta ? mMeta->getIndex() : 0;
+        return mMeta.getIndex();
     }
     std::string
     getEscMeta() const;
-    Json::Value
+
+    Json::Value const&
     getJson() const
     {
         return mJson;
     }
 
 private:
-    std::shared_ptr<ReadView const> mLedger;
     std::shared_ptr<STTx const> mTxn;
-    std::shared_ptr<TxMeta> mMeta;
-    TER mResult;
+    TxMeta mMeta;
     boost::container::flat_set<AccountID> mAffected;
     Blob mRawMeta;
     Json::Value mJson;
-    AccountIDCache const& accountCache_;
-    Logs& logs_;
-
-    void
-    buildJson();
 };
 
 }  // namespace ripple

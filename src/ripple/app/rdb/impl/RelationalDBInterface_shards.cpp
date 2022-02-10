@@ -79,7 +79,8 @@ saveLedgerMeta(
 
     if (app.config().useTxTables())
     {
-        AcceptedLedger::pointer const aLedger = [&app, ledger] {
+        auto const aLedger = [&app,
+                              ledger]() -> std::shared_ptr<AcceptedLedger> {
             try
             {
                 auto aLedger =
@@ -99,7 +100,7 @@ saveLedgerMeta(
                     << "An accepted ledger was missing nodes";
             }
 
-            return AcceptedLedger::pointer{nullptr};
+            return {};
         }();
 
         if (!aLedger)
@@ -107,10 +108,8 @@ saveLedgerMeta(
 
         soci::transaction tr(txnMetaSession);
 
-        for (auto const& [_, acceptedLedgerTx] : aLedger->getMap())
+        for (auto const& acceptedLedgerTx : *aLedger)
         {
-            (void)_;
-
             std::string_view constexpr txnSQL =
                 R"sql(INSERT OR REPLACE INTO TransactionMeta VALUES
                       (:transactionID,:shardIndex);)sql";
@@ -247,7 +246,7 @@ updateLedgerDBs(
                            "WHERE TransID = :txID;",
                     soci::use(sTxID);
 
-                auto const& accounts = txMeta->getAffectedAccounts(j);
+                auto const& accounts = txMeta->getAffectedAccounts();
                 if (!accounts.empty())
                 {
                     auto const sTxnSeq{std::to_string(txMeta->getIndex())};

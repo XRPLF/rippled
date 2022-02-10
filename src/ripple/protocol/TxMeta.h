@@ -84,7 +84,7 @@ public:
 
     /** Return a list of accounts affected by this transaction */
     boost::container::flat_set<AccountID>
-    getAffectedAccounts(beast::Journal j) const;
+    getAffectedAccounts() const;
 
     Json::Value
     getJson(JsonOptions p) const
