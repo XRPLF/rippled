@@ -33,7 +33,7 @@ accountSourceCurrencies(
     if (includeXRP)
         currencies.insert(xrpCurrency());
 
-    for (auto const& rspEntry : lrCache->getRippleLines(account))
+    for (auto const& rspEntry : lrCache->getRippleLines(account, true))
     {
         auto& saBalance = rspEntry.getBalance();
 
@@ -64,7 +64,7 @@ accountDestCurrencies(
         currencies.insert(xrpCurrency());
     // Even if account doesn't exist
 
-    for (auto const& rspEntry : lrCache->getRippleLines(account))
+    for (auto const& rspEntry : lrCache->getRippleLines(account, true))
     {
         auto& saBalance = rspEntry.getBalance();
 
