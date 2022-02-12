@@ -81,8 +81,11 @@ if(reporting)
                 PREFIX ${nih_cache_path}
                 GIT_REPOSITORY https://github.com/libuv/libuv.git
                 GIT_TAG v1.x
+                CMAKE_ARGS
+                    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
                 INSTALL_COMMAND ""
                 BUILD_BYPRODUCTS <BINARY_DIR>/${ep_lib_prefix}uv_a.a
+
                 LOG_BUILD TRUE
                 LOG_CONFIGURE TRUE
                 )
@@ -113,7 +116,8 @@ if(reporting)
             -DLIBUV_INCLUDE_DIR=${SOURCE_DIR}/include
             -DCASS_BUILD_STATIC=ON
             -DCASS_BUILD_SHARED=OFF
-            -DOPENSSL_ROOT_DIR=/opt/local/openssl
+            # -DOPENSSL_ROOT_DIR=/opt/local/openssl
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON
             INSTALL_COMMAND ""
             BUILD_BYPRODUCTS <BINARY_DIR>/${ep_lib_prefix}cassandra_static.a
             LOG_BUILD TRUE

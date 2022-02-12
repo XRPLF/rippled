@@ -14,7 +14,7 @@ if(reporting)
                 PREFIX ${nih_cache_path}
                 GIT_REPOSITORY https://github.com/postgres/postgres.git
                 GIT_TAG master
-                CONFIGURE_COMMAND ./configure --without-readline > /dev/null
+                CONFIGURE_COMMAND ./configure CFLAGS=-fPIC CXXFLAGS=-fPIC --without-readline > /dev/null
                 BUILD_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKELEVEL make
                 UPDATE_COMMAND ""
                 BUILD_IN_SOURCE 1
