@@ -417,12 +417,12 @@ class View_test : public beast::unit_test::suite
             ++b1;
             BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(4)) == b1);
             BEAST_EXPECT(ledger->stateMap().lower_bound(uint256(5)) == b1);
-            auto b2 = ledger->stateMap().begin();
-            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(0)) == b2);
-            ++b2;
-            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(1)) == b2);
-            ++b2;
-            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(2)) == b2);
+            b1 = ledger->stateMap().begin();
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(0)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(1)) == b1);
+            ++b1;
+            BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(2)) == b1);
             BEAST_EXPECT(ledger->stateMap().upper_bound(uint256(3)) == e);
         }
 
@@ -558,9 +558,6 @@ class View_test : public beast::unit_test::suite
                 ledger->stateMap().lower_bound(uint256(5))->key() ==
                 uint256(4));
             BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(5))->key() ==
-                uint256(4));
-            BEAST_EXPECT(
                 ledger->stateMap().lower_bound(uint256(15))->key() ==
                 uint256(14));
             BEAST_EXPECT(
@@ -575,9 +572,6 @@ class View_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 ledger->stateMap().lower_bound(uint256(24))->key() ==
                 uint256(20));
-            BEAST_EXPECT(
-                ledger->stateMap().lower_bound(uint256(31))->key() ==
-                uint256(30));
             BEAST_EXPECT(
                 ledger->stateMap().lower_bound(uint256(31))->key() ==
                 uint256(30));

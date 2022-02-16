@@ -422,9 +422,9 @@ private:
         SharedPtrNodeStack& stack,
         int branch = branchFactor) const;
 
-    // helper function for the above
+    // helper function for firstBelow and lastBelow
     SHAMapLeafNode*
-    below(
+    belowHelper(
         std::shared_ptr<SHAMapTreeNode> node,
         SharedPtrNodeStack& stack,
         int branch,

@@ -437,7 +437,7 @@ SHAMap::unshareNode(std::shared_ptr<Node> node, SHAMapNodeID const& nodeID)
 }
 
 SHAMapLeafNode*
-SHAMap::below(
+SHAMap::belowHelper(
     std::shared_ptr<SHAMapTreeNode> node,
     SharedPtrNodeStack& stack,
     int branch,
@@ -483,11 +483,11 @@ SHAMap::lastBelow(
     SharedPtrNodeStack& stack,
     int branch) const
 {
-    return below(
-        node,
-        stack,
-        branch,
-        {branchFactor - 1, [](int i) { return i >= 0; }, [](int& i) { --i; }});
+    auto init = branchFactor - 1;
+    auto cmp = [](int i) { return i >= 0; };
+    auto incr = [](int& i) { --i; };
+
+    return belowHelper(node, stack, branch, {init, cmp, incr});
 }
 SHAMapLeafNode*
 SHAMap::firstBelow(
@@ -495,11 +495,11 @@ SHAMap::firstBelow(
     SharedPtrNodeStack& stack,
     int branch) const
 {
-    return below(
-        node,
-        stack,
-        branch,
-        {0, [](int i) { return i <= branchFactor; }, [](int& i) { ++i; }});
+    auto init = 0;
+    auto cmp = [](int i) { return i <= branchFactor; };
+    auto incr = [](int& i) { ++i; };
+
+    return belowHelper(node, stack, branch, {init, cmp, incr});
 }
 static const std::shared_ptr<SHAMapItem const> no_item;
 

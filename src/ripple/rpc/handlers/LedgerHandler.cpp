@@ -213,7 +213,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::DELETED);
             else
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
-            auto blob = inDesired ? inDesired->slice() : inBase->slice();
+            auto const blob = inDesired ? inDesired->slice() : inBase->slice();
             auto const objectType =
                 static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
 

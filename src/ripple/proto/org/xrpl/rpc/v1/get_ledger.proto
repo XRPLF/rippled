@@ -70,6 +70,9 @@ message GetLedgerResponse
     // map diff
     bool object_neighbors_included = 9;
 
+
+    // Successor information for book directories modified as part of this
+    // ledger
     repeated BookSuccessor book_successors = 10;
 }
 
