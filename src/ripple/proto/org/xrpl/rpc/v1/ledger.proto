@@ -59,12 +59,6 @@ message RawLedgerObject
     bytes predecessor = 4;
 
     bytes successor = 5;
-
-    bool is_first_book_dir = 6;
-
-    bool was_first_book_dir = 7;
-
-    bytes new_first_book_dir = 8;
 }
 
 message RawLedgerObjects

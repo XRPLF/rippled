@@ -262,7 +262,6 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                                         getQualityNext(bookBase.key) &&
                                     oldFirstBook->key() == k)
                                 {
-                                    obj->set_was_first_book_dir(true);
                                     auto succ = response.add_book_successors();
                                     succ->set_book_base(
                                         bookBase.key.data(),
@@ -277,9 +276,6 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                                             getQualityNext(bookBase.key))
                                     {
                                         succ->set_first_book(
-                                            newFirstBook->key().data(),
-                                            newFirstBook->key().size());
-                                        obj->set_new_first_book_dir(
                                             newFirstBook->key().data(),
                                             newFirstBook->key().size());
                                     }
