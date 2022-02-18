@@ -64,18 +64,22 @@ std::vector<T>
 getTrustLineItems(
     AccountID const& accountID,
     ReadView const& view,
-    bool outgoing = true)
+    LineDirection direction = LineDirection::outgoing)
 {
     std::vector<T> items;
     forEachItem(
         view,
         accountID,
-        [&items, &accountID, &outgoing](
+        [&items, &accountID, &direction](
             std::shared_ptr<SLE const> const& sleCur) {
             auto ret = T::makeItem(accountID, sleCur);
-            if (ret && (outgoing || !ret->getNoRipple()))
+            if (ret &&
+                (direction == LineDirection::outgoing || !ret->getNoRipple()))
                 items.push_back(std::move(*ret));
         });
+    // This list may be around for a while, so free up any unneeded
+    // capacity
+    items.shrink_to_fit();
 
     return items;
 }
@@ -85,10 +89,10 @@ std::vector<PathFindTrustLine>
 PathFindTrustLine::getItems(
     AccountID const& accountID,
     ReadView const& view,
-    bool outgoing)
+    LineDirection direction)
 {
     return detail::getTrustLineItems<PathFindTrustLine>(
-        accountID, view, outgoing);
+        accountID, view, direction);
 }
 
 RPCTrustLine::RPCTrustLine(
