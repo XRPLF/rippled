@@ -44,7 +44,7 @@ public:
     std::shared_ptr<ReadView const> const&
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
     /** Find the trust lines associated with an account.
@@ -59,14 +59,14 @@ public:
        @accountID's side.
        @return Returns a vector of the usable trust lines.
     */
-    std::vector<PathFindTrustLine> const&
+    std::shared_ptr<std::vector<PathFindTrustLine>>
     getRippleLines(AccountID const& accountID, bool outgoing);
 
 private:
     std::mutex mLock;
 
     ripple::hardened_hash<> hasher_;
-    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<ReadView const> ledger_;
 
     beast::Journal journal_;
 
@@ -111,8 +111,17 @@ private:
         };
     };
 
-    hash_map<AccountKey, std::vector<PathFindTrustLine>, AccountKey::Hash>
+    // Use a shared_ptr so entries can be removed from the map safely.
+    // Even though a shared_ptr to a vector will take more memory just a vector,
+    // most accounts are not going to have any entries (estimated over 90%), so
+    // vectors will not need to be created for them. This should lead to far
+    // less memory usage overall.
+    hash_map<
+        AccountKey,
+        std::shared_ptr<std::vector<PathFindTrustLine>>,
+        AccountKey::Hash>
         lines_;
+    std::size_t totalLineCount_ = 0;
 };
 
 }  // namespace ripple

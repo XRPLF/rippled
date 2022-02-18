@@ -76,6 +76,9 @@ getTrustLineItems(
             if (ret && (outgoing || !ret->getNoRipple()))
                 items.push_back(std::move(*ret));
         });
+    // This list may be around for a while, so free up any unneeded
+    // capacity
+    items.shrink_to_fit();
 
     return items;
 }
