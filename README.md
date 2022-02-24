@@ -1,5 +1,8 @@
 # The XRP Ledger
 
+[![Twitter](https://img.shields.io/twitter/follow/Ripple.svg?style=social)](https://twitter.com/Ripple)
+[![Discord](https://img.shields.io/discord/714888181740339261?color=1C1CE1&label=XRP-Ledger-Developers%20%7C%20Discord%20%F0%9F%91%8B%20&style=flat-square)](https://discord.gg/g2r92g88Em)
+
 The [XRP Ledger](https://xrpl.org/) is a decentralized cryptographic ledger powered by a network of peer-to-peer nodes. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator.
 
 ## XRP
