@@ -291,23 +291,23 @@ install (
 if (tests)
   install (
     FILES
-      src/ripple/beast/extras/unit_test/amount.hpp
-      src/ripple/beast/extras/unit_test/dstream.hpp
-      src/ripple/beast/extras/unit_test/global_suites.hpp
-      src/ripple/beast/extras/unit_test/match.hpp
-      src/ripple/beast/extras/unit_test/recorder.hpp
-      src/ripple/beast/extras/unit_test/reporter.hpp
-      src/ripple/beast/extras/unit_test/results.hpp
-      src/ripple/beast/extras/unit_test/runner.hpp
-      src/ripple/beast/extras/unit_test/suite.hpp
-      src/ripple/beast/extras/unit_test/suite_info.hpp
-      src/ripple/beast/extras/unit_test/suite_list.hpp
-      src/ripple/beast/extras/unit_test/thread.hpp
+      src/ripple/beast/unit_test/amount.hpp
+      src/ripple/beast/unit_test/dstream.hpp
+      src/ripple/beast/unit_test/global_suites.hpp
+      src/ripple/beast/unit_test/match.hpp
+      src/ripple/beast/unit_test/recorder.hpp
+      src/ripple/beast/unit_test/reporter.hpp
+      src/ripple/beast/unit_test/results.hpp
+      src/ripple/beast/unit_test/runner.hpp
+      src/ripple/beast/unit_test/suite.hpp
+      src/ripple/beast/unit_test/suite_info.hpp
+      src/ripple/beast/unit_test/suite_list.hpp
+      src/ripple/beast/unit_test/thread.hpp
     DESTINATION include/ripple/beast/extras/unit_test)
   install (
     FILES
-      src/ripple/beast/extras/unit_test/detail/const_container.hpp
-    DESTINATION include/ripple/beast/extras/unit_test/detail)
+      src/ripple/beast/unit_test/detail/const_container.hpp
+    DESTINATION include/ripple/beast/unit_test/detail)
 endif () #tests
 #[===================================================================[
    rippled executable
