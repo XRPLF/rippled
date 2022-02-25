@@ -8,8 +8,8 @@
 #ifndef BEAST_UNIT_TEST_SUITE_LIST_HPP
 #define BEAST_UNIT_TEST_SUITE_LIST_HPP
 
-#include <ripple/beast/extras/unit_test/suite_info.hpp>
-#include <ripple/beast/extras/unit_test/detail/const_container.hpp>
+#include <ripple/beast/unit_test/suite_info.hpp>
+#include <ripple/beast/unit_test/detail/const_container.hpp>
 #include <boost/assert.hpp>
 #include <typeindex>
 #include <set>

@@ -20,6 +20,7 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/beast/unit_test/thread.hpp>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
@@ -28,7 +29,6 @@
 #include <ripple/unity/rocksdb.h>
 #include <boost/algorithm/string.hpp>
 #include <atomic>
-#include <ripple/beast/extras/unit_test/thread.hpp>
 #include <chrono>
 #include <iterator>
 #include <limits>
