@@ -2,10 +2,15 @@
    xrpl_core
    core functionality, useable by some client software perhaps
 #]===================================================================]
-if(POLICY CMP0083)
-  cmake_policy(SET CMP0083 NEW)
-  include(CheckPIESupported)
-  check_pie_supported()
+
+if (CMAKE_VERSION VERSION_LESS 3.14)
+  string (APPEND CMAKE_CXX_FLAGS " -pie")
+else()
+  if(POLICY CMP0083)
+    cmake_policy(SET CMP0083 NEW)
+    include(CheckPIESupported)
+    check_pie_supported()
+  endif()
 endif()
 
 file (GLOB_RECURSE rb_headers
