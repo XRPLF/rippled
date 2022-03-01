@@ -1,8 +1,4 @@
 # The XRP Ledger
-
-[![Twitter](https://img.shields.io/twitter/follow/Ripple.svg?style=social)](https://twitter.com/Ripple)
-[![Discord](https://img.shields.io/discord/714888181740339261?color=1C1CE1&label=XRP-Ledger-Developers%20%7C%20Discord%20%F0%9F%91%8B%20&style=flat-square)](https://discord.gg/g2r92g88Em)
-
 The [XRP Ledger](https://xrpl.org/) is a decentralized cryptographic ledger powered by a network of peer-to-peer nodes. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator.
 
 ## XRP
@@ -50,13 +46,10 @@ The server software that powers the XRP Ledger is called `rippled` and is availa
 | `./cfg`    | Example configuration files.                     |
 | `./src`    | Source code.                                     |
 
-Some of the directories under `src` are external repositories included using
-git-subtree. See those directories' README files for more details.
-
-
 ## See Also
 
 * [XRP Ledger Dev Portal](https://xrpl.org/)
 * [Setup and Installation](https://xrpl.org/install-rippled.html)
 * [Source Documentation (Doxygen)](https://ripple.github.io/rippled)
 * [Learn more about the XRP Ledger (YouTube)](https://www.youtube.com/playlist?list=PLJQ55Tj1hIVZtJ_JdTvSum2qMTsedWkNi)
+* [Join the XRP Ledger Developer's Discord server](http://xrpldevs.org/)
