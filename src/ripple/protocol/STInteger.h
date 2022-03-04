@@ -72,7 +72,7 @@ private:
     STBase*
     move(std::size_t n, void* buf) override;
 
-    friend class detail::STVar;
+    friend class ripple::detail::STVar;
 };
 
 using STUInt8 = STInteger<unsigned char>;

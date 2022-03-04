@@ -282,7 +282,7 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
-        - CMAKE_EXE=/opt/local/cmake-3.9/bin/cmake
+        - CMAKE_EXE=/opt/local/cmake/bin/cmake
         - SKIP_TESTS=true
     # validator keys project as subproj of rippled
     - <<: *linux
