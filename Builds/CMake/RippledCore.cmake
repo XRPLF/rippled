@@ -142,30 +142,9 @@ target_link_libraries (xrpl_core
 #[=================================[
    main/core headers installation
 #]=================================]
-install (
-  FILES
-    src/ripple/basics/base64.h
-    src/ripple/basics/Blob.h
-    src/ripple/basics/Buffer.h
-    src/ripple/basics/CountedObject.h
-    src/ripple/basics/FileUtilities.h
-    src/ripple/basics/IOUAmount.h
-    src/ripple/basics/LocalValue.h
-    src/ripple/basics/Log.h
-    src/ripple/basics/MathUtilities.h
-    src/ripple/basics/safe_cast.h
-    src/ripple/basics/Slice.h
-    src/ripple/basics/StringUtilities.h
-    src/ripple/basics/ToString.h
-    src/ripple/basics/UnorderedContainers.h
-    src/ripple/basics/XRPAmount.h
-    src/ripple/basics/algorithm.h
-    src/ripple/basics/base_uint.h
-    src/ripple/basics/chrono.h
-    src/ripple/basics/contract.h
-    src/ripple/basics/FeeUnits.h
-    src/ripple/basics/hardened_hash.h
-    src/ripple/basics/strHex.h
+file(GLOB BASICS_H src/ripple/basics/*.h)
+install(
+  FILES ${BASICS_H}
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -303,7 +282,7 @@ if (tests)
       src/ripple/beast/unit_test/suite_info.hpp
       src/ripple/beast/unit_test/suite_list.hpp
       src/ripple/beast/unit_test/thread.hpp
-    DESTINATION include/ripple/beast/extras/unit_test)
+    DESTINATION include/ripple/beast/unit_test)
   install (
     FILES
       src/ripple/beast/unit_test/detail/const_container.hpp
