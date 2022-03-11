@@ -69,10 +69,11 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
-<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1STArray-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::STArray Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
@@ -128,10 +129,14 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a4fc9204d1d46d19ac27e5057e1c95384"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a4fc9204d1d46d19ac27e5057e1c95384">STArray</a> ()=default</td></tr>
 <tr class="separator:a4fc9204d1d46d19ac27e5057e1c95384"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0eaf4618ad0982371725f10c86cc7b81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a0eaf4618ad0982371725f10c86cc7b81">STArray</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;)</td></tr>
-<tr class="separator:a0eaf4618ad0982371725f10c86cc7b81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf1ed9082b0bdbcacf99f237fd52a045"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#acf1ed9082b0bdbcacf99f237fd52a045">STArray</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> const &amp;)=default</td></tr>
 <tr class="separator:acf1ed9082b0bdbcacf99f237fd52a045"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99ab04632b42d2c51ae033449674c8fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a99ab04632b42d2c51ae033449674c8fa">operator=</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> const &amp;)=default</td></tr>
+<tr class="separator:a99ab04632b42d2c51ae033449674c8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0eaf4618ad0982371725f10c86cc7b81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a0eaf4618ad0982371725f10c86cc7b81">STArray</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;)</td></tr>
+<tr class="separator:a0eaf4618ad0982371725f10c86cc7b81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0fafbb5585577134795a641268ed7e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ac0fafbb5585577134795a641268ed7e1">operator=</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;)</td></tr>
+<tr class="separator:ac0fafbb5585577134795a641268ed7e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b96345a91bcf69fbbe47027440b222e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a0b96345a91bcf69fbbe47027440b222e">STArray</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f, int n)</td></tr>
 <tr class="separator:a0b96345a91bcf69fbbe47027440b222e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa11b61b17442e9e65e51d60e901ace1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#aaa11b61b17442e9e65e51d60e901ace1">STArray</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f, int depth=0)</td></tr>
@@ -140,20 +145,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a18bdf41b077a1abae843e6434c200d08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab18e1e7874971ff20f2a59850b49bab5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ab18e1e7874971ff20f2a59850b49bab5">STArray</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f)</td></tr>
 <tr class="separator:ab18e1e7874971ff20f2a59850b49bab5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99ab04632b42d2c51ae033449674c8fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a99ab04632b42d2c51ae033449674c8fa">operator=</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> const &amp;)=default</td></tr>
-<tr class="separator:a99ab04632b42d2c51ae033449674c8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0fafbb5585577134795a641268ed7e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ac0fafbb5585577134795a641268ed7e1">operator=</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;)</td></tr>
-<tr class="separator:ac0fafbb5585577134795a641268ed7e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd1fdde67f2eaf42f3bad6d6dd5d53fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#acd1fdde67f2eaf42f3bad6d6dd5d53fd">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
-<tr class="separator:acd1fdde67f2eaf42f3bad6d6dd5d53fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14c339f3e5a49086737a62941c4a8707"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a14c339f3e5a49086737a62941c4a8707">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
-<tr class="separator:a14c339f3e5a49086737a62941c4a8707"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19f35be2db335a76bb8c62a1082ab896"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a19f35be2db335a76bb8c62a1082ab896">operator[]</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j)</td></tr>
-<tr class="separator:a19f35be2db335a76bb8c62a1082ab896"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae66d7ba6b5c4459cb5a4737698823d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#aae66d7ba6b5c4459cb5a4737698823d6">operator[]</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j) const</td></tr>
-<tr class="separator:aae66d7ba6b5c4459cb5a4737698823d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a8e8e818ee5ba2536921d3e63cda98e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a9a8e8e818ee5ba2536921d3e63cda98e">back</a> ()</td></tr>
-<tr class="separator:a9a8e8e818ee5ba2536921d3e63cda98e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac169d2c8fc9934e573a5274871cf19b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#aac169d2c8fc9934e573a5274871cf19b">operator[]</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j)</td></tr>
+<tr class="separator:aac169d2c8fc9934e573a5274871cf19b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa96208125f2c09813640a9c6d72ef7ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#aa96208125f2c09813640a9c6d72ef7ad">operator[]</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j) const</td></tr>
+<tr class="separator:aa96208125f2c09813640a9c6d72ef7ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75f0aea39c00662bf3a18b263364e422"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a75f0aea39c00662bf3a18b263364e422">back</a> ()</td></tr>
+<tr class="separator:a75f0aea39c00662bf3a18b263364e422"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ef445b30e4909f7caf1275c7f424837"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STObject.html">STObject</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a3ef445b30e4909f7caf1275c7f424837">back</a> () const</td></tr>
 <tr class="separator:a3ef445b30e4909f7caf1275c7f424837"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12601f465a34c4aba5b9212e747d738d"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
@@ -163,16 +160,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adc3dc750320964c46b6d4ea2af8b8bc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad26057921b9e9517638e25eb8928282"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#aad26057921b9e9517638e25eb8928282">push_back</a> (<a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;&amp;object)</td></tr>
 <tr class="separator:aad26057921b9e9517638e25eb8928282"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66725b497316717cd17cdad5645f6c18"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a66725b497316717cd17cdad5645f6c18">begin</a> ()</td></tr>
-<tr class="separator:a66725b497316717cd17cdad5645f6c18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a783ca92264f290814ea939d873e7ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a0a783ca92264f290814ea939d873e7ba">end</a> ()</td></tr>
-<tr class="separator:a0a783ca92264f290814ea939d873e7ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6708ef65cc023e8aeee8017d32967e1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a6708ef65cc023e8aeee8017d32967e1b">begin</a> ()</td></tr>
+<tr class="separator:a6708ef65cc023e8aeee8017d32967e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34a099abae2ee12003b38705f04fc31c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a34a099abae2ee12003b38705f04fc31c">end</a> ()</td></tr>
+<tr class="separator:a34a099abae2ee12003b38705f04fc31c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73e56549f733fdd4864a241d22c74629"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a73e56549f733fdd4864a241d22c74629">begin</a> () const</td></tr>
 <tr class="separator:a73e56549f733fdd4864a241d22c74629"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e7a4a6a9bd9960d8f787116dcace127"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a1e7a4a6a9bd9960d8f787116dcace127">end</a> () const</td></tr>
 <tr class="separator:a1e7a4a6a9bd9960d8f787116dcace127"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42131766ed81f1534c020fdc8a17cedb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#aca4d839face991357809c815783922e7">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a42131766ed81f1534c020fdc8a17cedb">size</a> () const</td></tr>
-<tr class="separator:a42131766ed81f1534c020fdc8a17cedb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdae4983cf41a2e6c3031d203b79c67b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#aca4d839face991357809c815783922e7">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#afdae4983cf41a2e6c3031d203b79c67b">size</a> () const</td></tr>
+<tr class="separator:afdae4983cf41a2e6c3031d203b79c67b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a158ccc470b30b011cd462eadcf6f249c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a158ccc470b30b011cd462eadcf6f249c">empty</a> () const</td></tr>
 <tr class="separator:a158ccc470b30b011cd462eadcf6f249c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07392d9e1f86f8bef9eac7199b310110"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a07392d9e1f86f8bef9eac7199b310110">clear</a> ()</td></tr>
@@ -181,13 +178,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab94237ad4c605b27943ea0779cb89ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae981854aaee3a5f3e849a7134e9913ac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ae981854aaee3a5f3e849a7134e9913ac">swap</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;a) noexcept</td></tr>
 <tr class="separator:ae981854aaee3a5f3e849a7134e9913ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25a57343fef279c44718871cfff9090a"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a25a57343fef279c44718871cfff9090a">getFullText</a> () const override</td></tr>
+<tr class="memitem:a25a57343fef279c44718871cfff9090a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a25a57343fef279c44718871cfff9090a">getFullText</a> () const override</td></tr>
 <tr class="separator:a25a57343fef279c44718871cfff9090a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adb3d58e18270823ec9be664368a390a7"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#adb3d58e18270823ec9be664368a390a7">getText</a> () const override</td></tr>
+<tr class="memitem:adb3d58e18270823ec9be664368a390a7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#adb3d58e18270823ec9be664368a390a7">getText</a> () const override</td></tr>
 <tr class="separator:adb3d58e18270823ec9be664368a390a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abace0153bbea0217867bde2a591ebe28"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#abace0153bbea0217867bde2a591ebe28">getJson</a> (<a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a> index) const override</td></tr>
+<tr class="memitem:abace0153bbea0217867bde2a591ebe28"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#abace0153bbea0217867bde2a591ebe28">getJson</a> (<a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a> index) const override</td></tr>
 <tr class="separator:abace0153bbea0217867bde2a591ebe28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a503c65c189b78b535997c132691161cf"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a503c65c189b78b535997c132691161cf">add</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const override</td></tr>
+<tr class="memitem:a503c65c189b78b535997c132691161cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a503c65c189b78b535997c132691161cf">add</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const override</td></tr>
 <tr class="separator:a503c65c189b78b535997c132691161cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52cb3ac0c8cf4548767769e4948e6114"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a52cb3ac0c8cf4548767769e4948e6114">sort</a> (bool(*<a class="el" href="namespaceripple.html#ad584345ad1d39fa2234a298a991f8e66">compare</a>)(const <a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;o1, const <a class="el" href="classripple_1_1STObject.html">STObject</a> &amp;o2))</td></tr>
 <tr class="separator:a52cb3ac0c8cf4548767769e4948e6114"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,22 +192,22 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a19d50364cad5c4a416cf0b148d698b1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3602315d657315eba0dddace6b5e376d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a3602315d657315eba0dddace6b5e376d">operator!=</a> (const <a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;s) const</td></tr>
 <tr class="separator:a3602315d657315eba0dddace6b5e376d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5eed12b22573d2e65d9c5df35e4027bc"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a5eed12b22573d2e65d9c5df35e4027bc">getSType</a> () const override</td></tr>
-<tr class="separator:a5eed12b22573d2e65d9c5df35e4027bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a723f75eb399695e810f9c49a4c092892"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a723f75eb399695e810f9c49a4c092892">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
+<tr class="memitem:ab115a45641a6faf9020bad542ec904cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ab115a45641a6faf9020bad542ec904cd">getSType</a> () const override</td></tr>
+<tr class="separator:ab115a45641a6faf9020bad542ec904cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a723f75eb399695e810f9c49a4c092892"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a723f75eb399695e810f9c49a4c092892">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
 <tr class="separator:a723f75eb399695e810f9c49a4c092892"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac97ce94dea19b76dd183d534e5809762"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ac97ce94dea19b76dd183d534e5809762">isDefault</a> () const override</td></tr>
-<tr class="separator:ac97ce94dea19b76dd183d534e5809762"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb3257b248dae86aa57a4ca8c342ef45"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#abb3257b248dae86aa57a4ca8c342ef45">isDefault</a> () const override</td></tr>
+<tr class="separator:abb3257b248dae86aa57a4ca8c342ef45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae135ed870399690be58580bf3f6a43e1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#ae135ed870399690be58580bf3f6a43e1">operator==</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const</td></tr>
 <tr class="separator:ae135ed870399690be58580bf3f6a43e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32ab54e85ae1082a43396f57cb0bf2d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a32ab54e85ae1082a43396f57cb0bf2d8">operator!=</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const</td></tr>
 <tr class="separator:a32ab54e85ae1082a43396f57cb0bf2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
-<tr class="memitem:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memTemplItemLeft" align="right" valign="top">D &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">downcast</a> ()</td></tr>
-<tr class="separator:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61b521e7125b47bab19a29c5ac5c836d"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
-<tr class="memitem:a61b521e7125b47bab19a29c5ac5c836d"><td class="memTemplItemLeft" align="right" valign="top">D const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a61b521e7125b47bab19a29c5ac5c836d">downcast</a> () const</td></tr>
-<tr class="separator:a61b521e7125b47bab19a29c5ac5c836d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
+<tr class="memitem:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memTemplItemLeft" align="right" valign="top">D &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#acba8a09427afd05563c1d0a38c9bb6f2">downcast</a> ()</td></tr>
+<tr class="separator:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
+<tr class="memitem:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memTemplItemLeft" align="right" valign="top">D const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a9b14e04b97e4eefb3ea37135ed52accf">downcast</a> () const</td></tr>
+<tr class="separator:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07ee4998ae80eb722fc77151a1a1cb0c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a07ee4998ae80eb722fc77151a1a1cb0c">setFName</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;n)</td></tr>
 <tr class="memdesc:a07ee4998ae80eb722fc77151a1a1cb0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">A <a class="el" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format.">STBase</a> is a field.  <a href="classripple_1_1STBase.html#a07ee4998ae80eb722fc77151a1a1cb0c">More...</a><br /></td></tr>
 <tr class="separator:a07ee4998ae80eb722fc77151a1a1cb0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -221,19 +218,21 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
-<tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a7fb3256be27a1c525eca36470f25e131">emplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf, T &amp;&amp;val)</td></tr>
-<tr class="separator:a7fb3256be27a1c525eca36470f25e131"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
-Protected Attributes</h2></td></tr>
-<tr class="memitem:a784e6b1508801ba39b3bae5653675de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SField.html">SField</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a784e6b1508801ba39b3bae5653675de7">fName</a></td></tr>
-<tr class="separator:a784e6b1508801ba39b3bae5653675de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a84fe46ac92fe704869cc6d64c49dd1ba">emplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf, T &amp;&amp;val)</td></tr>
+<tr class="separator:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
 <tr class="memitem:a40cfc278c4e97e74ad35cf6697ce5ef7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a40cfc278c4e97e74ad35cf6697ce5ef7">list_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STObject.html">STObject</a> &gt;</td></tr>
 <tr class="separator:a40cfc278c4e97e74ad35cf6697ce5ef7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a4b88c266eb23eacdb25cfb0cadaed9e5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a4b88c266eb23eacdb25cfb0cadaed9e5">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
+<tr class="separator:a4b88c266eb23eacdb25cfb0cadaed9e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a462df39c2dcb79afe666364209371dfb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a462df39c2dcb79afe666364209371dfb">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
+<tr class="separator:a462df39c2dcb79afe666364209371dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -244,6 +243,13 @@ Static Private Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:ac8f930965fa757fc6d69e72c8c86e7b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a40cfc278c4e97e74ad35cf6697ce5ef7">list_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ac8f930965fa757fc6d69e72c8c86e7b8">v_</a></td></tr>
 <tr class="separator:ac8f930965fa757fc6d69e72c8c86e7b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a784e6b1508801ba39b3bae5653675de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SField.html">SField</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a784e6b1508801ba39b3bae5653675de7">fName</a></td></tr>
+<tr class="separator:a784e6b1508801ba39b3bae5653675de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a5e49bd8b743617d1af92ffed7ac6b665">detail::STVar</a></td></tr>
+<tr class="separator:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -347,28 +353,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a0eaf4618ad0982371725f10c86cc7b81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0eaf4618ad0982371725f10c86cc7b81">&#9670;&nbsp;</a></span>STArray() <span class="overload">[2/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ripple::STArray::STArray </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;&#160;</td>
-          <td class="paramname"><em>other</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00027">27</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
-
-</div>
-</div>
 <a id="acf1ed9082b0bdbcacf99f237fd52a045"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf1ed9082b0bdbcacf99f237fd52a045">&#9670;&nbsp;</a></span>STArray() <span class="overload">[3/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acf1ed9082b0bdbcacf99f237fd52a045">&#9670;&nbsp;</a></span>STArray() <span class="overload">[2/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -390,6 +376,26 @@ Private Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0eaf4618ad0982371725f10c86cc7b81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0eaf4618ad0982371725f10c86cc7b81">&#9670;&nbsp;</a></span>STArray() <span class="overload">[3/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::STArray::STArray </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>other</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00027">27</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -562,94 +568,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="acd1fdde67f2eaf42f3bad6d6dd5d53fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd1fdde67f2eaf42f3bad6d6dd5d53fd">&#9670;&nbsp;</a></span>copy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STArray::copy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a1002d0c1e5d5991f043abdc61c72211f">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00053">53</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
-
-</div>
-</div>
-<a id="a14c339f3e5a49086737a62941c4a8707"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14c339f3e5a49086737a62941c4a8707">&#9670;&nbsp;</a></span>move()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STArray::move </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0c488c0c2d41d96972e1966f64fec655">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00059">59</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
-
-</div>
-</div>
-<a id="a19f35be2db335a76bb8c62a1082ab896"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19f35be2db335a76bb8c62a1082ab896">&#9670;&nbsp;</a></span>operator[]() <span class="overload">[1/2]</span></h2>
+<a id="aac169d2c8fc9934e573a5274871cf19b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac169d2c8fc9934e573a5274871cf19b">&#9670;&nbsp;</a></span>operator[]() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a>&amp; ripple::STArray::operator[] </td>
+          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a> &amp; ripple::STArray::operator[] </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
           <td class="paramname"><em>j</em></td><td>)</td>
@@ -658,18 +584,18 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00065">65</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00142">142</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
-<a id="aae66d7ba6b5c4459cb5a4737698823d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae66d7ba6b5c4459cb5a4737698823d6">&#9670;&nbsp;</a></span>operator[]() <span class="overload">[2/2]</span></h2>
+<a id="aa96208125f2c09813640a9c6d72ef7ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa96208125f2c09813640a9c6d72ef7ad">&#9670;&nbsp;</a></span>operator[]() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a> const&amp; ripple::STArray::operator[] </td>
+          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a> const  &amp; ripple::STArray::operator[] </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
           <td class="paramname"><em>j</em></td><td>)</td>
@@ -678,18 +604,18 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00071">71</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00148">148</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
-<a id="a9a8e8e818ee5ba2536921d3e63cda98e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a8e8e818ee5ba2536921d3e63cda98e">&#9670;&nbsp;</a></span>back() <span class="overload">[1/2]</span></h2>
+<a id="a75f0aea39c00662bf3a18b263364e422"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75f0aea39c00662bf3a18b263364e422">&#9670;&nbsp;</a></span>back() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a>&amp; ripple::STArray::back </td>
+          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a> const  &amp; ripple::STArray::back </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -697,7 +623,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00077">77</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00154">154</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -715,8 +641,6 @@ Private Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00083">83</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -738,7 +662,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00090">90</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00167">167</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -758,7 +682,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00096">96</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00173">173</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -778,18 +702,18 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00102">102</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00179">179</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
-<a id="a66725b497316717cd17cdad5645f6c18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66725b497316717cd17cdad5645f6c18">&#9670;&nbsp;</a></span>begin() <span class="overload">[1/2]</span></h2>
+<a id="a6708ef65cc023e8aeee8017d32967e1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6708ef65cc023e8aeee8017d32967e1b">&#9670;&nbsp;</a></span>begin() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a> ripple::STArray::begin </td>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">STArray::const_iterator</a> ripple::STArray::begin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -797,18 +721,18 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00108">108</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00185">185</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
-<a id="a0a783ca92264f290814ea939d873e7ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a783ca92264f290814ea939d873e7ba">&#9670;&nbsp;</a></span>end() <span class="overload">[1/2]</span></h2>
+<a id="a34a099abae2ee12003b38705f04fc31c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34a099abae2ee12003b38705f04fc31c">&#9670;&nbsp;</a></span>end() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a> ripple::STArray::end </td>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">STArray::const_iterator</a> ripple::STArray::end </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -816,7 +740,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00114">114</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00191">191</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -835,8 +759,6 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00120">120</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
-
 </div>
 </div>
 <a id="a1e7a4a6a9bd9960d8f787116dcace127"></a>
@@ -854,18 +776,16 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00126">126</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
-
 </div>
 </div>
-<a id="a42131766ed81f1534c020fdc8a17cedb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a42131766ed81f1534c020fdc8a17cedb">&#9670;&nbsp;</a></span>size()</h2>
+<a id="afdae4983cf41a2e6c3031d203b79c67b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdae4983cf41a2e6c3031d203b79c67b">&#9670;&nbsp;</a></span>size()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STArray.html#aca4d839face991357809c815783922e7">size_type</a> ripple::STArray::size </td>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#aca4d839face991357809c815783922e7">STArray::size_type</a> ripple::STArray::size </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -873,7 +793,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00132">132</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00209">209</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -892,7 +812,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00138">138</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00215">215</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -911,7 +831,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00143">143</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00221">221</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -931,7 +851,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00148">148</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00227">227</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -959,7 +879,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00153">153</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00233">233</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -988,7 +908,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#ac8d35807022215e4c00cb974b6f36216">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00093">93</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00105">105</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1017,7 +937,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a45b0231291b9ba9d1e999033ff975cc3">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00112">112</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00124">124</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1047,7 +967,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af1dfd1c754eaf5eded23242b59a0cdb5">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00131">131</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00143">143</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1077,7 +997,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#acc434da323d0ee0bf1880cd46b2a207a">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00146">146</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00158">158</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1097,7 +1017,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00164">164</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00188">188</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1117,7 +1037,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00172">172</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00239">239</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1137,12 +1057,12 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00177">177</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00245">245</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
-<a id="a5eed12b22573d2e65d9c5df35e4027bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5eed12b22573d2e65d9c5df35e4027bc">&#9670;&nbsp;</a></span>getSType()</h2>
+<a id="ab115a45641a6faf9020bad542ec904cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab115a45641a6faf9020bad542ec904cd">&#9670;&nbsp;</a></span>getSType()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1151,7 +1071,7 @@ template&lt;class... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a> ripple::STArray::getSType </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a> ripple::STArray::getSType </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1166,7 +1086,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a233469e9eb1efaa8639b384628fcef62">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00183">183</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00169">169</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1196,12 +1116,12 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a2282c8e10ea51c1565b1fd5e67ac8344">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00157">157</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00175">175</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ac97ce94dea19b76dd183d534e5809762"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac97ce94dea19b76dd183d534e5809762">&#9670;&nbsp;</a></span>isDefault()</h2>
+<a id="abb3257b248dae86aa57a4ca8c342ef45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb3257b248dae86aa57a4ca8c342ef45">&#9670;&nbsp;</a></span>isDefault()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1210,7 +1130,7 @@ template&lt;class... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual bool ripple::STArray::isDefault </td>
+          <td class="memname">bool ripple::STArray::isDefault </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1225,7 +1145,87 @@ template&lt;class... Args&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00190">190</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00182">182</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4b88c266eb23eacdb25cfb0cadaed9e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b88c266eb23eacdb25cfb0cadaed9e5">&#9670;&nbsp;</a></span>copy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STArray::copy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#aed5deead1fe850667301dfc9c58320bb">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00093">93</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a462df39c2dcb79afe666364209371dfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a462df39c2dcb79afe666364209371dfb">&#9670;&nbsp;</a></span>move()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STArray::move </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0ab863d0b635b5ff22f7f718d0581090">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STArray_8cpp_source.html#l00099">99</a> of file <a class="el" href="STArray_8cpp_source.html">STArray.cpp</a>.</p>
 
 </div>
 </div>
@@ -1285,8 +1285,8 @@ template&lt;class... Args&gt; </div>
 
 </div>
 </div>
-<a id="a5e2b3d13d27e01946bbee9e50ec8833d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e2b3d13d27e01946bbee9e50ec8833d">&#9670;&nbsp;</a></span>downcast() <span class="overload">[1/2]</span></h2>
+<a id="acba8a09427afd05563c1d0a38c9bb6f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acba8a09427afd05563c1d0a38c9bb6f2">&#9670;&nbsp;</a></span>downcast() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1297,10 +1297,7 @@ template&lt;class D &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">D&amp; ripple::STBase::downcast </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td class="memname">D &amp; ripple::STBase::downcast</td>
         </tr>
       </table>
   </td>
@@ -1310,12 +1307,12 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00094">94</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00145">145</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
-<a id="a61b521e7125b47bab19a29c5ac5c836d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61b521e7125b47bab19a29c5ac5c836d">&#9670;&nbsp;</a></span>downcast() <span class="overload">[2/2]</span></h2>
+<a id="a9b14e04b97e4eefb3ea37135ed52accf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b14e04b97e4eefb3ea37135ed52accf">&#9670;&nbsp;</a></span>downcast() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1326,10 +1323,7 @@ template&lt;class D &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">D const&amp; ripple::STBase::downcast </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname">D const  &amp; ripple::STBase::downcast</td>
         </tr>
       </table>
   </td>
@@ -1339,7 +1333,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00104">104</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00155">155</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
@@ -1370,7 +1364,7 @@ template&lt;class D &gt; </div>
 <p>A <a class="el" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format.">STBase</a> is a field. </p>
 <p>This sets the name. </p>
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00113">113</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00125">125</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1397,7 +1391,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00120">120</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00132">132</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1425,12 +1419,12 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00126">126</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00138">138</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a7fb3256be27a1c525eca36470f25e131"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fb3256be27a1c525eca36470f25e131">&#9670;&nbsp;</a></span>emplace()</h2>
+<a id="a84fe46ac92fe704869cc6d64c49dd1ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84fe46ac92fe704869cc6d64c49dd1ba">&#9670;&nbsp;</a></span>emplace()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1441,7 +1435,7 @@ template&lt;class T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STBase::emplace </td>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STBase::emplace </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -1471,7 +1465,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00149">149</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00165">165</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
@@ -1496,6 +1490,31 @@ template&lt;class T &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a5e49bd8b743617d1af92ffed7ac6b665"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e49bd8b743617d1af92ffed7ac6b665">&#9670;&nbsp;</a></span>detail::STVar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classripple_1_1detail_1_1STVar.html">detail::STVar</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00138">138</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1539,12 +1558,12 @@ template&lt;class T &gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00145">145</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00068">68</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>

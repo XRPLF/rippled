@@ -2,7 +2,7 @@
 <area shape="rect" id="node1" title="Handles the download and import of one or more shard archives." alt="" coords="2527,971,2713,1013"/>
 <area shape="rect" id="node2" href="$classripple_1_1ClosureCounter.html" title=" " alt="" coords="1454,225,1621,281"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1061,55,1204,81"/>
-<area shape="rect" id="node45" href="$classripple_1_1ClosureCounter.html" title=" " alt="" coords="1454,138,1621,179"/>
+<area shape="rect" id="node43" href="$classripple_1_1ClosureCounter.html" title=" " alt="" coords="1454,138,1621,179"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1047,168,1218,195"/>
 <area shape="rect" id="node22" href="$classripple_1_1HTTPDownloader.html" title="Provides an asynchronous HTTP[S] file downloader." alt="" coords="1448,655,1627,681"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1087,304,1179,331"/>
@@ -23,7 +23,7 @@
 <area shape="rect" id="node15" title=" " alt="" coords="1464,591,1611,617"/>
 <area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1047,1126,1219,1167"/>
 <area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="652,1172,755,1199"/>
-<area shape="rect" id="node43" href="$classripple_1_1RPC_1_1ShardVerificationScheduler.html" title=" " alt="" coords="1027,1254,1238,1295"/>
+<area shape="rect" id="node44" href="$classripple_1_1RPC_1_1ShardVerificationScheduler.html" title=" " alt="" coords="1027,1254,1238,1295"/>
 <area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="220,1114,359,1155"/>
 <area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="2205,878,2391,919"/>
 <area shape="rect" id="node21" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="1780,748,1987,775"/>
@@ -44,7 +44,7 @@
 <area shape="rect" id="node40" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="216,941,363,968"/>
 <area shape="rect" id="node41" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1490,727,1585,753"/>
 <area shape="rect" id="node42" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="2233,1083,2363,1109"/>
-<area shape="rect" id="node44" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="608,1463,799,1505"/>
+<area shape="rect" id="node45" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="608,1463,799,1505"/>
 <area shape="rect" id="node46" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="2011,1281,2181,1322"/>
 <area shape="rect" id="node48" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1047,1453,1218,1494"/>
 <area shape="rect" id="node49" href="$classripple_1_1Checkpointer.html" title=" " alt="" coords="627,1529,780,1556"/>

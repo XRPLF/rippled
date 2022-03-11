@@ -115,12 +115,14 @@ $(function() {
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> proxied = <a class="code" href="namespaceripple.html#ab318d7cb709ae818391ccdd8fbc25b00">forwardToP2p</a>(context);</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> lf = proxied[jss::result][jss::info][jss::load_factor];</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        ret[jss::info][jss::load_factor] = lf.<a class="code" href="classJson_1_1Value.html#abde4070e21e46dc4f8203f66582cb19f">isNull</a>() ? 1 : lf;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;}</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> vq = proxied[jss::result][jss::info][jss::validation_quorum];</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        ret[jss::info][jss::validation_quorum] = vq.<a class="code" href="classJson_1_1Value.html#abde4070e21e46dc4f8203f66582cb19f">isNull</a>() ? 1 : vq;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        ret[jss::info][jss::load_factor] = lf.<a class="code" href="classJson_1_1Value.html#abde4070e21e46dc4f8203f66582cb19f">isNull</a>() ? 1 : lf;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html">ripple::RPC::JsonContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00053">Context.h:53</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_af4863a74bd582bd66f43b2e0e82feedd"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#af4863a74bd582bd66f43b2e0e82feedd">ripple::NetworkOPs::getServerInfo</a></div><div class="ttdeci">virtual Json::Value getServerInfo(bool human, bool admin, bool counters)=0</div></div>

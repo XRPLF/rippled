@@ -68,7 +68,9 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1STBitString-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::STBitString&lt; Bits &gt; Class Template Reference</div>  </div>
@@ -104,10 +106,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afcd5ff50a32c065a49394bab41a93bc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e074167e73c5e5414c4f6941c27bf19"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a7e074167e73c5e5414c4f6941c27bf19">STBitString</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name)</td></tr>
 <tr class="separator:a7e074167e73c5e5414c4f6941c27bf19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a17d1c4dd4711c0a917a2d88da64b67e4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a17d1c4dd4711c0a917a2d88da64b67e4">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
-<tr class="separator:a17d1c4dd4711c0a917a2d88da64b67e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac31fddc5259a75416513c1d662c73632"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#ac31fddc5259a75416513c1d662c73632">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
-<tr class="separator:ac31fddc5259a75416513c1d662c73632"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1aefab195b7c9bc68a1addc3e52fe4bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a1aefab195b7c9bc68a1addc3e52fe4bc">getSType</a> () const override</td></tr>
 <tr class="separator:a1aefab195b7c9bc68a1addc3e52fe4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ffb7865ecb03b476064257474074d78"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a2ffb7865ecb03b476064257474074d78">getText</a> () const override</td></tr>
@@ -116,20 +114,32 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a97f6a3b46f7692043efba8de68d6631f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5cd9d880de85c44dc3b50b20f6ae76b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#ae5cd9d880de85c44dc3b50b20f6ae76b">add</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const override</td></tr>
 <tr class="separator:ae5cd9d880de85c44dc3b50b20f6ae76b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2440e971e6f659116f29b9bba4623e92"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a2440e971e6f659116f29b9bba4623e92">isDefault</a> () const override</td></tr>
+<tr class="separator:a2440e971e6f659116f29b9bba4623e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ce8e71ab19e0411c01035814ebb9d5f"><td class="memTemplParams" colspan="2">template&lt;typename Tag &gt; </td></tr>
 <tr class="memitem:a6ce8e71ab19e0411c01035814ebb9d5f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a6ce8e71ab19e0411c01035814ebb9d5f">setValue</a> (<a class="el" href="classripple_1_1base__uint.html">base_uint</a>&lt; Bits, Tag &gt; const &amp;v)</td></tr>
 <tr class="separator:a6ce8e71ab19e0411c01035814ebb9d5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab38ccea6817bd40ea1b4fd5795c4efc2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#ab38ccea6817bd40ea1b4fd5795c4efc2">value</a> () const</td></tr>
-<tr class="separator:ab38ccea6817bd40ea1b4fd5795c4efc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8210cb56f2658a0ba7efba86228ef458"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a8210cb56f2658a0ba7efba86228ef458">value</a> () const</td></tr>
+<tr class="separator:a8210cb56f2658a0ba7efba86228ef458"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a957b0cbf1ee573b7f1d98ec197855ad0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a957b0cbf1ee573b7f1d98ec197855ad0">operator value_type</a> () const</td></tr>
 <tr class="separator:a957b0cbf1ee573b7f1d98ec197855ad0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2440e971e6f659116f29b9bba4623e92"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a2440e971e6f659116f29b9bba4623e92">isDefault</a> () const override</td></tr>
-<tr class="separator:a2440e971e6f659116f29b9bba4623e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a55c8c68dbbfe5e0dbd76f0ed7c80010b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a55c8c68dbbfe5e0dbd76f0ed7c80010b">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
+<tr class="separator:a55c8c68dbbfe5e0dbd76f0ed7c80010b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a247a54f53a03ceab16d37751ea0b7955"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a247a54f53a03ceab16d37751ea0b7955">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
+<tr class="separator:a247a54f53a03ceab16d37751ea0b7955"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a27a02a1aa7b1ea934ce0d05d784b804a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a27a02a1aa7b1ea934ce0d05d784b804a">value_</a></td></tr>
 <tr class="separator:a27a02a1aa7b1ea934ce0d05d784b804a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBitString.html#a5e49bd8b743617d1af92ffed7ac6b665">detail::STVar</a></td></tr>
+<tr class="separator:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;std::size_t Bits&gt;<br />
@@ -202,7 +212,7 @@ template&lt;std::size_t Bits&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00036">36</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00083">83</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -224,7 +234,7 @@ template&lt;std::size_t Bits&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00040">40</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00088">88</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -256,7 +266,7 @@ template&lt;std::size_t Bits&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00044">44</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00093">93</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -288,91 +298,11 @@ template&lt;std::size_t Bits&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00048">48</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00099">99</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a17d1c4dd4711c0a917a2d88da64b67e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a17d1c4dd4711c0a917a2d88da64b67e4">&#9670;&nbsp;</a></span>copy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;std::size_t Bits&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::copy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00054">54</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
-
-</div>
-</div>
-<a id="ac31fddc5259a75416513c1d662c73632"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac31fddc5259a75416513c1d662c73632">&#9670;&nbsp;</a></span>move()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;std::size_t Bits&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::move </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00060">60</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
-
-</div>
-</div>
 <a id="a1aefab195b7c9bc68a1addc3e52fe4bc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1aefab195b7c9bc68a1addc3e52fe4bc">&#9670;&nbsp;</a></span>getSType()</h2>
 
@@ -393,7 +323,7 @@ template&lt;std::size_t Bits&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00123">123</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00120">120</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -409,10 +339,7 @@ template&lt;std::size_t Bits&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::getText </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::getText</td>
         </tr>
       </table>
   </td>
@@ -422,7 +349,7 @@ template&lt;std::size_t Bits&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00069">69</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00141">141</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -452,7 +379,7 @@ template&lt;std::size_t Bits&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00075">75</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00148">148</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -482,7 +409,33 @@ template&lt;std::size_t Bits&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00082">82</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00156">156</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+
+</div>
+</div>
+<a id="a2440e971e6f659116f29b9bba4623e92"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2440e971e6f659116f29b9bba4623e92">&#9670;&nbsp;</a></span>isDefault()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;std::size_t Bits&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::isDefault</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00186">186</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -506,12 +459,12 @@ template&lt;typename Tag &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00091">91</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00166">166</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
-<a id="ab38ccea6817bd40ea1b4fd5795c4efc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab38ccea6817bd40ea1b4fd5795c4efc2">&#9670;&nbsp;</a></span>value()</h2>
+<a id="a8210cb56f2658a0ba7efba86228ef458"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8210cb56f2658a0ba7efba86228ef458">&#9670;&nbsp;</a></span>value()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -519,15 +472,12 @@ template&lt;typename Tag &gt; </div>
 template&lt;std::size_t Bits&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a> const&amp; <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::value </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname"><a class="el" href="classripple_1_1STBitString.html">STBitString</a>&lt; Bits &gt;::<a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a> const  &amp; <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::value</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00097">97</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00173">173</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -540,20 +490,17 @@ template&lt;std::size_t Bits&gt; </div>
 template&lt;std::size_t Bits&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::operator <a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a> </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname"><a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::operator <a class="el" href="classripple_1_1STBitString.html#ad72c6842edc73d7b25cb58bb6b86a55d">value_type</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00102">102</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00179">179</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
-<a id="a2440e971e6f659116f29b9bba4623e92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2440e971e6f659116f29b9bba4623e92">&#9670;&nbsp;</a></span>isDefault()</h2>
+<a id="a55c8c68dbbfe5e0dbd76f0ed7c80010b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55c8c68dbbfe5e0dbd76f0ed7c80010b">&#9670;&nbsp;</a></span>copy()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -564,20 +511,98 @@ template&lt;std::size_t Bits&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::isDefault </td>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::copy </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00108">108</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00106">106</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+
+</div>
+</div>
+<a id="a247a54f53a03ceab16d37751ea0b7955"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a247a54f53a03ceab16d37751ea0b7955">&#9670;&nbsp;</a></span>move()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;std::size_t Bits&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * <a class="el" href="classripple_1_1STBitString.html">ripple::STBitString</a>&lt; Bits &gt;::move </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00113">113</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a5e49bd8b743617d1af92ffed7ac6b665"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e49bd8b743617d1af92ffed7ac6b665">&#9670;&nbsp;</a></span>detail::STVar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;std::size_t Bits&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classripple_1_1detail_1_1STVar.html">detail::STVar</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00075">75</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -604,7 +629,7 @@ template&lt;std::size_t Bits&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00114">114</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00035">35</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>

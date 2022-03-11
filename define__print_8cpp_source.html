@@ -76,15 +76,15 @@ $(function() {
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;beast/unit_test/amount.hpp&gt;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;beast/unit_test/global_suites.hpp&gt;</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;beast/unit_test/suite.hpp&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test/amount.hpp&gt;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test/global_suites.hpp&gt;</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test/suite.hpp&gt;</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">// Include this .cpp in your project to gain access to the printing suite</span></div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacebeast.html">beast</a> {</div>
-<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="namespacebeast_1_1unit__test.html">   16</a></span>&#160;<span class="keyword">namespace </span>unit_test {</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">namespace </span>unit_test {</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="classbeast_1_1unit__test_1_1print__test.html">   19</a></span>&#160;<span class="keyword">class </span><a class="code" href="classbeast_1_1unit__test_1_1print__test.html">print_test</a> : <span class="keyword">public</span> suite</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
@@ -95,13 +95,13 @@ $(function() {
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> manual = 0;</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> total = 0;</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">auto</span> prefix = [](suite_info <span class="keyword">const</span>&amp; s) {</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">auto</span> <a class="code" href="namespacebeast_1_1unit__test.html#a29a547c77a180d4885775691ff2d7970">prefix</a> = [](suite_info <span class="keyword">const</span>&amp; s) {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;            <span class="keywordflow">return</span> s.manual() ? <span class="stringliteral">&quot;|M| &quot;</span> : <span class="stringliteral">&quot;    &quot;</span>;</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        };</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; s : global_suites())</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            log &lt;&lt; prefix(s) &lt;&lt; s.full_name() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            log &lt;&lt; <a class="code" href="namespacebeast_1_1unit__test.html#a29a547c77a180d4885775691ff2d7970">prefix</a>(s) &lt;&lt; s.full_name() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            <span class="keywordflow">if</span> (s.manual())</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                ++manual;</div>
@@ -115,14 +115,16 @@ $(function() {
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;};</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<a class="code" href="namespacebeast_1_1unit__test.html#a815547038ead3407b8fbdefeee9d8dfd">BEAST_DEFINE_TESTSUITE_MANUAL</a>(print, unit_test, <a class="code" href="namespacebeast.html">beast</a>);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<a class="code" href="namespacebeast_1_1unit__test.html#a815547038ead3407b8fbdefeee9d8dfd">BEAST_DEFINE_TESTSUITE_MANUAL</a>(<a class="code" href="namespacebeast_1_1unit__test.html#a6cfcd6660e293fe31a401d0778de72c8">print</a>, unit_test, <a class="code" href="namespacebeast.html">beast</a>);</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;}  <span class="comment">// namespace unit_test</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;}  <span class="comment">// namespace beast</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1print__test_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1print__test.html">beast::unit_test::print_test</a></div><div class="ttdoc">A suite that prints the list of globally defined suites.</div><div class="ttdef"><b>Definition:</b> <a href="define__print_8cpp_source.html#l00019">define_print.cpp:19</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1print__test_html_a530c4043faf785da815f5ab1891d18f9"><div class="ttname"><a href="classbeast_1_1unit__test_1_1print__test.html#a530c4043faf785da815f5ab1891d18f9">beast::unit_test::print_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="define__print_8cpp_source.html#l00023">define_print.cpp:23</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1unit__test_html_a6cfcd6660e293fe31a401d0778de72c8"><div class="ttname"><a href="namespacebeast_1_1unit__test.html#a6cfcd6660e293fe31a401d0778de72c8">beast::unit_test::print</a></div><div class="ttdeci">static void print(std::ostream &amp;os, suite_list const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="main_8cpp_source.html#l00042">main.cpp:42</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1unit__test_html_a815547038ead3407b8fbdefeee9d8dfd"><div class="ttname"><a href="namespacebeast_1_1unit__test.html#a815547038ead3407b8fbdefeee9d8dfd">beast::unit_test::BEAST_DEFINE_TESTSUITE_MANUAL</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE_MANUAL(print, unit_test, beast)</div></div>
+<div class="ttc" id="anamespacebeast_1_1unit__test_html_a29a547c77a180d4885775691ff2d7970"><div class="ttname"><a href="namespacebeast_1_1unit__test.html#a29a547c77a180d4885775691ff2d7970">beast::unit_test::prefix</a></div><div class="ttdeci">static std::string prefix(suite_info const &amp;s)</div><div class="ttdef"><b>Definition:</b> <a href="main_8cpp_source.html#l00034">main.cpp:34</a></div></div>
 <div class="ttc" id="aendl_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a></div><div class="ttdeci">T endl(T... args)</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00657">base_uint.h:657</a></div></div>

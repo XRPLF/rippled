@@ -299,7 +299,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of callbacks (of a single type signature) that they previously scheduled.  <a href="classripple_1_1ClosureCounter.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of closures (of a specific type signature) that they previously registered.  <a href="classripple_1_1ClosureCounter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Cluster.html">Cluster</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1376,8 +1376,8 @@ Typedefs</h2></td></tr>
 <tr class="separator:a1f5e4bc32db16ddca497c7844bdfc9e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d1073988f9cea389d752de1ffb8803d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d1073988f9cea389d752de1ffb8803d">semaphore</a> = <a class="el" href="classripple_1_1basic__semaphore.html">basic_semaphore</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a> &gt;</td></tr>
 <tr class="separator:a3d1073988f9cea389d752de1ffb8803d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf17c8e58c57ecf0ed6cbc7ee1c2ab22"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adf17c8e58c57ecf0ed6cbc7ee1c2ab22">JobCounter</a> = <a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a>&lt; void, <a class="el" href="classripple_1_1Job.html">Job</a> &amp; &gt;</td></tr>
-<tr class="separator:adf17c8e58c57ecf0ed6cbc7ee1c2ab22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad17e2e9d1ff416f1a19d953c213d0b95"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad17e2e9d1ff416f1a19d953c213d0b95">JobCounter</a> = <a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a>&lt; void &gt;</td></tr>
+<tr class="separator:ad17e2e9d1ff416f1a19d953c213d0b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2ccf44248af5be8a81db7091ad4d019"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa2ccf44248af5be8a81db7091ad4d019">const_iterator</a> = <a class="el" href="classripple_1_1Dir_1_1const__iterator.html">Dir::const_iterator</a></td></tr>
 <tr class="separator:aa2ccf44248af5be8a81db7091ad4d019"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9722ac6213471ba4b92259afc6edc2b1"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;</td></tr>
@@ -4551,9 +4551,9 @@ Functions</h2></td></tr>
 <tr class="separator:ac44c4bc38270bac0b5277f85950ec295"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa67f82b6511d33fde0d38bbaa7629976"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa67f82b6511d33fde0d38bbaa7629976">passwordUnrequiredOrSentCorrect</a> (<a class="el" href="structripple_1_1Port.html">Port</a> const &amp;port, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params)</td></tr>
 <tr class="separator:aa67f82b6511d33fde0d38bbaa7629976"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab4448e43092a3a8a66df9941330b7be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aab4448e43092a3a8a66df9941330b7be">ipAllowed</a> (<a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> const  &amp;remoteIp, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt; const  &amp;adminIp)</td></tr>
-<tr class="memdesc:aab4448e43092a3a8a66df9941330b7be"><td class="mdescLeft">&#160;</td><td class="mdescRight">True if remoteIp is in any of adminIp.  <a href="namespaceripple.html#aab4448e43092a3a8a66df9941330b7be">More...</a><br /></td></tr>
-<tr class="separator:aab4448e43092a3a8a66df9941330b7be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae526cb7431d0104912811e64227383f8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae526cb7431d0104912811e64227383f8">ipAllowed</a> (<a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> const  &amp;remoteIp, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v4 &gt; const  &amp;nets4, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v6 &gt; const  &amp;nets6)</td></tr>
+<tr class="memdesc:ae526cb7431d0104912811e64227383f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">True if remoteIp is in any of adminIp.  <a href="namespaceripple.html#ae526cb7431d0104912811e64227383f8">More...</a><br /></td></tr>
+<tr class="separator:ae526cb7431d0104912811e64227383f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4267716481f84b7fd7ea521266fa9ef8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4267716481f84b7fd7ea521266fa9ef8">isAdmin</a> (<a class="el" href="structripple_1_1Port.html">Port</a> const &amp;port, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> const &amp;remoteIp)</td></tr>
 <tr class="separator:a4267716481f84b7fd7ea521266fa9ef8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4651467ced3e4fee70737ddb4e78ea32"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4651467ced3e4fee70737ddb4e78ea32">requestRole</a> (<a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> const  &amp;required, <a class="el" href="structripple_1_1Port.html">Port</a> const  &amp;port, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const  &amp;params, <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const  &amp;remoteIp, boost::string_view const  &amp;user)</td></tr>
@@ -4611,8 +4611,8 @@ Functions</h2></td></tr>
 <tr class="separator:ab560b13cbf9e3bc5a0255a2c1b622442"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44da72f827bb1c030af5c21553caa3b7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a44da72f827bb1c030af5c21553caa3b7">operator&lt;&lt;</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;os, <a class="el" href="structripple_1_1Port.html">Port</a> const &amp;p)</td></tr>
 <tr class="separator:a44da72f827bb1c030af5c21553caa3b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb4f4c2c76e447e05dd18d244cae8fc4"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afb4f4c2c76e447e05dd18d244cae8fc4">populate</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;field, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;log, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt;&gt; &amp;ips, bool allowAllIps, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt; const &amp;admin_ip)</td></tr>
-<tr class="separator:afb4f4c2c76e447e05dd18d244cae8fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28d12b84433ba740cd9f33d53a020ba4"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a28d12b84433ba740cd9f33d53a020ba4">populate</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;field, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;log, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v4 &gt; &amp;nets4, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v6 &gt; &amp;nets6)</td></tr>
+<tr class="separator:a28d12b84433ba740cd9f33d53a020ba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b67e65f60cd241099149dc88f1e4bfd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5b67e65f60cd241099149dc88f1e4bfd">parse_Port</a> (<a class="el" href="structripple_1_1ParsedPort.html">ParsedPort</a> &amp;port, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;log)</td></tr>
 <tr class="separator:a5b67e65f60cd241099149dc88f1e4bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f03c206eec01cb455b609c9fd752508"><td class="memTemplParams" colspan="2">template&lt;class Handler &gt; </td></tr>
@@ -6275,19 +6275,19 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 
 </div>
 </div>
-<a id="adf17c8e58c57ecf0ed6cbc7ee1c2ab22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf17c8e58c57ecf0ed6cbc7ee1c2ab22">&#9670;&nbsp;</a></span>JobCounter</h2>
+<a id="ad17e2e9d1ff416f1a19d953c213d0b95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad17e2e9d1ff416f1a19d953c213d0b95">&#9670;&nbsp;</a></span>JobCounter</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="namespaceripple.html#adf17c8e58c57ecf0ed6cbc7ee1c2ab22">ripple::JobCounter</a> = typedef <a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a>&lt;void, <a class="el" href="classripple_1_1Job.html">Job</a>&amp;&gt;</td>
+          <td class="memname">using <a class="el" href="namespaceripple.html#ad17e2e9d1ff416f1a19d953c213d0b95">ripple::JobCounter</a> = typedef <a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a>&lt;void&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00170">170</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00151">151</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -6761,7 +6761,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00117">117</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00078">78</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -6777,7 +6777,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00118">118</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00079">79</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -6793,7 +6793,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00119">119</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBitString_8h_source.html#l00080">80</a> of file <a class="el" href="STBitString_8h_source.html">STBitString.h</a>.</p>
 
 </div>
 </div>
@@ -6809,7 +6809,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00112">112</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00078">78</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -6825,7 +6825,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00113">113</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00079">79</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -6841,7 +6841,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00114">114</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00080">80</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -6857,7 +6857,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00115">115</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00081">81</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -8949,7 +8949,7 @@ ledger.
 <tr><td class="fieldname"><a id="ae08fe18f17b24699ce41d3898fbb8c2cae59518181ec60bb5370c94110f1cd4bf"></a>FORBID&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="Role_8h_source.html#l00040">40</a> of file <a class="el" href="Role_8h_source.html">Role.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8h_source.html#l00043">43</a> of file <a class="el" href="Role_8h_source.html">Role.h</a>.</p>
 
 </div>
 </div>
@@ -9811,7 +9811,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>The rationale is that for transaction trees, it may make sense to not include the leaves if the fetch pack is being constructed for someone attempting to get a recent ledger for which they already have the transactions.</p>
 <p>However, for historical ledgers, which is the only use we have for fetch packs right now, it makes sense to include the transactions because the caller is unlikely to have them. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02160">2160</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02159">2159</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -10177,7 +10177,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01020">1020</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01019">1019</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10221,7 +10221,7 @@ template&lt;class ApplyTxs &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01038">1038</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01037">1037</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10241,7 +10241,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01054">1054</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01053">1053</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10277,7 +10277,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01064">1064</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01063">1063</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10313,7 +10313,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01077">1077</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01076">1076</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10343,7 +10343,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01092">1092</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01091">1091</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10373,7 +10373,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01161">1161</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01160">1160</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10583,7 +10583,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02184">2184</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02182">2182</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -11674,7 +11674,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02000">2000</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l01998">1998</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -11712,7 +11712,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02751">2751</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02749">2749</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -11796,7 +11796,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04449">4449</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04447">4447</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -11832,7 +11832,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00761">761</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00766">766</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -27821,7 +27821,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03203">3203</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03201">3201</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -27871,7 +27871,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03227">3227</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03225">3225</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -38225,7 +38225,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00351">351</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00363">363</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38255,7 +38255,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00416">416</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00428">428</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38285,7 +38285,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00442">442</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00454">454</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38305,7 +38305,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00769">769</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00793">793</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38335,7 +38335,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00781">781</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00805">805</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38365,7 +38365,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00846">846</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00870">870</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38395,7 +38395,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00951">951</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00975">975</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38425,7 +38425,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00973">973</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00997">997</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38455,7 +38455,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00980">980</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01004">1004</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38475,7 +38475,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01015">1015</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01039">1039</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38519,7 +38519,7 @@ any terminating null.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01038">1038</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01062">1062</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38569,7 +38569,7 @@ any terminating null.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01059">1059</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01083">1083</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38605,7 +38605,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01083">1083</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01107">1107</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38641,7 +38641,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01128">1128</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01152">1152</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38685,7 +38685,7 @@ any terminating null.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01184">1184</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01208">1208</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38727,7 +38727,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01219">1219</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01243">1243</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38769,7 +38769,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01305">1305</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l01329">1329</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -38799,7 +38799,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00135">135</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00147">147</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -38855,7 +38855,7 @@ any terminating null.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00136">136</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00155">155</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -38893,7 +38893,7 @@ any terminating null.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00400">400</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00419">419</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -38921,7 +38921,7 @@ any terminating null.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00493">493</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00512">512</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -38951,7 +38951,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00506">506</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00525">525</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -38974,7 +38974,7 @@ any terminating null.
 <p>Sterilize a transaction. </p>
 <p>The transaction is serialized and then deserialized, ensuring that all equivalent transactions are in canonical form. This also ensures that program metadata such as the transaction's digest, are all computed. </p>
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00526">526</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00545">545</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -38996,7 +38996,7 @@ any terminating null.
 
 <p>Check whether a transaction is a pseudo-transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00535">535</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00554">554</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -40193,7 +40193,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00374">374</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00302">302</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -40213,7 +40213,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00386">386</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00430">430</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -40243,7 +40243,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00403">403</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00447">447</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -40273,7 +40273,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00409">409</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00453">453</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -40303,7 +40303,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00415">415</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00459">459</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -40333,7 +40333,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00421">421</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00465">465</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -40353,7 +40353,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00470">470</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00514">514</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -43460,12 +43460,12 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00030">30</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00031">31</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aab4448e43092a3a8a66df9941330b7be"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aab4448e43092a3a8a66df9941330b7be">&#9670;&nbsp;</a></span>ipAllowed()</h2>
+<a id="ae526cb7431d0104912811e64227383f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae526cb7431d0104912811e64227383f8">&#9670;&nbsp;</a></span>ipAllowed()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -43479,8 +43479,14 @@ template&lt;typename L , typename R &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>adminIp</em>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v4 &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>nets4</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v6 &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>nets6</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -43500,7 +43506,7 @@ template&lt;typename L , typename R &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether remoteIp is in adminIp. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00044">44</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00045">45</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43536,7 +43542,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00057">57</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00084">84</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43587,7 +43593,7 @@ template&lt;typename L , typename R &gt; </div>
 <p>Return the allowed privilege role. </p>
 <p>params must meet the requirements of the JSON-RPC specification. It must be of type Object, containing the key params which is an array with at least one object. Inside this object are the optional keys 'admin_user' and 'admin_password' used to validate the credentials. If user is non-blank, it's username passed in the HTTP header by a secure_gateway proxy. </p>
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00067">67</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00094">94</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43610,7 +43616,7 @@ template&lt;typename L , typename R &gt; </div>
 <p>ADMIN and IDENTIFIED roles shall have unlimited resources. </p>
 <p>Check if the role entitles the user to unlimited resources. </p>
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00094">94</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00124">124</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43658,7 +43664,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00100">100</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00130">130</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43706,7 +43712,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00111">111</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00141">141</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43734,7 +43740,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00126">126</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00156">156</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -43754,7 +43760,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00231">231</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00261">261</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
 
 </div>
 </div>
@@ -44387,12 +44393,12 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8cpp_source.html#l00046">46</a> of file <a class="el" href="Port_8cpp_source.html">Port.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8cpp_source.html#l00047">47</a> of file <a class="el" href="Port_8cpp_source.html">Port.cpp</a>.</p>
 
 </div>
 </div>
-<a id="afb4f4c2c76e447e05dd18d244cae8fc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb4f4c2c76e447e05dd18d244cae8fc4">&#9670;&nbsp;</a></span>populate()</h2>
+<a id="a28d12b84433ba740cd9f33d53a020ba4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28d12b84433ba740cd9f33d53a020ba4">&#9670;&nbsp;</a></span>populate()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -44421,20 +44427,14 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt;&gt; &amp;&#160;</td>
-          <td class="paramname"><em>ips</em>, </td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>nets4</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>allowAllIps</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>admin_ip</em>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v6 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>nets6</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -44449,7 +44449,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8cpp_source.html#l00071">71</a> of file <a class="el" href="Port_8cpp_source.html">Port.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8cpp_source.html#l00088">88</a> of file <a class="el" href="Port_8cpp_source.html">Port.cpp</a>.</p>
 
 </div>
 </div>
@@ -44485,7 +44485,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8cpp_source.html#l00139">139</a> of file <a class="el" href="Port_8cpp_source.html">Port.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8cpp_source.html#l00199">199</a> of file <a class="el" href="Port_8cpp_source.html">Port.cpp</a>.</p>
 
 </div>
 </div>
@@ -44722,7 +44722,7 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00692">692</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00719">719</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
 
 </div>
 </div>
@@ -44752,7 +44752,7 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00699">699</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00726">726</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
 
 </div>
 </div>
@@ -49877,7 +49877,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00479">479</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00523">523</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -53235,7 +53235,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8cpp_source.html#l00479">479</a> of file <a class="el" href="SHAMap_8cpp_source.html">SHAMap.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8cpp_source.html#l00504">504</a> of file <a class="el" href="SHAMap_8cpp_source.html">SHAMap.cpp</a>.</p>
 
 </div>
 </div>

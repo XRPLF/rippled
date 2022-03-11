@@ -1,4 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1TOfferStreamBase.html" title=" " alt="" coords="5,5,197,47"/>
-<area shape="rect" id="node2" href="$classripple_1_1OfferStream.html" title="Presents and consumes the offers in an order book." alt="" coords="245,13,392,39"/>
+<area shape="rect" id="node1" href="$classripple_1_1TOfferBase_3_01STAmount_00_01STAmount_01_4.html" title=" " alt="" coords="5,39,197,80"/>
+<area shape="rect" id="node2" href="$classripple_1_1TOffer.html" title=" " alt="" coords="268,5,415,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1TOffer.html" title=" " alt="" coords="245,71,437,112"/>
 </map>

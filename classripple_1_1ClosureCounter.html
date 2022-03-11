@@ -76,7 +76,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of callbacks (of a single type signature) that they previously scheduled.  
+<p>The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of closures (of a specific type signature) that they previously registered.  
  <a href="classripple_1_1ClosureCounter.html#details">More...</a></p>
 <div class="dynheader">
 Collaboration diagram for ripple::ClosureCounter&lt; Ret_t, Args_t &gt;:</div>
@@ -142,10 +142,10 @@ Private Attributes</h2></td></tr>
 <div class="textblock"><h3>template&lt;typename Ret_t, typename... Args_t&gt;<br />
 class ripple::ClosureCounter&lt; Ret_t, Args_t &gt;</h3>
 
-<p>The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of callbacks (of a single type signature) that they previously scheduled. </p>
-<p>The lifetime of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> consists of two phases: the initial expanding "fork" phase, and the subsequent shrinking "join" phase.</p>
-<p>In the fork phase, callers register a callback by passing the callback and receiving a substitute in return. The substitute has the same callable interface as the callback, and it informs the <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> whenever it is copied or destroyed, so that it can keep an accurate count of copies.</p>
-<p>The transition to the join phase is made by a call to <code>join</code>. In this phase, every substitute returned going forward will be empty, signaling to the caller that they should just drop the callback and cancel their asynchronous operation. <code>join</code> blocks until all existing callback substitutes are destroyed.</p>
+<p>The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of closures (of a specific type signature) that they previously registered. </p>
+<p>These closures are typically callbacks for asynchronous operations. The lifetime of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> consists of two phases: the initial expanding "fork" phase, and the subsequent shrinking "join" phase.</p>
+<p>In the fork phase, callers register a closure by passing the closure and receiving a substitute in return. The substitute has the same callable interface as the closure, and it informs the <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> whenever it is copied or destroyed, so that it can keep an accurate count of copies.</p>
+<p>The transition to the join phase is made by a call to <code>join</code>. In this phase, every substitute returned going forward will be null, signaling to the caller that they should drop the closure and cancel their operation. <code>join</code> blocks until all existing closure substitutes are destroyed.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Ret_t</td><td>The return type of the closure. </td></tr>

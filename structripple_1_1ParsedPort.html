@@ -78,13 +78,14 @@ Collaboration diagram for ripple::ParsedPort:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1ParsedPort__coll__graph.png" border="0" usemap="#ripple_1_1ParsedPort_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1ParsedPort_coll__map" id="ripple_1_1ParsedPort_coll__map">
-<area shape="rect" title=" " alt="" coords="508,174,644,201"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="178,5,333,47"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="204,71,307,98"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="184,122,327,178"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="186,203,325,244"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="176,449,335,491"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="5,422,92,449"/>
+<area shape="rect" title=" " alt="" coords="545,205,681,231"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="187,5,341,47"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="213,71,315,98"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="195,123,333,164"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="176,188,352,229"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="185,435,343,476"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="5,407,92,434"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="176,500,352,541"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -125,14 +126,18 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ae32c2f5693e35df49944be81a716f2c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a379a41d37bcc5806794320915b6d151e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#a379a41d37bcc5806794320915b6d151e">port</a></td></tr>
 <tr class="separator:a379a41d37bcc5806794320915b6d151e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07ea03d506562c99d3152e07b8f6435c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#a07ea03d506562c99d3152e07b8f6435c">admin_ip</a></td></tr>
-<tr class="separator:a07ea03d506562c99d3152e07b8f6435c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b1ca34a5b96f07d959f9b130888012c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#a4b1ca34a5b96f07d959f9b130888012c">secure_gateway_ip</a></td></tr>
-<tr class="separator:a4b1ca34a5b96f07d959f9b130888012c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fe32f5a0b54244c90f6b7684f57775c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#a3fe32f5a0b54244c90f6b7684f57775c">admin_nets_v4</a></td></tr>
+<tr class="separator:a3fe32f5a0b54244c90f6b7684f57775c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7f5cf9ef9920924eefb47f07e4bfbaf"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#ab7f5cf9ef9920924eefb47f07e4bfbaf">admin_nets_v6</a></td></tr>
+<tr class="separator:ab7f5cf9ef9920924eefb47f07e4bfbaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6352ba8e1ca2026696d5f38447753da"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#af6352ba8e1ca2026696d5f38447753da">secure_gateway_nets_v4</a></td></tr>
+<tr class="separator:af6352ba8e1ca2026696d5f38447753da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a616ba634f3c33ee5612c0d0c3968cc4d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::network_v6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ParsedPort.html#a616ba634f3c33ee5612c0d0c3968cc4d">secure_gateway_nets_v6</a></td></tr>
+<tr class="separator:a616ba634f3c33ee5612c0d0c3968cc4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00091">91</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00096">96</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a046726d415bbc7f2387fdb318f0ad128"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a046726d415bbc7f2387fdb318f0ad128">&#9670;&nbsp;</a></span>ParsedPort()</h2>
@@ -172,7 +177,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00095">95</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00100">100</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -188,7 +193,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00096">96</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00101">101</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -204,7 +209,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00097">97</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00102">102</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -220,7 +225,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00098">98</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00103">103</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -236,7 +241,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00099">99</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00104">104</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -252,7 +257,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00100">100</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00105">105</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -268,7 +273,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00101">101</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00106">106</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +289,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00102">102</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00107">107</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +305,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00103">103</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00108">108</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -316,7 +321,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00104">104</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00109">109</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +337,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00105">105</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00110">110</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -348,7 +353,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00106">106</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00111">111</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -364,7 +369,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00107">107</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00112">112</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -380,7 +385,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00109">109</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00114">114</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
@@ -396,39 +401,71 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00110">110</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00115">115</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
-<a id="a07ea03d506562c99d3152e07b8f6435c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a07ea03d506562c99d3152e07b8f6435c">&#9670;&nbsp;</a></span>admin_ip</h2>
+<a id="a3fe32f5a0b54244c90f6b7684f57775c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fe32f5a0b54244c90f6b7684f57775c">&#9670;&nbsp;</a></span>admin_nets_v4</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a>&gt; &gt; ripple::ParsedPort::admin_ip</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;boost::asio::ip::network_v4&gt; ripple::ParsedPort::admin_nets_v4</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00111">111</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00116">116</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>
-<a id="a4b1ca34a5b96f07d959f9b130888012c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4b1ca34a5b96f07d959f9b130888012c">&#9670;&nbsp;</a></span>secure_gateway_ip</h2>
+<a id="ab7f5cf9ef9920924eefb47f07e4bfbaf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7f5cf9ef9920924eefb47f07e4bfbaf">&#9670;&nbsp;</a></span>admin_nets_v6</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a>&gt; &gt; ripple::ParsedPort::secure_gateway_ip</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;boost::asio::ip::network_v6&gt; ripple::ParsedPort::admin_nets_v6</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00112">112</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00117">117</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+
+</div>
+</div>
+<a id="af6352ba8e1ca2026696d5f38447753da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6352ba8e1ca2026696d5f38447753da">&#9670;&nbsp;</a></span>secure_gateway_nets_v4</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;boost::asio::ip::network_v4&gt; ripple::ParsedPort::secure_gateway_nets_v4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00118">118</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
+
+</div>
+</div>
+<a id="a616ba634f3c33ee5612c0d0c3968cc4d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a616ba634f3c33ee5612c0d0c3968cc4d">&#9670;&nbsp;</a></span>secure_gateway_nets_v6</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;boost::asio::ip::network_v6&gt; ripple::ParsedPort::secure_gateway_nets_v6</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Port_8h_source.html#l00119">119</a> of file <a class="el" href="Port_8h_source.html">Port.h</a>.</p>
 
 </div>
 </div>

@@ -71,10 +71,10 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
-<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1STAmount-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::STAmount Class Reference</div>  </div>
@@ -130,36 +130,32 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aeeeb64eb7e4a2fbff4d37a6557802bb9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aeeeb64eb7e4a2fbff4d37a6557802bb9">STAmount</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name)</td></tr>
 <tr class="separator:aeeeb64eb7e4a2fbff4d37a6557802bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff34c170d20a4c9c24406e67afa06324"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aff34c170d20a4c9c24406e67afa06324">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="el" href="classripple_1_1STAmount.html#adbd368767f508e1102a01ce62acf75a6">mantissa_type</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, <a class="el" href="classripple_1_1STAmount.html#a224947adcdab4d02e3369f70fc19d7bb">exponent_type</a> <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>, bool <a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>, <a class="el" href="structripple_1_1STAmount_1_1unchecked.html">unchecked</a>)</td></tr>
+<tr class="memitem:aff34c170d20a4c9c24406e67afa06324"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aff34c170d20a4c9c24406e67afa06324">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="el" href="classripple_1_1STAmount.html#adbd368767f508e1102a01ce62acf75a6">mantissa_type</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, <a class="el" href="classripple_1_1STAmount.html#a224947adcdab4d02e3369f70fc19d7bb">exponent_type</a> <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>, bool <a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>, <a class="el" href="structripple_1_1STAmount_1_1unchecked.html">unchecked</a>)</td></tr>
 <tr class="separator:aff34c170d20a4c9c24406e67afa06324"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a868a6e0b96a1d962878a5c6d55cafdcd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a868a6e0b96a1d962878a5c6d55cafdcd">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="el" href="classripple_1_1STAmount.html#adbd368767f508e1102a01ce62acf75a6">mantissa_type</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, <a class="el" href="classripple_1_1STAmount.html#a224947adcdab4d02e3369f70fc19d7bb">exponent_type</a> <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>, bool <a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>, <a class="el" href="structripple_1_1STAmount_1_1unchecked.html">unchecked</a>)</td></tr>
+<tr class="memitem:a868a6e0b96a1d962878a5c6d55cafdcd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a868a6e0b96a1d962878a5c6d55cafdcd">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="el" href="classripple_1_1STAmount.html#adbd368767f508e1102a01ce62acf75a6">mantissa_type</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, <a class="el" href="classripple_1_1STAmount.html#a224947adcdab4d02e3369f70fc19d7bb">exponent_type</a> <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>, bool <a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>, <a class="el" href="structripple_1_1STAmount_1_1unchecked.html">unchecked</a>)</td></tr>
 <tr class="separator:a868a6e0b96a1d962878a5c6d55cafdcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2c2b618f549b6bf85e05d6e3acf11d4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ae2c2b618f549b6bf85e05d6e3acf11d4">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="el" href="classripple_1_1STAmount.html#adbd368767f508e1102a01ce62acf75a6">mantissa_type</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, <a class="el" href="classripple_1_1STAmount.html#a224947adcdab4d02e3369f70fc19d7bb">exponent_type</a> <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>, bool <a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>)</td></tr>
+<tr class="memitem:ae2c2b618f549b6bf85e05d6e3acf11d4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ae2c2b618f549b6bf85e05d6e3acf11d4">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="el" href="classripple_1_1STAmount.html#adbd368767f508e1102a01ce62acf75a6">mantissa_type</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, <a class="el" href="classripple_1_1STAmount.html#a224947adcdab4d02e3369f70fc19d7bb">exponent_type</a> <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>, bool <a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>)</td></tr>
 <tr class="separator:ae2c2b618f549b6bf85e05d6e3acf11d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac6a5ec0c212fb6e0bbd8ae07e6e25f25"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ac6a5ec0c212fb6e0bbd8ae07e6e25f25">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>)</td></tr>
 <tr class="separator:ac6a5ec0c212fb6e0bbd8ae07e6e25f25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4a7cf8e33b47e8b5e414e1287305d9e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ab4a7cf8e33b47e8b5e414e1287305d9e">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
 <tr class="separator:ab4a7cf8e33b47e8b5e414e1287305d9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad65d42865593afee0e885fe7319f3da7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ad65d42865593afee0e885fe7319f3da7">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>=0, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
+<tr class="memitem:ad65d42865593afee0e885fe7319f3da7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ad65d42865593afee0e885fe7319f3da7">STAmount</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>=0, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
 <tr class="separator:ad65d42865593afee0e885fe7319f3da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f096cadcfb0e67e88c6913afd87ea2e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a7f096cadcfb0e67e88c6913afd87ea2e">STAmount</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
 <tr class="separator:a7f096cadcfb0e67e88c6913afd87ea2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a459764b91682a9cc1057b4cfeae53d24"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a459764b91682a9cc1057b4cfeae53d24">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>=0, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
+<tr class="memitem:a459764b91682a9cc1057b4cfeae53d24"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a459764b91682a9cc1057b4cfeae53d24">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>=0, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
 <tr class="separator:a459764b91682a9cc1057b4cfeae53d24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a927eae6b86b8b78ba2f65ecb350a139a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a927eae6b86b8b78ba2f65ecb350a139a">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
+<tr class="memitem:a927eae6b86b8b78ba2f65ecb350a139a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a927eae6b86b8b78ba2f65ecb350a139a">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0, bool <a class="el" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>=false)</td></tr>
 <tr class="separator:a927eae6b86b8b78ba2f65ecb350a139a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad940e95ecf9ee974ba368c788e27399e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ad940e95ecf9ee974ba368c788e27399e">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0)</td></tr>
+<tr class="memitem:ad940e95ecf9ee974ba368c788e27399e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ad940e95ecf9ee974ba368c788e27399e">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0)</td></tr>
 <tr class="separator:ad940e95ecf9ee974ba368c788e27399e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1596a42c6398b1433b8706de371453dc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a1596a42c6398b1433b8706de371453dc">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>, int <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0)</td></tr>
+<tr class="memitem:a1596a42c6398b1433b8706de371453dc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a1596a42c6398b1433b8706de371453dc">STAmount</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>, int <a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>, int <a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>=0)</td></tr>
 <tr class="separator:a1596a42c6398b1433b8706de371453dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f13952d6b60dd4efb943f9a87d54afa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a7f13952d6b60dd4efb943f9a87d54afa">STAmount</a> (<a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> const &amp;amount, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>)</td></tr>
+<tr class="memitem:a7f13952d6b60dd4efb943f9a87d54afa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a7f13952d6b60dd4efb943f9a87d54afa">STAmount</a> (<a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> const &amp;amount, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>)</td></tr>
 <tr class="separator:a7f13952d6b60dd4efb943f9a87d54afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67baee148280677d33108339eb2a3d6e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a67baee148280677d33108339eb2a3d6e">STAmount</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;amount)</td></tr>
 <tr class="separator:a67baee148280677d33108339eb2a3d6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5261982a6c0a407616701443f74d386"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ae5261982a6c0a407616701443f74d386">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
-<tr class="separator:ae5261982a6c0a407616701443f74d386"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a853e8f29dc2d7739b2fc796e931caccd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a853e8f29dc2d7739b2fc796e931caccd">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
-<tr class="separator:a853e8f29dc2d7739b2fc796e931caccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2885d73708e1b809f31a46ffaea5ad7f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a> () const noexcept</td></tr>
 <tr class="separator:a2885d73708e1b809f31a46ffaea5ad7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3a02d7e9cd0b11509a90e0e6980bd64"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a> () const noexcept</td></tr>
@@ -168,12 +164,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa830654962840253139aa891659f7551"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f9ce5e872fd96b92b0cedbf8f09f81"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a> () const noexcept</td></tr>
 <tr class="separator:ae7f9ce5e872fd96b92b0cedbf8f09f81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60d8449d2915fa495f12994f56ceca34"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a> () const</td></tr>
-<tr class="separator:a60d8449d2915fa495f12994f56ceca34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2563a8f586a001bfbbc88630701deaf1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a> () const</td></tr>
-<tr class="separator:a2563a8f586a001bfbbc88630701deaf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32dbb5cdbd2b0d593047909d9294c861"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a> () const</td></tr>
-<tr class="separator:a32dbb5cdbd2b0d593047909d9294c861"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acab76380a95d902071fd26ab3425bbe5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a> () const</td></tr>
+<tr class="separator:acab76380a95d902071fd26ab3425bbe5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c7b5375e72e2459d4b6d65797744ca6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a5c7b5375e72e2459d4b6d65797744ca6">getCurrency</a> () const</td></tr>
+<tr class="separator:a5c7b5375e72e2459d4b6d65797744ca6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaac822e5948df5f12b6eaf48feaf1684"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aaac822e5948df5f12b6eaf48feaf1684">getIssuer</a> () const</td></tr>
+<tr class="separator:aaac822e5948df5f12b6eaf48feaf1684"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa068506da537548a864f80cf4128f7e9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aa068506da537548a864f80cf4128f7e9">signum</a> () const noexcept</td></tr>
 <tr class="separator:aa068506da537548a864f80cf4128f7e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8fda98bf85bb681409a8d601a3f08dc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#af8fda98bf85bb681409a8d601a3f08dc">zeroed</a> () const</td></tr>
@@ -181,29 +177,29 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af8fda98bf85bb681409a8d601a3f08dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75dd101f324f37e45ae0d1e5decd8f9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a75dd101f324f37e45ae0d1e5decd8f9a">setJson</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;) const</td></tr>
 <tr class="separator:a75dd101f324f37e45ae0d1e5decd8f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e24b6129487afa80257e90edb7710d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a9e24b6129487afa80257e90edb7710d9">value</a> () const noexcept</td></tr>
-<tr class="separator:a9e24b6129487afa80257e90edb7710d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa40b0743a468d95eeaaf4914ea555866"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aa40b0743a468d95eeaaf4914ea555866">value</a> () const noexcept</td></tr>
+<tr class="separator:aa40b0743a468d95eeaaf4914ea555866"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36b2970fd735357dff5c387ded830cc2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a36b2970fd735357dff5c387ded830cc2">operator bool</a> () const noexcept</td></tr>
 <tr class="separator:a36b2970fd735357dff5c387ded830cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5736362e5b3e1b55e9f07ce75643190e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a5736362e5b3e1b55e9f07ce75643190e">operator+=</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;)</td></tr>
 <tr class="separator:a5736362e5b3e1b55e9f07ce75643190e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a796e10f39a5856f195555461d5949fdd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a796e10f39a5856f195555461d5949fdd">operator-=</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;)</td></tr>
 <tr class="separator:a796e10f39a5856f195555461d5949fdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a20e986062e194e7719dee2361ef5b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a0a20e986062e194e7719dee2361ef5b8">operator=</a> (<a class="el" href="structbeast_1_1Zero.html">beast::Zero</a>)</td></tr>
-<tr class="separator:a0a20e986062e194e7719dee2361ef5b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a915dbf5eff3c092077e19525701de3e5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a915dbf5eff3c092077e19525701de3e5">operator=</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;amount)</td></tr>
-<tr class="separator:a915dbf5eff3c092077e19525701de3e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26e41013034a7a5a484c7727fdaadbba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a26e41013034a7a5a484c7727fdaadbba">operator=</a> (<a class="el" href="structbeast_1_1Zero.html">beast::Zero</a>)</td></tr>
+<tr class="separator:a26e41013034a7a5a484c7727fdaadbba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa02925b2ca8cf8f5f486dfc4ce393394"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aa02925b2ca8cf8f5f486dfc4ce393394">operator=</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;amount)</td></tr>
+<tr class="separator:aa02925b2ca8cf8f5f486dfc4ce393394"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9cebdb647da68f740009f9cda4dbe83"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ad9cebdb647da68f740009f9cda4dbe83">negate</a> ()</td></tr>
 <tr class="separator:ad9cebdb647da68f740009f9cda4dbe83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1e71aef94d7a8d5730eb85804b710da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ae1e71aef94d7a8d5730eb85804b710da">clear</a> ()</td></tr>
 <tr class="separator:ae1e71aef94d7a8d5730eb85804b710da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac71455ecef8d7984fef35dffe4c1052e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#ac71455ecef8d7984fef35dffe4c1052e">clear</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;saTmpl)</td></tr>
 <tr class="separator:ac71455ecef8d7984fef35dffe4c1052e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85fa691b53a348f463706079ecb0b0e2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a85fa691b53a348f463706079ecb0b0e2">clear</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>)</td></tr>
+<tr class="memitem:a85fa691b53a348f463706079ecb0b0e2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a85fa691b53a348f463706079ecb0b0e2">clear</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>)</td></tr>
 <tr class="separator:a85fa691b53a348f463706079ecb0b0e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a532cc28fd8b3d99c5de749e7e78fd08d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a532cc28fd8b3d99c5de749e7e78fd08d">setIssuer</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;uIssuer)</td></tr>
 <tr class="separator:a532cc28fd8b3d99c5de749e7e78fd08d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3758d676b17e36e61b94cb3fec90dcdf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a3758d676b17e36e61b94cb3fec90dcdf">setIssue</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>)</td></tr>
+<tr class="memitem:a3758d676b17e36e61b94cb3fec90dcdf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a3758d676b17e36e61b94cb3fec90dcdf">setIssue</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>)</td></tr>
 <tr class="memdesc:a3758d676b17e36e61b94cb3fec90dcdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a> for this amount and update mIsNative.  <a href="classripple_1_1STAmount.html#a3758d676b17e36e61b94cb3fec90dcdf">More...</a><br /></td></tr>
 <tr class="separator:a3758d676b17e36e61b94cb3fec90dcdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86b562f0d5185fedf5a71756dc0be19f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a86b562f0d5185fedf5a71756dc0be19f">getSType</a> () const override</td></tr>
@@ -228,12 +224,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae135ed870399690be58580bf3f6a43e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32ab54e85ae1082a43396f57cb0bf2d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a32ab54e85ae1082a43396f57cb0bf2d8">operator!=</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const</td></tr>
 <tr class="separator:a32ab54e85ae1082a43396f57cb0bf2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
-<tr class="memitem:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memTemplItemLeft" align="right" valign="top">D &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">downcast</a> ()</td></tr>
-<tr class="separator:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61b521e7125b47bab19a29c5ac5c836d"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
-<tr class="memitem:a61b521e7125b47bab19a29c5ac5c836d"><td class="memTemplItemLeft" align="right" valign="top">D const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a61b521e7125b47bab19a29c5ac5c836d">downcast</a> () const</td></tr>
-<tr class="separator:a61b521e7125b47bab19a29c5ac5c836d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
+<tr class="memitem:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memTemplItemLeft" align="right" valign="top">D &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#acba8a09427afd05563c1d0a38c9bb6f2">downcast</a> ()</td></tr>
+<tr class="separator:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
+<tr class="memitem:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memTemplItemLeft" align="right" valign="top">D const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a9b14e04b97e4eefb3ea37135ed52accf">downcast</a> () const</td></tr>
+<tr class="separator:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07ee4998ae80eb722fc77151a1a1cb0c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a07ee4998ae80eb722fc77151a1a1cb0c">setFName</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;n)</td></tr>
 <tr class="memdesc:a07ee4998ae80eb722fc77151a1a1cb0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">A <a class="el" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format.">STBase</a> is a field.  <a href="classripple_1_1STBase.html#a07ee4998ae80eb722fc77151a1a1cb0c">More...</a><br /></td></tr>
 <tr class="separator:a07ee4998ae80eb722fc77151a1a1cb0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -265,14 +261,9 @@ Static Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
-<tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a7fb3256be27a1c525eca36470f25e131">emplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf, T &amp;&amp;val)</td></tr>
-<tr class="separator:a7fb3256be27a1c525eca36470f25e131"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
-Protected Attributes</h2></td></tr>
-<tr class="memitem:a784e6b1508801ba39b3bae5653675de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SField.html">SField</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a784e6b1508801ba39b3bae5653675de7">fName</a></td></tr>
-<tr class="separator:a784e6b1508801ba39b3bae5653675de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a84fe46ac92fe704869cc6d64c49dd1ba">emplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf, T &amp;&amp;val)</td></tr>
+<tr class="separator:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -280,6 +271,10 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:ae252d978fddac8a365f6fc67556843f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a104f16b3dcb68a0b317788706c347809"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a104f16b3dcb68a0b317788706c347809">canonicalize</a> ()</td></tr>
 <tr class="separator:a104f16b3dcb68a0b317788706c347809"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf159f0fdfeb655c111a50b303a0d774"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#abf159f0fdfeb655c111a50b303a0d774">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
+<tr class="separator:abf159f0fdfeb655c111a50b303a0d774"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a359188da6f9563edb159e0651f6ccf6e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a359188da6f9563edb159e0651f6ccf6e">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
+<tr class="separator:a359188da6f9563edb159e0651f6ccf6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -298,6 +293,13 @@ Private Attributes</h2></td></tr>
 <tr class="separator:adfc9be8e6e0843a250f7810a4b887f1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20c85933442c2eacf51abe2b3bf66f41"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a20c85933442c2eacf51abe2b3bf66f41">mIsNegative</a></td></tr>
 <tr class="separator:a20c85933442c2eacf51abe2b3bf66f41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a784e6b1508801ba39b3bae5653675de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SField.html">SField</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a784e6b1508801ba39b3bae5653675de7">fName</a></td></tr>
+<tr class="separator:a784e6b1508801ba39b3bae5653675de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a5e49bd8b743617d1af92ffed7ac6b665">detail::STVar</a></td></tr>
+<tr class="separator:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -925,8 +927,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae5261982a6c0a407616701443f74d386"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5261982a6c0a407616701443f74d386">&#9670;&nbsp;</a></span>copy()</h2>
+<a id="a2885d73708e1b809f31a46ffaea5ad7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2885d73708e1b809f31a46ffaea5ad7f">&#9670;&nbsp;</a></span>exponent()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -935,21 +937,497 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STAmount::copy </td>
+          <td class="memname">int ripple::STAmount::exponent </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
         </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00314">314</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="af3a02d7e9cd0b11509a90e0e6980bd64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3a02d7e9cd0b11509a90e0e6980bd64">&#9670;&nbsp;</a></span>native()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
         <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
+          <td class="memname">bool ripple::STAmount::native </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
         </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00320">320</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="aa830654962840253139aa891659f7551"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa830654962840253139aa891659f7551">&#9670;&nbsp;</a></span>negative()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
         <tr>
+          <td class="memname">bool ripple::STAmount::negative </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00326">326</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="ae7f9ce5e872fd96b92b0cedbf8f09f81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7f9ce5e872fd96b92b0cedbf8f09f81">&#9670;&nbsp;</a></span>mantissa()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::STAmount::mantissa </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00332">332</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="acab76380a95d902071fd26ab3425bbe5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acab76380a95d902071fd26ab3425bbe5">&#9670;&nbsp;</a></span>issue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp; ripple::STAmount::issue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00338">338</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a5c7b5375e72e2459d4b6d65797744ca6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c7b5375e72e2459d4b6d65797744ca6">&#9670;&nbsp;</a></span>getCurrency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> const  &amp; ripple::STAmount::getCurrency </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00344">344</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="aaac822e5948df5f12b6eaf48feaf1684"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaac822e5948df5f12b6eaf48feaf1684">&#9670;&nbsp;</a></span>getIssuer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp; ripple::STAmount::getIssuer </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00350">350</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="aa068506da537548a864f80cf4128f7e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa068506da537548a864f80cf4128f7e9">&#9670;&nbsp;</a></span>signum()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ripple::STAmount::signum </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00356">356</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="af8fda98bf85bb681409a8d601a3f08dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8fda98bf85bb681409a8d601a3f08dc">&#9670;&nbsp;</a></span>zeroed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> ripple::STAmount::zeroed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a zero value with the same issuer and currency. </p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00362">362</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a75dd101f324f37e45ae0d1e5decd8f9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75dd101f324f37e45ae0d1e5decd8f9a">&#9670;&nbsp;</a></span>setJson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::setJson </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramname"><em>elem</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00476">476</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa40b0743a468d95eeaaf4914ea555866"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa40b0743a468d95eeaaf4914ea555866">&#9670;&nbsp;</a></span>value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp; ripple::STAmount::value </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00424">424</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a36b2970fd735357dff5c387ded830cc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36b2970fd735357dff5c387ded830cc2">&#9670;&nbsp;</a></span>operator bool()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::STAmount::operator bool </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00367">367</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a5736362e5b3e1b55e9f07ce75643190e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5736362e5b3e1b55e9f07ce75643190e">&#9670;&nbsp;</a></span>operator+=()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator+= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>a</em></td><td>)</td>
           <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00349">349</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a796e10f39a5856f195555461d5949fdd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a796e10f39a5856f195555461d5949fdd">&#9670;&nbsp;</a></span>operator-=()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator-= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>a</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00356">356</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a26e41013034a7a5a484c7727fdaadbba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26e41013034a7a5a484c7727fdaadbba">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structbeast_1_1Zero.html">beast::Zero</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00372">372</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="aa02925b2ca8cf8f5f486dfc4ce393394"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa02925b2ca8cf8f5f486dfc4ce393394">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amount</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00379">379</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="ad9cebdb647da68f740009f9cda4dbe83"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9cebdb647da68f740009f9cda4dbe83">&#9670;&nbsp;</a></span>negate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::negate </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00386">386</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="ae1e71aef94d7a8d5730eb85804b710da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1e71aef94d7a8d5730eb85804b710da">&#9670;&nbsp;</a></span>clear() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::clear </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00393">393</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="ac71455ecef8d7984fef35dffe4c1052e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac71455ecef8d7984fef35dffe4c1052e">&#9670;&nbsp;</a></span>clear() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::clear </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>saTmpl</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00404">404</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a85fa691b53a348f463706079ecb0b0e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85fa691b53a348f463706079ecb0b0e2">&#9670;&nbsp;</a></span>clear() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::clear </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00410">410</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a532cc28fd8b3d99c5de749e7e78fd08d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a532cc28fd8b3d99c5de749e7e78fd08d">&#9670;&nbsp;</a></span>setIssuer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::setIssuer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>uIssuer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00417">417</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="a3758d676b17e36e61b94cb3fec90dcdf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3758d676b17e36e61b94cb3fec90dcdf">&#9670;&nbsp;</a></span>setIssue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::setIssue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a> for this amount and update mIsNative. </p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00438">438</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a86b562f0d5185fedf5a71756dc0be19f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86b562f0d5185fedf5a71756dc0be19f">&#9670;&nbsp;</a></span>getSType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a> ripple::STAmount::getSType </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -959,14 +1437,14 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a1002d0c1e5d5991f043abdc61c72211f">ripple::STBase</a>.</p>
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a233469e9eb1efaa8639b384628fcef62">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00148">148</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00501">501</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a853e8f29dc2d7739b2fc796e931caccd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a853e8f29dc2d7739b2fc796e931caccd">&#9670;&nbsp;</a></span>move()</h2>
+<a id="aee39db45aa65eddca7002ad9bf3e7877"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee39db45aa65eddca7002ad9bf3e7877">&#9670;&nbsp;</a></span>getFullText()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -975,21 +1453,10 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STAmount::move </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::STAmount::getFullText </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -999,9 +1466,195 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0c488c0c2d41d96972e1966f64fec655">ripple::STBase</a>.</p>
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#ac8d35807022215e4c00cb974b6f36216">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00154">154</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00507">507</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa65826cb148b5d15412fceecca5ae47c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa65826cb148b5d15412fceecca5ae47c">&#9670;&nbsp;</a></span>getText()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::STAmount::getText </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a45b0231291b9ba9d1e999033ff975cc3">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00530">530</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a02bef3696a9cb07b72e5ec750e7ea456"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02bef3696a9cb07b72e5ec750e7ea456">&#9670;&nbsp;</a></span>getJson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::STAmount::getJson </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af1dfd1c754eaf5eded23242b59a0cdb5">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00614">614</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7bf29283f8f8748b8fb5624197a4140f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bf29283f8f8748b8fb5624197a4140f">&#9670;&nbsp;</a></span>add()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STAmount::add </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#acc434da323d0ee0bf1880cd46b2a207a">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00622">622</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae0e55250f704128f3a9ea539d3258954"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0e55250f704128f3a9ea539d3258954">&#9670;&nbsp;</a></span>isEquivalent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::STAmount::isEquivalent </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a2282c8e10ea51c1565b1fd5e67ac8344">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00653">653</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a78eb39e1724fd6263bd688f055ce8028"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78eb39e1724fd6263bd688f055ce8028">&#9670;&nbsp;</a></span>isDefault()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::STAmount::isDefault </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00660">660</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6c2ca92e9c91e2a34493d61e02d79ebf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c2ca92e9c91e2a34493d61e02d79ebf">&#9670;&nbsp;</a></span>xrp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> ripple::STAmount::xrp </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00313">313</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a094bda660d23e258021a2c63112ebc9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a094bda660d23e258021a2c63112ebc9a">&#9670;&nbsp;</a></span>iou()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> ripple::STAmount::iou </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00328">328</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1067,7 +1720,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00752">752</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00776">776</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1094,12 +1747,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00660">660</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00684">684</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a2885d73708e1b809f31a46ffaea5ad7f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2885d73708e1b809f31a46ffaea5ad7f">&#9670;&nbsp;</a></span>exponent()</h2>
+<a id="abf159f0fdfeb655c111a50b303a0d774"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf159f0fdfeb655c111a50b303a0d774">&#9670;&nbsp;</a></span>copy()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1108,485 +1761,38 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int ripple::STAmount::exponent </td>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STAmount::copy </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
         </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00178">178</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="af3a02d7e9cd0b11509a90e0e6980bd64"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3a02d7e9cd0b11509a90e0e6980bd64">&#9670;&nbsp;</a></span>native()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
         <tr>
-          <td class="memname">bool ripple::STAmount::native </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00183">183</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="aa830654962840253139aa891659f7551"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa830654962840253139aa891659f7551">&#9670;&nbsp;</a></span>negative()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::STAmount::negative </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00188">188</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="ae7f9ce5e872fd96b92b0cedbf8f09f81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7f9ce5e872fd96b92b0cedbf8f09f81">&#9670;&nbsp;</a></span>mantissa()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::STAmount::mantissa </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00193">193</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a60d8449d2915fa495f12994f56ceca34"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60d8449d2915fa495f12994f56ceca34">&#9670;&nbsp;</a></span>issue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Issue.html">Issue</a> const&amp; ripple::STAmount::issue </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00198">198</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a2563a8f586a001bfbbc88630701deaf1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2563a8f586a001bfbbc88630701deaf1">&#9670;&nbsp;</a></span>getCurrency()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> const&amp; ripple::STAmount::getCurrency </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00205">205</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a32dbb5cdbd2b0d593047909d9294c861"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32dbb5cdbd2b0d593047909d9294c861">&#9670;&nbsp;</a></span>getIssuer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const&amp; ripple::STAmount::getIssuer </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00210">210</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="aa068506da537548a864f80cf4128f7e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa068506da537548a864f80cf4128f7e9">&#9670;&nbsp;</a></span>signum()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int ripple::STAmount::signum </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00216">216</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="af8fda98bf85bb681409a8d601a3f08dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af8fda98bf85bb681409a8d601a3f08dc">&#9670;&nbsp;</a></span>zeroed()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> ripple::STAmount::zeroed </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns a zero value with the same issuer and currency. </p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00223">223</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a75dd101f324f37e45ae0d1e5decd8f9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75dd101f324f37e45ae0d1e5decd8f9a">&#9670;&nbsp;</a></span>setJson()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::setJson </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
-          <td class="paramname"><em>elem</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00464">464</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a9e24b6129487afa80257e90edb7710d9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e24b6129487afa80257e90edb7710d9">&#9670;&nbsp;</a></span>value()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const&amp; ripple::STAmount::value </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00232">232</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a36b2970fd735357dff5c387ded830cc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36b2970fd735357dff5c387ded830cc2">&#9670;&nbsp;</a></span>operator bool()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ripple::STAmount::operator bool </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">explicit</span><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00243">243</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a5736362e5b3e1b55e9f07ce75643190e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5736362e5b3e1b55e9f07ce75643190e">&#9670;&nbsp;</a></span>operator+=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator+= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
-          <td class="paramname"><em>a</em></td><td>)</td>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
         </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00337">337</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a796e10f39a5856f195555461d5949fdd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a796e10f39a5856f195555461d5949fdd">&#9670;&nbsp;</a></span>operator-=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator-= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
-          <td class="paramname"><em>a</em></td><td>)</td>
           <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00344">344</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#aed5deead1fe850667301dfc9c58320bb">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00296">296</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0a20e986062e194e7719dee2361ef5b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a20e986062e194e7719dee2361ef5b8">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&amp; ripple::STAmount::operator= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structbeast_1_1Zero.html">beast::Zero</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00253">253</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a915dbf5eff3c092077e19525701de3e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a915dbf5eff3c092077e19525701de3e5">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&amp; ripple::STAmount::operator= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;&#160;</td>
-          <td class="paramname"><em>amount</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00260">260</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="ad9cebdb647da68f740009f9cda4dbe83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9cebdb647da68f740009f9cda4dbe83">&#9670;&nbsp;</a></span>negate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::negate </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00273">273</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="ae1e71aef94d7a8d5730eb85804b710da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1e71aef94d7a8d5730eb85804b710da">&#9670;&nbsp;</a></span>clear() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::clear </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00280">280</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="ac71455ecef8d7984fef35dffe4c1052e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac71455ecef8d7984fef35dffe4c1052e">&#9670;&nbsp;</a></span>clear() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
-          <td class="paramname"><em>saTmpl</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00291">291</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a85fa691b53a348f463706079ecb0b0e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85fa691b53a348f463706079ecb0b0e2">&#9670;&nbsp;</a></span>clear() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
-          <td class="paramname"><em>issue</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00297">297</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a532cc28fd8b3d99c5de749e7e78fd08d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a532cc28fd8b3d99c5de749e7e78fd08d">&#9670;&nbsp;</a></span>setIssuer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::setIssuer </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
-          <td class="paramname"><em>uIssuer</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00304">304</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a3758d676b17e36e61b94cb3fec90dcdf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3758d676b17e36e61b94cb3fec90dcdf">&#9670;&nbsp;</a></span>setIssue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::setIssue </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
-          <td class="paramname"><em>issue</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Set the <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a> for this amount and update mIsNative. </p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00426">426</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a86b562f0d5185fedf5a71756dc0be19f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86b562f0d5185fedf5a71756dc0be19f">&#9670;&nbsp;</a></span>getSType()</h2>
+<a id="a359188da6f9563edb159e0651f6ccf6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a359188da6f9563edb159e0651f6ccf6e">&#9670;&nbsp;</a></span>move()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1595,237 +1801,33 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a> ripple::STAmount::getSType </td>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STAmount::move </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a233469e9eb1efaa8639b384628fcef62">ripple::STBase</a>.</p>
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0ab863d0b635b5ff22f7f718d0581090">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00321">321</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="aee39db45aa65eddca7002ad9bf3e7877"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee39db45aa65eddca7002ad9bf3e7877">&#9670;&nbsp;</a></span>getFullText()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::STAmount::getFullText </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#ac8d35807022215e4c00cb974b6f36216">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00489">489</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa65826cb148b5d15412fceecca5ae47c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa65826cb148b5d15412fceecca5ae47c">&#9670;&nbsp;</a></span>getText()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::STAmount::getText </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a45b0231291b9ba9d1e999033ff975cc3">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00512">512</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a02bef3696a9cb07b72e5ec750e7ea456"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02bef3696a9cb07b72e5ec750e7ea456">&#9670;&nbsp;</a></span>getJson()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::STAmount::getJson </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af1dfd1c754eaf5eded23242b59a0cdb5">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00596">596</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a7bf29283f8f8748b8fb5624197a4140f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7bf29283f8f8748b8fb5624197a4140f">&#9670;&nbsp;</a></span>add()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STAmount::add </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;&#160;</td>
-          <td class="paramname"><em>s</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#acc434da323d0ee0bf1880cd46b2a207a">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00604">604</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ae0e55250f704128f3a9ea539d3258954"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0e55250f704128f3a9ea539d3258954">&#9670;&nbsp;</a></span>isEquivalent()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::STAmount::isEquivalent </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a2282c8e10ea51c1565b1fd5e67ac8344">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00635">635</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a78eb39e1724fd6263bd688f055ce8028"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a78eb39e1724fd6263bd688f055ce8028">&#9670;&nbsp;</a></span>isDefault()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::STAmount::isDefault </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00341">341</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
-
-</div>
-</div>
-<a id="a6c2ca92e9c91e2a34493d61e02d79ebf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c2ca92e9c91e2a34493d61e02d79ebf">&#9670;&nbsp;</a></span>xrp()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> ripple::STAmount::xrp </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00301">301</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a094bda660d23e258021a2c63112ebc9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a094bda660d23e258021a2c63112ebc9a">&#9670;&nbsp;</a></span>iou()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> ripple::STAmount::iou </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00316">316</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00302">302</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1885,8 +1887,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a5e2b3d13d27e01946bbee9e50ec8833d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e2b3d13d27e01946bbee9e50ec8833d">&#9670;&nbsp;</a></span>downcast() <span class="overload">[1/2]</span></h2>
+<a id="acba8a09427afd05563c1d0a38c9bb6f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acba8a09427afd05563c1d0a38c9bb6f2">&#9670;&nbsp;</a></span>downcast() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1897,10 +1899,7 @@ template&lt;class D &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">D&amp; ripple::STBase::downcast </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td class="memname">D &amp; ripple::STBase::downcast</td>
         </tr>
       </table>
   </td>
@@ -1910,12 +1909,12 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00094">94</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00145">145</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
-<a id="a61b521e7125b47bab19a29c5ac5c836d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61b521e7125b47bab19a29c5ac5c836d">&#9670;&nbsp;</a></span>downcast() <span class="overload">[2/2]</span></h2>
+<a id="a9b14e04b97e4eefb3ea37135ed52accf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b14e04b97e4eefb3ea37135ed52accf">&#9670;&nbsp;</a></span>downcast() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1926,10 +1925,7 @@ template&lt;class D &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">D const&amp; ripple::STBase::downcast </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname">D const  &amp; ripple::STBase::downcast</td>
         </tr>
       </table>
   </td>
@@ -1939,7 +1935,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00104">104</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00155">155</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
@@ -1970,7 +1966,7 @@ template&lt;class D &gt; </div>
 <p>A <a class="el" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format.">STBase</a> is a field. </p>
 <p>This sets the name. </p>
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00113">113</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00125">125</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -1997,7 +1993,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00120">120</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00132">132</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -2025,12 +2021,12 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00126">126</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00138">138</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a7fb3256be27a1c525eca36470f25e131"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fb3256be27a1c525eca36470f25e131">&#9670;&nbsp;</a></span>emplace()</h2>
+<a id="a84fe46ac92fe704869cc6d64c49dd1ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84fe46ac92fe704869cc6d64c49dd1ba">&#9670;&nbsp;</a></span>emplace()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2041,7 +2037,7 @@ template&lt;class T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STBase::emplace </td>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STBase::emplace </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -2071,7 +2067,32 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00149">149</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00165">165</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a5e49bd8b743617d1af92ffed7ac6b665"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e49bd8b743617d1af92ffed7ac6b665">&#9670;&nbsp;</a></span>detail::STVar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classripple_1_1detail_1_1STVar.html">detail::STVar</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00277">277</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2427,12 +2448,12 @@ template&lt;class T &gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00145">145</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00068">68</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>

@@ -169,11 +169,11 @@ $(function() {
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a961ba30ab4cc6d8c450612fbaa7d9680">temBAD_OFFER</a>;</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    }</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uPaysIssuerID = saTakerPays.<a class="code" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a>();</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uPaysCurrency = saTakerPays.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>();</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uPaysIssuerID = saTakerPays.<a class="code" href="classripple_1_1STAmount.html#aaac822e5948df5f12b6eaf48feaf1684">getIssuer</a>();</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uPaysCurrency = saTakerPays.<a class="code" href="classripple_1_1STAmount.html#a5c7b5375e72e2459d4b6d65797744ca6">getCurrency</a>();</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uGetsIssuerID = saTakerGets.<a class="code" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a>();</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uGetsCurrency = saTakerGets.<a class="code" href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">getCurrency</a>();</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uGetsIssuerID = saTakerGets.<a class="code" href="classripple_1_1STAmount.html#aaac822e5948df5f12b6eaf48feaf1684">getIssuer</a>();</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uGetsCurrency = saTakerGets.<a class="code" href="classripple_1_1STAmount.html#a5c7b5375e72e2459d4b6d65797744ca6">getCurrency</a>();</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordflow">if</span> (uPaysCurrency == uGetsCurrency &amp;&amp; uPaysIssuerID == uGetsIssuerID)</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    {</div>
@@ -708,7 +708,7 @@ $(function() {
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;    <a class="code" href="classripple_1_1Sandbox.html">Sandbox</a>&amp; sbCancel,</div>
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;    Amounts <span class="keyword">const</span>&amp; takerAmount)</div>
 <div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;{</div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> when = ctx_.view().parentCloseTime();</div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> when = sb.<a class="code" href="classripple_1_1ReadView.html#a1427aa6cbbda99c50b9ca0ebf6e0d0b3">parentCloseTime</a>();</div>
 <div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160; </div>
 <div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;    <a class="code" href="classbeast_1_1WrappedSink.html">beast::WrappedSink</a> takerSink(j_, <span class="stringliteral">&quot;Taker &quot;</span>);</div>
 <div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160; </div>
@@ -775,9 +775,9 @@ $(function() {
 <div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;        <span class="comment">// offer taker.  Set sendMax to allow for the gateway&#39;s cut.</span></div>
 <div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;        <a class="code" href="structripple_1_1Rate.html">Rate</a> gatewayXferRate{QUALITY_ONE};</div>
 <div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;        <a class="code" href="classripple_1_1STAmount.html">STAmount</a> sendMax = takerAmount.in;</div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;        <span class="keywordflow">if</span> (!sendMax.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>() &amp;&amp; (account_ != sendMax.<a class="code" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a>()))</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;        <span class="keywordflow">if</span> (!sendMax.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>() &amp;&amp; (account_ != sendMax.<a class="code" href="classripple_1_1STAmount.html#aaac822e5948df5f12b6eaf48feaf1684">getIssuer</a>()))</div>
 <div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;        {</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;            gatewayXferRate = <a class="code" href="namespaceripple.html#a9ad0749604cda5299e9af18bf08cb830">transferRate</a>(psb, sendMax.<a class="code" href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">getIssuer</a>());</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;            gatewayXferRate = <a class="code" href="namespaceripple.html#a9ad0749604cda5299e9af18bf08cb830">transferRate</a>(psb, sendMax.<a class="code" href="classripple_1_1STAmount.html#aaac822e5948df5f12b6eaf48feaf1684">getIssuer</a>());</div>
 <div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            <span class="keywordflow">if</span> (gatewayXferRate.value != QUALITY_ONE)</div>
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;            {</div>
 <div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;                sendMax = <a class="code" href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">multiplyRound</a>(</div>
@@ -828,7 +828,7 @@ $(function() {
 <div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;                <span class="comment">// Since the transfer rate cannot exceed 200%, we use 1/2</span></div>
 <div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;                <span class="comment">// maxValue for our limit.</span></div>
 <div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;                deliver = <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;                    takerAmount.out.<a class="code" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>(),</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;                    takerAmount.out.<a class="code" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>(),</div>
 <div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;                    STAmount::cMaxValue / 2,</div>
 <div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;                    STAmount::cMaxOffset};</div>
 <div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;        }</div>
@@ -957,7 +957,7 @@ $(function() {
 <div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;{</div>
 <div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> txt = amount.<a class="code" href="classripple_1_1STAmount.html#aa65826cb148b5d15412fceecca5ae47c">getText</a>();</div>
 <div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;    txt += <span class="stringliteral">&quot;/&quot;</span>;</div>
-<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;    txt += to_string(amount.<a class="code" href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">issue</a>().<a class="code" href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">currency</a>);</div>
+<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;    txt += to_string(amount.<a class="code" href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">issue</a>().<a class="code" href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">currency</a>);</div>
 <div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;    <span class="keywordflow">return</span> txt;</div>
 <div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;}</div>
 <div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160; </div>
@@ -1028,7 +1028,7 @@ $(function() {
 <div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;    <span class="comment">// Expiration is defined in terms of the close time of the parent ledger,</span></div>
 <div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;    <span class="comment">// because we definitively know the time that it closed but we do not</span></div>
 <div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160;    <span class="comment">// know the closing time of the ledger that is under construction.</span></div>
-<div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160;    <span class="keywordflow">if</span> (expiration &amp;&amp; (ctx_.view().parentCloseTime() &gt;= tp{d{*expiration}}))</div>
+<div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160;    <span class="keywordflow">if</span> (expiration &amp;&amp; (sb.<a class="code" href="classripple_1_1ReadView.html#a1427aa6cbbda99c50b9ca0ebf6e0d0b3">parentCloseTime</a>() &gt;= tp{d{*expiration}}))</div>
 <div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;    {</div>
 <div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;        <span class="comment">// If the offer has expired, the transaction has successfully</span></div>
 <div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;        <span class="comment">// done nothing, so short circuit from here.</span></div>
@@ -1036,276 +1036,275 @@ $(function() {
 <div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;        <span class="comment">// The return code change is attached to featureDepositPreauth as a</span></div>
 <div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160;        <span class="comment">// convenience.  The change is not big enough to deserve a fix code.</span></div>
 <div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;        <a class="code" href="classripple_1_1TERSubset.html">TER</a> <span class="keyword">const</span> ter{</div>
-<div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160;            ctx_.view().rules().enabled(featureDepositPreauth)</div>
-<div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160;                ? <a class="code" href="classripple_1_1TERSubset.html">TER</a>{<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caede598f88bbd44e4df1c4e0d418c4cdc">tecEXPIRED</a>}</div>
-<div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;                : TER{tesSUCCESS}};</div>
-<div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;        <span class="keywordflow">return</span> {ter, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160;    }</div>
-<div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160; </div>
-<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> bOpenLedger = ctx_.view().open();</div>
-<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;    <span class="keywordtype">bool</span> crossed = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160; </div>
-<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;    <span class="keywordflow">if</span> (result == tesSUCCESS)</div>
-<div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;    {</div>
-<div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160;        <span class="comment">// If a tick size applies, round the offer to the tick size</span></div>
-<div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uPaysIssuerID = saTakerPays.getIssuer();</div>
-<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uGetsIssuerID = saTakerGets.getIssuer();</div>
-<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160; </div>
-<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> uTickSize = Quality::maxTickSize;</div>
-<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(uPaysIssuerID))</div>
-<div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160;        {</div>
-<div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> sle = sb.read(keylet::account(uPaysIssuerID));</div>
-<div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160;            <span class="keywordflow">if</span> (sle &amp;&amp; sle-&gt;isFieldPresent(sfTickSize))</div>
-<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;                uTickSize = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>(uTickSize, (*sle)[sfTickSize]);</div>
-<div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;        }</div>
-<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(uGetsIssuerID))</div>
-<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;        {</div>
-<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> sle = sb.read(keylet::account(uGetsIssuerID));</div>
-<div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;            <span class="keywordflow">if</span> (sle &amp;&amp; sle-&gt;isFieldPresent(sfTickSize))</div>
-<div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;                uTickSize = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>(uTickSize, (*sle)[sfTickSize]);</div>
-<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;        }</div>
-<div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;        <span class="keywordflow">if</span> (uTickSize &lt; Quality::maxTickSize)</div>
-<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;        {</div>
-<div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a8e8d814b8820ce0b6979abde0d6a2618">rate</a> =</div>
-<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;                Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();</div>
-<div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160; </div>
-<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;            <span class="comment">// We round the side that&#39;s not exact,</span></div>
-<div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;            <span class="comment">// just as if the offer happened to execute</span></div>
-<div class="line"><a name="l01003"></a><span class="lineno"> 1003</span>&#160;            <span class="comment">// at a slightly better (for the placer) rate</span></div>
-<div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;            <span class="keywordflow">if</span> (bSell)</div>
-<div class="line"><a name="l01005"></a><span class="lineno"> 1005</span>&#160;            {</div>
-<div class="line"><a name="l01006"></a><span class="lineno"> 1006</span>&#160;                <span class="comment">// this is a sell, round taker pays</span></div>
-<div class="line"><a name="l01007"></a><span class="lineno"> 1007</span>&#160;                saTakerPays = <a class="code" href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">multiply</a>(saTakerGets, rate, saTakerPays.issue());</div>
-<div class="line"><a name="l01008"></a><span class="lineno"> 1008</span>&#160;            }</div>
-<div class="line"><a name="l01009"></a><span class="lineno"> 1009</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01010"></a><span class="lineno"> 1010</span>&#160;            {</div>
-<div class="line"><a name="l01011"></a><span class="lineno"> 1011</span>&#160;                <span class="comment">// this is a buy, round taker gets</span></div>
-<div class="line"><a name="l01012"></a><span class="lineno"> 1012</span>&#160;                saTakerGets = <a class="code" href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">divide</a>(saTakerPays, rate, saTakerGets.issue());</div>
-<div class="line"><a name="l01013"></a><span class="lineno"> 1013</span>&#160;            }</div>
-<div class="line"><a name="l01014"></a><span class="lineno"> 1014</span>&#160;            <span class="keywordflow">if</span> (!saTakerGets || !saTakerPays)</div>
-<div class="line"><a name="l01015"></a><span class="lineno"> 1015</span>&#160;            {</div>
-<div class="line"><a name="l01016"></a><span class="lineno"> 1016</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Offer rounded to zero&quot;</span>;</div>
-<div class="line"><a name="l01017"></a><span class="lineno"> 1017</span>&#160;                <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01018"></a><span class="lineno"> 1018</span>&#160;            }</div>
-<div class="line"><a name="l01019"></a><span class="lineno"> 1019</span>&#160; </div>
-<div class="line"><a name="l01020"></a><span class="lineno"> 1020</span>&#160;            uRate = <a class="code" href="namespaceripple.html#a73cc988e7ba5d5ee0fd9db53740917ec">getRate</a>(saTakerGets, saTakerPays);</div>
-<div class="line"><a name="l01021"></a><span class="lineno"> 1021</span>&#160;        }</div>
-<div class="line"><a name="l01022"></a><span class="lineno"> 1022</span>&#160; </div>
-<div class="line"><a name="l01023"></a><span class="lineno"> 1023</span>&#160;        <span class="comment">// We reverse pays and gets because during crossing we are taking.</span></div>
-<div class="line"><a name="l01024"></a><span class="lineno"> 1024</span>&#160;        Amounts <span class="keyword">const</span> takerAmount(saTakerGets, saTakerPays);</div>
-<div class="line"><a name="l01025"></a><span class="lineno"> 1025</span>&#160; </div>
-<div class="line"><a name="l01026"></a><span class="lineno"> 1026</span>&#160;        <span class="comment">// The amount of the offer that is unfilled after crossing has been</span></div>
-<div class="line"><a name="l01027"></a><span class="lineno"> 1027</span>&#160;        <span class="comment">// performed. It may be equal to the original amount (didn&#39;t cross),</span></div>
-<div class="line"><a name="l01028"></a><span class="lineno"> 1028</span>&#160;        <span class="comment">// empty (fully crossed), or something in-between.</span></div>
-<div class="line"><a name="l01029"></a><span class="lineno"> 1029</span>&#160;        Amounts place_offer;</div>
-<div class="line"><a name="l01030"></a><span class="lineno"> 1030</span>&#160; </div>
-<div class="line"><a name="l01031"></a><span class="lineno"> 1031</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Attempting cross: &quot;</span></div>
-<div class="line"><a name="l01032"></a><span class="lineno"> 1032</span>&#160;                         &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(takerAmount.in.issue()) &lt;&lt; <span class="stringliteral">&quot; -&gt; &quot;</span></div>
-<div class="line"><a name="l01033"></a><span class="lineno"> 1033</span>&#160;                         &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(takerAmount.out.issue());</div>
-<div class="line"><a name="l01034"></a><span class="lineno"> 1034</span>&#160; </div>
-<div class="line"><a name="l01035"></a><span class="lineno"> 1035</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> stream = j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
-<div class="line"><a name="l01036"></a><span class="lineno"> 1036</span>&#160;        {</div>
-<div class="line"><a name="l01037"></a><span class="lineno"> 1037</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;   mode: &quot;</span> &lt;&lt; (bPassive ? <span class="stringliteral">&quot;passive &quot;</span> : <span class="stringliteral">&quot;&quot;</span>)</div>
-<div class="line"><a name="l01038"></a><span class="lineno"> 1038</span>&#160;                   &lt;&lt; (bSell ? <span class="stringliteral">&quot;sell&quot;</span> : <span class="stringliteral">&quot;buy&quot;</span>);</div>
-<div class="line"><a name="l01039"></a><span class="lineno"> 1039</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;     in: &quot;</span> &lt;&lt; format_amount(takerAmount.in);</div>
-<div class="line"><a name="l01040"></a><span class="lineno"> 1040</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    out: &quot;</span> &lt;&lt; format_amount(takerAmount.out);</div>
-<div class="line"><a name="l01041"></a><span class="lineno"> 1041</span>&#160;        }</div>
-<div class="line"><a name="l01042"></a><span class="lineno"> 1042</span>&#160; </div>
-<div class="line"><a name="l01043"></a><span class="lineno"> 1043</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/tie.html">std::tie</a>(result, place_offer) = cross(sb, sbCancel, takerAmount);</div>
-<div class="line"><a name="l01044"></a><span class="lineno"> 1044</span>&#160; </div>
-<div class="line"><a name="l01045"></a><span class="lineno"> 1045</span>&#160;        <span class="comment">// We expect the implementation of cross to succeed</span></div>
-<div class="line"><a name="l01046"></a><span class="lineno"> 1046</span>&#160;        <span class="comment">// or give a tec.</span></div>
-<div class="line"><a name="l01047"></a><span class="lineno"> 1047</span>&#160;        assert(result == tesSUCCESS || <a class="code" href="namespaceripple.html#a18e688f3fc0a5e80e13b353c9f924b22">isTecClaim</a>(result));</div>
-<div class="line"><a name="l01048"></a><span class="lineno"> 1048</span>&#160; </div>
-<div class="line"><a name="l01049"></a><span class="lineno"> 1049</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> stream = j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
-<div class="line"><a name="l01050"></a><span class="lineno"> 1050</span>&#160;        {</div>
-<div class="line"><a name="l01051"></a><span class="lineno"> 1051</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;Cross result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
-<div class="line"><a name="l01052"></a><span class="lineno"> 1052</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;     in: &quot;</span> &lt;&lt; format_amount(place_offer.in);</div>
-<div class="line"><a name="l01053"></a><span class="lineno"> 1053</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    out: &quot;</span> &lt;&lt; format_amount(place_offer.out);</div>
-<div class="line"><a name="l01054"></a><span class="lineno"> 1054</span>&#160;        }</div>
-<div class="line"><a name="l01055"></a><span class="lineno"> 1055</span>&#160; </div>
-<div class="line"><a name="l01056"></a><span class="lineno"> 1056</span>&#160;        <span class="keywordflow">if</span> (result == tecFAILED_PROCESSING &amp;&amp; bOpenLedger)</div>
-<div class="line"><a name="l01057"></a><span class="lineno"> 1057</span>&#160;            result = <a class="code" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a453d7db3d36a5516e925c466d1dc0ac1">telFAILED_PROCESSING</a>;</div>
-<div class="line"><a name="l01058"></a><span class="lineno"> 1058</span>&#160; </div>
-<div class="line"><a name="l01059"></a><span class="lineno"> 1059</span>&#160;        <span class="keywordflow">if</span> (result != tesSUCCESS)</div>
-<div class="line"><a name="l01060"></a><span class="lineno"> 1060</span>&#160;        {</div>
-<div class="line"><a name="l01061"></a><span class="lineno"> 1061</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
-<div class="line"><a name="l01062"></a><span class="lineno"> 1062</span>&#160;            <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01063"></a><span class="lineno"> 1063</span>&#160;        }</div>
-<div class="line"><a name="l01064"></a><span class="lineno"> 1064</span>&#160; </div>
-<div class="line"><a name="l01065"></a><span class="lineno"> 1065</span>&#160;        assert(saTakerGets.issue() == place_offer.in.issue());</div>
-<div class="line"><a name="l01066"></a><span class="lineno"> 1066</span>&#160;        assert(saTakerPays.issue() == place_offer.out.issue());</div>
-<div class="line"><a name="l01067"></a><span class="lineno"> 1067</span>&#160; </div>
-<div class="line"><a name="l01068"></a><span class="lineno"> 1068</span>&#160;        <span class="keywordflow">if</span> (takerAmount != place_offer)</div>
-<div class="line"><a name="l01069"></a><span class="lineno"> 1069</span>&#160;            crossed = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01070"></a><span class="lineno"> 1070</span>&#160; </div>
-<div class="line"><a name="l01071"></a><span class="lineno"> 1071</span>&#160;        <span class="comment">// The offer that we need to place after offer crossing should</span></div>
-<div class="line"><a name="l01072"></a><span class="lineno"> 1072</span>&#160;        <span class="comment">// never be negative. If it is, something went very very wrong.</span></div>
-<div class="line"><a name="l01073"></a><span class="lineno"> 1073</span>&#160;        <span class="keywordflow">if</span> (place_offer.in &lt; zero || place_offer.out &lt; zero)</div>
-<div class="line"><a name="l01074"></a><span class="lineno"> 1074</span>&#160;        {</div>
-<div class="line"><a name="l01075"></a><span class="lineno"> 1075</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>()) &lt;&lt; <span class="stringliteral">&quot;Cross left offer negative!&quot;</span></div>
-<div class="line"><a name="l01076"></a><span class="lineno"> 1076</span>&#160;                             &lt;&lt; <span class="stringliteral">&quot;     in: &quot;</span> &lt;&lt; format_amount(place_offer.in)</div>
-<div class="line"><a name="l01077"></a><span class="lineno"> 1077</span>&#160;                             &lt;&lt; <span class="stringliteral">&quot;    out: &quot;</span> &lt;&lt; format_amount(place_offer.out);</div>
-<div class="line"><a name="l01078"></a><span class="lineno"> 1078</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ad035d214edc31c72362d7efbdaba234c">tefINTERNAL</a>, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01079"></a><span class="lineno"> 1079</span>&#160;        }</div>
-<div class="line"><a name="l01080"></a><span class="lineno"> 1080</span>&#160; </div>
-<div class="line"><a name="l01081"></a><span class="lineno"> 1081</span>&#160;        <span class="keywordflow">if</span> (place_offer.in == zero || place_offer.out == zero)</div>
-<div class="line"><a name="l01082"></a><span class="lineno"> 1082</span>&#160;        {</div>
-<div class="line"><a name="l01083"></a><span class="lineno"> 1083</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Offer fully crossed!&quot;</span>;</div>
-<div class="line"><a name="l01084"></a><span class="lineno"> 1084</span>&#160;            <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01085"></a><span class="lineno"> 1085</span>&#160;        }</div>
-<div class="line"><a name="l01086"></a><span class="lineno"> 1086</span>&#160; </div>
-<div class="line"><a name="l01087"></a><span class="lineno"> 1087</span>&#160;        <span class="comment">// We now need to adjust the offer to reflect the amount left after</span></div>
-<div class="line"><a name="l01088"></a><span class="lineno"> 1088</span>&#160;        <span class="comment">// crossing. We reverse in and out here, since during crossing we</span></div>
-<div class="line"><a name="l01089"></a><span class="lineno"> 1089</span>&#160;        <span class="comment">// were the taker.</span></div>
-<div class="line"><a name="l01090"></a><span class="lineno"> 1090</span>&#160;        saTakerPays = place_offer.out;</div>
-<div class="line"><a name="l01091"></a><span class="lineno"> 1091</span>&#160;        saTakerGets = place_offer.in;</div>
-<div class="line"><a name="l01092"></a><span class="lineno"> 1092</span>&#160;    }</div>
-<div class="line"><a name="l01093"></a><span class="lineno"> 1093</span>&#160; </div>
-<div class="line"><a name="l01094"></a><span class="lineno"> 1094</span>&#160;    assert(saTakerPays &gt; zero &amp;&amp; saTakerGets &gt; zero);</div>
-<div class="line"><a name="l01095"></a><span class="lineno"> 1095</span>&#160; </div>
-<div class="line"><a name="l01096"></a><span class="lineno"> 1096</span>&#160;    <span class="keywordflow">if</span> (result != tesSUCCESS)</div>
-<div class="line"><a name="l01097"></a><span class="lineno"> 1097</span>&#160;    {</div>
-<div class="line"><a name="l01098"></a><span class="lineno"> 1098</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
-<div class="line"><a name="l01099"></a><span class="lineno"> 1099</span>&#160;        <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01100"></a><span class="lineno"> 1100</span>&#160;    }</div>
-<div class="line"><a name="l01101"></a><span class="lineno"> 1101</span>&#160; </div>
-<div class="line"><a name="l01102"></a><span class="lineno"> 1102</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> stream = j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
-<div class="line"><a name="l01103"></a><span class="lineno"> 1103</span>&#160;    {</div>
-<div class="line"><a name="l01104"></a><span class="lineno"> 1104</span>&#160;        <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;Place&quot;</span> &lt;&lt; (crossed ? <span class="stringliteral">&quot; remaining &quot;</span> : <span class="stringliteral">&quot; &quot;</span>) &lt;&lt; <span class="stringliteral">&quot;offer:&quot;</span>;</div>
-<div class="line"><a name="l01105"></a><span class="lineno"> 1105</span>&#160;        <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    Pays: &quot;</span> &lt;&lt; saTakerPays.getFullText();</div>
-<div class="line"><a name="l01106"></a><span class="lineno"> 1106</span>&#160;        <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    Gets: &quot;</span> &lt;&lt; saTakerGets.getFullText();</div>
-<div class="line"><a name="l01107"></a><span class="lineno"> 1107</span>&#160;    }</div>
-<div class="line"><a name="l01108"></a><span class="lineno"> 1108</span>&#160; </div>
-<div class="line"><a name="l01109"></a><span class="lineno"> 1109</span>&#160;    <span class="comment">// For &#39;fill or kill&#39; offers, failure to fully cross means that the</span></div>
-<div class="line"><a name="l01110"></a><span class="lineno"> 1110</span>&#160;    <span class="comment">// entire operation should be aborted, with only fees paid.</span></div>
-<div class="line"><a name="l01111"></a><span class="lineno"> 1111</span>&#160;    <span class="keywordflow">if</span> (bFillOrKill)</div>
-<div class="line"><a name="l01112"></a><span class="lineno"> 1112</span>&#160;    {</div>
-<div class="line"><a name="l01113"></a><span class="lineno"> 1113</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Fill or Kill: offer killed&quot;</span>;</div>
-<div class="line"><a name="l01114"></a><span class="lineno"> 1114</span>&#160;        <span class="keywordflow">if</span> (sb.rules().enabled(fix1578))</div>
-<div class="line"><a name="l01115"></a><span class="lineno"> 1115</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca82773cd87fbf942a9cb626416218f52b">tecKILLED</a>, <span class="keyword">false</span>};</div>
-<div class="line"><a name="l01116"></a><span class="lineno"> 1116</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, <span class="keyword">false</span>};</div>
-<div class="line"><a name="l01117"></a><span class="lineno"> 1117</span>&#160;    }</div>
-<div class="line"><a name="l01118"></a><span class="lineno"> 1118</span>&#160; </div>
-<div class="line"><a name="l01119"></a><span class="lineno"> 1119</span>&#160;    <span class="comment">// For &#39;immediate or cancel&#39; offers, the amount remaining doesn&#39;t get</span></div>
-<div class="line"><a name="l01120"></a><span class="lineno"> 1120</span>&#160;    <span class="comment">// placed - it gets canceled and the operation succeeds.</span></div>
-<div class="line"><a name="l01121"></a><span class="lineno"> 1121</span>&#160;    <span class="keywordflow">if</span> (bImmediateOrCancel)</div>
-<div class="line"><a name="l01122"></a><span class="lineno"> 1122</span>&#160;    {</div>
-<div class="line"><a name="l01123"></a><span class="lineno"> 1123</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Immediate or cancel: offer canceled&quot;</span>;</div>
-<div class="line"><a name="l01124"></a><span class="lineno"> 1124</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01125"></a><span class="lineno"> 1125</span>&#160;    }</div>
-<div class="line"><a name="l01126"></a><span class="lineno"> 1126</span>&#160; </div>
-<div class="line"><a name="l01127"></a><span class="lineno"> 1127</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> sleCreator = sb.peek(keylet::account(account_));</div>
-<div class="line"><a name="l01128"></a><span class="lineno"> 1128</span>&#160;    <span class="keywordflow">if</span> (!sleCreator)</div>
-<div class="line"><a name="l01129"></a><span class="lineno"> 1129</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ad035d214edc31c72362d7efbdaba234c">tefINTERNAL</a>, <span class="keyword">false</span>};</div>
-<div class="line"><a name="l01130"></a><span class="lineno"> 1130</span>&#160; </div>
-<div class="line"><a name="l01131"></a><span class="lineno"> 1131</span>&#160;    {</div>
-<div class="line"><a name="l01132"></a><span class="lineno"> 1132</span>&#160;        XRPAmount reserve = ctx_.view().fees().accountReserve(</div>
-<div class="line"><a name="l01133"></a><span class="lineno"> 1133</span>&#160;            sleCreator-&gt;getFieldU32(sfOwnerCount) + 1);</div>
-<div class="line"><a name="l01134"></a><span class="lineno"> 1134</span>&#160; </div>
-<div class="line"><a name="l01135"></a><span class="lineno"> 1135</span>&#160;        <span class="keywordflow">if</span> (mPriorBalance &lt; reserve)</div>
-<div class="line"><a name="l01136"></a><span class="lineno"> 1136</span>&#160;        {</div>
-<div class="line"><a name="l01137"></a><span class="lineno"> 1137</span>&#160;            <span class="comment">// If we are here, the signing account had an insufficient reserve</span></div>
-<div class="line"><a name="l01138"></a><span class="lineno"> 1138</span>&#160;            <span class="comment">// *prior* to our processing. If something actually crossed, then</span></div>
-<div class="line"><a name="l01139"></a><span class="lineno"> 1139</span>&#160;            <span class="comment">// we allow this; otherwise, we just claim a fee.</span></div>
-<div class="line"><a name="l01140"></a><span class="lineno"> 1140</span>&#160;            <span class="keywordflow">if</span> (!crossed)</div>
-<div class="line"><a name="l01141"></a><span class="lineno"> 1141</span>&#160;                result = <a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca30792765079d182f869612fc3b96ef8c">tecINSUF_RESERVE_OFFER</a>;</div>
-<div class="line"><a name="l01142"></a><span class="lineno"> 1142</span>&#160; </div>
-<div class="line"><a name="l01143"></a><span class="lineno"> 1143</span>&#160;            <span class="keywordflow">if</span> (result != tesSUCCESS)</div>
-<div class="line"><a name="l01144"></a><span class="lineno"> 1144</span>&#160;            {</div>
-<div class="line"><a name="l01145"></a><span class="lineno"> 1145</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
-<div class="line"><a name="l01146"></a><span class="lineno"> 1146</span>&#160;            }</div>
-<div class="line"><a name="l01147"></a><span class="lineno"> 1147</span>&#160; </div>
-<div class="line"><a name="l01148"></a><span class="lineno"> 1148</span>&#160;            <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01149"></a><span class="lineno"> 1149</span>&#160;        }</div>
-<div class="line"><a name="l01150"></a><span class="lineno"> 1150</span>&#160;    }</div>
-<div class="line"><a name="l01151"></a><span class="lineno"> 1151</span>&#160; </div>
-<div class="line"><a name="l01152"></a><span class="lineno"> 1152</span>&#160;    <span class="comment">// We need to place the remainder of the offer into its order book.</span></div>
-<div class="line"><a name="l01153"></a><span class="lineno"> 1153</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> offer_index = keylet::offer(account_, offerSequence);</div>
-<div class="line"><a name="l01154"></a><span class="lineno"> 1154</span>&#160; </div>
-<div class="line"><a name="l01155"></a><span class="lineno"> 1155</span>&#160;    <span class="comment">// Add offer to owner&#39;s directory.</span></div>
-<div class="line"><a name="l01156"></a><span class="lineno"> 1156</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> ownerNode = sb.dirInsert(</div>
-<div class="line"><a name="l01157"></a><span class="lineno"> 1157</span>&#160;        keylet::ownerDir(account_), offer_index, <a class="code" href="namespaceripple.html#a5b498122d9b8c1acbeb9fe459faac22b">describeOwnerDir</a>(account_));</div>
-<div class="line"><a name="l01158"></a><span class="lineno"> 1158</span>&#160; </div>
-<div class="line"><a name="l01159"></a><span class="lineno"> 1159</span>&#160;    <span class="keywordflow">if</span> (!ownerNode)</div>
-<div class="line"><a name="l01160"></a><span class="lineno"> 1160</span>&#160;    {</div>
-<div class="line"><a name="l01161"></a><span class="lineno"> 1161</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>())</div>
-<div class="line"><a name="l01162"></a><span class="lineno"> 1162</span>&#160;            &lt;&lt; <span class="stringliteral">&quot;final result: failed to add offer to owner&#39;s directory&quot;</span>;</div>
-<div class="line"><a name="l01163"></a><span class="lineno"> 1163</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca4f19fdbc12c26412215f3477f70d5feb">tecDIR_FULL</a>, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01164"></a><span class="lineno"> 1164</span>&#160;    }</div>
-<div class="line"><a name="l01165"></a><span class="lineno"> 1165</span>&#160; </div>
-<div class="line"><a name="l01166"></a><span class="lineno"> 1166</span>&#160;    <span class="comment">// Update owner count.</span></div>
-<div class="line"><a name="l01167"></a><span class="lineno"> 1167</span>&#160;    <a class="code" href="namespaceripple.html#a7e31af9d90dac8c9e4272bf597d83fb4">adjustOwnerCount</a>(sb, sleCreator, 1, viewJ);</div>
-<div class="line"><a name="l01168"></a><span class="lineno"> 1168</span>&#160; </div>
-<div class="line"><a name="l01169"></a><span class="lineno"> 1169</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;adding to book: &quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(saTakerPays.issue())</div>
-<div class="line"><a name="l01170"></a><span class="lineno"> 1170</span>&#160;                     &lt;&lt; <span class="stringliteral">&quot; : &quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(saTakerGets.issue());</div>
-<div class="line"><a name="l01171"></a><span class="lineno"> 1171</span>&#160; </div>
-<div class="line"><a name="l01172"></a><span class="lineno"> 1172</span>&#160;    Book <span class="keyword">const</span> book{saTakerPays.issue(), saTakerGets.issue()};</div>
-<div class="line"><a name="l01173"></a><span class="lineno"> 1173</span>&#160; </div>
-<div class="line"><a name="l01174"></a><span class="lineno"> 1174</span>&#160;    <span class="comment">// Add offer to order book, using the original rate</span></div>
-<div class="line"><a name="l01175"></a><span class="lineno"> 1175</span>&#160;    <span class="comment">// before any crossing occured.</span></div>
-<div class="line"><a name="l01176"></a><span class="lineno"> 1176</span>&#160;    <span class="keyword">auto</span> dir = keylet::quality(keylet::book(book), uRate);</div>
-<div class="line"><a name="l01177"></a><span class="lineno"> 1177</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> bookExisted = <span class="keyword">static_cast&lt;</span><span class="keywordtype">bool</span><span class="keyword">&gt;</span>(sb.peek(dir));</div>
-<div class="line"><a name="l01178"></a><span class="lineno"> 1178</span>&#160; </div>
-<div class="line"><a name="l01179"></a><span class="lineno"> 1179</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> bookNode = sb.dirAppend(dir, offer_index, [&amp;](SLE::ref sle) {</div>
-<div class="line"><a name="l01180"></a><span class="lineno"> 1180</span>&#160;        sle-&gt;setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);</div>
-<div class="line"><a name="l01181"></a><span class="lineno"> 1181</span>&#160;        sle-&gt;setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);</div>
-<div class="line"><a name="l01182"></a><span class="lineno"> 1182</span>&#160;        sle-&gt;setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);</div>
-<div class="line"><a name="l01183"></a><span class="lineno"> 1183</span>&#160;        sle-&gt;setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);</div>
-<div class="line"><a name="l01184"></a><span class="lineno"> 1184</span>&#160;        sle-&gt;setFieldU64(sfExchangeRate, uRate);</div>
-<div class="line"><a name="l01185"></a><span class="lineno"> 1185</span>&#160;    });</div>
-<div class="line"><a name="l01186"></a><span class="lineno"> 1186</span>&#160; </div>
-<div class="line"><a name="l01187"></a><span class="lineno"> 1187</span>&#160;    <span class="keywordflow">if</span> (!bookNode)</div>
-<div class="line"><a name="l01188"></a><span class="lineno"> 1188</span>&#160;    {</div>
-<div class="line"><a name="l01189"></a><span class="lineno"> 1189</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: failed to add offer to book&quot;</span>;</div>
-<div class="line"><a name="l01190"></a><span class="lineno"> 1190</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca4f19fdbc12c26412215f3477f70d5feb">tecDIR_FULL</a>, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01191"></a><span class="lineno"> 1191</span>&#160;    }</div>
-<div class="line"><a name="l01192"></a><span class="lineno"> 1192</span>&#160; </div>
-<div class="line"><a name="l01193"></a><span class="lineno"> 1193</span>&#160;    <span class="keyword">auto</span> sleOffer = std::make_shared&lt;SLE&gt;(offer_index);</div>
-<div class="line"><a name="l01194"></a><span class="lineno"> 1194</span>&#160;    sleOffer-&gt;setAccountID(sfAccount, account_);</div>
-<div class="line"><a name="l01195"></a><span class="lineno"> 1195</span>&#160;    sleOffer-&gt;setFieldU32(sfSequence, offerSequence);</div>
-<div class="line"><a name="l01196"></a><span class="lineno"> 1196</span>&#160;    sleOffer-&gt;setFieldH256(sfBookDirectory, dir.key);</div>
-<div class="line"><a name="l01197"></a><span class="lineno"> 1197</span>&#160;    sleOffer-&gt;setFieldAmount(sfTakerPays, saTakerPays);</div>
-<div class="line"><a name="l01198"></a><span class="lineno"> 1198</span>&#160;    sleOffer-&gt;setFieldAmount(sfTakerGets, saTakerGets);</div>
-<div class="line"><a name="l01199"></a><span class="lineno"> 1199</span>&#160;    sleOffer-&gt;setFieldU64(sfOwnerNode, *ownerNode);</div>
-<div class="line"><a name="l01200"></a><span class="lineno"> 1200</span>&#160;    sleOffer-&gt;setFieldU64(sfBookNode, *bookNode);</div>
-<div class="line"><a name="l01201"></a><span class="lineno"> 1201</span>&#160;    <span class="keywordflow">if</span> (expiration)</div>
-<div class="line"><a name="l01202"></a><span class="lineno"> 1202</span>&#160;        sleOffer-&gt;setFieldU32(sfExpiration, *expiration);</div>
-<div class="line"><a name="l01203"></a><span class="lineno"> 1203</span>&#160;    <span class="keywordflow">if</span> (bPassive)</div>
-<div class="line"><a name="l01204"></a><span class="lineno"> 1204</span>&#160;        sleOffer-&gt;setFlag(lsfPassive);</div>
-<div class="line"><a name="l01205"></a><span class="lineno"> 1205</span>&#160;    <span class="keywordflow">if</span> (bSell)</div>
-<div class="line"><a name="l01206"></a><span class="lineno"> 1206</span>&#160;        sleOffer-&gt;setFlag(lsfSell);</div>
-<div class="line"><a name="l01207"></a><span class="lineno"> 1207</span>&#160;    sb.insert(sleOffer);</div>
-<div class="line"><a name="l01208"></a><span class="lineno"> 1208</span>&#160; </div>
-<div class="line"><a name="l01209"></a><span class="lineno"> 1209</span>&#160;    <span class="keywordflow">if</span> (!bookExisted)</div>
-<div class="line"><a name="l01210"></a><span class="lineno"> 1210</span>&#160;        ctx_.app.getOrderBookDB().addOrderBook(book);</div>
-<div class="line"><a name="l01211"></a><span class="lineno"> 1211</span>&#160; </div>
-<div class="line"><a name="l01212"></a><span class="lineno"> 1212</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: success&quot;</span>;</div>
-<div class="line"><a name="l01213"></a><span class="lineno"> 1213</span>&#160; </div>
-<div class="line"><a name="l01214"></a><span class="lineno"> 1214</span>&#160;    <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, <span class="keyword">true</span>};</div>
-<div class="line"><a name="l01215"></a><span class="lineno"> 1215</span>&#160;}</div>
-<div class="line"><a name="l01216"></a><span class="lineno"> 1216</span>&#160; </div>
-<div class="line"><a name="l01217"></a><span class="lineno"> 1217</span>&#160;<a class="code" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a></div>
-<div class="line"><a name="l01218"></a><span class="lineno"><a class="line" href="classripple_1_1CreateOffer.html#ae8670d9db3224f61491379bfeaf6719f"> 1218</a></span>&#160;CreateOffer::doApply()</div>
-<div class="line"><a name="l01219"></a><span class="lineno"> 1219</span>&#160;{</div>
-<div class="line"><a name="l01220"></a><span class="lineno"> 1220</span>&#160;    <span class="comment">// This is the ledger view that we work against. Transactions are applied</span></div>
-<div class="line"><a name="l01221"></a><span class="lineno"> 1221</span>&#160;    <span class="comment">// as we go on processing transactions.</span></div>
-<div class="line"><a name="l01222"></a><span class="lineno"> 1222</span>&#160;    <a class="code" href="classripple_1_1Sandbox.html">Sandbox</a> sb(&amp;ctx_.view());</div>
-<div class="line"><a name="l01223"></a><span class="lineno"> 1223</span>&#160; </div>
-<div class="line"><a name="l01224"></a><span class="lineno"> 1224</span>&#160;    <span class="comment">// This is a ledger with just the fees paid and any unfunded or expired</span></div>
-<div class="line"><a name="l01225"></a><span class="lineno"> 1225</span>&#160;    <span class="comment">// offers we encounter removed. It&#39;s used when handling Fill-or-Kill offers,</span></div>
-<div class="line"><a name="l01226"></a><span class="lineno"> 1226</span>&#160;    <span class="comment">// if the order isn&#39;t going to be placed, to avoid wasting the work we did.</span></div>
-<div class="line"><a name="l01227"></a><span class="lineno"> 1227</span>&#160;    <a class="code" href="classripple_1_1Sandbox.html">Sandbox</a> sbCancel(&amp;ctx_.view());</div>
-<div class="line"><a name="l01228"></a><span class="lineno"> 1228</span>&#160; </div>
-<div class="line"><a name="l01229"></a><span class="lineno"> 1229</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> result = applyGuts(sb, sbCancel);</div>
-<div class="line"><a name="l01230"></a><span class="lineno"> 1230</span>&#160;    <span class="keywordflow">if</span> (result.second)</div>
-<div class="line"><a name="l01231"></a><span class="lineno"> 1231</span>&#160;        sb.<a class="code" href="classripple_1_1Sandbox.html#af027065a92ed80c4b54b08d7974c06ce">apply</a>(ctx_.rawView());</div>
-<div class="line"><a name="l01232"></a><span class="lineno"> 1232</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01233"></a><span class="lineno"> 1233</span>&#160;        sbCancel.<a class="code" href="classripple_1_1Sandbox.html#af027065a92ed80c4b54b08d7974c06ce">apply</a>(ctx_.rawView());</div>
-<div class="line"><a name="l01234"></a><span class="lineno"> 1234</span>&#160;    <span class="keywordflow">return</span> result.first;</div>
-<div class="line"><a name="l01235"></a><span class="lineno"> 1235</span>&#160;}</div>
-<div class="line"><a name="l01236"></a><span class="lineno"> 1236</span>&#160; </div>
-<div class="line"><a name="l01237"></a><span class="lineno"> 1237</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160;            sb.rules().enabled(featureDepositPreauth) ? <a class="code" href="classripple_1_1TERSubset.html">TER</a>{<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caede598f88bbd44e4df1c4e0d418c4cdc">tecEXPIRED</a>}</div>
+<div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160;                                                      : TER{tesSUCCESS}};</div>
+<div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;        <span class="keywordflow">return</span> {ter, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;    }</div>
+<div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160; </div>
+<div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> bOpenLedger = sb.open();</div>
+<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;    <span class="keywordtype">bool</span> crossed = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160; </div>
+<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;    <span class="keywordflow">if</span> (result == tesSUCCESS)</div>
+<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;    {</div>
+<div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;        <span class="comment">// If a tick size applies, round the offer to the tick size</span></div>
+<div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uPaysIssuerID = saTakerPays.getIssuer();</div>
+<div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; uGetsIssuerID = saTakerGets.getIssuer();</div>
+<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160; </div>
+<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> uTickSize = Quality::maxTickSize;</div>
+<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(uPaysIssuerID))</div>
+<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;        {</div>
+<div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> sle = sb.read(keylet::account(uPaysIssuerID));</div>
+<div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;            <span class="keywordflow">if</span> (sle &amp;&amp; sle-&gt;isFieldPresent(sfTickSize))</div>
+<div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160;                uTickSize = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>(uTickSize, (*sle)[sfTickSize]);</div>
+<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;        }</div>
+<div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(uGetsIssuerID))</div>
+<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;        {</div>
+<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> sle = sb.read(keylet::account(uGetsIssuerID));</div>
+<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;            <span class="keywordflow">if</span> (sle &amp;&amp; sle-&gt;isFieldPresent(sfTickSize))</div>
+<div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;                uTickSize = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>(uTickSize, (*sle)[sfTickSize]);</div>
+<div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;        }</div>
+<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;        <span class="keywordflow">if</span> (uTickSize &lt; Quality::maxTickSize)</div>
+<div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;        {</div>
+<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a8e8d814b8820ce0b6979abde0d6a2618">rate</a> =</div>
+<div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;                Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();</div>
+<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160; </div>
+<div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160;            <span class="comment">// We round the side that&#39;s not exact,</span></div>
+<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;            <span class="comment">// just as if the offer happened to execute</span></div>
+<div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;            <span class="comment">// at a slightly better (for the placer) rate</span></div>
+<div class="line"><a name="l01003"></a><span class="lineno"> 1003</span>&#160;            <span class="keywordflow">if</span> (bSell)</div>
+<div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;            {</div>
+<div class="line"><a name="l01005"></a><span class="lineno"> 1005</span>&#160;                <span class="comment">// this is a sell, round taker pays</span></div>
+<div class="line"><a name="l01006"></a><span class="lineno"> 1006</span>&#160;                saTakerPays = <a class="code" href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">multiply</a>(saTakerGets, rate, saTakerPays.issue());</div>
+<div class="line"><a name="l01007"></a><span class="lineno"> 1007</span>&#160;            }</div>
+<div class="line"><a name="l01008"></a><span class="lineno"> 1008</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01009"></a><span class="lineno"> 1009</span>&#160;            {</div>
+<div class="line"><a name="l01010"></a><span class="lineno"> 1010</span>&#160;                <span class="comment">// this is a buy, round taker gets</span></div>
+<div class="line"><a name="l01011"></a><span class="lineno"> 1011</span>&#160;                saTakerGets = <a class="code" href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">divide</a>(saTakerPays, rate, saTakerGets.issue());</div>
+<div class="line"><a name="l01012"></a><span class="lineno"> 1012</span>&#160;            }</div>
+<div class="line"><a name="l01013"></a><span class="lineno"> 1013</span>&#160;            <span class="keywordflow">if</span> (!saTakerGets || !saTakerPays)</div>
+<div class="line"><a name="l01014"></a><span class="lineno"> 1014</span>&#160;            {</div>
+<div class="line"><a name="l01015"></a><span class="lineno"> 1015</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Offer rounded to zero&quot;</span>;</div>
+<div class="line"><a name="l01016"></a><span class="lineno"> 1016</span>&#160;                <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01017"></a><span class="lineno"> 1017</span>&#160;            }</div>
+<div class="line"><a name="l01018"></a><span class="lineno"> 1018</span>&#160; </div>
+<div class="line"><a name="l01019"></a><span class="lineno"> 1019</span>&#160;            uRate = <a class="code" href="namespaceripple.html#a73cc988e7ba5d5ee0fd9db53740917ec">getRate</a>(saTakerGets, saTakerPays);</div>
+<div class="line"><a name="l01020"></a><span class="lineno"> 1020</span>&#160;        }</div>
+<div class="line"><a name="l01021"></a><span class="lineno"> 1021</span>&#160; </div>
+<div class="line"><a name="l01022"></a><span class="lineno"> 1022</span>&#160;        <span class="comment">// We reverse pays and gets because during crossing we are taking.</span></div>
+<div class="line"><a name="l01023"></a><span class="lineno"> 1023</span>&#160;        Amounts <span class="keyword">const</span> takerAmount(saTakerGets, saTakerPays);</div>
+<div class="line"><a name="l01024"></a><span class="lineno"> 1024</span>&#160; </div>
+<div class="line"><a name="l01025"></a><span class="lineno"> 1025</span>&#160;        <span class="comment">// The amount of the offer that is unfilled after crossing has been</span></div>
+<div class="line"><a name="l01026"></a><span class="lineno"> 1026</span>&#160;        <span class="comment">// performed. It may be equal to the original amount (didn&#39;t cross),</span></div>
+<div class="line"><a name="l01027"></a><span class="lineno"> 1027</span>&#160;        <span class="comment">// empty (fully crossed), or something in-between.</span></div>
+<div class="line"><a name="l01028"></a><span class="lineno"> 1028</span>&#160;        Amounts place_offer;</div>
+<div class="line"><a name="l01029"></a><span class="lineno"> 1029</span>&#160; </div>
+<div class="line"><a name="l01030"></a><span class="lineno"> 1030</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Attempting cross: &quot;</span></div>
+<div class="line"><a name="l01031"></a><span class="lineno"> 1031</span>&#160;                         &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(takerAmount.in.issue()) &lt;&lt; <span class="stringliteral">&quot; -&gt; &quot;</span></div>
+<div class="line"><a name="l01032"></a><span class="lineno"> 1032</span>&#160;                         &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(takerAmount.out.issue());</div>
+<div class="line"><a name="l01033"></a><span class="lineno"> 1033</span>&#160; </div>
+<div class="line"><a name="l01034"></a><span class="lineno"> 1034</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> stream = j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
+<div class="line"><a name="l01035"></a><span class="lineno"> 1035</span>&#160;        {</div>
+<div class="line"><a name="l01036"></a><span class="lineno"> 1036</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;   mode: &quot;</span> &lt;&lt; (bPassive ? <span class="stringliteral">&quot;passive &quot;</span> : <span class="stringliteral">&quot;&quot;</span>)</div>
+<div class="line"><a name="l01037"></a><span class="lineno"> 1037</span>&#160;                   &lt;&lt; (bSell ? <span class="stringliteral">&quot;sell&quot;</span> : <span class="stringliteral">&quot;buy&quot;</span>);</div>
+<div class="line"><a name="l01038"></a><span class="lineno"> 1038</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;     in: &quot;</span> &lt;&lt; format_amount(takerAmount.in);</div>
+<div class="line"><a name="l01039"></a><span class="lineno"> 1039</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    out: &quot;</span> &lt;&lt; format_amount(takerAmount.out);</div>
+<div class="line"><a name="l01040"></a><span class="lineno"> 1040</span>&#160;        }</div>
+<div class="line"><a name="l01041"></a><span class="lineno"> 1041</span>&#160; </div>
+<div class="line"><a name="l01042"></a><span class="lineno"> 1042</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/tie.html">std::tie</a>(result, place_offer) = cross(sb, sbCancel, takerAmount);</div>
+<div class="line"><a name="l01043"></a><span class="lineno"> 1043</span>&#160; </div>
+<div class="line"><a name="l01044"></a><span class="lineno"> 1044</span>&#160;        <span class="comment">// We expect the implementation of cross to succeed</span></div>
+<div class="line"><a name="l01045"></a><span class="lineno"> 1045</span>&#160;        <span class="comment">// or give a tec.</span></div>
+<div class="line"><a name="l01046"></a><span class="lineno"> 1046</span>&#160;        assert(result == tesSUCCESS || <a class="code" href="namespaceripple.html#a18e688f3fc0a5e80e13b353c9f924b22">isTecClaim</a>(result));</div>
+<div class="line"><a name="l01047"></a><span class="lineno"> 1047</span>&#160; </div>
+<div class="line"><a name="l01048"></a><span class="lineno"> 1048</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> stream = j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
+<div class="line"><a name="l01049"></a><span class="lineno"> 1049</span>&#160;        {</div>
+<div class="line"><a name="l01050"></a><span class="lineno"> 1050</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;Cross result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
+<div class="line"><a name="l01051"></a><span class="lineno"> 1051</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;     in: &quot;</span> &lt;&lt; format_amount(place_offer.in);</div>
+<div class="line"><a name="l01052"></a><span class="lineno"> 1052</span>&#160;            <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    out: &quot;</span> &lt;&lt; format_amount(place_offer.out);</div>
+<div class="line"><a name="l01053"></a><span class="lineno"> 1053</span>&#160;        }</div>
+<div class="line"><a name="l01054"></a><span class="lineno"> 1054</span>&#160; </div>
+<div class="line"><a name="l01055"></a><span class="lineno"> 1055</span>&#160;        <span class="keywordflow">if</span> (result == tecFAILED_PROCESSING &amp;&amp; bOpenLedger)</div>
+<div class="line"><a name="l01056"></a><span class="lineno"> 1056</span>&#160;            result = <a class="code" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a453d7db3d36a5516e925c466d1dc0ac1">telFAILED_PROCESSING</a>;</div>
+<div class="line"><a name="l01057"></a><span class="lineno"> 1057</span>&#160; </div>
+<div class="line"><a name="l01058"></a><span class="lineno"> 1058</span>&#160;        <span class="keywordflow">if</span> (result != tesSUCCESS)</div>
+<div class="line"><a name="l01059"></a><span class="lineno"> 1059</span>&#160;        {</div>
+<div class="line"><a name="l01060"></a><span class="lineno"> 1060</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
+<div class="line"><a name="l01061"></a><span class="lineno"> 1061</span>&#160;            <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01062"></a><span class="lineno"> 1062</span>&#160;        }</div>
+<div class="line"><a name="l01063"></a><span class="lineno"> 1063</span>&#160; </div>
+<div class="line"><a name="l01064"></a><span class="lineno"> 1064</span>&#160;        assert(saTakerGets.issue() == place_offer.in.issue());</div>
+<div class="line"><a name="l01065"></a><span class="lineno"> 1065</span>&#160;        assert(saTakerPays.issue() == place_offer.out.issue());</div>
+<div class="line"><a name="l01066"></a><span class="lineno"> 1066</span>&#160; </div>
+<div class="line"><a name="l01067"></a><span class="lineno"> 1067</span>&#160;        <span class="keywordflow">if</span> (takerAmount != place_offer)</div>
+<div class="line"><a name="l01068"></a><span class="lineno"> 1068</span>&#160;            crossed = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01069"></a><span class="lineno"> 1069</span>&#160; </div>
+<div class="line"><a name="l01070"></a><span class="lineno"> 1070</span>&#160;        <span class="comment">// The offer that we need to place after offer crossing should</span></div>
+<div class="line"><a name="l01071"></a><span class="lineno"> 1071</span>&#160;        <span class="comment">// never be negative. If it is, something went very very wrong.</span></div>
+<div class="line"><a name="l01072"></a><span class="lineno"> 1072</span>&#160;        <span class="keywordflow">if</span> (place_offer.in &lt; zero || place_offer.out &lt; zero)</div>
+<div class="line"><a name="l01073"></a><span class="lineno"> 1073</span>&#160;        {</div>
+<div class="line"><a name="l01074"></a><span class="lineno"> 1074</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>()) &lt;&lt; <span class="stringliteral">&quot;Cross left offer negative!&quot;</span></div>
+<div class="line"><a name="l01075"></a><span class="lineno"> 1075</span>&#160;                             &lt;&lt; <span class="stringliteral">&quot;     in: &quot;</span> &lt;&lt; format_amount(place_offer.in)</div>
+<div class="line"><a name="l01076"></a><span class="lineno"> 1076</span>&#160;                             &lt;&lt; <span class="stringliteral">&quot;    out: &quot;</span> &lt;&lt; format_amount(place_offer.out);</div>
+<div class="line"><a name="l01077"></a><span class="lineno"> 1077</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ad035d214edc31c72362d7efbdaba234c">tefINTERNAL</a>, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01078"></a><span class="lineno"> 1078</span>&#160;        }</div>
+<div class="line"><a name="l01079"></a><span class="lineno"> 1079</span>&#160; </div>
+<div class="line"><a name="l01080"></a><span class="lineno"> 1080</span>&#160;        <span class="keywordflow">if</span> (place_offer.in == zero || place_offer.out == zero)</div>
+<div class="line"><a name="l01081"></a><span class="lineno"> 1081</span>&#160;        {</div>
+<div class="line"><a name="l01082"></a><span class="lineno"> 1082</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Offer fully crossed!&quot;</span>;</div>
+<div class="line"><a name="l01083"></a><span class="lineno"> 1083</span>&#160;            <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01084"></a><span class="lineno"> 1084</span>&#160;        }</div>
+<div class="line"><a name="l01085"></a><span class="lineno"> 1085</span>&#160; </div>
+<div class="line"><a name="l01086"></a><span class="lineno"> 1086</span>&#160;        <span class="comment">// We now need to adjust the offer to reflect the amount left after</span></div>
+<div class="line"><a name="l01087"></a><span class="lineno"> 1087</span>&#160;        <span class="comment">// crossing. We reverse in and out here, since during crossing we</span></div>
+<div class="line"><a name="l01088"></a><span class="lineno"> 1088</span>&#160;        <span class="comment">// were the taker.</span></div>
+<div class="line"><a name="l01089"></a><span class="lineno"> 1089</span>&#160;        saTakerPays = place_offer.out;</div>
+<div class="line"><a name="l01090"></a><span class="lineno"> 1090</span>&#160;        saTakerGets = place_offer.in;</div>
+<div class="line"><a name="l01091"></a><span class="lineno"> 1091</span>&#160;    }</div>
+<div class="line"><a name="l01092"></a><span class="lineno"> 1092</span>&#160; </div>
+<div class="line"><a name="l01093"></a><span class="lineno"> 1093</span>&#160;    assert(saTakerPays &gt; zero &amp;&amp; saTakerGets &gt; zero);</div>
+<div class="line"><a name="l01094"></a><span class="lineno"> 1094</span>&#160; </div>
+<div class="line"><a name="l01095"></a><span class="lineno"> 1095</span>&#160;    <span class="keywordflow">if</span> (result != tesSUCCESS)</div>
+<div class="line"><a name="l01096"></a><span class="lineno"> 1096</span>&#160;    {</div>
+<div class="line"><a name="l01097"></a><span class="lineno"> 1097</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
+<div class="line"><a name="l01098"></a><span class="lineno"> 1098</span>&#160;        <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01099"></a><span class="lineno"> 1099</span>&#160;    }</div>
+<div class="line"><a name="l01100"></a><span class="lineno"> 1100</span>&#160; </div>
+<div class="line"><a name="l01101"></a><span class="lineno"> 1101</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> stream = j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
+<div class="line"><a name="l01102"></a><span class="lineno"> 1102</span>&#160;    {</div>
+<div class="line"><a name="l01103"></a><span class="lineno"> 1103</span>&#160;        <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;Place&quot;</span> &lt;&lt; (crossed ? <span class="stringliteral">&quot; remaining &quot;</span> : <span class="stringliteral">&quot; &quot;</span>) &lt;&lt; <span class="stringliteral">&quot;offer:&quot;</span>;</div>
+<div class="line"><a name="l01104"></a><span class="lineno"> 1104</span>&#160;        <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    Pays: &quot;</span> &lt;&lt; saTakerPays.getFullText();</div>
+<div class="line"><a name="l01105"></a><span class="lineno"> 1105</span>&#160;        <a class="code" href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">stream</a> &lt;&lt; <span class="stringliteral">&quot;    Gets: &quot;</span> &lt;&lt; saTakerGets.getFullText();</div>
+<div class="line"><a name="l01106"></a><span class="lineno"> 1106</span>&#160;    }</div>
+<div class="line"><a name="l01107"></a><span class="lineno"> 1107</span>&#160; </div>
+<div class="line"><a name="l01108"></a><span class="lineno"> 1108</span>&#160;    <span class="comment">// For &#39;fill or kill&#39; offers, failure to fully cross means that the</span></div>
+<div class="line"><a name="l01109"></a><span class="lineno"> 1109</span>&#160;    <span class="comment">// entire operation should be aborted, with only fees paid.</span></div>
+<div class="line"><a name="l01110"></a><span class="lineno"> 1110</span>&#160;    <span class="keywordflow">if</span> (bFillOrKill)</div>
+<div class="line"><a name="l01111"></a><span class="lineno"> 1111</span>&#160;    {</div>
+<div class="line"><a name="l01112"></a><span class="lineno"> 1112</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Fill or Kill: offer killed&quot;</span>;</div>
+<div class="line"><a name="l01113"></a><span class="lineno"> 1113</span>&#160;        <span class="keywordflow">if</span> (sb.rules().enabled(fix1578))</div>
+<div class="line"><a name="l01114"></a><span class="lineno"> 1114</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca82773cd87fbf942a9cb626416218f52b">tecKILLED</a>, <span class="keyword">false</span>};</div>
+<div class="line"><a name="l01115"></a><span class="lineno"> 1115</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, <span class="keyword">false</span>};</div>
+<div class="line"><a name="l01116"></a><span class="lineno"> 1116</span>&#160;    }</div>
+<div class="line"><a name="l01117"></a><span class="lineno"> 1117</span>&#160; </div>
+<div class="line"><a name="l01118"></a><span class="lineno"> 1118</span>&#160;    <span class="comment">// For &#39;immediate or cancel&#39; offers, the amount remaining doesn&#39;t get</span></div>
+<div class="line"><a name="l01119"></a><span class="lineno"> 1119</span>&#160;    <span class="comment">// placed - it gets canceled and the operation succeeds.</span></div>
+<div class="line"><a name="l01120"></a><span class="lineno"> 1120</span>&#160;    <span class="keywordflow">if</span> (bImmediateOrCancel)</div>
+<div class="line"><a name="l01121"></a><span class="lineno"> 1121</span>&#160;    {</div>
+<div class="line"><a name="l01122"></a><span class="lineno"> 1122</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Immediate or cancel: offer canceled&quot;</span>;</div>
+<div class="line"><a name="l01123"></a><span class="lineno"> 1123</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01124"></a><span class="lineno"> 1124</span>&#160;    }</div>
+<div class="line"><a name="l01125"></a><span class="lineno"> 1125</span>&#160; </div>
+<div class="line"><a name="l01126"></a><span class="lineno"> 1126</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> sleCreator = sb.peek(keylet::account(account_));</div>
+<div class="line"><a name="l01127"></a><span class="lineno"> 1127</span>&#160;    <span class="keywordflow">if</span> (!sleCreator)</div>
+<div class="line"><a name="l01128"></a><span class="lineno"> 1128</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ad035d214edc31c72362d7efbdaba234c">tefINTERNAL</a>, <span class="keyword">false</span>};</div>
+<div class="line"><a name="l01129"></a><span class="lineno"> 1129</span>&#160; </div>
+<div class="line"><a name="l01130"></a><span class="lineno"> 1130</span>&#160;    {</div>
+<div class="line"><a name="l01131"></a><span class="lineno"> 1131</span>&#160;        XRPAmount reserve =</div>
+<div class="line"><a name="l01132"></a><span class="lineno"> 1132</span>&#160;            sb.fees().accountReserve(sleCreator-&gt;getFieldU32(sfOwnerCount) + 1);</div>
+<div class="line"><a name="l01133"></a><span class="lineno"> 1133</span>&#160; </div>
+<div class="line"><a name="l01134"></a><span class="lineno"> 1134</span>&#160;        <span class="keywordflow">if</span> (mPriorBalance &lt; reserve)</div>
+<div class="line"><a name="l01135"></a><span class="lineno"> 1135</span>&#160;        {</div>
+<div class="line"><a name="l01136"></a><span class="lineno"> 1136</span>&#160;            <span class="comment">// If we are here, the signing account had an insufficient reserve</span></div>
+<div class="line"><a name="l01137"></a><span class="lineno"> 1137</span>&#160;            <span class="comment">// *prior* to our processing. If something actually crossed, then</span></div>
+<div class="line"><a name="l01138"></a><span class="lineno"> 1138</span>&#160;            <span class="comment">// we allow this; otherwise, we just claim a fee.</span></div>
+<div class="line"><a name="l01139"></a><span class="lineno"> 1139</span>&#160;            <span class="keywordflow">if</span> (!crossed)</div>
+<div class="line"><a name="l01140"></a><span class="lineno"> 1140</span>&#160;                result = <a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca30792765079d182f869612fc3b96ef8c">tecINSUF_RESERVE_OFFER</a>;</div>
+<div class="line"><a name="l01141"></a><span class="lineno"> 1141</span>&#160; </div>
+<div class="line"><a name="l01142"></a><span class="lineno"> 1142</span>&#160;            <span class="keywordflow">if</span> (result != tesSUCCESS)</div>
+<div class="line"><a name="l01143"></a><span class="lineno"> 1143</span>&#160;            {</div>
+<div class="line"><a name="l01144"></a><span class="lineno"> 1144</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(result);</div>
+<div class="line"><a name="l01145"></a><span class="lineno"> 1145</span>&#160;            }</div>
+<div class="line"><a name="l01146"></a><span class="lineno"> 1146</span>&#160; </div>
+<div class="line"><a name="l01147"></a><span class="lineno"> 1147</span>&#160;            <span class="keywordflow">return</span> {result, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01148"></a><span class="lineno"> 1148</span>&#160;        }</div>
+<div class="line"><a name="l01149"></a><span class="lineno"> 1149</span>&#160;    }</div>
+<div class="line"><a name="l01150"></a><span class="lineno"> 1150</span>&#160; </div>
+<div class="line"><a name="l01151"></a><span class="lineno"> 1151</span>&#160;    <span class="comment">// We need to place the remainder of the offer into its order book.</span></div>
+<div class="line"><a name="l01152"></a><span class="lineno"> 1152</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> offer_index = keylet::offer(account_, offerSequence);</div>
+<div class="line"><a name="l01153"></a><span class="lineno"> 1153</span>&#160; </div>
+<div class="line"><a name="l01154"></a><span class="lineno"> 1154</span>&#160;    <span class="comment">// Add offer to owner&#39;s directory.</span></div>
+<div class="line"><a name="l01155"></a><span class="lineno"> 1155</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> ownerNode = sb.dirInsert(</div>
+<div class="line"><a name="l01156"></a><span class="lineno"> 1156</span>&#160;        keylet::ownerDir(account_), offer_index, <a class="code" href="namespaceripple.html#a5b498122d9b8c1acbeb9fe459faac22b">describeOwnerDir</a>(account_));</div>
+<div class="line"><a name="l01157"></a><span class="lineno"> 1157</span>&#160; </div>
+<div class="line"><a name="l01158"></a><span class="lineno"> 1158</span>&#160;    <span class="keywordflow">if</span> (!ownerNode)</div>
+<div class="line"><a name="l01159"></a><span class="lineno"> 1159</span>&#160;    {</div>
+<div class="line"><a name="l01160"></a><span class="lineno"> 1160</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>())</div>
+<div class="line"><a name="l01161"></a><span class="lineno"> 1161</span>&#160;            &lt;&lt; <span class="stringliteral">&quot;final result: failed to add offer to owner&#39;s directory&quot;</span>;</div>
+<div class="line"><a name="l01162"></a><span class="lineno"> 1162</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca4f19fdbc12c26412215f3477f70d5feb">tecDIR_FULL</a>, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01163"></a><span class="lineno"> 1163</span>&#160;    }</div>
+<div class="line"><a name="l01164"></a><span class="lineno"> 1164</span>&#160; </div>
+<div class="line"><a name="l01165"></a><span class="lineno"> 1165</span>&#160;    <span class="comment">// Update owner count.</span></div>
+<div class="line"><a name="l01166"></a><span class="lineno"> 1166</span>&#160;    <a class="code" href="namespaceripple.html#a7e31af9d90dac8c9e4272bf597d83fb4">adjustOwnerCount</a>(sb, sleCreator, 1, viewJ);</div>
+<div class="line"><a name="l01167"></a><span class="lineno"> 1167</span>&#160; </div>
+<div class="line"><a name="l01168"></a><span class="lineno"> 1168</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;adding to book: &quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(saTakerPays.issue())</div>
+<div class="line"><a name="l01169"></a><span class="lineno"> 1169</span>&#160;                     &lt;&lt; <span class="stringliteral">&quot; : &quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(saTakerGets.issue());</div>
+<div class="line"><a name="l01170"></a><span class="lineno"> 1170</span>&#160; </div>
+<div class="line"><a name="l01171"></a><span class="lineno"> 1171</span>&#160;    Book <span class="keyword">const</span> book{saTakerPays.issue(), saTakerGets.issue()};</div>
+<div class="line"><a name="l01172"></a><span class="lineno"> 1172</span>&#160; </div>
+<div class="line"><a name="l01173"></a><span class="lineno"> 1173</span>&#160;    <span class="comment">// Add offer to order book, using the original rate</span></div>
+<div class="line"><a name="l01174"></a><span class="lineno"> 1174</span>&#160;    <span class="comment">// before any crossing occured.</span></div>
+<div class="line"><a name="l01175"></a><span class="lineno"> 1175</span>&#160;    <span class="keyword">auto</span> dir = keylet::quality(keylet::book(book), uRate);</div>
+<div class="line"><a name="l01176"></a><span class="lineno"> 1176</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> bookExisted = <span class="keyword">static_cast&lt;</span><span class="keywordtype">bool</span><span class="keyword">&gt;</span>(sb.peek(dir));</div>
+<div class="line"><a name="l01177"></a><span class="lineno"> 1177</span>&#160; </div>
+<div class="line"><a name="l01178"></a><span class="lineno"> 1178</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> bookNode = sb.dirAppend(dir, offer_index, [&amp;](SLE::ref sle) {</div>
+<div class="line"><a name="l01179"></a><span class="lineno"> 1179</span>&#160;        sle-&gt;setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);</div>
+<div class="line"><a name="l01180"></a><span class="lineno"> 1180</span>&#160;        sle-&gt;setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);</div>
+<div class="line"><a name="l01181"></a><span class="lineno"> 1181</span>&#160;        sle-&gt;setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);</div>
+<div class="line"><a name="l01182"></a><span class="lineno"> 1182</span>&#160;        sle-&gt;setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);</div>
+<div class="line"><a name="l01183"></a><span class="lineno"> 1183</span>&#160;        sle-&gt;setFieldU64(sfExchangeRate, uRate);</div>
+<div class="line"><a name="l01184"></a><span class="lineno"> 1184</span>&#160;    });</div>
+<div class="line"><a name="l01185"></a><span class="lineno"> 1185</span>&#160; </div>
+<div class="line"><a name="l01186"></a><span class="lineno"> 1186</span>&#160;    <span class="keywordflow">if</span> (!bookNode)</div>
+<div class="line"><a name="l01187"></a><span class="lineno"> 1187</span>&#160;    {</div>
+<div class="line"><a name="l01188"></a><span class="lineno"> 1188</span>&#160;        JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: failed to add offer to book&quot;</span>;</div>
+<div class="line"><a name="l01189"></a><span class="lineno"> 1189</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca4f19fdbc12c26412215f3477f70d5feb">tecDIR_FULL</a>, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01190"></a><span class="lineno"> 1190</span>&#160;    }</div>
+<div class="line"><a name="l01191"></a><span class="lineno"> 1191</span>&#160; </div>
+<div class="line"><a name="l01192"></a><span class="lineno"> 1192</span>&#160;    <span class="keyword">auto</span> sleOffer = std::make_shared&lt;SLE&gt;(offer_index);</div>
+<div class="line"><a name="l01193"></a><span class="lineno"> 1193</span>&#160;    sleOffer-&gt;setAccountID(sfAccount, account_);</div>
+<div class="line"><a name="l01194"></a><span class="lineno"> 1194</span>&#160;    sleOffer-&gt;setFieldU32(sfSequence, offerSequence);</div>
+<div class="line"><a name="l01195"></a><span class="lineno"> 1195</span>&#160;    sleOffer-&gt;setFieldH256(sfBookDirectory, dir.key);</div>
+<div class="line"><a name="l01196"></a><span class="lineno"> 1196</span>&#160;    sleOffer-&gt;setFieldAmount(sfTakerPays, saTakerPays);</div>
+<div class="line"><a name="l01197"></a><span class="lineno"> 1197</span>&#160;    sleOffer-&gt;setFieldAmount(sfTakerGets, saTakerGets);</div>
+<div class="line"><a name="l01198"></a><span class="lineno"> 1198</span>&#160;    sleOffer-&gt;setFieldU64(sfOwnerNode, *ownerNode);</div>
+<div class="line"><a name="l01199"></a><span class="lineno"> 1199</span>&#160;    sleOffer-&gt;setFieldU64(sfBookNode, *bookNode);</div>
+<div class="line"><a name="l01200"></a><span class="lineno"> 1200</span>&#160;    <span class="keywordflow">if</span> (expiration)</div>
+<div class="line"><a name="l01201"></a><span class="lineno"> 1201</span>&#160;        sleOffer-&gt;setFieldU32(sfExpiration, *expiration);</div>
+<div class="line"><a name="l01202"></a><span class="lineno"> 1202</span>&#160;    <span class="keywordflow">if</span> (bPassive)</div>
+<div class="line"><a name="l01203"></a><span class="lineno"> 1203</span>&#160;        sleOffer-&gt;setFlag(lsfPassive);</div>
+<div class="line"><a name="l01204"></a><span class="lineno"> 1204</span>&#160;    <span class="keywordflow">if</span> (bSell)</div>
+<div class="line"><a name="l01205"></a><span class="lineno"> 1205</span>&#160;        sleOffer-&gt;setFlag(lsfSell);</div>
+<div class="line"><a name="l01206"></a><span class="lineno"> 1206</span>&#160;    sb.insert(sleOffer);</div>
+<div class="line"><a name="l01207"></a><span class="lineno"> 1207</span>&#160; </div>
+<div class="line"><a name="l01208"></a><span class="lineno"> 1208</span>&#160;    <span class="keywordflow">if</span> (!bookExisted)</div>
+<div class="line"><a name="l01209"></a><span class="lineno"> 1209</span>&#160;        ctx_.app.getOrderBookDB().addOrderBook(book);</div>
+<div class="line"><a name="l01210"></a><span class="lineno"> 1210</span>&#160; </div>
+<div class="line"><a name="l01211"></a><span class="lineno"> 1211</span>&#160;    JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;final result: success&quot;</span>;</div>
+<div class="line"><a name="l01212"></a><span class="lineno"> 1212</span>&#160; </div>
+<div class="line"><a name="l01213"></a><span class="lineno"> 1213</span>&#160;    <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, <span class="keyword">true</span>};</div>
+<div class="line"><a name="l01214"></a><span class="lineno"> 1214</span>&#160;}</div>
+<div class="line"><a name="l01215"></a><span class="lineno"> 1215</span>&#160; </div>
+<div class="line"><a name="l01216"></a><span class="lineno"> 1216</span>&#160;<a class="code" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a></div>
+<div class="line"><a name="l01217"></a><span class="lineno"><a class="line" href="classripple_1_1CreateOffer.html#ae8670d9db3224f61491379bfeaf6719f"> 1217</a></span>&#160;CreateOffer::doApply()</div>
+<div class="line"><a name="l01218"></a><span class="lineno"> 1218</span>&#160;{</div>
+<div class="line"><a name="l01219"></a><span class="lineno"> 1219</span>&#160;    <span class="comment">// This is the ledger view that we work against. Transactions are applied</span></div>
+<div class="line"><a name="l01220"></a><span class="lineno"> 1220</span>&#160;    <span class="comment">// as we go on processing transactions.</span></div>
+<div class="line"><a name="l01221"></a><span class="lineno"> 1221</span>&#160;    <a class="code" href="classripple_1_1Sandbox.html">Sandbox</a> sb(&amp;ctx_.view());</div>
+<div class="line"><a name="l01222"></a><span class="lineno"> 1222</span>&#160; </div>
+<div class="line"><a name="l01223"></a><span class="lineno"> 1223</span>&#160;    <span class="comment">// This is a ledger with just the fees paid and any unfunded or expired</span></div>
+<div class="line"><a name="l01224"></a><span class="lineno"> 1224</span>&#160;    <span class="comment">// offers we encounter removed. It&#39;s used when handling Fill-or-Kill offers,</span></div>
+<div class="line"><a name="l01225"></a><span class="lineno"> 1225</span>&#160;    <span class="comment">// if the order isn&#39;t going to be placed, to avoid wasting the work we did.</span></div>
+<div class="line"><a name="l01226"></a><span class="lineno"> 1226</span>&#160;    <a class="code" href="classripple_1_1Sandbox.html">Sandbox</a> sbCancel(&amp;ctx_.view());</div>
+<div class="line"><a name="l01227"></a><span class="lineno"> 1227</span>&#160; </div>
+<div class="line"><a name="l01228"></a><span class="lineno"> 1228</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> result = applyGuts(sb, sbCancel);</div>
+<div class="line"><a name="l01229"></a><span class="lineno"> 1229</span>&#160;    <span class="keywordflow">if</span> (result.second)</div>
+<div class="line"><a name="l01230"></a><span class="lineno"> 1230</span>&#160;        sb.<a class="code" href="classripple_1_1Sandbox.html#af027065a92ed80c4b54b08d7974c06ce">apply</a>(ctx_.rawView());</div>
+<div class="line"><a name="l01231"></a><span class="lineno"> 1231</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01232"></a><span class="lineno"> 1232</span>&#160;        sbCancel.<a class="code" href="classripple_1_1Sandbox.html#af027065a92ed80c4b54b08d7974c06ce">apply</a>(ctx_.rawView());</div>
+<div class="line"><a name="l01233"></a><span class="lineno"> 1233</span>&#160;    <span class="keywordflow">return</span> result.first;</div>
+<div class="line"><a name="l01234"></a><span class="lineno"> 1234</span>&#160;}</div>
+<div class="line"><a name="l01235"></a><span class="lineno"> 1235</span>&#160; </div>
+<div class="line"><a name="l01236"></a><span class="lineno"> 1236</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a0d78fe5b5eff36774b5be525cbcc3972"><div class="ttname"><a href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">ripple::badCurrency</a></div><div class="ttdeci">Currency const  &amp; badCurrency()</div><div class="ttdoc">We deliberately disallow the currency that looks like &quot;XRP&quot; because too many people were using it ins...</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00135">UintTypes.cpp:135</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>
@@ -1327,8 +1326,9 @@ $(function() {
 <div class="ttc" id="astructripple_1_1PreclaimContext_html_a534551c8ca0dd7afc8fe9098bf9da780"><div class="ttname"><a href="structripple_1_1PreclaimContext.html#a534551c8ca0dd7afc8fe9098bf9da780">ripple::PreclaimContext::j</a></div><div class="ttdeci">const beast::Journal j</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00060">Transactor.h:60</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_abbe082bd27ca0f1d1365af2824e4f85b"><div class="ttname"><a href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">beast::Journal::trace</a></div><div class="ttdeci">Stream trace() const</div><div class="ttdoc">Severity stream access functions.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00309">Journal.h:309</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7c8945b5034bba5f9df719cff2503495"><div class="ttname"><a href="namespaceripple.html#a7c8945b5034bba5f9df719cff2503495">ripple::composed_quality</a></div><div class="ttdeci">Quality composed_quality(Quality const &amp;lhs, Quality const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="Quality_8cpp_source.html#l00101">Quality.cpp:101</a></div></div>
-<div class="ttc" id="aclassripple_1_1STAmount_html_ae1e71aef94d7a8d5730eb85804b710da"><div class="ttname"><a href="classripple_1_1STAmount.html#ae1e71aef94d7a8d5730eb85804b710da">ripple::STAmount::clear</a></div><div class="ttdeci">void clear()</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00280">STAmount.h:280</a></div></div>
+<div class="ttc" id="aclassripple_1_1STAmount_html_ae1e71aef94d7a8d5730eb85804b710da"><div class="ttname"><a href="classripple_1_1STAmount.html#ae1e71aef94d7a8d5730eb85804b710da">ripple::STAmount::clear</a></div><div class="ttdeci">void clear()</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00393">STAmount.h:393</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a2f47aed569ab0aad959f6d6d8d1c3af7"><div class="ttname"><a href="namespaceJson.html#a2f47aed569ab0aad959f6d6d8d1c3af7">Json::stream</a></div><div class="ttdeci">void stream(Json::Value const &amp;jv, Write const &amp;write)</div><div class="ttdoc">Stream compact JSON to the specified function.</div><div class="ttdef"><b>Definition:</b> <a href="json__writer_8h_source.html#l00300">json_writer.h:300</a></div></div>
+<div class="ttc" id="aclassripple_1_1STAmount_html_acab76380a95d902071fd26ab3425bbe5"><div class="ttname"><a href="classripple_1_1STAmount.html#acab76380a95d902071fd26ab3425bbe5">ripple::STAmount::issue</a></div><div class="ttdeci">Issue const  &amp; issue() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00338">STAmount.h:338</a></div></div>
 <div class="ttc" id="aclassripple_1_1Taker_html"><div class="ttname"><a href="classripple_1_1Taker.html">ripple::Taker</a></div><div class="ttdef"><b>Definition:</b> <a href="Taker_8h_source.html#l00240">Taker.h:240</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adebe4d783be9c979e67fdbb2bc27162fae9a023686bac48d78ee1d9d7aaa95b5f"><div class="ttname"><a href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fae9a023686bac48d78ee1d9d7aaa95b5f">ripple::terNO_LINE</a></div><div class="ttdeci">@ terNO_LINE</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00195">TER.h:195</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5b498122d9b8c1acbeb9fe459faac22b"><div class="ttname"><a href="namespaceripple.html#a5b498122d9b8c1acbeb9fe459faac22b">ripple::describeOwnerDir</a></div><div class="ttdeci">std::function&lt; void(SLE::ref)&gt; describeOwnerDir(AccountID const &amp;account)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00731">View.cpp:731</a></div></div>
@@ -1343,16 +1343,16 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1BasicTaker_html_a767e75e4d5d6181a3419d0df1b1bebc9"><div class="ttname"><a href="classripple_1_1BasicTaker.html#a767e75e4d5d6181a3419d0df1b1bebc9">ripple::BasicTaker::reject</a></div><div class="ttdeci">bool reject(Quality const &amp;quality) const noexcept</div><div class="ttdoc">Returns true if the quality does not meet the taker's requirements.</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8h_source.html#l00179">Taker.h:179</a></div></div>
 <div class="ttc" id="aclassripple_1_1BasicTaker_html_a9584df14ca2e8cd3e1e233b1629254e2"><div class="ttname"><a href="classripple_1_1BasicTaker.html#a9584df14ca2e8cd3e1e233b1629254e2">ripple::BasicTaker::remaining_offer</a></div><div class="ttdeci">Amounts remaining_offer() const</div><div class="ttdoc">Returns the amount remaining on the offer.</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8cpp_source.html#l00141">Taker.cpp:141</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af16188617a6d8abff264150016b2dc43"><div class="ttname"><a href="namespaceripple.html#af16188617a6d8abff264150016b2dc43">ripple::tfPassive</a></div><div class="ttdeci">const std::uint32_t tfPassive</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00076">TxFlags.h:76</a></div></div>
-<div class="ttc" id="aclassripple_1_1STAmount_html_aa65826cb148b5d15412fceecca5ae47c"><div class="ttname"><a href="classripple_1_1STAmount.html#aa65826cb148b5d15412fceecca5ae47c">ripple::STAmount::getText</a></div><div class="ttdeci">std::string getText() const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00512">STAmount.cpp:512</a></div></div>
+<div class="ttc" id="aclassripple_1_1STAmount_html_aa65826cb148b5d15412fceecca5ae47c"><div class="ttname"><a href="classripple_1_1STAmount.html#aa65826cb148b5d15412fceecca5ae47c">ripple::STAmount::getText</a></div><div class="ttdeci">std::string getText() const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00530">STAmount.cpp:530</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad2487abbcc1a5d6064b72144b461df6e"><div class="ttname"><a href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ripple::ApplyFlags</a></div><div class="ttdeci">ApplyFlags</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00029">ApplyView.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1Issue_html_a4b723aa4198e4c630e41de06586e2fe7"><div class="ttname"><a href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">ripple::Issue::currency</a></div><div class="ttdeci">Currency currency</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00037">Issue.h:37</a></div></div>
 <div class="ttc" id="anamespaceripple_html_acba9aa7d1101df4ac940c3588972fdea"><div class="ttname"><a href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">ripple::multiplyRound</a></div><div class="ttdeci">STAmount multiplyRound(STAmount const &amp;amount, Rate const &amp;rate, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00049">Rate2.cpp:49</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a875ae996b37ed036597d70628ae053e3"><div class="ttname"><a href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">ripple::transToken</a></div><div class="ttdeci">std::string transToken(TER code)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00196">TER.cpp:196</a></div></div>
-<div class="ttc" id="aclassripple_1_1STPathSet_html_af48d3b97e65d1e4826d13289b1648c80"><div class="ttname"><a href="classripple_1_1STPathSet.html#af48d3b97e65d1e4826d13289b1648c80">ripple::STPathSet::emplace_back</a></div><div class="ttdeci">void emplace_back(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00400">STPathSet.h:400</a></div></div>
+<div class="ttc" id="aclassripple_1_1STPathSet_html_af48d3b97e65d1e4826d13289b1648c80"><div class="ttname"><a href="classripple_1_1STPathSet.html#af48d3b97e65d1e4826d13289b1648c80">ripple::STPathSet::emplace_back</a></div><div class="ttdeci">void emplace_back(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00515">STPathSet.h:515</a></div></div>
 <div class="ttc" id="aclassripple_1_1BasicTaker_html_a4e2d19f61a316ceaad0f41d51ba16462"><div class="ttname"><a href="classripple_1_1BasicTaker.html#a4e2d19f61a316ceaad0f41d51ba16462">ripple::BasicTaker::issue_in</a></div><div class="ttdeci">Issue const  &amp; issue_in() const</div><div class="ttdoc">Returns the Issue associated with the input of the offer.</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8h_source.html#l00193">Taker.h:193</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5e49d5cb12f80e98c70ac0dea63764e5"><div class="ttname"><a href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">ripple::divideRound</a></div><div class="ttdeci">STAmount divideRound(STAmount const &amp;amount, Rate const &amp;rate, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00088">Rate2.cpp:88</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3e312ecdb199409dca142d307a3e0e5b"><div class="ttname"><a href="namespaceripple.html#a3e312ecdb199409dca142d307a3e0e5b">ripple::isLegalNet</a></div><div class="ttdeci">bool isLegalNet(STAmount const &amp;value)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00386">STAmount.h:386</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3e312ecdb199409dca142d307a3e0e5b"><div class="ttname"><a href="namespaceripple.html#a3e312ecdb199409dca142d307a3e0e5b">ripple::isLegalNet</a></div><div class="ttdeci">bool isLegalNet(STAmount const &amp;value)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00430">STAmount.h:430</a></div></div>
 <div class="ttc" id="aclassripple_1_1OfferStream_html"><div class="ttname"><a href="classripple_1_1OfferStream.html">ripple::OfferStream</a></div><div class="ttdoc">Presents and consumes the offers in an order book.</div><div class="ttdef"><b>Definition:</b> <a href="OfferStream_8h_source.html#l00147">OfferStream.h:147</a></div></div>
 <div class="ttc" id="aclassripple_1_1Taker_html_a3af0974a9a375f39dc201b8f957c44d8"><div class="ttname"><a href="classripple_1_1Taker.html#a3af0974a9a375f39dc201b8f957c44d8">ripple::Taker::get_bridge_crossings</a></div><div class="ttdeci">std::uint32_t get_bridge_crossings() const</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8h_source.html#l00274">Taker.h:274</a></div></div>
 <div class="ttc" id="aclassripple_1_1Taker_html_a829f13c62828bb6b91041906077ccb21"><div class="ttname"><a href="classripple_1_1Taker.html#a829f13c62828bb6b91041906077ccb21">ripple::Taker::get_direct_crossings</a></div><div class="ttdeci">std::uint32_t get_direct_crossings() const</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8h_source.html#l00268">Taker.h:268</a></div></div>
@@ -1361,17 +1361,18 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46a02872f8cb2a55f507f839f28918933f0"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a02872f8cb2a55f507f839f28918933f0">ripple::temBAD_ISSUER</a></div><div class="ttdeci">@ temBAD_ISSUER</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00088">TER.h:88</a></div></div>
 <div class="ttc" id="astructripple_1_1PreflightContext_html_a7db9100a0f215cba1c093674692601c4"><div class="ttname"><a href="structripple_1_1PreflightContext.html#a7db9100a0f215cba1c093674692601c4">ripple::PreflightContext::j</a></div><div class="ttdeci">const beast::Journal j</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00038">Transactor.h:38</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a18e688f3fc0a5e80e13b353c9f924b22"><div class="ttname"><a href="namespaceripple.html#a18e688f3fc0a5e80e13b353c9f924b22">ripple::isTecClaim</a></div><div class="ttdeci">bool isTecClaim(TER x)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00590">TER.h:590</a></div></div>
-<div class="ttc" id="aclassripple_1_1STPathSet_html"><div class="ttname"><a href="classripple_1_1STPathSet.html">ripple::STPathSet</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00309">STPathSet.h:309</a></div></div>
+<div class="ttc" id="aclassripple_1_1STPathSet_html"><div class="ttname"><a href="classripple_1_1STPathSet.html">ripple::STPathSet</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00175">STPathSet.h:175</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5dfb437ade69624474bbe4125ceb791a"><div class="ttname"><a href="namespaceripple.html#a5dfb437ade69624474bbe4125ceb791a">ripple::preflight1</a></div><div class="ttdeci">NotTEC preflight1(PreflightContext const &amp;ctx)</div><div class="ttdoc">Performs early sanity checks on the account and fee fields.</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8cpp_source.html#l00056">Transactor.cpp:56</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html"><div class="ttname"><a href="classripple_1_1ApplyView.html">ripple::ApplyView</a></div><div class="ttdoc">Writeable view to a ledger, for applying a transaction.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00134">ApplyView.h:134</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5ae6db21adf463a223e362b44f0fd54663"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ae6db21adf463a223e362b44f0fd54663">ripple::lsfHighAuth</a></div><div class="ttdeci">@ lsfHighAuth</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00232">LedgerFormats.h:232</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca82773cd87fbf942a9cb626416218f52b"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca82773cd87fbf942a9cb626416218f52b">ripple::tecKILLED</a></div><div class="ttdeci">@ tecKILLED</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00278">TER.h:278</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7806e73f2a04df365821602cfcf89ff2"><div class="ttname"><a href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2">ripple::mulRound</a></div><div class="ttdeci">STAmount mulRound(STAmount const &amp;v1, STAmount const &amp;v2, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01219">STAmount.cpp:1219</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7806e73f2a04df365821602cfcf89ff2"><div class="ttname"><a href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2">ripple::mulRound</a></div><div class="ttdeci">STAmount mulRound(STAmount const &amp;v1, STAmount const &amp;v2, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01243">STAmount.cpp:1243</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a5caa8aa3fdb4ebc153fc074238574bb2"><div class="ttname"><a href="classripple_1_1TOffer.html#a5caa8aa3fdb4ebc153fc074238574bb2">ripple::TOffer::quality</a></div><div class="ttdeci">const Quality quality() const noexcept</div><div class="ttdoc">Returns the quality of the offer.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00075">Offer.h:75</a></div></div>
+<div class="ttc" id="aclassripple_1_1STAmount_html_aaac822e5948df5f12b6eaf48feaf1684"><div class="ttname"><a href="classripple_1_1STAmount.html#aaac822e5948df5f12b6eaf48feaf1684">ripple::STAmount::getIssuer</a></div><div class="ttdeci">AccountID const  &amp; getIssuer() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00350">STAmount.h:350</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae3182ff3db5f7f67e4fe8bcd69316727"><div class="ttname"><a href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">ripple::sfExpiration</a></div><div class="ttdeci">const SF_UINT32 sfExpiration</div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a7fdbb2b7d937889073f48e8eb2c5ad77"><div class="ttname"><a href="classripple_1_1TOffer.html#a7fdbb2b7d937889073f48e8eb2c5ad77">ripple::TOffer::amount</a></div><div class="ttdeci">TAmounts&lt; TIn, TOut &gt; const  &amp; amount() const</div><div class="ttdoc">Returns the in and out amounts.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00091">Offer.h:91</a></div></div>
 <div class="ttc" id="atie_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/tuple/tie.html">std::tie</a></div><div class="ttdeci">T tie(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a73cc988e7ba5d5ee0fd9db53740917ec"><div class="ttname"><a href="namespaceripple.html#a73cc988e7ba5d5ee0fd9db53740917ec">ripple::getRate</a></div><div class="ttdeci">std::uint64_t getRate(STAmount const &amp;offerOut, STAmount const &amp;offerIn)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00442">STAmount.cpp:442</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a73cc988e7ba5d5ee0fd9db53740917ec"><div class="ttname"><a href="namespaceripple.html#a73cc988e7ba5d5ee0fd9db53740917ec">ripple::getRate</a></div><div class="ttdeci">std::uint64_t getRate(STAmount const &amp;offerOut, STAmount const &amp;offerIn)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00454">STAmount.cpp:454</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a0ad557cc32ca87dcea19af8e30c63c6a"><div class="ttname"><a href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">ripple::divide</a></div><div class="ttdeci">STAmount divide(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00077">Rate2.cpp:77</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1bd06b8a74779afd739e715cbdbacddd"><div class="ttname"><a href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">ripple::sfTakerPays</a></div><div class="ttdeci">const SF_AMOUNT sfTakerPays</div></div>
@@ -1385,7 +1386,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1CreateOffer_html_a59d336027ccb062b2e916e385bd57114"><div class="ttname"><a href="classripple_1_1CreateOffer.html#a59d336027ccb062b2e916e385bd57114">ripple::CreateOffer::preclaim</a></div><div class="ttdeci">static TER preclaim(PreclaimContext const &amp;ctx)</div><div class="ttdoc">Enforce constraints beyond those of the Transactor base class.</div><div class="ttdef"><b>Definition:</b> <a href="CreateOffer_8cpp_source.html#l00130">CreateOffer.cpp:130</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_a50c370db96b4fdcdd202d9c2c38afce9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00130">Indexes.cpp:130</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a66af773abebf361a8c930c1dc457a740"><div class="ttname"><a href="namespaceripple.html#a66af773abebf361a8c930c1dc457a740">ripple::offerDelete</a></div><div class="ttdeci">TER offerDelete(ApplyView &amp;view, std::shared_ptr&lt; SLE &gt; const &amp;sle, beast::Journal j)</div><div class="ttdoc">Delete an offer.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00893">View.cpp:893</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a47b15adfd6fb69767c64f50d860a11cc"><div class="ttname"><a href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc">ripple::divRound</a></div><div class="ttdeci">STAmount divRound(STAmount const &amp;num, STAmount const &amp;den, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01305">STAmount.cpp:1305</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a47b15adfd6fb69767c64f50d860a11cc"><div class="ttname"><a href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc">ripple::divRound</a></div><div class="ttdeci">STAmount divRound(STAmount const &amp;num, STAmount const &amp;den, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01329">STAmount.cpp:1329</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9d8c82889876f162f2ca36cb29b6e4fd"><div class="ttname"><a href="namespaceripple.html#a9d8c82889876f162f2ca36cb29b6e4fd">ripple::tfOfferCreateMask</a></div><div class="ttdeci">const std::uint32_t tfOfferCreateMask</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00080">TxFlags.h:80</a></div></div>
 <div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset</a></div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00327">TER.h:327</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_afd346388dfa6d95ec38b22ec6527cb07"><div class="ttname"><a href="classripple_1_1TOffer.html#afd346388dfa6d95ec38b22ec6527cb07">ripple::TOffer::owner</a></div><div class="ttdeci">AccountID const  &amp; owner() const</div><div class="ttdoc">Returns the account id of the offer's owner.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00082">Offer.h:82</a></div></div>
@@ -1414,15 +1415,13 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1ReadView_html_a3351e0244f921234d5ba005a07ddf539"><div class="ttname"><a href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">ripple::ReadView::read</a></div><div class="ttdeci">virtual std::shared_ptr&lt; SLE const  &gt; read(Keylet const &amp;k) const =0</div><div class="ttdoc">Return the state item associated with a key.</div></div>
 <div class="ttc" id="astructripple_1_1PreclaimContext_html_a8e1240b39791cf309b9caaffe8e5d306"><div class="ttname"><a href="structripple_1_1PreclaimContext.html#a8e1240b39791cf309b9caaffe8e5d306">ripple::PreclaimContext::tx</a></div><div class="ttdeci">STTx const  &amp; tx</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00058">Transactor.h:58</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a15bb971c7e554fc3df218aba54c33fcc"><div class="ttname"><a href="namespaceripple.html#a15bb971c7e554fc3df218aba54c33fcc">ripple::accountFunds</a></div><div class="ttdeci">STAmount accountFunds(ReadView const &amp;view, AccountID const &amp;id, STAmount const &amp;saDefault, FreezeHandling freezeHandling, beast::Journal j)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00260">View.cpp:260</a></div></div>
-<div class="ttc" id="aclassripple_1_1STAmount_html_a2563a8f586a001bfbbc88630701deaf1"><div class="ttname"><a href="classripple_1_1STAmount.html#a2563a8f586a001bfbbc88630701deaf1">ripple::STAmount::getCurrency</a></div><div class="ttdeci">Currency const  &amp; getCurrency() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00205">STAmount.h:205</a></div></div>
-<div class="ttc" id="aclassripple_1_1STAmount_html_a32dbb5cdbd2b0d593047909d9294c861"><div class="ttname"><a href="classripple_1_1STAmount.html#a32dbb5cdbd2b0d593047909d9294c861">ripple::STAmount::getIssuer</a></div><div class="ttdeci">AccountID const  &amp; getIssuer() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00210">STAmount.h:210</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca4f19fdbc12c26412215f3477f70d5feb"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca4f19fdbc12c26412215f3477f70d5feb">ripple::tecDIR_FULL</a></div><div class="ttdeci">@ tecDIR_FULL</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00249">TER.h:249</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adebe4d783be9c979e67fdbb2bc27162faa7ab9460c6755719dd1a4e74b83f34c4"><div class="ttname"><a href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162faa7ab9460c6755719dd1a4e74b83f34c4">ripple::terNO_ACCOUNT</a></div><div class="ttdeci">@ terNO_ACCOUNT</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00193">TER.h:193</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5adb540ae694e45bca2ad089fff15128"><div class="ttname"><a href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">ripple::multiply</a></div><div class="ttdeci">STAmount multiply(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00038">Rate2.cpp:38</a></div></div>
 <div class="ttc" id="amin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a></div><div class="ttdeci">T min(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1PreclaimContext_html"><div class="ttname"><a href="structripple_1_1PreclaimContext.html">ripple::PreclaimContext</a></div><div class="ttdoc">State information when determining if a tx is likely to claim a fee.</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00052">Transactor.h:52</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad2487abbcc1a5d6064b72144b461df6ead993a03ae0b72db5c62a616b69eaccff"><div class="ttname"><a href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6ead993a03ae0b72db5c62a616b69eaccff">ripple::tapRETRY</a></div><div class="ttdeci">@ tapRETRY</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00038">ApplyView.h:38</a></div></div>
-<div class="ttc" id="aclassripple_1_1STAmount_html_af3a02d7e9cd0b11509a90e0e6980bd64"><div class="ttname"><a href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">ripple::STAmount::native</a></div><div class="ttdeci">bool native() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00183">STAmount.h:183</a></div></div>
+<div class="ttc" id="aclassripple_1_1STAmount_html_af3a02d7e9cd0b11509a90e0e6980bd64"><div class="ttname"><a href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">ripple::STAmount::native</a></div><div class="ttdeci">bool native() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00320">STAmount.h:320</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html"><div class="ttname"><a href="classripple_1_1ReadView.html">ripple::ReadView</a></div><div class="ttdoc">A view into a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00192">ReadView.h:192</a></div></div>
 <div class="ttc" id="aclassripple_1_1BasicTaker_html_a27d9a56a69cd21c25afe074a095a6995"><div class="ttname"><a href="classripple_1_1BasicTaker.html#a27d9a56a69cd21c25afe074a095a6995">ripple::BasicTaker::done</a></div><div class="ttdeci">bool done() const</div><div class="ttdoc">Returns true if order crossing should not continue.</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8cpp_source.html#l00112">Taker.cpp:112</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
@@ -1432,7 +1431,6 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38caede598f88bbd44e4df1c4e0d418c4cdc"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caede598f88bbd44e4df1c4e0d418c4cdc">ripple::tecEXPIRED</a></div><div class="ttdeci">@ tecEXPIRED</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00276">TER.h:276</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOfferStreamBase_html_a8b2dbfd4a3cfb6e68306c33d5ce9e38f"><div class="ttname"><a href="classripple_1_1TOfferStreamBase.html#a8b2dbfd4a3cfb6e68306c33d5ce9e38f">ripple::TOfferStreamBase::tip</a></div><div class="ttdeci">TOffer&lt; TIn, TOut &gt; &amp; tip() const</div><div class="ttdoc">Returns the offer at the tip of the order book.</div><div class="ttdef"><b>Definition:</b> <a href="OfferStream_8h_source.html#l00108">OfferStream.h:108</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html_aaf2fa03be723bb78d8bdf41614a75a30"><div class="ttname"><a href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">ripple::ReadView::rules</a></div><div class="ttdeci">virtual Rules const  &amp; rules() const =0</div><div class="ttdoc">Returns the tx processing rules.</div></div>
-<div class="ttc" id="aclassripple_1_1STAmount_html_a60d8449d2915fa495f12994f56ceca34"><div class="ttname"><a href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">ripple::STAmount::issue</a></div><div class="ttdeci">Issue const  &amp; issue() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00198">STAmount.h:198</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac1371098a8a7c1e1238290d0220dc941"><div class="ttname"><a href="namespaceripple.html#ac1371098a8a7c1e1238290d0220dc941">ripple::sfFlags</a></div><div class="ttdeci">const SF_UINT32 sfFlags</div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca33d363e51ee15c8bd4f5d7c4e4518def"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca33d363e51ee15c8bd4f5d7c4e4518def">ripple::tecNO_ISSUER</a></div><div class="ttdeci">@ tecNO_ISSUER</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00261">TER.h:261</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a42d0740567b18c792db00b70a44c03b8"><div class="ttname"><a href="namespaceripple.html#a42d0740567b18c792db00b70a44c03b8">ripple::tfFillOrKill</a></div><div class="ttdeci">const std::uint32_t tfFillOrKill</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00078">TxFlags.h:78</a></div></div>
@@ -1453,10 +1451,11 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46a8845e05d481141ea5e8e5274796f45a7"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a8845e05d481141ea5e8e5274796f45a7">ripple::temBAD_EXPIRATION</a></div><div class="ttdeci">@ temBAD_EXPIRATION</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00086">TER.h:86</a></div></div>
 <div class="ttc" id="aclassripple_1_1BasicTaker_html_ac208f3e27e0dfa925dcb34414b9a8ba4"><div class="ttname"><a href="classripple_1_1BasicTaker.html#ac208f3e27e0dfa925dcb34414b9a8ba4">ripple::BasicTaker::account</a></div><div class="ttdeci">AccountID const  &amp; account() const noexcept</div><div class="ttdoc">Returns the account identifier of the taker.</div><div class="ttdef"><b>Definition:</b> <a href="Taker_8h_source.html#l00172">Taker.h:172</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2cb56a55020f266d207ee04d66cc97ae"><div class="ttname"><a href="namespaceripple.html#a2cb56a55020f266d207ee04d66cc97ae">ripple::featureFlowCross</a></div><div class="ttdeci">const uint256 featureFlowCross</div></div>
-<div class="ttc" id="aclassripple_1_1STPath_html"><div class="ttname"><a href="classripple_1_1STPath.html">ripple::STPath</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00212">STPathSet.h:212</a></div></div>
+<div class="ttc" id="aclassripple_1_1STPath_html"><div class="ttname"><a href="classripple_1_1STPath.html">ripple::STPath</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00117">STPathSet.h:117</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca30792765079d182f869612fc3b96ef8c"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca30792765079d182f869612fc3b96ef8c">ripple::tecINSUF_RESERVE_OFFER</a></div><div class="ttdeci">@ tecINSUF_RESERVE_OFFER</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00251">TER.h:251</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxConsequences_html"><div class="ttname"><a href="classripple_1_1TxConsequences.html">ripple::TxConsequences</a></div><div class="ttdoc">Class describing the consequences to the account of applying a transaction if the transaction consume...</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8h_source.html#l00045">applySteps.h:45</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00056">chrono.h:56</a></div></div>
+<div class="ttc" id="aclassripple_1_1STAmount_html_a5c7b5375e72e2459d4b6d65797744ca6"><div class="ttname"><a href="classripple_1_1STAmount.html#a5c7b5375e72e2459d4b6d65797744ca6">ripple::STAmount::getCurrency</a></div><div class="ttdeci">Currency const  &amp; getCurrency() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00344">STAmount.h:344</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151"><div class="ttname"><a href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">ripple::tesSUCCESS</a></div><div class="ttdeci">@ tesSUCCESS</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00217">TER.h:217</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html"><div class="ttname"><a href="classripple_1_1TOffer.html">ripple::TOffer</a></div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00049">Offer.h:49</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a91af9326e7f471001066b6b59f24599c"><div class="ttname"><a href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">ripple::xrpCurrency</a></div><div class="ttdeci">Currency const  &amp; xrpCurrency()</div><div class="ttdoc">XRP currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00121">UintTypes.cpp:121</a></div></div>

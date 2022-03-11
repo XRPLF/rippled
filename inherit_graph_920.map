@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/logic_error.html" title="STL class." alt="" coords="5,13,124,39"/>
-<area shape="rect" id="node2" href="$structripple_1_1test_1_1jtx_1_1parse__error.html" title="Thrown when parse fails." alt="" coords="172,5,297,47"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/iterator/iterator.html" title=" " alt="" coords="5,5,277,164"/>
+<area shape="rect" id="node2" href="$classbeast_1_1LockFreeStackIterator.html" title=" " alt="" coords="325,64,532,105"/>
 </map>

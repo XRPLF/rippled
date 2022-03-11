@@ -69,8 +69,9 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
-<a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1STBlob-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::STBlob Class Reference</div>  </div>
@@ -114,7 +115,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8a7f4b6ed6cc818743c32b696de65dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5426326c3424fcc3b73dbd16bc53fb31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a5426326c3424fcc3b73dbd16bc53fb31">STBlob</a> (<a class="el" href="classripple_1_1STBlob.html">STBlob</a> const &amp;rhs)</td></tr>
 <tr class="separator:a5426326c3424fcc3b73dbd16bc53fb31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0bd842ef1d275aec686e2c4b165e76a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a0bd842ef1d275aec686e2c4b165e76a0">STBlob</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f, void const *<a class="el" href="classripple_1_1STBlob.html#a8158dbad5279563ef0c49e04af47d85b">data</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1STBlob.html#a6f35800e09c25366d770be7148bf62c6">size</a>)</td></tr>
+<tr class="memitem:a0bd842ef1d275aec686e2c4b165e76a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a0bd842ef1d275aec686e2c4b165e76a0">STBlob</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f, void const *<a class="el" href="classripple_1_1STBlob.html#a469ebcd60d186cf3f96d3d2457c29773">data</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1STBlob.html#a6f35800e09c25366d770be7148bf62c6">size</a>)</td></tr>
 <tr class="separator:a0bd842ef1d275aec686e2c4b165e76a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdee96a00fcf01661eab85ecd599c35a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#afdee96a00fcf01661eab85ecd599c35a">STBlob</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f, <a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;b)</td></tr>
 <tr class="separator:afdee96a00fcf01661eab85ecd599c35a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -122,42 +123,38 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac3fd05139d9c52b5cb79c89a9a028401"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d69436893669a0343eaf2374d30a322"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a6d69436893669a0343eaf2374d30a322">STBlob</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name=<a class="el" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>)</td></tr>
 <tr class="separator:a6d69436893669a0343eaf2374d30a322"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2445c68ec14bbc059e01ff85d6f7c46"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#ad2445c68ec14bbc059e01ff85d6f7c46">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
-<tr class="separator:ad2445c68ec14bbc059e01ff85d6f7c46"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad1b8999c7b228770a0553468c5998e8a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#ad1b8999c7b228770a0553468c5998e8a">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
-<tr class="separator:ad1b8999c7b228770a0553468c5998e8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f35800e09c25366d770be7148bf62c6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a6f35800e09c25366d770be7148bf62c6">size</a> () const</td></tr>
 <tr class="separator:a6f35800e09c25366d770be7148bf62c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8158dbad5279563ef0c49e04af47d85b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a8158dbad5279563ef0c49e04af47d85b">data</a> () const</td></tr>
-<tr class="separator:a8158dbad5279563ef0c49e04af47d85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a469ebcd60d186cf3f96d3d2457c29773"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a469ebcd60d186cf3f96d3d2457c29773">data</a> () const</td></tr>
+<tr class="separator:a469ebcd60d186cf3f96d3d2457c29773"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09e35f23fa25391cdeb65c87759e8862"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a09e35f23fa25391cdeb65c87759e8862">getSType</a> () const override</td></tr>
 <tr class="separator:a09e35f23fa25391cdeb65c87759e8862"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1ba53c8a0b9bb0e39b2ae8c7a1c13f1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#af1ba53c8a0b9bb0e39b2ae8c7a1c13f1">getText</a> () const override</td></tr>
 <tr class="separator:af1ba53c8a0b9bb0e39b2ae8c7a1c13f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab5073359102e3f335fe27f2a6d9c91a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#aab5073359102e3f335fe27f2a6d9c91a">add</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const override</td></tr>
 <tr class="separator:aab5073359102e3f335fe27f2a6d9c91a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd546c38cef148a13be09dbd81a4d6b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBlob.html">STBlob</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#acd546c38cef148a13be09dbd81a4d6b3">operator=</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;slice)</td></tr>
-<tr class="separator:acd546c38cef148a13be09dbd81a4d6b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa68674587c4b19e59c0f5f5efcafa79"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBlob.html#a7ebe043c880148cacd1f48c4d8d8d8ff">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#aaa68674587c4b19e59c0f5f5efcafa79">value</a> () const noexcept</td></tr>
-<tr class="separator:aaa68674587c4b19e59c0f5f5efcafa79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd24613f37aef984171a49566236572d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBlob.html">STBlob</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#abd24613f37aef984171a49566236572d">operator=</a> (<a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;buffer)</td></tr>
-<tr class="separator:abd24613f37aef984171a49566236572d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53662d81f04256852bb09bfd8aaf9a15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a53662d81f04256852bb09bfd8aaf9a15">setValue</a> (<a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;b)</td></tr>
-<tr class="separator:a53662d81f04256852bb09bfd8aaf9a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75b7b78064ddfbfcf2067d5c34e708bd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a75b7b78064ddfbfcf2067d5c34e708bd">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
 <tr class="separator:a75b7b78064ddfbfcf2067d5c34e708bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae544b056017cc603ae1f82fe32398072"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#ae544b056017cc603ae1f82fe32398072">isDefault</a> () const override</td></tr>
 <tr class="separator:ae544b056017cc603ae1f82fe32398072"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12e7ad828bd6eb30636de61c33ad837d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBlob.html">STBlob</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a12e7ad828bd6eb30636de61c33ad837d">operator=</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;slice)</td></tr>
+<tr class="separator:a12e7ad828bd6eb30636de61c33ad837d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a393a0b187b44fc17e23fdfdfa269a18c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBlob.html#a7ebe043c880148cacd1f48c4d8d8d8ff">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a393a0b187b44fc17e23fdfdfa269a18c">value</a> () const noexcept</td></tr>
+<tr class="separator:a393a0b187b44fc17e23fdfdfa269a18c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7854b657dd1e9badd6947175b8f2740f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBlob.html">STBlob</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a7854b657dd1e9badd6947175b8f2740f">operator=</a> (<a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;buffer)</td></tr>
+<tr class="separator:a7854b657dd1e9badd6947175b8f2740f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53662d81f04256852bb09bfd8aaf9a15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a53662d81f04256852bb09bfd8aaf9a15">setValue</a> (<a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;b)</td></tr>
+<tr class="separator:a53662d81f04256852bb09bfd8aaf9a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae135ed870399690be58580bf3f6a43e1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#ae135ed870399690be58580bf3f6a43e1">operator==</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const</td></tr>
 <tr class="separator:ae135ed870399690be58580bf3f6a43e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32ab54e85ae1082a43396f57cb0bf2d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a32ab54e85ae1082a43396f57cb0bf2d8">operator!=</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const</td></tr>
 <tr class="separator:a32ab54e85ae1082a43396f57cb0bf2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
-<tr class="memitem:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memTemplItemLeft" align="right" valign="top">D &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">downcast</a> ()</td></tr>
-<tr class="separator:a5e2b3d13d27e01946bbee9e50ec8833d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61b521e7125b47bab19a29c5ac5c836d"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
-<tr class="memitem:a61b521e7125b47bab19a29c5ac5c836d"><td class="memTemplItemLeft" align="right" valign="top">D const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a61b521e7125b47bab19a29c5ac5c836d">downcast</a> () const</td></tr>
-<tr class="separator:a61b521e7125b47bab19a29c5ac5c836d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
+<tr class="memitem:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memTemplItemLeft" align="right" valign="top">D &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#acba8a09427afd05563c1d0a38c9bb6f2">downcast</a> ()</td></tr>
+<tr class="separator:acba8a09427afd05563c1d0a38c9bb6f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memTemplParams" colspan="2">template&lt;class D &gt; </td></tr>
+<tr class="memitem:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memTemplItemLeft" align="right" valign="top">D const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a9b14e04b97e4eefb3ea37135ed52accf">downcast</a> () const</td></tr>
+<tr class="separator:a9b14e04b97e4eefb3ea37135ed52accf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8d35807022215e4c00cb974b6f36216"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#ac8d35807022215e4c00cb974b6f36216">getFullText</a> () const</td></tr>
 <tr class="separator:ac8d35807022215e4c00cb974b6f36216"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1dfd1c754eaf5eded23242b59a0cdb5"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#af1dfd1c754eaf5eded23242b59a0cdb5">getJson</a> (<a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a>) const</td></tr>
@@ -172,19 +169,28 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
-<tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a7fb3256be27a1c525eca36470f25e131"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a7fb3256be27a1c525eca36470f25e131">emplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf, T &amp;&amp;val)</td></tr>
-<tr class="separator:a7fb3256be27a1c525eca36470f25e131"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a84fe46ac92fe704869cc6d64c49dd1ba">emplace</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf, T &amp;&amp;val)</td></tr>
+<tr class="separator:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
-Protected Attributes</h2></td></tr>
-<tr class="memitem:a784e6b1508801ba39b3bae5653675de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SField.html">SField</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a784e6b1508801ba39b3bae5653675de7">fName</a></td></tr>
-<tr class="separator:a784e6b1508801ba39b3bae5653675de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:ae30a06fc11bca1030ca23203e027a088"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#ae30a06fc11bca1030ca23203e027a088">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
+<tr class="separator:ae30a06fc11bca1030ca23203e027a088"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8377db7f7dd827bdcf41b139b4c93e10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a8377db7f7dd827bdcf41b139b4c93e10">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
+<tr class="separator:a8377db7f7dd827bdcf41b139b4c93e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:acae25162f3374e5f1f850d160546c03a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Buffer.html">Buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#acae25162f3374e5f1f850d160546c03a">value_</a></td></tr>
 <tr class="separator:acae25162f3374e5f1f850d160546c03a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a784e6b1508801ba39b3bae5653675de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SField.html">SField</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a784e6b1508801ba39b3bae5653675de7">fName</a></td></tr>
+<tr class="separator:a784e6b1508801ba39b3bae5653675de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a5e49bd8b743617d1af92ffed7ac6b665">detail::STVar</a></td></tr>
+<tr class="separator:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -202,7 +208,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00036">36</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00038">38</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -248,7 +254,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00039">39</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00090">90</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +290,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00043">43</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00095">95</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -314,7 +320,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00048">48</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00100">100</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -334,7 +340,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00052">52</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00105">105</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -369,86 +375,6 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad2445c68ec14bbc059e01ff85d6f7c46"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2445c68ec14bbc059e01ff85d6f7c46">&#9670;&nbsp;</a></span>copy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STBlob::copy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a1002d0c1e5d5991f043abdc61c72211f">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00059">59</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
-
-</div>
-</div>
-<a id="ad1b8999c7b228770a0553468c5998e8a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad1b8999c7b228770a0553468c5998e8a">&#9670;&nbsp;</a></span>move()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STBlob::move </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0c488c0c2d41d96972e1966f64fec655">ripple::STBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00065">65</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
-
-</div>
-</div>
 <a id="a6f35800e09c25366d770be7148bf62c6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6f35800e09c25366d770be7148bf62c6">&#9670;&nbsp;</a></span>size()</h2>
 
@@ -464,18 +390,18 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00071">71</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00110">110</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
-<a id="a8158dbad5279563ef0c49e04af47d85b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8158dbad5279563ef0c49e04af47d85b">&#9670;&nbsp;</a></span>data()</h2>
+<a id="a469ebcd60d186cf3f96d3d2457c29773"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a469ebcd60d186cf3f96d3d2457c29773">&#9670;&nbsp;</a></span>data()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const* ripple::STBlob::data </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const  * ripple::STBlob::data </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -483,7 +409,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00077">77</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00116">116</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -512,7 +438,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a233469e9eb1efaa8639b384628fcef62">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00083">83</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00043">43</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
 
 </div>
 </div>
@@ -541,7 +467,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a45b0231291b9ba9d1e999033ff975cc3">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00031">31</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00049">49</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
 
 </div>
 </div>
@@ -571,94 +497,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#acc434da323d0ee0bf1880cd46b2a207a">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00092">92</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
-
-</div>
-</div>
-<a id="acd546c38cef148a13be09dbd81a4d6b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd546c38cef148a13be09dbd81a4d6b3">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBlob.html">STBlob</a>&amp; ripple::STBlob::operator= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;&#160;</td>
-          <td class="paramname"><em>slice</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00101">101</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
-
-</div>
-</div>
-<a id="aaa68674587c4b19e59c0f5f5efcafa79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa68674587c4b19e59c0f5f5efcafa79">&#9670;&nbsp;</a></span>value()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBlob.html#a7ebe043c880148cacd1f48c4d8d8d8ff">value_type</a> ripple::STBlob::value </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00108">108</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
-
-</div>
-</div>
-<a id="abd24613f37aef984171a49566236572d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd24613f37aef984171a49566236572d">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBlob.html">STBlob</a>&amp; ripple::STBlob::operator= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;&#160;</td>
-          <td class="paramname"><em>buffer</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00114">114</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
-
-</div>
-</div>
-<a id="a53662d81f04256852bb09bfd8aaf9a15"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53662d81f04256852bb09bfd8aaf9a15">&#9670;&nbsp;</a></span>setValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::STBlob::setValue </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;&#160;</td>
-          <td class="paramname"><em>b</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00121">121</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00055">55</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
 
 </div>
 </div>
@@ -688,7 +527,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a2282c8e10ea51c1565b1fd5e67ac8344">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00037">37</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00065">65</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
 
 </div>
 </div>
@@ -717,7 +556,174 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00130">130</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00072">72</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a12e7ad828bd6eb30636de61c33ad837d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12e7ad828bd6eb30636de61c33ad837d">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBlob.html">STBlob</a> &amp; ripple::STBlob::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;&#160;</td>
+          <td class="paramname"><em>slice</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00122">122</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+
+</div>
+</div>
+<a id="a393a0b187b44fc17e23fdfdfa269a18c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a393a0b187b44fc17e23fdfdfa269a18c">&#9670;&nbsp;</a></span>value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBlob.html#a7ebe043c880148cacd1f48c4d8d8d8ff">STBlob::value_type</a> ripple::STBlob::value </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00129">129</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+
+</div>
+</div>
+<a id="a7854b657dd1e9badd6947175b8f2740f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7854b657dd1e9badd6947175b8f2740f">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBlob.html">STBlob</a> &amp; ripple::STBlob::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>buffer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00135">135</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+
+</div>
+</div>
+<a id="a53662d81f04256852bb09bfd8aaf9a15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53662d81f04256852bb09bfd8aaf9a15">&#9670;&nbsp;</a></span>setValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::STBlob::setValue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>b</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00142">142</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+
+</div>
+</div>
+<a id="ae30a06fc11bca1030ca23203e027a088"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae30a06fc11bca1030ca23203e027a088">&#9670;&nbsp;</a></span>copy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STBlob::copy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#aed5deead1fe850667301dfc9c58320bb">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00031">31</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8377db7f7dd827bdcf41b139b4c93e10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8377db7f7dd827bdcf41b139b4c93e10">&#9670;&nbsp;</a></span>move()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STBlob::move </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0ab863d0b635b5ff22f7f718d0581090">ripple::STBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8cpp_source.html#l00037">37</a> of file <a class="el" href="STBlob_8cpp_source.html">STBlob.cpp</a>.</p>
 
 </div>
 </div>
@@ -777,8 +783,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a5e2b3d13d27e01946bbee9e50ec8833d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e2b3d13d27e01946bbee9e50ec8833d">&#9670;&nbsp;</a></span>downcast() <span class="overload">[1/2]</span></h2>
+<a id="acba8a09427afd05563c1d0a38c9bb6f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acba8a09427afd05563c1d0a38c9bb6f2">&#9670;&nbsp;</a></span>downcast() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -789,10 +795,7 @@ template&lt;class D &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">D&amp; ripple::STBase::downcast </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td class="memname">D &amp; ripple::STBase::downcast</td>
         </tr>
       </table>
   </td>
@@ -802,12 +805,12 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00094">94</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00145">145</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
-<a id="a61b521e7125b47bab19a29c5ac5c836d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61b521e7125b47bab19a29c5ac5c836d">&#9670;&nbsp;</a></span>downcast() <span class="overload">[2/2]</span></h2>
+<a id="a9b14e04b97e4eefb3ea37135ed52accf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b14e04b97e4eefb3ea37135ed52accf">&#9670;&nbsp;</a></span>downcast() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -818,10 +821,7 @@ template&lt;class D &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">D const&amp; ripple::STBase::downcast </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname">D const  &amp; ripple::STBase::downcast</td>
         </tr>
       </table>
   </td>
@@ -831,7 +831,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00104">104</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00155">155</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>
@@ -858,9 +858,9 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classripple_1_1STObject.html#aa4fffc0fe22a576ac01d35952add7c06">ripple::STObject</a>, <a class="el" href="classripple_1_1STAmount.html#aee39db45aa65eddca7002ad9bf3e7877">ripple::STAmount</a>, <a class="el" href="classripple_1_1STArray.html#a25a57343fef279c44718871cfff9090a">ripple::STArray</a>, <a class="el" href="classripple_1_1STTx.html#ae4c7b50dbe35c2ddd16d4845636a6379">ripple::STTx</a>, and <a class="el" href="classripple_1_1STLedgerEntry.html#a710f7ea4baeb1072501dc39c2533b2da">ripple::STLedgerEntry</a>.</p>
+<p>Reimplemented in <a class="el" href="classripple_1_1STAmount.html#aee39db45aa65eddca7002ad9bf3e7877">ripple::STAmount</a>, <a class="el" href="classripple_1_1STObject.html#aa4fffc0fe22a576ac01d35952add7c06">ripple::STObject</a>, <a class="el" href="classripple_1_1STArray.html#a25a57343fef279c44718871cfff9090a">ripple::STArray</a>, <a class="el" href="classripple_1_1STTx.html#ae4c7b50dbe35c2ddd16d4845636a6379">ripple::STTx</a>, and <a class="el" href="classripple_1_1STLedgerEntry.html#a710f7ea4baeb1072501dc39c2533b2da">ripple::STLedgerEntry</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00063">63</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00075">75</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -888,9 +888,9 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classripple_1_1STPathSet.html#a98d06aae5b406ad1633092c13af49408">ripple::STPathSet</a>, <a class="el" href="classripple_1_1STAmount.html#a02bef3696a9cb07b72e5ec750e7ea456">ripple::STAmount</a>, <a class="el" href="classripple_1_1STVector256.html#a478b879cc607d0d1ac931f10b8cd96e8">ripple::STVector256</a>, <a class="el" href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">ripple::STObject</a>, <a class="el" href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">ripple::STTx</a>, <a class="el" href="classripple_1_1STLedgerEntry.html#a9302de6f8a80801399254527caf91fe2">ripple::STLedgerEntry</a>, and <a class="el" href="classripple_1_1STArray.html#abace0153bbea0217867bde2a591ebe28">ripple::STArray</a>.</p>
+<p>Reimplemented in <a class="el" href="classripple_1_1STAmount.html#a02bef3696a9cb07b72e5ec750e7ea456">ripple::STAmount</a>, <a class="el" href="classripple_1_1STPathSet.html#a98d06aae5b406ad1633092c13af49408">ripple::STPathSet</a>, <a class="el" href="classripple_1_1STVector256.html#a478b879cc607d0d1ac931f10b8cd96e8">ripple::STVector256</a>, <a class="el" href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">ripple::STObject</a>, <a class="el" href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">ripple::STTx</a>, <a class="el" href="classripple_1_1STLedgerEntry.html#a9302de6f8a80801399254527caf91fe2">ripple::STLedgerEntry</a>, and <a class="el" href="classripple_1_1STArray.html#abace0153bbea0217867bde2a591ebe28">ripple::STArray</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00087">87</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00099">99</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -921,7 +921,7 @@ template&lt;class D &gt; </div>
 <p>A <a class="el" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format.">STBase</a> is a field. </p>
 <p>This sets the name. </p>
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00113">113</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00125">125</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -948,7 +948,7 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00120">120</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00132">132</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
@@ -976,12 +976,12 @@ template&lt;class D &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00126">126</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8cpp_source.html#l00138">138</a> of file <a class="el" href="STBase_8cpp_source.html">STBase.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a7fb3256be27a1c525eca36470f25e131"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fb3256be27a1c525eca36470f25e131">&#9670;&nbsp;</a></span>emplace()</h2>
+<a id="a84fe46ac92fe704869cc6d64c49dd1ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84fe46ac92fe704869cc6d64c49dd1ba">&#9670;&nbsp;</a></span>emplace()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -992,7 +992,7 @@ template&lt;class T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="classripple_1_1STBase.html">STBase</a>* ripple::STBase::emplace </td>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * ripple::STBase::emplace </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -1022,7 +1022,32 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00149">149</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00165">165</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a5e49bd8b743617d1af92ffed7ac6b665"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e49bd8b743617d1af92ffed7ac6b665">&#9670;&nbsp;</a></span>detail::STVar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classripple_1_1detail_1_1STVar.html">detail::STVar</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00087">87</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -1047,7 +1072,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00136">136</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00035">35</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -1066,12 +1091,12 @@ template&lt;class T &gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00145">145</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00068">68</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
 
 </div>
 </div>

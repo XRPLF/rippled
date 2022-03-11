@@ -68,7 +68,9 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1STInteger-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::STInteger&lt; Integer &gt; Class Template Reference</div>  </div>
@@ -88,10 +90,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aba0b4ea55c452591d1081a0b2735fcda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcfbd29fec614ffaf86595cf330fb0ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#adcfbd29fec614ffaf86595cf330fb0ca">STInteger</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name)</td></tr>
 <tr class="separator:adcfbd29fec614ffaf86595cf330fb0ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7f52a168213568ecb1e16eaff14a534"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#aa7f52a168213568ecb1e16eaff14a534">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
-<tr class="separator:aa7f52a168213568ecb1e16eaff14a534"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbed26098bc1b97f15fed8f3a8ba5a1a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#abbed26098bc1b97f15fed8f3a8ba5a1a">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
-<tr class="separator:abbed26098bc1b97f15fed8f3a8ba5a1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1066b6733ce6f94cb1d7061592f437c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#ab1066b6733ce6f94cb1d7061592f437c">getSType</a> () const override</td></tr>
 <tr class="separator:ab1066b6733ce6f94cb1d7061592f437c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d690262f59133fe59e938b2097920f3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a2d690262f59133fe59e938b2097920f3">getJson</a> (<a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a>) const override</td></tr>
@@ -100,18 +98,18 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a67a06dfeba31ce3fad2bd10079d111fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3af7697b660a5a8d525d3420fa6a6568"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">add</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const override</td></tr>
 <tr class="separator:a3af7697b660a5a8d525d3420fa6a6568"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc2ae0ad1503da8274159779c3aa9715"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STInteger.html">STInteger</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#adc2ae0ad1503da8274159779c3aa9715">operator=</a> (<a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> const &amp;v)</td></tr>
-<tr class="separator:adc2ae0ad1503da8274159779c3aa9715"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf0b5444ba259c386a68885740029402"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#adf0b5444ba259c386a68885740029402">value</a> () const noexcept</td></tr>
-<tr class="separator:adf0b5444ba259c386a68885740029402"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af38ade5435e47164c140f74a361c7189"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">isDefault</a> () const override</td></tr>
+<tr class="separator:af38ade5435e47164c140f74a361c7189"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5a1f692c849e2df150533f1758da7a2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
+<tr class="separator:ab5a1f692c849e2df150533f1758da7a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d0976394d28114accdef79464358f8f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STInteger.html">STInteger</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">operator=</a> (<a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> const &amp;v)</td></tr>
+<tr class="separator:a4d0976394d28114accdef79464358f8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7db20a6a442a8febb5332200673f5507"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">value</a> () const noexcept</td></tr>
+<tr class="separator:a7db20a6a442a8febb5332200673f5507"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8b01d91a90a3b2510b73667a1403d78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">setValue</a> (Integer v)</td></tr>
 <tr class="separator:ae8b01d91a90a3b2510b73667a1403d78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44015589da51b8c90546f77cb8a5b663"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a44015589da51b8c90546f77cb8a5b663">operator Integer</a> () const</td></tr>
 <tr class="separator:a44015589da51b8c90546f77cb8a5b663"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09435c900a0e2557e380565cf2a56cc5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a09435c900a0e2557e380565cf2a56cc5">isDefault</a> () const override</td></tr>
-<tr class="separator:a09435c900a0e2557e380565cf2a56cc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5a1f692c849e2df150533f1758da7a2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
-<tr class="separator:ab5a1f692c849e2df150533f1758da7a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab66d2debb005ab9f17d3f25680ba63a2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#ab66d2debb005ab9f17d3f25680ba63a2">STInteger</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name)</td></tr>
 <tr class="separator:ab66d2debb005ab9f17d3f25680ba63a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70fe95f90580006f20e8ba8695776d5d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a70fe95f90580006f20e8ba8695776d5d">STInteger</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name)</td></tr>
@@ -121,10 +119,22 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7e01ce1c38b1f231a0a1b74c7cfdf78d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a7e01ce1c38b1f231a0a1b74c7cfdf78d">STInteger</a> (<a class="el" href="classripple_1_1SerialIter.html">SerialIter</a> &amp;sit, <a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name)</td></tr>
 <tr class="separator:a7e01ce1c38b1f231a0a1b74c7cfdf78d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a8175096a15b76b857b33f35a17224479"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">copy</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) const override</td></tr>
+<tr class="separator:a8175096a15b76b857b33f35a17224479"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6026d10b82d322c570bb536030514e0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
+<tr class="separator:a6026d10b82d322c570bb536030514e0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a8f5a481a9f8cca7b0b607bb7707a14de"><td class="memItemLeft" align="right" valign="top">Integer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a></td></tr>
 <tr class="separator:a8f5a481a9f8cca7b0b607bb7707a14de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:aa19bf94528b7060c0be2bce480531c68"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STInteger.html#aa19bf94528b7060c0be2bce480531c68">ripple::detail::STVar</a></td></tr>
+<tr class="separator:aa19bf94528b7060c0be2bce480531c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename Integer&gt;<br />
@@ -178,7 +188,7 @@ template&lt;typename Integer &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00033">33</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00084">84</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -210,7 +220,7 @@ template&lt;typename Integer &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00037">37</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00089">89</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -365,86 +375,6 @@ template&lt;typename Integer &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa7f52a168213568ecb1e16eaff14a534"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7f52a168213568ecb1e16eaff14a534">&#9670;&nbsp;</a></span>copy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Integer &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::copy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00044">44</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
-
-</div>
-</div>
-<a id="abbed26098bc1b97f15fed8f3a8ba5a1a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abbed26098bc1b97f15fed8f3a8ba5a1a">&#9670;&nbsp;</a></span>move()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Integer &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a>* <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::move </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00050">50</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
-
-</div>
-</div>
 <a id="ab1066b6733ce6f94cb1d7061592f437c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab1066b6733ce6f94cb1d7061592f437c">&#9670;&nbsp;</a></span>getSType()</h2>
 
@@ -547,34 +477,12 @@ template&lt;typename Integer &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00064">64</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00110">110</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
-<a id="adc2ae0ad1503da8274159779c3aa9715"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc2ae0ad1503da8274159779c3aa9715">&#9670;&nbsp;</a></span>operator=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Integer &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STInteger.html">STInteger</a>&amp; <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::operator= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>v</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00072">72</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
-
-</div>
-</div>
-<a id="adf0b5444ba259c386a68885740029402"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf0b5444ba259c386a68885740029402">&#9670;&nbsp;</a></span>value()</h2>
+<a id="af38ade5435e47164c140f74a361c7189"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af38ade5435e47164c140f74a361c7189">&#9670;&nbsp;</a></span>isDefault()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -585,92 +493,17 @@ template&lt;typename Integer &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::value </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname">bool <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::isDefault</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00079">79</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
-
-</div>
-</div>
-<a id="ae8b01d91a90a3b2510b73667a1403d78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae8b01d91a90a3b2510b73667a1403d78">&#9670;&nbsp;</a></span>setValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Integer &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::setValue </td>
-          <td>(</td>
-          <td class="paramtype">Integer&#160;</td>
-          <td class="paramname"><em>v</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00085">85</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
-
-</div>
-</div>
-<a id="a44015589da51b8c90546f77cb8a5b663"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44015589da51b8c90546f77cb8a5b663">&#9670;&nbsp;</a></span>operator Integer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Integer &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::operator Integer </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00090">90</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
-
-</div>
-</div>
-<a id="a09435c900a0e2557e380565cf2a56cc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09435c900a0e2557e380565cf2a56cc5">&#9670;&nbsp;</a></span>isDefault()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Integer &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::isDefault </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00096">96</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00119">119</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -700,7 +533,202 @@ template&lt;typename Integer &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00102">102</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00126">126</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<a id="a4d0976394d28114accdef79464358f8f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d0976394d28114accdef79464358f8f">&#9670;&nbsp;</a></span>operator=()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STInteger.html">STInteger</a>&lt; Integer &gt; &amp; <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> const &amp;&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00134">134</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<a id="a7db20a6a442a8febb5332200673f5507"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7db20a6a442a8febb5332200673f5507">&#9670;&nbsp;</a></span>value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STInteger.html">STInteger</a>&lt; Integer &gt;::<a class="el" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::value</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00142">142</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<a id="ae8b01d91a90a3b2510b73667a1403d78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8b01d91a90a3b2510b73667a1403d78">&#9670;&nbsp;</a></span>setValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::setValue </td>
+          <td>(</td>
+          <td class="paramtype">Integer&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00149">149</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<a id="a44015589da51b8c90546f77cb8a5b663"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44015589da51b8c90546f77cb8a5b663">&#9670;&nbsp;</a></span>operator Integer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::operator Integer</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00155">155</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<a id="a8175096a15b76b857b33f35a17224479"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8175096a15b76b857b33f35a17224479">&#9670;&nbsp;</a></span>copy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::copy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00096">96</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<a id="a6026d10b82d322c570bb536030514e0b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6026d10b82d322c570bb536030514e0b">&#9670;&nbsp;</a></span>move()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STBase.html">STBase</a> * <a class="el" href="classripple_1_1STInteger.html">ripple::STInteger</a>&lt; Integer &gt;::move </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00103">103</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="aa19bf94528b7060c0be2bce480531c68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa19bf94528b7060c0be2bce480531c68">&#9670;&nbsp;</a></span>ripple::detail::STVar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Integer &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classripple_1_1detail_1_1STVar.html">ripple::detail::STVar</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00075">75</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
@@ -727,7 +755,7 @@ template&lt;typename Integer &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00109">109</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STInteger_8h_source.html#l00034">34</a> of file <a class="el" href="STInteger_8h_source.html">STInteger.h</a>.</p>
 
 </div>
 </div>
