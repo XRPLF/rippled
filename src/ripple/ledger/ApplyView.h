@@ -274,9 +274,9 @@ public:
         Keylet const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
-        if (key.type != ltOFFER)
+        if (key.type != ltOFFER && key.type != ltAMM)
         {
-            assert(!"Only Offers are appended to book directories.  "
+            assert(!"Only Offers and AMMs are appended to book directories.  "
                 "Call dirInsert() instead.");
             return std::nullopt;
         }

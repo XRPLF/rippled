@@ -149,6 +149,12 @@ enum LedgerEntryType : std::uint16_t
      */
     ltNEGATIVE_UNL = 0x004e,
 
+    /** The ledger object which tracks the AMM.
+
+       \sa keylet::amm
+    */
+    ltAMM = 0x0079,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -237,6 +243,9 @@ enum LedgerSpecificFlags {
 
     // ltSIGNER_LIST
     lsfOneOwnerCount = 0x00010000,  // True, uses only one OwnerCount
+
+    // ltAMM
+    lsfAMM = 0x00010000, // True, AMM account
 };
 
 //------------------------------------------------------------------------------

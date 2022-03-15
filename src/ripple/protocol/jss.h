@@ -46,8 +46,13 @@ JSS(Account);                // in: TransactionSign; field.
 JSS(AccountDelete);          // transaction type.
 JSS(AccountRoot);            // ledger type.
 JSS(AccountSet);             // transaction type.
+JSS(AMMAccount);             // field
+JSS(AMMInstanceCreate);      // transaction type
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
+JSS(Asset1Details);          // in/out: AMM IOU/XRP pool amount
+JSS(Asset2Details);          // in/out: AMM IOU pool amount
+JSS(AssetWeight);            // in/out: AMM asset1 weight
 JSS(Check);                  // ledger type.
 JSS(CheckCancel);            // transaction type.
 JSS(CheckCash);              // transaction type.
@@ -97,6 +102,7 @@ JSS(TakerPays);              // field.
 JSS(Ticket);                 // ledger type.
 JSS(TicketCreate);           // transaction type.
 JSS(TxnSignature);           // field.
+JSS(TradingFee);             // in/out: AMM trading fee
 JSS(TransactionType);        // in: TransactionSign.
 JSS(TransferRate);           // in: TransferRate.
 JSS(TrustSet);               // transaction type.

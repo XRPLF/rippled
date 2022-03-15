@@ -325,6 +325,12 @@ payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
         indexHash(LedgerNameSpace::XRP_PAYMENT_CHANNEL, src, dst, seq)};
 }
 
+Keylet
+amm(AccountID const& amm) noexcept
+{
+    return {ltAMM, indexHash(LedgerNameSpace::ACCOUNT, amm)};
+}
+
 }  // namespace keylet
 
 }  // namespace ripple

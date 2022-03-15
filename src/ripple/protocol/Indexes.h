@@ -225,6 +225,10 @@ escrow(AccountID const& src, std::uint32_t seq) noexcept;
 Keylet
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 
+/** AMM entry */
+Keylet
+amm(AccountID const& amm) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

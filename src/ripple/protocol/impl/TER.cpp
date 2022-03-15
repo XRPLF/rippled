@@ -117,6 +117,7 @@ transResults()
         MAKE_ERROR(telCAN_NOT_QUEUE_FULL,     "Can not queue at this time: queue is full."),
 
         MAKE_ERROR(temMALFORMED,              "Malformed transaction."),
+        MAKE_ERROR(temBAD_AMOUNT,             "Malformed: Bad AMM."),
         MAKE_ERROR(temBAD_AMOUNT,             "Can only send positive amounts."),
         MAKE_ERROR(temBAD_CURRENCY,           "Malformed: Bad currency."),
         MAKE_ERROR(temBAD_EXPIRATION,         "Malformed: Bad expiration."),

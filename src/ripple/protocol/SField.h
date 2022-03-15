@@ -341,6 +341,7 @@ extern SF_UINT8 const sfMethod;
 extern SF_UINT8 const sfTransactionResult;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
+extern SF_UINT8 const sfAssetWeight;
 
 // 16-bit integers
 extern SF_UINT16 const sfLedgerEntryType;
@@ -364,6 +365,7 @@ extern SF_UINT32 const sfTransferRate;
 extern SF_UINT32 const sfWalletSize;
 extern SF_UINT32 const sfOwnerCount;
 extern SF_UINT32 const sfDestinationTag;
+extern SF_UINT32 const sfTradingFee;
 
 // 32-bit integers (uncommon)
 extern SF_UINT32 const sfHighQualityIn;
@@ -448,6 +450,8 @@ extern SF_AMOUNT const sfHighLimit;
 extern SF_AMOUNT const sfFee;
 extern SF_AMOUNT const sfSendMax;
 extern SF_AMOUNT const sfDeliverMin;
+extern SF_AMOUNT const sfAsset1Details;
+extern SF_AMOUNT const sfAsset2Details;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;
@@ -486,6 +490,7 @@ extern SF_ACCOUNT const sfAuthorize;
 extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfTarget;
 extern SF_ACCOUNT const sfRegularKey;
+extern SF_ACCOUNT const sfAMMAccount;
 
 // path set
 extern SField const sfPaths;

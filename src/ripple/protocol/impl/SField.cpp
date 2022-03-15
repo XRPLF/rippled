@@ -84,6 +84,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA
 CONSTRUCT_TYPED_SFIELD(sfCloseResolution,       "CloseResolution",      UINT8,      1);
 CONSTRUCT_TYPED_SFIELD(sfMethod,                "Method",               UINT8,      2);
 CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,      3);
+CONSTRUCT_TYPED_SFIELD(sfAssetWeight,           "AssetWeight",          UINT8,      5);
 
 // 8-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
@@ -111,6 +112,7 @@ CONSTRUCT_TYPED_SFIELD(sfTransferRate,          "TransferRate",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfWalletSize,            "WalletSize",           UINT32,    12);
 CONSTRUCT_TYPED_SFIELD(sfOwnerCount,            "OwnerCount",           UINT32,    13);
 CONSTRUCT_TYPED_SFIELD(sfDestinationTag,        "DestinationTag",       UINT32,    14);
+CONSTRUCT_TYPED_SFIELD(sfTradingFee,            "TradingFee",           UINT32,    15);
 
 // 32-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHighQualityIn,         "HighQualityIn",        UINT32,    16);
@@ -196,6 +198,8 @@ CONSTRUCT_TYPED_SFIELD(sfHighLimit,             "HighLimit",            AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfFee,                   "Fee",                  AMOUNT,     8);
 CONSTRUCT_TYPED_SFIELD(sfSendMax,               "SendMax",              AMOUNT,     9);
 CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT,    10);
+CONSTRUCT_TYPED_SFIELD(sfAsset1Details,         "Asset1Details",        AMOUNT,    11);
+CONSTRUCT_TYPED_SFIELD(sfAsset2Details,         "Asset2Details",        AMOUNT,    12);
 
 // currency amount (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
@@ -235,6 +239,7 @@ CONSTRUCT_TYPED_SFIELD(sfAuthorize,             "Authorize",            ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfUnauthorize,           "Unauthorize",          ACCOUNT,    6);
 //                                                                                  7 is currently unused
 CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,    8);
+CONSTRUCT_TYPED_SFIELD(sfAMMAccount,            "AMMAccount",           ACCOUNT,    9);
 
 // vector of 256-bit
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);

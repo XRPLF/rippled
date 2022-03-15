@@ -54,6 +54,8 @@ LedgerFormats::LedgerFormats()
             {sfDomain, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
             {sfTicketCount, soeOPTIONAL},
+            {sfAssetWeight, soeOPTIONAL},
+            {sfTradingFee, soeOPTIONAL},
         },
         commonFields);
 

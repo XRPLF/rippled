@@ -375,6 +375,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
+  src/ripple/app/misc/impl/AMM.cpp
+  src/ripple/app/misc/impl/AMM_formulae.cpp
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
   src/ripple/app/misc/HashRouter.cpp
@@ -411,6 +413,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/RelationalDBInterface_nodes.cpp
   src/ripple/app/rdb/impl/RelationalDBInterface_postgres.cpp
   src/ripple/app/rdb/impl/RelationalDBInterface_shards.cpp
+  src/ripple/app/tx/impl/AMMCreate.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
@@ -572,6 +575,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/AccountOffers.cpp
   src/ripple/rpc/handlers/AccountTx.cpp
   src/ripple/rpc/handlers/AccountTxOld.cpp
+  src/ripple/rpc/handlers/AMMInfo.cpp
   src/ripple/rpc/handlers/BlackList.cpp
   src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
@@ -670,6 +674,7 @@ if (tests)
     src/test/app/AccountDelete_test.cpp
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
+    src/test/app/AMM_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
@@ -804,6 +809,7 @@ if (tests)
     src/test/jtx/Env_test.cpp
     src/test/jtx/WSClient_test.cpp
     src/test/jtx/impl/Account.cpp
+    src/test/jtx/impl/AMM.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/ManualTimeKeeper.cpp

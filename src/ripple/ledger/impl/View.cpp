@@ -356,7 +356,9 @@ xrpLiquid(
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
-    STAmount amount = balance - reserve;
+    // AMM doesn't require the reserves
+    STAmount amount =
+        (sle->getFlags() & lsfAMM) ? balance : (balance - reserve);
     if (balance < reserve)
         amount.clear();
 

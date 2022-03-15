@@ -81,6 +81,7 @@ enum TEMcodes : TERUnderlyingType {
     // - Cannot succeed in any imagined ledger.
     temMALFORMED = -299,
 
+    temBAD_AMM,
     temBAD_AMOUNT,
     temBAD_CURRENCY,
     temBAD_EXPIRATION,

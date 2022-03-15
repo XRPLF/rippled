@@ -79,6 +79,14 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::AMMInstanceCreate,
+        ttAMM_CREATE,
+        {
+            {sfAsset1Details, soeREQUIRED},
+            {sfAsset2Details, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+        },
+        commonFields);
     add(jss::OfferCancel,
         ttOFFER_CANCEL,
         {
