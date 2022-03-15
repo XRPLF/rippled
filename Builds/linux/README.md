@@ -144,6 +144,7 @@ testing and running.
 * `-Dsan=address` to enable the address sanitizer with clang
 * `-Dstatic=ON` to enable static linking library dependencies
 * `-Dreporting=ON` to build code necessary for reporting mode (defaults to OFF)
+* `-Dresource_report=ON` to build code necessary for sending resource report messages (defaults to OFF). Linux only.
 
 Several other infrequently used options are available - run `ccmake` or
 `cmake-gui` for a list of all options.

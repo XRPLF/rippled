@@ -138,7 +138,8 @@ target_link_libraries (xrpl_core
     NIH::secp256k1
     NIH::ed25519-donna
     date::date
-    Ripple::opts)
+    Ripple::opts
+    gmp)
 #[=================================[
    main/core headers installation
 #]=================================]
@@ -472,6 +473,12 @@ target_sources (rippled PRIVATE
   src/ripple/consensus/Consensus.cpp
   #[===============================[
      main sources:
+       subdir: collectors
+  #]===============================]
+  src/ripple/collectors/impl/ResourceUsageCollectorBase.cpp
+  src/ripple/collectors/impl/default/ResourceUsageCollectorDefault.cpp
+  #[===============================[
+     main sources:
        subdir: ledger
   #]===============================]
   src/ripple/ledger/impl/ApplyStateTable.cpp
@@ -660,6 +667,15 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp
   src/ripple/shamap/impl/ShardFamily.cpp)
+
+  #[===============================[
+     main sources:
+       subdir: collectors
+  #]===============================]
+if (resource_report AND is_linux)
+  target_sources (rippled PRIVATE
+  src/ripple/collectors/impl/linux/ResourceUsageCollectorLinux.cpp)
+endif() # resource_report
 
   #[===============================[
      test sources:
@@ -991,6 +1007,10 @@ endif ()
 
 if (reporting)
     target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
+endif ()
+
+if (resource_report)
+    target_compile_definitions(rippled PRIVATE RIPPLED_RESOURCE_REPORT)
 endif ()
 
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)

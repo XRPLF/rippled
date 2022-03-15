@@ -26,6 +26,7 @@
 #include <ripple/basics/RangeSet.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/collectors/ResourceUsageCollectorBase.h>
 #include <ripple/nodestore/ShardInfo.h>
 #include <ripple/overlay/Squelch.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -541,6 +542,8 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMCluster> const& m);
     void
+    onMessage(std::shared_ptr<protocol::TMResourceReport> const& m);
+    void
     onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m);
@@ -641,6 +644,9 @@ private:
 
     void
     processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+    void
+    sendResourceReport();
 };
 
 //------------------------------------------------------------------------------

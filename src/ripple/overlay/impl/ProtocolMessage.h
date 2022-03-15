@@ -113,6 +113,8 @@ protocolMessageName(int type)
             return "get_peer_shard_info_v2";
         case protocol::mtPEER_SHARD_INFO_V2:
             return "peer_shard_info_v2";
+        case protocol::mtRESOURCE_REPORT:
+            return "resource_report";
         default:
             break;
     }
@@ -404,6 +406,10 @@ invokeProtocolMessage(
         case protocol::mtCLUSTER:
             success =
                 detail::invoke<protocol::TMCluster>(*header, buffers, handler);
+            break;
+        case protocol::mtRESOURCE_REPORT:
+            success =
+                detail::invoke<protocol::TMResourceReport>(*header, buffers, handler);
             break;
         case protocol::mtENDPOINTS:
             success = detail::invoke<protocol::TMEndpoints>(

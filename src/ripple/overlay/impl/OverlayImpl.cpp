@@ -122,7 +122,8 @@ OverlayImpl::OverlayImpl(
     Resolver& resolver,
     boost::asio::io_service& io_service,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector)
+    beast::insight::Collector::ptr const& collector,
+    std::shared_ptr<collectors::ResourceUsageCollectorBase> const& resourceUsageCollector)
     : app_(app)
     , io_service_(io_service)
     , work_(std::in_place, std::ref(io_service_))
@@ -155,6 +156,7 @@ OverlayImpl::OverlayImpl(
 
               return ret;
           }())
+    , m_resourceUsageCollector(resourceUsageCollector)
 {
     beast::PropertyStream::Source::add(m_peerFinder.get());
 }
@@ -1657,7 +1659,10 @@ make_Overlay(
         resolver,
         io_service,
         config,
-        collector);
+        collector,
+        collectors::ResourceUsageCollectorBase::create(
+            app.journal("ResourceUsageCollector"),
+            io_service));
 }
 
 }  // namespace ripple

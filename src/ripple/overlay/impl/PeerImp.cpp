@@ -44,6 +44,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #include <memory>
@@ -749,6 +750,8 @@ PeerImp::onTimer(error_code const& ec)
 
     send(std::make_shared<Message>(message, protocol::mtPING));
 
+    sendResourceReport();
+
     setTimer();
 }
 
@@ -1182,6 +1185,55 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
     }
 
     app_.getFeeTrack().setClusterFee(clusterFee);
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMResourceReport> const& m)
+{
+    constexpr std::size_t max_size_string = 128;
+    constexpr std::size_t max_size_reportmap = 16;
+
+    if (nullptr == m)
+    {
+        return;
+    }
+
+    if (!m->has_nodename() || m->nodename().empty() || (m->nodename().size() > max_size_string))
+    {
+        fee_ = Resource::feeBadData;
+        return;
+    }
+
+    if (m->resourcereportmap().empty() || (m->resourcereportmap().size() > max_size_reportmap))
+    {
+        fee_ = Resource::feeBadData;
+        return;
+    }
+
+    if (!p_journal_.debug())
+    {
+        return;
+    }
+
+    fee_ = Resource::feeLightPeer;
+    std::string reportOneliner;
+    for (const auto& kvp : m->resourcereportmap())
+    {
+        const auto& key = kvp.first;
+        const auto& value = kvp.second;
+
+        if (key.empty() || (key.size() > max_size_string) || value.empty() || (value.size() > max_size_string))
+        {
+            fee_ = Resource::feeBadData;
+            return;
+        }
+
+        reportOneliner += key + ": " + value + "; ";
+    }
+
+    JLOG(p_journal_.debug())
+        << "Received ResourceReport for " << m->nodename() << ": "
+        << reportOneliner;
 }
 
 void
@@ -3667,6 +3719,32 @@ PeerImp::reduceRelayReady()
             reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
             reduce_relay::WAIT_ON_BOOTUP;
     return vpReduceRelayEnabled_ && reduceRelayReady_;
+}
+
+void
+PeerImp::sendResourceReport()
+{
+    if ((nullptr == overlay_.resourceUsageCollector()) || !app_.config().resourceReport())
+    {
+        return;
+    }
+
+    auto resultMap = overlay_.resourceUsageCollector()->resultMap();
+    if (resultMap.empty())
+    {
+        return;
+    }
+
+    protocol::TMResourceReport report;
+    report.set_nodename(makePrefix(id_));
+    auto& reportMap = *report.mutable_resourcereportmap();
+    for (const auto& kvp : resultMap)
+    {
+        reportMap[kvp.first] = boost::lexical_cast<std::string>(kvp.second);
+    }
+
+    send(
+        std::make_shared<Message>(report, protocol::mtRESOURCE_REPORT));
 }
 
 void
