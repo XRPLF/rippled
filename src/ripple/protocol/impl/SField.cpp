@@ -84,6 +84,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA
 CONSTRUCT_TYPED_SFIELD(sfCloseResolution,       "CloseResolution",      UINT8,      1);
 CONSTRUCT_TYPED_SFIELD(sfMethod,                "Method",               UINT8,      2);
 CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,      3);
+CONSTRUCT_TYPED_SFIELD(sfAssetWeight,           "AssetWeight",          UINT8,      5);
 
 // 8-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
@@ -95,6 +96,7 @@ CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16,     2);
 CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
 CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16,     4);
+CONSTRUCT_TYPED_SFIELD(sfSlippage,              "Slippage",             UINT16,     5);
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
@@ -117,6 +119,7 @@ CONSTRUCT_TYPED_SFIELD(sfTransferRate,          "TransferRate",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfWalletSize,            "WalletSize",           UINT32,    12);
 CONSTRUCT_TYPED_SFIELD(sfOwnerCount,            "OwnerCount",           UINT32,    13);
 CONSTRUCT_TYPED_SFIELD(sfDestinationTag,        "DestinationTag",       UINT32,    14);
+CONSTRUCT_TYPED_SFIELD(sfTradingFee,            "TradingFee",           UINT32,    15);
 
 // 32-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHighQualityIn,         "HighQualityIn",        UINT32,    16);
@@ -227,12 +230,22 @@ CONSTRUCT_TYPED_SFIELD(sfHighLimit,             "HighLimit",            AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfFee,                   "Fee",                  AMOUNT,     8);
 CONSTRUCT_TYPED_SFIELD(sfSendMax,               "SendMax",              AMOUNT,     9);
 CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT,    10);
+CONSTRUCT_TYPED_SFIELD(sfAsset1,                "Asset1",               AMOUNT,    11);
+CONSTRUCT_TYPED_SFIELD(sfAsset2,                "Asset2",               AMOUNT,    12);
 
 // currency amount (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
 CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
+CONSTRUCT_TYPED_SFIELD(sfAsset1In,              "Asset1In",             AMOUNT,    20);
+CONSTRUCT_TYPED_SFIELD(sfAsset2In,              "Asset2In",             AMOUNT,    21);
+CONSTRUCT_TYPED_SFIELD(sfAsset1Out,             "Asset1Out",            AMOUNT,    22);
+CONSTRUCT_TYPED_SFIELD(sfAsset2Out,             "Asset2Out",            AMOUNT,    23);
+CONSTRUCT_TYPED_SFIELD(sfMaxSP,                 "MaxSP",                AMOUNT,    27);
+CONSTRUCT_TYPED_SFIELD(sfLPTokens,              "LPTokens",             AMOUNT,    28);
+CONSTRUCT_TYPED_SFIELD(sfAssetIn,               "AssetIn",              AMOUNT,    29);
+CONSTRUCT_TYPED_SFIELD(sfAssetOut,              "AssetOut",             AMOUNT,    30);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
@@ -273,6 +286,7 @@ CONSTRUCT_TYPED_SFIELD(sfUnauthorize,           "Unauthorize",          ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,    8);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenMinter,         "NFTokenMinter",        ACCOUNT,    9);
 CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,   10);
+CONSTRUCT_TYPED_SFIELD(sfAMMAccount,            "AMMAccount",           ACCOUNT,   11);
 
 // account (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,   16);

@@ -42,6 +42,11 @@ transResults()
             TERUnderlyingType,
             std::pair<char const* const, char const* const>> const results
     {
+        MAKE_ERROR(tecAMM_BALANCE,                   "AMM instance has invalid balance."),
+        MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM Trade exceeded 30%."),
+        MAKE_ERROR(tecAMM_FAILED_DEPOSIT,            "AMM failed deposit."),
+        MAKE_ERROR(tecAMM_FAILED_WITHDRAW,           "AMM failed withdraw."),
+        MAKE_ERROR(tecAMM_FAILED_SWAP,               "AMM failed swap."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),
         MAKE_ERROR(tecFAILED_PROCESSING,             "Failed to correctly process transaction."),
@@ -58,6 +63,7 @@ transResults()
         MAKE_ERROR(tecOVERSIZE,                      "Object exceeded serialization limits."),
         MAKE_ERROR(tecUNFUNDED,                      "Not enough XRP to satisfy the reserve requirement."),
         MAKE_ERROR(tecUNFUNDED_ADD,                  "DEPRECATED."),
+        MAKE_ERROR(tecUNFUNDED_AMM,                  "Insufficient balance to fund AMM."),
         MAKE_ERROR(tecUNFUNDED_OFFER,                "Insufficient balance to fund created offer."),
         MAKE_ERROR(tecUNFUNDED_PAYMENT,              "Insufficient XRP balance to send."),
         MAKE_ERROR(tecOWNERS,                        "Non-zero owner count."),
@@ -126,6 +132,9 @@ transResults()
         MAKE_ERROR(telCAN_NOT_QUEUE_FULL,     "Can not queue at this time: queue is full."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
+        MAKE_ERROR(temBAD_AMM,                   "Malformed: AMM Instance."),
+        MAKE_ERROR(temBAD_AMM_OPTIONS,           "Malformed: Invalid combination of options."),
+        MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
         MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),
         MAKE_ERROR(temBAD_CURRENCY,              "Malformed: Bad currency."),
         MAKE_ERROR(temBAD_EXPIRATION,            "Malformed: Bad expiration."),

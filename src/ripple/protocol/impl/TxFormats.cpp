@@ -80,6 +80,48 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::AMMInstanceCreate,
+        ttAMM_CREATE,
+        {
+            {sfAsset1, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::AMMDeposit,
+        ttAMM_DEPOSIT,
+        {
+            {sfAMMAccount, soeREQUIRED},
+            {sfAsset1In, soeOPTIONAL},
+            {sfAsset2In, soeOPTIONAL},
+            {sfMaxSP, soeOPTIONAL},
+            {sfLPTokens, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMWithdraw,
+        ttAMM_WITHDRAW,
+        {
+            {sfAMMAccount, soeREQUIRED},
+            {sfAsset1Out, soeOPTIONAL},
+            {sfAsset2Out, soeOPTIONAL},
+            {sfMaxSP, soeOPTIONAL},
+            {sfLPTokens, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMSwap,
+        ttAMM_SWAP,
+        {
+            {sfAMMAccount, soeREQUIRED},
+            {sfAssetIn, soeOPTIONAL},
+            {sfAssetOut, soeOPTIONAL},
+            {sfMaxSP, soeOPTIONAL},
+            {sfSlippage, soeOPTIONAL},
+        },
+        commonFields);
+
     add(jss::OfferCancel,
         ttOFFER_CANCEL,
         {

@@ -370,6 +370,12 @@ nft_sells(uint256 const& id) noexcept
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NFTOKEN_SELL_OFFERS, id)};
 }
 
+Keylet
+amm(AccountID const& amm) noexcept
+{
+    return {ltAMM, indexHash(LedgerNameSpace::ACCOUNT, amm)};
+}
+
 }  // namespace keylet
 
 }  // namespace ripple

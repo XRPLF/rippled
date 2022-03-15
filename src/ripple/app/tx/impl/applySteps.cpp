@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/app/tx/impl/AMMCreate.h>
+#include <ripple/app/tx/impl/AMMDeposit.h>
+#include <ripple/app/tx/impl/AMMSwap.h>
+#include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
@@ -147,6 +151,14 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preflight_helper<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preflight_helper<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preflight_helper<AMMWithdraw>(ctx);
+        case ttAMM_SWAP:
+            return invoke_preflight_helper<AMMSwap>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +260,14 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preclaim<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preclaim<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preclaim<AMMWithdraw>(ctx);
+        case ttAMM_SWAP:
+            return invoke_preclaim<AMMSwap>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +331,14 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttAMM_CREATE:
+            return AMMCreate::calculateBaseFee(view, tx);
+        case ttAMM_DEPOSIT:
+            return AMMDeposit::calculateBaseFee(view, tx);
+        case ttAMM_WITHDRAW:
+            return AMMWithdraw::calculateBaseFee(view, tx);
+        case ttAMM_SWAP:
+            return AMMSwap::calculateBaseFee(view, tx);
         default:
             assert(false);
             return FeeUnit64{0};
@@ -461,6 +489,22 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttAMM_CREATE: {
+            AMMCreate p(ctx);
+            return p();
+        }
+        case ttAMM_DEPOSIT: {
+            AMMDeposit p(ctx);
+            return p();
+        }
+        case ttAMM_WITHDRAW: {
+            AMMWithdraw p(ctx);
+            return p();
+        }
+        case ttAMM_SWAP: {
+            AMMSwap p(ctx);
             return p();
         }
         default:

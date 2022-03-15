@@ -339,12 +339,14 @@ extern SF_UINT8 const sfTransactionResult;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
+extern SF_UINT8 const sfAssetWeight;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
 extern SF_UINT16 const sfTransactionType;
 extern SF_UINT16 const sfSignerWeight;
 extern SF_UINT16 const sfTransferFee;
+extern SF_UINT16 const sfSlippage;
 
 // 16-bit integers (uncommon)
 extern SF_UINT16 const sfVersion;
@@ -367,6 +369,7 @@ extern SF_UINT32 const sfTransferRate;
 extern SF_UINT32 const sfWalletSize;
 extern SF_UINT32 const sfOwnerCount;
 extern SF_UINT32 const sfDestinationTag;
+extern SF_UINT32 const sfTradingFee;
 
 // 32-bit integers (uncommon)
 extern SF_UINT32 const sfHighQualityIn;
@@ -476,12 +479,22 @@ extern SF_AMOUNT const sfHighLimit;
 extern SF_AMOUNT const sfFee;
 extern SF_AMOUNT const sfSendMax;
 extern SF_AMOUNT const sfDeliverMin;
+extern SF_AMOUNT const sfAsset1;
+extern SF_AMOUNT const sfAsset2;
+extern SF_AMOUNT const sfAsset1In;
+extern SF_AMOUNT const sfAsset2In;
+extern SF_AMOUNT const sfAsset1Out;
+extern SF_AMOUNT const sfAsset2Out;
+extern SF_AMOUNT const sfMaxSP;
+extern SF_AMOUNT const sfAssetIn;
+extern SF_AMOUNT const sfAssetOut;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;
 extern SF_AMOUNT const sfRippleEscrow;
 extern SF_AMOUNT const sfDeliveredAmount;
 extern SF_AMOUNT const sfNFTokenBrokerFee;
+extern SF_AMOUNT const sfLPTokens;
 
 // variable length (common)
 extern SF_VL const sfPublicKey;
@@ -521,6 +534,7 @@ extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfRegularKey;
 extern SF_ACCOUNT const sfNFTokenMinter;
 extern SF_ACCOUNT const sfEmitCallback;
+extern SF_ACCOUNT const sfAMMAccount;
 
 // account (uncommon)
 extern SF_ACCOUNT const sfHookAccount;

@@ -161,6 +161,12 @@ enum LedgerEntryType : std::uint16_t
      */
     ltNFTOKEN_OFFER = 0x0037,
 
+    /** The ledger object which tracks the AMM.
+
+       \sa keylet::amm
+    */
+    ltAMM = 0x0079,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -256,6 +262,9 @@ enum LedgerSpecificFlags {
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
+
+    // ltAMM
+    lsfAMM = 0x00010000, // True, AMM account
 };
 
 //------------------------------------------------------------------------------

@@ -1239,6 +1239,7 @@ public:
             {"account_objects", &RPCParser::parseAccountItems, 1, 5},
             {"account_offers", &RPCParser::parseAccountItems, 1, 4},
             {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},
+            {"amm_info", &RPCParser::parseAsIs, 1, 2},
             {"book_changes", &RPCParser::parseLedgerId, 1, 1},
             {"book_offers", &RPCParser::parseBookOffers, 2, 7},
             {"can_delete", &RPCParser::parseCanDelete, 0, 1},

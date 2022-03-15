@@ -55,6 +55,8 @@ LedgerFormats::LedgerFormats()
             {sfNFTokenMinter,        soeOPTIONAL},
             {sfMintedNFTokens,       soeDEFAULT},
             {sfBurnedNFTokens,       soeDEFAULT},
+            {sfAssetWeight,          soeOPTIONAL},
+            {sfTradingFee,           soeOPTIONAL},
         },
         commonFields);
 

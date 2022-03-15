@@ -81,6 +81,9 @@ enum TEMcodes : TERUnderlyingType {
     // - Cannot succeed in any imagined ledger.
     temMALFORMED = -299,
 
+    temBAD_AMM,
+    temBAD_AMM_OPTIONS,
+    temBAD_AMM_TOKENS,
     temBAD_AMOUNT,
     temBAD_CURRENCY,
     temBAD_EXPIRATION,
@@ -289,6 +292,12 @@ enum TECcodes : TERUnderlyingType {
     tecINSUFFICIENT_FUNDS = 159,
     tecOBJECT_NOT_FOUND = 160,
     tecINSUFFICIENT_PAYMENT = 161,
+    tecUNFUNDED_AMM = 162,
+    tecAMM_BALANCE = 163,
+    tecAMM_FAILED_DEPOSIT = 164,
+    tecAMM_FAILED_WITHDRAW = 165,
+    tecAMM_INVALID_TOKENS = 166,
+    tecAMM_FAILED_SWAP = 167,
 };
 
 //------------------------------------------------------------------------------
