@@ -82,7 +82,7 @@ SidechainListener::send(
     RpcCallback onResponse)
 {
     std::weak_ptr<SidechainListener> selfWeak = shared_from_this();
-    auto job = [cmd, params, onResponse, selfWeak](Job&) {
+    auto job = [cmd, params, onResponse, selfWeak]() {
         auto self = selfWeak.lock();
         if (!self)
             return;

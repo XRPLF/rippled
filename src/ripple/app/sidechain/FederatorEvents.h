@@ -26,7 +26,6 @@
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
-#include <beast/utility/Journal.h>
 
 #include <boost/format.hpp>
 

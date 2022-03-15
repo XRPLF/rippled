@@ -1175,7 +1175,7 @@ public:
         getInboundLedgers().sweep();
         getLedgerReplayer().sweep();
         m_acceptedLedgerCache.sweep();
-        cachedSLEs_.expire();
+        cachedSLEs_.sweep();
         if (sidechainFederator_)
             sidechainFederator_->sweep();
 

@@ -80,7 +80,7 @@ SignatureCollector::signAndSubmit(Json::Value const& txJson)
                 chain =
                     isMainChain_ ? Federator::mainChain : Federator::sideChain,
                 f = federator_.weak_from_this(),
-                j = j_](Job&) mutable {
+                j = j_]() mutable {
         auto federator = f.lock();
         if (!federator)
             return;

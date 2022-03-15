@@ -959,7 +959,7 @@ Federator::payTxn(
                 seq,
                 signingPK = signingPK_,
                 signingSK = signingSK_,
-                j = j_](Job&) mutable {
+                j = j_]() mutable {
         auto const txnJson = detail::getTxn(
             thisChainSrcAccount, dstAccount, amt, seq, std::move(memos));
 

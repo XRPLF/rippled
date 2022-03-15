@@ -40,13 +40,13 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/protocol/SField.h>
 #include <ripple/protocol/digest.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
 
-#include "protocol/SField.h"
 #include <algorithm>
 #include <memory>
 #include <mutex>
@@ -3106,7 +3106,7 @@ PeerImp::onMessage(
          seq,
          m,
          j = sidechainJ,
-         sig = std::move(sig)](Job&) mutable {
+         sig = std::move(sig)]() mutable {
             auto& hashRouter = self->app_.getHashRouter();
             if (auto const toSkip = hashRouter.shouldRelay(suppression))
             {
@@ -3229,7 +3229,7 @@ PeerImp::onMessage(
          m,
          j = sidechainJ,
          chain = *dstChain,
-         sig = std::move(sig)](Job&) mutable {
+         sig = std::move(sig)]() mutable {
             auto& hashRouter = self->app_.getHashRouter();
             if (auto const toSkip = hashRouter.shouldRelay(suppression))
             {
