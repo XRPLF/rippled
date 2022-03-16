@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -ex
+set -e
 install_from=$1
 use_private=${2:-0} # this option not currently needed by any CI scripts,
                     # reserved for possible future use

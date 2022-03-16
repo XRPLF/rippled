@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -ex
+set -e
 docker login -u rippled \
     -p ${ARTIFACTORY_DEPLOY_KEY_RIPPLED} "${ARTIFACTORY_HUB}"
 # this gives us rippled_version :
@@ -19,4 +19,3 @@ for label in ${rippled_version} latest ; do
     docker push \
         "${ARTIFACTORY_HUB}/${DPKG_CONTAINER_NAME}:${label}_${CI_COMMIT_REF_SLUG}"
 done
-
