@@ -40,7 +40,7 @@ env:
 jobs:
   windows_cache:
     name: Seed windows cache
-    runs-on: windows-latest
+    runs-on: windows-2019
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_win') }}
     outputs:
@@ -348,7 +348,7 @@ jobs:
   windows_everything_else:
     name: Windows ${{ matrix.VCVersion }}, ${{ matrix.build.type }}, ${{ matrix.cmake.CMAKE_GENERATOR }} ${{ matrix.note }} unity=${{ matrix.cmake.unity }}
     needs: windows_cache
-    runs-on: windows-latest
+    runs-on: windows-2019
     timeout-minutes: 720
     strategy:
       fail-fast: false
