@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -ex
+set -e
 # used as a before/setup script for docker steps in gitlab-ci
 # expects to be run in standard alpine/dind image
 echo $(nproc)
@@ -13,4 +13,3 @@ apk add \
 pip3 install awscli
 # list curdir contents to build log:
 ls -la
-

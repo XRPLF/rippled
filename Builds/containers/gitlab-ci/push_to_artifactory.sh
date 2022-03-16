@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -ex
+set -e
 action=$1
 filter=$2
 
