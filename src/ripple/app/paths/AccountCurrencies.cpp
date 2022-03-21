@@ -33,7 +33,8 @@ accountSourceCurrencies(
     if (includeXRP)
         currencies.insert(xrpCurrency());
 
-    if (auto const lines = lrCache->getRippleLines(account, true))
+    if (auto const lines =
+            lrCache->getRippleLines(account, LineDirection::outgoing))
     {
         for (auto const& rspEntry : *lines)
         {
@@ -68,7 +69,8 @@ accountDestCurrencies(
         currencies.insert(xrpCurrency());
     // Even if account doesn't exist
 
-    if (auto const lines = lrCache->getRippleLines(account, true))
+    if (auto const lines =
+            lrCache->getRippleLines(account, LineDirection::outgoing))
     {
         for (auto const& rspEntry : *lines)
         {

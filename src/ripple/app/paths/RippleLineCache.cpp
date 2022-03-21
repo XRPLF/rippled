@@ -39,29 +39,40 @@ RippleLineCache::~RippleLineCache()
 }
 
 std::shared_ptr<std::vector<PathFindTrustLine>>
-RippleLineCache::getRippleLines(AccountID const& accountID, bool outgoing)
+RippleLineCache::getRippleLines(
+    AccountID const& accountID,
+    LineDirection direction)
 {
     auto const hash = hasher_(accountID);
-    AccountKey key(accountID, outgoing, hash);
-    AccountKey otherkey(accountID, !outgoing, hash);
+    AccountKey key(accountID, direction, hash);
+    AccountKey otherkey(
+        accountID,
+        direction == LineDirection::outgoing ? LineDirection::incoming
+                                             : LineDirection::outgoing,
+        hash);
 
     std::lock_guard sl(mLock);
 
     auto [it, inserted] = [&]() {
         if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
         {
-            // The whole point of using the outgoing flag is to reduce the
+            // The whole point of using the direction flag is to reduce the
             // number of trust line objects held in memory. Ensure that there is
             // only a single set of trustlines in the cache per account.
             auto const size = otheriter->second ? otheriter->second->size() : 0;
             JLOG(journal_.info())
-                << "Request for " << (outgoing ? "outgoing" : "incoming")
+                << "Request for "
+                << (direction == LineDirection::outgoing ? "outgoing"
+                                                         : "incoming")
                 << " trust lines for account " << accountID << " found " << size
-                << (outgoing ? " incoming" : " outgoing") << " trust lines. "
-                << (outgoing ? "Deleting the subset of incoming"
-                             : "Returning the superset of outgoing")
+                << (direction == LineDirection::outgoing ? " incoming"
+                                                         : " outgoing")
+                << " trust lines. "
+                << (direction == LineDirection::outgoing
+                        ? "Deleting the subset of incoming"
+                        : "Returning the superset of outgoing")
                 << " trust lines. ";
-            if (outgoing)
+            if (direction == LineDirection::outgoing)
             {
                 // This request is for the outgoing set, but there is already a
                 // subset of incoming lines in the cache. Erase that subset
@@ -89,7 +100,8 @@ RippleLineCache::getRippleLines(AccountID const& accountID, bool outgoing)
     if (inserted)
     {
         assert(it->second == nullptr);
-        auto lines = PathFindTrustLine::getItems(accountID, *ledger_, outgoing);
+        auto lines =
+            PathFindTrustLine::getItems(accountID, *ledger_, direction);
         if (lines.size())
         {
             it->second = std::make_shared<std::vector<PathFindTrustLine>>(
@@ -102,7 +114,9 @@ RippleLineCache::getRippleLines(AccountID const& accountID, bool outgoing)
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger "
                            << ledger_->info().seq << " found " << size
-                           << (key.outgoing_ ? " outgoing" : " incoming")
+                           << (key.direction_ == LineDirection::outgoing
+                                   ? " outgoing"
+                                   : " incoming")
                            << " lines for " << (inserted ? "new " : "existing ")
                            << accountID << " out of a total of "
                            << lines_.size() << " accounts and "

@@ -708,7 +708,7 @@ int
 Pathfinder::getPathsOut(
     Currency const& currency,
     AccountID const& account,
-    bool outgoing,
+    LineDirection direction,
     bool isDstCurrency,
     AccountID const& dstAccount,
     std::function<bool(void)> const& continueCallback)
@@ -736,7 +736,7 @@ Pathfinder::getPathsOut(
     {
         count = app_.getOrderBookDB().getBookSize(issue);
 
-        if (auto const lines = mRLCache->getRippleLines(account, outgoing))
+        if (auto const lines = mRLCache->getRippleLines(account, direction))
         {
             for (auto const& rspEntry : *lines)
             {
@@ -981,8 +981,10 @@ Pathfinder::addLink(
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly(addFlags & afAC_LAST);
 
-                if (auto const lines =
-                        mRLCache->getRippleLines(uEndAccount, !bIsNoRippleOut))
+                if (auto const lines = mRLCache->getRippleLines(
+                        uEndAccount,
+                        bIsNoRippleOut ? LineDirection::incoming
+                                       : LineDirection::outgoing))
                 {
                     auto& rippleLines = *lines;
 
@@ -994,7 +996,7 @@ Pathfinder::addLink(
                         if (continueCallback && !continueCallback())
                             return;
                         auto const& acct = rs.getAccountIDPeer();
-                        bool const outgoing = !rs.getNoRipplePeer();
+                        LineDirection const direction = rs.getDirectionPeer();
 
                         if (hasEffectiveDestination && (acct == mDstAccount))
                         {
@@ -1058,7 +1060,7 @@ Pathfinder::addLink(
                                 int out = getPathsOut(
                                     uEndCurrency,
                                     acct,
-                                    outgoing,
+                                    direction,
                                     bIsEndCurrency,
                                     mEffectiveDst,
                                     continueCallback);
