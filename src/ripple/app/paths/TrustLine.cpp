@@ -32,6 +32,8 @@ TrustLineBase::TrustLineBase(
     , mLowLimit(sle->getFieldAmount(sfLowLimit))
     , mHighLimit(sle->getFieldAmount(sfHighLimit))
     , mBalance(sle->getFieldAmount(sfBalance))
+    , mLockedBalance((*sle)[~sfLockedBalance])
+    , mLockCount((*sle)[~sfLockCount])
     , mFlags(sle->getFieldU32(sfFlags))
     , mViewLowest(mLowLimit.getIssuer() == viewAccount)
 {

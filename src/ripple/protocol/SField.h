@@ -400,6 +400,7 @@ extern SF_UINT32 const sfMintedNFTokens;
 extern SF_UINT32 const sfBurnedNFTokens;
 extern SF_UINT32 const sfHookStateCount;
 extern SF_UINT32 const sfEmitGeneration;
+extern SF_UINT32 const sfLockCount;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;
@@ -476,6 +477,7 @@ extern SF_AMOUNT const sfHighLimit;
 extern SF_AMOUNT const sfFee;
 extern SF_AMOUNT const sfSendMax;
 extern SF_AMOUNT const sfDeliverMin;
+extern SF_AMOUNT const sfLockedBalance;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;

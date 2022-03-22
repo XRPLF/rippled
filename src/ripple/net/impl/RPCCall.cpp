@@ -149,6 +149,35 @@ private:
         }
     }
 
+    // Build an object
+    // { "currency" : "XYZ", "issuer" : "rXYX", "value": 1000 }
+    static Json::Value
+    jvParseSTAmount(std::string const& strIC)
+    {
+        static boost::regex reCurIss(
+            "\\`(0|[1-9][0-9]*)(?:/([[:alpha:]]{3}))(?:/(.+))?\\'");
+
+        boost::smatch icMatch;
+
+        Json::Value jvResult(Json::objectValue);
+        if (boost::regex_match(strIC, icMatch, reCurIss))
+        {
+            std::string strAmount = icMatch[1];
+            std::string strCurrency = icMatch[2];
+            std::string strIssuer = icMatch[3];
+
+            jvResult[jss::currency] = strCurrency;
+            jvResult[jss::value] = strAmount;
+
+            if (strIssuer.length())
+            {
+                // Could confirm issuer is a valid Ripple address.
+                jvResult[jss::issuer] = strIssuer;
+            }
+        }
+        return jvResult;
+    }
+
     static bool
     validPublicKey(
         std::string const& strPk,
@@ -792,7 +821,8 @@ private:
         return parseAccountRaw2(jvParams, jss::destination_account);
     }
 
-    // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>
+    // channel_authorize: <private_key> [<key_type>] <channel_id> <drops |
+    // amount>
     Json::Value
     parseChannelAuthorize(Json::Value const& jvParams)
     {
@@ -825,14 +855,36 @@ private:
             index++;
         }
 
-        if (!jvParams[index].isString() ||
-            !to_uint64(jvParams[index].asString()))
-            return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[index];
+        {
+            // validate amount string | json
+            if (!jvParams[index].isString())
+                return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+            // parse string
+            Json::Value amountJson =
+                jvParseSTAmount(jvParams[index].asString());
+            if (!amountJson)
+            {
+                // amount is string
+                if (!to_uint64(jvParams[index].asString()))
+                    return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+                jvRequest[jss::amount] = jvParams[index].asString();
+            }
+            else
+            {
+                // amount is json
+                STAmount amount;
+                bool isAmount = amountFromJsonNoThrow(amount, amountJson);
+                if (!isAmount)
+                    return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+                jvRequest[jss::amount] = amountJson;
+            }
+        }
 
         // If additional parameters are appended, be sure to increment index
         // here
-
         return jvRequest;
     }
 
@@ -856,12 +908,33 @@ private:
         }
         jvRequest[jss::channel_id] = jvParams[1u].asString();
 
-        if (!jvParams[2u].isString() || !to_uint64(jvParams[2u].asString()))
-            return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[2u];
+        {
+            // validate amount string | json
+            if (!jvParams[2u].isString())
+                return rpcError(rpcCHANNEL_AMT_MALFORMED);
+            // parse string
+            Json::Value amountJson = jvParseSTAmount(jvParams[2u].asString());
+            if (!amountJson)
+            {
+                // amount is string
+                if (!to_uint64(jvParams[2u].asString()))
+                    return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+                jvRequest[jss::amount] = jvParams[2u].asString();
+            }
+            else
+            {
+                // amount is json
+                STAmount amount;
+                bool isAmount = amountFromJsonNoThrow(amount, amountJson);
+                if (!isAmount)
+                    return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+                jvRequest[jss::amount] = amountJson;
+            }
+        }
 
         jvRequest[jss::signature] = jvParams[3u].asString();
-
         return jvRequest;
     }
 

@@ -289,6 +289,7 @@ enum TECcodes : TERUnderlyingType {
     tecINSUFFICIENT_FUNDS = 159,
     tecOBJECT_NOT_FOUND = 160,
     tecINSUFFICIENT_PAYMENT = 161,
+    tecPRECISION_LOSS = 162,
 };
 
 //------------------------------------------------------------------------------

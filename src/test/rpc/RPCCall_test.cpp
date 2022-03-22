@@ -2023,6 +2023,28 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
+    {"channel_authorize: ic.",
+     __LINE__,
+     {"channel_authorize",
+      "secret_can_be_anything",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      "1000/USD/rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "amount" : {
+            "currency" : "USD",
+            "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+            "value" : "1000"
+         },
+         "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+         "secret" : "secret_can_be_anything"
+      }
+    ]
+    })"},
     {"channel_authorize: too few arguments.",
      __LINE__,
      {
@@ -2180,6 +2202,30 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "api_version" : %MAX_API_VER%,
          "amount" : "0",
+         "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+         "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
+         "signature" : "DEADBEEF"
+      }
+    ]
+    })"},
+    {"channel_verify: ic public key.",
+     __LINE__,
+     {"channel_verify",
+      "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      "1000/USD/rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+      "DEADBEEF"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "channel_verify",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "amount" : {
+            "currency" : "USD",
+            "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+            "value" : "1000"
+         },
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
          "signature" : "DEADBEEF"

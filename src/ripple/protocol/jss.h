@@ -369,6 +369,8 @@ JSS(local);                       // out: resource/Logic.h
 JSS(local_txs);                   // out: GetCounts
 JSS(local_static_keys);           // out: ValidatorList
 JSS(low);                         // out: BookChanges
+JSS(locked_balance);              // out: AccountLines
+JSS(lock_count);                  // out: AccountLines
 JSS(lowest_sequence);             // out: AccountInfo
 JSS(lowest_ticket);               // out: AccountInfo
 JSS(majority);                    // out: RPC feature

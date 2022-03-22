@@ -63,17 +63,38 @@ doChannelAuthorize(RPC::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
-        ? to_uint64(params[jss::amount].asString())
-        : std::nullopt;
+    Serializer msg;
 
-    if (!optDrops)
+    if (params[jss::amount].isNumeric())
         return rpcError(rpcCHANNEL_AMT_MALFORMED);
 
-    std::uint64_t const drops = *optDrops;
+    if (params[jss::amount].isString())
+    {
+        std::optional<std::uint64_t> const optDrops =
+            params[jss::amount].isString()
+            ? to_uint64(params[jss::amount].asString())
+            : std::nullopt;
 
-    Serializer msg;
-    serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
+        if (!optDrops)
+            return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+        std::uint64_t const drops = *optDrops;
+        serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
+    }
+    else
+    {
+        STAmount amount;
+        bool isAmount = amountFromJsonNoThrow(amount, params[jss::amount]);
+        if (!isAmount)
+            return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+        serializePayChanAuthorization(
+            msg,
+            channelId,
+            amount.iou(),
+            amount.getCurrency(),
+            amount.getIssuer());
+    }
 
     try
     {
@@ -124,21 +145,43 @@ doChannelVerify(RPC::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
-        ? to_uint64(params[jss::amount].asString())
-        : std::nullopt;
+    Serializer msg;
 
-    if (!optDrops)
+    if (params[jss::amount].isNumeric())
         return rpcError(rpcCHANNEL_AMT_MALFORMED);
 
-    std::uint64_t const drops = *optDrops;
+    if (params[jss::amount].isString())
+    {
+        std::optional<std::uint64_t> const optDrops =
+            params[jss::amount].isString()
+            ? to_uint64(params[jss::amount].asString())
+            : std::nullopt;
+
+        if (!optDrops)
+            return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+        std::uint64_t const drops = *optDrops;
+        serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
+    }
+    else
+    {
+        STAmount amount;
+        bool isAmount = amountFromJsonNoThrow(amount, params[jss::amount]);
+
+        if (!isAmount)
+            return rpcError(rpcCHANNEL_AMT_MALFORMED);
+
+        serializePayChanAuthorization(
+            msg,
+            channelId,
+            amount.iou(),
+            amount.getCurrency(),
+            amount.getIssuer());
+    }
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || !sig->size())
         return rpcError(rpcINVALID_PARAMS);
-
-    Serializer msg;
-    serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
 
     Json::Value result;
     result[jss::signature_verified] =

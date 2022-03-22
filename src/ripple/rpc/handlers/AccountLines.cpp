@@ -47,6 +47,9 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
+    std::optional<STAmount> const& saLockedBalance(line.getLockedBalance());
+    std::optional<uint32_t> const& saLockCount(line.getLockCount());
+
     Json::Value& jPeer(jsonLines.append(Json::objectValue));
 
     jPeer[jss::account] = to_string(line.getAccountIDPeer());
@@ -56,6 +59,15 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
     // Amount reported is negative if other account holds current
     // account's IOUs.
     jPeer[jss::balance] = saBalance.getText();
+
+    if (saLockedBalance)
+        jPeer[jss::locked_balance] = saLockedBalance->negative()
+            ? (-(*saLockedBalance)).getText()
+            : saLockedBalance->getText();
+
+    if (saLockCount)
+        jPeer[jss::lock_count] = *saLockCount;
+
     jPeer[jss::currency] = to_string(saBalance.issue().currency);
     jPeer[jss::limit] = saLimit.getText();
     jPeer[jss::limit_peer] = saLimitPeer.getText();

@@ -56,7 +56,7 @@ enum class LedgerNameSpace : std::uint16_t {
     FEE_SETTINGS = 'e',
     TICKET = 'T',
     SIGNER_LIST = 'S',
-    XRP_PAYMENT_CHANNEL = 'x',
+    PAYMENT_CHANNEL = 'x',
     CHECK = 'C',
     DEPOSIT_PREAUTH = 'p',
     NEGATIVE_UNL = 'N',
@@ -324,8 +324,7 @@ Keylet
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
     return {
-        ltPAYCHAN,
-        indexHash(LedgerNameSpace::XRP_PAYMENT_CHANNEL, src, dst, seq)};
+        ltPAYCHAN, indexHash(LedgerNameSpace::PAYMENT_CHANNEL, src, dst, seq)};
 }
 
 Keylet
