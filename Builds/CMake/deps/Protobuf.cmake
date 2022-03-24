@@ -65,7 +65,7 @@ if (local_protobuf OR NOT (Protobuf_FOUND AND Protobuf_PROTOC_EXECUTABLE AND pro
       ${CMAKE_COMMAND}
       --build .
       --config $<CONFIG>
-      $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+      --parallel ${ep_procs}
     TEST_COMMAND ""
     INSTALL_COMMAND
       ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install

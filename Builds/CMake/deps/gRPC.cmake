@@ -112,7 +112,7 @@ else ()
         ${CMAKE_COMMAND}
           --build .
           --config $<CONFIG>
-          $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+          --parallel ${ep_procs}
       TEST_COMMAND ""
       INSTALL_COMMAND
         ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
@@ -169,7 +169,7 @@ else ()
           ${CMAKE_COMMAND}
             --build .
             --config $<CONFIG>
-            $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+            --parallel ${ep_procs}
         TEST_COMMAND ""
         INSTALL_COMMAND
           ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
@@ -237,7 +237,7 @@ else ()
         ${CMAKE_COMMAND}
         --build .
         --config $<CONFIG>
-        $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+        --parallel ${ep_procs}
         $<$<BOOL:${is_multiconfig}>:
           COMMAND
             ${CMAKE_COMMAND} -E copy

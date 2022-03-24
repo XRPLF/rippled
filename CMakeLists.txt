@@ -25,12 +25,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/deps")
 
 include (CheckCXXCompilerFlag)
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
-  include (FetchContent)
-endif ()
-if (MSVC AND CMAKE_VERSION VERSION_LESS 3.12)
-  message (FATAL_ERROR "MSVC requires cmake 3.12 or greater for proper boost support")
-endif ()
+include (FetchContent)
 include (ExternalProject)
 include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
 include (ProcessorCount)
