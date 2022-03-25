@@ -1273,14 +1273,25 @@ struct PeerDataCounts
         if (counts.empty())
             return;
 
+        auto outFunc = [&f](auto&& v) { f(v.first); };
         std::minstd_rand rng{std::random_device{}()};
+#if _MSC_VER
+        std::vector<std::pair<std::shared_ptr<Peer>, int>> s;
+        s.reserve(n);
+        std::sample(
+            counts.begin(), counts.end(), std::back_inserter(s), n, rng);
+        for (auto& v : s)
+        {
+            outFunc(v);
+        }
+#else
         std::sample(
             counts.begin(),
             counts.end(),
-            boost::make_function_output_iterator(
-                [&f](auto&& v) { f(v.first); }),
+            boost::make_function_output_iterator(outFunc),
             n,
             rng);
+#endif
     }
 };
 }  // namespace detail
