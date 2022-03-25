@@ -152,7 +152,7 @@ populate(
                     v4Net = boost::asio::ip::make_network_v4(ip);
                     v4 = true;
                 }
-                catch (boost::system::system_error const& e)
+                catch (boost::system::system_error const&)
                 {
                     v6Net = boost::asio::ip::make_network_v6(ip);
                     v4 = false;
