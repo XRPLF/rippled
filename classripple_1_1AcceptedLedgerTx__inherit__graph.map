@@ -1,0 +1,4 @@
+<map id="ripple::AcceptedLedgerTx" name="ripple::AcceptedLedgerTx">
+<area shape="rect" id="node1" title="A transaction that is in a closed ledger." alt="" coords="5,95,192,121"/>
+<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="13,5,185,47"/>
+</map>

@@ -345,89 +345,89 @@ $(function() {
 <div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <span class="keywordflow">return</span> ret;</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    }</div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> replace&gt;</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache.html#ae175032110e2410c9887ca62a955d403">  310</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache.html#ae175032110e2410c9887ca62a955d403">canonicalize</a>(</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">key_type</a>&amp; key,</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional_t</a>&lt;</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            replace,</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a> <span class="keyword">const</span>,</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a>&gt;&amp; data)</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    {</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="comment">// Return canonical value, store if needed, refresh in cache</span></div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="comment">// Return values: true=we had the data already</span></div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1TaggedCache.html#a7b941b85ce975e7812ddb4caa4320c1a">m_mutex</a>);</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <span class="keyword">auto</span> cit = <a class="code" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a>.<a class="code" href="classripple_1_1partitioned__unordered__map.html#adbc404e309cf1bfee175028af700c6dc">find</a>(key);</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        <span class="keywordflow">if</span> (cit == <a class="code" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a>.<a class="code" href="classripple_1_1partitioned__unordered__map.html#a422fccbd458720d3fb6d959ab5b40995">end</a>())</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        {</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            <a class="code" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a>.<a class="code" href="classripple_1_1partitioned__unordered__map.html#a94fe12974edf0121d1cc2f9f06a6e0a7">emplace</a>(</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                std::piecewise_construct,</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(key),</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(<a class="code" href="classripple_1_1TaggedCache.html#a59474c6f11ed52197982a2c61fdb953b">m_clock</a>.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>(), data));</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            ++<a class="code" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a>;</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        }</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00309"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">  309</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">canonicalize</a>(</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">key_type</a>&amp; key,</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a>&amp; data,</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">bool</span>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a> <span class="keyword">const</span>&amp;)&gt;&amp;&amp; replace)</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    {</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <span class="comment">// Return canonical value, store if needed, refresh in cache</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        <span class="comment">// Return values: true=we had the data already</span></div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1TaggedCache.html#a7b941b85ce975e7812ddb4caa4320c1a">m_mutex</a>);</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keyword">auto</span> cit = <a class="code" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a>.<a class="code" href="classripple_1_1partitioned__unordered__map.html#adbc404e309cf1bfee175028af700c6dc">find</a>(key);</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        <span class="keywordflow">if</span> (cit == <a class="code" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a>.<a class="code" href="classripple_1_1partitioned__unordered__map.html#a422fccbd458720d3fb6d959ab5b40995">end</a>())</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        {</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            <a class="code" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a>.<a class="code" href="classripple_1_1partitioned__unordered__map.html#a94fe12974edf0121d1cc2f9f06a6e0a7">emplace</a>(</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                std::piecewise_construct,</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(key),</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(<a class="code" href="classripple_1_1TaggedCache.html#a59474c6f11ed52197982a2c61fdb953b">m_clock</a>.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>(), data));</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            ++<a class="code" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a>;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        }</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <a class="code" href="classripple_1_1TaggedCache.html#a4555c3b035bf08da7f4fea6109bfee43">Entry</a>&amp; entry = cit-&gt;second;</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        entry.touch(<a class="code" href="classripple_1_1TaggedCache.html#a59474c6f11ed52197982a2c61fdb953b">m_clock</a>.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>());</div>
 <div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        <a class="code" href="classripple_1_1TaggedCache.html#a4555c3b035bf08da7f4fea6109bfee43">Entry</a>&amp; entry = cit-&gt;second;</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        entry.touch(<a class="code" href="classripple_1_1TaggedCache.html#a59474c6f11ed52197982a2c61fdb953b">m_clock</a>.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>());</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160; </div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        <span class="keywordflow">if</span> (entry.isCached())</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        {</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="keywordflow">if</span> constexpr (replace)</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            {</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                entry.ptr = data;</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                entry.weak_ptr = data;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            }</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            {</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                data = entry.ptr;</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            }</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        <span class="keywordflow">if</span> (entry.isCached())</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        {</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            <span class="keywordflow">if</span> (replace(entry.ptr))</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            {</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                entry.ptr = data;</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                entry.weak_ptr = data;</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            }</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            {</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                data = entry.ptr;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            }</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        }</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        }</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160; </div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        <span class="keyword">auto</span> cachedData = entry.lock();</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <span class="keywordflow">if</span> (cachedData)</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        {</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            <span class="keywordflow">if</span> constexpr (replace)</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            {</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                entry.ptr = data;</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                entry.weak_ptr = data;</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            }</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            {</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                entry.ptr = cachedData;</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                data = cachedData;</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            }</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            ++<a class="code" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a>;</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        }</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160; </div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        entry.ptr = data;</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        entry.weak_ptr = data;</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        ++<a class="code" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a>;</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keyword">auto</span> cachedData = entry.lock();</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        <span class="keywordflow">if</span> (cachedData)</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        {</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="keywordflow">if</span> (replace(entry.ptr))</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            {</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                entry.ptr = data;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                entry.weak_ptr = data;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            }</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            {</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                entry.ptr = cachedData;</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                data = cachedData;</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            }</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            ++<a class="code" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a>;</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        }</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        entry.ptr = data;</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        entry.weak_ptr = data;</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        ++<a class="code" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a>;</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160; </div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    }</div>
 <div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    }</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00379"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">  379</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">canonicalize_replace_cache</a>(</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">key_type</a>&amp; key,</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a> <span class="keyword">const</span>&amp; data)</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    {</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="keywordflow">return</span> canonicalize&lt;true&gt;(key, data);</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    }</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00387"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">  387</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">canonicalize_replace_client</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">key_type</a>&amp; key, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a>&amp; data)</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    {</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        <span class="keywordflow">return</span> canonicalize&lt;false&gt;(key, data);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00375"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">  375</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">canonicalize_replace_cache</a>(</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        <span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">key_type</a>&amp; key,</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a> <span class="keyword">const</span>&amp; data)</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    {</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">canonicalize</a>(</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            key,</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            <span class="keyword">const_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a>&amp;<span class="keyword">&gt;</span>(data),</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            [](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a> <span class="keyword">const</span>&amp;) { <span class="keywordflow">return</span> <span class="keyword">true</span>; });</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    }</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00386"></a><span class="lineno"><a class="line" href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">  386</a></span>&#160;    <a class="code" href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">canonicalize_replace_client</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">key_type</a>&amp; key, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a>&amp; data)</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    {</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">canonicalize</a>(</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            key, data, [](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a> <span class="keyword">const</span>&amp;) { <span class="keywordflow">return</span> <span class="keyword">false</span>; });</div>
 <div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    }</div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;T&gt;</a></div>
@@ -855,6 +855,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a5445906f1657546cd6557b89216a2f34"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a5445906f1657546cd6557b89216a2f34">ripple::TaggedCache::collect_metrics</a></div><div class="ttdeci">void collect_metrics()</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00539">TaggedCache.h:539</a></div></div>
 <div class="ttc" id="astructripple_1_1TaggedCache_1_1Stats_html_a09f93f17c4895a651fc9abeed8c98792"><div class="ttname"><a href="structripple_1_1TaggedCache_1_1Stats.html#a09f93f17c4895a651fc9abeed8c98792">ripple::TaggedCache::Stats::hook</a></div><div class="ttdeci">beast::insight::Hook hook</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00571">TaggedCache.h:571</a></div></div>
 <div class="ttc" id="aclassripple_1_1partitioned__unordered__map_html"><div class="ttname"><a href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a></div><div class="ttdef"><b>Definition:</b> <a href="partitioned__unordered__map_8h_source.html#l00043">partitioned_unordered_map.h:43</a></div></div>
+<div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a3d2e1d1503f17e1c3f8b615cf46cc4a2"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a3d2e1d1503f17e1c3f8b615cf46cc4a2">ripple::TaggedCache&lt; uint256, SLE const &gt;::mapped_type</a></div><div class="ttdeci">SLE const mapped_type</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00061">TaggedCache.h:61</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_ac4a0686d55f1636032d48164e8338bcd"><div class="ttname"><a href="classripple_1_1TaggedCache.html#ac4a0686d55f1636032d48164e8338bcd">ripple::TaggedCache::sweepHelper</a></div><div class="ttdeci">std::thread sweepHelper(clock_type::time_point const &amp;when_expire, clock_type::time_point const &amp;now, typename KeyOnlyCacheType::map_type &amp;partition, std::vector&lt; std::shared_ptr&lt; mapped_type &gt;&gt; &amp;stuffToSweep, std::atomic&lt; int &gt; &amp;allRemovals, std::lock_guard&lt; std::recursive_mutex &gt; const &amp;lock)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00721">TaggedCache.h:721</a></div></div>
 <div class="ttc" id="aclassripple_1_1partitioned__unordered__map_html_adbc404e309cf1bfee175028af700c6dc"><div class="ttname"><a href="classripple_1_1partitioned__unordered__map.html#adbc404e309cf1bfee175028af700c6dc">ripple::partitioned_unordered_map::find</a></div><div class="ttdeci">void find(key_type const &amp;key, T &amp;it) const</div><div class="ttdef"><b>Definition:</b> <a href="partitioned__unordered__map_8h_source.html#l00311">partitioned_unordered_map.h:311</a></div></div>
@@ -862,7 +863,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1TaggedCache_1_1ValueEntry_html_a24e9360735e967278ea6e3e4cc53f55e"><div class="ttname"><a href="classripple_1_1TaggedCache_1_1ValueEntry.html#a24e9360735e967278ea6e3e4cc53f55e">ripple::TaggedCache::ValueEntry::touch</a></div><div class="ttdeci">void touch(clock_type::time_point const &amp;now)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00631">TaggedCache.h:631</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_1_1ValueEntry_html_a17404bb0114f5b12afc033ba633c4f72"><div class="ttname"><a href="classripple_1_1TaggedCache_1_1ValueEntry.html#a17404bb0114f5b12afc033ba633c4f72">ripple::TaggedCache::ValueEntry::weak_ptr</a></div><div class="ttdeci">std::weak_ptr&lt; mapped_type &gt; weak_ptr</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00600">TaggedCache.h:600</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a45b6f2ac8315aa34d1234e119ce9a2e2"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a45b6f2ac8315aa34d1234e119ce9a2e2">ripple::TaggedCache::m_misses</a></div><div class="ttdeci">std::uint64_t m_misses</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00787">TaggedCache.h:787</a></div></div>
-<div class="ttc" id="aclassripple_1_1TaggedCache_html_a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">ripple::TaggedCache::canonicalize_replace_cache</a></div><div class="ttdeci">bool canonicalize_replace_cache(const key_type &amp;key, std::shared_ptr&lt; T &gt; const &amp;data)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00379">TaggedCache.h:379</a></div></div>
+<div class="ttc" id="aclassripple_1_1TaggedCache_html_a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">ripple::TaggedCache::canonicalize_replace_cache</a></div><div class="ttdeci">bool canonicalize_replace_cache(const key_type &amp;key, std::shared_ptr&lt; T &gt; const &amp;data)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00375">TaggedCache.h:375</a></div></div>
 <div class="ttc" id="astructripple_1_1TaggedCache_1_1Stats_html_a61b119ae7dbc8dfbcc83fccfba7a12ad"><div class="ttname"><a href="structripple_1_1TaggedCache_1_1Stats.html#a61b119ae7dbc8dfbcc83fccfba7a12ad">ripple::TaggedCache::Stats::size</a></div><div class="ttdeci">beast::insight::Gauge size</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00572">TaggedCache.h:572</a></div></div>
 <div class="ttc" id="aexpired_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/weak_ptr/expired.html">std::weak_ptr::expired</a></div><div class="ttdeci">T expired(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_ac9a577663353bfea66a096f12cb85293"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">beast::abstract_clock::now</a></div><div class="ttdeci">virtual time_point now() const =0</div><div class="ttdoc">Returns the current time.</div></div>
@@ -871,6 +872,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_ae3695f9380d7cf36abe6384bc9b3e13b"><div class="ttname"><a href="classripple_1_1TaggedCache.html#ae3695f9380d7cf36abe6384bc9b3e13b">ripple::TaggedCache::getHitRate</a></div><div class="ttdeci">float getHitRate()</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00155">TaggedCache.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_1_1KeyOnlyEntry_html_a9631d86b426eb61c8848e94fb17cb0d5"><div class="ttname"><a href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html#a9631d86b426eb61c8848e94fb17cb0d5">ripple::TaggedCache::KeyOnlyEntry::last_access</a></div><div class="ttdeci">clock_type::time_point last_access</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00582">TaggedCache.h:582</a></div></div>
+<div class="ttc" id="aclassripple_1_1TaggedCache_html_a8ccb634f184f6815b5dc5249add2aa0c"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">ripple::TaggedCache::canonicalize</a></div><div class="ttdeci">bool canonicalize(const key_type &amp;key, std::shared_ptr&lt; T &gt; &amp;data, std::function&lt; bool(std::shared_ptr&lt; T &gt; const &amp;)&gt; &amp;&amp;replace)</div><div class="ttdoc">Replace aliased objects with originals.</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00309">TaggedCache.h:309</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a7c93038dab2483ab59153f816d9ed4e4"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a7c93038dab2483ab59153f816d9ed4e4">ripple::TaggedCache::setTargetSize</a></div><div class="ttdeci">void setTargetSize(int s)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00105">TaggedCache.h:105</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_afa8e18677da99995543fda2b75ed2929"><div class="ttname"><a href="classripple_1_1TaggedCache.html#afa8e18677da99995543fda2b75ed2929">ripple::TaggedCache::m_target_age</a></div><div class="ttdeci">clock_type::duration m_target_age</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00781">TaggedCache.h:781</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a10fb65444d213248bb86271e589821d6"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a10fb65444d213248bb86271e589821d6">ripple::TaggedCache::getTrackSize</a></div><div class="ttdeci">int getTrackSize() const</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00148">TaggedCache.h:148</a></div></div>
@@ -905,7 +907,6 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_ac55d64946c1478480a16538eea72b0d0"><div class="ttname"><a href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">ripple::TaggedCache::clock_type</a></div><div class="ttdeci">beast::abstract_clock&lt; std::chrono::steady_clock &gt; clock_type</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00062">TaggedCache.h:62</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a4555c3b035bf08da7f4fea6109bfee43"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a4555c3b035bf08da7f4fea6109bfee43">ripple::TaggedCache&lt; uint256, SLE const &gt;::Entry</a></div><div class="ttdeci">std::conditional&lt; false, KeyOnlyEntry, ValueEntry &gt;::type Entry</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00639">TaggedCache.h:639</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a960092c9c7439c8c1fd02459d0e82d00"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a960092c9c7439c8c1fd02459d0e82d00">ripple::TaggedCache::m_name</a></div><div class="ttdeci">std::string m_name</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00775">TaggedCache.h:775</a></div></div>
-<div class="ttc" id="aclassripple_1_1TaggedCache_html_ae175032110e2410c9887ca62a955d403"><div class="ttname"><a href="classripple_1_1TaggedCache.html#ae175032110e2410c9887ca62a955d403">ripple::TaggedCache::canonicalize</a></div><div class="ttdeci">bool canonicalize(const key_type &amp;key, std::conditional_t&lt; replace, std::shared_ptr&lt; T &gt; const, std::shared_ptr&lt; T &gt;&gt; &amp;data)</div><div class="ttdoc">Replace aliased objects with originals.</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00310">TaggedCache.h:310</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_1_1KeyOnlyEntry_html"><div class="ttname"><a href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">ripple::TaggedCache::KeyOnlyEntry</a></div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00579">TaggedCache.h:579</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a3560674c26007c744baaedfc8aa0a126"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a3560674c26007c744baaedfc8aa0a126">ripple::TaggedCache::fetch</a></div><div class="ttdeci">std::shared_ptr&lt; T &gt; fetch(const key_type &amp;key)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00393">TaggedCache.h:393</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
@@ -916,9 +917,9 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1Journal_html_a556228cb60bcf405c225d3f64b7b01ae"><div class="ttname"><a href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">beast::Journal::debug</a></div><div class="ttdeci">Stream debug() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00315">Journal.h:315</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_aa3c8e033d152cefb85f9546aac64b175"><div class="ttname"><a href="classripple_1_1TaggedCache.html#aa3c8e033d152cefb85f9546aac64b175">ripple::TaggedCache::touch_if_exists</a></div><div class="ttdeci">bool touch_if_exists(KeyComparable const &amp;key)</div><div class="ttdoc">Refresh the last access time on a key if present.</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00185">TaggedCache.h:185</a></div></div>
-<div class="ttc" id="aclassripple_1_1TaggedCache_html_a87fe60d8d8ce16003486f76bd6fa9ae3"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">ripple::TaggedCache::canonicalize_replace_client</a></div><div class="ttdeci">bool canonicalize_replace_client(const key_type &amp;key, std::shared_ptr&lt; T &gt; &amp;data)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00387">TaggedCache.h:387</a></div></div>
+<div class="ttc" id="aclassripple_1_1TaggedCache_html_a87fe60d8d8ce16003486f76bd6fa9ae3"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">ripple::TaggedCache::canonicalize_replace_client</a></div><div class="ttdeci">bool canonicalize_replace_client(const key_type &amp;key, std::shared_ptr&lt; T &gt; &amp;data)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00386">TaggedCache.h:386</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a4deea9f6c2b5fb0defca835ae3f43055"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a4deea9f6c2b5fb0defca835ae3f43055">ripple::TaggedCache::peekMutex</a></div><div class="ttdeci">mutex_type &amp; peekMutex()</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00449">TaggedCache.h:449</a></div></div>
-<div class="ttc" id="aconditional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional_t</a></div></div>
+<div class="ttc" id="aconditional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a></div><div class="ttdeci">T max(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_1_1ValueEntry_html_adf56f84d2d9282242896a2192e841d4a"><div class="ttname"><a href="classripple_1_1TaggedCache_1_1ValueEntry.html#adf56f84d2d9282242896a2192e841d4a">ripple::TaggedCache::ValueEntry::ptr</a></div><div class="ttdeci">std::shared_ptr&lt; mapped_type &gt; ptr</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00599">TaggedCache.h:599</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html_a4ef56975db8e01e222f08361b6d29b87"><div class="ttname"><a href="classripple_1_1TaggedCache.html#a4ef56975db8e01e222f08361b6d29b87">ripple::TaggedCache::initialFetch</a></div><div class="ttdeci">std::shared_ptr&lt; T &gt; initialFetch(key_type const &amp;key, std::lock_guard&lt; mutex_type &gt; const &amp;l)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00512">TaggedCache.h:512</a></div></div>

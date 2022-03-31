@@ -68,21 +68,32 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="classripple_1_1Book-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::Book Class Reference</div>  </div>
+<div class="title">ripple::Book Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p>Specifies an order book.  
  <a href="classripple_1_1Book.html#details">More...</a></p>
 <div class="dynheader">
+Inheritance diagram for ripple::Book:</div>
+<div class="dyncontent">
+<div class="center"><img src="classripple_1_1Book__inherit__graph.png" border="0" usemap="#ripple_1_1Book_inherit__map" alt="Inheritance graph"/></div>
+<map name="ripple_1_1Book_inherit__map" id="ripple_1_1Book_inherit__map">
+<area shape="rect" title="Specifies an order book." alt="" coords="37,95,137,121"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
 Collaboration diagram for ripple::Book:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Book__coll__graph.png" border="0" usemap="#ripple_1_1Book_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1Book_coll__map" id="ripple_1_1Book_coll__map">
-<area shape="rect" title="Specifies an order book." alt="" coords="973,74,1073,101"/>
-<area shape="rect" href="classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="803,74,904,101"/>
+<area shape="rect" title="Specifies an order book." alt="" coords="1035,45,1135,71"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="803,8,965,49"/>
+<area shape="rect" href="classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="833,74,935,101"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="491,33,689,75"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,5,389,47"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="487,99,693,140"/>
@@ -104,12 +115,17 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a44f1acfd1d549e7f025f5372fb345f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6992e8a5da385182ec3ab51a0216281a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Issue.html">Issue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Book.html#a6992e8a5da385182ec3ab51a0216281a">out</a></td></tr>
 <tr class="separator:a6992e8a5da385182ec3ab51a0216281a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#acde6c67ea432f6bb32d2ecb5db786ce8">getCounter</a> () noexcept</td></tr>
+<tr class="separator:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Specifies an order book. </p>
 <p>The order book is a pair of Issues called in and out. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00032">32</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00033">33</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a11abcc0ea010a3f83ff56ca2c6e47427"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a11abcc0ea010a3f83ff56ca2c6e47427">&#9670;&nbsp;</a></span>Book() <span class="overload">[1/2]</span></h2>
@@ -126,7 +142,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00038">38</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00039">39</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
 
 </div>
 </div>
@@ -156,7 +172,32 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00042">42</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00043">43</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="acde6c67ea432f6bb32d2ecb5db786ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde6c67ea432f6bb32d2ecb5db786ce8">&#9670;&nbsp;</a></span>getCounter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static auto&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1Book.html">Book</a>  &gt;::getCounter</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span><span class="mlabel">noexcept</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -173,7 +214,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00035">35</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00036">36</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
 
 </div>
 </div>
@@ -189,7 +230,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00036">36</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Book_8h_source.html#l00037">37</a> of file <a class="el" href="Book_8h_source.html">Book.h</a>.</p>
 
 </div>
 </div>

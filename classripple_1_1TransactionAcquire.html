@@ -140,8 +140,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a66024e1acf01cdfb2abbb18fcb676184"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06a996f9c8f481e4c81fc6a86a254e91"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a06a996f9c8f481e4c81fc6a86a254e91">~TransactionAcquire</a> ()=default</td></tr>
 <tr class="separator:a06a996f9c8f481e4c81fc6a86a254e91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d0001518ae50ed99f26b905ca6a0197"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a2d0001518ae50ed99f26b905ca6a0197">takeNodes</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)</td></tr>
-<tr class="separator:a2d0001518ae50ed99f26b905ca6a0197"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad80d803431f3e198911235d2ff964312"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ad80d803431f3e198911235d2ff964312">takeNodes</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a>, <a class="el" href="classripple_1_1Slice.html">Slice</a> &gt;&gt; const &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)</td></tr>
+<tr class="separator:ad80d803431f3e198911235d2ff964312"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bb370b7cd8b82c130d0e58acda42064"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a6bb370b7cd8b82c130d0e58acda42064">init</a> (int <a class="el" href="namespaceripple.html#a6fb8bd4df2c5490143227e364868e46aab8652ba790968033ade1e2732478d440">startPeers</a>)</td></tr>
 <tr class="separator:a6bb370b7cd8b82c130d0e58acda42064"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19169b2acca6d5bcc30b7babf13cb7e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a19169b2acca6d5bcc30b7babf13cb7e3">stillNeed</a> ()</td></tr>
@@ -337,8 +337,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2d0001518ae50ed99f26b905ca6a0197"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d0001518ae50ed99f26b905ca6a0197">&#9670;&nbsp;</a></span>takeNodes()</h2>
+<a id="ad80d803431f3e198911235d2ff964312"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad80d803431f3e198911235d2ff964312">&#9670;&nbsp;</a></span>takeNodes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -346,13 +346,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> ripple::TransactionAcquire::takeNodes </td>
           <td>(</td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>IDs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a>, <a class="el" href="classripple_1_1Slice.html">Slice</a> &gt;&gt; const &amp;&#160;</td>
           <td class="paramname"><em>data</em>, </td>
         </tr>
         <tr>
@@ -389,7 +383,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00256">256</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00249">249</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +402,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00266">266</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00259">259</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -505,7 +499,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00247">247</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00240">240</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -760,7 +754,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00058">58</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00057">57</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -784,7 +778,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00059">59</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00058">58</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -808,7 +802,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00060">60</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00059">59</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>

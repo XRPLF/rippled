@@ -1,12 +1,12 @@
 <map id="ripple::ManifestCache" name="ripple::ManifestCache">
-<area shape="rect" id="node1" title="Remembers manifests with the highest sequence number." alt="" coords="1137,179,1300,205"/>
+<area shape="rect" id="node1" title="Remembers manifests with the highest sequence number." alt="" coords="1093,179,1256,205"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="637,5,789,61"/>
 <area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="185,69,316,96"/>
 <area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="840,164,992,220"/>
 <area shape="rect" id="node10" href="$structripple_1_1Manifest.html" title=" " alt="" coords="451,179,573,205"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,44,100,71"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="9,95,97,121"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="870,113,962,140"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/shared_mutex.html" title="STL class." alt="" coords="845,113,987,140"/>
 <area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="609,260,816,287"/>
 <area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="199,249,302,276"/>
 <area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="207,179,294,205"/>

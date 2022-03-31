@@ -262,6 +262,7 @@ $(function() {
 , <a class="el" href="classbeast_1_1List.html#a2d3c19a2ea6aba941902adcc0c1a5a73">beast::List&lt; T, Tag &gt;</a>
 , <a class="el" href="classbeast_1_1LockFreeStack.html#a5e135680d24783ba57f13792d0a09f9e">beast::LockFreeStack&lt; Element, Tag &gt;</a>
 , <a class="el" href="classJson_1_1Value.html#a4544f7b3f4163ebe5da9273258936fe5">Json::Value</a>
+, <a class="el" href="classripple_1_1AcceptedLedger.html#ae21403bc88447ef8c09d2fd6718a774a">ripple::AcceptedLedger</a>
 , <a class="el" href="classripple_1_1base__uint.html#a2ffd09234d574e5554c5d84199a9f287">ripple::base_uint&lt; Bits, Tag &gt;</a>
 , <a class="el" href="classripple_1_1BookDirs.html#a9e69b52fe7b86276ae3f7ef33e7ced0d">ripple::BookDirs</a>
 , <a class="el" href="classripple_1_1Buffer.html#a51f78cf733d00b778e89cb1c63842af2">ripple::Buffer</a>
@@ -287,7 +288,7 @@ $(function() {
 , <a class="el" href="classripple_1_1STObject.html#aa820a166593f797cce00099c29fd6b90">ripple::STObject</a>
 , <a class="el" href="classripple_1_1STPath.html#a715d0660b0924d6a79def59b88f0621f">ripple::STPath</a>
 , <a class="el" href="classripple_1_1STPathSet.html#a942c597a3ff98e2f6a7c0a6681c388aa">ripple::STPathSet</a>
-, <a class="el" href="classripple_1_1STVector256.html#a787e5dd1ee4e0780eddbb26bcc0cc497">ripple::STVector256</a>
+, <a class="el" href="classripple_1_1STVector256.html#a71f67390ccc98b6703a36f181224090c">ripple::STVector256</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1PeerGroup.html#afafee344652b29c6939d0036114f4b26">ripple::test::csf::PeerGroup</a>
 , <a class="el" href="classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html#aadc9dd3df29c0e18e12e19041593e1aa">ripple::test::csf::Scheduler::queue_type</a>
 </li>
@@ -343,6 +344,9 @@ $(function() {
 <li>bits
 : <a class="el" href="classripple_1_1unsigned__integer.html#ae17527ce85a7d672faa1e7ffd6150055">ripple::unsigned_integer&lt; Bits, UInt &gt;</a>
 </li>
+<li>bits_
+: <a class="el" href="classripple_1_1SpinBitlock.html#acd3d51a637da2f19e12a2a31839aa162">ripple::SpinBitlock</a>
+</li>
 <li>bLastSuccess
 : <a class="el" href="classripple_1_1PathRequest.html#a8f8cc5acf991ff3dd84c349aaef8c7a1">ripple::PathRequest</a>
 </li>
@@ -378,7 +382,6 @@ $(function() {
 </li>
 <li>book()
 : <a class="el" href="classripple_1_1BookStep.html#a9078a99ce222b97f9fb3d166633b1b49">ripple::BookStep&lt; TIn, TOut, TDerived &gt;</a>
-, <a class="el" href="classripple_1_1OrderBook.html#a4d25f59a6d21bc854d61869fd05ffd9e">ripple::OrderBook</a>
 </li>
 <li>book_
 : <a class="el" href="classripple_1_1BookStep.html#ae1c9905d2af71cf8b6695ad869685c36">ripple::BookStep&lt; TIn, TOut, TDerived &gt;</a>
@@ -451,7 +454,7 @@ $(function() {
 </li>
 <li>broadcast()
 : <a class="el" href="classripple_1_1Overlay.html#a17d67bb9ac9226723d038b519d0a5332">ripple::Overlay</a>
-, <a class="el" href="classripple_1_1OverlayImpl.html#a7127b00a7f599b223cab483654723616">ripple::OverlayImpl</a>
+, <a class="el" href="classripple_1_1OverlayImpl.html#a5bc128f8eabac2750f081934705b1f27">ripple::OverlayImpl</a>
 , <a class="el" href="structripple_1_1Transaction_1_1SubmitResult.html#a1055868f6cbb6df3ec8a5bc1e57a12ea">ripple::Transaction::SubmitResult</a>
 </li>
 <li>broadcastBlobs()
@@ -482,7 +485,7 @@ $(function() {
 : <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a241b964e5d6631de20fb0f6105b87662">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 </li>
 <li>Buckets()
-: <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a08c0295821bfa438782be1911b409703">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets</a>
+: <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a573f8ec79ead834a5deea796c52d5ef4">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets</a>
 </li>
 <li>buf_
 : <a class="el" href="classbeast_1_1basic__logstream.html#a5a61d7eb7aa74f1cc1c11c1b1cbe1a18">beast::basic_logstream&lt; CharT, Traits &gt;</a>
@@ -497,7 +500,7 @@ $(function() {
 : <a class="el" href="structripple_1_1BaseHTTPPeer_1_1buffer.html#aa198bea1ec001e4fdc4f2c7c5693d8f1">ripple::BaseHTTPPeer&lt; Handler, Impl &gt;::buffer</a>
 </li>
 <li>Buffer()
-: <a class="el" href="classripple_1_1Buffer.html#ab6e7078b7265f7a885512b6d13accd69">ripple::Buffer</a>
+: <a class="el" href="classripple_1_1Buffer.html#a93bd7973eefc6715c22fefaf01e71abc">ripple::Buffer</a>
 </li>
 <li>buffer_
 : <a class="el" href="classripple_1_1json__body_1_1reader.html#a20ff9a9f234fca1f7e25d39c112e4dab">ripple::json_body::reader</a>
@@ -544,9 +547,6 @@ $(function() {
 </li>
 <li>buildGetObjectByHash()
 : <a class="el" href="classripple_1_1test_1_1compression__test.html#a61586c6b46661d4bba9560061b3fab8a">ripple::test::compression_test</a>
-</li>
-<li>buildJson()
-: <a class="el" href="classripple_1_1AcceptedLedgerTx.html#a92e318de53b84c31426cf9c7919cfac4">ripple::AcceptedLedgerTx</a>
 </li>
 <li>buildLCL()
 : <a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#a8ca18b539a9a017ac1210c8104ffcc74">ripple::RCLConsensus::Adaptor</a>

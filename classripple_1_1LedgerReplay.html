@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1LedgerReplay-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -74,60 +75,69 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
+Inheritance diagram for ripple::LedgerReplay:</div>
+<div class="dyncontent">
+<div class="center"><img src="classripple_1_1LedgerReplay__inherit__graph.png" border="0" usemap="#ripple_1_1LedgerReplay_inherit__map" alt="Inheritance graph"/></div>
+<map name="ripple_1_1LedgerReplay_inherit__map" id="ripple_1_1LedgerReplay_inherit__map">
+<area shape="rect" title=" " alt="" coords="9,95,164,121"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
 Collaboration diagram for ripple::LedgerReplay:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1LedgerReplay__coll__graph.png" border="0" usemap="#ripple_1_1LedgerReplay_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1LedgerReplay_coll__map" id="ripple_1_1LedgerReplay_coll__map">
-<area shape="rect" title=" " alt="" coords="1944,437,2099,464"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="1631,201,1803,257"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="39,384,142,411"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="330,343,498,385"/>
-<area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="353,1365,475,1392"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="1071,524,1207,551"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1347,209,1517,250"/>
-<area shape="rect" href="classripple_1_1STTx.html" title=" " alt="" coords="1089,216,1188,243"/>
-<area shape="rect" href="classripple_1_1STObject.html" title=" " alt="" coords="656,175,781,201"/>
-<area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="357,175,471,201"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="333,226,495,267"/>
-<area shape="rect" href="classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="341,57,487,84"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="343,109,485,150"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="637,109,800,150"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="370,292,458,319"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="648,323,789,365"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1631,466,1802,507"/>
-<area shape="rect" href="classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="1377,967,1487,993"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1056,873,1221,914"/>
-<area shape="rect" href="classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="1032,819,1245,845"/>
-<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="653,811,784,837"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="314,760,514,787"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="317,811,511,837"/>
-<area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="1063,989,1214,1016"/>
-<area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="655,1079,782,1105"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1057,1041,1220,1082"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="837,1177,1008,1218"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="5,1299,176,1341"/>
-<area shape="rect" href="classripple_1_1Family.html" title=" " alt="" coords="35,1365,146,1392"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="35,1416,146,1443"/>
-<area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="1087,1107,1190,1133"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="633,1210,804,1251"/>
-<area shape="rect" href="classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="345,1315,483,1341"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="1093,1235,1185,1261"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="641,659,797,701"/>
-<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="647,584,790,611"/>
-<area shape="rect" href="structripple_1_1Fees.html" title="Reflects the fee settings for a particular ledger." alt="" coords="1091,939,1187,965"/>
-<area shape="rect" title=" " alt="" coords="331,694,497,735"/>
-<area shape="rect" title=" " alt="" coords="301,460,527,487"/>
-<area shape="rect" title=" " alt="" coords="309,511,519,553"/>
-<area shape="rect" title=" " alt="" coords="307,577,521,618"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="367,643,461,669"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="633,494,805,535"/>
-<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="624,1013,813,1054"/>
-<area shape="rect" title=" " alt="" coords="319,861,509,917"/>
-<area shape="rect" title=" " alt="" coords="313,942,515,983"/>
-<area shape="rect" title=" " alt="" coords="313,1008,515,1064"/>
-<area shape="rect" title=" " alt="" coords="321,1088,507,1144"/>
-<area shape="rect" title=" " alt="" coords="311,1169,517,1210"/>
-<area shape="rect" title=" " alt="" coords="319,1235,509,1291"/>
+<area shape="rect" title=" " alt="" coords="1944,475,2099,502"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1635,395,1798,436"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="1631,461,1803,517"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="39,451,142,478"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="330,408,498,449"/>
+<area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="353,71,475,98"/>
+<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="1071,649,1207,675"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1347,301,1517,343"/>
+<area shape="rect" href="classripple_1_1STTx.html" title=" " alt="" coords="1089,306,1188,333"/>
+<area shape="rect" href="classripple_1_1STObject.html" title=" " alt="" coords="656,239,781,266"/>
+<area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="357,239,471,266"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="333,291,495,332"/>
+<area shape="rect" href="classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="341,122,487,149"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="343,173,485,215"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="637,173,800,215"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="370,357,458,383"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="648,384,789,425"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1631,600,1802,641"/>
+<area shape="rect" href="classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="1377,798,1487,825"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1056,820,1221,861"/>
+<area shape="rect" href="classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="1032,886,1245,913"/>
+<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="653,1081,784,1107"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="314,1249,514,1275"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="317,1299,511,1326"/>
+<area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="1063,937,1214,963"/>
+<area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="655,1131,782,1158"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="1057,988,1220,1029"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="837,100,1008,141"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="5,5,176,47"/>
+<area shape="rect" href="classripple_1_1Family.html" title=" " alt="" coords="35,71,146,98"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="35,122,146,149"/>
+<area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="1087,1138,1190,1165"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="633,1300,804,1341"/>
+<area shape="rect" href="classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="345,1350,483,1377"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="1093,598,1185,625"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="641,576,797,617"/>
+<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="647,707,790,734"/>
+<area shape="rect" href="structripple_1_1Fees.html" title="Reflects the fee settings for a particular ledger." alt="" coords="1091,769,1187,795"/>
+<area shape="rect" title=" " alt="" coords="331,576,497,617"/>
+<area shape="rect" title=" " alt="" coords="301,642,527,669"/>
+<area shape="rect" title=" " alt="" coords="309,693,519,735"/>
+<area shape="rect" title=" " alt="" coords="307,759,521,800"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="367,825,461,851"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="633,641,805,683"/>
+<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="624,993,813,1035"/>
+<area shape="rect" title=" " alt="" coords="319,875,509,931"/>
+<area shape="rect" title=" " alt="" coords="313,956,515,997"/>
+<area shape="rect" title=" " alt="" coords="313,1022,515,1078"/>
+<area shape="rect" title=" " alt="" coords="321,1102,507,1158"/>
+<area shape="rect" title=" " alt="" coords="311,1183,517,1224"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -144,6 +154,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aadae6af6a87dc1d9165dd694e8754797"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const  &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplay.html#aadae6af6a87dc1d9165dd694e8754797">orderedTxns</a> () const</td></tr>
 <tr class="separator:aadae6af6a87dc1d9165dd694e8754797"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#acde6c67ea432f6bb32d2ecb5db786ce8">getCounter</a> () noexcept</td></tr>
+<tr class="separator:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a5b04ce33c6c1f7ac628442d9b3a15644"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplay.html#a5b04ce33c6c1f7ac628442d9b3a15644">parent_</a></td></tr>
@@ -155,7 +170,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00032">32</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00033">33</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae1c7550b33a497d145d5c618c7a70b70"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae1c7550b33a497d145d5c618c7a70b70">&#9670;&nbsp;</a></span>LedgerReplay() <span class="overload">[1/2]</span></h2>
@@ -240,7 +255,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>The parent of the ledger to replay </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00051">51</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00052">52</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
 
 </div>
 </div>
@@ -260,7 +275,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>The ledger to replay </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00059">59</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00060">60</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
 
 </div>
 </div>
@@ -280,7 +295,31 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>Transactions in the order they should be replayed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00067">67</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00068">68</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+
+</div>
+</div>
+<a id="acde6c67ea432f6bb32d2ecb5db786ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde6c67ea432f6bb32d2ecb5db786ce8">&#9670;&nbsp;</a></span>getCounter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static auto&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1LedgerReplay.html">LedgerReplay</a>  &gt;::getCounter</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span><span class="mlabel">noexcept</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -305,7 +344,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00034">34</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00035">35</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
 
 </div>
 </div>
@@ -329,7 +368,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00035">35</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00036">36</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
 
 </div>
 </div>
@@ -353,7 +392,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00036">36</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay_8h_source.html#l00037">37</a> of file <a class="el" href="LedgerReplay_8h_source.html">LedgerReplay.h</a>.</p>
 
 </div>
 </div>

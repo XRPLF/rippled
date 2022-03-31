@@ -90,57 +90,57 @@ $(function() {
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/ledger/AcceptedLedger.h&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/app/main/Application.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/chrono.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">   27</a></span>&#160;<a class="code" href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">AcceptedLedger::AcceptedLedger</a>(</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app)</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    : mLedger(ledger)</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;{</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">auto</span> insertAll = [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; txns) {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : txns)</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        {</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            <a class="code" href="classripple_1_1AcceptedLedger.html#a8df57869d680a1f99181efa9097a30b7">insert</a>(std::make_shared&lt;AcceptedLedgerTx&gt;(</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                ledger,</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                item.first,</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                item.second,</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;                app.<a class="code" href="classripple_1_1Application.html#a0d508c01af813d937de83e30c58dd828">accountIDCache</a>(),</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                app.<a class="code" href="classripple_1_1Application.html#a25782128c9548339beec993b748b0268">logs</a>()));</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        }</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    };</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">if</span> (app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        insertAll(<a class="code" href="namespaceripple.html#a6328c469eb804b05c66c8c140d470ba5">flatFetchTransactions</a>(*ledger, app));</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        insertAll(ledger-&gt;txs);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classripple_1_1AcceptedLedger.html#a8df57869d680a1f99181efa9097a30b7">   51</a></span>&#160;<a class="code" href="classripple_1_1AcceptedLedger.html#a8df57869d680a1f99181efa9097a30b7">AcceptedLedger::insert</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">AcceptedLedgerTx::ref</a> at)</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;{</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    assert(<a class="code" href="classripple_1_1AcceptedLedger.html#addb8f1c3248fcd38bb42060399015340">mMap</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/find.html">find</a>(at-&gt;getIndex()) == <a class="code" href="classripple_1_1AcceptedLedger.html#addb8f1c3248fcd38bb42060399015340">mMap</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/end.html">end</a>());</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1AcceptedLedger.html#addb8f1c3248fcd38bb42060399015340">mMap</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map/insert.html">insert</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(at-&gt;getIndex(), at));</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">   26</a></span>&#160;<a class="code" href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">AcceptedLedger::AcceptedLedger</a>(</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app)</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    : mLedger(ledger)</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <a class="code" href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">transactions_</a>.reserve(256);</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">auto</span> insertAll = [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; txns) {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; idcache = app.<a class="code" href="classripple_1_1Application.html#a0d508c01af813d937de83e30c58dd828">accountIDCache</a>();</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : txns)</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            <a class="code" href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">transactions_</a>.emplace_back(std::make_unique&lt;AcceptedLedgerTx&gt;(</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                ledger, item.first, item.second, idcache));</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    };</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">if</span> (app.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> txs = <a class="code" href="namespaceripple.html#a6328c469eb804b05c66c8c140d470ba5">flatFetchTransactions</a>(*ledger, app);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <a class="code" href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">transactions_</a>.reserve(txs.size());</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        insertAll(txs);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    {</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="code" href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">transactions_</a>.reserve(256);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        insertAll(ledger-&gt;txs);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    }</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a>(</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <a class="code" href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">transactions_</a>.begin(),</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">transactions_</a>.end(),</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        [](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b) {</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            return a-&gt;getTxnSeq() &lt; b-&gt;getTxnSeq();</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        });</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00115">Application.h:115</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map/find.html">std::map::find</a></div><div class="ttdeci">T find(T... args)</div></div>
+<div class="ttc" id="asort_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a></div><div class="ttdeci">T sort(T... args)</div></div>
+<div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a0d508c01af813d937de83e30c58dd828"><div class="ttname"><a href="classripple_1_1Application.html#a0d508c01af813d937de83e30c58dd828">ripple::Application::accountIDCache</a></div><div class="ttdeci">virtual AccountIDCache const  &amp; accountIDCache() const =0</div></div>
-<div class="ttc" id="aclassripple_1_1AcceptedLedger_html_a837de50e96c45d3e0e5f248e0630e253"><div class="ttname"><a href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">ripple::AcceptedLedger::AcceptedLedger</a></div><div class="ttdeci">AcceptedLedger(std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="AcceptedLedger_8cpp_source.html#l00027">AcceptedLedger.cpp:27</a></div></div>
+<div class="ttc" id="aclassripple_1_1AcceptedLedger_html_a837de50e96c45d3e0e5f248e0630e253"><div class="ttname"><a href="classripple_1_1AcceptedLedger.html#a837de50e96c45d3e0e5f248e0630e253">ripple::AcceptedLedger::AcceptedLedger</a></div><div class="ttdeci">AcceptedLedger(std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="AcceptedLedger_8cpp_source.html#l00026">AcceptedLedger.cpp:26</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a8fdf3fd3b2112759b3a0a7fa4d8afa05"><div class="ttname"><a href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config::reporting</a></div><div class="ttdeci">bool reporting() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00316">Config.h:316</a></div></div>
+<div class="ttc" id="aclassripple_1_1AcceptedLedger_html_a07167247ec42b3c61c72958e5cc48c04"><div class="ttname"><a href="classripple_1_1AcceptedLedger.html#a07167247ec42b3c61c72958e5cc48c04">ripple::AcceptedLedger::transactions_</a></div><div class="ttdeci">std::vector&lt; std::unique_ptr&lt; AcceptedLedgerTx &gt; &gt; transactions_</div><div class="ttdef"><b>Definition:</b> <a href="AcceptedLedger_8h_source.html#l00077">AcceptedLedger.h:77</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_aca56b7c63030174e59720ab51d739422"><div class="ttname"><a href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">ripple::Application::config</a></div><div class="ttdeci">virtual Config &amp; config()=0</div></div>
-<div class="ttc" id="aclassripple_1_1AcceptedLedger_html_a8df57869d680a1f99181efa9097a30b7"><div class="ttname"><a href="classripple_1_1AcceptedLedger.html#a8df57869d680a1f99181efa9097a30b7">ripple::AcceptedLedger::insert</a></div><div class="ttdeci">void insert(AcceptedLedgerTx::ref)</div><div class="ttdef"><b>Definition:</b> <a href="AcceptedLedger_8cpp_source.html#l00051">AcceptedLedger.cpp:51</a></div></div>
-<div class="ttc" id="aclassripple_1_1Application_html_a25782128c9548339beec993b748b0268"><div class="ttname"><a href="classripple_1_1Application.html#a25782128c9548339beec993b748b0268">ripple::Application::logs</a></div><div class="ttdeci">virtual Logs &amp; logs()=0</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="ainsert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map/insert.html">std::map::insert</a></div><div class="ttdeci">T insert(T... args)</div></div>
-<div class="ttc" id="amake_pair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a></div><div class="ttdeci">T make_pair(T... args)</div></div>
-<div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map/end.html">std::map::end</a></div><div class="ttdeci">T end(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1AcceptedLedger_html_addb8f1c3248fcd38bb42060399015340"><div class="ttname"><a href="classripple_1_1AcceptedLedger.html#addb8f1c3248fcd38bb42060399015340">ripple::AcceptedLedger::mMap</a></div><div class="ttdeci">map_t mMap</div><div class="ttdef"><b>Definition:</b> <a href="AcceptedLedger_8h_source.html#l00080">AcceptedLedger.h:80</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a6328c469eb804b05c66c8c140d470ba5"><div class="ttname"><a href="namespaceripple.html#a6328c469eb804b05c66c8c140d470ba5">ripple::flatFetchTransactions</a></div><div class="ttdeci">std::vector&lt; std::pair&lt; std::shared_ptr&lt; STTx const  &gt;, std::shared_ptr&lt; STObject const  &gt; &gt; &gt; flatFetchTransactions(Application &amp;app, std::vector&lt; uint256 &gt; &amp;nodestoreHashes)</div><div class="ttdef"><b>Definition:</b> <a href="Ledger_8cpp_source.html#l01091">Ledger.cpp:1091</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

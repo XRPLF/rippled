@@ -105,25 +105,24 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
 <div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespaceripple.html#a07dd67952f9aad3b87dd9c774c954f32">   35</a></span>&#160;<a class="code" href="namespaceripple.html#a07dd67952f9aad3b87dd9c774c954f32">doLedgerAccept</a>(<a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock{context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a2362c2a51a01b3ae1c1ecd38184c46f1">getMasterMutex</a>()};</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvResult;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">if</span> (!context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a55cd8ef67ffbf6a137e0dd71bc8151c6">standalone</a>() || context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        jvResult[jss::error] = <span class="stringliteral">&quot;notStandAlone&quot;</span>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    }</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvResult;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">if</span> (!context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a55cd8ef67ffbf6a137e0dd71bc8151c6">standalone</a>() || context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        jvResult[jss::error] = <span class="stringliteral">&quot;notStandAlone&quot;</span>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock{context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a2362c2a51a01b3ae1c1ecd38184c46f1">getMasterMutex</a>()};</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#aabbcc8ad1953616f19dd1eeecccedfcd">netOps</a>.<a class="code" href="classripple_1_1NetworkOPs.html#adc30e2f12890d9cd5687139edf56b1f9">acceptLedger</a>();</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        jvResult[jss::ledger_current_index] =</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#ae1ced193783ee99e6935bf68d8eb7031">getCurrentLedgerIndex</a>();</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        jvResult[jss::ledger_current_index] =</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#ae1ced193783ee99e6935bf68d8eb7031">getCurrentLedgerIndex</a>();</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html">ripple::RPC::JsonContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00053">Context.h:53</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a07dd67952f9aad3b87dd9c774c954f32"><div class="ttname"><a href="namespaceripple.html#a07dd67952f9aad3b87dd9c774c954f32">ripple::doLedgerAccept</a></div><div class="ttdeci">Json::Value doLedgerAccept(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerAccept_8cpp_source.html#l00035">LedgerAccept.cpp:35</a></div></div>

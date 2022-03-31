@@ -114,6 +114,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1nonPresentObject__t.html">nonPresentObject_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1PeerDataCounts.html">PeerDataCounts</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1RawStateTable.html">RawStateTable</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ReadViewFwdIter.html">ReadViewFwdIter</a></td></tr>
@@ -173,6 +175,9 @@ Typedefs</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a09fb4bb46d61698f0d5479f403da7ff8"><td class="memItemLeft" align="right" valign="top">constexpr static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; bool, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a09fb4bb46d61698f0d5479f403da7ff8">sumOfFirstSquares</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> xIn)</td></tr>
 <tr class="separator:a09fb4bb46d61698f0d5479f403da7ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b47b0fc82082f029218f76e160a2396"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a2b47b0fc82082f029218f76e160a2396"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a2b47b0fc82082f029218f76e160a2396">getTrustLineItems</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;accountID, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view)</td></tr>
+<tr class="separator:a2b47b0fc82082f029218f76e160a2396"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9769881a083fcc3aba7e9ddaaa7ece28">toString</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info)</td></tr>
 <tr class="memdesc:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function for printing out basic ledger info.  <a href="namespaceripple_1_1detail.html#a9769881a083fcc3aba7e9ddaaa7ece28">More...</a><br /></td></tr>
 <tr class="separator:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -409,6 +414,38 @@ template&lt;class T &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00191">191</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a2b47b0fc82082f029218f76e160a2396"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b47b0fc82082f029218f76e160a2396">&#9670;&nbsp;</a></span>getTrustLineItems()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;T&gt; ripple::detail::getTrustLineItems </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>accountID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TrustLine_8cpp_source.html#l00064">64</a> of file <a class="el" href="TrustLine_8cpp_source.html">TrustLine.cpp</a>.</p>
 
 </div>
 </div>

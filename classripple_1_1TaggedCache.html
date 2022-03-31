@@ -161,6 +161,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5a2f1176e41e598872fc1ab375e74441"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7055703a52e579ca1ef3a90d53dcebcb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7055703a52e579ca1ef3a90d53dcebcb">del</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, bool valid)</td></tr>
 <tr class="separator:a7055703a52e579ca1ef3a90d53dcebcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ccb634f184f6815b5dc5249add2aa0c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">canonicalize</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;)&gt; &amp;&amp;replace)</td></tr>
+<tr class="memdesc:a8ccb634f184f6815b5dc5249add2aa0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace aliased objects with originals.  <a href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">More...</a><br /></td></tr>
+<tr class="separator:a8ccb634f184f6815b5dc5249add2aa0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">canonicalize_replace_cache</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;data)</td></tr>
 <tr class="separator:a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87fe60d8d8ce16003486f76bd6fa9ae3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">canonicalize_replace_client</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;data)</td></tr>
@@ -201,10 +204,6 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:ae175032110e2410c9887ca62a955d403"><td class="memTemplParams" colspan="2">template&lt;bool replace&gt; </td></tr>
-<tr class="memitem:ae175032110e2410c9887ca62a955d403"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ae175032110e2410c9887ca62a955d403">canonicalize</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional_t</a>&lt; replace, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&gt; &amp;data)</td></tr>
-<tr class="memdesc:ae175032110e2410c9887ca62a955d403"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace aliased objects with originals.  <a href="classripple_1_1TaggedCache.html#ae175032110e2410c9887ca62a955d403">More...</a><br /></td></tr>
-<tr class="separator:ae175032110e2410c9887ca62a955d403"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ef56975db8e01e222f08361b6d29b87"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a4ef56975db8e01e222f08361b6d29b87">initialFetch</a> (<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> &gt; const &amp;l)</td></tr>
 <tr class="separator:a4ef56975db8e01e222f08361b6d29b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5445906f1657546cd6557b89216a2f34"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5445906f1657546cd6557b89216a2f34">collect_metrics</a> ()</td></tr>
@@ -780,18 +779,13 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 
 </div>
 </div>
-<a id="ae175032110e2410c9887ca62a955d403"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae175032110e2410c9887ca62a955d403">&#9670;&nbsp;</a></span>canonicalize()</h2>
+<a id="a8ccb634f184f6815b5dc5249add2aa0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ccb634f184f6815b5dc5249add2aa0c">&#9670;&nbsp;</a></span>canonicalize()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
-<div class="memtemplate">
-template&lt;bool replace&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize </td>
@@ -802,8 +796,14 @@ template&lt;bool replace&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional_t</a>&lt; replace, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&gt; &amp;&#160;</td>
-          <td class="paramname"><em>data</em>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;)&gt; &amp;&amp;&#160;</td>
+          <td class="paramname"><em>replace</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -811,11 +811,6 @@ template&lt;bool replace&gt; </div>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Replace aliased objects with originals. </p>
@@ -824,13 +819,13 @@ template&lt;bool replace&gt; </div>
   <table class="params">
     <tr><td class="paramname">key</td><td>The key corresponding to the object </td></tr>
     <tr><td class="paramname">data</td><td>A shared pointer to the data corresponding to the object. </td></tr>
-    <tr><td class="paramname">replace</td><td><code>true</code> if <code>data</code> is the up to date version of the object.</td></tr>
+    <tr><td class="paramname">replace</td><td>Function that decides if cache should be replaced</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> If the key already existed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00310">310</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00309">309</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
@@ -862,7 +857,7 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00379">379</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00375">375</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
@@ -894,7 +889,7 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00387">387</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00386">386</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
