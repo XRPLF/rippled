@@ -61,7 +61,11 @@ if [ "${pkgtype}" = "dpkg" ] ; then
 else
     yum -y update
     if [ "${install_from}" = "repo" ] ; then
-        yum -y install yum-utils coreutils util-linux
+        pkgs=("yum-utils coreutils util-linux")
+        if [ "$ID" = "rocky" ]; then
+            pkgs="${pkgs[@]/coreutils}"
+        fi
+        yum install -y $pkgs
         REPOFILE="/etc/yum.repos.d/artifactory.repo"
         echo "[Artifactory]" > ${REPOFILE}
         echo "name=Artifactory" >> ${REPOFILE}
