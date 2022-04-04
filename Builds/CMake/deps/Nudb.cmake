@@ -18,14 +18,14 @@ if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
     message (STATUS "Pausing to download NuDB...")
     FetchContent_Populate(nudb_src)
   endif()
-endif ()
 
-file(TO_CMAKE_PATH "${nudb_src_SOURCE_DIR}" nudb_src_SOURCE_DIR)
-# specify as system includes so as to avoid warnings
-target_include_directories (nudb SYSTEM INTERFACE ${nudb_src_SOURCE_DIR}/include)
-target_link_libraries (nudb
-  INTERFACE
-    Boost::thread
-    Boost::system)
-add_library (NIH::nudb ALIAS nudb)
-target_link_libraries (ripple_libs INTERFACE NIH::nudb)
+  file(TO_CMAKE_PATH "${nudb_src_SOURCE_DIR}" nudb_src_SOURCE_DIR)
+  # specify as system includes so as to avoid warnings
+  target_include_directories (nudb SYSTEM INTERFACE ${nudb_src_SOURCE_DIR}/include)
+  target_link_libraries (nudb
+    INTERFACE
+      Boost::thread
+      Boost::system)
+  add_library (NIH::nudb ALIAS nudb)
+  target_link_libraries (ripple_libs INTERFACE NIH::nudb)
+endif ()
