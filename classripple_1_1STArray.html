@@ -118,6 +118,8 @@ Collaboration diagram for ripple::STArray:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:a6c64cf0367851dfb2f0aab6ab1adf71f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a6c64cf0367851dfb2f0aab6ab1adf71f">value_type</a> = <a class="el" href="classripple_1_1STObject.html">STObject</a></td></tr>
+<tr class="separator:a6c64cf0367851dfb2f0aab6ab1adf71f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca4d839face991357809c815783922e7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#aca4d839face991357809c815783922e7">size_type</a> = list_type::size_type</td></tr>
 <tr class="separator:aca4d839face991357809c815783922e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9233f9b64d8006549e19a417670d7542"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a> = list_type::iterator</td></tr>
@@ -131,6 +133,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4fc9204d1d46d19ac27e5057e1c95384"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf1ed9082b0bdbcacf99f237fd52a045"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#acf1ed9082b0bdbcacf99f237fd52a045">STArray</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> const &amp;)=default</td></tr>
 <tr class="separator:acf1ed9082b0bdbcacf99f237fd52a045"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46b1c2767cf7f395cbbb266e6d358afb"><td class="memTemplParams" colspan="2">template&lt;class Iter , class  = std::enable_if_t&lt;std::is_convertible_v&lt;            typename std::iterator_traits&lt;Iter&gt;::reference,            STObject&gt;&gt;&gt; </td></tr>
+<tr class="memitem:a46b1c2767cf7f395cbbb266e6d358afb"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a46b1c2767cf7f395cbbb266e6d358afb">STArray</a> (Iter first, Iter last)</td></tr>
+<tr class="separator:a46b1c2767cf7f395cbbb266e6d358afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afae258affa5a4f3802afc69e993bcf3d"><td class="memTemplParams" colspan="2">template&lt;class Iter , class  = std::enable_if_t&lt;std::is_convertible_v&lt;            typename std::iterator_traits&lt;Iter&gt;::reference,            STObject&gt;&gt;&gt; </td></tr>
+<tr class="memitem:afae258affa5a4f3802afc69e993bcf3d"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#afae258affa5a4f3802afc69e993bcf3d">STArray</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;f, Iter first, Iter last)</td></tr>
+<tr class="separator:afae258affa5a4f3802afc69e993bcf3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99ab04632b42d2c51ae033449674c8fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a99ab04632b42d2c51ae033449674c8fa">operator=</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> const &amp;)=default</td></tr>
 <tr class="separator:a99ab04632b42d2c51ae033449674c8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0eaf4618ad0982371725f10c86cc7b81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a0eaf4618ad0982371725f10c86cc7b81">STArray</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;&amp;)</td></tr>
@@ -192,6 +200,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a19d50364cad5c4a416cf0b148d698b1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3602315d657315eba0dddace6b5e376d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a3602315d657315eba0dddace6b5e376d">operator!=</a> (const <a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;s) const</td></tr>
 <tr class="separator:a3602315d657315eba0dddace6b5e376d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cf82d27b41e9069eab22cef45485834"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a3cf82d27b41e9069eab22cef45485834">erase</a> (<a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a> pos)</td></tr>
+<tr class="separator:a3cf82d27b41e9069eab22cef45485834"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7c070617588e01071ac8ebc69c563c9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ad7c070617588e01071ac8ebc69c563c9">erase</a> (<a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a> pos)</td></tr>
+<tr class="separator:ad7c070617588e01071ac8ebc69c563c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60157a6f8a01a91f43ec45aae60960f0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a60157a6f8a01a91f43ec45aae60960f0">erase</a> (<a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a> first, <a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a> last)</td></tr>
+<tr class="separator:a60157a6f8a01a91f43ec45aae60960f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28ba0b3a9fb3f0ed2c16736e58be9371"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a28ba0b3a9fb3f0ed2c16736e58be9371">erase</a> (<a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a> first, <a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a> last)</td></tr>
+<tr class="separator:a28ba0b3a9fb3f0ed2c16736e58be9371"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab115a45641a6faf9020bad542ec904cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#ab115a45641a6faf9020bad542ec904cd">getSType</a> () const override</td></tr>
 <tr class="separator:ab115a45641a6faf9020bad542ec904cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a723f75eb399695e810f9c49a4c092892"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STArray.html#a723f75eb399695e810f9c49a4c092892">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
@@ -279,6 +295,22 @@ Friends</h2></td></tr>
 
 </div>
 </div>
+<a id="a6c64cf0367851dfb2f0aab6ab1adf71f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c64cf0367851dfb2f0aab6ab1adf71f">&#9670;&nbsp;</a></span>value_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1STArray.html#a6c64cf0367851dfb2f0aab6ab1adf71f">ripple::STArray::value_type</a> =  <a class="el" href="classripple_1_1STObject.html">STObject</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00036">36</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
 <a id="aca4d839face991357809c815783922e7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aca4d839face991357809c815783922e7">&#9670;&nbsp;</a></span>size_type</h2>
 
@@ -291,7 +323,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00036">36</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00037">37</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -307,7 +339,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00037">37</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00038">38</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -323,13 +355,13 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00038">38</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00039">39</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4fc9204d1d46d19ac27e5057e1c95384"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4fc9204d1d46d19ac27e5057e1c95384">&#9670;&nbsp;</a></span>STArray() <span class="overload">[1/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fc9204d1d46d19ac27e5057e1c95384">&#9670;&nbsp;</a></span>STArray() <span class="overload">[1/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -354,7 +386,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="acf1ed9082b0bdbcacf99f237fd52a045"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf1ed9082b0bdbcacf99f237fd52a045">&#9670;&nbsp;</a></span>STArray() <span class="overload">[2/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acf1ed9082b0bdbcacf99f237fd52a045">&#9670;&nbsp;</a></span>STArray() <span class="overload">[2/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -379,8 +411,86 @@ Friends</h2></td></tr>
 
 </div>
 </div>
+<a id="a46b1c2767cf7f395cbbb266e6d358afb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46b1c2767cf7f395cbbb266e6d358afb">&#9670;&nbsp;</a></span>STArray() <span class="overload">[3/9]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Iter , class &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::STArray::STArray </td>
+          <td>(</td>
+          <td class="paramtype">Iter&#160;</td>
+          <td class="paramname"><em>first</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Iter&#160;</td>
+          <td class="paramname"><em>last</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00170">170</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
+<a id="afae258affa5a4f3802afc69e993bcf3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afae258affa5a4f3802afc69e993bcf3d">&#9670;&nbsp;</a></span>STArray() <span class="overload">[4/9]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Iter , class &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::STArray::STArray </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html">SField</a> const &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Iter&#160;</td>
+          <td class="paramname"><em>first</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Iter&#160;</td>
+          <td class="paramname"><em>last</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00175">175</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
 <a id="a0eaf4618ad0982371725f10c86cc7b81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0eaf4618ad0982371725f10c86cc7b81">&#9670;&nbsp;</a></span>STArray() <span class="overload">[3/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0eaf4618ad0982371725f10c86cc7b81">&#9670;&nbsp;</a></span>STArray() <span class="overload">[5/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -400,7 +510,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="a0b96345a91bcf69fbbe47027440b222e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b96345a91bcf69fbbe47027440b222e">&#9670;&nbsp;</a></span>STArray() <span class="overload">[4/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b96345a91bcf69fbbe47027440b222e">&#9670;&nbsp;</a></span>STArray() <span class="overload">[6/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -430,7 +540,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="aaa11b61b17442e9e65e51d60e901ace1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa11b61b17442e9e65e51d60e901ace1">&#9670;&nbsp;</a></span>STArray() <span class="overload">[5/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa11b61b17442e9e65e51d60e901ace1">&#9670;&nbsp;</a></span>STArray() <span class="overload">[7/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -466,7 +576,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="a18bdf41b077a1abae843e6434c200d08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a18bdf41b077a1abae843e6434c200d08">&#9670;&nbsp;</a></span>STArray() <span class="overload">[6/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a18bdf41b077a1abae843e6434c200d08">&#9670;&nbsp;</a></span>STArray() <span class="overload">[8/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -494,7 +604,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="ab18e1e7874971ff20f2a59850b49bab5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab18e1e7874971ff20f2a59850b49bab5">&#9670;&nbsp;</a></span>STArray() <span class="overload">[7/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab18e1e7874971ff20f2a59850b49bab5">&#9670;&nbsp;</a></span>STArray() <span class="overload">[9/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -584,7 +694,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00142">142</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00181">181</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -604,7 +714,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00148">148</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00187">187</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -623,7 +733,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00154">154</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00193">193</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -662,7 +772,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00167">167</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00206">206</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +792,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00173">173</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00212">212</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -702,7 +812,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00179">179</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00218">218</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -721,7 +831,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00185">185</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00224">224</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -740,7 +850,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00191">191</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00230">230</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -793,7 +903,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00209">209</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00248">248</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -812,7 +922,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00215">215</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00254">254</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -831,7 +941,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00221">221</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00260">260</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -851,7 +961,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00227">227</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00266">266</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -879,7 +989,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00233">233</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00272">272</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1037,7 +1147,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00239">239</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00278">278</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1057,7 +1167,107 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00245">245</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00284">284</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
+<a id="a3cf82d27b41e9069eab22cef45485834"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3cf82d27b41e9069eab22cef45485834">&#9670;&nbsp;</a></span>erase() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">STArray::iterator</a> ripple::STArray::erase </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td>
+          <td class="paramname"><em>pos</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00290">290</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
+<a id="ad7c070617588e01071ac8ebc69c563c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7c070617588e01071ac8ebc69c563c9">&#9670;&nbsp;</a></span>erase() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">STArray::iterator</a> ripple::STArray::erase </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a>&#160;</td>
+          <td class="paramname"><em>pos</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00296">296</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
+<a id="a60157a6f8a01a91f43ec45aae60960f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60157a6f8a01a91f43ec45aae60960f0">&#9670;&nbsp;</a></span>erase() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">STArray::iterator</a> ripple::STArray::erase </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td>
+          <td class="paramname"><em>first</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">iterator</a>&#160;</td>
+          <td class="paramname"><em>last</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00302">302</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+
+</div>
+</div>
+<a id="a28ba0b3a9fb3f0ed2c16736e58be9371"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28ba0b3a9fb3f0ed2c16736e58be9371">&#9670;&nbsp;</a></span>erase() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STArray.html#a9233f9b64d8006549e19a417670d7542">STArray::iterator</a> ripple::STArray::erase </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a>&#160;</td>
+          <td class="paramname"><em>first</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STArray.html#a980ca49bc5349ee7663e6561d50f2399">const_iterator</a>&#160;</td>
+          <td class="paramname"><em>last</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00308">308</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>
@@ -1514,7 +1724,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00138">138</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STArray_8h_source.html#l00166">166</a> of file <a class="el" href="STArray_8h_source.html">STArray.h</a>.</p>
 
 </div>
 </div>

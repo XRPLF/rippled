@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1test_1_1csf_1_1Share.html" title="A value to be flooded to all other peers starting from this peer." alt="" coords="5,5,132,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,20,124,47"/>
+<area shape="rect" id="node2" href="$structripple_1_1test_1_1csf_1_1Scheduler_1_1event.html" title=" " alt="" coords="172,13,303,54"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1event__impl.html" title=" " alt="" coords="351,5,517,61"/>
 </map>

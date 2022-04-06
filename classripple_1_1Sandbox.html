@@ -208,6 +208,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1c8f17e8aa8248be7d972ffecdd949a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#a1c8f17e8aa8248be7d972ffecdd949a8">rawDestroyXRP</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;feeDrops) override</td></tr>
 <tr class="memdesc:a1c8f17e8aa8248be7d972ffecdd949a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy XRP.  <a href="classripple_1_1detail_1_1ApplyViewBase.html#a1c8f17e8aa8248be7d972ffecdd949a8">More...</a><br /></td></tr>
 <tr class="separator:a1c8f17e8aa8248be7d972ffecdd949a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a469fe9366dd58b47c9b29ba98bd3fc8d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplyView.html#a469fe9366dd58b47c9b29ba98bd3fc8d">dirDelete</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;directory, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;)&gt; const &amp;)</td></tr>
+<tr class="memdesc:a469fe9366dd58b47c9b29ba98bd3fc8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the specified directory, invoking the callback for every node.  <a href="classripple_1_1ApplyView.html#a469fe9366dd58b47c9b29ba98bd3fc8d">More...</a><br /></td></tr>
+<tr class="separator:a469fe9366dd58b47c9b29ba98bd3fc8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68f2bcf1204498ac968947005ef9c3de"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplyView.html#a68f2bcf1204498ac968947005ef9c3de">emptyDirDelete</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;directory)</td></tr>
 <tr class="memdesc:a68f2bcf1204498ac968947005ef9c3de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the specified directory, if it is empty.  <a href="classripple_1_1ApplyView.html#a68f2bcf1204498ac968947005ef9c3de">More...</a><br /></td></tr>
 <tr class="separator:a68f2bcf1204498ac968947005ef9c3de"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1824,6 +1827,46 @@ on this instance of the RawView.
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="ApplyView_8h_source.html#l00348">348</a> of file <a class="el" href="ApplyView_8h_source.html">ApplyView.h</a>.</p>
+
+</div>
+</div>
+<a id="a469fe9366dd58b47c9b29ba98bd3fc8d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a469fe9366dd58b47c9b29ba98bd3fc8d">&#9670;&nbsp;</a></span>dirDelete()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::ApplyView::dirDelete </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
+          <td class="paramname"><em>directory</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove the specified directory, invoking the callback for every node. </p>
+
+<p class="definition">Definition at line <a class="el" href="ApplyView_8cpp_source.html#l00338">338</a> of file <a class="el" href="ApplyView_8cpp_source.html">ApplyView.cpp</a>.</p>
 
 </div>
 </div>

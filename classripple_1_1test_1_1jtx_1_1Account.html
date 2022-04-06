@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
@@ -104,6 +105,13 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1jtx_1_1Account_1_1privateCtorTag.html">privateCtorTag</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:aca8ee7ec341c993ca685d27dd8fcc6c3"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3">AcctStringType</a> { <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3aceb144f5c46ddf333838c98908ba9933">base58Seed</a>, 
+<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3aec5bf4b418512ca79864057aff3e160f">other</a>
+ }</td></tr>
+<tr class="separator:aca8ee7ec341c993ca685d27dd8fcc6c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af645735ff689ac8a5db7272f6ffc2159"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#af645735ff689ac8a5db7272f6ffc2159">Account</a> ()=default</td></tr>
@@ -116,6 +124,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a07853347f808b682de7bbde5b9cd3edd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19cc7baf7df17e1681383d85e0cf629d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#a19cc7baf7df17e1681383d85e0cf629d">operator=</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:a19cc7baf7df17e1681383d85e0cf629d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f49c4dcbf73cf089d781f19d74ba2ed"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#a3f49c4dcbf73cf089d781f19d74ba2ed">Account</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3">AcctStringType</a> stringType, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> base58SeedStr)</td></tr>
+<tr class="memdesc:a3f49c4dcbf73cf089d781f19d74ba2ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an account from a base58 seed string.  <a href="classripple_1_1test_1_1jtx_1_1Account.html#a3f49c4dcbf73cf089d781f19d74ba2ed">More...</a><br /></td></tr>
+<tr class="separator:a3f49c4dcbf73cf089d781f19d74ba2ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73b876d967ad2ff6580a435ccc47a96"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#ae73b876d967ad2ff6580a435ccc47a96">name</a> () const</td></tr>
 <tr class="memdesc:ae73b876d967ad2ff6580a435ccc47a96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the name.  <a href="classripple_1_1test_1_1jtx_1_1Account.html#ae73b876d967ad2ff6580a435ccc47a96">More...</a><br /></td></tr>
 <tr class="separator:ae73b876d967ad2ff6580a435ccc47a96"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -154,8 +165,8 @@ Static Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
-<tr class="memitem:ae6fc4e00cc2d12ffb7cda60c78982746"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#ae6fc4e00cc2d12ffb7cda60c78982746">fromCache</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#ae73b876d967ad2ff6580a435ccc47a96">name</a>, <a class="el" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4dde">KeyType</a> type)</td></tr>
-<tr class="separator:ae6fc4e00cc2d12ffb7cda60c78982746"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adde68595aba6ea8bc60fd0b01a7d3593"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#adde68595aba6ea8bc60fd0b01a7d3593">fromCache</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3">AcctStringType</a> stringType, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#ae73b876d967ad2ff6580a435ccc47a96">name</a>, <a class="el" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4dde">KeyType</a> type)</td></tr>
+<tr class="separator:adde68595aba6ea8bc60fd0b01a7d3593"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -179,9 +190,30 @@ Static Private Attributes</h2></td></tr>
 <div class="textblock"><p>Immutable cryptographic account descriptor. </p>
 
 <p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00037">37</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="aca8ee7ec341c993ca685d27dd8fcc6c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca8ee7ec341c993ca685d27dd8fcc6c3">&#9670;&nbsp;</a></span>AcctStringType</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3">ripple::test::jtx::Account::AcctStringType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aca8ee7ec341c993ca685d27dd8fcc6c3aceb144f5c46ddf333838c98908ba9933"></a>base58Seed&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="aca8ee7ec341c993ca685d27dd8fcc6c3aec5bf4b418512ca79864057aff3e160f"></a>other&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00076">76</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="af645735ff689ac8a5db7272f6ffc2159"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af645735ff689ac8a5db7272f6ffc2159">&#9670;&nbsp;</a></span>Account() <span class="overload">[1/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af645735ff689ac8a5db7272f6ffc2159">&#9670;&nbsp;</a></span>Account() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -206,7 +238,7 @@ Static Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a724215d4ba783c7363331218041e1368"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a724215d4ba783c7363331218041e1368">&#9670;&nbsp;</a></span>Account() <span class="overload">[2/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a724215d4ba783c7363331218041e1368">&#9670;&nbsp;</a></span>Account() <span class="overload">[2/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -232,7 +264,7 @@ Static Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a81379e0bf65fa10df91dba6f6dc1b25e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81379e0bf65fa10df91dba6f6dc1b25e">&#9670;&nbsp;</a></span>Account() <span class="overload">[3/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a81379e0bf65fa10df91dba6f6dc1b25e">&#9670;&nbsp;</a></span>Account() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,7 +290,7 @@ Static Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="aa30797b24593afc6714e5ba720759dee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa30797b24593afc6714e5ba720759dee">&#9670;&nbsp;</a></span>Account() <span class="overload">[4/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa30797b24593afc6714e5ba720759dee">&#9670;&nbsp;</a></span>Account() <span class="overload">[4/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -285,12 +317,12 @@ Static Private Attributes</h2></td></tr>
 
 <p>Create an account from a simple string name. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8cpp_source.html#l00064">64</a> of file <a class="el" href="Account_8cpp_source.html">Account.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8cpp_source.html#l00075">75</a> of file <a class="el" href="Account_8cpp_source.html">Account.cpp</a>.</p>
 
 </div>
 </div>
 <a id="a095f51e7ff062154b90e919a6e369341"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a095f51e7ff062154b90e919a6e369341">&#9670;&nbsp;</a></span>Account() <span class="overload">[5/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a095f51e7ff062154b90e919a6e369341">&#9670;&nbsp;</a></span>Account() <span class="overload">[5/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -320,7 +352,7 @@ Static Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a5882b0d3a40901acff9aaf392438a96e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5882b0d3a40901acff9aaf392438a96e">&#9670;&nbsp;</a></span>Account() <span class="overload">[6/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5882b0d3a40901acff9aaf392438a96e">&#9670;&nbsp;</a></span>Account() <span class="overload">[6/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -352,6 +384,39 @@ Static Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="Account_8cpp_source.html#l00036">36</a> of file <a class="el" href="Account_8cpp_source.html">Account.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a3f49c4dcbf73cf089d781f19d74ba2ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f49c4dcbf73cf089d781f19d74ba2ed">&#9670;&nbsp;</a></span>Account() <span class="overload">[7/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::test::jtx::Account::Account </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3">AcctStringType</a>&#160;</td>
+          <td class="paramname"><em>stringType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td>
+          <td class="paramname"><em>base58SeedStr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create an account from a base58 seed string. </p>
+<p>Throws on invalid seed. </p>
+
+<p class="definition">Definition at line <a class="el" href="Account_8cpp_source.html#l00080">80</a> of file <a class="el" href="Account_8cpp_source.html">Account.cpp</a>.</p>
 
 </div>
 </div>
@@ -425,7 +490,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Return the name. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00078">78</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00082">82</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -446,7 +511,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Return the public key. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00085">85</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00089">89</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -467,7 +532,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Return the secret key. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00092">92</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00096">96</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -489,7 +554,7 @@ Static Private Attributes</h2></td></tr>
 <p>Returns the <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html" title="Immutable cryptographic account descriptor.">Account</a> ID. </p>
 <p>The <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html" title="Immutable cryptographic account descriptor.">Account</a> ID is the uint160 hash of the public key. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00102">102</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00106">106</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -510,7 +575,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Returns the human readable public key. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00109">109</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00113">113</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -532,7 +597,7 @@ Static Private Attributes</h2></td></tr>
 <p>Implicit conversion to AccountID. </p>
 <p>This allows passing an <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html" title="Immutable cryptographic account descriptor.">Account</a> where an AccountID is expected. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00119">119</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00123">123</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -554,12 +619,12 @@ Static Private Attributes</h2></td></tr>
 
 <p>Returns an <a class="el" href="classripple_1_1test_1_1jtx_1_1IOU.html" title="Converts to IOU Issue or STAmount.">IOU</a> for the specified gateway currency. </p>
 
-<p class="definition">Definition at line <a class="el" href="Account_8cpp_source.html#l00070">70</a> of file <a class="el" href="Account_8cpp_source.html">Account.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8cpp_source.html#l00089">89</a> of file <a class="el" href="Account_8cpp_source.html">Account.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ae6fc4e00cc2d12ffb7cda60c78982746"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6fc4e00cc2d12ffb7cda60c78982746">&#9670;&nbsp;</a></span>fromCache()</h2>
+<a id="adde68595aba6ea8bc60fd0b01a7d3593"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adde68595aba6ea8bc60fd0b01a7d3593">&#9670;&nbsp;</a></span>fromCache()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -570,6 +635,12 @@ Static Private Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> ripple::test::jtx::Account::fromCache </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html#aca8ee7ec341c993ca685d27dd8fcc6c3">AcctStringType</a>&#160;</td>
+          <td class="paramname"><em>stringType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td>
           <td class="paramname"><em>name</em>, </td>
         </tr>
@@ -643,7 +714,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00131">131</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00135">135</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -667,7 +738,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00137">137</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00141">141</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -691,7 +762,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00138">138</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00142">142</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -715,7 +786,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00139">139</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00143">143</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -739,7 +810,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00140">140</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00144">144</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>
@@ -763,7 +834,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00141">141</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Account_8h_source.html#l00145">145</a> of file <a class="el" href="Account_8h_source.html">Account.h</a>.</p>
 
 </div>
 </div>

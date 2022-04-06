@@ -1,0 +1,4 @@
+<map id="ripple::test::jtx::token::destination" name="ripple::test::jtx::token::destination">
+<area shape="rect" id="node1" title="Sets the optional Destination field on an NFTokenOffer." alt="" coords="5,95,145,136"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="32,5,119,32"/>
+</map>

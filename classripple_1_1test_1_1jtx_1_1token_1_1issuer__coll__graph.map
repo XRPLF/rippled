@@ -1,0 +1,4 @@
+<map id="ripple::test::jtx::token::issuer" name="ripple::test::jtx::token::issuer">
+<area shape="rect" id="node1" title="Sets the optional Issuer on an NFTokenMint." alt="" coords="5,95,131,136"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="25,5,111,32"/>
+</map>
