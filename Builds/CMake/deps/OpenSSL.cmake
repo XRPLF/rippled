@@ -8,7 +8,9 @@
   OPENSSL_ROOT vars to this
 #]===============================================]
 if (NOT DEFINED OPENSSL_ROOT_DIR)
-  if (DEFINED ENV{OPENSSL_ROOT})
+  if (DEFINED OPENSSL_ROOT)
+    set (OPENSSL_ROOT_DIR "${OPENSSL_ROOT}")
+  elseif (DEFINED ENV{OPENSSL_ROOT})
     set (OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT})
   elseif (HOMEBREW)
     execute_process (COMMAND ${HOMEBREW} --prefix openssl
