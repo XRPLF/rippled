@@ -163,12 +163,15 @@ enum warning_code_i {
 
 namespace RPC {
 
-/** Maps an rpc error code to its token and default message. */
+/** Maps an rpc error code to its token, default message, and HTTP status. */
 struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
     constexpr ErrorInfo()
-        : code(rpcUNKNOWN), token("unknown"), message("An unknown error code.")
+        : code(rpcUNKNOWN)
+        , token("unknown")
+        , message("An unknown error code.")
+        , http_status(200)
     {
     }
 
@@ -176,13 +179,26 @@ struct ErrorInfo
         error_code_i code_,
         char const* token_,
         char const* message_)
-        : code(code_), token(token_), message(message_)
+        : code(code_), token(token_), message(message_), http_status(200)
+    {
+    }
+
+    constexpr ErrorInfo(
+        error_code_i code_,
+        char const* token_,
+        char const* message_,
+        int http_status_)
+        : code(code_)
+        , token(token_)
+        , message(message_)
+        , http_status(http_status_)
     {
     }
 
     error_code_i code;
     Json::StaticString token;
     Json::StaticString message;
+    int http_status;
 };
 
 /** Returns an ErrorInfo that reflects the error code. */
@@ -331,6 +347,10 @@ not_validator_error()
 /** Returns `true` if the json contains an rpc error specification. */
 bool
 contains_error(Json::Value const& json);
+
+/** Returns http status that corresponds to the error code. */
+int
+error_code_http_status(error_code_i code);
 
 }  // namespace RPC
 

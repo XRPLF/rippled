@@ -1675,7 +1675,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     void
     testLedgerAccountsOption()
     {
-        testcase("Ledger Request, Accounts Option");
+        testcase("Ledger Request, Accounts Hashes");
         using namespace test::jtx;
 
         Env env{*this};
