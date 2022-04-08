@@ -33,12 +33,28 @@ private:
     list_type v_;
 
 public:
+    using value_type = STObject;
     using size_type = list_type::size_type;
     using iterator = list_type::iterator;
     using const_iterator = list_type::const_iterator;
 
     STArray() = default;
     STArray(STArray const&) = default;
+
+    template <
+        class Iter,
+        class = std::enable_if_t<std::is_convertible_v<
+            typename std::iterator_traits<Iter>::reference,
+            STObject>>>
+    explicit STArray(Iter first, Iter last);
+
+    template <
+        class Iter,
+        class = std::enable_if_t<std::is_convertible_v<
+            typename std::iterator_traits<Iter>::reference,
+            STObject>>>
+    STArray(SField const& f, Iter first, Iter last);
+
     STArray&
     operator=(STArray const&) = default;
     STArray(STArray&&);
@@ -120,6 +136,18 @@ public:
     bool
     operator!=(const STArray& s) const;
 
+    iterator
+    erase(iterator pos);
+
+    iterator
+    erase(const_iterator pos);
+
+    iterator
+    erase(iterator first, iterator last);
+
+    iterator
+    erase(const_iterator first, const_iterator last);
+
     SerializedTypeID
     getSType() const override;
 
@@ -137,6 +165,17 @@ private:
 
     friend class detail::STVar;
 };
+
+template <class Iter, class>
+STArray::STArray(Iter first, Iter last) : v_(first, last)
+{
+}
+
+template <class Iter, class>
+STArray::STArray(SField const& f, Iter first, Iter last)
+    : STBase(f), v_(first, last)
+{
+}
 
 inline STObject&
 STArray::operator[](std::size_t j)
@@ -245,6 +284,30 @@ inline bool
 STArray::operator!=(const STArray& s) const
 {
     return v_ != s.v_;
+}
+
+inline STArray::iterator
+STArray::erase(iterator pos)
+{
+    return v_.erase(pos);
+}
+
+inline STArray::iterator
+STArray::erase(const_iterator pos)
+{
+    return v_.erase(pos);
+}
+
+inline STArray::iterator
+STArray::erase(iterator first, iterator last)
+{
+    return v_.erase(first, last);
+}
+
+inline STArray::iterator
+STArray::erase(const_iterator first, const_iterator last)
+{
+    return v_.erase(first, last);
 }
 
 }  // namespace ripple

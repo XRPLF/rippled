@@ -31,8 +31,6 @@ namespace ripple {
 
 class SetAccount : public Transactor
 {
-    static std::size_t const DOMAIN_BYTES_MAX = 256;
-
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 

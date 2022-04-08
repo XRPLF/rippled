@@ -180,7 +180,7 @@ Change::applyAmendment()
         // This amendment now has a majority
         newMajorities.push_back(STObject(sfMajority));
         auto& entry = newMajorities.back();
-        entry.emplace_back(STHash256(sfAmendment, amendment));
+        entry.emplace_back(STUInt256(sfAmendment, amendment));
         entry.emplace_back(STUInt32(
             sfCloseTime, view().parentCloseTime().time_since_epoch().count()));
 

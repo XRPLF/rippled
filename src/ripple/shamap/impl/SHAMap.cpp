@@ -608,8 +608,6 @@ SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
 SHAMap::const_iterator
 SHAMap::upper_bound(uint256 const& id) const
 {
-    // Get a const_iterator to the next item in the tree after a given item
-    // item need not be in tree
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
     while (!stack.empty())

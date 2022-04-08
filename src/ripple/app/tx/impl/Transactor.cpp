@@ -22,6 +22,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
@@ -716,6 +717,25 @@ removeUnfundedOffers(
     }
 }
 
+static void
+removeExpiredNFTokenOffers(
+    ApplyView& view,
+    std::vector<uint256> const& offers,
+    beast::Journal viewJ)
+{
+    std::size_t removed = 0;
+
+    for (auto const& index : offers)
+    {
+        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        {
+            nft::deleteTokenOffer(view, offer);
+            if (++removed == expiredOfferRemoveLimit)
+                return;
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -807,10 +827,14 @@ Transactor::operator()()
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
-        (isTecClaimHardFail(result, view().flags())))
+        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
+        // FIXME: This mechanism for doing work while returning a `tec` is
+        //        awkward and very limiting. A more general purpose approach
+        //        should be used, making it possible to do more useful work
+        //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
 
         if ((result == tecOVERSIZE) || (result == tecKILLED))
@@ -834,6 +858,25 @@ Transactor::operator()()
             });
         }
 
+        std::vector<uint256> expiredNFTokenOffers;
+
+        if (result == tecEXPIRED)
+        {
+            ctx_.visit([&expiredNFTokenOffers](
+                           uint256 const& index,
+                           bool isDelete,
+                           std::shared_ptr<SLE const> const& before,
+                           std::shared_ptr<SLE const> const& after) {
+                if (isDelete)
+                {
+                    assert(before && after);
+                    if (before && after &&
+                        (before->getType() == ltNFTOKEN_OFFER))
+                        expiredNFTokenOffers.push_back(index);
+                }
+            });
+        }
+
         // Reset the context, potentially adjusting the fee.
         {
             auto const resetResult = reset(fee);
@@ -847,6 +890,10 @@ Transactor::operator()()
         if ((result == tecOVERSIZE) || (result == tecKILLED))
             removeUnfundedOffers(
                 view(), removedOffers, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredNFTokenOffers(
+                view(), expiredNFTokenOffers, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

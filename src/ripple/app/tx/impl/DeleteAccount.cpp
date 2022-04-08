@@ -20,12 +20,14 @@
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/st.h>
 
@@ -40,9 +42,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1(ctx);
-
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -127,6 +127,21 @@ removeDepositPreauthFromLedger(
     return DepositPreauth::removeFromLedger(app, view, delIndex, j);
 }
 
+TER
+removeNFTokenOfferFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal)
+{
+    if (!nft::deleteTokenOffer(view, sleDel))
+        return tefBAD_LEDGER;
+
+    return tesSUCCESS;
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -143,6 +158,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeTicketFromLedger;
         case ltDEPOSIT_PREAUTH:
             return removeDepositPreauthFromLedger;
+        case ltNFTOKEN_OFFER:
+            return removeNFTokenOfferFromLedger;
         default:
             return nullptr;
     }
@@ -177,6 +194,25 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
+    if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
+    {
+        // If an issuer has any issued NFTs resident in the ledger then it
+        // cannot be deleted.
+        if ((*sleAccount)[~sfMintedNFTokens] !=
+            (*sleAccount)[~sfBurnedNFTokens])
+            return tecHAS_OBLIGATIONS;
+
+        // If the account owns any NFTs it cannot be deleted.
+        Keylet const first = keylet::nftpage_min(account);
+        Keylet const last = keylet::nftpage_max(account);
+
+        auto const cp = ctx.view.read(Keylet(
+            ltNFTOKEN_PAGE,
+            ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+        if (cp)
+            return tecHAS_OBLIGATIONS;
+    }
+
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old
     // transactions if this account is resurrected after it is deleted.
@@ -197,10 +233,10 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::zero};
 
+    // Account has no directory at all.  This _should_ have been caught
+    // by the dirIsEmpty() check earlier, but it's okay to catch it here.
     if (!cdirFirst(
             ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
-        // Account has no directory at all.  This _should_ have been caught
-        // by the dirIsEmpty() check earlier, but it's okay to catch it here.
         return tesSUCCESS;
 
     std::int32_t deletableDirEntryCount{0};

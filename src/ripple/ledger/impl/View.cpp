@@ -18,17 +18,14 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
-#include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
-#include <boost/algorithm/string.hpp>
 #include <cassert>
 #include <optional>
 
@@ -101,7 +98,8 @@ internalDirFirst(
     else
         page = view.peek(keylet::page(root));
 
-    assert(page);
+    if (!page)
+        return false;
 
     index = 0;
 
@@ -175,6 +173,15 @@ addRaw(LedgerInfo const& info, Serializer& s, bool includeHash)
 
     if (includeHash)
         s.addBitString(info.hash);
+}
+
+bool
+hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
+{
+    using d = NetClock::duration;
+    using tp = NetClock::time_point;
+
+    return exp && (view.parentCloseTime() >= tp{d{*exp}});
 }
 
 bool
@@ -264,31 +271,16 @@ accountFunds(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    STAmount saFunds;
-
     if (!saDefault.native() && saDefault.getIssuer() == id)
-    {
-        saFunds = saDefault;
-        JLOG(j.trace()) << "accountFunds:"
-                        << " account=" << to_string(id)
-                        << " saDefault=" << saDefault.getFullText()
-                        << " SELF-FUNDED";
-    }
-    else
-    {
-        saFunds = accountHolds(
-            view,
-            id,
-            saDefault.getCurrency(),
-            saDefault.getIssuer(),
-            freezeHandling,
-            j);
-        JLOG(j.trace()) << "accountFunds:"
-                        << " account=" << to_string(id)
-                        << " saDefault=" << saDefault.getFullText()
-                        << " saFunds=" << saFunds.getFullText();
-    }
-    return saFunds;
+        return saDefault;
+
+    return accountHolds(
+        view,
+        id,
+        saDefault.getCurrency(),
+        saDefault.getIssuer(),
+        freezeHandling,
+        j);
 }
 
 // Prevent ownerCount from wrapping under error conditions.
@@ -374,17 +366,21 @@ xrpLiquid(
 void
 forEachItem(
     ReadView const& view,
-    AccountID const& id,
-    std::function<void(std::shared_ptr<SLE const> const&)> f)
+    Keylet const& root,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
-    auto const root = keylet::ownerDir(id);
+    assert(root.type == ltDIR_NODE);
+
+    if (root.type != ltDIR_NODE)
+        return;
+
     auto pos = root;
-    for (;;)
+
+    while (true)
     {
         auto sle = view.read(pos);
         if (!sle)
             return;
-        // VFALCO NOTE We aren't checking field exists?
         for (auto const& key : sle->getFieldV256(sfIndexes))
             f(view.read(keylet::child(key)));
         auto const next = sle->getFieldU64(sfIndexNext);
@@ -397,21 +393,25 @@ forEachItem(
 bool
 forEachItemAfter(
     ReadView const& view,
-    AccountID const& id,
+    Keylet const& root,
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> f)
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
-    auto const rootIndex = keylet::ownerDir(id);
-    auto currentIndex = rootIndex;
+    assert(root.type == ltDIR_NODE);
+
+    if (root.type != ltDIR_NODE)
+        return false;
+
+    auto currentIndex = root;
 
     // If startAfter is not zero try jumping to that page using the hint
     if (after.isNonZero())
     {
-        auto const hintIndex = keylet::page(rootIndex, hint);
-        auto hintDir = view.read(hintIndex);
-        if (hintDir)
+        auto const hintIndex = keylet::page(root, hint);
+
+        if (auto hintDir = view.read(hintIndex))
         {
             for (auto const& key : hintDir->getFieldV256(sfIndexes))
             {
@@ -446,7 +446,7 @@ forEachItemAfter(
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return found;
-            currentIndex = keylet::page(rootIndex, uNodeNext);
+            currentIndex = keylet::page(root, uNodeNext);
         }
     }
     else
@@ -462,7 +462,7 @@ forEachItemAfter(
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return true;
-            currentIndex = keylet::page(rootIndex, uNodeNext);
+            currentIndex = keylet::page(root, uNodeNext);
         }
     }
 }

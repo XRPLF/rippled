@@ -34,8 +34,10 @@
 #include <iterator>
 #include <utility>
 
+#ifndef __aarch64__
 // This is used for the _mm_pause instruction:
 #include <immintrin.h>
+#endif
 
 namespace ripple {
 
@@ -100,7 +102,9 @@ public:
                 if (try_lock())
                     return;
 
+#ifndef __aarch64__
                 _mm_pause();
+#endif
             }
 
             std::this_thread::yield();

@@ -1238,6 +1238,7 @@ public:
             {"account_info", &RPCParser::parseAccountItems, 1, 3},
             {"account_lines", &RPCParser::parseAccountLines, 1, 5},
             {"account_channels", &RPCParser::parseAccountChannels, 1, 3},
+            {"account_nfts", &RPCParser::parseAccountItems, 1, 5},
             {"account_objects", &RPCParser::parseAccountItems, 1, 5},
             {"account_offers", &RPCParser::parseAccountItems, 1, 4},
             {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},

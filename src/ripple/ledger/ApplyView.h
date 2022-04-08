@@ -355,6 +355,12 @@ public:
     }
     /** @} */
 
+    /** Remove the specified directory, invoking the callback for every node. */
+    bool
+    dirDelete(
+        Keylet const& directory,
+        std::function<void(uint256 const&)> const&);
+
     /** Remove the specified directory, if it is empty.
 
         @param directory the identifier of the directory node to be deleted

@@ -80,6 +80,14 @@ public:
 
     virtual ~STObject() = default;
     STObject(STObject const&) = default;
+
+    template <typename F>
+    STObject(SOTemplate const& type, SField const& name, F&& f)
+        : STObject(type, name)
+    {
+        f(*this);
+    }
+
     STObject&
     operator=(STObject const&) = default;
     STObject(STObject&&);
@@ -661,9 +669,15 @@ STObject::Proxy<T>::value() const -> value_type
     auto const t = find();
     if (t)
         return t->value();
+    if (style_ == soeINVALID)
+    {
+        Throw<STObject::FieldErr>("Value requested from invalid STObject.");
+    }
     if (style_ != soeDEFAULT)
+    {
         Throw<STObject::FieldErr>(
             "Missing field '" + this->f_->getName() + "'");
+    }
     return value_type{};
 }
 
@@ -962,22 +976,23 @@ STObject::at(TypedField<T> const& f) const
     if (!b)
         // This is a free object (no constraints)
         // with no template
-        Throw<STObject::FieldErr>("Missing field '" + f.getName() + "'");
-    auto const u = dynamic_cast<T const*>(b);
-    if (!u)
-    {
-        assert(mType);
-        assert(b->getSType() == STI_NOTPRESENT);
-        if (mType->style(f) == soeOPTIONAL)
-            Throw<STObject::FieldErr>("Missing field '" + f.getName() + "'");
-        assert(mType->style(f) == soeDEFAULT);
-        // Handle the case where value_type is a
-        // const reference, otherwise we return
-        // the address of a temporary.
-        static std::decay_t<typename T::value_type> const dv{};
-        return dv;
-    }
-    return u->value();
+        Throw<STObject::FieldErr>("Missing field: " + f.getName());
+
+    if (auto const u = dynamic_cast<T const*>(b))
+        return u->value();
+
+    assert(mType);
+    assert(b->getSType() == STI_NOTPRESENT);
+
+    if (mType->style(f) == soeOPTIONAL)
+        Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
+
+    assert(mType->style(f) == soeDEFAULT);
+
+    // Used to help handle the case where value_type is a const reference,
+    // otherwise we would return the address of a temporary.
+    static std::decay_t<typename T::value_type> const dv{};
+    return dv;
 }
 
 template <class T>

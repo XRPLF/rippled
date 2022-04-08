@@ -22,7 +22,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/STArray.h>
 #include <ripple/protocol/SystemParameters.h>
+#include <ripple/protocol/nftPageMask.h>
 
 namespace ripple {
 
@@ -366,6 +368,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCHECK:
             case ltDEPOSIT_PREAUTH:
             case ltNEGATIVE_UNL:
+            case ltNFTOKEN_PAGE:
+            case ltNFTOKEN_OFFER:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -483,6 +487,191 @@ ValidNewAccountRoot::finalize(
     JLOG(j.fatal()) << "Invariant failed: account root created "
                        "by a non-Payment or by an unsuccessful transaction";
     return false;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidNFTokenPage::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    static constexpr uint256 const& pageBits = nft::pageMask;
+    static constexpr uint256 const accountBits = ~pageBits;
+
+    auto check = [this](std::shared_ptr<SLE const> const& sle) {
+        auto const account = sle->key() & accountBits;
+        auto const limit = sle->key() & pageBits;
+
+        if (auto const prev = (*sle)[~sfPreviousPageMin])
+        {
+            if (account != (*prev & accountBits))
+                badLink_ = true;
+
+            if (limit <= (*prev & pageBits))
+                badLink_ = true;
+        }
+
+        if (auto const next = (*sle)[~sfNextPageMin])
+        {
+            if (account != (*next & accountBits))
+                badLink_ = true;
+
+            if (limit >= (*next & pageBits))
+                badLink_ = true;
+        }
+
+        for (auto const& obj : sle->getFieldArray(sfNFTokens))
+        {
+            if ((obj[sfNFTokenID] & pageBits) >= limit)
+                badEntry_ = true;
+
+            if (auto uri = obj[~sfURI]; uri && uri->empty())
+                badURI_ = true;
+        }
+    };
+
+    if (before && before->getType() == ltNFTOKEN_PAGE)
+        check(before);
+
+    if (after && after->getType() == ltNFTOKEN_PAGE)
+        check(after);
+}
+
+bool
+ValidNFTokenPage::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (badLink_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT page is improperly linked.";
+        return false;
+    }
+
+    if (badEntry_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT found in incorrect page.";
+        return false;
+    }
+
+    if (badURI_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT contains empty URI.";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+void
+NFTokenCountTracking::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (before && before->getType() == ltACCOUNT_ROOT)
+    {
+        beforeMintedTotal += (*before)[~sfMintedNFTokens].value_or(0);
+        beforeBurnedTotal += (*before)[~sfBurnedNFTokens].value_or(0);
+    }
+
+    if (after && after->getType() == ltACCOUNT_ROOT)
+    {
+        afterMintedTotal += (*after)[~sfMintedNFTokens].value_or(0);
+        afterBurnedTotal += (*after)[~sfBurnedNFTokens].value_or(0);
+    }
+}
+
+bool
+NFTokenCountTracking::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (TxType const txType = tx.getTxnType();
+        txType != ttNFTOKEN_MINT && txType != ttNFTOKEN_BURN)
+    {
+        if (beforeMintedTotal != afterMintedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: the number of minted tokens "
+                               "changed without a mint transaction!";
+            return false;
+        }
+
+        if (beforeBurnedTotal != afterBurnedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: the number of burned tokens "
+                               "changed without a burn transaction!";
+            return false;
+        }
+
+        return true;
+    }
+
+    if (tx.getTxnType() == ttNFTOKEN_MINT)
+    {
+        if (result == tesSUCCESS && beforeMintedTotal >= afterMintedTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: successful minting didn't increase "
+                   "the number of minted tokens.";
+            return false;
+        }
+
+        if (result != tesSUCCESS && beforeMintedTotal != afterMintedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: failed minting changed the "
+                               "number of minted tokens.";
+            return false;
+        }
+
+        if (beforeBurnedTotal != afterBurnedTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: minting changed the number of "
+                   "burned tokens.";
+            return false;
+        }
+    }
+
+    if (tx.getTxnType() == ttNFTOKEN_BURN)
+    {
+        if (result == tesSUCCESS)
+        {
+            if (beforeBurnedTotal >= afterBurnedTotal)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: successful burning didn't increase "
+                       "the number of burned tokens.";
+                return false;
+            }
+        }
+
+        if (result != tesSUCCESS && beforeBurnedTotal != afterBurnedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: failed burning changed the "
+                               "number of burned tokens.";
+            return false;
+        }
+
+        if (beforeMintedTotal != afterMintedTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: burning changed the number of "
+                   "minted tokens.";
+            return false;
+        }
+    }
+
+    return true;
 }
 
 }  // namespace ripple
