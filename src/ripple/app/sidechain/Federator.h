@@ -39,6 +39,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/SecretKey.h>
 
+#include <boost/asio.hpp>
 #include <boost/container/flat_map.hpp>
 
 #include <atomic>
@@ -139,6 +140,9 @@ private:
     TicketRunner ticketRunner_;
     DoorKeeper mainDoorKeeper_;
     DoorKeeper sideDoorKeeper_;
+
+    boost::posix_time::seconds const heartbeatInterval{5};
+    std::unique_ptr<boost::asio::deadline_timer> heartbeatTimer;
 
     struct PeerTxnSignature
     {
@@ -307,6 +311,9 @@ private:
         std::uint16_t port,
         std::shared_ptr<MainchainListener>&& mainchainListener,
         std::shared_ptr<SidechainListener>&& sidechainListener);
+
+    void
+    heartbeatTimerHandler(const boost::system::error_code& ec);
 
     // Convert between the asset on the src chain to the asset on the other
     // chain. The `assetProps_` array controls how this conversion is done.

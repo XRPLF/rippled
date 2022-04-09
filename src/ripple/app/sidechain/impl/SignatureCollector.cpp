@@ -139,7 +139,39 @@ void
 SignatureCollector::expire()
 {
     std::lock_guard lock(mtx_);
+    // Never expire collections with this servers sig or submitted txns
+    for (auto i = messages_.begin(), e = messages_.end(); i != e; ++i)
+    {
+        auto const& multiSigMsg = i->second;
+        if (multiSigMsg.submitted_)
+        {
+            messages_.touch(i);
+            continue;
+        }
+        for (auto const& [pk, sig] : multiSigMsg.sigMaps_)
+        {
+            if (pk == myPubKey_)
+            {
+                messages_.touch(i);
+            }
+        }
+    }
     beast::expire(messages_, messageExpire);
+}
+
+void
+SignatureCollector::reshareSigs()
+{
+    std::lock_guard lock(mtx_);
+    for (auto const& [messageId, multiSigMsg] : messages_)
+    {
+        if (multiSigMsg.submitted_)
+            continue;
+        for (auto const& [pk, sig] : multiSigMsg.sigMaps_)
+        {
+            shareSig(messageId, sig);
+        }
+    }
 }
 
 bool
