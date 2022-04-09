@@ -41,14 +41,17 @@
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/TransactionSign.h>
-#include <mutex>
 #include <ripple.pb.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/system/detail/errc.hpp>
 
 #include <chrono>
 #include <cmath>
+#include <memory>
+#include <mutex>
 #include <sstream>
 
 namespace ripple {
@@ -815,6 +818,13 @@ Federator::init(
     ticketRunner_.setRpcChannel(false, sidechainListener_);
     mainDoorKeeper_.setRpcChannel(mainchainListener_);
     sideDoorKeeper_.setRpcChannel(sidechainListener_);
+
+    heartbeatTimer =
+        std::make_unique<boost::asio::deadline_timer>(ios, heartbeatInterval);
+    heartbeatTimer->async_wait(
+        [self = shared_from_this()](boost::system::error_code const& ec) {
+            self->heartbeatTimerHandler(ec);
+        });
 }
 
 Federator::~Federator()
@@ -851,6 +861,25 @@ Federator::stop()
         running_ = false;
     }
     mainchainListener_->shutdown();
+}
+
+void
+Federator::heartbeatTimerHandler(const boost::system::error_code& ec)
+{
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec == boost::system::errc::success)
+    {
+        onEvent(event::HeartbeatTimer{});
+    }
+
+    heartbeatTimer->expires_at(
+        heartbeatTimer->expires_at() + heartbeatInterval);
+    heartbeatTimer->async_wait(
+        [self = shared_from_this()](boost::system::error_code const& ec) {
+            self->heartbeatTimerHandler(ec);
+        });
 }
 
 void
@@ -1354,6 +1383,13 @@ Federator::onEvent(event::HeartbeatTimer const& e)
         "Federator::onEvent",
         jv("eventtype", "HeartbeatTimer"),
         jv("event", e.toJson()));
+
+    static bool shareMain = false;
+    shareMain = !shareMain;
+    if (shareMain)
+        mainSigCollector_.reshareSigs();
+    else
+        sideSigCollector_.reshareSigs();
 }
 
 void

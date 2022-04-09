@@ -122,6 +122,9 @@ public:
     void
     setRpcChannel(std::shared_ptr<ChainListener> channel);
 
+    void
+    reshareSigs() EXCLUDES(mtx_);
+
 private:
     // verify a signature (if it is from a peer) and add to a collection
     bool
