@@ -22,6 +22,7 @@
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STObject.h>
 #include <cstdint>
+#include <optional>
 
 namespace ripple {
 
@@ -41,7 +42,7 @@ SignerEntries::deserialize(
     }
 
     std::vector<SignerEntry> accountVec;
-    accountVec.reserve(STTx::maxMultiSigners);
+    accountVec.reserve(STTx::maxMultiSigners());
 
     STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
     for (STObject const& sEntry : sEntries)
@@ -57,7 +58,9 @@ SignerEntries::deserialize(
         // Extract SignerEntry fields.
         AccountID const account = sEntry.getAccountID(sfAccount);
         std::uint16_t const weight = sEntry.getFieldU16(sfSignerWeight);
-        accountVec.emplace_back(account, weight);
+        std::optional<uint256> const tag = sEntry.at(~sfWalletLocator);
+
+        accountVec.emplace_back(account, weight, tag);
     }
     return accountVec;
 }

@@ -34,6 +34,30 @@ class MultiSign_test : public beast::unit_test::suite
     jtx::Account const phase{"phase", KeyType::ed25519};
     jtx::Account const shade{"shade", KeyType::secp256k1};
     jtx::Account const spook{"spook", KeyType::ed25519};
+    jtx::Account const acc10{"acc10", KeyType::ed25519};
+    jtx::Account const acc11{"acc11", KeyType::ed25519};
+    jtx::Account const acc12{"acc12", KeyType::ed25519};
+    jtx::Account const acc13{"acc13", KeyType::ed25519};
+    jtx::Account const acc14{"acc14", KeyType::ed25519};
+    jtx::Account const acc15{"acc15", KeyType::ed25519};
+    jtx::Account const acc16{"acc16", KeyType::ed25519};
+    jtx::Account const acc17{"acc17", KeyType::ed25519};
+    jtx::Account const acc18{"acc18", KeyType::ed25519};
+    jtx::Account const acc19{"acc19", KeyType::ed25519};
+    jtx::Account const acc20{"acc20", KeyType::ed25519};
+    jtx::Account const acc21{"acc21", KeyType::ed25519};
+    jtx::Account const acc22{"acc22", KeyType::ed25519};
+    jtx::Account const acc23{"acc23", KeyType::ed25519};
+    jtx::Account const acc24{"acc24", KeyType::ed25519};
+    jtx::Account const acc25{"acc25", KeyType::ed25519};
+    jtx::Account const acc26{"acc26", KeyType::ed25519};
+    jtx::Account const acc27{"acc27", KeyType::ed25519};
+    jtx::Account const acc28{"acc28", KeyType::ed25519};
+    jtx::Account const acc29{"acc29", KeyType::ed25519};
+    jtx::Account const acc30{"acc30", KeyType::ed25519};
+    jtx::Account const acc31{"acc31", KeyType::ed25519};
+    jtx::Account const acc32{"acc32", KeyType::ed25519};
+    jtx::Account const acc33{"acc33", KeyType::ed25519};
 
 public:
     void
@@ -159,22 +183,30 @@ public:
                  {spook, 1}}),
             ter(temBAD_QUORUM));
 
-        // Make a signer list that's too big.  Should fail.
+        // clang-format off
+        // Make a signer list that's too big.  Should fail. (Even with
+        // ExpandedSignerList)
         Account const spare("spare", KeyType::secp256k1);
         env(signers(
                 alice,
                 1,
-                {{bogie, 1},
-                 {demon, 1},
-                 {ghost, 1},
-                 {haunt, 1},
-                 {jinni, 1},
-                 {phase, 1},
-                 {shade, 1},
-                 {spook, 1},
-                 {spare, 1}}),
+                features[featureExpandedSignerList]
+                    ? std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
+                                          {haunt, 1}, {jinni, 1}, {phase, 1},
+                                          {shade, 1}, {spook, 1}, {spare, 1},
+                                          {acc10, 1}, {acc11, 1}, {acc12, 1},
+                                          {acc13, 1}, {acc14, 1}, {acc15, 1},
+                                          {acc16, 1}, {acc17, 1}, {acc18, 1},
+                                          {acc19, 1}, {acc20, 1}, {acc21, 1},
+                                          {acc22, 1}, {acc23, 1}, {acc24, 1},
+                                          {acc25, 1}, {acc26, 1}, {acc27, 1},
+                                          {acc28, 1}, {acc29, 1}, {acc30, 1},
+                                          {acc31, 1}, {acc32, 1}, {acc33, 1}}
+                    : std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
+                                          {haunt, 1}, {jinni, 1}, {phase, 1},
+                                          {shade, 1}, {spook, 1}, {spare, 1}}),
             ter(temMALFORMED));
-
+        // clang-format on
         env.close();
         env.require(owners(alice, 0));
     }
@@ -1149,20 +1181,56 @@ public:
                 "fails local checks: Invalid Signers array size.");
         }
         {
-            // Multisign 9 times should fail.
+            // Multisign 9 (!ExpandedSignerList) | 33 (ExpandedSignerList) times
+            // should fail.
             JTx tx = env.jt(
                 noop(alice),
                 fee(2 * baseFee),
-                msig(
-                    bogie,
-                    bogie,
-                    bogie,
-                    bogie,
-                    bogie,
-                    bogie,
-                    bogie,
-                    bogie,
-                    bogie));
+
+                features[featureExpandedSignerList] ? msig(
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie)
+                                                    : msig(
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie,
+                                                          bogie));
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1518,6 +1586,82 @@ public:
     }
 
     void
+    test_signersWithTags(FeatureBitset features)
+    {
+        if (!features[featureExpandedSignerList])
+            return;
+
+        testcase("Signers With Tags");
+
+        using namespace jtx;
+        Env env{*this, features};
+        Account const alice{"alice", KeyType::ed25519};
+        env.fund(XRP(1000), alice);
+        env.close();
+        uint8_t tag1[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+
+        uint8_t tag2[] =
+            "hello world some ascii 32b long";  // including 1 byte for NUL
+
+        uint256 bogie_tag = ripple::base_uint<256>::fromVoid(tag1);
+        uint256 demon_tag = ripple::base_uint<256>::fromVoid(tag2);
+
+        // Attach phantom signers to alice and use them for a transaction.
+        env(signers(alice, 1, {{bogie, 1, bogie_tag}, {demon, 1, demon_tag}}));
+        env.close();
+        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 4));
+
+        // This should work.
+        auto const baseFee = env.current()->fees().base;
+        std::uint32_t aliceSeq = env.seq(alice);
+        env(noop(alice), msig(bogie, demon), fee(3 * baseFee));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+
+        // Either signer alone should work.
+        aliceSeq = env.seq(alice);
+        env(noop(alice), msig(bogie), fee(2 * baseFee));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+
+        aliceSeq = env.seq(alice);
+        env(noop(alice), msig(demon), fee(2 * baseFee));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+
+        // Duplicate signers should fail.
+        aliceSeq = env.seq(alice);
+        env(noop(alice), msig(demon, demon), fee(3 * baseFee), ter(temINVALID));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        // A non-signer should fail.
+        aliceSeq = env.seq(alice);
+        env(noop(alice),
+            msig(bogie, spook),
+            fee(3 * baseFee),
+            ter(tefBAD_SIGNATURE));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        // Don't meet the quorum.  Should fail.
+        env(signers(alice, 2, {{bogie, 1}, {demon, 1}}));
+        aliceSeq = env.seq(alice);
+        env(noop(alice), msig(bogie), fee(2 * baseFee), ter(tefBAD_QUORUM));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        // Meet the quorum.  Should succeed.
+        aliceSeq = env.seq(alice);
+        env(noop(alice), msig(bogie, demon), fee(3 * baseFee));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         test_noReserve(features);
@@ -1537,6 +1681,7 @@ public:
         test_multisigningMultisigner(features);
         test_signForHash(features);
         test_signersWithTickets(features);
+        test_signersWithTags(features);
     }
 
     void
@@ -1545,10 +1690,13 @@ public:
         using namespace jtx;
         auto const all = supported_amendments();
 
-        // The reserve required on a signer list changes based on.
-        // featureMultiSignReserve.  Test both with and without.
-        testAll(all - featureMultiSignReserve);
-        testAll(all | featureMultiSignReserve);
+        // The reserve required on a signer list changes based on
+        // featureMultiSignReserve.  Limits on the number of signers
+        // changes based on featureExpandedSignerList.  Test both with and
+        // without.
+        testAll(all - featureMultiSignReserve - featureExpandedSignerList);
+        testAll(all - featureExpandedSignerList);
+        testAll(all);
         test_amendmentTransition();
     }
 };

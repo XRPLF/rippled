@@ -20,6 +20,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STTx.h>
@@ -27,7 +28,6 @@
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/messages.h>
-
 #include <memory>
 #include <regex>
 
@@ -1591,8 +1591,10 @@ public:
         });
         j.sign(keypair.first, keypair.second);
 
+        Rules defaultRules{{}};
+
         unexpected(
-            !j.checkSign(STTx::RequireFullyCanonicalSig::yes),
+            !j.checkSign(STTx::RequireFullyCanonicalSig::yes, defaultRules),
             "Transaction fails signature test");
 
         Serializer rawTxn;
