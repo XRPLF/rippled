@@ -82,6 +82,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
   src/ripple/protocol/impl/Rate2.cpp
+  src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
   src/ripple/protocol/impl/SOTemplate.cpp
   src/ripple/protocol/impl/STAccount.cpp
@@ -209,6 +210,7 @@ install (
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
     src/ripple/protocol/Rate.h
+    src/ripple/protocol/Rules.h
     src/ripple/protocol/SField.h
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h

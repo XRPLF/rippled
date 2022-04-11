@@ -23,9 +23,11 @@
 #include <ripple/app/tx/impl/Transactor.h>  // NotTEC
 #include <ripple/basics/Expected.h>         //
 #include <ripple/beast/utility/Journal.h>   // beast::Journal
+#include <ripple/protocol/Rules.h>          // Rules
 #include <ripple/protocol/STTx.h>           // STTx::maxMultiSigners
 #include <ripple/protocol/TER.h>            // temMALFORMED
 #include <ripple/protocol/UintTypes.h>      // AccountID
+#include <optional>
 
 namespace ripple {
 
@@ -42,9 +44,13 @@ public:
     {
         AccountID account;
         std::uint16_t weight;
+        std::optional<uint256> tag;
 
-        SignerEntry(AccountID const& inAccount, std::uint16_t inWeight)
-            : account(inAccount), weight(inWeight)
+        SignerEntry(
+            AccountID const& inAccount,
+            std::uint16_t inWeight,
+            std::optional<uint256> inTag)
+            : account(inAccount), weight(inWeight), tag(inTag)
         {
         }
 

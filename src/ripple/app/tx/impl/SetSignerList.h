@@ -25,6 +25,7 @@
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
@@ -83,7 +84,8 @@ private:
         std::uint32_t quorum,
         std::vector<SignerEntries::SignerEntry> const& signers,
         AccountID const& account,
-        beast::Journal j);
+        beast::Journal j,
+        Rules const&);
 
     TER
     replaceSignerList();
