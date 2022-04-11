@@ -129,6 +129,11 @@ public:
         unsubLedger(std::uint64_t uListener) = 0;
 
         virtual bool
+        subBookChanges(ref ispListener) = 0;
+        virtual bool
+        unsubBookChanges(std::uint64_t uListener) = 0;
+
+        virtual bool
         subManifests(ref ispListener) = 0;
         virtual bool
         unsubManifests(std::uint64_t uListener) = 0;

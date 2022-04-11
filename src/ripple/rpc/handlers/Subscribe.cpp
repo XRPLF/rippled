@@ -136,6 +136,10 @@ doSubscribe(RPC::JsonContext& context)
             {
                 context.netOps.subLedger(ispSub, jvResult);
             }
+            else if (streamName == "book_changes")
+            {
+                context.netOps.subBookChanges(ispSub);
+            }
             else if (streamName == "manifests")
             {
                 context.netOps.subManifests(ispSub);

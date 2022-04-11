@@ -504,6 +504,11 @@ public:
     unsubLedger(std::uint64_t uListener) override;
 
     bool
+    subBookChanges(InfoSub::ref ispListener) override;
+    bool
+    unsubBookChanges(std::uint64_t uListener) override;
+
+    bool
     subServer(InfoSub::ref ispListener, Json::Value& jvResult, bool admin)
         override;
     bool
@@ -744,9 +749,10 @@ private:
         sValidations,     // Received validations.
         sPeerStatus,      // Peer status changes.
         sConsensusPhase,  // Consensus phase
+        sBookChanges,     // Per-ledger order book changes
 
-        sLastEntry = sConsensusPhase  // as this name implies, any new entry
-                                      // must be ADDED ABOVE this one
+        sLastEntry = sBookChanges  // as this name implies, any new entry
+                                   // must be ADDED ABOVE this one
     };
     std::array<SubMapType, SubTypes::sLastEntry + 1> mStreamMaps;
 
@@ -2899,6 +2905,180 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             }
         }
 
+        if (!mStreamMaps[sBookChanges].empty())
+        {
+            std::map<
+                std::string,
+                std::tuple<
+                    STAmount,  // side A volume
+                    STAmount,  // side B volume
+                    STAmount,  // high rate
+                    STAmount,  // low rate
+                    STAmount,  // open rate
+                    STAmount   // close rate
+                    >>
+                tally;
+
+            for (auto& tx : lpAccepted->txs)
+            {
+                if (!tx.first || !tx.second ||
+                    !tx.first->isFieldPresent(sfTransactionType))
+                    continue;
+
+                std::optional<uint32_t> offerCancel;
+                uint16_t tt = tx.first->getFieldU16(sfTransactionType);
+                switch (tt)
+                {
+                    case ttOFFER_CANCEL:
+                    case ttOFFER_CREATE: {
+                        if (tx.first->isFieldPresent(sfOfferSequence))
+                            offerCancel =
+                                tx.first->getFieldU32(sfOfferSequence);
+                        break;
+                    }
+                    // in future if any other ways emerge to cancel an offer
+                    // this switch makes them easy to add
+                    default:
+                        break;
+                }
+
+                for (auto const& node :
+                     tx.second->getFieldArray(sfAffectedNodes))
+                {
+                    SField const& metaType = node.getFName();
+                    uint16_t nodeType = node.getFieldU16(sfLedgerEntryType);
+
+                    // we only care about ltOFFER objects being modified or
+                    // deleted
+                    if (nodeType != ltOFFER || metaType == sfCreatedNode)
+                        continue;
+
+                    STObject& ff = (const_cast<STObject&>(node))
+                                       .getField(sfFinalFields)
+                                       .downcast<STObject>();
+
+                    // filter out any offers deleted by explicit offer cancels
+                    if (metaType == sfDeletedNode && offerCancel &&
+                        ff.getFieldU32(sfSequence) == *offerCancel)
+                        continue;
+
+                    if (!node.isFieldPresent(sfPreviousFields))
+                    {
+                        std::cerr << "warning sfPreviousFields not found on "
+                                     "ltOFFER meta\n";
+                        continue;
+                    }
+
+                    STObject& mf = (const_cast<STObject&>(node))
+                                       .getField(sfPreviousFields)
+                                       .downcast<STObject>();
+
+                    STAmount deltaGets = ff.getFieldAmount(sfTakerGets) -
+                        mf.getFieldAmount(sfTakerGets);
+                    STAmount deltaPays = ff.getFieldAmount(sfTakerPays) -
+                        mf.getFieldAmount(sfTakerPays);
+
+                    std::string g{to_string(deltaGets.issue())};
+                    std::string p{to_string(deltaPays.issue())};
+
+                    bool const noswap = (g < p);
+
+                    STAmount first = noswap ? deltaGets : deltaPays;
+                    STAmount second = noswap ? deltaPays : deltaGets;
+
+                    STAmount rate = divide(first, second, noIssue());
+
+                    if (first < beast::zero)
+                        first = -first;
+
+                    if (second < beast::zero)
+                        second = -second;
+
+                    std::stringstream ss;
+                    if (noswap)
+                        ss << g << "|" << p;
+                    else
+                        ss << p << "|" << g;
+
+                    std::string key{ss.str()};
+
+                    if (tally.find(key) == tally.end())
+                        tally[key] = {
+                            first,   // side A vol
+                            second,  // side B vol
+                            rate,    // high
+                            rate,    // low
+                            rate,    // open
+                            rate     // close
+                        };
+                    else
+                    {
+                        // increment volume
+                        auto& entry = tally[key];
+
+                        std::get<0>(entry) += first;   // side A vol
+                        std::get<1>(entry) += second;  // side B vol
+
+                        if (std::get<2>(entry) < rate)  // high
+                            std::get<2>(entry) = rate;
+
+                        if (std::get<3>(entry) > rate)  // low
+                            std::get<3>(entry) = rate;
+
+                        std::get<5>(entry) = rate;  // close
+                    }
+                }
+            }
+
+            Json::Value jvObj(Json::objectValue);
+            jvObj[jss::type] = "bookChanges";
+            jvObj[jss::ledger_index] = lpAccepted->info().seq;
+            jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
+            jvObj[jss::ledger_time] = Json::Value::UInt(
+                lpAccepted->info().closeTime.time_since_epoch().count());
+
+            jvObj[jss::changes] = Json::arrayValue;
+
+            for (auto const& entry : tally)
+            {
+                Json::Value& inner =
+                    jvObj[jss::changes].append(Json::objectValue);
+
+                STAmount volA = std::get<0>(entry.second);
+                STAmount volB = std::get<1>(entry.second);
+
+                inner[jss::cur_a] =
+                    (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
+                inner[jss::cur_b] =
+                    (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
+
+                inner[jss::vol_a] =
+                    (isXRP(volA) ? to_string(volA.xrp())
+                                 : to_string(volA.iou()));
+                inner[jss::vol_b] =
+                    (isXRP(volB) ? to_string(volB.xrp())
+                                 : to_string(volB.iou()));
+
+                inner[jss::high] = to_string(std::get<2>(entry.second).iou());
+                inner[jss::low] = to_string(std::get<3>(entry.second).iou());
+                inner[jss::open] = to_string(std::get<4>(entry.second).iou());
+                inner[jss::close] = to_string(std::get<5>(entry.second).iou());
+            }
+
+            auto it = mStreamMaps[sBookChanges].begin();
+            while (it != mStreamMaps[sBookChanges].end())
+            {
+                InfoSub::pointer p = it->second.lock();
+                if (p)
+                {
+                    p->send(jvObj, true);
+                    ++it;
+                }
+                else
+                    it = mStreamMaps[sBookChanges].erase(it);
+            }
+        }
+
         {
             static bool firstTime = true;
             if (firstTime)
@@ -3875,12 +4055,30 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         .second;
 }
 
+// <-- bool: true=added, false=already there
+bool
+NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
+{
+    std::lock_guard sl(mSubLock);
+    return mStreamMaps[sBookChanges]
+        .emplace(isrListener->getSeq(), isrListener)
+        .second;
+}
+
 // <-- bool: true=erased, false=was not there
 bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
     return mStreamMaps[sLedger].erase(uSeq);
+}
+
+// <-- bool: true=erased, false=was not there
+bool
+NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
+{
+    std::lock_guard sl(mSubLock);
+    return mStreamMaps[sBookChanges].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there

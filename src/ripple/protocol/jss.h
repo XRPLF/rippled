@@ -166,11 +166,13 @@ JSS(build_path);             // in: TransactionSign
 JSS(build_version);          // out: NetworkOPs
 JSS(cancel_after);           // out: AccountChannels
 JSS(can_delete);             // out: CanDelete
+JSS(changes);                // out: BookChanges
 JSS(channel_id);             // out: AccountChannels
 JSS(channels);               // out: AccountChannels
 JSS(check);                  // in: AccountObjects
 JSS(check_nodes);            // in: LedgerCleaner
 JSS(clear);                  // in/out: FetchInfo
+JSS(close);                  // out: BookChanges
 JSS(close_flags);            // out: LedgerToJson
 JSS(close_time);             // in: Application, out: NetworkOPs,
                              //      RCLCxPeerPos, LedgerToJson
@@ -193,6 +195,8 @@ JSS(converge_time_s);        // out: NetworkOPs
 JSS(cookie);                 // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
+JSS(cur_a);                  // out: BookChanges
+JSS(cur_b);                  // out: BookChanges
 JSS(currentShard);           // out: NodeToShardStatus
 JSS(currentShardIndex);      // out: NodeToShardStatus
 JSS(currency);               // in: paths/PathRequest, STAmount
@@ -282,6 +286,7 @@ JSS(hashes);                // in: AccountObjects
 JSS(have_header);           // out: InboundLedger
 JSS(have_state);            // out: InboundLedger
 JSS(have_transactions);     // out: InboundLedger
+JSS(high);                  // out: BookChanges
 JSS(highest_sequence);      // out: AccountInfo
 JSS(highest_ticket);        // out: AccountInfo
 JSS(historical_perminute);  // historical_perminute.
@@ -363,6 +368,7 @@ JSS(load_fee);                    // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                       // out: resource/Logic.h
 JSS(local_txs);                   // out: GetCounts
 JSS(local_static_keys);           // out: ValidatorList
+JSS(low);                         // out: BookChanges
 JSS(lowest_sequence);             // out: AccountInfo
 JSS(lowest_ticket);               // out: AccountInfo
 JSS(majority);                    // out: RPC feature
@@ -639,6 +645,8 @@ JSS(validator_sites);         // out: ValidatorSites
 JSS(value);                   // out: STAmount
 JSS(version);                 // out: RPCVersion
 JSS(vetoed);                  // out: AmendmentTableImpl
+JSS(vol_a);                   // out: BookChanges
+JSS(vol_b);                   // out: BookChanges
 JSS(vote);                    // in: Feature
 JSS(warning);                 // rpc:
 JSS(warnings);                // out: server_info, server_state
