@@ -626,7 +626,7 @@ Ledger::setup(Config const& config)
 
     try
     {
-        rules_ = Rules(*this, config.features);
+        rules_ = makeRulesGivenLedger(*this, config.features);
     }
     catch (SHAMapMissingNode const&)
     {
