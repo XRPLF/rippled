@@ -40,6 +40,7 @@
 #include <ripple/protocol/SecretKey.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/container/flat_map.hpp>
 
 #include <atomic>
