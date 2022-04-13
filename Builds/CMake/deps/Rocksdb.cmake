@@ -2,6 +2,12 @@
    NIH dep: rocksdb
 #]===================================================================]
 
+option(use_rocksdb "build rocksdb" OFF)
+
+if(NOT use_rocksdb)
+  return()
+endif()
+
 add_library (rocksdb_lib UNKNOWN IMPORTED GLOBAL)
 set_target_properties (rocksdb_lib
   PROPERTIES INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1)
