@@ -33,66 +33,53 @@ using uint128_t = __uint128_t;
 
 namespace ripple {
 
-// Guard
+// guard
 
-// The Guard class is used to tempoarily add extra digits of
-// preicision to an operation.  This enables the final result
-// to be correctly rounded to the internal precision of Number.
-
-class Number::Guard
+class Number::guard
 {
-    std::uint64_t digits_;   // 16 decimal guard digits
-    std::uint8_t xbit_ : 1;  // has a non-zero digit been shifted off the end
-    std::uint8_t sbit_ : 1;  // the sign of the guard digits
+    std::uint64_t digits_;
+    std::uint8_t xbit_ : 1;
+    std::uint8_t sbit_ : 1;  // TODO :  get rid of
 
 public:
-    explicit Guard() : digits_{0}, xbit_{0}, sbit_{0}
+    explicit guard() : digits_{0}, xbit_{0}, sbit_{0}
     {
     }
 
-    // set & test the sign bit
     void
     set_positive() noexcept;
     void
     set_negative() noexcept;
     bool
     is_negative() const noexcept;
-
-    // add a digit
     void
     push(unsigned d) noexcept;
-
-    // recover a digit
     unsigned
     pop() noexcept;
-
-    // Indicate round direction:  1 is up, -1 is down, 0 is even
-    // This enables the client to round towards nearest, and on
-    // tie, round towards even.
     int
     round() noexcept;
 };
 
 inline void
-Number::Guard::set_positive() noexcept
+Number::guard::set_positive() noexcept
 {
     sbit_ = 0;
 }
 
 inline void
-Number::Guard::set_negative() noexcept
+Number::guard::set_negative() noexcept
 {
     sbit_ = 1;
 }
 
 inline bool
-Number::Guard::is_negative() const noexcept
+Number::guard::is_negative() const noexcept
 {
     return sbit_ == 1;
 }
 
 inline void
-Number::Guard::push(unsigned d) noexcept
+Number::guard::push(unsigned d) noexcept
 {
     xbit_ = xbit_ || (digits_ & 0x0000'0000'0000'000F) != 0;
     digits_ >>= 4;
@@ -100,7 +87,7 @@ Number::Guard::push(unsigned d) noexcept
 }
 
 inline unsigned
-Number::Guard::pop() noexcept
+Number::guard::pop() noexcept
 {
     unsigned d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
@@ -108,7 +95,7 @@ Number::Guard::pop() noexcept
 }
 
 int
-Number::Guard::round() noexcept
+Number::guard::round() noexcept
 {
     if (digits_ > 0x5000'0000'0000'0000)
         return 1;
@@ -140,12 +127,10 @@ Number::normalize()
         m *= 10;
         --exponent_;
     }
-    Guard g;
     while (m > maxMantissa)
     {
         if (exponent_ >= maxExponent)
             throw std::overflow_error("Number::normalize 1");
-        g.push(m % 10);
         m /= 10;
         ++exponent_;
     }
@@ -156,16 +141,6 @@ Number::normalize()
         return;
     }
 
-    auto r = g.round();
-    if (r == 1 || (r == 0 && (mantissa_ & 1) == 1))
-    {
-        ++mantissa_;
-        if (mantissa_ > maxMantissa)
-        {
-            mantissa_ /= 10;
-            ++exponent_;
-        }
-    }
     if (exponent_ > maxExponent)
         throw std::overflow_error("Number::normalize 2");
 
@@ -205,7 +180,7 @@ Number::operator+=(Number const& y)
         ym = -ym;
         yn = -1;
     }
-    Guard g;
+    guard g;
     if (xe < ye)
     {
         if (xn == -1)
@@ -286,6 +261,7 @@ Number::operator+=(Number const& y)
     }
     mantissa_ = xm * xn;
     exponent_ = xe;
+    assert(isnormal());
     return *this;
 }
 
@@ -319,7 +295,7 @@ Number::operator*=(Number const& y)
     auto zm = uint128_t(xm) * uint128_t(ym);
     auto ze = xe + ye;
     auto zn = xn * yn;
-    Guard g;
+    guard g;
     while (zm > maxMantissa)
     {
         g.push(static_cast<unsigned>(zm % 10));
@@ -349,7 +325,7 @@ Number::operator*=(Number const& y)
             std::to_string(xe));
     mantissa_ = xm * zn;
     exponent_ = xe;
-    assert(isnormal() || *this == Number{});
+    assert(isnormal());
     return *this;
 }
 
@@ -386,9 +362,8 @@ Number::operator/=(Number const& y)
     static_assert(a2.isnormal());
     Number rm2{};
     Number rm1{};
-    Number r = (a2 * d + a1) * d + a0;
-    //  Newton–Raphson iteration of 1/x - d with initial guess r
-    //  halt when r stops changing, checking for bouncing on the last iteration
+    Number r = a2;
+    r = (a2 * d + a1) * d + a0;
     do
     {
         rm2 = rm1;
@@ -397,45 +372,6 @@ Number::operator/=(Number const& y)
     } while (r != rm1 && r != rm2);
     *this = n * r;
     return *this;
-}
-
-Number::operator rep() const
-{
-    rep drops = mantissa_;
-    int offset = exponent_;
-    Guard g;
-    if (drops != 0)
-    {
-        if (drops < 0)
-        {
-            g.set_negative();
-            drops = -drops;
-        }
-        for (; offset < 0; ++offset)
-        {
-            g.push(drops % 10);
-            drops /= 10;
-        }
-        for (; offset > 0; --offset)
-        {
-            if (drops > std::numeric_limits<decltype(drops)>::max() / 10)
-                throw std::overflow_error("Number::operator rep() overflow");
-            drops *= 10;
-        }
-        auto r = g.round();
-        if (r == 1 || (r == 0 && (drops & 1) == 1))
-        {
-            ++drops;
-        }
-        if (g.is_negative())
-            drops = -drops;
-    }
-    return drops;
-}
-
-Number::operator XRPAmount() const
-{
-    return XRPAmount{static_cast<rep>(*this)};
 }
 
 std::string
@@ -529,10 +465,10 @@ to_string(Number const& amount)
 }
 
 // Returns f^n
-// Uses a log_2(n) number of multiplications
+// Uses a log_2(n) number of mulitiplications
 
 Number
-power(Number const& f, unsigned n)
+power(Number f, unsigned n)
 {
     if (n == 0)
         return one;
@@ -548,11 +484,6 @@ power(Number const& f, unsigned n)
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
 // to find the non-negative root of the polynomial g(x) = x^d - f
-
-// This function, and power(Number f, unsigned n, unsigned d)
-// treat corner cases such as 0 roots as advised by Annex F of
-// the C standard, which itself is consistent with the IEEE
-// floating point standards.
 
 Number
 root(Number f, unsigned d)
@@ -619,48 +550,10 @@ root(Number f, unsigned d)
     return Number{r.mantissa(), r.exponent() + e / di};
 }
 
-Number
-root2(Number f)
-{
-    if (f == one)
-        return f;
-    if (f < Number{})
-        throw std::overflow_error("Number::root nan");
-    if (f == Number{})
-        return f;
-
-    // Scale f into the range (0, 1) such that f's exponent is a multiple of d
-    auto e = f.exponent() + 16;
-    if (e % 2 != 0)
-        ++e;
-    f = Number{f.mantissa(), f.exponent() - e};  // f /= 10^e;
-
-    // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = 105;
-    auto const a0 = 18;
-    auto const a1 = 144;
-    auto const a2 = -60;
-    Number r = ((Number{a2} * f + Number{a1}) * f + Number{a0}) / Number{D};
-
-    //  Newton–Raphson iteration of f^(1/2) with initial guess r
-    //  halt when r stops changing, checking for bouncing on the last iteration
-    Number rm1{};
-    Number rm2{};
-    do
-    {
-        rm2 = rm1;
-        rm1 = r;
-        r = (r + f / r) / Number(2);
-    } while (r != rm1 && r != rm2);
-
-    //  return r * 10^(e/2) to reverse scaling
-    return Number{r.mantissa(), r.exponent() + e / 2};
-}
-
 // Returns f^(n/d)
 
 Number
-power(Number const& f, unsigned n, unsigned d)
+power(Number f, unsigned n, unsigned d)
 {
     if (f == one)
         return f;
@@ -673,8 +566,9 @@ power(Number const& f, unsigned n, unsigned d)
             return one;
         if (abs(f) < one)
             return Number{};
-        // abs(f) > one
-        throw std::overflow_error("Number::power infinity");
+        if (abs(f) > one)
+            throw std::overflow_error("Number::power infinity");
+        throw std::overflow_error("Number::power nan");
     }
     if (n == 0)
         return one;
