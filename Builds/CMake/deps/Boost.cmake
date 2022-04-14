@@ -44,7 +44,7 @@ else()
 endif()
 # TBD:
 # Boost_USE_DEBUG_RUNTIME:  When ON, uses Boost libraries linked against the
-find_package(Boost 1.70 REQUIRED
+find_package(Boost 1.71 REQUIRED
   COMPONENTS
     chrono
     container

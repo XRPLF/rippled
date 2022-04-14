@@ -33,13 +33,13 @@ protobuf will give errors.
 
 ### Build Boost
 
-Boost 1.70 or later is required. We recommend downloading and compiling boost
+Boost 1.71 to 1.77 is required. Version 1.78 and later won't work. We recommend downloading and compiling boost
 with the following process: After changing to the directory where
 you wish to download and compile boost, run
 ``` 
-$ wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz
-$ tar -xzf boost_1_70_0.tar.gz
-$ cd boost_1_70_0
+$ wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz
+$ tar -xzf boost_1_71_0.tar.gz
+$ cd boost_1_71_0
 $ ./bootstrap.sh
 $ ./b2 headers
 $ ./b2 -j<Num Parallel>
@@ -88,14 +88,14 @@ git checkout develop
 If you didn't persistently set the `BOOST_ROOT` environment variable to the
 directory in which you compiled boost, then you should set it temporarily.
 
-For example, you built Boost in your home directory `~/boost_1_70_0`, you
+For example, you built Boost in your home directory `~/boost_1_71_0`, you
 would do for any shell in which you want to build:
 
 ```
-export BOOST_ROOT=~/boost_1_70_0
+export BOOST_ROOT=~/boost_1_71_0
 ```
 
-Alternatively, you can add `DBOOST_ROOT=~/boost_1_70_0` to the command line when
+Alternatively, you can add `-DBOOST_ROOT=~/boost_1_71_0` to the command line when
 invoking `cmake`.
 
 ### Generate Configuration
