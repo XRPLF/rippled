@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_NUMBER_H_INCLUDED
 
 #include <ripple/basics/IOUAmount.h>
+#include <ripple/basics/XRPAmount.h>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -51,6 +52,7 @@ public:
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
 
     Number(IOUAmount const& x);
+    Number(XRPAmount const& x);
 
     constexpr rep
     mantissa() const noexcept;
@@ -81,6 +83,8 @@ public:
     operator/=(Number const& x);
 
     explicit operator IOUAmount() const;
+    explicit operator XRPAmount() const;  // round to nearest, even on tie
+    explicit operator rep() const;        // round to nearest, even on tie
 
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept
@@ -181,6 +185,10 @@ inline Number::Number(rep mantissa) : Number{mantissa, 0}
 }
 
 inline Number::Number(IOUAmount const& x) : Number{x.mantissa(), x.exponent()}
+{
+}
+
+inline Number::Number(XRPAmount const& x) : Number{x.drops()}
 {
 }
 

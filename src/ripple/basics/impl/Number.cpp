@@ -374,6 +374,45 @@ Number::operator/=(Number const& y)
     return *this;
 }
 
+Number::operator rep() const
+{
+    std::int64_t drops = mantissa_;
+    int offset = exponent_;
+    guard g;
+    if (drops != 0)
+    {
+        if (drops < 0)
+        {
+            g.set_negative();
+            drops = -drops;
+        }
+        for (; offset < 0; ++offset)
+        {
+            g.push(drops % 10);
+            drops /= 10;
+        }
+        for (; offset > 0; --offset)
+        {
+            if (drops > std::numeric_limits<decltype(drops)>::max() / 10)
+                throw std::runtime_error("Number::operator rep() overflow");
+            drops *= 10;
+        }
+        auto r = g.round();
+        if (r == 1 || (r == 0 && (drops & 1) == 1))
+        {
+            ++drops;
+        }
+        if (g.is_negative())
+            drops = -drops;
+    }
+    return drops;
+}
+
+Number::operator XRPAmount() const
+{
+    return XRPAmount{static_cast<rep>(*this)};
+}
+
 std::string
 to_string(Number const& amount)
 {
