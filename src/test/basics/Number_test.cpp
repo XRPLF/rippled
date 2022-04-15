@@ -127,6 +127,75 @@ public:
     }
 
     void
+    test_to_integer()
+    {
+        Number x[]{
+            Number{0},
+            Number{1},
+            Number{2},
+            Number{3},
+            Number{-1},
+            Number{-2},
+            Number{-3},
+            Number{10},
+            Number{99},
+            Number{1155},
+            Number{9'999'999'999'999'999, 0},
+            Number{9'999'999'999'999'999, 1},
+            Number{9'999'999'999'999'999, 2},
+            Number{-9'999'999'999'999'999, 2},
+            Number{15, -1},
+            Number{14, -1},
+            Number{16, -1},
+            Number{25, -1},
+            Number{6, -1},
+            Number{5, -1},
+            Number{4, -1},
+            Number{-15, -1},
+            Number{-14, -1},
+            Number{-16, -1},
+            Number{-25, -1},
+            Number{-6, -1},
+            Number{-5, -1},
+            Number{-4, -1}};
+        std::int64_t y[]{
+            0,
+            1,
+            2,
+            3,
+            -1,
+            -2,
+            -3,
+            10,
+            99,
+            1155,
+            9'999'999'999'999'999,
+            99'999'999'999'999'990,
+            999'999'999'999'999'900,
+            -999'999'999'999'999'900,
+            2,
+            1,
+            2,
+            2,
+            1,
+            0,
+            0,
+            -2,
+            -1,
+            -2,
+            -2,
+            -1,
+            0,
+            0};
+        static_assert(std::size(x) == std::size(y));
+        for (unsigned u = 0; u < std::size(x); ++u)
+        {
+            auto j = static_cast<std::int64_t>(x[u]);
+            BEAST_EXPECT(j == y[u]);
+        }
+    }
+
+    void
     run() override
     {
         testZero();
@@ -135,6 +204,7 @@ public:
         test_div();
         test_root();
         testConversions();
+        test_to_integer();
     }
 };
 
