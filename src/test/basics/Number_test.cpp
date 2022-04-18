@@ -129,6 +129,7 @@ public:
     void
     test_to_integer()
     {
+        testcase("test_to_integer");
         Number x[]{
             Number{0},
             Number{1},
@@ -196,6 +197,19 @@ public:
     }
 
     void
+    test_clip()
+    {
+        testcase("test_clip");
+        Number limit{1, -6};
+        BEAST_EXPECT((clip(Number{2, -6}, limit) == Number{2, -6}));
+        BEAST_EXPECT((clip(Number{1, -6}, limit) == Number{1, -6}));
+        BEAST_EXPECT((clip(Number{9, -7}, limit) == Number{0}));
+        BEAST_EXPECT((clip(Number{-2, -6}, limit) == Number{-2, -6}));
+        BEAST_EXPECT((clip(Number{-1, -6}, limit) == Number{-1, -6}));
+        BEAST_EXPECT((clip(Number{-9, -7}, limit) == Number{0}));
+    }
+
+    void
     run() override
     {
         testZero();
@@ -205,6 +219,7 @@ public:
         test_root();
         testConversions();
         test_to_integer();
+        test_clip();
     }
 };
 

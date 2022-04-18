@@ -325,6 +325,16 @@ root(Number f, unsigned d);
 Number
 power(Number f, unsigned n, unsigned d);
 
+// Return 0 if abs(x) < limit, else returns x
+
+inline constexpr Number
+clip(Number const& x, Number const& limit) noexcept
+{
+    if (abs(x) < limit)
+        return Number{};
+    return x;
+}
+
 }  // namespace ripple
 
 #endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED
