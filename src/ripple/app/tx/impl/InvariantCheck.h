@@ -320,9 +320,11 @@ public:
 
 class ValidNFTokenPage
 {
-    bool badLink_ = false;
     bool badEntry_ = false;
+    bool badLink_ = false;
+    bool badSort_ = false;
     bool badURI_ = false;
+    bool invalidSize_ = false;
 
 public:
     void

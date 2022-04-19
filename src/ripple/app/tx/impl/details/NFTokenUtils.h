@@ -53,14 +53,13 @@ constexpr std::uint16_t const flagOnlyXRP = 0x0002;
 constexpr std::uint16_t const flagCreateTrustLines = 0x0004;
 constexpr std::uint16_t const flagTransferable = 0x0008;
 
-/** Erases the specified offer from the specified token offer directory.
-
- */
-void
-removeTokenOffer(ApplyView& view, uint256 const& id);
-
+/** Deletes all offers from the specified token offer directory. */
 void
 removeAllTokenOffers(ApplyView& view, Keylet const& directory);
+
+/** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
+TER
+notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
 
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
@@ -178,6 +177,9 @@ getIssuer(uint256 const& id)
 {
     return AccountID::fromVoid(id.data() + 4);
 }
+
+bool
+compareTokens(uint256 const& a, uint256 const& b);
 
 }  // namespace nft
 

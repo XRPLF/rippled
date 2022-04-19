@@ -26,6 +26,7 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -101,21 +102,41 @@ doAccountNFTs(RPC::JsonContext& context)
     auto& nfts = (result[jss::account_nfts] = Json::arrayValue);
 
     // Continue iteration from the current page:
-
+    bool pastMarker = marker.isZero();
+    uint256 const maskedMarker = marker & nft::pageMask;
     while (cp)
     {
         auto arr = cp->getFieldArray(sfNFTokens);
 
         for (auto const& o : arr)
         {
-            if (o.getFieldH256(sfNFTokenID) <= marker)
+            // Scrolling past the marker gets weird.  We need to look at
+            // a couple of conditions.
+            //
+            //  1. If the low 96-bits don't match, then we compare only
+            //     against the low 96-bits, since that's what determines
+            //     the sort order of the pages.
+            //
+            //  2. However, within one page there can be a number of
+            //     NFTokenIDs that all have the same low 96 bits.  If we're
+            //     in that case then we need to compare against the full
+            //     256 bits.
+            uint256 const nftokenID = o[sfNFTokenID];
+            uint256 const maskedNftokenID = nftokenID & nft::pageMask;
+
+            if (!pastMarker && maskedNftokenID < maskedMarker)
                 continue;
+
+            if (!pastMarker && maskedNftokenID == maskedMarker &&
+                nftokenID <= marker)
+                continue;
+
+            pastMarker = true;
 
             {
                 Json::Value& obj = nfts.append(o.getJson(JsonOptions::none));
 
                 // Pull out the components of the nft ID.
-                uint256 const nftokenID = o[sfNFTokenID];
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
                 obj[sfNFTokenTaxon.jsonName] =
