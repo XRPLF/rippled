@@ -482,15 +482,14 @@ class NFToken_test : public beast::unit_test::suite
                 if (replacement->getFieldU32(sfMintedNFTokens) != 1)
                     return false;  // Unexpected test conditions.
 
-                // Now replace the sfMintedNFTokens with its maximum value.
-                (*replacement)[sfMintedNFTokens] =
-                    std::numeric_limits<std::uint32_t>::max();
+                // Now replace sfMintedNFTokens with the largest valid value.
+                (*replacement)[sfMintedNFTokens] = 0xFFFF'FFFE;
                 view.rawReplace(replacement);
                 return true;
             });
 
-        // alice should not be able to mint any tokens because she has already
-        // minted the maximum allowed by a single account.
+        // See whether alice is at the boundary that causes an error.
+        env(token::mint(alice, 0u), ter(tesSUCCESS));
         env(token::mint(alice, 0u), ter(tecMAX_SEQUENCE_REACHED));
     }
 
@@ -4070,6 +4069,87 @@ class NFToken_test : public beast::unit_test::suite
     }
 
     void
+    testNFTokenOfferOwner(FeatureBitset features)
+    {
+        // Verify the Owner field of an offer behaves as expected.
+        testcase("NFToken offer owner");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer1{"buyer1"};
+        Account const buyer2{"buyer2"};
+        env.fund(XRP(10000), issuer, buyer1, buyer2);
+        env.close();
+
+        // issuer creates an NFT.
+        uint256 const nftId{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0u), txflags(tfTransferable));
+        env.close();
+
+        // Prove that issuer now owns nftId.
+        BEAST_EXPECT(nftCount(env, issuer) == 1);
+        BEAST_EXPECT(nftCount(env, buyer1) == 0);
+        BEAST_EXPECT(nftCount(env, buyer2) == 0);
+
+        // Both buyer1 and buyer2 create buy offers for nftId.
+        uint256 const buyer1OfferIndex =
+            keylet::nftoffer(buyer1, env.seq(buyer1)).key;
+        env(token::createOffer(buyer1, nftId, XRP(100)), token::owner(issuer));
+        uint256 const buyer2OfferIndex =
+            keylet::nftoffer(buyer2, env.seq(buyer2)).key;
+        env(token::createOffer(buyer2, nftId, XRP(100)), token::owner(issuer));
+        env.close();
+
+        // Lambda that counts the number of buy offers for a given NFT.
+        auto nftBuyOfferCount = [&env](uint256 const& nftId) -> std::size_t {
+            // We know that in this case not very many offers will be
+            // returned, so we skip the marker stuff.
+            Json::Value params;
+            params[jss::nft_id] = to_string(nftId);
+            Json::Value buyOffers =
+                env.rpc("json", "nft_buy_offers", to_string(params));
+
+            if (buyOffers.isMember(jss::result) &&
+                buyOffers[jss::result].isMember(jss::offers))
+                return buyOffers[jss::result][jss::offers].size();
+
+            return 0;
+        };
+
+        // Show there are two buy offers for nftId.
+        BEAST_EXPECT(nftBuyOfferCount(nftId) == 2);
+
+        // issuer accepts buyer1's offer.
+        env(token::acceptBuyOffer(issuer, buyer1OfferIndex));
+        env.close();
+
+        // Prove that buyer1 now owns nftId.
+        BEAST_EXPECT(nftCount(env, issuer) == 0);
+        BEAST_EXPECT(nftCount(env, buyer1) == 1);
+        BEAST_EXPECT(nftCount(env, buyer2) == 0);
+
+        // buyer1's offer was consumed, but buyer2's offer is still in the
+        // ledger.
+        BEAST_EXPECT(nftBuyOfferCount(nftId) == 1);
+
+        // buyer1 can now accept buyer2's offer, even though buyer2's
+        // NFTokenCreateOffer transaction specified the NFT Owner as issuer.
+        env(token::acceptBuyOffer(buyer1, buyer2OfferIndex));
+        env.close();
+
+        // Prove that buyer2 now owns nftId.
+        BEAST_EXPECT(nftCount(env, issuer) == 0);
+        BEAST_EXPECT(nftCount(env, buyer1) == 0);
+        BEAST_EXPECT(nftCount(env, buyer2) == 1);
+
+        // All of the NFTokenOffers are now consumed.
+        BEAST_EXPECT(nftBuyOfferCount(nftId) == 0);
+    }
+
+    void
     testNFTokenWithTickets(FeatureBitset features)
     {
         // Make sure all NFToken transactions work with tickets.
@@ -4249,6 +4329,235 @@ class NFToken_test : public beast::unit_test::suite
     }
 
     void
+    testNftXxxOffers(FeatureBitset features)
+    {
+        testcase("nft_buy_offers and nft_sell_offers");
+
+        // The default limit on returned NFToken offers is 250, so we need
+        // to produce more than 250 offers of each kind in order to exercise
+        // the marker.
+
+        // Fortunately there's nothing in the rules that says an account
+        // can't hold more than one offer for the same NFT.  So we only
+        // need two accounts to generate the necessary offers.
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        // A lot of offers requires a lot for reserve.
+        env.fund(XRP(1000000), issuer, buyer);
+        env.close();
+
+        // Create an NFT that we'll make offers for.
+        uint256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), txflags(tfTransferable));
+        env.close();
+
+        // A lambda that validates nft_XXX_offers query responses.
+        auto checkOffers = [this, &env, &nftID](
+                               char const* request,
+                               int expectCount,
+                               int expectMarkerCount,
+                               int line) {
+            int markerCount = 0;
+            Json::Value allOffers(Json::arrayValue);
+            std::string marker;
+
+            // The do/while collects results until no marker is returned.
+            do
+            {
+                Json::Value nftOffers = [&env, &nftID, &request, &marker]() {
+                    Json::Value params;
+                    params[jss::nft_id] = to_string(nftID);
+
+                    if (!marker.empty())
+                        params[jss::marker] = marker;
+                    return env.rpc("json", request, to_string(params));
+                }();
+
+                // If there are no offers for the NFT we get an error
+                if (expectCount == 0)
+                {
+                    if (expect(
+                            nftOffers.isMember(jss::result),
+                            "expected \"result\"",
+                            __FILE__,
+                            line))
+                    {
+                        if (expect(
+                                nftOffers[jss::result].isMember(jss::error),
+                                "expected \"error\"",
+                                __FILE__,
+                                line))
+                        {
+                            expect(
+                                nftOffers[jss::result][jss::error].asString() ==
+                                    "objectNotFound",
+                                "expected \"objectNotFound\"",
+                                __FILE__,
+                                line);
+                        }
+                    }
+                    break;
+                }
+
+                marker.clear();
+                if (expect(
+                        nftOffers.isMember(jss::result),
+                        "expected \"result\"",
+                        __FILE__,
+                        line))
+                {
+                    Json::Value& result = nftOffers[jss::result];
+
+                    if (result.isMember(jss::marker))
+                    {
+                        ++markerCount;
+                        marker = result[jss::marker].asString();
+                    }
+
+                    if (expect(
+                            result.isMember(jss::offers),
+                            "expected \"offers\"",
+                            __FILE__,
+                            line))
+                    {
+                        Json::Value& someOffers = result[jss::offers];
+                        for (std::size_t i = 0; i < someOffers.size(); ++i)
+                            allOffers.append(someOffers[i]);
+                    }
+                }
+            } while (!marker.empty());
+
+            // Verify the contents of allOffers makes sense.
+            expect(
+                allOffers.size() == expectCount,
+                "Unexpected returned offer count",
+                __FILE__,
+                line);
+            expect(
+                markerCount == expectMarkerCount,
+                "Unexpected marker count",
+                __FILE__,
+                line);
+            std::optional<int> globalFlags;
+            std::set<std::string> offerIndexes;
+            std::set<std::string> amounts;
+            for (Json::Value const& offer : allOffers)
+            {
+                // The flags on all found offers should be the same.
+                if (!globalFlags)
+                    globalFlags = offer[jss::flags].asInt();
+
+                expect(
+                    *globalFlags == offer[jss::flags].asInt(),
+                    "Inconsistent flags returned",
+                    __FILE__,
+                    line);
+
+                // The test conditions should produce unique indexes and
+                // amounts for all offers.
+                offerIndexes.insert(offer[jss::nft_offer_index].asString());
+                amounts.insert(offer[jss::amount].asString());
+            }
+
+            expect(
+                offerIndexes.size() == expectCount,
+                "Duplicate indexes returned?",
+                __FILE__,
+                line);
+            expect(
+                amounts.size() == expectCount,
+                "Duplicate amounts returned?",
+                __FILE__,
+                line);
+        };
+
+        // There are no sell offers.
+        checkOffers("nft_sell_offers", 0, false, __LINE__);
+
+        // A lambda that generates sell offers.
+        STAmount sellPrice = XRP(0);
+        auto makeSellOffers =
+            [&env, &issuer, &nftID, &sellPrice](STAmount const& limit) {
+                // Save a little test time by not closing too often.
+                int offerCount = 0;
+                while (sellPrice < limit)
+                {
+                    sellPrice += XRP(1);
+                    env(token::createOffer(issuer, nftID, sellPrice),
+                        txflags(tfSellNFToken));
+                    if (++offerCount % 10 == 0)
+                        env.close();
+                }
+                env.close();
+            };
+
+        // There is one sell offer.
+        makeSellOffers(XRP(1));
+        checkOffers("nft_sell_offers", 1, 0, __LINE__);
+
+        // There are 250 sell offers.
+        makeSellOffers(XRP(250));
+        checkOffers("nft_sell_offers", 250, 0, __LINE__);
+
+        // There are 251 sell offers.
+        makeSellOffers(XRP(251));
+        checkOffers("nft_sell_offers", 251, 1, __LINE__);
+
+        // There are 500 sell offers.
+        makeSellOffers(XRP(500));
+        checkOffers("nft_sell_offers", 500, 1, __LINE__);
+
+        // There are 501 sell offers.
+        makeSellOffers(XRP(501));
+        checkOffers("nft_sell_offers", 501, 2, __LINE__);
+
+        // There are no buy offers.
+        checkOffers("nft_buy_offers", 0, 0, __LINE__);
+
+        // A lambda that generates buy offers.
+        STAmount buyPrice = XRP(0);
+        auto makeBuyOffers =
+            [&env, &buyer, &issuer, &nftID, &buyPrice](STAmount const& limit) {
+                // Save a little test time by not closing too often.
+                int offerCount = 0;
+                while (buyPrice < limit)
+                {
+                    buyPrice += XRP(1);
+                    env(token::createOffer(buyer, nftID, buyPrice),
+                        token::owner(issuer));
+                    if (++offerCount % 10 == 0)
+                        env.close();
+                }
+                env.close();
+            };
+
+        // There is one buy offer;
+        makeBuyOffers(XRP(1));
+        checkOffers("nft_buy_offers", 1, 0, __LINE__);
+
+        // There are 250 buy offers.
+        makeBuyOffers(XRP(250));
+        checkOffers("nft_buy_offers", 250, 0, __LINE__);
+
+        // There are 251 buy offers.
+        makeBuyOffers(XRP(251));
+        checkOffers("nft_buy_offers", 251, 1, __LINE__);
+
+        // There are 500 buy offers.
+        makeBuyOffers(XRP(500));
+        checkOffers("nft_buy_offers", 500, 1, __LINE__);
+
+        // There are 501 buy offers.
+        makeBuyOffers(XRP(501));
+        checkOffers("nft_buy_offers", 501, 2, __LINE__);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -4271,8 +4580,10 @@ class NFToken_test : public beast::unit_test::suite
         testCancelOffers(features);
         testCancelTooManyOffers(features);
         testBrokeredAccept(features);
+        testNFTokenOfferOwner(features);
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
+        testNftXxxOffers(features);
     }
 
 public:
@@ -4280,8 +4591,11 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testWithFeats(sa);
+        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+
+        testWithFeats(all - fixNFTDir);
+        testWithFeats(all);
     }
 };
 

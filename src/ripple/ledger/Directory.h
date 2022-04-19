@@ -79,6 +79,12 @@ public:
     const_iterator
     operator++(int);
 
+    const_iterator&
+    next_page();
+
+    std::size_t
+    page_size();
+
     Keylet const&
     page() const
     {
