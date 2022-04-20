@@ -325,7 +325,7 @@ Number::operator*=(Number const& y)
             std::to_string(xe));
     mantissa_ = xm * zn;
     exponent_ = xe;
-    assert(isnormal());
+    assert(isnormal() || *this == Number{});
     return *this;
 }
 
@@ -362,8 +362,9 @@ Number::operator/=(Number const& y)
     static_assert(a2.isnormal());
     Number rm2{};
     Number rm1{};
-    Number r = a2;
-    r = (a2 * d + a1) * d + a0;
+    Number r = (a2 * d + a1) * d + a0;
+    //  Newton–Raphson iteration of 1/x - d with initial guess r
+    //  halt when r stops changing, checking for bouncing on the last iteration
     do
     {
         rm2 = rm1;
@@ -376,7 +377,7 @@ Number::operator/=(Number const& y)
 
 Number::operator rep() const
 {
-    std::int64_t drops = mantissa_;
+    rep drops = mantissa_;
     int offset = exponent_;
     guard g;
     if (drops != 0)

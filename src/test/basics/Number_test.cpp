@@ -20,6 +20,7 @@
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Number.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/protocol/STAmount.h>
 
 namespace ripple {
 
@@ -124,6 +125,10 @@ public:
         BEAST_EXPECT((y == Number{5, 6}));
         IOUAmount z{y};
         BEAST_EXPECT(x == z);
+        XRPAmount xrp{500};
+        STAmount st = xrp;
+        Number n = st;
+        BEAST_EXPECT(XRPAmount{n} == xrp);
     }
 
     void
