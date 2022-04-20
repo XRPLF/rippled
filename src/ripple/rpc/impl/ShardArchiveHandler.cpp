@@ -37,11 +37,12 @@ using namespace std::chrono_literals;
 boost::filesystem::path
 ShardArchiveHandler::getDownloadDirectory(Config const& config)
 {
-    return get(config.section(ConfigSection::shardDatabase()),
-               "download_path",
+    return boost::filesystem::path{
                get(config.section(ConfigSection::shardDatabase()),
-                   "path",
-                   "")) /
+                   "download_path",
+                   get(config.section(ConfigSection::shardDatabase()),
+                       "path",
+                       ""))} /
         "download";
 }
 

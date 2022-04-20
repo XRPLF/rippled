@@ -22,6 +22,7 @@
 
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
+#include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/SField.h>
@@ -143,6 +144,7 @@ public:
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
+    operator Number() const;
 
     //--------------------------------------------------------------------------
     //
@@ -367,6 +369,13 @@ STAmount::zeroed() const
 inline STAmount::operator bool() const noexcept
 {
     return *this != beast::zero;
+}
+
+inline STAmount::operator Number() const
+{
+    if (mIsNative)
+        return xrp();
+    return iou();
 }
 
 inline STAmount& STAmount::operator=(beast::Zero)
