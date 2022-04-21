@@ -73,16 +73,50 @@ public:
         testcase("test_sub");
         Number x[]{
             Number{1'000'000'000'000'000, -15},
-            Number{6'555'555'555'555'555, -29}};
+            Number{6'555'555'555'555'555, -29},
+            Number{1'000'000'000'000'000, -15},
+            Number{1'000'000'000'000'000, -15},
+            Number{1'000'000'000'000'001, -15}};
         Number y[]{
             Number{6'555'555'555'555'555, -29},
+            Number{1'000'000'000'000'000, -15},
+            Number{1'000'000'000'000'000, -15},
+            Number{1'000'000'000'000'001, -15},
             Number{1'000'000'000'000'000, -15}};
         Number z[]{
             Number{9'999'999'999'999'344, -16},
-            Number{-9'999'999'999'999'344, -16}};
+            Number{-9'999'999'999'999'344, -16},
+            Number{0},
+            Number{-1'000'000'000'000'000, -30},
+            Number{1'000'000'000'000'000, -30}};
         for (unsigned i = 0; i < std::size(x); ++i)
         {
             BEAST_EXPECT(x[i] - y[i] == z[i]);
+        }
+    }
+
+    void
+    test_mul()
+    {
+        testcase("test_mul");
+        Number x[]{
+            Number{7},
+            Number{1414213562373095, -15},
+            Number{-1414213562373095, -15},
+            Number{-1414213562373095, -15}};
+        Number y[]{
+            Number{8},
+            Number{1414213562373095, -15},
+            Number{1414213562373095, -15},
+            Number{-1414213562373095, -15}};
+        Number z[]{
+            Number{56},
+            Number{2000000000000000, -15},
+            Number{-2000000000000000, -15},
+            Number{2000000000000000, -15}};
+        for (unsigned i = 0; i < std::size(x); ++i)
+        {
+            BEAST_EXPECT(x[i] * y[i] == z[i]);
         }
     }
 
@@ -220,6 +254,7 @@ public:
         testZero();
         test_add();
         test_sub();
+        test_mul();
         test_div();
         test_root();
         testConversions();
