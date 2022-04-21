@@ -19,11 +19,16 @@
 #ifndef RIPPLE_APP_MISC_AMM_H_INLCUDED
 #define RIPPLE_APP_MISC_AMM_H_INLCUDED
 
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/TER.h>
 #include <ripple/protocol/digest.h>
 
 namespace ripple {
+
+class ReadView;
+class STLedgerEntry;
 
 /** Calculate AMM account ID.
  * @return AMM account id
@@ -39,44 +44,23 @@ calcAccountID(Args const&... args)
     return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
 }
 
-/** Calculate account ID for all AMM's with the same issue combination.
+/** Calculate AMM's unique hash.
  * Issues are sorted in canonical order.
+ * @param weight1 weight of the issue1
  * @param issue1 issue of one side of the AMM instance
  * @param issue2 issue of the other side of the AMM instance
- * @return account id
+ * @return hash
  */
-AccountID
-calcAMMGroupHash(Issue const& issue1, Issue const& issue2);
+uint256
+calcAMMHash(std::uint8_t weight1, Issue const& issue1, Issue const& issue2);
 
-/** Calculate AMM instance account ID and return the weight
- * based on the issues canonical order. I.e. if issue1 > issue2
- * then returned weight is weight1, otherwise it's 100 - weight1.
+/** Same as above. Returns weight in the issues
+ * canonical order in addition to the hash.
+ * weight is weight1 if issue1 < issue2, otherwise
+ * it's 100 - weight1.
  */
-std::pair<AccountID, std::uint8_t>
-calcAMMAccountIDAndWeight(
-    int weight1,
-    Issue const& issue1,
-    Issue const& issue2);
-
-/** A weight, based on the issues canonical order, is stored in the account
- * root. Return weights based on this order.
- */
-std::pair<std::uint8_t, std::uint8_t>
-canonicalWeights(int weight, Issue const& in, Issue const& out);
-
-/** Calculate AMM account ID.
- * @weight1 weight associated with issue1
- * @issue1 issue of one side of the pool
- * @issue2 issue of another side of the pool
- * @return AMM account id
- */
-inline AccountID
-calcAMMAccountID(int weight1, Issue const& issue1, Issue const& issue2)
-{
-    auto [id, weight] = calcAMMAccountIDAndWeight(weight1, issue1, issue2);
-    (void)weight;
-    return id;
-}
+std::pair<uint256, std::uint8_t>
+calcAMMHashAndWeight(int weight1, Issue const& issue1, Issue const& issue2);
 
 /** Calculate Liquidity Provider Token (LPT) Currency.
  * @param ammAccountID AMM's instance account id
@@ -148,6 +132,15 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
  */
 bool
 validLPTokens(STAmount const& lptAMMBalance, STAmount const& tokens);
+
+/** Get AMM SLE and verify that the AMM account exists.
+ * Return null if SLE not found or AMM account doesn't exist.
+ * @param view
+ * @param ammHash
+ * @return
+ */
+std::shared_ptr<SLE const>
+getAMMSle(ReadView const& view, uint256 ammHash);
 
 }  // namespace ripple
 

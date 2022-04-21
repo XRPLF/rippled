@@ -268,15 +268,6 @@ struct AMM_test : public beast::unit_test::suite
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
             AMM ammCarol(env, carol, XRP(10000), USD(10000), ter(tefINTERNAL));
         }
-
-        {
-            Env env{*this};
-            fund(env);
-            // AMM already exists
-            auto const ammAccount = calcAMMAccountID(50, XRP, USD);
-            env(amm::pay(gw, ammAccount, XRP(10000)));
-            AMM ammCarol(env, carol, XRP(10000), USD(10000), ter(tefINTERNAL));
-        }
     }
 
     void

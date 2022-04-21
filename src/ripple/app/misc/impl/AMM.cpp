@@ -18,60 +18,34 @@
 //==============================================================================
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/paths/TrustLine.h>
+#include <ripple/protocol/STArray.h>
 
 namespace ripple {
 
-AccountID
-calcAMMGroupHash(Issue const& issue1, Issue const& issue2)
+uint256
+calcAMMHash(std::uint8_t weight1, Issue const& issue1, Issue const& issue2)
 {
-    if (isXRP(issue1.currency))
-        return calcAccountID(issue2);
-    else if (isXRP(issue2.currency))
-        return calcAccountID(issue1);
-    else if (issue1 > issue2)
-        return calcAccountID(
-            issue1.account, issue1.currency, issue2.account, issue2.currency);
-    return calcAccountID(
-        issue2.account, issue2.currency, issue1.account, issue1.currency);
+    if (issue1 < issue2)
+        return sha512Half(
+            weight1,
+            issue1.account,
+            issue1.currency,
+            issue2.account,
+            issue2.currency);
+    return sha512Half(
+        100 - weight1,
+        issue2.account,
+        issue2.currency,
+        issue1.account,
+        issue1.currency);
 }
 
-std::pair<AccountID, std::uint8_t>
-calcAMMAccountIDAndWeight(int weight1, Issue const& issue1, Issue const& issue2)
+std::pair<uint256, std::uint8_t>
+calcAMMHashAndWeight(int weight1, Issue const& issue1, Issue const& issue2)
 {
     auto const weight2 = 100 - weight1;
-    if (isXRP(issue1.currency))
-        return std::make_pair(calcAccountID(weight2, issue2), weight2);
-    else if (isXRP(issue2.currency))
-        return std::make_pair(calcAccountID(weight1, issue1), weight1);
-    else if (issue1 > issue2)
-        return std::make_pair(
-            calcAccountID(
-                weight1,
-                issue1.account,
-                issue1.currency,
-                issue2.account,
-                issue2.currency),
-            weight1);
-    return std::make_pair(
-        calcAccountID(
-            weight2,
-            issue2.account,
-            issue2.currency,
-            issue1.account,
-            issue1.currency),
-        weight2);
-}
-
-std::pair<std::uint8_t, std::uint8_t>
-canonicalWeights(int weight, Issue const& in, Issue const& out)
-{
-    if (isXRP(in.currency))
-        return std::make_pair(100 - weight, weight);
-    else if (isXRP(out.currency))
-        return std::make_pair(weight, 100 - weight);
-    else if (in > out)
-        return std::make_pair(weight, 100 - weight);
-    return std::make_pair(100 - weight, weight);
+    auto const weight = issue1 < issue2 ? weight1 : weight2;
+    return std::make_pair(calcAMMHash(weight1, issue1, issue2), weight);
 }
 
 Currency
@@ -239,6 +213,15 @@ validLPTokens(STAmount const& lptAMMBalance, STAmount const& tokens)
         STAmount{tokens.issue(), 100},
         tokens.issue());
     return pct != beast::zero && pct <= STAmount{tokens.issue(), 30};
+}
+
+std::shared_ptr<SLE const>
+getAMMSle(ReadView const& view, uint256 ammHash)
+{
+    auto const sle = view.read(keylet::amm(ammHash));
+    if (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount))))
+        return nullptr;
+    return sle;
 }
 
 }  // namespace ripple

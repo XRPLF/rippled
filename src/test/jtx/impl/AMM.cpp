@@ -37,9 +37,8 @@ AMM::AMM(
     std::optional<ter> const& ter)
     : env_(env)
     , creatorAccount_(account)
-    , ammAccountID_(
-          ripple::calcAMMAccountID(weight1, asset1.issue(), asset2.issue()))
-    , lptIssue_(ripple::calcLPTIssue(ammAccountID_))
+    , ammHash_(ripple::calcAMMHash(weight1, asset1.issue(), asset2.issue()))
+    , ammAccountID_{}
     , asset1_(asset1)
     , asset2_(asset2)
     , weight1_(weight1)
@@ -78,6 +77,11 @@ AMM::create(std::uint32_t tfee)
         env_(jv, *ter_);
     else
         env_(jv);
+    if (auto const sleAMM = env_.current()->read(keylet::amm(ammHash_)))
+    {
+        ammAccountID_ = sleAMM->getAccountID(sfAMMAccount);
+        lptIssue_ = ripple::calcLPTIssue(ammAccountID_);
+    }
 }
 
 std::optional<Json::Value>
@@ -86,7 +90,7 @@ AMM::ammInfo(std::optional<Account> const& account) const
     Json::Value jv;
     if (account)
         jv[jss::account] = account->human();
-    jv[jss::AMMAccount] = to_string(ammAccountID_);
+    jv[jss::AMMHash] = to_string(ammHash_);
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::status) &&
@@ -165,7 +169,7 @@ void
 AMM::deposit(std::optional<Account> const& account, Json::Value& jv)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMAccount] = to_string(ammAccountID_);
+    jv[jss::AMMHash] = to_string(ammHash_);
     jv[jss::TransactionType] = jss::AMMDeposit;
     if (log_)
         std::cout << jv.toStyledString();
@@ -213,7 +217,7 @@ AMM::withdraw(
     std::optional<ter> const& ter)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMAccount] = to_string(ammAccountID_);
+    jv[jss::AMMHash] = to_string(ammHash_);
     jv[jss::TransactionType] = jss::AMMWithdraw;
     if (log_)
         std::cout << jv.toStyledString();
@@ -310,7 +314,7 @@ AMM::swap(
     std::optional<ter> const& ter)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMAccount] = to_string(ammAccountID_);
+    jv[jss::AMMHash] = to_string(ammHash_);
     jv[jss::TransactionType] = jss::AMMSwap;
     if (log_)
         std::cout << jv.toStyledString();

@@ -34,6 +34,7 @@ class AMM
 {
     Env& env_;
     Account const creatorAccount_;
+    uint256 ammHash_;
     AccountID ammAccountID_;
     Issue lptIssue_;
     STAmount asset1_;

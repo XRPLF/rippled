@@ -153,15 +153,21 @@ AMMCreate::applyGuts(Sandbox& sb)
         return {terNO_ACCOUNT, false};
 
     // The weight matches issue's canonical order.
-    auto const [ammAccountID, weight] =
-        calcAMMAccountIDAndWeight(weight1, saAsset1.issue(), saAsset2.issue());
+    auto const [ammHash, weight] =
+        calcAMMHashAndWeight(weight1, saAsset1.issue(), saAsset2.issue());
 
     // AMM already exists.
-    if (sb.peek(keylet::account(ammAccountID)))
+    if (sb.peek(keylet::amm(ammHash)))
     {
         JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
         return {tefINTERNAL, false};
     }
+
+    // Create AMM Account ID. Discard the public/private keys and
+    // disable the master key.
+    AccountID ammAccountID =
+        calcAccountID(generateKeyPair(KeyType::secp256k1, randomSeed()).first);
+    std::uint32_t uFlags = lsfDisableMaster;
 
     // LP Token already exists.
     auto const lptIssue = calcLPTIssue(ammAccountID);
@@ -172,30 +178,22 @@ AMMCreate::applyGuts(Sandbox& sb)
     }
 
     // Create AMM Root Account.
-    auto sleAMM = std::make_shared<SLE>(keylet::account(ammAccountID));
-    sleAMM->setAccountID(sfAccount, ammAccountID);
-    sleAMM->setFieldAmount(sfBalance, STAmount{});
+    auto sleAMMRoot = std::make_shared<SLE>(keylet::account(ammAccountID));
+    sleAMMRoot->setAccountID(sfAccount, ammAccountID);
+    sleAMMRoot->setFieldAmount(sfBalance, STAmount{});
     std::uint32_t const seqno{
         view().rules().enabled(featureDeletableAccounts) ? view().seq() : 1};
-    sleAMM->setFieldU32(sfSequence, seqno);
+    sleAMMRoot->setFieldU32(sfSequence, seqno);
+    // Ignore reserves requirement.
+    sleAMMRoot->setFieldU32(sfFlags, lsfAMM | uFlags);
+    sb.insert(sleAMMRoot);
+
+    // Create AMM ledger object
+    auto sleAMM = std::make_shared<SLE>(keylet::amm(ammHash));
     sleAMM->setFieldU8(sfAssetWeight, weight);
     sleAMM->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
-    // Internal flag to ignore reserves requirement for AMM.
-    sleAMM->setFieldU32(sfFlags, lsfAMM);
+    sleAMM->setAccountID(sfAMMAccount, ammAccountID);
     sb.insert(sleAMM);
-
-    // Add directory entry so the payment engine
-    // can retrieve all AMM's with different weights.
-    auto amms = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
-    auto const ammNode = sb.dirAppend(
-        keylet::ownerDir(amms),
-        keylet::amm(ammAccountID),
-        describeOwnerDir(amms));
-    if (!ammNode)
-    {
-        JLOG(j_.debug()) << "AMM Instance: failed to add AMM entry.";
-        return {tecDIR_FULL, true};
-    }
 
     // Calculate initial LPT balance.
     auto const lpTokens = calcAMMLPT(saAsset1, saAsset2, lptIssue, weight1);
@@ -220,7 +218,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (res != tesSUCCESS)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else
-        JLOG(j_.debug()) << "AMM Instance: success " << ammAccountID << " "
+        JLOG(j_.debug()) << "AMM Instance: success " << ammHash << " "
                          << lptIssue << saAsset1 << " " << saAsset2 << " "
                          << weight;
 

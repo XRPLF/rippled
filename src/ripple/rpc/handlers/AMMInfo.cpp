@@ -49,11 +49,11 @@ doAMMInfo(RPC::JsonContext& context)
     Json::Value result;
     std::optional<AccountID> accountID;
 
-    if (!params.isMember(jss::AMMAccount))
-        return RPC::missing_field_error(jss::AMMAccount);
+    if (!params.isMember(jss::AMMHash))
+        return RPC::missing_field_error(jss::AMMHash);
 
-    auto const ammAccountID = getAccount(params[jss::AMMAccount], result);
-    if (!ammAccountID)
+    uint256 ammHash;
+    if (!ammHash.parseHex(params[jss::AMMHash].asString()))
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
@@ -74,13 +74,15 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const sle = ledger->read(keylet::account(*ammAccountID));
-    if (sle == nullptr)
+    auto const sleAMM = getAMMSle(*ledger, ammHash);
+    if (!sleAMM)
         return rpcError(rpcACT_NOT_FOUND);
+
+    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
 
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
-        *ammAccountID,
+        ammAccountID,
         accountID,
         std::nullopt,
         std::nullopt,
@@ -89,6 +91,7 @@ doAMMInfo(RPC::JsonContext& context)
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
     lptAMMBalance.setJson(result[jss::balance]);
+    result[jss::AMMAccount] = to_string(ammAccountID);
 
     return result;
 }

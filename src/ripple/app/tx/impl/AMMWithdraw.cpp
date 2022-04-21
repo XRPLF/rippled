@@ -88,7 +88,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::account(ctx.tx[sfAMMAccount])))
+    auto const sleAMM = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
+    if (!sleAMM)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account";
         return temBAD_SRC_ACCOUNT;
@@ -98,7 +99,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const maxSP = ctx.tx[~sfMaxSP];
     auto const [asset1, asset2, lptBalance] = getAMMBalances(
         ctx.view,
-        ctx.tx[sfAMMAccount],
+        sleAMM->getAccountID(sfAMMAccount),
         ctx.tx[sfAccount],
         asset1Out ? std::optional<Issue>(asset1Out->issue()) : std::nullopt,
         asset2Out ? std::optional<Issue>(asset2Out->issue()) : std::nullopt,
@@ -154,26 +155,26 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const asset1Out = ctx_.tx[~sfAsset1Out];
     auto const asset2Out = ctx_.tx[~sfAsset2Out];
     auto const maxSP = ctx_.tx[~sfMaxSP];
-    auto const ammAccount = ctx_.tx[sfAMMAccount];
+    auto const sleAMM = ctx_.view().peek(keylet::amm(ctx_.tx[sfAMMHash]));
+    assert(sleAMM);
+    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
     auto const lpTokens = [&]() -> std::optional<STAmount> {
         auto const tokens = ctx_.tx[~sfLPTokens];
         // special case - withdraw all tokens
         if (tokens && *tokens == beast::zero)
-            return getLPTokens(sb, ammAccount, account_, ctx_.journal);
+            return getLPTokens(sb, ammAccountID, account_, ctx_.journal);
         return tokens;
     }();
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
         sb,
-        ammAccount,
+        ammAccountID,
         std::nullopt,
         asset1Out ? asset1Out->issue() : std::optional<Issue>{},
         asset2Out ? asset2Out->issue() : std::optional<Issue>{},
         ctx_.journal);
 
-    auto const sle = sb.read(keylet::account(ctx_.tx[sfAMMAccount]));
-    assert(sle);
-    auto const tfee = sle->getFieldU32(sfTradingFee);
-    auto const weight = sle->getFieldU8(sfAssetWeight);
+    auto const tfee = sleAMM->getFieldU32(sfTradingFee);
+    auto const weight = sleAMM->getFieldU8(sfAssetWeight);
 
     TER result = tesSUCCESS;
 
@@ -182,7 +183,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (asset2Out)
             result = equalWithdrawalLimit(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lptAMMBalance,
@@ -190,11 +191,17 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 *asset2Out);
         else if (lpTokens)
             result = singleWithdrawalTokens(
-                sb, ammAccount, asset1, lptAMMBalance, *lpTokens, weight, tfee);
+                sb,
+                ammAccountID,
+                asset1,
+                lptAMMBalance,
+                *lpTokens,
+                weight,
+                tfee);
         else if (maxSP)
             result = singleWithdrawMaxSP(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lptAMMBalance,
@@ -205,7 +212,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         else
             result = singleWithdrawal(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 lptAMMBalance,
                 *asset1Out,
@@ -214,7 +221,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     }
     else if (lpTokens)
         result = equalWithdrawalTokens(
-            sb, ammAccount, asset1, asset2, lptAMMBalance, *lpTokens);
+            sb, ammAccountID, asset1, asset2, lptAMMBalance, *lpTokens);
     return {result, result == tesSUCCESS};
 }
 

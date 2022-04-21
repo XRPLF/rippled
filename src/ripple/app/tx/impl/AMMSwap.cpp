@@ -84,7 +84,8 @@ AMMSwap::preflight(PreflightContext const& ctx)
 TER
 AMMSwap::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::account(ctx.tx[sfAMMAccount])))
+    auto const sleAMM = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
+    if (!sleAMM)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account";
         return temBAD_SRC_ACCOUNT;
@@ -92,7 +93,7 @@ AMMSwap::preclaim(PreclaimContext const& ctx)
     auto const assetOut = ctx.tx[~sfAssetOut];
     auto const [asset1, asset2, lpTokens] = getAMMBalances(
         ctx.view,
-        ctx.tx[sfAMMAccount],
+        sleAMM->getAccountID(sfAMMAccount),
         ctx.tx[sfAccount],
         assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
         std::nullopt,
@@ -135,7 +136,9 @@ AMMSwap::applyGuts(Sandbox& sb)
     auto const assetOut = ctx_.tx[~sfAssetOut];
     auto const maxSP = ctx_.tx[~sfMaxSP];
     auto const slippage = ctx_.tx[~sfSlippage];
-    auto const ammAccount = ctx_.tx[sfAMMAccount];
+    auto const sleAMM = ctx_.view().peek(keylet::amm(ctx_.tx[sfAMMHash]));
+    assert(sleAMM);
+    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
     auto const issue = [&]() -> std::optional<Issue> {
         if (assetIn)
             return assetIn->issue();
@@ -147,15 +150,13 @@ AMMSwap::applyGuts(Sandbox& sb)
     // if assetIn is provided then asset1 corresponds to assetIn, otherwise
     // assetOut
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
-        sb, ammAccount, std::nullopt, issue, std::nullopt, ctx_.journal);
+        sb, ammAccountID, std::nullopt, issue, std::nullopt, ctx_.journal);
     // lpAsset1, lpAsset2 ordered same as above
     auto const [lpAsset1, lpAsset2, lpTokens] = getAMMBalances(
-        sb, ammAccount, account_, issue, std::nullopt, ctx_.journal);
+        sb, ammAccountID, account_, issue, std::nullopt, ctx_.journal);
 
-    auto const sle = sb.read(keylet::account(ctx_.tx[sfAMMAccount]));
-    assert(sle);
-    auto const tfee = sle->getFieldU32(sfTradingFee);
-    auto const weight = sle->getFieldU8(sfAssetWeight);
+    auto const tfee = sleAMM->getFieldU32(sfTradingFee);
+    auto const weight = sleAMM->getFieldU8(sfAssetWeight);
 
     TER result = tesSUCCESS;
 
@@ -164,7 +165,7 @@ AMMSwap::applyGuts(Sandbox& sb)
         if (maxSP && slippage)
             result = swapSlippageMaxSP(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lpAsset1,
@@ -177,7 +178,7 @@ AMMSwap::applyGuts(Sandbox& sb)
         else if (maxSP)
             result = swapInMaxSP(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lpAsset2,
@@ -188,7 +189,7 @@ AMMSwap::applyGuts(Sandbox& sb)
         else if (slippage)
             result = swapInSlippage(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lpAsset2,
@@ -199,7 +200,7 @@ AMMSwap::applyGuts(Sandbox& sb)
         else
             result = swapIn(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lpAsset2,
@@ -212,7 +213,7 @@ AMMSwap::applyGuts(Sandbox& sb)
         if (maxSP)
             result = swapOutMaxSP(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lpAsset1,
@@ -223,7 +224,7 @@ AMMSwap::applyGuts(Sandbox& sb)
         else
             result = swapOut(
                 sb,
-                ammAccount,
+                ammAccountID,
                 asset1,
                 asset2,
                 lpAsset1,
