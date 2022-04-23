@@ -44,27 +44,27 @@ using namespace std::chrono_literals;
 
 enum {
     // Number of peers to start with
-    peerCountStart = 4
+    peerCountStart = 5
 
     // Number of peers to add on a timeout
     ,
-    peerCountAdd = 2
+    peerCountAdd = 3
 
     // how many timeouts before we give up
     ,
-    ledgerTimeoutRetriesMax = 10
+    ledgerTimeoutRetriesMax = 6
 
     // how many timeouts before we get aggressive
     ,
-    ledgerBecomeAggressiveThreshold = 6
+    ledgerBecomeAggressiveThreshold = 4
 
     // Number of nodes to find initially
     ,
-    missingNodesFind = 512
+    missingNodesFind = 256
 
     // Number of nodes to request for a reply
     ,
-    reqNodesReply = 256
+    reqNodesReply = 128
 
     // Number of nodes to request blindly
     ,
@@ -72,7 +72,7 @@ enum {
 };
 
 // millisecond for each ledger timeout
-auto constexpr ledgerAcquireTimeout = 2500ms;
+auto constexpr ledgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
@@ -664,15 +664,15 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     if (reason != TriggerReason::reply)
     {
         // If we're querying blind, don't query deep
-        tmGL.set_querydepth(1);
+        tmGL.set_querydepth(0);
     }
     else if (peer && peer->isHighLatency())
     {
         // If the peer has high latency, query extra deep
-        tmGL.set_querydepth(3);
+        tmGL.set_querydepth(2);
     }
     else
-        tmGL.set_querydepth(2);
+        tmGL.set_querydepth(1);
 
     // Get the state data first because it's the most likely to be useful
     // if we wind up abandoning this fetch.
