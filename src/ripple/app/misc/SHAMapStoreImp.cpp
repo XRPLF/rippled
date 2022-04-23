@@ -166,7 +166,7 @@ SHAMapStoreImp::SHAMapStoreImp(
 }
 
 std::unique_ptr<NodeStore::Database>
-SHAMapStoreImp::makeNodeStore(std::int32_t readThreads)
+SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
 
