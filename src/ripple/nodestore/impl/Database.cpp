@@ -43,7 +43,8 @@ Database::Database(
     , earliestLedgerSeq_(
           get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
     , earliestShardIndex_((earliestLedgerSeq_ - 1) / ledgersPerShard_)
-    , readThreads_(std::min(1, readThreads))
+    , requestBundle_(get<int>(config, "rq_bundle", 4))
+    , readThreads_(std::max(1, readThreads))
 {
     assert(readThreads != 0);
 
@@ -53,10 +54,15 @@ Database::Database(
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
 
-    for (int i = 0; i != readThreads_.load(); ++i)
+    if (requestBundle_ < 1 || requestBundle_ > 64)
+        Throw<std::runtime_error>("Invalid rq_bundle");
+
+    for (int i = readThreads_.load(); i != 0; --i)
     {
         std::thread t(
             [this](int i) {
+                runningThreads_++;
+
                 beast::setCurrentThreadName(
                     "db prefetch #" + std::to_string(i));
 
@@ -68,14 +74,20 @@ Database::Database(
                         std::unique_lock<std::mutex> lock(readLock_);
 
                         if (read_.empty())
+                        {
+                            runningThreads_--;
                             readCondVar_.wait(lock);
+                            runningThreads_++;
+                        }
 
                         if (isStopping())
                             continue;
 
-                        // We extract up to 64 objects to minimize the overhead
-                        // of acquiring the mutex.
-                        for (int cnt = 0; !read_.empty() && cnt != 64; ++cnt)
+                        // If configured, extract multiple object at a time to
+                        // minimize the overhead of acquiring the mutex.
+                        for (int cnt = 0;
+                             !read_.empty() && cnt != requestBundle_;
+                             ++cnt)
                             read.insert(read_.extract(read_.begin()));
                     }
 
@@ -84,7 +96,7 @@ Database::Database(
                         assert(!it->second.empty());
 
                         auto const& hash = it->first;
-                        auto const& data = std::move(it->second);
+                        auto const& data = it->second;
                         auto const seqn = data[0].first;
 
                         auto obj =
@@ -340,6 +352,16 @@ void
 Database::getCountsJson(Json::Value& obj)
 {
     assert(obj.isObject());
+
+    {
+        std::unique_lock<std::mutex> lock(readLock_);
+        obj["read_queue"] = static_cast<Json::UInt>(read_.size());
+    }
+
+    obj["read_threads_total"] = readThreads_.load();
+    obj["read_threads_running"] = runningThreads_.load();
+    obj["read_request_bundle"] = requestBundle_;
+
     obj[jss::node_writes] = std::to_string(storeCount_);
     obj[jss::node_reads_total] = std::to_string(fetchTotalCount_);
     obj[jss::node_reads_hit] = std::to_string(fetchHitCount_);
