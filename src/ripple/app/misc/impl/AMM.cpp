@@ -136,10 +136,11 @@ getAMMBalances(
             }
             return true;
         });
+    auto issue = [](auto const& issue) { return issue ? *issue : noIssue(); };
     if (!issue1Opt)
         return std::make_tuple(
-            STAmount{*issue1Opt, 0},
-            STAmount{*issue2Opt, 0},
+            STAmount{issue(issue1), 0},
+            STAmount{issue(issue2), 0},
             STAmount{lptIssue, 0});
     // re-order if needed
     if (issue1 && *issue1Opt != *issue1)
@@ -147,8 +148,8 @@ getAMMBalances(
     // validate issues
     if ((issue1 && *issue1Opt != *issue1) || (issue2 && *issue2Opt != *issue2))
         return std::make_tuple(
-            STAmount{*issue1Opt, 0},
-            STAmount{*issue2Opt, 0},
+            STAmount{issue(issue1), 0},
+            STAmount{issue(issue2), 0},
             STAmount{lptIssue, 0});
     auto const [balance1, balance2] =
         getAMMPoolBalances(view, ammAccountID, *issue1Opt, *issue2Opt, j);
