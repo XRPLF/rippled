@@ -116,18 +116,68 @@ readLines(E& env, AccountX const& acct)
 
 struct AMM_test : public beast::unit_test::suite
 {
+    AccountX const gw;
+    AccountX const carol;
+    AccountX const alice;
+    AccountX const bob;
+    jtx::IOU const USD;
+    jtx::IOU const EUR;
+    jtx::IOU const BTC;
+    jtx::IOU const BAD;
+
+public:
+    AMM_test()
+        : gw("gateway")
+        , carol("carol")
+        , alice("alice")
+        , bob("bob")
+        , USD(gw["USD"])
+        , EUR(gw["EUR"])
+        , BTC(gw["BTC"])
+        , BAD(jtx::IOU(gw, badCurrency()))
+    {
+    }
+
+private:
+    template <typename F>
+    void
+    proc(
+        F&& cb,
+        std::optional<std::pair<std::uint32_t, std::uint32_t>> const& pool = {},
+        std::optional<IOUAmount> const& lpt = {})
+    {
+        using namespace jtx;
+        Env env{*this};
+
+        env.fund(jtx::XRP(30000), alice, carol, gw);
+        env.trust(USD(30000), alice);
+        env.trust(USD(30000), carol);
+
+        env(pay(gw, alice, USD(30000)));
+        env(pay(gw, carol, USD(30000)));
+
+        auto [asset1, asset2] =
+            [&]() -> std::pair<std::uint32_t, std::uint32_t> {
+            if (pool)
+                return *pool;
+            return {10000, 10000};
+        }();
+        auto tokens = [&]() {
+            if (lpt)
+                return *lpt;
+            return IOUAmount{10000000, 0};
+        }();
+        AMM ammAlice(env, alice, XRP(asset1), USD(asset2));
+        BEAST_EXPECT(ammAlice.expectBalances(XRP(asset1), USD(asset2), tokens));
+        cb(ammAlice, env);
+    }
+
     void
     testInstanceCreate()
     {
         testcase("Instance Create");
 
         using namespace jtx;
-
-        auto const gw = AccountX{"gateway"};
-        auto const USD = gw["USD"];
-        auto const BTC = gw["BTC"];
-        AccountX const alice{"alice"};
-        AccountX const carol{"carol"};
 
         auto fund = [&](auto& env) {
             env.fund(XRP(20000), alice, carol, gw);
@@ -178,12 +228,6 @@ struct AMM_test : public beast::unit_test::suite
         testcase("Invalid Instance");
 
         using namespace jtx;
-
-        auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
-        auto const BAD = IOU(gw, badCurrency());
-        Account const alice{"alice"};
-        Account const carol{"carol"};
 
         auto fund = [&](auto& env) {
             env.fund(XRP(30000), alice, carol, gw);
@@ -279,42 +323,8 @@ struct AMM_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        auto const gw = AccountX{"gateway"};
-        auto const USD = gw["USD"];
-        AccountX const alice{"alice"};
-        AccountX const carol{"carol"};
-
-        auto proc = [&](auto cb,
-                        std::optional<std::pair<std::uint32_t, std::uint32_t>>
-                            pool = {},
-                        std::optional<std::uint32_t> lpt = {}) {
-            Env env{*this};
-            env.fund(XRP(30000), alice, carol, gw);
-            env.trust(USD(30000), alice);
-            env.trust(USD(30000), carol);
-
-            env(pay(gw, alice, USD(30000)));
-            env(pay(gw, carol, USD(30000)));
-
-            auto [asset1, asset2] =
-                [&]() -> std::pair<std::uint32_t, std::uint32_t> {
-                if (pool)
-                    return *pool;
-                return {10000, 10000};
-            }();
-            auto tokens = [&]() -> std::uint32_t {
-                if (lpt)
-                    return *lpt;
-                return 10000000;
-            }();
-            AMM ammAlice(env, alice, XRP(asset1), USD(asset2));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(asset1), USD(asset2), IOUAmount{tokens, 0}));
-            cb(ammAlice);
-        };
-
         // Equal deposit: 1000000 tokens, 10% of the current pool
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 1000000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
@@ -325,14 +335,14 @@ struct AMM_test : public beast::unit_test::suite
         // exceeds 100XRP then deposit 100XRP and USD proportionally
         // to the pool composition not to exceed 100USD. Fail if exceeded.
         // Deposit 100USD/100XRP
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(100), XRP(100));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10100), USD(10100), IOUAmount{10100000, 0}));
         });
 
         // Equal limit deposit. Deposit 100USD/100XRP
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(200), XRP(100));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10100), USD(10100), IOUAmount{10100000, 0}));
@@ -341,28 +351,28 @@ struct AMM_test : public beast::unit_test::suite
         // TODO. Equal limit deposit. Constraint fails.
 
         // Single deposit: 1000 USD
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(11000), IOUAmount{102469507659596, -7}));
         });
 
         // Single deposit: 1000 XRP
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(10000), IOUAmount{102469507659596, -7}));
         });
 
         // Single deposit: 100000 tokens worth of USD
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 100000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10402), IOUAmount{10100000, 0}));
         });
 
         // Single deposit: 100000 tokens worth of XRP
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 100000, XRP(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10402), USD(10000), IOUAmount{10100000, 0}));
@@ -387,42 +397,8 @@ struct AMM_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        auto const gw = AccountX{"gateway"};
-        auto const USD = gw["USD"];
-        AccountX const alice{"alice"};
-        AccountX const carol{"carol"};
-
-        auto proc = [&](auto cb,
-                        std::optional<std::pair<std::uint32_t, std::uint32_t>>
-                            pool = {},
-                        std::optional<IOUAmount> lpt = {}) {
-            Env env{*this};
-            env.fund(XRP(30000), alice, carol, gw);
-            env.trust(USD(30000), alice);
-            env.trust(USD(30000), carol);
-
-            env(pay(gw, alice, USD(30000)));
-            env(pay(gw, carol, USD(30000)));
-
-            auto [asset1, asset2] =
-                [&]() -> std::pair<std::uint32_t, std::uint32_t> {
-                if (pool)
-                    return *pool;
-                return {10000, 10000};
-            }();
-            auto tokens = [&]() {
-                if (lpt)
-                    return *lpt;
-                return IOUAmount{10000000, 0};
-            }();
-            AMM ammAlice(env, alice, XRP(asset1), USD(asset2));
-            BEAST_EXPECT(
-                ammAlice.expectBalances(XRP(asset1), USD(asset2), tokens));
-            cb(ammAlice);
-        };
-
         // Should fail - Carol is not a Liquidity Provider.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(
                 carol, 10000, std::nullopt, std::optional<ter>(tecAMM_BALANCE));
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -430,7 +406,7 @@ struct AMM_test : public beast::unit_test::suite
         });
 
         // Should fail - Carol withdraws more than deposited
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
             ammAlice.deposit(carol, 1000000);
@@ -447,7 +423,7 @@ struct AMM_test : public beast::unit_test::suite
         });
 
         // Equal withdraw by Carol: 1000000 of tokens, 10% of the current pool
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
             ammAlice.deposit(carol, 1000000);
@@ -464,7 +440,7 @@ struct AMM_test : public beast::unit_test::suite
 
         // Equal withdraw by tokens 1000000, 10%
         // of the current pool
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, 1000000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(9000), USD(9000), IOUAmount{9000000, 0}));
@@ -475,28 +451,28 @@ struct AMM_test : public beast::unit_test::suite
         // the withdraw that amount, otherwise withdraw USD100
         // and proportionally withdraw XRP. It's the latter
         // in this case - XRP100/USD100.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, XRP(200), USD(100));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(9900), USD(9900), IOUAmount{9900000, 0}));
         });
 
         // Equal withdraw with a limit. XRP100/USD100.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, XRP(100), USD(200));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(9900), USD(9900), IOUAmount{9900000, 0}));
         });
 
         // Single withdraw by amount XRP100
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(9000), USD(10000), IOUAmount{894427190999916, -8}));
         });
 
         // Single withdraw by tokens 10000.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, 10000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(9990.005), IOUAmount{9990000, 0}));
@@ -505,7 +481,7 @@ struct AMM_test : public beast::unit_test::suite
 #if 0
         // Single withdraw maxSP limit. SP after the trade is 1111111.111,
         // less than 1200000.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(
                 alice, USD(1000), std::nullopt, XRPAmount{1200000});
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -514,7 +490,7 @@ struct AMM_test : public beast::unit_test::suite
 
         // Single withdraw maxSP limit. SP after the trade is 1111111.111,
         // greater than 1100000, the withdrawl amount is changed to ~USD488.088
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(
                 alice, USD(1000), std::nullopt, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -523,16 +499,15 @@ struct AMM_test : public beast::unit_test::suite
                 IOUAmount{9752902910568, -6}));
         });
 
+#endif
+
         // Withdraw all tokens. 0 means withdraw all tokens.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env& env) {
             ammAlice.withdraw(alice, 0);
-            std::cout << ammAlice.ammInfo()->toStyledString();
             BEAST_EXPECT(
                 ammAlice.expectBalances(XRP(0), USD(0), IOUAmount{0, 0}));
-        }, {}, {}, [](Env& env, AMM& ammAlice) {
-                readLines(env, ammAlice.ammAccount(), "amm");
-             });
-#endif
+            readLines(env, ammAlice.ammAccount(), "amm");
+        });
     }
 
     void
@@ -559,13 +534,6 @@ struct AMM_test : public beast::unit_test::suite
             using namespace jtx;
             Env env(*this);
 
-            auto const gw = AccountX("gateway");
-            auto const USD = gw["USD"];
-            auto const EUR = gw["EUR"];
-            AccountX const alice{"alice"};
-            AccountX const carol{"carol"};
-            AccountX const bob{"bob"};
-
             env.fund(XRP(1000), alice, carol, bob, gw);
             env.trust(USD(1000), carol);
             env.trust(EUR(1000), alice);
@@ -591,13 +559,6 @@ struct AMM_test : public beast::unit_test::suite
         {
             using namespace jtx;
             Env env(*this);
-
-            auto const gw = AccountX("gateway");
-            auto const USD = gw["USD"];
-            auto const EUR = gw["EUR"];
-            AccountX const alice{"alice"};
-            AccountX const carol{"carol"};
-            AccountX const bob{"bob"};
 
             env.fund(XRP(1000), alice, carol, bob, gw);
             env.trust(USD(1000), carol);
@@ -628,56 +589,22 @@ struct AMM_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        auto const gw = AccountX{"gateway"};
-        auto const USD = gw["USD"];
-        AccountX const alice{"alice"};
-        AccountX const carol{"carol"};
-
-        auto proc = [&](auto cb,
-                        std::optional<std::pair<std::uint32_t, std::uint32_t>>
-                            pool = {},
-                        std::optional<IOUAmount> lpt = {}) {
-            Env env{*this};
-            env.fund(XRP(30000), alice, carol, gw);
-            env.trust(USD(30000), alice);
-            env.trust(USD(30000), carol);
-
-            env(pay(gw, alice, USD(30000)));
-            env(pay(gw, carol, USD(30000)));
-
-            auto [asset1, asset2] =
-                [&]() -> std::pair<std::uint32_t, std::uint32_t> {
-                if (pool)
-                    return *pool;
-                return {10000, 10000};
-            }();
-            auto tokens = [&]() {
-                if (lpt)
-                    return *lpt;
-                return IOUAmount{10000000, 0};
-            }();
-            AMM ammAlice(env, alice, XRP(asset1), USD(asset2));
-            BEAST_EXPECT(
-                ammAlice.expectBalances(XRP(asset1), USD(asset2), tokens));
-            cb(ammAlice);
-        };
-
         // Swap in USD1000
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapIn(alice, USD(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{9090909091}, USD(11000), IOUAmount{10000000, 0}));
         });
 
         // Swap in USD1000, Slippage not to exceed 10000
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapIn(alice, USD(1000), 10000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{9090909091}, USD(11000), IOUAmount{10000000, 0}));
         });
 
         // Swap in USD1000, MaxSP not to exceed 1100000
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapIn(alice, USD(1000), std::nullopt, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{9534625893},
@@ -687,7 +614,7 @@ struct AMM_test : public beast::unit_test::suite
 
         // Swap in USD1000, MaxSP not to exceed 110000.
         // This transaction fails.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapIn(
                 alice,
                 USD(1000),
@@ -701,7 +628,7 @@ struct AMM_test : public beast::unit_test::suite
         // Swap in USD1000, MaxSP not to exceed 1100000, and Slippage 10000.
         // SP is less than MaxSP - execute swapOut with MaxSP
         // 110000, the trade executes.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swap(alice, USD(1000), 10000, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10513133959},
@@ -711,7 +638,7 @@ struct AMM_test : public beast::unit_test::suite
 
         // Swap in USD1000, MaxSP not to exceed 100000, and Slippage 10000.
         // SP is less than MaxSP. The SP can't be changed and the trade fails.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swap(
                 alice,
                 USD(1000),
@@ -724,7 +651,7 @@ struct AMM_test : public beast::unit_test::suite
 
         // Swap in USD1000, MaxSP not to exceed 900000, and Slippage 10000.
         // SP is greater than MaxSP. TODO: But change SP then fails.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swap(
                 alice,
                 USD(1000),
@@ -736,14 +663,14 @@ struct AMM_test : public beast::unit_test::suite
         });
 
         // Swap out
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapOut(alice, USD(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{11111111111}, USD(9000), IOUAmount{10000000, 0}));
         });
 
         // Swap out USD1000, MaxSP not to exceed 1100000
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapOut(alice, USD(1000), XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10513133959},
@@ -753,7 +680,7 @@ struct AMM_test : public beast::unit_test::suite
 
         // Swap out USD1000, MaxSP not to exceed 900000
         // This transaction fails.
-        proc([&](AMM& ammAlice) {
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapOut(
                 alice,
                 USD(1000),
