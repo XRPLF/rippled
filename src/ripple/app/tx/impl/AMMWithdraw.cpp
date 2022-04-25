@@ -20,6 +20,7 @@
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
+#include <ripple/basics/Number.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -97,9 +98,10 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const maxSP = ctx.tx[~sfMaxSP];
+    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
     auto const [asset1, asset2, lptBalance] = getAMMBalances(
         ctx.view,
-        sleAMM->getAccountID(sfAMMAccount),
+        ammAccountID,
         ctx.tx[sfAccount],
         asset1Out ? std::optional<Issue>(asset1Out->issue()) : std::nullopt,
         asset2Out ? std::optional<Issue>(asset2Out->issue()) : std::nullopt,
@@ -109,7 +111,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         // special case - withdraw all tokens
         if (tokens && *tokens == beast::zero)
             return getLPTokens(
-                ctx.view, ctx.tx[sfAMMAccount], ctx.tx[sfAccount], ctx.j);
+                ctx.view, ammAccountID, ctx.tx[sfAccount], ctx.j);
         return tokens;
     }();
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
@@ -129,7 +131,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.error()) << "AMM Withdraw: invalid asset1 balance";
         return tecAMM_BALANCE;
     }
-    if (!maxSP && asset2Out && *asset2Out > asset2)
+    if (asset2Out && *asset2Out > asset2)
     {
         JLOG(ctx.j.error()) << "AMM Withdraw: invalid asset2 balance";
         return tecAMM_BALANCE;
@@ -195,6 +197,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 ammAccountID,
                 asset1,
                 lptAMMBalance,
+                *asset1Out,
                 *lpTokens,
                 weight,
                 tfee);
@@ -247,6 +250,69 @@ AMMWithdraw::doApply()
 }
 
 TER
+AMMWithdraw::deleteAccount(Sandbox& view, AccountID const& ammAccountID)
+{
+    return tesSUCCESS;
+    auto sleAMMRoot = view.peek(keylet::account(ammAccountID));
+    assert(sleAMMRoot);
+    auto sleAMM = view.peek(keylet::amm(ctx_.tx[sfAMMHash]));
+    assert(sleAMM);
+
+    if (!sleAMMRoot || !sleAMM)
+        return tefBAD_LEDGER;
+
+    // Delete all of the entries in the account directory.
+    Keylet const ownerDirKeylet{keylet::ownerDir(ammAccountID)};
+    std::shared_ptr<SLE> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
+
+    if (view.exists(ownerDirKeylet) &&
+        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    {
+        do
+        {
+            // Choose the right way to delete each directory node.
+            auto sleItem = view.peek(keylet::child(dirEntry));
+            if (!sleItem)
+            {
+                // Directory node has an invalid index.  Bail out.
+                JLOG(j_.fatal())
+                    << "DeleteAccount: Directory node in ledger " << view.seq()
+                    << " has index to object that is missing: "
+                    << to_string(dirEntry);
+                return tefBAD_LEDGER;
+            }
+
+            assert(uDirEntry == 1);
+            if (uDirEntry != 1)
+            {
+                JLOG(j_.error())
+                    << "DeleteAccount iterator re-validation failed.";
+                return tefBAD_LEDGER;
+            }
+            uDirEntry = 0;
+
+        } while (
+            dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    }
+
+    // If there's still an owner directory associated with the source account
+    // delete it.
+    if (view.exists(ownerDirKeylet) && !view.emptyDirDelete(ownerDirKeylet))
+    {
+        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of "
+                         << toBase58(account_);
+        return tecHAS_OBLIGATIONS;
+    }
+
+    this->view().erase(sleAMM);
+    this->view().erase(sleAMMRoot);
+
+    return tesSUCCESS;
+}
+
+TER
 AMMWithdraw::withdraw(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -288,23 +354,19 @@ AMMWithdraw::withdraw(
         return res;
     }
 
+    auto const [asset1Rem, asset2Rem, lptAMMRem] = getAMMBalances(
+        view,
+        ammAccount,
+        std::nullopt,
+        std::nullopt,
+        std::nullopt,
+        ctx_.journal);
     // TODO delete AMM account and all related objects if
     // the tokens balance is 0. Must handle cases
     // if tokens are 0 but balances are not and the other way
-    // around. We don't allow to withdraw more than 30% of the pool.
-    // How can we then get to 0 tokens?
-    if (accountHolds(
-            view,
-            ammAccount,
-            lpTokens.issue().currency,
-            ammAccount,
-            FreezeHandling::fhIGNORE_FREEZE,
-            ctx_.journal) == beast::zero)
-    {
-        // Delete account root. Should we call the transactor?
-        // Delete directory entry for the assets/weight
-        // LPT trustline must have been deleted
-    }
+    // around.
+    if (lptAMMRem == beast::zero)
+        return deleteAccount(view, ammAccount);
 
     return tesSUCCESS;
 }
@@ -338,23 +400,25 @@ AMMWithdraw::equalWithdrawalLimit(
     STAmount const& asset1Out,
     STAmount const& asset2Out)
 {
-    auto const& issue1 = asset1Balance.issue();
-    auto const& issue2 = asset2Balance.issue();
-    auto const& lptIssue = lptAMMBalance.issue();
-    auto frac = divide(asset1Out, asset1Balance, noIssue());
-    auto tokens = multiply(frac, lptAMMBalance, lptIssue);
-    auto const asset2Deposit = multiply(asset2Balance, frac, issue2);
-    if (asset2Deposit <= asset2Out)
+    auto frac = Number{asset1Out} / asset1Balance;
+    auto const asset2Withdraw = asset2Balance * frac;
+    if (asset2Withdraw <= asset2Out)
         return withdraw(
-            view, ammAccount, asset1Out, asset2Deposit, lptAMMBalance, tokens);
-
-    frac = divide(asset2Out, asset2Balance, noIssue());
-    tokens = multiply(frac, lptAMMBalance, lptIssue);
-    auto const asset1Deposit = multiply(asset1Balance, frac, issue1);
-    if (asset1Deposit <= asset1Out)
-        return withdraw(
-            view, ammAccount, asset1Deposit, asset2Out, lptAMMBalance, tokens);
-    return tecAMM_FAILED_DEPOSIT;
+            view,
+            ammAccount,
+            asset1Out,
+            toSTAmount(asset2Out.issue(), asset2Withdraw),
+            lptAMMBalance,
+            toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac));
+    frac = Number{asset2Out} / asset2Balance;
+    auto const asset1Withdraw = asset1Balance * frac;
+    return withdraw(
+        view,
+        ammAccount,
+        toSTAmount(asset1Out.issue(), asset1Withdraw),
+        asset2Out,
+        lptAMMBalance,
+        toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac));
 }
 
 TER
@@ -369,10 +433,8 @@ AMMWithdraw::singleWithdrawal(
 {
     auto const tokens =
         calcLPTokensOut(asset1Balance, asset1Out, lptAMMBalance, weight, tfee);
-    if (!tokens)
-        return tecAMM_FAILED_WITHDRAW;
     return withdraw(
-        view, ammAccount, asset1Out, std::nullopt, lptAMMBalance, *tokens);
+        view, ammAccount, asset1Out, std::nullopt, lptAMMBalance, tokens);
 }
 
 TER
@@ -381,19 +443,23 @@ AMMWithdraw::singleWithdrawalTokens(
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& lptAMMBalance,
+    STAmount const& asset1Out,
     STAmount const& tokens,
     std::uint8_t weight,
     std::uint16_t tfee)
 {
-    auto tosq =
-        STAmount{noIssue(), 1} - divide(tokens, lptAMMBalance, noIssue());
-    auto const m = STAmount{noIssue(), 1} - multiply(tosq, tosq, noIssue());
-    auto const asset1Deposit = multiply(
-        asset1Balance,
-        multiply(m, getFeeMult(tfee, weight), noIssue()),
-        asset1Balance.issue());
-    return withdraw(
-        view, ammAccount, asset1Deposit, std::nullopt, lptAMMBalance, tokens);
+    auto const asset1Withdraw = asset1Balance *
+        (1 - power(1 - tokens / lptAMMBalance, 100, weight)) *
+        feeMult(tfee, weight);
+    if (asset1Out == beast::zero || asset1Withdraw >= asset1Out)
+        return withdraw(
+            view,
+            ammAccount,
+            toSTAmount(asset1Out.issue(), asset1Withdraw),
+            std::nullopt,
+            lptAMMBalance,
+            tokens);
+    return tecAMM_FAILED_WITHDRAW;
 }
 
 TER
@@ -408,6 +474,7 @@ AMMWithdraw::singleWithdrawMaxSP(
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
+#if 0
     auto const asset1BalanceUpd = asset1Balance - asset1Out;
     auto const sp =
         calcSpotPrice(asset1BalanceUpd, asset2Balance, weight1, tfee);
@@ -424,7 +491,9 @@ AMMWithdraw::singleWithdrawMaxSP(
     if (!tokens)
         return tecAMM_FAILED_DEPOSIT;
     return withdraw(
-        view, ammAccount, *asset1Deposit, std::nullopt, lptAMMBalance, *tokens);
+        view, ammAccount, *asset1Deposit, std::nullopt, lptAMMBalance, tokens);
+#endif
+    return tecAMM_FAILED_DEPOSIT;
 }
 
 }  // namespace ripple

@@ -160,27 +160,27 @@ private:
         std::uint16_t tfee);
 
     /** Single asset deposit with the constraint that the effective price
-     * of the trade doesn't exceed the specified SP. The fee is charged.
+     * of the trade doesn't exceed the specified. The fee is charged.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
      * @param asset1In requested asset1 deposit amount
      * @param lptAMMBalance current AMM LPT balance
-     * @param maxSP maximum effective price
+     * @param ePrice maximum effective price
      * @param weight1
      * @param tfee
      * @return
      */
     TER
-    singleDepositMaxSP(
+    singleDepositEPrice(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
         STAmount const& asset1In,
         STAmount const& lptAMMBalance,
-        STAmount const& maxEP,
+        STAmount const& ePrice,
         std::uint8_t weight1,
         std::uint16_t tfee);
 };

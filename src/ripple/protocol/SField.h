@@ -487,6 +487,7 @@ extern SF_AMOUNT const sfAsset2In;
 extern SF_AMOUNT const sfAsset1Out;
 extern SF_AMOUNT const sfAsset2Out;
 extern SF_AMOUNT const sfMaxSP;
+extern SF_AMOUNT const sfEPrice;
 extern SF_AMOUNT const sfAssetIn;
 extern SF_AMOUNT const sfAssetOut;
 

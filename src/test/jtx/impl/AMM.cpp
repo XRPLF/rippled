@@ -183,8 +183,10 @@ void
 AMM::deposit(
     std::optional<Account> const& account,
     std::uint64_t tokens,
-    std::optional<STAmount> const& asset1In)
+    std::optional<STAmount> const& asset1In,
+    std::optional<ter> const& ter)
 {
+    ter_ = ter;
     Json::Value jv;
     STAmount saTokens{calcLPTIssue(ammAccountID_), tokens, 0};
     saTokens.setJson(jv[jss::LPTokens]);
@@ -198,15 +200,17 @@ AMM::deposit(
     std::optional<Account> const& account,
     STAmount const& asset1In,
     std::optional<STAmount> const& asset2In,
-    std::optional<STAmount> const& maxSP)
+    std::optional<STAmount> const& maxEP,
+    std::optional<ter> const& ter)
 {
-    assert(!(asset2In && maxSP));
+    assert(!(asset2In && maxEP));
+    ter_ = ter;
     Json::Value jv;
     asset1In.setJson(jv[jss::Asset1In]);
     if (asset2In)
         asset2In->setJson(jv[jss::Asset2In]);
-    if (maxSP)
-        maxSP->setJson(jv[jss::MaxSP]);
+    if (maxEP)
+        maxEP->setJson(jv[jss::EPrice]);
     deposit(account, jv);
 }
 

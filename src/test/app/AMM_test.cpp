@@ -22,6 +22,8 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/PathSet.h>
 
+#include <utility>
+
 namespace ripple {
 namespace test {
 
@@ -336,41 +338,37 @@ struct AMM_test : public beast::unit_test::suite
                 XRP(10100), USD(10100), IOUAmount{10100000, 0}));
         });
 
+        // TODO. Equal limit deposit. Constraint fails.
+
         // Single deposit: 1000 USD
         proc([&](AMM& ammAlice) {
             ammAlice.deposit(carol, USD(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(11000), IOUAmount{104880884817015, -7}));
+                XRP(10000), USD(11000), IOUAmount{102469507659596, -7}));
         });
 
         // Single deposit: 1000 XRP
         proc([&](AMM& ammAlice) {
             ammAlice.deposit(carol, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(11000), USD(10000), IOUAmount{104880884817015, -7}));
+                XRP(11000), USD(10000), IOUAmount{102469507659596, -7}));
         });
 
         // Single deposit: 100000 tokens worth of USD
         proc([&](AMM& ammAlice) {
             ammAlice.deposit(carol, 100000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10201), IOUAmount{10100000, 0}));
+                XRP(10000), USD(10402), IOUAmount{10100000, 0}));
         });
 
         // Single deposit: 100000 tokens worth of XRP
         proc([&](AMM& ammAlice) {
             ammAlice.deposit(carol, 100000, XRP(0));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10201), USD(10000), IOUAmount{10100000, 0}));
+                XRP(10402), USD(10000), IOUAmount{10100000, 0}));
         });
 
-        // Single deposit: 100000 tokens worth of XRP
-        proc([&](AMM& ammAlice) {
-            ammAlice.deposit(carol, 100000, XRP(0));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10201), USD(10000), IOUAmount{10100000, 0}));
-        });
-
+#if 0
         // Single deposit with SP not exceeding specified:
         // 100USD with SP not to exceed 100000 (USD relative to XRP)
         proc([&](AMM& ammAlice) {
@@ -379,8 +377,7 @@ struct AMM_test : public beast::unit_test::suite
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(11000), IOUAmount{104880884817015, -7}));
         });
-
-        // TODO add exceed SP test
+#endif
     }
 
     void
@@ -465,7 +462,7 @@ struct AMM_test : public beast::unit_test::suite
                 XRP(0), USD(0), IOUAmount{0, 0}, carol));
         });
 
-        // Equal withdraw by tokens 1000000, which is 10%
+        // Equal withdraw by tokens 1000000, 10%
         // of the current pool
         proc([&](AMM& ammAlice) {
             ammAlice.withdraw(alice, 1000000);
@@ -476,7 +473,7 @@ struct AMM_test : public beast::unit_test::suite
         // Equal withdraw with a limit. Withdraw XRP200.
         // If proportional withdraw of USD is less than 100
         // the withdraw that amount, otherwise withdraw USD100
-        // and proportionally withdraw XRP. It's the latter in
+        // and proportionally withdraw XRP. It's the latter
         // in this case - XRP100/USD100.
         proc([&](AMM& ammAlice) {
             ammAlice.withdraw(alice, XRP(200), USD(100));
@@ -495,16 +492,17 @@ struct AMM_test : public beast::unit_test::suite
         proc([&](AMM& ammAlice) {
             ammAlice.withdraw(alice, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(9000), USD(10000), IOUAmount{948683298050513, -8}));
+                XRP(9000), USD(10000), IOUAmount{894427190999916, -8}));
         });
 
-        // Single withdraw by tokens 1000.
+        // Single withdraw by tokens 10000.
         proc([&](AMM& ammAlice) {
             ammAlice.withdraw(alice, 10000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(9980.01), IOUAmount{9990000, 0}));
+                XRP(10000), USD(9990.005), IOUAmount{9990000, 0}));
         });
 
+#if 0
         // Single withdraw maxSP limit. SP after the trade is 1111111.111,
         // less than 1200000.
         proc([&](AMM& ammAlice) {
@@ -524,6 +522,17 @@ struct AMM_test : public beast::unit_test::suite
                 STAmount{USD.issue(), 95119115182985llu, -10},
                 IOUAmount{9752902910568, -6}));
         });
+
+        // Withdraw all tokens. 0 means withdraw all tokens.
+        proc([&](AMM& ammAlice) {
+            ammAlice.withdraw(alice, 0);
+            std::cout << ammAlice.ammInfo()->toStyledString();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(0), USD(0), IOUAmount{0, 0}));
+        }, {}, {}, [](Env& env, AMM& ammAlice) {
+                readLines(env, ammAlice.ammAccount(), "amm");
+             });
+#endif
     }
 
     void
@@ -672,7 +681,7 @@ struct AMM_test : public beast::unit_test::suite
             ammAlice.swapIn(alice, USD(1000), std::nullopt, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{9534625893},
-                STAmount{USD.issue(), 104880884817015llu, -10},
+                STAmount{USD.issue(), 1048808848170152llu, -11},
                 IOUAmount{10000000, 0}));
         });
 
@@ -696,7 +705,7 @@ struct AMM_test : public beast::unit_test::suite
             ammAlice.swap(alice, USD(1000), 10000, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10513133959},
-                STAmount{USD.issue(), 95119115182985llu, -10},
+                STAmount{USD.issue(), 951191151829848llu, -11},
                 IOUAmount{10000000, 0}));
         });
 
@@ -738,7 +747,7 @@ struct AMM_test : public beast::unit_test::suite
             ammAlice.swapOut(alice, USD(1000), XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10513133959},
-                STAmount{USD.issue(), 95119115182985llu, -10},
+                STAmount{USD.issue(), 951191151829848llu, -11},
                 IOUAmount{10000000, 0}));
         });
 

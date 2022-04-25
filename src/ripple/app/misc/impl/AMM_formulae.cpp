@@ -23,40 +23,6 @@
 
 namespace ripple {
 
-namespace detail {
-#pragma message( \
-    "THIS IS TEMPORARY. PORTABLE POW() AND NUMBER CLASS WILL BE IMPLEMENTED TO FACILITATE OPS ON MIXED AMOUNTS AND UINT.")
-
-double
-saToDouble(STAmount const& a)
-{
-    return static_cast<double>(a.mantissa() * std::pow(10, a.exponent()));
-}
-
-STAmount
-toSTAfromDouble(double v, Issue const& issue)
-{
-    auto exponent = decimal_places(v);
-    std::int64_t mantissa = v * pow(10, exponent);
-    exponent = -exponent;
-    return STAmount(issue, mantissa, exponent);
-}
-
-STAmount
-sqrt(STAmount const& a)
-{
-    return toSTAfromDouble(std::sqrt(saToDouble(a)), a.issue());
-}
-
-STAmount
-pow(STAmount const& a, std::uint8_t weight, Issue const& issue = noIssue())
-{
-    return toSTAfromDouble(
-        std::pow(saToDouble(a), static_cast<double>(weight) / 100.), issue);
-}
-
-}  // namespace detail
-
 STAmount
 calcAMMLPT(
     STAmount const& asset1,
@@ -64,12 +30,11 @@ calcAMMLPT(
     Issue const& lptIssue,
     std::uint8_t weight1)
 {
-    assert(weight1 == 50);
-
-    return detail::sqrt(multiply(asset1, asset2, lptIssue));
+    auto const tokens = power(asset1 / asset2, weight1, 100) * asset2;
+    return toSTAmount(lptIssue, tokens);
 }
 
-std::optional<STAmount>
+STAmount
 calcLPTokensIn(
     STAmount const& asset1Balance,
     STAmount const& asset1Deposit,
@@ -77,21 +42,17 @@ calcLPTokensIn(
     std::uint16_t weight,
     std::uint16_t tfee)
 {
-    assert(weight == 50);
-
-    auto const num =
-        asset1Balance +
-        multiply(
-            asset1Deposit, getFeeMult(tfee, weight), asset1Balance.issue());
-    auto const fr = detail::sqrt(divide(num, asset1Balance, noIssue())) -
-        STAmount{noIssue(), 1};
-    // should not happen
-    if (fr.negative() || fr == beast::zero)
-        return std::nullopt;
-    return multiply(lpTokensBalance, fr, lpTokensBalance.issue());
+    return toSTAmount(
+        lpTokensBalance.issue(),
+        lpTokensBalance *
+            (power(
+                 1 + (asset1Deposit * feeMult(tfee, weight)) / asset1Balance,
+                 weight,
+                 100) -
+             1));
 }
 
-std::optional<STAmount>
+STAmount
 calcAssetIn(
     STAmount const& asset1Balance,
     STAmount const& lpTokensBalance,
@@ -99,19 +60,15 @@ calcAssetIn(
     std::uint16_t weight1,
     std::uint16_t tfee)
 {
-    assert(weight1 == 50);
-
-    auto const sq = divide(lpTokensBalance, lptAMMBalance, noIssue()) +
-        STAmount{noIssue(), 1};
-    auto const num = multiply(sq, sq, noIssue()) - STAmount{noIssue(), 1};
-    auto const fr = divide(num, getFeeMult(tfee, weight1), noIssue());
-    // should not happen
-    if (fr == beast::zero || fr.negative())
-        return std::nullopt;
-    return multiply(asset1Balance, fr, asset1Balance.issue());
+    return toSTAmount(
+        asset1Balance.issue(),
+        ((power(Number{lpTokensBalance} / lptAMMBalance + 1, 100, weight1) -
+          1) /
+         feeMult(tfee, weight1)) *
+            asset1Balance);
 }
 
-std::optional<STAmount>
+STAmount
 calcLPTokensOut(
     STAmount const& asset1Balance,
     STAmount const& asset1Withdraw,
@@ -119,16 +76,14 @@ calcLPTokensOut(
     std::uint16_t weight,
     std::uint16_t tfee)
 {
-    assert(weight == 50);
-
-    auto const den = multiply(
-        asset1Balance, getFeeMult(tfee, weight), asset1Balance.issue());
-    auto const num = den - asset1Withdraw;
-    auto const fr =
-        STAmount{noIssue(), 1} - detail::sqrt(divide(num, den, noIssue()));
-    if (fr.negative() || fr == beast::zero)
-        return std::nullopt;
-    return multiply(lpTokensBalance, fr, lpTokensBalance.issue());
+    return toSTAmount(
+        lpTokensBalance.issue(),
+        lpTokensBalance *
+            (1 -
+             power(
+                 1 - asset1Withdraw / (asset1Balance * feeMult(tfee, weight)),
+                 weight,
+                 100)));
 }
 
 STAmount
@@ -138,20 +93,10 @@ calcSpotPrice(
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    assert(weight1 == 50);
-
-    auto const num = multiply(
-        asset2Balance,
-        STAmount{asset2Balance.issue(), weight1},
-        asset2Balance.issue());
-    auto const den = multiply(
-        multiply(
-            asset1Balance,
-            STAmount(asset1Balance.issue(), 100 - weight1),
-            asset1Balance.issue()),
-        getFeeMult(tfee),
-        asset1Balance.issue());
-    return divide(num, den, noIssue());
+    return toSTAmount(
+        noIssue(),
+        Number{asset2Balance} * weight1 /
+            (asset1Balance * (100 - weight1) * feeMult(tfee)));
 }
 
 std::optional<STAmount>
@@ -162,14 +107,11 @@ changeSpotPrice(
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    assert(weight1 == 50);
-
     auto const sp = calcSpotPrice(asset1Balance, asset2Balance, weight1, tfee);
-    auto const fr = detail::pow(divide(newSP, sp, noIssue()), weight1) -
-        STAmount{noIssue(), 1};
-    if (fr == beast::zero || fr.negative())
-        return std::nullopt;
-    return multiply(asset1Balance, fr, asset1Balance.issue());
+    auto const res = asset1Balance * (power(newSP / sp, weight1, 100) - 1);
+    if (res > 0)
+        return toSTAmount(asset1Balance.issue(), res);
+    return std::nullopt;
 }
 
 STAmount
@@ -180,13 +122,14 @@ swapAssetIn(
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    assert(weight1 == 50);
-
-    auto const den =
-        asset1Balance + multiply(assetIn, getFeeMult(tfee), assetIn.issue());
-    auto const frac =
-        STAmount{noIssue(), 1} - divide(asset1Balance, den, noIssue());
-    return multiply(asset2Balance, frac, asset2Balance.issue());
+    return toSTAmount(
+        asset2Balance.issue(),
+        asset2Balance *
+            (1 -
+             power(
+                 asset1Balance / (asset1Balance + assetIn * feeMult(tfee)),
+                 weight1,
+                 100 - weight1)));
 }
 
 STAmount
@@ -197,12 +140,15 @@ swapAssetOut(
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    assert(weight1 == 50);
-
-    auto frac = divide(asset1Balance, asset1Balance - assetOut, noIssue()) -
-        STAmount{noIssue(), 1};
-    frac = divide(frac, getFeeMult(tfee), noIssue());
-    return multiply(asset2Balance, frac, asset2Balance.issue());
+    return toSTAmount(
+        asset2Balance.issue(),
+        asset2Balance *
+            (power(
+                 asset1Balance / (asset1Balance - assetOut),
+                 weight1,
+                 100 - weight1) -
+             1) /
+            feeMult(tfee));
 }
 
 STAmount
@@ -211,11 +157,8 @@ slippageSlope(
     std::uint8_t assetWeight,
     std::uint16_t tfee)
 {
-    auto const num =
-        multiply(getFeeMult(tfee), STAmount{noIssue(), 100}, noIssue());
-    auto const den = multiply(
-        assetBalance, STAmount{noIssue(), 2 * (100 - assetWeight)}, noIssue());
-    return divide(num, den, noIssue());
+    return toSTAmount(
+        noIssue(), feeMult(tfee) / (2 * assetBalance * (100 - assetWeight)));
 }
 
 STAmount

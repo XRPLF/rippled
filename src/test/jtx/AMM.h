@@ -119,14 +119,16 @@ public:
     deposit(
         std::optional<Account> const& account,
         std::uint64_t tokens,
-        std::optional<STAmount> const& asset1InDetails = {});
+        std::optional<STAmount> const& asset1InDetails = {},
+        std::optional<ter> const& ter = {});
 
     void
     deposit(
         std::optional<Account> const& account,
         STAmount const& asset1InDetails,
         std::optional<STAmount> const& asset2InAmount = {},
-        std::optional<STAmount> const& maxSP = {});
+        std::optional<STAmount> const& maxEP = {},
+        std::optional<ter> const& ter = {});
 
     void
     withdraw(
@@ -167,6 +169,12 @@ public:
         std::uint16_t const& slippage,
         STAmount const& maxSP,
         std::optional<ter> const& ter = std::nullopt);
+
+    AccountID
+    ammAccount() const
+    {
+        return ammAccountID_;
+    }
 };
 
 namespace amm {

@@ -208,11 +208,8 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a)
 bool
 validLPTokens(STAmount const& lptAMMBalance, STAmount const& tokens)
 {
-    auto const pct = multiply(
-        divide(tokens, lptAMMBalance, tokens.issue()),
-        STAmount{tokens.issue(), 100},
-        tokens.issue());
-    return pct != beast::zero && pct <= STAmount{tokens.issue(), 30};
+    auto const pct = Number{100} * tokens / lptAMMBalance;
+    return pct != Number{0};
 }
 
 std::shared_ptr<SLE const>

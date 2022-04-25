@@ -45,7 +45,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     auto const asset1In = ctx.tx[~sfAsset1In];
     auto const asset2In = ctx.tx[~sfAsset2In];
-    auto const maxSP = ctx.tx[~sfMaxSP];
+    auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokens];
     // Valid combinations are:
     //   LPTokens
@@ -53,10 +53,10 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   Asset1In and Asset2In
     //   Asset1In and LPTokens
     //   Asset1In and MaxSP
-    if ((!lpTokens && !asset1In) || (lpTokens && (asset2In || maxSP)) ||
+    if ((!lpTokens && !asset1In) || (lpTokens && (asset2In || ePrice)) ||
         (asset1In &&
-         ((asset2In && (lpTokens || maxSP)) ||
-          (maxSP && (asset2In || lpTokens)))))
+         ((asset2In && (lpTokens || ePrice)) ||
+          (ePrice && (asset2In || lpTokens)))))
     {
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid combination of "
                                "deposit fields.";
@@ -78,9 +78,9 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid Asset2InAmount";
         return *res;
     }
-    else if (auto const res = validAmount(maxSP))
+    else if (auto const res = validAmount(ePrice))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid MaxEP";
+        JLOG(ctx.j.debug()) << "Malformed transaction: invalid EPrice";
         return *res;
     }
 
@@ -131,7 +131,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
 {
     auto const asset1In = ctx_.tx[~sfAsset1In];
     auto const asset2In = ctx_.tx[~sfAsset2In];
-    auto const maxSP = ctx_.tx[~sfMaxSP];
+    auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokens = ctx_.tx[~sfLPTokens];
     auto const sleAMM = sb.peek(keylet::amm(ctx_.tx[sfAMMHash]));
     assert(sleAMM);
@@ -169,15 +169,15 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 *lpTokens,
                 weight,
                 tfee);
-        else if (maxSP)
-            result = singleDepositMaxSP(
+        else if (ePrice)
+            result = singleDepositEPrice(
                 sb,
                 ammAccountID,
                 asset1,
                 asset2,
                 *asset1In,
                 lptAMMBalance,
-                *maxSP,
+                *ePrice,
                 weight,
                 tfee);
         else
@@ -310,26 +310,30 @@ AMMDeposit::equalDepositLimit(
     STAmount const& asset1In,
     STAmount const& asset2In)
 {
-    auto const& issue1 = asset1Balance.issue();
-    auto const& issue2 = asset2Balance.issue();
-    auto const& lptIssue = lptAMMBalance.issue();
-    // proportion of tokens to deposit is equal to proportion of
-    // deposited asset1
-    auto frac = divide(asset1In, asset1Balance, noIssue());
-    auto tokens = multiply(frac, lptAMMBalance, lptIssue);
+    auto frac = Number{asset1In} / asset1Balance;
+    auto tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
     if (!validLPTokens(lptAMMBalance, tokens))
         return tecAMM_INVALID_TOKENS;
-    auto const asset2Deposit = multiply(asset2Balance, frac, issue2);
+    auto const asset2Deposit = asset2Balance * frac;
     if (asset2Deposit <= asset2In)
-        return deposit(view, ammAccount, asset1In, asset2Deposit, tokens);
-
-    frac = divide(asset2In, asset2Balance, noIssue());
-    tokens = multiply(frac, lptAMMBalance, lptIssue);
+        return deposit(
+            view,
+            ammAccount,
+            asset1In,
+            toSTAmount(asset2Balance.issue(), asset2Deposit),
+            tokens);
+    frac = Number{asset2In} / asset2Balance;
+    tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
     if (!validLPTokens(lptAMMBalance, tokens))
         return tecAMM_INVALID_TOKENS;
-    auto const asset1Deposit = multiply(asset1Balance, frac, issue1);
+    auto const asset1Deposit = asset1Balance * frac;
     if (asset1Deposit <= asset1In)
-        return deposit(view, ammAccount, asset1Deposit, asset2In, tokens);
+        return deposit(
+            view,
+            ammAccount,
+            toSTAmount(asset1Balance.issue(), asset1Deposit),
+            asset2In,
+            tokens);
     return tecAMM_FAILED_DEPOSIT;
 }
 
@@ -345,11 +349,9 @@ AMMDeposit::singleDeposit(
 {
     auto const tokens =
         calcLPTokensIn(asset1Balance, asset1In, lptAMMBalance, weight1, tfee);
-    if (!tokens)
-        return tecAMM_FAILED_DEPOSIT;
-    if (!validLPTokens(lptAMMBalance, *tokens))
+    if (!validLPTokens(lptAMMBalance, tokens))
         return tecAMM_INVALID_TOKENS;
-    return deposit(view, ammAccount, asset1In, std::nullopt, *tokens);
+    return deposit(view, ammAccount, asset1In, std::nullopt, tokens);
 }
 
 TER
@@ -364,41 +366,30 @@ AMMDeposit::singleDepositTokens(
 {
     auto const asset1Deposit =
         calcAssetIn(asset1Balance, tokens, lptAMMBalance, weight1, tfee);
-    if (!asset1Deposit)
-        return tecAMM_FAILED_DEPOSIT;
-    return deposit(view, ammAccount, *asset1Deposit, std::nullopt, tokens);
+    return deposit(view, ammAccount, asset1Deposit, std::nullopt, tokens);
 }
 
 TER
-AMMDeposit::singleDepositMaxSP(
+AMMDeposit::singleDepositEPrice(
     Sandbox& view,
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& asset1In,
     STAmount const& lptAMMBalance,
-    STAmount const& maxSP,
+    STAmount const& ePrice,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    auto const asset1BalanceUpd = asset1Balance + asset1In;
-    auto const sp =
-        calcSpotPrice(asset1BalanceUpd, asset2Balance, weight1, tfee);
-    auto const asset1Deposit = [&]() -> std::optional<STAmount> {
-        if (sp <= STAmount{noIssue(), maxSP.mantissa(), maxSP.exponent()})
-            return asset1In;
-        return changeSpotPrice(
-            asset1Balance, asset2Balance, maxSP, weight1, tfee);
-    }();
-    if (!asset1Deposit)
-        return tecAMM_FAILED_DEPOSIT;
+#if 0
     auto const tokens = calcLPTokensIn(
-        asset1Balance, *asset1Deposit, lptAMMBalance, weight1, tfee);
-    if (!tokens)
-        return tecAMM_FAILED_DEPOSIT;
-    if (!validLPTokens(lptAMMBalance, *tokens))
-        return tecAMM_INVALID_TOKENS;
-    return deposit(view, ammAccount, *asset1Deposit, std::nullopt, *tokens);
+        asset1Balance, asset1In, lptAMMBalance, weight1, tfee);
+
+    auto const ep = Number{asset1In} / tokens;
+    if (asset1In != STAmount{asset1In.issue(), 0} && ep <= ePrice)
+        return deposit(view, ammAccount, asset1In, std::nullopt, tokens);
+#endif
+    return tecAMM_INVALID_TOKENS;
 }
 
 }  // namespace ripple

@@ -119,13 +119,13 @@ private:
         STAmount const& asset2Out);
 
     /** Single asset withdrawal equivalent to the amount specified
-     * in Asset1OutDetails. The fee is charged.
+     * in Asset1Out. The fee is charged.
      * @param ctx
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1OutDetails asset1 withdraw amount
+     * @param asset1Out asset1 withdraw amount
      * @param weight asset1 weight
      * @param tfee trading fee in basis points
      * @return
@@ -136,7 +136,7 @@ private:
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1OutDetails,
+        STAmount const& asset1Out,
         std::uint8_t weight,
         std::uint16_t tfee);
 
@@ -146,6 +146,7 @@ private:
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
+     * @param asset1Out asset1 withdraw amount
      * @param tokens to withdraw
      * @param weight asset1 weight
      * @param tfee trading fee in basis points
@@ -157,6 +158,7 @@ private:
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& lptAMMBalance,
+        STAmount const& asset1Out,
         STAmount const& tokens,
         std::uint8_t weight,
         std::uint16_t tfee);
@@ -167,8 +169,8 @@ private:
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1OutDetails
-     * @param maxSP
+     * @param asset1Out aset1 withdraw amount
+     * @param maxSP maximum asset1 spot price
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
      * @return
@@ -180,10 +182,18 @@ private:
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1OutDetails,
+        STAmount const& asset1Out,
         STAmount const& maxSP,
         std::uint8_t weight1,
         std::uint16_t tfee);
+
+    /** Delete AMM account.
+     * @param view
+     * @param ammAccountID
+     * @return
+     */
+    TER
+    deleteAccount(Sandbox& view, AccountID const& ammAccountID);
 };
 
 }  // namespace ripple
