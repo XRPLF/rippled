@@ -697,15 +697,15 @@ std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
     using string_to_seed_t =
-        std::function<std::optional<Seed>(const std::string&)>;
-    using seed_match_t = std::pair<const char*, string_to_seed_t>;
+        std::function<std::optional<Seed>(std::string const&)>;
+    using seed_match_t = std::pair<char const*, string_to_seed_t>;
 
     static seed_match_t const seedTypes[]{
         {jss::passphrase.c_str(),
-         [](const std::string& s) { return parseGenericSeed(s); }},
+         [](std::string const& s) { return parseGenericSeed(s); }},
         {jss::seed.c_str(),
-         [](const std::string& s) { return parseBase58<Seed>(s); }},
-        {jss::seed_hex.c_str(), [](const std::string& s) {
+         [](std::string const& s) { return parseBase58<Seed>(s); }},
+        {jss::seed_hex.c_str(), [](std::string const& s) {
              uint128 i;
              if (i.parseHex(s))
                  return std::optional<Seed>(Slice(i.data(), i.size()));
@@ -713,7 +713,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
          }}};
 
     // Identify which seed type is in use.
-    const seed_match_t* seedType = nullptr;
+    seed_match_t const* seedType = nullptr;
     int count = 0;
     for (auto const& t : seedTypes)
     {
@@ -734,7 +734,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     }
 
     // Make sure a string is present
-    const auto& param = params[seedType->first];
+    auto const& param = params[seedType->first];
     if (!param.isString())
     {
         error = RPC::expected_field_error(seedType->first, "string");
@@ -811,7 +811,8 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
             return {};
         }
 
-        // using strcmp as pointers may not match (see  https://bit.ly/3OGvf0E)
+        // using strcmp as pointers may not match (see
+        // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
         if (strcmp(secretType, jss::secret.c_str()) == 0)
         {
             error = RPC::make_param_error(
@@ -824,7 +825,8 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
-    // using strcmp as pointers may not match (see  https://bit.ly/3OGvf0E)
+    // using strcmp as pointers may not match (see
+    // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
     if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
         seed = RPC::parseRippleLibSeed(params[secretType]);
