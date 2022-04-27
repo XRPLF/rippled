@@ -811,8 +811,8 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
             return {};
         }
 
-        if (strcmp(secretType, jss::secret.c_str()) ==
-            0)  // don't assume that pointers are the same
+        // using strcmp as pointers may not match (see  https://bit.ly/3OGvf0E)
+        if (strcmp(secretType, jss::secret.c_str()) == 0)
         {
             error = RPC::make_param_error(
                 "The secret field is not allowed if " +
@@ -824,8 +824,8 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
-    if (strcmp(secretType, jss::seed_hex.c_str()) !=
-        0)  // don't assume that pointers are the same
+    // using strcmp as pointers may not match (see  https://bit.ly/3OGvf0E)
+    if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
         seed = RPC::parseRippleLibSeed(params[secretType]);
 
