@@ -715,7 +715,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     // Identify which seed type is in use.
     const seed_match_t* seedType = nullptr;
     int count = 0;
-    for (const auto& t : seedTypes)
+    for (auto const& t : seedTypes)
     {
         if (params.isMember(t.first))
         {
