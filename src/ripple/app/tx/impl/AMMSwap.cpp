@@ -46,34 +46,34 @@ AMMSwap::preflight(PreflightContext const& ctx)
     // Valid combinations are:
     //   AssetIn
     //   AssetOut
-    //   AssetIn and MaxSP
-    //   AssetOut and MaxSP
+    //   AssetIn and LimitSpotPrice
+    //   AssetOut and LimitSpotPrice
     //   AssetIn and Slippage
-    //   AssetIn and MaxSP and Slippage
+    //   AssetOut and Slippage
     auto const assetIn = ctx.tx[~sfAssetIn];
     auto const assetOut = ctx.tx[~sfAssetOut];
-    auto const maxSP = ctx.tx[~sfMaxSP];
+    auto const limitSP = ctx.tx[~sfLimitSpotPrice];
     auto const slippage = ctx.tx[~sfSlippage];
     if ((!assetIn && !assetOut) || (assetIn && assetOut) ||
-        (assetOut && slippage))
+        (limitSP && slippage))
     {
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid combination of "
-                               "swap fields.";
+                               "fields.";
         return temBAD_AMM_OPTIONS;
     }
-    if (auto const res = validAmount(assetIn, maxSP.has_value()))
+    if (auto const res = validAmount(assetIn, limitSP.has_value()))
     {
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid AssetIn";
         return *res;
     }
-    else if (auto const res = validAmount(assetOut, maxSP.has_value()))
+    else if (auto const res = validAmount(assetOut, limitSP.has_value()))
     {
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid AssetOut";
         return *res;
     }
-    else if (auto const res = validAmount(maxSP))
+    else if (auto const res = validAmount(limitSP))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid MaxSP";
+        JLOG(ctx.j.debug()) << "Malformed transaction: invalid LimitSpotPrice";
         return *res;
     }
     // TODO CHECK slippage
@@ -91,12 +91,13 @@ AMMSwap::preclaim(PreclaimContext const& ctx)
         return temBAD_SRC_ACCOUNT;
     }
     auto const assetOut = ctx.tx[~sfAssetOut];
+    auto const assetIn = ctx.tx[~sfAssetIn];
     auto const [asset1, asset2, lpTokens] = getAMMBalances(
         ctx.view,
         sleAMM->getAccountID(sfAMMAccount),
         ctx.tx[sfAccount],
+        assetIn ? std::optional<Issue>(assetIn->issue()) : std::nullopt,
         assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
-        std::nullopt,
         ctx.j);
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
         lpTokens <= beast::zero)
@@ -105,14 +106,18 @@ AMMSwap::preclaim(PreclaimContext const& ctx)
             << "AMM Deposit: reserves or tokens balance is zero";
         return tecAMM_BALANCE;
     }
-    if (assetOut && *assetOut > asset1)
+    if (assetIn && *assetIn > asset1)
+    {
+        JLOG(ctx.j.error()) << "AMM Deposit: invalid swap in amount";
+        return tecAMM_BALANCE;
+    }
+    if (assetOut && *assetOut > asset2)
     {
         JLOG(ctx.j.error()) << "AMM Deposit: invalid swap out amount";
         return tecAMM_BALANCE;
     }
 
-    if (isFrozen(ctx.view, ctx.tx[~sfAssetIn]) ||
-        isFrozen(ctx.view, ctx.tx[~sfAssetOut]))
+    if (isFrozen(ctx.view, assetIn) || isFrozen(ctx.view, assetOut))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit involves frozen asset";
         return tecFROZEN;
@@ -130,61 +135,48 @@ AMMSwap::preCompute()
 std::pair<TER, bool>
 AMMSwap::applyGuts(Sandbox& sb)
 {
-    // TODO if slippage and maxSP then there should be another var sfAsset which
-    // could be either in or out
     auto const assetIn = ctx_.tx[~sfAssetIn];
     auto const assetOut = ctx_.tx[~sfAssetOut];
-    auto const maxSP = ctx_.tx[~sfMaxSP];
+    auto const limitSP = ctx_.tx[~sfLimitSpotPrice];
     auto const slippage = ctx_.tx[~sfSlippage];
     auto const sleAMM = ctx_.view().peek(keylet::amm(ctx_.tx[sfAMMHash]));
     assert(sleAMM);
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
-    auto const issue = [&]() -> std::optional<Issue> {
-        if (assetIn)
-            return assetIn->issue();
-        else if (assetOut)
-            return assetOut->issue();
-        return std::nullopt;
-    }();
-    // asset1, asset2 are ordered by issue; i.e. asset1.issue == issue
-    // if assetIn is provided then asset1 corresponds to assetIn, otherwise
-    // assetOut
+    // asset1 corresponds to assetIn and asset2 corresponds to assetOut
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
-        sb, ammAccountID, std::nullopt, issue, std::nullopt, ctx_.journal);
+        sb,
+        ammAccountID,
+        std::nullopt,
+        assetIn ? std::optional<Issue>(assetIn->issue()) : std::nullopt,
+        assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
+        ctx_.journal);
     // lpAsset1, lpAsset2 ordered same as above
     auto const [lpAsset1, lpAsset2, lpTokens] = getAMMBalances(
-        sb, ammAccountID, account_, issue, std::nullopt, ctx_.journal);
+        sb,
+        ammAccountID,
+        account_,
+        assetIn ? std::optional<Issue>(assetIn->issue()) : std::nullopt,
+        assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
+        ctx_.journal);
 
     auto const tfee = sleAMM->getFieldU32(sfTradingFee);
-    auto const weight = sleAMM->getFieldU8(sfAssetWeight);
+    auto const weight1 = orderWeight(
+        sleAMM->getFieldU8(sfAssetWeight), asset1.issue(), asset2.issue());
 
     TER result = tesSUCCESS;
 
     if (assetIn)
     {
-        if (maxSP && slippage)
-            result = swapSlippageMaxSP(
+        if (limitSP)
+            result = swapInLimitSP(
                 sb,
                 ammAccountID,
                 asset1,
                 asset2,
-                lpAsset1,
-                lpAsset2,
                 *assetIn,
-                *slippage,
-                *maxSP,
-                weight,
-                tfee);
-        else if (maxSP)
-            result = swapInMaxSP(
-                sb,
-                ammAccountID,
-                asset1,
-                asset2,
                 lpAsset2,
-                assetIn->issue(),
-                *maxSP,
-                weight,
+                *limitSP,
+                weight1,
                 tfee);
         else if (slippage)
             result = swapInSlippage(
@@ -192,10 +184,10 @@ AMMSwap::applyGuts(Sandbox& sb)
                 ammAccountID,
                 asset1,
                 asset2,
-                lpAsset2,
                 *assetIn,
+                lpAsset2,
                 *slippage,
-                weight,
+                weight1,
                 tfee);
         else
             result = swapIn(
@@ -203,23 +195,34 @@ AMMSwap::applyGuts(Sandbox& sb)
                 ammAccountID,
                 asset1,
                 asset2,
-                lpAsset2,
                 *assetIn,
-                weight,
+                lpAsset2,
+                weight1,
                 tfee);
     }
     else if (assetOut)
     {
-        if (maxSP)
-            result = swapOutMaxSP(
+        if (limitSP)
+            result = swapOutLimitSP(
                 sb,
                 ammAccountID,
                 asset1,
                 asset2,
-                lpAsset1,
-                assetOut->issue(),
-                *maxSP,
-                weight,
+                *assetOut,
+                lpAsset2,
+                *limitSP,
+                weight1,
+                tfee);
+        else if (slippage)
+            result = swapOutSlippage(
+                sb,
+                ammAccountID,
+                asset1,
+                asset2,
+                *assetOut,
+                lpAsset2,
+                *slippage,
+                weight1,
                 tfee);
         else
             result = swapOut(
@@ -227,9 +230,9 @@ AMMSwap::applyGuts(Sandbox& sb)
                 ammAccountID,
                 asset1,
                 asset2,
-                lpAsset1,
                 *assetOut,
-                weight,
+                lpAsset2,
+                weight1,
                 tfee);
     }
 
@@ -292,8 +295,8 @@ AMMSwap::swapIn(
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
-    STAmount const& lpAsset2,
     STAmount const& assetIn,
+    STAmount const& lpAsset2,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
@@ -308,68 +311,80 @@ AMMSwap::swapOut(
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
-    STAmount const& lpAsset2,
     STAmount const& assetOut,
+    STAmount const& lpAsset2,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    auto const assetIn =
-        swapAssetOut(asset1Balance, asset2Balance, assetOut, weight1, tfee);
+    auto const assetIn = swapAssetOut(
+        asset2Balance, asset1Balance, assetOut, 100 - weight1, tfee);
     return swapAssets(view, ammAccount, assetIn, assetOut, lpAsset2);
 }
 
 TER
-AMMSwap::swapInMaxSP(
+AMMSwap::swapInLimitSP(
     Sandbox& view,
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
+    STAmount const& assetIn,
     STAmount const& lpAsset2,
-    Issue const& assetInIssue,
-    STAmount const& maxSP,
+    STAmount const& limitSP,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    auto const assetIn =
-        changeSpotPrice(asset1Balance, asset2Balance, maxSP, weight1, tfee);
-    if (!assetIn)
+    auto const assetInDeposit =
+        changeSpotPrice(asset1Balance, asset2Balance, limitSP, weight1, tfee);
+    if (!assetInDeposit)
         return tecAMM_FAILED_SWAP;
+    if (assetIn == beast::zero || *assetInDeposit <= assetIn)
+        return swapIn(
+            view,
+            ammAccount,
+            asset1Balance,
+            asset2Balance,
+            *assetInDeposit,
+            lpAsset2,
+            weight1,
+            tfee);
     return swapIn(
         view,
         ammAccount,
         asset1Balance,
         asset2Balance,
+        assetIn,
         lpAsset2,
-        *assetIn,
         weight1,
         tfee);
 }
 
 TER
-AMMSwap::swapOutMaxSP(
+AMMSwap::swapOutLimitSP(
     Sandbox& view,
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
+    STAmount const& assetOut,
     STAmount const& lpAsset2,
-    Issue const& assetOutIssue,
-    STAmount const& maxSP,
+    STAmount const& limitSP,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    auto const assetOut =
-        changeSpotPrice(asset1Balance, asset2Balance, maxSP, weight1, tfee);
-    if (!assetOut)
+    auto const assetOutDeposit =
+        changeSpotPrice(asset2Balance, asset1Balance, limitSP, weight1, tfee);
+    if (!assetOutDeposit)
         return tecAMM_FAILED_SWAP;
-    return swapOut(
-        view,
-        ammAccount,
-        asset1Balance,
-        asset2Balance,
-        lpAsset2,
-        *assetOut,
-        weight1,
-        tfee);
+    if (assetOut == beast::zero || assetOutDeposit >= assetOut)
+        return swapOut(
+            view,
+            ammAccount,
+            asset1Balance,
+            asset2Balance,
+            lpAsset2,
+            *assetOutDeposit,
+            weight1,
+            tfee);
+    return tecAMM_FAILED_SWAP;
 }
 
 TER
@@ -378,97 +393,74 @@ AMMSwap::swapInSlippage(
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
-    STAmount const& lpAsset,
     STAmount const& assetIn,
+    STAmount const& lpAsset2,
     std::uint16_t slippage,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    STAmount const saSlippage{noIssue(), slippage, -3};
-    auto const ss = slippageSlope(asset1Balance, weight1, tfee);
-    auto const assetInUpd = [&] {
-        if (auto const s = multiply(assetIn, ss, noIssue()); s <= saSlippage)
-            return assetIn;
-        return divide(saSlippage, ss, assetIn.issue());
-    }();
+    auto const slippageSlope =
+        averageSlippageIn(asset1Balance, assetIn, weight1, tfee);
+    if (assetIn * slippageSlope <= slippage)
+        return swapIn(
+            view,
+            ammAccount,
+            asset1Balance,
+            asset2Balance,
+            assetIn,
+            lpAsset2,
+            weight1,
+            tfee);
+
+    auto const assetInUpd =
+        toSTAmount(assetIn.issue(), slippage / slippageSlope);
     return swapIn(
         view,
         ammAccount,
         asset1Balance,
         asset2Balance,
-        lpAsset,
         assetInUpd,
+        lpAsset2,
         weight1,
         tfee);
 }
 
 TER
-AMMSwap::swapSlippageMaxSP(
+AMMSwap::swapOutSlippage(
     Sandbox& view,
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
-    STAmount const& lpAsset1,
+    STAmount const& assetOut,
     STAmount const& lpAsset2,
-    STAmount const& asset,
     std::uint16_t slippage,
-    STAmount const& maxSP,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
-    auto const sp = calcSpotPrice(asset1Balance, asset2Balance, weight1, tfee);
-    // The asset to be swapped out, such that after
-    // the trade the SP of this asset is no more than maxSP
-    if (sp <= STAmount{noIssue(), maxSP.mantissa(), maxSP.exponent()})
-        return swapOutMaxSP(
+    auto const slippageSlope =
+        averageSlippageOut(asset2Balance, assetOut, weight1, tfee);
+    if (assetOut * slippageSlope <= slippage)
+        return swapOut(
             view,
             ammAccount,
             asset1Balance,
             asset2Balance,
-            lpAsset1,
-            asset.issue(),
-            maxSP,
-            weight1,
-            tfee);
-
-    // The asset to be swapped in, such that after the trade the SP of this
-    // asset is no less than maxSP and the slippage for the trade does not
-    // exceed slippage
-    auto const assetIn =
-        changeSpotPrice(asset1Balance, asset2Balance, maxSP, weight1, tfee);
-    if (!assetIn)
-        return tecAMM_FAILED_SWAP;
-
-    STAmount saSlippage{noIssue(), slippage, -3};
-    auto const ss = slippageSlope(asset1Balance, weight1, tfee);
-    if (auto const s = multiply(*assetIn, ss, noIssue()); s <= saSlippage)
-        return swapIn(
-            view,
-            ammAccount,
-            asset1Balance,
-            asset2Balance,
+            assetOut,
             lpAsset2,
-            *assetIn,
             weight1,
             tfee);
 
-    // Figure out assetIn given the slippage
-    auto const newAssetIn = divide(saSlippage, ss, asset.issue());
-    auto const tosq = divide(newAssetIn, asset1Balance, noIssue());
-    if (auto const newSP =
-            multiply(multiply(tosq, tosq, noIssue()), sp, maxSP.issue());
-        newSP >= maxSP)
-        return swapIn(
-            view,
-            ammAccount,
-            asset1Balance,
-            asset2Balance,
-            lpAsset2,
-            newAssetIn,
-            weight1,
-            tfee);
-
-    return tecAMM_FAILED_SWAP;
+    auto const assetOutUpd =
+        toSTAmount(assetOut.issue(), slippage / slippageSlope);
+    return swapOut(
+        view,
+        ammAccount,
+        asset1Balance,
+        asset2Balance,
+        assetOutUpd,
+        lpAsset2,
+        weight1,
+        tfee);
 }
 
 }  // namespace ripple

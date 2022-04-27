@@ -243,7 +243,7 @@ CONSTRUCT_TYPED_SFIELD(sfAsset1In,              "Asset1In",             AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfAsset2In,              "Asset2In",             AMOUNT,    21);
 CONSTRUCT_TYPED_SFIELD(sfAsset1Out,             "Asset1Out",            AMOUNT,    22);
 CONSTRUCT_TYPED_SFIELD(sfAsset2Out,             "Asset2Out",            AMOUNT,    23);
-CONSTRUCT_TYPED_SFIELD(sfMaxSP,                 "MaxSP",                AMOUNT,    27);
+CONSTRUCT_TYPED_SFIELD(sfLimitSpotPrice,        "LimitSpotPrice",       AMOUNT,    27);
 CONSTRUCT_TYPED_SFIELD(sfLPTokens,              "LPTokens",             AMOUNT,    28);
 CONSTRUCT_TYPED_SFIELD(sfAssetIn,               "AssetIn",              AMOUNT,    29);
 CONSTRUCT_TYPED_SFIELD(sfAssetOut,              "AssetOut",             AMOUNT,    30);

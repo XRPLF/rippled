@@ -251,16 +251,16 @@ AMM::withdraw(
     std::optional<Account> const& account,
     STAmount const& asset1Out,
     std::optional<STAmount> const& asset2Out,
-    std::optional<STAmount> const& maxSP,
+    std::optional<STAmount> const& limitSP,
     std::optional<ter> const& ter)
 {
-    assert(!(asset2Out && maxSP));
+    assert(!(asset2Out && limitSP));
     Json::Value jv;
     asset1Out.setJson(jv[jss::Asset1Out]);
     if (asset2Out)
         asset2Out->setJson(jv[jss::Asset2Out]);
-    if (maxSP)
-        maxSP->setJson(jv[jss::MaxSP]);
+    if (limitSP)
+        limitSP->setJson(jv[jss::LimitSpotPrice]);
     withdraw(account, jv, ter);
 }
 
@@ -269,16 +269,16 @@ AMM::swapIn(
     std::optional<Account> const& account,
     STAmount const& assetIn,
     std::optional<std::uint16_t> const& slippage,
-    std::optional<STAmount> const& maxSP,
+    std::optional<STAmount> const& limitSP,
     std::optional<ter> const& ter)
 {
-    assert(!(maxSP.has_value() && slippage.has_value()));
+    assert(!(limitSP.has_value() && slippage.has_value()));
     Json::Value jv;
     assetIn.setJson(jv[jss::AssetIn]);
     if (slippage)
         jv[jss::Slippage] = *slippage;
-    if (maxSP)
-        maxSP->setJson(jv[jss::MaxSP]);
+    if (limitSP)
+        limitSP->setJson(jv[jss::LimitSpotPrice]);
     swap(account, jv, ter);
 }
 
@@ -287,13 +287,13 @@ AMM::swap(
     std::optional<Account> const& account,
     STAmount const& asset,
     std::uint16_t const& slippage,
-    STAmount const& maxSP,
+    STAmount const& limitSP,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
     asset.setJson(jv[jss::AssetIn]);
     jv[jss::Slippage] = slippage;
-    maxSP.setJson(jv[jss::MaxSP]);
+    limitSP.setJson(jv[jss::LimitSpotPrice]);
     swap(account, jv, ter);
 }
 
@@ -301,13 +301,13 @@ void
 AMM::swapOut(
     std::optional<Account> const& account,
     STAmount const& assetOut,
-    std::optional<STAmount> const& maxSP,
+    std::optional<STAmount> const& limitSP,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
     assetOut.setJson(jv[jss::AssetOut]);
-    if (maxSP)
-        maxSP->setJson(jv[jss::MaxSP]);
+    if (limitSP)
+        limitSP->setJson(jv[jss::LimitSpotPrice]);
     swap(account, jv, ter);
 }
 

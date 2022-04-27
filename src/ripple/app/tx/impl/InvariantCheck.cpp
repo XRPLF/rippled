@@ -324,7 +324,13 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    // AMM account root can be deleted as the result of AMM withdraw
+    // transaction when the total AMM LP Tokens balance goes to 0.
+    // Not every AMM withdraw deletes the AMM account, accountsDeleted_
+    // is set if it is deleted.
+    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
+         (tx.getTxnType() == ttAMM_WITHDRAW && accountsDeleted_ == 1)) &&
+        result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;

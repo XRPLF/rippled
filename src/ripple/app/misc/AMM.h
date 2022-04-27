@@ -124,15 +124,6 @@ validAmount(std::optional<STAmount> const& a, bool zero = false);
 bool
 isFrozen(ReadView const& view, std::optional<STAmount> const& a);
 
-/** Validate deposit/withdraw lpt amount. The amount must not
- * exceed 30% of the pool share and must not be 0.
- * @param lptAMMBalance current AMM LPT balance
- * @param tokens requested LPT amount to deposit/withdraw
- * @return
- */
-bool
-validLPTokens(STAmount const& lptAMMBalance, STAmount const& tokens);
-
 /** Get AMM SLE and verify that the AMM account exists.
  * Return null if SLE not found or AMM account doesn't exist.
  * @param view
@@ -141,6 +132,15 @@ validLPTokens(STAmount const& lptAMMBalance, STAmount const& tokens);
  */
 std::shared_ptr<SLE const>
 getAMMSle(ReadView const& view, uint256 ammHash);
+
+/** Return weight that corresponds to issue1.
+ * If issue1 < issue2
+ *   weight
+ * else
+ *   100 - weight
+ */
+std::uint8_t
+orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2);
 
 }  // namespace ripple
 

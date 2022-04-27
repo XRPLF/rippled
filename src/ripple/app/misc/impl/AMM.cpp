@@ -143,7 +143,8 @@ getAMMBalances(
             STAmount{issue(issue2), 0},
             STAmount{lptIssue, 0});
     // re-order if needed
-    if (issue1 && *issue1Opt != *issue1)
+    if ((issue1 && *issue1Opt != *issue1) ||
+        (!issue1 && issue2 && *issue2Opt != *issue2))
         issue1Opt.swap(issue2Opt);
     // validate issues
     if ((issue1 && *issue1Opt != *issue1) || (issue2 && *issue2Opt != *issue2))
@@ -206,13 +207,6 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a)
     return a && !a->native() && isGlobalFrozen(view, a->getIssuer());
 }
 
-bool
-validLPTokens(STAmount const& lptAMMBalance, STAmount const& tokens)
-{
-    auto const pct = Number{100} * tokens / lptAMMBalance;
-    return pct != Number{0};
-}
-
 std::shared_ptr<SLE const>
 getAMMSle(ReadView const& view, uint256 ammHash)
 {
@@ -220,6 +214,15 @@ getAMMSle(ReadView const& view, uint256 ammHash)
     if (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount))))
         return nullptr;
     return sle;
+}
+
+std::uint8_t
+orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2)
+{
+    if (issue1 < issue2)
+        return weight;
+    else
+        return 100 - weight;
 }
 
 }  // namespace ripple

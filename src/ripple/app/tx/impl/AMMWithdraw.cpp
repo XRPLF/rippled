@@ -46,18 +46,18 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
-    auto const maxSP = ctx.tx[~sfMaxSP];
+    auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokens];
     // Valid combinations are:
     //   LPTokens
     //   Asset1Out
     //   Asset1Out and Asset2Out
     //   Asset1Out and LPTokens
-    //   Asset1Out and MaxSP
-    if ((!lpTokens && !asset1Out) || (lpTokens && (asset2Out || maxSP)) ||
+    //   Asset1Out and EPrice
+    if ((!lpTokens && !asset1Out) || (lpTokens && (asset2Out || ePrice)) ||
         (asset1Out &&
-         ((asset2Out && (lpTokens || maxSP)) ||
-          (maxSP && (asset2Out || lpTokens)))))
+         ((asset2Out && (lpTokens || ePrice)) ||
+          (ePrice && (asset2Out || lpTokens)))))
     {
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid combination of "
                                "deposit fields.";
@@ -77,9 +77,9 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid Asset2OutAmount";
         return *res;
     }
-    else if (auto const res = validAmount(maxSP))
+    else if (auto const res = validAmount(ePrice))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid MaxSP";
+        JLOG(ctx.j.debug()) << "Malformed transaction: invalid EPrice";
         return *res;
     }
 
@@ -97,7 +97,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     }
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
-    auto const maxSP = ctx.tx[~sfMaxSP];
+    auto const ePrice = ctx.tx[~sfEPrice];
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
     auto const [asset1, asset2, lptBalance] = getAMMBalances(
         ctx.view,
@@ -156,7 +156,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 {
     auto const asset1Out = ctx_.tx[~sfAsset1Out];
     auto const asset2Out = ctx_.tx[~sfAsset2Out];
-    auto const maxSP = ctx_.tx[~sfMaxSP];
+    auto const ePrice = ctx_.tx[~sfEPrice];
     auto const sleAMM = ctx_.view().peek(keylet::amm(ctx_.tx[sfAMMHash]));
     assert(sleAMM);
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
@@ -176,7 +176,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         ctx_.journal);
 
     auto const tfee = sleAMM->getFieldU32(sfTradingFee);
-    auto const weight = sleAMM->getFieldU8(sfAssetWeight);
+    auto const weight1 = orderWeight(
+        sleAMM->getFieldU8(sfAssetWeight), asset1.issue(), asset2.issue());
 
     TER result = tesSUCCESS;
 
@@ -199,18 +200,18 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 lptAMMBalance,
                 *asset1Out,
                 *lpTokens,
-                weight,
+                weight1,
                 tfee);
-        else if (maxSP)
-            result = singleWithdrawMaxSP(
+        else if (ePrice)
+            result = singleWithdrawEPrice(
                 sb,
                 ammAccountID,
                 asset1,
                 asset2,
                 lptAMMBalance,
                 *asset1Out,
-                *maxSP,
-                weight,
+                *ePrice,
+                weight1,
                 tfee);
         else
             result = singleWithdrawal(
@@ -219,7 +220,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 asset1,
                 lptAMMBalance,
                 *asset1Out,
-                weight,
+                weight1,
                 tfee);
     }
     else if (lpTokens)
@@ -252,7 +253,6 @@ AMMWithdraw::doApply()
 TER
 AMMWithdraw::deleteAccount(Sandbox& view, AccountID const& ammAccountID)
 {
-    return tesSUCCESS;
     auto sleAMMRoot = view.peek(keylet::account(ammAccountID));
     assert(sleAMMRoot);
     auto sleAMM = view.peek(keylet::amm(ctx_.tx[sfAMMHash]));
@@ -261,53 +261,11 @@ AMMWithdraw::deleteAccount(Sandbox& view, AccountID const& ammAccountID)
     if (!sleAMMRoot || !sleAMM)
         return tefBAD_LEDGER;
 
-    // Delete all of the entries in the account directory.
-    Keylet const ownerDirKeylet{keylet::ownerDir(ammAccountID)};
-    std::shared_ptr<SLE> sleDirNode{};
-    unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
-
-    if (view.exists(ownerDirKeylet) &&
-        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
-    {
-        do
-        {
-            // Choose the right way to delete each directory node.
-            auto sleItem = view.peek(keylet::child(dirEntry));
-            if (!sleItem)
-            {
-                // Directory node has an invalid index.  Bail out.
-                JLOG(j_.fatal())
-                    << "DeleteAccount: Directory node in ledger " << view.seq()
-                    << " has index to object that is missing: "
-                    << to_string(dirEntry);
-                return tefBAD_LEDGER;
-            }
-
-            assert(uDirEntry == 1);
-            if (uDirEntry != 1)
-            {
-                JLOG(j_.error())
-                    << "DeleteAccount iterator re-validation failed.";
-                return tefBAD_LEDGER;
-            }
-            uDirEntry = 0;
-
-        } while (
-            dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
-    }
-
-    // If there's still an owner directory associated with the source account
-    // delete it.
-    if (view.exists(ownerDirKeylet) && !view.emptyDirDelete(ownerDirKeylet))
-    {
-        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of "
-                         << toBase58(account_);
-        return tecHAS_OBLIGATIONS;
-    }
-
-    this->view().erase(sleAMM);
-    this->view().erase(sleAMMRoot);
+    // Note, the AMM trust lines are deleted since the balance
+    // goes to 0. It also means there are no linked
+    // ledger objects.
+    view.erase(sleAMM);
+    view.erase(sleAMMRoot);
 
     return tesSUCCESS;
 }
@@ -321,15 +279,29 @@ AMMWithdraw::withdraw(
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens)
 {
-    if (!validLPTokens(lptAMMBalance, lpTokens))
-        return tecAMM_INVALID_TOKENS;
+    auto const [lpAsset1, lpAsset2, lptAMM] = getAMMBalances(
+        view, ammAccount, account_, asset1.issue(), std::nullopt, ctx_.journal);
+    // The balances exceed LP holding or withdrawing all tokens and
+    // there is some balance remaining.
+    if (lpTokens == beast::zero || lpTokens > lptAMM || asset1 > lpAsset1 ||
+        (asset2 && *asset2 > lpAsset2) ||
+        (lpTokens == lptAMMBalance &&
+         (lpAsset1 != asset1 || (asset2 && *asset2 != lpAsset2))))
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Instance: failed to withdraw, invalid LP balance "
+            << " tokens: " << lpTokens << " " << lptAMM
+            << " asset1: " << lpAsset1 << " " << asset1
+            << " asset2: " << lpAsset2 << (asset2 ? to_string(*asset2) : "");
+        return tecAMM_BALANCE;
+    }
 
     // Withdraw asset1
     auto res = accountSend(view, ammAccount, account_, asset1, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Instance: failed to withdraw " << asset1;
+            << "AMM Withdraw: failed to withdraw " << asset1;
         return res;
     }
 
@@ -340,7 +312,7 @@ AMMWithdraw::withdraw(
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())
-                << "AMM Instance: failed to withdraw " << *asset2;
+                << "AMM Withdraw: failed to withdraw " << *asset2;
             return res;
         }
     }
@@ -350,22 +322,11 @@ AMMWithdraw::withdraw(
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Instance: failed to withdraw LPTokens";
+            << "AMM Withdraw: failed to withdraw LPTokens";
         return res;
     }
 
-    auto const [asset1Rem, asset2Rem, lptAMMRem] = getAMMBalances(
-        view,
-        ammAccount,
-        std::nullopt,
-        std::nullopt,
-        std::nullopt,
-        ctx_.journal);
-    // TODO delete AMM account and all related objects if
-    // the tokens balance is 0. Must handle cases
-    // if tokens are 0 but balances are not and the other way
-    // around.
-    if (lptAMMRem == beast::zero)
+    if (lpTokens == lptAMMBalance)
         return deleteAccount(view, ammAccount);
 
     return tesSUCCESS;
@@ -463,14 +424,14 @@ AMMWithdraw::singleWithdrawalTokens(
 }
 
 TER
-AMMWithdraw::singleWithdrawMaxSP(
+AMMWithdraw::singleWithdrawEPrice(
     Sandbox& view,
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& lptAMMBalance,
     STAmount const& asset1Out,
-    STAmount const& maxSP,
+    STAmount const& ePrice,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {

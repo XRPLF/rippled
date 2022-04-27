@@ -170,20 +170,20 @@ private:
      * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1Out aset1 withdraw amount
-     * @param maxSP maximum asset1 spot price
+     * @param ePrice maximum asset1 effective price
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
      * @return
      */
     TER
-    singleWithdrawMaxSP(
+    singleWithdrawEPrice(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& asset1Out,
-        STAmount const& maxSP,
+        STAmount const& ePrice,
         std::uint8_t weight1,
         std::uint16_t tfee);
 

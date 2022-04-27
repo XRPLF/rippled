@@ -151,25 +151,45 @@ swapAssetOut(
             feeMult(tfee));
 }
 
-STAmount
-slippageSlope(
-    STAmount const& assetBalance,
-    std::uint8_t assetWeight,
-    std::uint16_t tfee)
-{
-    return toSTAmount(
-        noIssue(), feeMult(tfee) / (2 * assetBalance * (100 - assetWeight)));
-}
-
-STAmount
-averageSlippage(
+Number
+slippageSlopeIn(
     STAmount const& assetBalance,
     STAmount const& assetIn,
     std::uint8_t assetWeight,
     std::uint16_t tfee)
 {
-    auto const ss = slippageSlope(assetBalance, assetWeight, tfee);
-    return multiply(assetIn, ss, noIssue());
+    return feeMult(tfee) * 100 / (2 * assetBalance * (100 - assetWeight));
+}
+
+Number
+averageSlippageIn(
+    STAmount const& assetBalance,
+    STAmount const& assetIn,
+    std::uint8_t assetWeight,
+    std::uint16_t tfee)
+{
+    return assetIn * slippageSlopeIn(assetBalance, assetIn, assetWeight, tfee);
+}
+
+Number
+slippageSlopeOut(
+    STAmount const& assetBalance,
+    STAmount const& assetOut,
+    std::uint8_t assetWeight,
+    std::uint16_t tfee)
+{
+    return Number{100} / (2 * assetBalance * assetWeight);
+}
+
+Number
+averageSlippageOut(
+    STAmount const& assetBalance,
+    STAmount const& assetOut,
+    std::uint8_t assetWeight,
+    std::uint16_t tfee)
+{
+    return assetOut *
+        slippageSlopeOut(assetBalance, assetOut, assetWeight, tfee);
 }
 
 }  // namespace ripple

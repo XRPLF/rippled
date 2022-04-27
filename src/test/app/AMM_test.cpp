@@ -506,7 +506,11 @@ private:
             ammAlice.withdraw(alice, 0);
             BEAST_EXPECT(
                 ammAlice.expectBalances(XRP(0), USD(0), IOUAmount{0, 0}));
-            readLines(env, ammAlice.ammAccount(), "amm");
+
+            // Can create AMM for the XRP/USD pair
+            AMM ammCarol(env, carol, XRP(10000), USD(10000));
+            BEAST_EXPECT(ammCarol.expectBalances(
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
     }
 
@@ -603,7 +607,7 @@ private:
                 XRPAmount{9090909091}, USD(11000), IOUAmount{10000000, 0}));
         });
 
-        // Swap in USD1000, MaxSP not to exceed 1100000
+        // Swap in USD1000, limitSP not to exceed 1100000
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapIn(alice, USD(1000), std::nullopt, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -612,7 +616,7 @@ private:
                 IOUAmount{10000000, 0}));
         });
 
-        // Swap in USD1000, MaxSP not to exceed 110000.
+        // Swap in USD1000, limitSP not to exceed 110000.
         // This transaction fails.
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapIn(
@@ -620,44 +624,7 @@ private:
                 USD(1000),
                 std::nullopt,
                 XRPAmount{110000},
-                std::optional<ter>(tecAMM_FAILED_SWAP));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-        });
-
-        // Swap in USD1000, MaxSP not to exceed 1100000, and Slippage 10000.
-        // SP is less than MaxSP - execute swapOut with MaxSP
-        // 110000, the trade executes.
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swap(alice, USD(1000), 10000, XRPAmount{1100000});
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{10513133959},
-                STAmount{USD.issue(), 951191151829848llu, -11},
-                IOUAmount{10000000, 0}));
-        });
-
-        // Swap in USD1000, MaxSP not to exceed 100000, and Slippage 10000.
-        // SP is less than MaxSP. The SP can't be changed and the trade fails.
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swap(
-                alice,
-                USD(1000),
-                10000,
-                XRPAmount{100000},
-                std::optional<ter>(tecAMM_FAILED_SWAP));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-        });
-
-        // Swap in USD1000, MaxSP not to exceed 900000, and Slippage 10000.
-        // SP is greater than MaxSP. TODO: But change SP then fails.
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swap(
-                alice,
-                USD(1000),
-                10000,
-                XRPAmount{900000},
-                std::optional<ter>(tecAMM_FAILED_SWAP));
+                ter(tecAMM_FAILED_SWAP));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
@@ -669,7 +636,8 @@ private:
                 XRPAmount{11111111111}, USD(9000), IOUAmount{10000000, 0}));
         });
 
-        // Swap out USD1000, MaxSP not to exceed 1100000
+#if 0
+        // Swap out USD1000, limitSP not to exceed 1100000
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapOut(alice, USD(1000), XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -678,7 +646,7 @@ private:
                 IOUAmount{10000000, 0}));
         });
 
-        // Swap out USD1000, MaxSP not to exceed 900000
+        // Swap out USD1000, limitSP not to exceed 900000
         // This transaction fails.
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.swapOut(
@@ -689,6 +657,7 @@ private:
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
+#endif
     }
 
     void

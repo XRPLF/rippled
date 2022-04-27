@@ -52,7 +52,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   Asset1In
     //   Asset1In and Asset2In
     //   Asset1In and LPTokens
-    //   Asset1In and MaxSP
+    //   Asset1In and EPrice
     if ((!lpTokens && !asset1In) || (lpTokens && (asset2In || ePrice)) ||
         (asset1In &&
          ((asset2In && (lpTokens || ePrice)) ||
@@ -62,7 +62,6 @@ AMMDeposit::preflight(PreflightContext const& ctx)
                                "deposit fields.";
         return temBAD_AMM_OPTIONS;
     }
-    // Is there an upper bound?
     if (lpTokens && *lpTokens == beast::zero)
     {
         JLOG(ctx.j.debug()) << "Malformed transaction: invalid LPTokens";
@@ -145,7 +144,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
         ctx_.journal);
 
     auto const tfee = sleAMM->getFieldU32(sfTradingFee);
-    auto const weight = sleAMM->getFieldU8(sfAssetWeight);
+    auto const weight1 = orderWeight(
+        sleAMM->getFieldU8(sfAssetWeight), asset1.issue(), asset2.issue());
 
     TER result = tesSUCCESS;
 
@@ -167,7 +167,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 asset1,
                 lptAMMBalance,
                 *lpTokens,
-                weight,
+                weight1,
                 tfee);
         else if (ePrice)
             result = singleDepositEPrice(
@@ -178,7 +178,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 *asset1In,
                 lptAMMBalance,
                 *ePrice,
-                weight,
+                weight1,
                 tfee);
         else
             result = singleDeposit(
@@ -187,7 +187,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 asset1,
                 lptAMMBalance,
                 *asset1In,
-                weight,
+                weight1,
                 tfee);
     }
     else if (lpTokens)
@@ -312,7 +312,7 @@ AMMDeposit::equalDepositLimit(
 {
     auto frac = Number{asset1In} / asset1Balance;
     auto tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
-    if (!validLPTokens(lptAMMBalance, tokens))
+    if (tokens == beast::zero)
         return tecAMM_INVALID_TOKENS;
     auto const asset2Deposit = asset2Balance * frac;
     if (asset2Deposit <= asset2In)
@@ -324,7 +324,7 @@ AMMDeposit::equalDepositLimit(
             tokens);
     frac = Number{asset2In} / asset2Balance;
     tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
-    if (!validLPTokens(lptAMMBalance, tokens))
+    if (tokens == beast::zero)
         return tecAMM_INVALID_TOKENS;
     auto const asset1Deposit = asset1Balance * frac;
     if (asset1Deposit <= asset1In)
@@ -349,7 +349,7 @@ AMMDeposit::singleDeposit(
 {
     auto const tokens =
         calcLPTokensIn(asset1Balance, asset1In, lptAMMBalance, weight1, tfee);
-    if (!validLPTokens(lptAMMBalance, tokens))
+    if (tokens == beast::zero)
         return tecAMM_INVALID_TOKENS;
     return deposit(view, ammAccount, asset1In, std::nullopt, tokens);
 }

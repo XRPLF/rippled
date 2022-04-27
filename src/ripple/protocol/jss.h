@@ -96,7 +96,7 @@ JSS(NFTokenCancelOffer);     // transaction type.
 JSS(NFTokenCreateOffer);     // transaction type.
 JSS(NFTokenPage);            // ledger type.
 JSS(LPTokens);               // in: AMM Deposit/Withdraw option
-JSS(MaxSP);                  // in: AMM Deposit option
+JSS(LimitSpotPrice);         // in: AMM Deposit option
 JSS(Offer);                  // ledger type.
 JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.

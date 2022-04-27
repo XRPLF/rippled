@@ -79,8 +79,8 @@ private:
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
-     * @param lpAsset current LP asset balance same issue as asset2Balance
      * @param assetIn asset to swap in same issue as asset1Balance
+     * @param lpAsset current LP asset balance same issue as asset2Balance
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
      * @return
@@ -91,8 +91,8 @@ private:
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
-        STAmount const& lpAsset,
         STAmount const& assetIn,
+        STAmount const& lpAsset2,
         std::uint8_t weight1,
         std::uint16_t tfee);
 
@@ -101,8 +101,8 @@ private:
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
-     * @param lpAsset current LP asset balance same issue as asset1Balance
-     * @param assetOut asset to swap out same issue as asset1Balance
+     * @param assetOut asset to swap out same issue as asset2Balance
+     * @param lpAsset2 current LP asset balance same issue as asset2Balance
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
      * @return
@@ -113,43 +113,42 @@ private:
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
-        STAmount const& lpAsset,
         STAmount const& assetOut,
+        STAmount const& lpAsset2,
         std::uint8_t weight1,
         std::uint16_t tfee);
 
     /** Swap in asset's issue specified in assetIn. The spot price after
-     * the swap does not exceed MaxSP.
+     * the swap does not exceed limitSP.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
-     * @param lpAsset current LP asset balance same issue as asset2Balance
-     * @param assetIn asset's in issue same issue as asset1Balance
-     * @param maxSP SP after the trade
+     * @param assetIn max swap asset in, same issue as asset1Balance
+     * @param limitSP limit SP after the trade
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis point
      * @return
      */
     TER
-    swapInMaxSP(
+    swapInLimitSP(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
-        STAmount const& lpAsset,
-        Issue const& assetInIssue,
-        STAmount const& maxSP,
+        STAmount const& assetIn,
+        STAmount const& lpAsset2,
+        STAmount const& limitSP,
         std::uint8_t weight1,
         std::uint16_t tfee);
 
-    /**
+    /** Swap asset in with the slippage not exceeding specified.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
-     * @param lpAsset current LP asset same issue as asset2Balance
      * @param assetIn asset to swap in same issue as asset1Balance
+     * @param lpAsset2 current LP asset same issue as asset2Balance
      * @param slippage trade slippage in basis points
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
@@ -161,37 +160,33 @@ private:
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
-        STAmount const& lpAsset,
         STAmount const& assetIn,
+        STAmount const& lpAsset2,
         std::uint16_t slippage,
         std::uint8_t weight1,
         std::uint16_t tfee);
 
-    /**
+    /** Swap asset out with the slippage not exceeding specified.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
-     * @param lpAsset1 current LP asset1
-     * @param lpAsset2 current LP asset2
-     * @param asset asset to swap in same issue as asset1Balance
+     * @param assetOut asset to swap out same issue as asset2Balance
+     * @param lpAsset2 current LP asset same issue as asset2Balance
      * @param slippage trade slippage in basis points
-     * @param maxSP SP after the trade
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
      * @return
      */
     TER
-    swapSlippageMaxSP(
+    swapOutSlippage(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
-        STAmount const& lpAsset1,
+        STAmount const& assetOut,
         STAmount const& lpAsset2,
-        STAmount const& asset,
         std::uint16_t slippage,
-        STAmount const& maxSP,
         std::uint8_t weight1,
         std::uint16_t tfee);
 
@@ -201,22 +196,22 @@ private:
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
-     * @param lpAsset current LP asset2 balance same issue as asset1Balance
-     * @param assetOut asset's in issue same issue as asset1Balance
-     * @param maxSP SP after the trade
+     * @param assetOut max asset out, same issue as asset2Balance
+     * @param lpAsset2 current LP asset2 balance same issue as asset2Balance
+     * @param limitSP limit SP after the trade
      * @param weight1 asset1 weight
      * @param tfee trading fee in basis point
      * @return
      */
     TER
-    swapOutMaxSP(
+    swapOutLimitSP(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
-        STAmount const& lpAsset,
-        Issue const& assetOutIssue,
-        STAmount const& maxSP,
+        STAmount const& assetOut,
+        STAmount const& lpAsset2,
+        STAmount const& limitSP,
         std::uint8_t weight1,
         std::uint16_t tfee);
 };
