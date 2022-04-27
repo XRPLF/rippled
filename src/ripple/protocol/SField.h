@@ -483,6 +483,11 @@ extern SF_AMOUNT const sfRippleEscrow;
 extern SF_AMOUNT const sfDeliveredAmount;
 extern SF_AMOUNT const sfNFTokenBrokerFee;
 
+// currency amount (fees)
+extern SF_AMOUNT const sfBaseFeeXRP;
+extern SF_AMOUNT const sfReserveBaseXRP;
+extern SF_AMOUNT const sfReserveIncrementXRP;
+
 // variable length (common)
 extern SF_VL const sfPublicKey;
 extern SF_VL const sfMessageKey;

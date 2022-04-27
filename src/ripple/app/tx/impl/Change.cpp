@@ -90,8 +90,42 @@ Change::preclaim(PreclaimContext const& ctx)
 
     switch (ctx.tx.getTxnType())
     {
-        case ttAMENDMENT:
         case ttFEE:
+            if (ctx.view.rules().enabled(featureXRPFees))
+            {
+                if (!ctx.tx.isFieldPresent(sfBaseFeeXRP) ||
+                    !ctx.tx.isFieldPresent(sfReserveBaseXRP) ||
+                    !ctx.tx.isFieldPresent(sfReserveIncrementXRP))
+                    return temMALFORMED;
+                // The transaction should only have one set of fields or the
+                // other.
+                if (ctx.tx.isFieldPresent(sfBaseFee) ||
+                    ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    ctx.tx.isFieldPresent(sfReserveBase) ||
+                    ctx.tx.isFieldPresent(sfReserveIncrement))
+                    return temMALFORMED;
+            }
+            else
+            {
+                // The transaction format formerly enforced these fields as
+                // required. With featureXRPFees, those fields were made
+                // optional with the expectation that they won't be used once
+                // the feature is enabled. Since the feature hasn't yet
+                // been enabled, they should all still be here.
+                if (!ctx.tx.isFieldPresent(sfBaseFee) ||
+                    !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    !ctx.tx.isFieldPresent(sfReserveBase) ||
+                    !ctx.tx.isFieldPresent(sfReserveIncrement))
+                    return temMALFORMED;
+                // The transaction should only have one or the other. If the new
+                // fields are present without the amendment, that's bad, too.
+                if (ctx.tx.isFieldPresent(sfBaseFeeXRP) ||
+                    ctx.tx.isFieldPresent(sfReserveBaseXRP) ||
+                    ctx.tx.isFieldPresent(sfReserveIncrementXRP))
+                    return temDISABLED;
+            }
+            return tesSUCCESS;
+        case ttAMENDMENT:
         case ttUNL_MODIFY:
             return tesSUCCESS;
         default:
@@ -315,13 +349,27 @@ Change::applyFee()
         feeObject = std::make_shared<SLE>(k);
         view().insert(feeObject);
     }
-
-    feeObject->setFieldU64(sfBaseFee, ctx_.tx.getFieldU64(sfBaseFee));
-    feeObject->setFieldU32(
-        sfReferenceFeeUnits, ctx_.tx.getFieldU32(sfReferenceFeeUnits));
-    feeObject->setFieldU32(sfReserveBase, ctx_.tx.getFieldU32(sfReserveBase));
-    feeObject->setFieldU32(
-        sfReserveIncrement, ctx_.tx.getFieldU32(sfReserveIncrement));
+    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+        feeObject->at(field) = tx[field];
+    };
+    if (view().rules().enabled(featureXRPFees))
+    {
+        set(feeObject, ctx_.tx, sfBaseFeeXRP);
+        set(feeObject, ctx_.tx, sfReserveBaseXRP);
+        set(feeObject, ctx_.tx, sfReserveIncrementXRP);
+        // Ensure the old fields are removed
+        feeObject->makeFieldAbsent(sfBaseFee);
+        feeObject->makeFieldAbsent(sfReferenceFeeUnits);
+        feeObject->makeFieldAbsent(sfReserveBase);
+        feeObject->makeFieldAbsent(sfReserveIncrement);
+    }
+    else
+    {
+        set(feeObject, ctx_.tx, sfBaseFee);
+        set(feeObject, ctx_.tx, sfReferenceFeeUnits);
+        set(feeObject, ctx_.tx, sfReserveBase);
+        set(feeObject, ctx_.tx, sfReserveIncrement);
+    }
 
     view().update(feeObject);
 

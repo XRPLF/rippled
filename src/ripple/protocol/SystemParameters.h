@@ -46,7 +46,7 @@ constexpr XRPAmount INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP};
 inline bool
 isLegalAmount(XRPAmount const& amount)
 {
-    return amount <= INITIAL_XRP;
+    return amount >= -INITIAL_XRP && amount <= INITIAL_XRP;
 }
 
 /* The currency code for the native currency. */

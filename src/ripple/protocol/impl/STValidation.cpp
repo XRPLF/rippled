@@ -58,9 +58,14 @@ STValidation::validationFormat()
         {sfSigningPubKey,       soeREQUIRED},
         {sfSignature,           soeREQUIRED},
         {sfConsensusHash,       soeOPTIONAL},
+        // featureHardenedValidations
         {sfCookie,              soeDEFAULT},
         {sfValidatedHash,       soeOPTIONAL},
         {sfServerVersion,       soeOPTIONAL},
+        // featureXRPFees
+        {sfBaseFeeXRP,          soeOPTIONAL},
+        {sfReserveBaseXRP,      soeOPTIONAL},
+        {sfReserveIncrementXRP, soeOPTIONAL},
     };
     // clang-format on
 

@@ -219,7 +219,6 @@ class TxQ1_test : public beast::unit_test::suite
         checkMetrics(__LINE__, env, 0, flagMaxQueue, 0, expectedPerLedger, 256);
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == XRPAmount{base});
-        BEAST_EXPECT(fees.units == FeeUnit64{units});
         BEAST_EXPECT(fees.reserve == XRPAmount{reserve});
         BEAST_EXPECT(fees.increment == XRPAmount{increment});
 

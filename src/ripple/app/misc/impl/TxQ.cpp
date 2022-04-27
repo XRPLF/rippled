@@ -38,7 +38,7 @@ static FeeLevel64
 getFeeLevelPaid(ReadView const& view, STTx const& tx)
 {
     auto const [baseFee, effectiveFeePaid] = [&view, &tx]() {
-        XRPAmount baseFee = view.fees().toDrops(calculateBaseFee(view, tx));
+        XRPAmount baseFee = calculateBaseFee(view, tx);
         XRPAmount feePaid = tx[sfFee].xrp();
 
         // If baseFee is 0 then the cost of a basic transaction is free.
@@ -1758,7 +1758,7 @@ TxQ::getTxRequiredFeeAndSeq(
     std::lock_guard lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
-    auto const baseFee = view.fees().toDrops(calculateBaseFee(view, *tx));
+    auto const baseFee = calculateBaseFee(view, *tx);
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
     auto const sle = view.read(keylet::account(account));

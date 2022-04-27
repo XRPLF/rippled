@@ -132,13 +132,13 @@ public:
     checkPriorTxAndLastLedger(PreclaimContext const& ctx);
 
     static TER
-    checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee);
+    checkFee(PreclaimContext const& ctx, XRPAmount baseFee);
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
     // Returns the fee in fee units, not scaled for load.
-    static FeeUnit64
+    static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
@@ -182,7 +182,7 @@ protected:
     static XRPAmount
     minimumFee(
         Application& app,
-        FeeUnit64 baseFee,
+        XRPAmount baseFee,
         Fees const& fees,
         ApplyFlags flags);
 

@@ -234,6 +234,11 @@ CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
 
+// currency amount (fees)
+CONSTRUCT_TYPED_SFIELD(sfBaseFeeXRP,            "BaseFeeXRP",           AMOUNT,    20);
+CONSTRUCT_TYPED_SFIELD(sfReserveBaseXRP,        "ReserveBaseXRP",       AMOUNT,    21);
+CONSTRUCT_TYPED_SFIELD(sfReserveIncrementXRP,   "ReserveIncrementXRP",  AMOUNT,    22);
+
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
 CONSTRUCT_TYPED_SFIELD(sfMessageKey,            "MessageKey",           VL,         2);
