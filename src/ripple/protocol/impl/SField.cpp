@@ -198,7 +198,7 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenID,             "NFTokenID",            UINT256,
 CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      UINT256,   11);
 CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            UINT256,   12);
 CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         UINT256,   13);
-CONSTRUCT_TYPED_SFIELD(sfAMMHash,               "AMMHash",              HASH256,   14);
+CONSTRUCT_TYPED_SFIELD(sfAMMHash,               "AMMHash",              UINT256,   14);
 
 // 256-bit (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        UINT256,   16);
