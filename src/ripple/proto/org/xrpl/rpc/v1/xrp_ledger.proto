@@ -5,6 +5,7 @@ option java_package = "org.xrpl.rpc.v1";
 option java_multiple_files = true;
 
 import "org/xrpl/rpc/v1/get_account_info.proto";
+import "org/xrpl/rpc/v1/get_amm_info.proto";
 import "org/xrpl/rpc/v1/get_fee.proto";
 import "org/xrpl/rpc/v1/submit.proto";
 import "org/xrpl/rpc/v1/get_transaction.proto";
@@ -50,5 +51,8 @@ service XRPLedgerAPIService {
   // Get all ledger objects that are different between the two specified
   // ledgers. Note, this method has no JSON equivalent.
   rpc GetLedgerDiff(GetLedgerDiffRequest) returns (GetLedgerDiffResponse);
+
+  // Get account info for an account on the XRP Ledger.
+  rpc GetAmmInfo (GetAmmInfoRequest) returns (GetAmmInfoResponse);
 
 }

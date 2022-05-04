@@ -71,6 +71,9 @@ std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
 doLedgerDiffGrpc(
     RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context);
 
+std::pair<org::xrpl::rpc::v1::GetAmmInfoResponse, grpc::Status>
+doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context);
+
 }  // namespace ripple
 
 #endif

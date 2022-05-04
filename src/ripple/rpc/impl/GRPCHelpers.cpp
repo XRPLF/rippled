@@ -1104,6 +1104,120 @@ populateNFTokens(T& to, STObject const& from)
         sfNFToken);
 }
 
+template <class T>
+void
+populateTradingFee(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_trading_fee(); }, from, sfTradingFee);
+}
+
+template <class T>
+void
+populateAsset1(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset1(); }, from, sfAsset1);
+}
+
+template <class T>
+void
+populateAsset2(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset2(); }, from, sfAsset2);
+}
+
+template <class T>
+void
+populateAMMHash(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_ammhash(); }, from, sfAMMHash);
+}
+
+template <class T>
+void
+populateAsset1In(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset1_in(); }, from, sfAsset1In);
+}
+
+template <class T>
+void
+populateAsset2In(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset2_in(); }, from, sfAsset2In);
+}
+
+template <class T>
+void
+populateLPTokens(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_lptokens(); }, from, sfLPTokens);
+}
+
+template <class T>
+void
+populateEPrice(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_eprice(); }, from, sfEPrice);
+}
+
+template <class T>
+void
+populateAsset1Out(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset1_out(); }, from, sfAsset1Out);
+}
+
+template <class T>
+void
+populateAsset2Out(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset2_out(); }, from, sfAsset2Out);
+}
+
+template <class T>
+void
+populateAssetIn(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset_in(); }, from, sfAssetIn);
+}
+
+template <class T>
+void
+populateAssetOut(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_asset_out(); }, from, sfAssetOut);
+}
+
+template <class T>
+void
+populateLimitPrice(T& to, STObject const& from)
+{
+    populateProtoAmount(
+        [&to]() { return to.mutable_limit_spot_price(); },
+        from,
+        sfLimitSpotPrice);
+}
+
+template <class T>
+void
+populateSlippage(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_slippage(); }, from, sfSlippage);
+}
+
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1763,6 +1877,58 @@ convert(org::xrpl::rpc::v1::NFTokenPage& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::AMMInstanceCreate& to, STObject const& from)
+{
+    populateAsset1(to, from);
+
+    populateAsset2(to, from);
+
+    populateTradingFee(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::AMMDeposit& to, STObject const& from)
+{
+    populateAMMHash(to, from);
+
+    populateAsset1In(to, from);
+
+    populateAsset2In(to, from);
+
+    populateLPTokens(to, from);
+
+    populateEPrice(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::AMMWithdraw& to, STObject const& from)
+{
+    populateAMMHash(to, from);
+
+    populateAsset1Out(to, from);
+
+    populateAsset2Out(to, from);
+
+    populateLPTokens(to, from);
+
+    populateEPrice(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::AMMSwap& to, STObject const& from)
+{
+    populateAMMHash(to, from);
+
+    populateAssetIn(to, from);
+
+    populateAssetOut(to, from);
+
+    populateLimitPrice(to, from);
+
+    populateSlippage(to, from);
+}
+
+void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -2182,6 +2348,18 @@ convert(
             break;
         case TxType::ttNFTOKEN_ACCEPT_OFFER:
             convert(*to.mutable_nftoken_accept_offer(), fromObj);
+            break;
+        case TxType::ttAMM_CREATE:
+            convert(*to.mutable_amminstance_create(), fromObj);
+            break;
+        case TxType::ttAMM_DEPOSIT:
+            convert(*to.mutable_ammdeposit(), fromObj);
+            break;
+        case TxType::ttAMM_WITHDRAW:
+            convert(*to.mutable_ammwithdraw(), fromObj);
+            break;
+        case TxType::ttAMM_SWAP:
+            convert(*to.mutable_ammswap(), fromObj);
             break;
         default:
             break;

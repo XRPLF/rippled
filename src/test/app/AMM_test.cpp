@@ -197,14 +197,14 @@ private:
             AMM ammAlice(env, alice, XRP(10000), USD(10000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}, alice));
-            BEAST_EXPECT(ammAlice.expectAmmInfo(
+            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}, alice));
 
             // IOU to IOU
             AMM ammCarol(env, carol, USD(20000), BTC(0.5));
             BEAST_EXPECT(ammCarol.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            BEAST_EXPECT(ammCarol.expectAmmInfo(
+            BEAST_EXPECT(ammCarol.expectAmmRpcInfo(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}, carol));
         }
 

@@ -22,7 +22,9 @@
 
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/rpc/GRPCHandlers.h>
 #include <test/jtx/Account.h>
+#include <test/rpc/GRPCTestClientBase.h>
 
 namespace ripple {
 namespace test {
@@ -42,6 +44,23 @@ class AMM
     std::uint8_t weight1_;
     std::optional<ter> ter_;
     bool log_ = false;
+
+    struct AMMgRPCInfoClient : ripple::test::GRPCTestClientBase
+    {
+        org::xrpl::rpc::v1::GetAmmInfoRequest request;
+        org::xrpl::rpc::v1::GetAmmInfoResponse reply;
+
+        explicit AMMgRPCInfoClient(std::string const& port)
+            : GRPCTestClientBase(port)
+        {
+        }
+
+        grpc::Status
+        getAMMInfo()
+        {
+            return stub_->GetAmmInfo(&context, request, &reply);
+        }
+    };
 
     void
     create(std::uint32_t tfee = 0);
@@ -67,6 +86,13 @@ class AMM
         log_ = log;
     }
 
+    bool
+    expectAmmInfo(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& balance,
+        Json::Value const& jv);
+
 public:
     AMM(Env& env,
         Account const& account,
@@ -86,7 +112,18 @@ public:
     /** Send amm_info RPC command
      */
     std::optional<Json::Value>
-    ammInfo(std::optional<Account> const& account = {}) const;
+    ammRpcInfo(
+        std::optional<Account> const& account = {},
+        std::optional<std::string> const& ledgerIndex = {},
+        std::optional<uint256> const& ammHash = {}) const;
+
+    /** Send amm_info gRPC command
+     */
+    std::optional<Json::Value>
+    ammgRPCInfo(
+        std::optional<Account> const& account = {},
+        std::optional<std::string> const& ledgerIndex = {},
+        std::optional<uint256> const& ammHash = {}) const;
 
     /** Get AMM pool and tokens balance.
      */
@@ -106,7 +143,14 @@ public:
         std::optional<AccountID> const& account = std::nullopt) const;
 
     bool
-    expectAmmInfo(
+    expectAmmRpcInfo(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& balance,
+        std::optional<Account> const& account = {});
+
+    bool
+    expectAmmgRPCInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
@@ -174,6 +218,12 @@ public:
     ammAccount() const
     {
         return ammAccountID_;
+    }
+
+    uint256
+    ammHash() const
+    {
+        return ammHash_;
     }
 };
 

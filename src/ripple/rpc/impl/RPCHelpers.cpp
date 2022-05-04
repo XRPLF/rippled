@@ -324,6 +324,11 @@ ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
 
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>&);
+
 template <class T>
 Status
 ledgerFromSpecifier(

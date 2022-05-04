@@ -746,6 +746,23 @@ GRPCServerImpl::setupListeners()
             Resource::feeMediumBurdenRPC,
             secureGatewayIPs_));
     }
+    {
+        using cd = CallData<
+            org::xrpl::rpc::v1::GetAmmInfoRequest,
+            org::xrpl::rpc::v1::GetAmmInfoResponse>;
+
+        addToRequests(std::make_shared<cd>(
+            service_,
+            *cq_,
+            app_,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
+                RequestGetAmmInfo,
+            doAmmInfoGrpc,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetAmmInfo,
+            RPC::NO_CONDITION,
+            Resource::feeReferenceRPC,
+            secureGatewayIPs_));
+    }
     return requests;
 };
 

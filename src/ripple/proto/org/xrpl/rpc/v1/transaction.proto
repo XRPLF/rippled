@@ -27,6 +27,14 @@ message Transaction
 
         AccountDelete account_delete = 14;
 
+        AMMInstanceCreate amminstance_create = 41;
+
+        AMMDeposit ammdeposit = 42;
+
+        AMMWithdraw ammwithdraw = 43;
+
+        AMMSwap ammswap = 44;
+
         CheckCancel check_cancel = 15;
 
         CheckCash check_cash = 16;
@@ -135,6 +143,58 @@ message AccountDelete
    Destination destination = 1;
 
    DestinationTag destination_tag = 2;
+}
+
+// Next field: 3
+message AMMInstanceCreate
+{
+    Asset1 asset1 = 1;
+
+    Asset2 asset2 = 2;
+
+    TradingFee trading_fee = 3;
+}
+
+// Next field: 5
+message AMMDeposit
+{
+    AMMHash ammhash = 1;
+
+    Asset1In asset1_in = 2;
+
+    Asset2In asset2_in = 3;
+
+    LPTokens lptokens = 4;
+
+    EPrice eprice = 5;
+}
+
+// Next field: 5
+message AMMWithdraw
+{
+    AMMHash ammhash = 1;
+
+    Asset1Out asset1_out = 2;
+
+    Asset2Out asset2_out = 3;
+
+    LPTokens lptokens = 4;
+
+    EPrice eprice = 5;
+}
+
+// Next field: 5
+message AMMSwap
+{
+    AMMHash ammhash = 1;
+
+    AssetIn asset_in = 2;
+
+    AssetOut asset_out = 3;
+
+    LimitSpotPrice limit_spot_price = 4;
+
+    Slippage slippage = 5;
 }
 
 // Next field: 2

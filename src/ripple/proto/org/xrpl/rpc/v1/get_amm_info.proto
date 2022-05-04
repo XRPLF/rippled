@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/ledger_objects.proto";
+import "org/xrpl/rpc/v1/amount.proto";
+import "org/xrpl/rpc/v1/account.proto";
+import "org/xrpl/rpc/v1/ledger.proto";
+import "org/xrpl/rpc/v1/common.proto";
+
+// A request to get info about an account.
+// Next field: 2
+message GetAmmInfoRequest
+{
+  // The amm hash to get info about.
+  AMMHash ammhash = 1;
+
+  LedgerSpecifier ledger = 2;
+
+  Account account = 3;
+}
+
+// Response to GetAmmInfo RPC
+// Next field: 6
+message GetAmmInfoResponse
+{
+  Asset1 asset1 = 1;
+
+  Asset2 asset2 = 2;
+
+  AMMAccount ammaccount = 3;
+
+  Balance balance = 4;
+
+  uint32 ledger_index = 5;
+
+  bool validated = 6;
+}

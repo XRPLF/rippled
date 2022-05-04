@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/AMM.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 
@@ -85,18 +86,77 @@ AMM::create(std::uint32_t tfee)
 }
 
 std::optional<Json::Value>
-AMM::ammInfo(std::optional<Account> const& account) const
+AMM::ammRpcInfo(
+    std::optional<Account> const& account,
+    std::optional<std::string> const& ledgerIndex,
+    std::optional<uint256> const& ammHash) const
 {
     Json::Value jv;
     if (account)
         jv[jss::account] = account->human();
-    jv[jss::AMMHash] = to_string(ammHash_);
+    if (ledgerIndex)
+        jv[jss::ledger_index] = *ledgerIndex;
+    if (ammHash)
+        jv[jss::AMMHash] = to_string(*ammHash);
+    else
+        jv[jss::AMMHash] = to_string(ammHash_);
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
     if (jr.isObject() && jr.isMember(jss::result) &&
-        jr[jss::result].isMember(jss::status) &&
-        jr[jss::result][jss::status].asString() == "success")
+        jr[jss::result].isMember(jss::status))
         return jr[jss::result];
     return std::nullopt;
+}
+
+std::optional<Json::Value>
+AMM::ammgRPCInfo(
+    const std::optional<Account>& account,
+    const std::optional<std::string>& ledgerIndex,
+    std::optional<uint256> const& ammHash) const
+{
+    auto config = env_.app().config();
+    auto const grpcPort = config["port_grpc"].get<std::string>("port");
+    if (!grpcPort.has_value())
+        return {};
+    AMMgRPCInfoClient client(*grpcPort);
+    if (ammHash)
+        *client.request.mutable_ammhash()->mutable_value() =
+            to_string(*ammHash);
+    else
+        *client.request.mutable_ammhash()->mutable_value() =
+            to_string(ammHash_);
+    if (account)
+        *client.request.mutable_account()->mutable_value()->mutable_address() =
+            to_string(*account);
+    if (ledgerIndex)
+        *client.request.mutable_ledger()->mutable_hash() = *ledgerIndex;
+    auto const status = client.getAMMInfo();
+    Json::Value jv;
+    if (!status.ok())
+    {
+        jv[jss::error_message] = status.error_message();
+        jv[jss::error_code] = status.error_code();
+        jv[jss::error] = status.error_details();
+        return jv;
+    }
+    auto const ammAccountID =
+        parseBase58<AccountID>(client.reply.ammaccount().value().address());
+    auto getAmt = [&](auto const& amt) {
+        if (amt.value().has_xrp_amount())
+            return STAmount{xrpIssue(), amt.value().xrp_amount().drops(), 0};
+        auto const iou = amt.value().issued_currency_amount();
+        auto const account =
+            RPC::accountFromStringStrict(iou.issuer().address());
+        Currency currency = to_currency(iou.currency().name());
+        auto const value = iou.value();
+        if (!account.has_value() || currency == badCurrency())
+            return STAmount{};
+        return amountFromString(Issue(currency, *account), value);
+    };
+    getAmt(client.reply.asset1()).setJson(jv[jss::Asset1]);
+    getAmt(client.reply.asset2()).setJson(jv[jss::Asset2]);
+    getAmt(client.reply.balance()).setJson(jv[jss::balance]);
+    jv[jss::AMMAccount] = ammAccountID ? to_string(*ammAccountID) : "";
+    return jv;
 }
 
 std::tuple<STAmount, STAmount, STAmount>
@@ -134,27 +194,51 @@ AMM::accountRootExists() const
 }
 
 bool
+AMM::expectAmmRpcInfo(
+    const STAmount& asset1,
+    const STAmount& asset2,
+    const IOUAmount& balance,
+    const std::optional<Account>& account)
+{
+    auto const jv = ammRpcInfo(account);
+    if (!jv)
+        return false;
+    return expectAmmInfo(asset1, asset2, balance, *jv);
+}
+
+bool
+AMM::expectAmmgRPCInfo(
+    const STAmount& asset1,
+    const STAmount& asset2,
+    const IOUAmount& balance,
+    const std::optional<Account>& account)
+{
+    auto const jv = ammgRPCInfo(account);
+    if (!jv)
+        return false;
+    return expectAmmInfo(asset1, asset2, balance, *jv);
+}
+
+bool
 AMM::expectAmmInfo(
     STAmount const& asset1,
     STAmount const& asset2,
     IOUAmount const& balance,
-    std::optional<Account> const& account)
+    Json::Value const& jv)
 {
-    auto const jv = ammInfo(account);
-    if (!jv || !jv->isMember(jss::Asset1) || !jv->isMember(jss::Asset2) ||
-        !jv->isMember(jss::balance))
+    if (!jv.isMember(jss::Asset1) || !jv.isMember(jss::Asset2) ||
+        !jv.isMember(jss::balance))
         return false;
-    auto const& v = jv.value();
     STAmount asset1Info;
-    if (!amountFromJsonNoThrow(asset1Info, v[jss::Asset1]))
+    if (!amountFromJsonNoThrow(asset1Info, jv[jss::Asset1]))
         return false;
     STAmount asset2Info;
-    if (!amountFromJsonNoThrow(asset2Info, v[jss::Asset2]))
+    if (!amountFromJsonNoThrow(asset2Info, jv[jss::Asset2]))
         return false;
     STAmount lptBalance;
-    if (!amountFromJsonNoThrow(lptBalance, v[jss::balance]))
+    if (!amountFromJsonNoThrow(lptBalance, jv[jss::balance]))
         return false;
-    // ammInfo returns unordered assets
+    // ammRpcInfo returns unordered assets
     if (asset1Info.issue() != asset1.issue())
     {
         auto const tmp = asset1Info;
