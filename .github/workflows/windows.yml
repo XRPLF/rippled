@@ -13,7 +13,7 @@ env:
   # Alternate download location
   BOOST_URL2: 'https://downloads.sourceforge.net/project/boost/boost/1.75.0/boost_1_75_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
   BOOST_CACHE_DIR: ${{ github.workspace }}\_boost_cache
-  BOOST_ROOT: ${{ github.workspace }}\_boost_cache\boost_1_75_0
+  BOOST_ROOT: C:\lib\boost_1_75_0
   CMAKE_BOOST: |
     -DCMAKE_PREFIX_PATH=${BOOST_ROOT}\\_INSTALLED_
     -DBOOST_ROOT=${BOOST_ROOT}\\_INSTALLED_
@@ -40,7 +40,7 @@ env:
 jobs:
   windows_cache:
     name: Seed windows cache
-    runs-on: windows-2019
+    runs-on: windows-runner
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_win') }}
     outputs:
@@ -99,13 +99,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-
 
-      - name: Boost cache
-        id: boostcache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.BOOST_CACHE_DIR }}
-          key: ${{ runner.os }}-boost-${{ env.BOOST_ROOT }}
-
       - name: Vcpkg cache
         id: vcpkgcache
         uses: actions/cache@v2
@@ -147,26 +140,6 @@ jobs:
             mkdir -pv ${CACHE_DIR} ${NIH_CACHE_ROOT} ${BOOST_CACHE_DIR} \
                 ${VCPKG_CACHE_DIR} ${NIH_SRC_PATH}
 
-      - name: Download Boost
-        # Do this step early so that if the download fails, the job fails fast
-        if: ${{ steps.boostkeys.outputs.download_boost_file == 'true' }}
-        # Powershell
-        shell: pwsh
-        run: |
-            $Client = New-Object System.Net.WebClient
-            $Dest = "${{ steps.boostkeys.outputs.boost_file_win }}"
-            try {
-                $Url = "$env:BOOST_URL"
-                "Attempting to download $Url to $Dest"
-                $Client.DownloadFile($Url, $Dest)
-                ls "$Dest"
-            }
-            catch {
-                $Url = "$env:BOOST_URL2"
-                "Attempting to download $Url to $Dest"
-                $Client.DownloadFile($Url, $Dest)
-                ls "$Dest"
-            }
       - name: Initialize vcpkg cache
         if: steps.vcpkgcache.outputs.cache-hit != 'true'
         shell: bash
@@ -253,7 +226,6 @@ jobs:
               set -x
               choco list | wc
             fi
-            . ${srcdir}/bin/sh/setup-msvc.sh ${!VCVersion}
             [[ "${verbose}" == "true" ]] && type -a ninja || true
 
             # Download the NIH items
@@ -316,7 +288,6 @@ jobs:
         run: |
             du -sh ${VCPKG_DIR} || true
             du -sh ${VCPKG_CACHE_DIR} || true
-            du -sh ${BOOST_CACHE_DIR} || true
             du -sh ${CACHE_DIR} || true
             cd ${CACHE_DIR}
             du -sh * || true
@@ -348,7 +319,7 @@ jobs:
   windows_everything_else:
     name: Windows ${{ matrix.VCVersion }}, ${{ matrix.build.type }}, ${{ matrix.cmake.CMAKE_GENERATOR }} ${{ matrix.note }} unity=${{ matrix.cmake.unity }}
     needs: windows_cache
-    runs-on: windows-2019
+    runs-on: windows-runner-${{ matrix.VCVersion }}
     timeout-minutes: 720
     strategy:
       fail-fast: false
@@ -445,12 +416,6 @@ jobs:
           path: ${{ env.NIH_SRC_PATH}}
           key: ${{ runner.os }}-nihsrc-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions }}
 
-      - name: Boost cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.BOOST_CACHE_DIR }}
-          key: ${{ runner.os }}-boost-${{ env.BOOST_ROOT }}
-
       - name: Vcpkg cache
         id: vcpkgcache
         uses: actions/cache@v2
@@ -463,42 +428,6 @@ jobs:
         run: |
           env
           set | grep =
-
-      - name: Disk space before
-        shell: bash
-        run: |
-          df -h
-          du -sh ${VCPKG_CACHE_DIR} || true
-          du -sh ${BOOST_CACHE_DIR} || true
-          find ${CACHE_DIR} ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
-            -type d -exec du -sh {} \; || true
-
-      - name: Get vcpkg libs from cache
-        shell: bash
-        run: |
-            [[ "${verbose}" == "true" ]] && set -x || true
-
-            if [[ -d ${VCPKG_CACHE_DIR} ]]
-            then
-              pushd ${VCPKG_CACHE_DIR}
-              mv -u * ${VCPKG_DIR}/
-              popd
-            fi
-
-            . ${srcdir}/bin/sh/setup-msvc.sh ${!VCVersion}
-            if [[ "${verbose}" == "true" ]] ; then
-              type -a cl.exe || true
-              type -a vcpkg
-              ls -l ${VCPKG_DIR}
-            fi
-
-            mkdir -pv ${VCPKG_DIR}/installed
-
-            df -h
-            # Don't install dependencies. If they're not in the cache,
-            #  the build should fail
-            # Make sure we can see the installed packages
-            ${srcdir}/bin/sh/install-vcpkg.sh
 
       - name: Build
         shell: bash
@@ -567,16 +496,6 @@ jobs:
         #  is the problem.
         run: |
           find ${builddir} -iname 'unity_*.cxx' -ls -exec cat {} \;
-
-      - name: Disk space after
-        shell: bash
-        if: always()
-        run: |
-          df -h
-          du -sh ${VCPKG_CACHE_DIR} || true
-          du -sh ${BOOST_CACHE_DIR} || true
-          find ${CACHE_DIR} ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
-            -type d -exec du -sh {} \; || true
 
       - name: Debug output artifacts
         if: ${{ always() }}

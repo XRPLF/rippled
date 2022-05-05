@@ -1,5 +1,5 @@
 name: "Linux build, gcc-8 release unity"
-on: [push, pull_request]
+on: [workflow_dispatch]
 
 # The files starting with "linux-" are all interdependent.
 # If any significant changes are made, be sure to update them

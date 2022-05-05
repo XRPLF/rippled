@@ -1,5 +1,5 @@
 name: "Linux build, gcc-8 debug unity"
-on: [push, pull_request]
+on: [workflow_dispatch]
 
 # The files starting with "linux-" are all interdependent.
 # If any significant changes are made, be sure to update them
@@ -29,7 +29,7 @@ jobs:
   base:
     # Can't access env in the name, so hard code
     name: Linux gcc-8, Debug, unity, base
-    runs-on: ubuntu-18.04
+    runs-on: self-built-ubuntu
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
     outputs:
@@ -41,7 +41,8 @@ jobs:
       fail-fast: false
     container:
       # The env object is not accessible from here, so specify directly
-      image: rippleci/rippled-ci-builder:2020-01-08
+#      image: rippleci/rippled-ci-builder:2020-01-08
+      image: registry.gitlab.com/shichengsg001/demo:ubuntu_rippled_build
     env:
       # The higher-level env is not accessible from here, so specify
       # unity directly
