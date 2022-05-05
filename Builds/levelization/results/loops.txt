@@ -43,6 +43,9 @@ Loop: ripple.nodestore ripple.overlay
 Loop: ripple.overlay ripple.rpc
   ripple.rpc ~= ripple.overlay
 
+Loop: test.jtx test.rpc
+  test.rpc > test.jtx
+
 Loop: test.jtx test.toplevel
   test.toplevel > test.jtx
 
