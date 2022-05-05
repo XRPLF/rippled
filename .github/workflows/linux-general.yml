@@ -32,21 +32,21 @@ jobs:
     #    though a failed build will not push a cache.
     # The one downside is different prerequisites are installed on different
     # docker images, so there will be one cache per image.
-    runs-on: ubuntu-18.04
+    runs-on: rippled-runner-dind
     timeout-minutes: 720
     if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
     strategy:
       matrix:
         compiler:
-          - image_user: "rippleci"
+          - image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2020-01-08"
+            image_tag: "clanglessthan10"
             CC: gcc-9
             CXX: g++-9
 
-          - image_user: "rippleci"
+          - image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2944b78d22db"
+            image_tag: "clang10"
             CC: clang-10
             CXX: clang++-10
             CMAKE_ADD: " -DBoost_NO_BOOST_CMAKE=ON"
@@ -62,18 +62,6 @@ jobs:
       CXX: ${{ matrix.compiler.CXX }}
       CMAKE_ADD: ${{ matrix.compiler.CMAKE_ADD }}
     steps:
-      - name: Cancel Previous Runs
-        # https://github.com/styfle/cancel-workflow-action/tree/0.9.0
-        # Note this will not cancel jobs triggered by a pull request event
-        # when the PR is created from a fork, even if for the same PR.
-        # It works fine within the same fork, and is intended to allow
-        # multiple pushes during development without ending up with a
-        # huge backlog of jobs.
-        if: ${{ !contains(github.event.head_commit.message, 'ci_no_cancel') }}
-        uses: styfle/cancel-workflow-action@0.9.0
-        with:
-          access_token: ${{ github.token }}
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -185,7 +173,7 @@ jobs:
   linux_base:
     name: Linux ${{ matrix.compiler.CC }}, ${{ matrix.BUILD_TYPE }}, unity ${{ matrix.unity }}, ${{ matrix.name }}
     needs: linux_cache
-    runs-on: ubuntu-18.04
+    runs-on: rippled-runner-dind
     timeout-minutes: 720
     strategy:
       fail-fast: false
@@ -199,34 +187,34 @@ jobs:
             # always work
             CC: 'gcc-8'
             CXX: 'g++-8'
-            image_user: "rippleci"
+            image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2020-01-08"
+            image_tag: "clanglessthan10"
 
           - CC: 'gcc-9'
             CXX: 'g++-9'
-            image_user: "rippleci"
+            image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2020-01-08"
+            image_tag: "clanglessthan10"
 
           - CC: 'clang-8'
             CXX: 'clang++-8'
-            image_user: "rippleci"
+            image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2020-01-08"
+            image_tag: "clanglessthan10"
 
           - CC: 'clang-9'
             CXX: 'clang++-9'
-            image_user: "rippleci"
+            image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2020-01-08"
+            image_tag: "clanglessthan10"
 
           - # The 2020-01-08 image doesn't have clang-10
             CC: 'clang-10'
             CXX: 'clang++-10'
-            image_user: "rippleci"
+            image_user: "rippleautomation"
             image_name: "rippled-ci-builder"
-            image_tag: "2944b78d22db"
+            image_tag: "clang10"
             CMAKE_ADD: " -DBoost_NO_BOOST_CMAKE=ON"
 
         BUILD_TYPE: [ "Debug", "Release" ]
@@ -303,7 +291,19 @@ jobs:
           find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
             -type d -exec du -sh {} \; || true
 
-      - name: Build and test
+      - name: Build and Test
+        id: try1
+        continue-on-error: true
+        uses: ./.github/build-action
+
+      - name: Retry once
+        id: try2
+        continue-on-error: true
+        if: steps.try1.outcome == 'failure'
+        uses: ./.github/build-action
+
+      - name: Retry twice
+        if: steps.try2.outcome == 'failure'
         uses: ./.github/build-action
 
       - name: Unity files
@@ -355,7 +355,7 @@ jobs:
   linux_derived:
     name: Linux ${{ matrix.name }}, ${{ matrix.CC }}, ${{ matrix.BUILD_TYPE }}, unity
     needs: [ linux_base ]
-    runs-on: ubuntu-18.04
+    runs-on: rippled-runner-dind
     timeout-minutes: 720
     strategy:
       fail-fast: false
@@ -498,9 +498,9 @@ jobs:
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
       unity: "ON"
       # Need this image because it has the coverage tools
-      image_user: "rippleci"
+      image_user: "rippleautomation"
       image_name: "rippled-ci-builder"
-      image_tag: "2020-01-08"
+      image_tag: "clanglessthan10"
       CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
       TARGET: ${{ matrix.TARGET }}
       SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
@@ -569,7 +569,19 @@ jobs:
           find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
             -type d -exec du -sh {} \; || true
 
-      - name: Build and test
+      - name: Build and Test
+        id: try1
+        continue-on-error: true
+        uses: ./.github/build-action
+
+      - name: Retry once
+        id: try2
+        continue-on-error: true
+        if: steps.try1.outcome == 'failure'
+        uses: ./.github/build-action
+
+      - name: Retry twice
+        if: steps.try2.outcome == 'failure'
         uses: ./.github/build-action
 
       - name: Unity files
@@ -638,7 +650,7 @@ jobs:
     # Can't access env in the name, so hard code
     name: Linux manual tests gcc-8, ${{ matrix.BUILD_TYPE }}, unity
     needs: linux_base
-    runs-on: ubuntu-18.04
+    runs-on: rippled-runner-dind
     timeout-minutes: 720
     strategy:
       fail-fast: false
@@ -649,9 +661,9 @@ jobs:
       CXX: "g++-8"
       BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
       unity: "ON"
-      image_user: "rippleci"
+      image_user: "rippleautomation"
       image_name: "rippled-ci-builder"
-      image_tag: "2020-01-08"
+      image_tag: "clanglessthan10"
     steps:
       - name: Checkout
         uses: actions/checkout@v2

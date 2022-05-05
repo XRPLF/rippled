@@ -262,6 +262,7 @@ fi
 set -e
 
 if [[ ${look_core} == true ]]; then
+    echo "current path: $(pwd), core dir: ${coredir}"
     after=$(ls -A1 ${coredir})
     oIFS="${IFS}"
     IFS=$'\n\r'
@@ -269,21 +270,24 @@ if [[ ${look_core} == true ]]; then
     for l in $(diff -w --suppress-common-lines <(echo "$before") <(echo "$after")) ; do
         if [[ "$l" =~ ^[[:space:]]*\>[[:space:]]*(.+)$ ]] ; then
             corefile="${BASH_REMATCH[1]}"
-            echo "FOUND core dump file at '${coredir}/${corefile}'"
-            gdb_output=$(/bin/mktemp /tmp/gdb_output_XXXXXXXXXX.txt)
-            found_core=true
-            gdb \
-                -ex "set height 0" \
-                -ex "set logging file ${gdb_output}" \
-                -ex "set logging on" \
-                -ex "print 'ripple::BuildInfo::versionString'" \
-                -ex "thread apply all backtrace full" \
-                -ex "info inferiors" \
-                -ex quit \
-                "$APP_PATH" \
-                "${coredir}/${corefile}" &> /dev/null
+            if [[ "$( file -b ${coredir}/${corefile} )" =~ "core" ]];
+            then
+              echo "FOUND core dump file at '${coredir}/${corefile}'"
+              gdb_output=$(/bin/mktemp /tmp/gdb_output_XXXXXXXXXX.txt)
+              found_core=true
+              gdb \
+                  -ex "set height 0" \
+                  -ex "set logging file ${gdb_output}" \
+                  -ex "set logging on" \
+                  -ex "print 'ripple::BuildInfo::versionString'" \
+                  -ex "thread apply all backtrace full" \
+                  -ex "info inferiors" \
+                  -ex quit \
+                  "$APP_PATH" \
+                  "${coredir}/${corefile}" &> /dev/null
 
-            echo -e "CORE INFO: \n\n $(cat ${gdb_output}) \n\n)"
+              echo -e "CORE INFO: \n\n $(cat ${gdb_output}) \n\n)"
+            fi
         fi
     done
     IFS="${oIFS}"
