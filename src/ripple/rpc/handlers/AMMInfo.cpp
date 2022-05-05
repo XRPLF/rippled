@@ -50,11 +50,26 @@ doAMMInfo(RPC::JsonContext& context)
     Json::Value result;
     std::optional<AccountID> accountID;
 
+    uint256 ammHash{};
     if (!params.isMember(jss::AMMHash))
-        return RPC::missing_field_error(jss::AMMHash);
-
-    uint256 ammHash;
-    if (!ammHash.parseHex(params[jss::AMMHash].asString()))
+    {
+        // May provide asset1/asset2 as amounts
+        if (!params.isMember(jss::Asset1) || !params.isMember(jss::Asset2))
+            return RPC::missing_field_error(jss::AMMHash);
+        std::uint8_t const weight = params.isMember(jss::AssetWeight)
+            ? params[jss::AssetWeight].asUInt()
+            : 50;
+        STAmount asset1;
+        STAmount asset2;
+        if (!amountFromJsonNoThrow(asset1, params[jss::Asset1]) ||
+            !amountFromJsonNoThrow(asset2, params[jss::Asset2]))
+        {
+            RPC::inject_error(rpcACT_MALFORMED, result);
+            return result;
+        }
+        ammHash = calcAMMHash(weight, asset1.issue(), asset2.issue());
+    }
+    else if (!ammHash.parseHex(params[jss::AMMHash].asString()))
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
@@ -93,6 +108,8 @@ doAMMInfo(RPC::JsonContext& context)
     asset2Balance.setJson(result[jss::Asset2]);
     lptAMMBalance.setJson(result[jss::balance]);
     result[jss::AMMAccount] = to_string(ammAccountID);
+    if (!params.isMember(jss::AMMHash))
+        result[jss::AMMHash] = to_string(ammHash);
 
     return result;
 }
@@ -126,13 +143,35 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
     }
 
     // decode AMM hash
-    if (!params.has_ammhash())
-        return {
-            result,
-            grpc::Status(
-                grpc::StatusCode::NOT_FOUND, "Missing field ammHash.")};
     uint256 ammHash;
-    if (!ammHash.parseHex(params.ammhash().value()))
+    if (!params.has_ammhash())
+    {
+        if (!params.has_asset1() || !params.has_asset2())
+            return {
+                result,
+                grpc::Status(
+                    grpc::StatusCode::NOT_FOUND, "Missing field ammHash.")};
+        auto getIssue = [](auto const& v) -> std::optional<Issue> {
+            if (v.has_xrp_amount())
+                return xrpIssue();
+            auto const iou = v.issued_currency_amount();
+            auto const account =
+                RPC::accountFromStringStrict(iou.issuer().address());
+            if (!account)
+                return {};
+            Currency currency = to_currency(iou.currency().name());
+            return Issue(currency, *account);
+        };
+        auto const issue1 = getIssue(params.asset1().value());
+        auto const issue2 = getIssue(params.asset2().value());
+        if (!issue1.has_value() || !issue2.has_value())
+            return {
+                result,
+                grpc::Status(
+                    grpc::StatusCode::NOT_FOUND, "Account malformed.")};
+        ammHash = calcAMMHash(50, *issue1, *issue2);
+    }
+    else if (!ammHash.parseHex(params.ammhash().value()))
         return {
             result,
             grpc::Status(grpc::StatusCode::NOT_FOUND, "Account malformed.")};
@@ -182,6 +221,8 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
     ripple::RPC::convert(*balance, lptAMMBalance);
     *result.mutable_ammaccount()->mutable_value()->mutable_address() =
         toBase58(ammAccountID);
+    if (!params.has_ammhash())
+        *result.mutable_ammhash()->mutable_value() = to_string(ammHash);
 
     result.set_ledger_index(ledger->info().seq);
     result.set_validated(

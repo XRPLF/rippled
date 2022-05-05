@@ -11,19 +11,24 @@ import "org/xrpl/rpc/v1/ledger.proto";
 import "org/xrpl/rpc/v1/common.proto";
 
 // A request to get info about an account.
-// Next field: 2
+// Next field: 5
 message GetAmmInfoRequest
 {
   // The amm hash to get info about.
   AMMHash ammhash = 1;
 
-  LedgerSpecifier ledger = 2;
+  // Instead of the amm hash can pass asset1/asset2 as amounts
+  Asset1 asset1 = 2;
 
-  Account account = 3;
+  Asset2 asset2 = 3;
+
+  LedgerSpecifier ledger = 4;
+
+  Account account = 5;
 }
 
 // Response to GetAmmInfo RPC
-// Next field: 6
+// Next field: 7
 message GetAmmInfoResponse
 {
   Asset1 asset1 = 1;
@@ -34,7 +39,9 @@ message GetAmmInfoResponse
 
   Balance balance = 4;
 
-  uint32 ledger_index = 5;
+  AMMHash ammHash = 5;
 
-  bool validated = 6;
+  uint32 ledger_index = 6;
+
+  bool validated = 7;
 }

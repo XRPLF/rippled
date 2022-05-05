@@ -122,6 +122,19 @@ public:
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
+        proc([&](AMM& ammAlice, Env&) {
+            auto const ammHash = [&]() -> std::optional<uint256> {
+                if (auto const jv = ammAlice.ammRpcInfo({}, {}, {}, true);
+                    jv.has_value())
+                {
+                    uint256 ammHash;
+                    if (ammHash.parseHex((*jv)[jss::AMMHash].asString()))
+                        return ammHash;
+                }
+                return {};
+            }();
+            BEAST_EXPECT(ammHash.has_value() && ammAlice.ammHash() == *ammHash);
+        });
     }
 
     void
@@ -133,6 +146,19 @@ public:
         proc([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmgRPCInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
+        proc([&](AMM& ammAlice, Env&) {
+            auto const ammHash = [&]() -> std::optional<uint256> {
+                if (auto const jv = ammAlice.ammgRPCInfo({}, {}, {}, true);
+                    jv.has_value())
+                {
+                    uint256 ammHash;
+                    if (ammHash.parseHex((*jv)[jss::AMMHash].asString()))
+                        return ammHash;
+                }
+                return {};
+            }();
+            BEAST_EXPECT(ammHash.has_value() && ammAlice.ammHash() == *ammHash);
         });
     }
 

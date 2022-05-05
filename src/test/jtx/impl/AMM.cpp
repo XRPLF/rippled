@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/AMM.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
@@ -89,15 +90,24 @@ std::optional<Json::Value>
 AMM::ammRpcInfo(
     std::optional<Account> const& account,
     std::optional<std::string> const& ledgerIndex,
-    std::optional<uint256> const& ammHash) const
+    std::optional<uint256> const& ammHash,
+    bool useAssets) const
 {
     Json::Value jv;
     if (account)
         jv[jss::account] = account->human();
     if (ledgerIndex)
         jv[jss::ledger_index] = *ledgerIndex;
-    if (ammHash)
-        jv[jss::AMMHash] = to_string(*ammHash);
+    if (useAssets)
+    {
+        asset1_.setJson(jv[jss::Asset1]);
+        asset2_.setJson(jv[jss::Asset2]);
+    }
+    else if (ammHash)
+    {
+        if (*ammHash != uint256(0))
+            jv[jss::AMMHash] = to_string(*ammHash);
+    }
     else
         jv[jss::AMMHash] = to_string(ammHash_);
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
@@ -111,16 +121,25 @@ std::optional<Json::Value>
 AMM::ammgRPCInfo(
     const std::optional<Account>& account,
     const std::optional<std::string>& ledgerIndex,
-    std::optional<uint256> const& ammHash) const
+    std::optional<uint256> const& ammHash,
+    bool useAssets) const
 {
     auto config = env_.app().config();
     auto const grpcPort = config["port_grpc"].get<std::string>("port");
     if (!grpcPort.has_value())
         return {};
     AMMgRPCInfoClient client(*grpcPort);
-    if (ammHash)
-        *client.request.mutable_ammhash()->mutable_value() =
-            to_string(*ammHash);
+    if (useAssets)
+    {
+        RPC::convert(*client.request.mutable_asset1(), asset1_);
+        RPC::convert(*client.request.mutable_asset2(), asset2_);
+    }
+    else if (ammHash)
+    {
+        if (ammHash != uint256{0})
+            *client.request.mutable_ammhash()->mutable_value() =
+                to_string(*ammHash);
+    }
     else
         *client.request.mutable_ammhash()->mutable_value() =
             to_string(ammHash_);
@@ -140,6 +159,7 @@ AMM::ammgRPCInfo(
     }
     auto const ammAccountID =
         parseBase58<AccountID>(client.reply.ammaccount().value().address());
+    uint256 ammHashRet;
     auto getAmt = [&](auto const& amt) {
         if (amt.value().has_xrp_amount())
             return STAmount{xrpIssue(), amt.value().xrp_amount().drops(), 0};
@@ -156,6 +176,7 @@ AMM::ammgRPCInfo(
     getAmt(client.reply.asset2()).setJson(jv[jss::Asset2]);
     getAmt(client.reply.balance()).setJson(jv[jss::balance]);
     jv[jss::AMMAccount] = ammAccountID ? to_string(*ammAccountID) : "";
+    jv[jss::AMMHash] = client.reply.ammhash().value();
     return jv;
 }
 

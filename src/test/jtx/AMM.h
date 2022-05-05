@@ -115,7 +115,8 @@ public:
     ammRpcInfo(
         std::optional<Account> const& account = {},
         std::optional<std::string> const& ledgerIndex = {},
-        std::optional<uint256> const& ammHash = {}) const;
+        std::optional<uint256> const& ammHash = {},
+        bool useAssets = false) const;
 
     /** Send amm_info gRPC command
      */
@@ -123,7 +124,8 @@ public:
     ammgRPCInfo(
         std::optional<Account> const& account = {},
         std::optional<std::string> const& ledgerIndex = {},
-        std::optional<uint256> const& ammHash = {}) const;
+        std::optional<uint256> const& ammHash = {},
+        bool useAssets = false) const;
 
     /** Get AMM pool and tokens balance.
      */
