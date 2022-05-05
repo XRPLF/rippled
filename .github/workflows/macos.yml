@@ -1,5 +1,5 @@
 name: "MacOS build, general"
-on: [push, pull_request]
+on: [workflow_dispatch]
 
 env:
   NINJA_BUILD: true
