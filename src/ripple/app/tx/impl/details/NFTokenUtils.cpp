@@ -154,13 +154,14 @@ getPageForToken(
                     return nullptr;
 
                 else if (relation > 0)
-                    // We need to move the entire contents of this page to
-                    // narr and leave carr empty.  This keeps the NFTs
-                    // that must be together all on their own page.
+                    // We need to leave the entire contents of this page in
+                    // narr so carr stays empty.  The new NFT will be
+                    // inserted in carr.  This keeps the NFTs that must be
+                    // together all on their own page.
                     splitIter = narr.end();
 
-                // If neither of those conditions apply then we need to leave
-                // carr intact and produce an empty narr where the new NFT
+                // If neither of those conditions apply then put all of
+                // narr into carr and produce an empty narr where the new NFT
                 // will be inserted.  Leave the split at narr.begin().
             }
         }

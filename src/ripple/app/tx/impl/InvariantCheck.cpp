@@ -507,6 +507,9 @@ ValidNFTokenPage::visitEntry(
         uint256 const hiLimit = sle->key() & pageBits;
         std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
 
+        // Make sure that any page links...
+        //  1. Are properly associated with the owning account and
+        //  2. The page is correctly ordered between links.
         if (prev)
         {
             if (account != (*prev & accountBits))
