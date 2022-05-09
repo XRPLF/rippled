@@ -163,10 +163,10 @@ AMMCreate::applyGuts(Sandbox& sb)
         return {tefINTERNAL, false};
     }
 
-    // Create AMM Account ID. Discard the public/private keys and
-    // disable the master key.
-    AccountID ammAccountID =
-        calcAccountID(generateKeyPair(KeyType::secp256k1, randomSeed()).first);
+    // Create AMM Account ID. Use deterministic randomness.
+    // Disable the master key.
+    AccountID ammAccountID = calcAccountID(
+        ctx_.app.getLedgerMaster().getValidatedLedger()->info().hash);
     std::uint32_t uFlags = lsfDisableMaster;
 
     // LP Token already exists.
@@ -218,9 +218,9 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (res != tesSUCCESS)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else
-        JLOG(j_.debug()) << "AMM Instance: success " << ammHash << " "
-                         << lptIssue << " " << saAsset1 << " " << saAsset2
-                         << " " << weight;
+        JLOG(j_.debug()) << "AMM Instance: success " << ammAccountID << " "
+                         << ammHash << " " << lptIssue << " " << saAsset1 << " "
+                         << saAsset2 << " " << weight;
 
     return {res, res == tesSUCCESS};
 }
