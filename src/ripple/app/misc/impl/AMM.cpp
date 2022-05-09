@@ -33,7 +33,7 @@ calcAMMHash(std::uint8_t weight1, Issue const& issue1, Issue const& issue2)
             issue2.account,
             issue2.currency);
     return sha512Half(
-        100 - weight1,
+        static_cast<std::uint8_t>(100 - weight1),
         issue2.account,
         issue2.currency,
         issue1.account,
