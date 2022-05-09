@@ -219,8 +219,8 @@ AMMCreate::applyGuts(Sandbox& sb)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else
         JLOG(j_.debug()) << "AMM Instance: success " << ammHash << " "
-                         << lptIssue << " " << saAsset1 << " " << saAsset2 << " "
-                         << weight;
+                         << lptIssue << " " << saAsset1 << " " << saAsset2
+                         << " " << weight;
 
     return {res, res == tesSUCCESS};
 }
