@@ -37,7 +37,7 @@ class Number
 {
     using rep = std::int64_t;
     rep mantissa_{0};
-    int exponent_{-2'147'483'648};
+    int exponent_{std::numeric_limits<int>::lowest()};
 
 public:
     struct unchecked
@@ -45,7 +45,7 @@ public:
         explicit unchecked() = default;
     };
 
-    explicit Number() = default;
+    explicit constexpr Number() = default;
 
     Number(rep mantissa);
     explicit Number(rep mantissa, int exponent);
@@ -166,7 +166,7 @@ private:
     constexpr static int minExponent = -32768;
     constexpr static int maxExponent = 32768;
 
-    class guard;
+    class Guard;
 };
 
 inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
@@ -308,7 +308,7 @@ abs(Number x) noexcept
 }
 
 // Returns f^n
-// Uses a log_2(n) number of mulitiplications
+// Uses a log_2(n) number of multiplications
 
 Number
 power(Number f, unsigned n);
