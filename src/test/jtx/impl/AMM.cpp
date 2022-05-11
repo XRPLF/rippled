@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/AMM.h>
+#include <ripple/basics/random.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -64,7 +65,9 @@ AMM::AMM(
 void
 AMM::create(std::uint32_t tfee)
 {
+    Account amm(to_string(ripple::rand_int()));
     Json::Value jv;
+    jv[jss::AMMAccount] = amm.human();
     jv[jss::Account] = creatorAccount_.human();
     jv[jss::Asset1] = asset1_.getJson(JsonOptions::none);
     jv[jss::Asset2] = asset2_.getJson(JsonOptions::none);

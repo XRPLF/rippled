@@ -141,6 +141,7 @@ AMMCreate::preCompute()
 std::pair<TER, bool>
 AMMCreate::applyGuts(Sandbox& sb)
 {
+    auto const ammAccountID = ctx_.tx[sfAMMAccount];
     auto const saAsset1 = ctx_.tx[sfAsset1];
     auto const saAsset2 = ctx_.tx[sfAsset2];
     auto const weight1 = ctx_.tx.isFieldPresent(sfAssetWeight)
@@ -157,17 +158,11 @@ AMMCreate::applyGuts(Sandbox& sb)
         calcAMMHashAndWeight(weight1, saAsset1.issue(), saAsset2.issue());
 
     // AMM already exists.
-    if (sb.peek(keylet::amm(ammHash)))
+    if (sb.peek(keylet::amm(ammHash)) || sb.peek(keylet::account(ammAccountID)))
     {
         JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
         return {tefINTERNAL, false};
     }
-
-    // Create AMM Account ID. Use deterministic randomness.
-    // Disable the master key.
-    AccountID ammAccountID = calcAccountID(
-        ctx_.app.getLedgerMaster().getValidatedLedger()->info().hash);
-    std::uint32_t uFlags = lsfDisableMaster;
 
     // LP Token already exists.
     auto const lptIssue = calcLPTIssue(ammAccountID);
@@ -184,8 +179,8 @@ AMMCreate::applyGuts(Sandbox& sb)
     std::uint32_t const seqno{
         view().rules().enabled(featureDeletableAccounts) ? view().seq() : 1};
     sleAMMRoot->setFieldU32(sfSequence, seqno);
-    // Ignore reserves requirement.
-    sleAMMRoot->setFieldU32(sfFlags, lsfAMM | uFlags);
+    // Ignore reserves requirement and disable the master key.
+    sleAMMRoot->setFieldU32(sfFlags, lsfAMM | lsfDisableMaster);
     sb.insert(sleAMMRoot);
 
     // Create AMM ledger object
