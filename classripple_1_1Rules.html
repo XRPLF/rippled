@@ -68,7 +68,9 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1Rules-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::Rules Class Reference</div>  </div>
@@ -111,30 +113,34 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa6c0e558329f8b7e7a1f4470a3f51998"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#aa6c0e558329f8b7e7a1f4470a3f51998">Rules</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;presets)</td></tr>
 <tr class="memdesc:aa6c0e558329f8b7e7a1f4470a3f51998"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an empty rule set.  <a href="classripple_1_1Rules.html#aa6c0e558329f8b7e7a1f4470a3f51998">More...</a><br /></td></tr>
 <tr class="separator:aa6c0e558329f8b7e7a1f4470a3f51998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a375ab968a4a8bf1e04e1041809170232"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a375ab968a4a8bf1e04e1041809170232">Rules</a> (<a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;ledger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;presets)</td></tr>
-<tr class="memdesc:a375ab968a4a8bf1e04e1041809170232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct rules from a ledger.  <a href="classripple_1_1Rules.html#a375ab968a4a8bf1e04e1041809170232">More...</a><br /></td></tr>
-<tr class="separator:a375ab968a4a8bf1e04e1041809170232"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">enabled</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id) const</td></tr>
-<tr class="memdesc:a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a feature is enabled.  <a href="classripple_1_1Rules.html#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">More...</a><br /></td></tr>
-<tr class="separator:a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9d9f53e2a2ad927dca59b205871fc87"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#ae9d9f53e2a2ad927dca59b205871fc87">changed</a> (<a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;ledger) const</td></tr>
-<tr class="memdesc:ae9d9f53e2a2ad927dca59b205871fc87"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if these rules don't match the ledger.  <a href="classripple_1_1Rules.html#ae9d9f53e2a2ad927dca59b205871fc87">More...</a><br /></td></tr>
-<tr class="separator:ae9d9f53e2a2ad927dca59b205871fc87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a8388a2b9588aa9446ece92a88e0dd2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a1a8388a2b9588aa9446ece92a88e0dd2">enabled</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;feature) const</td></tr>
+<tr class="memdesc:a1a8388a2b9588aa9446ece92a88e0dd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a feature is enabled.  <a href="classripple_1_1Rules.html#a1a8388a2b9588aa9446ece92a88e0dd2">More...</a><br /></td></tr>
+<tr class="separator:a1a8388a2b9588aa9446ece92a88e0dd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d847a080c9937454c55986707118e55"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a8d847a080c9937454c55986707118e55">operator==</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;) const</td></tr>
 <tr class="memdesc:a8d847a080c9937454c55986707118e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if two rule sets are identical.  <a href="classripple_1_1Rules.html#a8d847a080c9937454c55986707118e55">More...</a><br /></td></tr>
 <tr class="separator:a8d847a080c9937454c55986707118e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bce36f8d772df5d6154d18c5aeb653e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a6bce36f8d772df5d6154d18c5aeb653e">operator!=</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;other) const</td></tr>
 <tr class="separator:a6bce36f8d772df5d6154d18c5aeb653e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:aa1b595193afa00d6748b9504b0bafcf3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#aa1b595193afa00d6748b9504b0bafcf3">Rules</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;presets, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;<a class="el" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>, <a class="el" href="classripple_1_1STVector256.html">STVector256</a> const &amp;amendments)</td></tr>
+<tr class="separator:aa1b595193afa00d6748b9504b0bafcf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a0212a8897c9460000cdb52b26e31a10a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Rules_1_1Impl.html">Impl</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a0212a8897c9460000cdb52b26e31a10a">impl_</a></td></tr>
 <tr class="separator:a0212a8897c9460000cdb52b26e31a10a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a616a2a6e6a1b7e5fadb338ac8f81cc5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Rules.html">Rules</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Rules.html#a616a2a6e6a1b7e5fadb338ac8f81cc5e">makeRulesGivenLedger</a> (<a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;ledger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;presets)</td></tr>
+<tr class="separator:a616a2a6e6a1b7e5fadb338ac8f81cc5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior.">Rules</a> controlling protocol behavior. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00131">131</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8h_source.html#l00033">33</a> of file <a class="el" href="Rules_8h_source.html">Rules.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a01a609c0047b4c2b95bc18b7d5f67e26"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a01a609c0047b4c2b95bc18b7d5f67e26">&#9670;&nbsp;</a></span>Rules() <span class="overload">[1/4]</span></h2>
@@ -214,12 +220,12 @@ Private Attributes</h2></td></tr>
 <p>Construct an empty rule set. </p>
 <p>These are the rules reflected by the genesis ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00096">96</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8cpp_source.html#l00069">69</a> of file <a class="el" href="Rules_8cpp_source.html">Rules.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a375ab968a4a8bf1e04e1041809170232"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a375ab968a4a8bf1e04e1041809170232">&#9670;&nbsp;</a></span>Rules() <span class="overload">[4/4]</span></h2>
+<a id="aa1b595193afa00d6748b9504b0bafcf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1b595193afa00d6748b9504b0bafcf3">&#9670;&nbsp;</a></span>Rules() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -230,14 +236,20 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">ripple::Rules::Rules </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ledger</em>, </td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>presets</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;&#160;</td>
-          <td class="paramname"><em>presets</em>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>digest</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STVector256.html">STVector256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amendments</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -247,15 +259,12 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Construct rules from a ledger. </p>
-<p>The ledger contents are analyzed for rules and amendments and extracted to the object. </p>
-
-<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00089">89</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8cpp_source.html#l00074">74</a> of file <a class="el" href="Rules_8cpp_source.html">Rules.cpp</a>.</p>
 
 </div>
 </div>
@@ -286,8 +295,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a7d7f2142bf5c4a4ddf9fba8eb6c2aebd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7d7f2142bf5c4a4ddf9fba8eb6c2aebd">&#9670;&nbsp;</a></span>enabled()</h2>
+<a id="a1a8388a2b9588aa9446ece92a88e0dd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a8388a2b9588aa9446ece92a88e0dd2">&#9670;&nbsp;</a></span>enabled()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -296,7 +305,7 @@ Private Attributes</h2></td></tr>
           <td class="memname">bool ripple::Rules::enabled </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>id</em></td><td>)</td>
+          <td class="paramname"><em>feature</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -304,29 +313,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns <code>true</code> if a feature is enabled. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00102">102</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ae9d9f53e2a2ad927dca59b205871fc87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9d9f53e2a2ad927dca59b205871fc87">&#9670;&nbsp;</a></span>changed()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::Rules::changed </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ledger</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns <code>true</code> if these rules don't match the ledger. </p>
-
-<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00109">109</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8cpp_source.html#l00083">83</a> of file <a class="el" href="Rules_8cpp_source.html">Rules.cpp</a>.</p>
 
 </div>
 </div>
@@ -347,9 +334,9 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns <code>true</code> if two rule sets are identical. </p>
-<dl class="section note"><dt>Note</dt><dd>This is for diagnostics. To determine if new rules should be constructed, call <a class="el" href="classripple_1_1Rules.html#ae9d9f53e2a2ad927dca59b205871fc87" title="Returns true if these rules don&#39;t match the ledger.">changed()</a> first instead. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This is for diagnostics. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00116">116</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8cpp_source.html#l00090">90</a> of file <a class="el" href="Rules_8cpp_source.html">Rules.cpp</a>.</p>
 
 </div>
 </div>
@@ -369,7 +356,46 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00178">178</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8cpp_source.html#l00099">99</a> of file <a class="el" href="Rules_8cpp_source.html">Rules.cpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a616a2a6e6a1b7e5fadb338ac8f81cc5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a616a2a6e6a1b7e5fadb338ac8f81cc5e">&#9670;&nbsp;</a></span>makeRulesGivenLedger</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Rules.html">Rules</a> makeRulesGivenLedger </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ledger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>presets</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00069">69</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
 
 </div>
 </div>
@@ -394,7 +420,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00134">134</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Rules_8h_source.html#l00036">36</a> of file <a class="el" href="Rules_8h_source.html">Rules.h</a>.</p>
 
 </div>
 </div>

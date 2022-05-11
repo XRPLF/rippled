@@ -90,7 +90,7 @@ $(function() {
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/ledger/LedgerMaster.h&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/app/misc/TxQ.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/app/rdb/backend/SQLiteDatabase.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/mulDiv.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/ErrorCodes.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
@@ -840,66 +840,66 @@ $(function() {
 <div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> deletedLedger = (startLegSeq + endLegSeq) / 2;</div>
 <div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;        {</div>
 <div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;            <span class="comment">// Remove one of the ledgers from the database directly</span></div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;            <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1RelationalDBInterfaceSqlite.html">RelationalDBInterfaceSqlite</a>*<span class="keyword">&gt;</span>(</div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;                &amp;env.app().getRelationalDBInterface())</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;                -&gt;deleteTransactionByLedgerSeq(deletedLedger);</div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;        }</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160; </div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;        {</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(tx-&gt;getTransactionID(), b);</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;            BEAST_EXPECT(result.first == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;        }</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160; </div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;        <span class="comment">// non final transaction</span></div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)));</div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        <span class="keyword">auto</span> res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        BEAST_EXPECT(res.first);</div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160; </div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;        BEAST_EXPECT(!res.second.validated());</div>
-<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;        BEAST_EXPECT(!res.second.meta().has_delivered_amount());</div>
-<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;        env.close();</div>
-<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160; </div>
-<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;        res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;        BEAST_EXPECT(res.first);</div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
-<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
-<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160; </div>
-<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
-<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;        BEAST_EXPECT(res.second.validated());</div>
-<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;        BEAST_EXPECT(res.second.meta().has_delivered_amount());</div>
-<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;    }</div>
-<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160; </div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00822"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">  822</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;        <a class="code" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">testTxGrpc</a>();</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    }</div>
-<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;};</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160; </div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(Tx, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;            <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1SQLiteDatabase.html">SQLiteDatabase</a>*<span class="keyword">&gt;</span>(&amp;env.app().getRelationalDatabase())</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;                -&gt;deleteTransactionByLedgerSeq(deletedLedger);</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;        }</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160; </div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;        {</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(tx-&gt;getTransactionID(), b);</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160; </div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;            BEAST_EXPECT(result.first == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;        }</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160; </div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;        <span class="comment">// non final transaction</span></div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)));</div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;        <span class="keyword">auto</span> res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        BEAST_EXPECT(res.first);</div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160; </div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;        BEAST_EXPECT(!res.second.validated());</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;        BEAST_EXPECT(!res.second.meta().has_delivered_amount());</div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;        env.close();</div>
+<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160; </div>
+<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;        res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;        BEAST_EXPECT(res.first);</div>
+<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
+<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160; </div>
+<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
+<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;        BEAST_EXPECT(res.second.validated());</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;        BEAST_EXPECT(res.second.meta().has_delivered_amount());</div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;    }</div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160; </div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00821"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">  821</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;        <a class="code" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">testTxGrpc</a>();</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;    }</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;};</div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160; </div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(Tx, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="aclassripple_1_1SQLiteDatabase_html"><div class="ttname"><a href="classripple_1_1SQLiteDatabase.html">ripple::SQLiteDatabase</a></div><div class="ttdef"><b>Definition:</b> <a href="SQLiteDatabase_8h_source.html#l00027">SQLiteDatabase.h:27</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a95abf901db0a698e0c97d00476c95f34"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">ripple::test::jtx::noop</a></div><div class="ttdeci">Json::Value noop(Account const &amp;account)</div><div class="ttdoc">The null transaction.</div><div class="ttdef"><b>Definition:</b> <a href="noop_8h_source.html#l00031">noop.h:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7fd7e51ca0c60ec6708ec74c0c50c8a7"><div class="ttname"><a href="namespaceripple.html#a7fd7e51ca0c60ec6708ec74c0c50c8a7">ripple::sfPaths</a></div><div class="ttdeci">const SField sfPaths</div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ripple::HashPrefix::ledgerMaster</a></div><div class="ttdeci">@ ledgerMaster</div><div class="ttdoc">ledger master data for signing</div></div>
@@ -936,7 +936,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_abe369758270ab5c2d7351497cd695c02"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#abe369758270ab5c2d7351497cd695c02">ripple::test::Tx_test::GrpcAccountTxClient::AccountTx</a></div><div class="ttdeci">void AccountTx()</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00520">Tx_test.cpp:520</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1invoice__id_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1invoice__id.html">ripple::test::jtx::invoice_id</a></div><div class="ttdef"><b>Definition:</b> <a href="invoice__id_8h_source.html#l00029">invoice_id.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1STPathSet_html_a3343684da99412733b6c1661720fc725"><div class="ttname"><a href="classripple_1_1STPathSet.html#a3343684da99412733b6c1661720fc725">ripple::STPathSet::end</a></div><div class="ttdeci">std::vector&lt; STPath &gt;::const_iterator end() const</div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00491">STPathSet.h:491</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1msig_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1msig.html">ripple::test::jtx::msig</a></div><div class="ttdoc">Set a multisignature on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="multisign_8h_source.html#l00058">multisign.h:58</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1msig_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1msig.html">ripple::test::jtx::msig</a></div><div class="ttdoc">Set a multisignature on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="multisign_8h_source.html#l00063">multisign.h:63</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a094bda660d23e258021a2c63112ebc9a"><div class="ttname"><a href="classripple_1_1STAmount.html#a094bda660d23e258021a2c63112ebc9a">ripple::STAmount::iou</a></div><div class="ttdeci">IOUAmount iou() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00328">STAmount.cpp:328</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_a134d3e27c7739f35090517cc01329cf7"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#a134d3e27c7739f35090517cc01329cf7">ripple::test::Tx_test::cmpDeliveredAmount</a></div><div class="ttdeci">void cmpDeliveredAmount(const org::xrpl::rpc::v1::Meta &amp;meta, const org::xrpl::rpc::v1::Transaction &amp;txn, const std::shared_ptr&lt; TxMeta &gt; expMeta, const std::shared_ptr&lt; STTx const &gt; expTxn, bool checkAmount=true)</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00456">Tx_test.cpp:456</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1GRPCTestClientBase_html_aa10315a3d1766936e53f33210ac435ac"><div class="ttname"><a href="structripple_1_1test_1_1GRPCTestClientBase.html#aa10315a3d1766936e53f33210ac435ac">ripple::test::GRPCTestClientBase::status</a></div><div class="ttdeci">grpc::Status status</div><div class="ttdef"><b>Definition:</b> <a href="GRPCTestClientBase_8h_source.html#l00042">GRPCTestClientBase.h:42</a></div></div>
@@ -949,10 +949,9 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a3de80dfbf6f7cdf152c70751e51ef399"><div class="ttname"><a href="namespaceripple.html#a3de80dfbf6f7cdf152c70751e51ef399">ripple::sfTransactionType</a></div><div class="ttdeci">const SF_UINT16 sfTransactionType</div></div>
 <div class="ttc" id="anamespaceripple_html_a2695cfe5d7b5e17b9a0ed4ec86244ec5"><div class="ttname"><a href="namespaceripple.html#a2695cfe5d7b5e17b9a0ed4ec86244ec5">ripple::sfDeliverMin</a></div><div class="ttdeci">const SF_AMOUNT sfDeliverMin</div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1account__txn__id_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1account__txn__id.html">ripple::test::jtx::account_txn_id</a></div><div class="ttdef"><b>Definition:</b> <a href="account__txn__id_8h_source.html#l00029">account_txn_id.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a32840c14368a6aec04452d1d98fb0ef1"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">ripple::RPC::convert</a></div><div class="ttdeci">void convert(org::xrpl::rpc::v1::TransactionResult &amp;to, TER from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01099">GRPCHelpers.cpp:1099</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a32840c14368a6aec04452d1d98fb0ef1"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">ripple::RPC::convert</a></div><div class="ttdeci">void convert(org::xrpl::rpc::v1::TransactionResult &amp;to, TER from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01108">GRPCHelpers.cpp:1108</a></div></div>
 <div class="ttc" id="anamespaceripple_html_afa1008ca16fa15093cd65212eab4e3ab"><div class="ttname"><a href="namespaceripple.html#afa1008ca16fa15093cd65212eab4e3ab">ripple::sfMemos</a></div><div class="ttdeci">const SField sfMemos</div></div>
 <div class="ttc" id="aclassripple_1_1STPathSet_html_af74f528bb7846fccf7665ec4e0e6667d"><div class="ttname"><a href="classripple_1_1STPathSet.html#af74f528bb7846fccf7665ec4e0e6667d">ripple::STPathSet::size</a></div><div class="ttdeci">std::vector&lt; STPath &gt;::size_type size() const</div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00497">STPathSet.h:497</a></div></div>
-<div class="ttc" id="aclassripple_1_1RelationalDBInterfaceSqlite_html"><div class="ttname"><a href="classripple_1_1RelationalDBInterfaceSqlite.html">ripple::RelationalDBInterfaceSqlite</a></div><div class="ttdef"><b>Definition:</b> <a href="RelationalDBInterfaceSqlite_8h_source.html#l00027">RelationalDBInterfaceSqlite.h:27</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_a359609b4abe3a9f80c4f3bb3c05c6e56"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#a359609b4abe3a9f80c4f3bb3c05c6e56">ripple::test::Tx_test::cmpAmount</a></div><div class="ttdeci">void cmpAmount(const org::xrpl::rpc::v1::CurrencyAmount &amp;proto_amount, STAmount amount)</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00052">Tx_test.cpp:52</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html">ripple::test::jtx::sendmax</a></div><div class="ttdoc">Sets the SendMax on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00031">sendmax.h:31</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcTxClient_html_a92409803f4f6c0b1ef30777eed87fb3c"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a92409803f4f6c0b1ef30777eed87fb3c">ripple::test::Tx_test::GrpcTxClient::Tx</a></div><div class="ttdeci">void Tx()</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00502">Tx_test.cpp:502</a></div></div>
@@ -995,7 +994,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00037">Account.h:37</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5bab99595719d22579e10d21cf048eb0"><div class="ttname"><a href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">ripple::sfAccount</a></div><div class="ttdeci">const SF_ACCOUNT sfAccount</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_a68c964e8343cbc1c4741292ac99856c4"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a68c964e8343cbc1c4741292ac99856c4">ripple::test::Tx_test::GrpcAccountTxClient::reply</a></div><div class="ttdeci">org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse reply</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00512">Tx_test.cpp:512</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_a6c771277b4c11206a190e9a9333a213b"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">ripple::test::Tx_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00822">Tx_test.cpp:822</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_a6c771277b4c11206a190e9a9333a213b"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">ripple::test::Tx_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00821">Tx_test.cpp:821</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_a0d0391aafb49970814c4290abd4ef64e"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">ripple::test::Tx_test::GrpcAccountTxClient::request</a></div><div class="ttdeci">org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest request</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00511">Tx_test.cpp:511</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a628c597be4a050e3957be56ec78df01a"><div class="ttname"><a href="namespaceripple.html#a628c597be4a050e3957be56ec78df01a">ripple::sfLastLedgerSequence</a></div><div class="ttdeci">const SF_UINT32 sfLastLedgerSequence</div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>

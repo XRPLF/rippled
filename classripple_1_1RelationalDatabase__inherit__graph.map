@@ -1,0 +1,7 @@
+<map id="ripple::RelationalDatabase" name="ripple::RelationalDatabase">
+<area shape="rect" id="node1" title=" " alt="" coords="127,5,321,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1PostgresDatabase.html" title=" " alt="" coords="30,80,215,107"/>
+<area shape="rect" id="node4" href="$classripple_1_1SQLiteDatabase.html" title=" " alt="" coords="247,80,417,107"/>
+<area shape="rect" id="node3" href="$classripple_1_1PostgresDatabaseImp.html" title=" " alt="" coords="5,155,216,181"/>
+<area shape="rect" id="node5" href="$classripple_1_1SQLiteDatabaseImp.html" title=" " alt="" coords="241,155,437,181"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="ripple::RelationalDatabase::AccountTransactionsData" name="ripple::RelationalDatabase::AccountTransactionsData">
+<area shape="rect" id="node1" title="Struct used to keep track of what to write to transactions and account_transactions tables in Postgre..." alt="" coords="105,332,300,373"/>
+<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title=" " alt="" coords="132,213,273,255"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,95,173,136"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="38,5,141,32"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="197,102,285,129"/>
+</map>

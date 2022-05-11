@@ -113,6 +113,8 @@ Public Member Functions</h2></td></tr>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:a22e01a88b7bb612b69b426d3ccae3a56"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1test_1_1TrustedPublisherServer.html">TrustedPublisherServer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1DatabaseDownloader__test.html#a22e01a88b7bb612b69b426d3ccae3a56">createServer</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, bool ssl=true)</td></tr>
 <tr class="separator:a22e01a88b7bb612b69b426d3ccae3a56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9d7f083f1296addabe6b62ecbe1de26"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1DatabaseDownloader__test.html#ad9d7f083f1296addabe6b62ecbe1de26">reportFailure</a> (<a class="el" href="structripple_1_1test_1_1DatabaseDownloader__test_1_1Downloader.html">Downloader</a> const &amp;dl, char const *file, int line)</td></tr>
+<tr class="separator:ad9d7f083f1296addabe6b62ecbe1de26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aceb4489381af64b0c728abc340dca2cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1DatabaseDownloader__test.html#aceb4489381af64b0c728abc340dca2cd">testDownload</a> (bool <a class="el" href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">verify</a>)</td></tr>
 <tr class="separator:aceb4489381af64b0c728abc340dca2cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a016eaf2d7804c9914029eecdadc49324"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1DatabaseDownloader__test.html#a016eaf2d7804c9914029eecdadc49324">testFailures</a> ()</td></tr>
@@ -125,7 +127,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00032">32</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00033">33</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a22e01a88b7bb612b69b426d3ccae3a56"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a22e01a88b7bb612b69b426d3ccae3a56">&#9670;&nbsp;</a></span>createServer()</h2>
@@ -161,7 +163,51 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00035">35</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00036">36</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad9d7f083f1296addabe6b62ecbe1de26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9d7f083f1296addabe6b62ecbe1de26">&#9670;&nbsp;</a></span>reportFailure()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::DatabaseDownloader_test::reportFailure </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1DatabaseDownloader__test_1_1Downloader.html">Downloader</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char const *&#160;</td>
+          <td class="paramname"><em>file</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>line</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00113">113</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -189,7 +235,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00109">109</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00128">128</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -216,7 +262,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00160">160</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00179">179</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -243,7 +289,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00265">265</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00296">296</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -268,7 +314,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00079">79</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader__test_8cpp_source.html#l00077">77</a> of file <a class="el" href="DatabaseDownloader__test_8cpp_source.html">DatabaseDownloader_test.cpp</a>.</p>
 
 </div>
 </div>

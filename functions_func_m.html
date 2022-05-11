@@ -194,7 +194,7 @@ $(function() {
 : <a class="el" href="structripple_1_1NodeStore_1_1DatabaseShard__test_1_1TestData.html#abe2d19370d102d2d20ed719473fe9f88">ripple::NodeStore::DatabaseShard_test::TestData</a>
 </li>
 <li>makeLedgerDBs()
-: <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a8adac5d22bc7db5874e56357e599fed2">ripple::RelationalDBInterfaceSqliteImp</a>
+: <a class="el" href="classripple_1_1SQLiteDatabaseImp.html#acbf39bd208b7d7567fb9e174edc32f70">ripple::SQLiteDatabaseImp</a>
 </li>
 <li>makeLedgers()
 : <a class="el" href="structripple_1_1NodeStore_1_1DatabaseShard__test_1_1TestData.html#a096839682219909ebf4462f5f7b08756">ripple::NodeStore::DatabaseShard_test::TestData</a>
@@ -224,14 +224,14 @@ $(function() {
 : <a class="el" href="classripple_1_1NodeStore_1_1ShardInfo.html#ac357098e2dfac741327ca2ca85daef95">ripple::NodeStore::ShardInfo</a>
 </li>
 <li>makeMetaDBs()
-: <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a7f6ec959ec1b047054d7f2f7dc2c36a7">ripple::RelationalDBInterfaceSqliteImp</a>
+: <a class="el" href="classripple_1_1SQLiteDatabaseImp.html#a11359b8b20e4317c875a79aa20e0071c">ripple::SQLiteDatabaseImp</a>
 </li>
 <li>makeNode()
 : <a class="el" href="classripple_1_1test_1_1csf_1_1Validations__test_1_1TestHarness.html#a118395eff25751d90315a80c7da53e67">ripple::test::csf::Validations_test::TestHarness</a>
 </li>
 <li>makeNodeStore()
-: <a class="el" href="classripple_1_1SHAMapStore.html#a6db65a7fd230d713ddc11466c07803a1">ripple::SHAMapStore</a>
-, <a class="el" href="classripple_1_1SHAMapStoreImp.html#a5938a3fb05e6d4ee4259b33391fd489b">ripple::SHAMapStoreImp</a>
+: <a class="el" href="classripple_1_1SHAMapStore.html#a1991ddf3bb16d194fcea4bf989d56c91">ripple::SHAMapStore</a>
+, <a class="el" href="classripple_1_1SHAMapStoreImp.html#a9492058383671e240f61b6b2cfc9fe2e">ripple::SHAMapStoreImp</a>
 </li>
 <li>makePages()
 : <a class="el" href="structripple_1_1test_1_1Directory__test.html#a69d3117311873320c092a35c45669920">ripple::test::Directory_test</a>
@@ -388,6 +388,9 @@ $(function() {
 <li>maxLedgers()
 : <a class="el" href="classripple_1_1NodeStore_1_1Database.html#aa76d0533ffd4bb80271a11b36de85ed2">ripple::NodeStore::Database</a>
 </li>
+<li>maxMultiSigners()
+: <a class="el" href="classripple_1_1STTx.html#a8a0ece74e5a2cfde26cfd84c5fdcc752">ripple::STTx</a>
+</li>
 <li>maxPaymentFlow()
 : <a class="el" href="classripple_1_1DirectStepI.html#a2d663a3568a68e7e85b20061563b955d">ripple::DirectStepI&lt; TDerived &gt;</a>
 </li>
@@ -413,7 +416,7 @@ $(function() {
 : <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a5a00a6620ad164b279396218c731422b">ripple::TxQ::MaybeTx</a>
 </li>
 <li>member()
-: <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization.html#aa636f02427e497edd17d7b016c00291a">beast::detail::empty_base_optimization&lt; T, UniqueID, isDerived &gt;</a>
+: <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization.html#a1557e6d2e7e324706178e115b154f94a">beast::detail::empty_base_optimization&lt; T, UniqueID, isDerived &gt;</a>
 , <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization_3_01T_00_01UniqueID_00_01false_01_4.html#a5a6193c02e481c64ab5460df89158dda">beast::detail::empty_base_optimization&lt; T, UniqueID, false &gt;</a>
 , <a class="el" href="classripple_1_1Cluster.html#adffcdc10e28e4fa6f3e9b9c5f4bb3afa">ripple::Cluster</a>
 </li>
@@ -490,7 +493,7 @@ $(function() {
 : <a class="el" href="classbeast_1_1insight_1_1Meter.html#a3b28aae0d54481cc432ce6fa9f158c4b">beast::insight::Meter</a>
 </li>
 <li>Metrics()
-: <a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#ae39d568c6278b1f880fea0b628f4743c">ripple::PeerImp::Metrics</a>
+: <a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#a351bf2d8fe62a49d71828f9c68056b5b">ripple::PeerImp::Metrics</a>
 , <a class="el" href="structripple_1_1TxQ_1_1Metrics.html#a5f8431c7f8f88f9455e5dce38defa925">ripple::TxQ::Metrics</a>
 </li>
 <li>min()
@@ -525,10 +528,10 @@ $(function() {
 : <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#ad406709fa9da290e48fb88ef1c7b1536">ripple::NodeStore::ManagerImp</a>
 </li>
 <li>missingNode()
-: <a class="el" href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">ripple::Family</a>
+: <a class="el" href="classripple_1_1Family.html#a25bd0bb37c0cbf82b50b479df990b5b2">ripple::Family</a>
 , <a class="el" href="classripple_1_1NodeFamily.html#ae28638a42e0a37921b85da75d6d73ba3">ripple::NodeFamily</a>
 , <a class="el" href="classripple_1_1ShardFamily.html#ab37342166bcf5823ea87e1b7bb6f54b3">ripple::ShardFamily</a>
-, <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a245a544cb00a81ee4378703d696294f2">ripple::tests::TestNodeFamily</a>
+, <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a8f177b952248943dee2c55f8fd780844">ripple::tests::TestNodeFamily</a>
 </li>
 <li>MissingNodes()
 : <a class="el" href="structripple_1_1SHAMap_1_1MissingNodes.html#a3ec85f310a1155ddcca197414136b4a0">ripple::SHAMap::MissingNodes</a>
@@ -599,10 +602,10 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1detail_1_1multi__runner__base.html#a9d6239c32e1e0eb4e014bd2a613e1aa9">ripple::test::detail::multi_runner_base&lt; IsParent &gt;</a>
 </li>
 <li>multi_runner_child()
-: <a class="el" href="classripple_1_1test_1_1multi__runner__child.html#abbb1e987a2f4dd89c2bb9b9b3b5a573c">ripple::test::multi_runner_child</a>
+: <a class="el" href="classripple_1_1test_1_1multi__runner__child.html#a053d5e34099f6672d0c7c4858177428c">ripple::test::multi_runner_child</a>
 </li>
 <li>multi_runner_parent()
-: <a class="el" href="classripple_1_1test_1_1multi__runner__parent.html#a1cf3e02d395c86f802c4a2f504363fe5">ripple::test::multi_runner_parent</a>
+: <a class="el" href="classripple_1_1test_1_1multi__runner__parent.html#aa83723ce2ca67d5b90ed19cd1d498deb">ripple::test::multi_runner_parent</a>
 </li>
 <li>MultipleMetrics()
 : <a class="el" href="structripple_1_1metrics_1_1MultipleMetrics.html#add641d5012939d8c792b8ca18324405b">ripple::metrics::MultipleMetrics</a>

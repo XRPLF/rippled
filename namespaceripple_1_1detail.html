@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
@@ -92,6 +93,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html">CachedViewImpl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1CurrencyTag.html">CurrencyTag</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1DatabasePairValid.html">DatabasePairValid</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1defaultObject__t.html">defaultObject_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -171,13 +174,126 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a0d1eb807267e0803b585e348424b7c7c"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a0d1eb807267e0803b585e348424b7c7c">test_hardened_unordered_multimap</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_multimap.html">std::unordered_multimap</a>&lt; T, int, <a class="el" href="classripple_1_1hardened__hash.html">hardened_hash</a>&lt;&gt; &gt;</td></tr>
 <tr class="separator:a0d1eb807267e0803b585e348424b7c7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a389870f45417a1e9cef591f28a0c05b0"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> { <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0abf53b9dc929f4f311bd89ae2a9bc4c30">TableType::Ledgers</a>, 
+<a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0a31112aca11d0e9e6eb7db96f317dda49">TableType::Transactions</a>, 
+<a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0a905a88ab91dd81b2eac7aee14c283b7c">TableType::AccountTransactions</a>
+ }</td></tr>
+<tr class="separator:a389870f45417a1e9cef591f28a0c05b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a09fb4bb46d61698f0d5479f403da7ff8"><td class="memItemLeft" align="right" valign="top">constexpr static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; bool, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a09fb4bb46d61698f0d5479f403da7ff8">sumOfFirstSquares</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> xIn)</td></tr>
 <tr class="separator:a09fb4bb46d61698f0d5479f403da7ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b47b0fc82082f029218f76e160a2396"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a2b47b0fc82082f029218f76e160a2396"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a2b47b0fc82082f029218f76e160a2396">getTrustLineItems</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;accountID, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view)</td></tr>
-<tr class="separator:a2b47b0fc82082f029218f76e160a2396"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14715cbef0283f3f91a9d7dc8b906969"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a14715cbef0283f3f91a9d7dc8b906969"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a14715cbef0283f3f91a9d7dc8b906969">getTrustLineItems</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;accountID, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#afaeac9ab95c58b4359cdd27f59d18568">LineDirection</a> direction=<a class="el" href="namespaceripple.html#afaeac9ab95c58b4359cdd27f59d18568a1186f94907928a1412cf4ecfdf8bc476">LineDirection::outgoing</a>)</td></tr>
+<tr class="separator:a14715cbef0283f3f91a9d7dc8b906969"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3410327039220be654fb0df46fc719e1"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a> (<a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type)</td></tr>
+<tr class="memdesc:a3410327039220be654fb0df46fc719e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">to_string Returns the name of a table according to its TableType.  <a href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">More...</a><br /></td></tr>
+<tr class="separator:a3410327039220be654fb0df46fc719e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa895b94bbde9d15d425aa0914d8e63d2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1detail_1_1DatabasePairValid.html">DatabasePairValid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aa895b94bbde9d15d425aa0914d8e63d2">makeLedgerDBs</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> const  &amp;setup, <a class="el" href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">DatabaseCon::CheckpointerSetup</a> const  &amp;checkpointerSetup)</td></tr>
+<tr class="memdesc:aa895b94bbde9d15d425aa0914d8e63d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">makeLedgerDBs Opens ledger and transactions databases.  <a href="namespaceripple_1_1detail.html#aa895b94bbde9d15d425aa0914d8e63d2">More...</a><br /></td></tr>
+<tr class="separator:aa895b94bbde9d15d425aa0914d8e63d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc8d0c614720abac7de8d062fbbbf254"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#adc8d0c614720abac7de8d062fbbbf254">getMinLedgerSeq</a> (soci::session &amp;session, <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type)</td></tr>
+<tr class="memdesc:adc8d0c614720abac7de8d062fbbbf254"><td class="mdescLeft">&#160;</td><td class="mdescRight">getMinLedgerSeq Returns minimum ledger sequence in given table.  <a href="namespaceripple_1_1detail.html#adc8d0c614720abac7de8d062fbbbf254">More...</a><br /></td></tr>
+<tr class="separator:adc8d0c614720abac7de8d062fbbbf254"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3608c4d21da52134a2f6d23f9d20c04"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#af3608c4d21da52134a2f6d23f9d20c04">getMaxLedgerSeq</a> (soci::session &amp;session, <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type)</td></tr>
+<tr class="memdesc:af3608c4d21da52134a2f6d23f9d20c04"><td class="mdescLeft">&#160;</td><td class="mdescRight">getMaxLedgerSeq Returns maximum ledger sequence in given table.  <a href="namespaceripple_1_1detail.html#af3608c4d21da52134a2f6d23f9d20c04">More...</a><br /></td></tr>
+<tr class="separator:af3608c4d21da52134a2f6d23f9d20c04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ed708674ac24e343fd48251bb4f52df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a5ed708674ac24e343fd48251bb4f52df">deleteByLedgerSeq</a> (soci::session &amp;session, <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq)</td></tr>
+<tr class="memdesc:a5ed708674ac24e343fd48251bb4f52df"><td class="mdescLeft">&#160;</td><td class="mdescRight">deleteByLedgerSeq Deletes all entries in given table for the ledger with given sequence.  <a href="namespaceripple_1_1detail.html#a5ed708674ac24e343fd48251bb4f52df">More...</a><br /></td></tr>
+<tr class="separator:a5ed708674ac24e343fd48251bb4f52df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a808cc852ebb93c50964285e2831d36a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a808cc852ebb93c50964285e2831d36a2">deleteBeforeLedgerSeq</a> (soci::session &amp;session, <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq)</td></tr>
+<tr class="memdesc:a808cc852ebb93c50964285e2831d36a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">deleteBeforeLedgerSeq Deletes all entries in given table for the ledgers with given sequence and all sequences below it.  <a href="namespaceripple_1_1detail.html#a808cc852ebb93c50964285e2831d36a2">More...</a><br /></td></tr>
+<tr class="separator:a808cc852ebb93c50964285e2831d36a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6323779b9b85253c2d4978fcc7161584"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a6323779b9b85253c2d4978fcc7161584">getRows</a> (soci::session &amp;session, <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type)</td></tr>
+<tr class="memdesc:a6323779b9b85253c2d4978fcc7161584"><td class="mdescLeft">&#160;</td><td class="mdescRight">getRows Returns number of rows in given table.  <a href="namespaceripple_1_1detail.html#a6323779b9b85253c2d4978fcc7161584">More...</a><br /></td></tr>
+<tr class="separator:a6323779b9b85253c2d4978fcc7161584"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09889694dc0604db676d0f912f031f61"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RelationalDatabase_1_1CountMinMax.html">RelationalDatabase::CountMinMax</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a09889694dc0604db676d0f912f031f61">getRowsMinMax</a> (soci::session &amp;session, <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a> type)</td></tr>
+<tr class="memdesc:a09889694dc0604db676d0f912f031f61"><td class="mdescLeft">&#160;</td><td class="mdescRight">getRowsMinMax Returns minumum ledger sequence, maximum ledger sequence and total number of rows in given table.  <a href="namespaceripple_1_1detail.html#a09889694dc0604db676d0f912f031f61">More...</a><br /></td></tr>
+<tr class="separator:a09889694dc0604db676d0f912f031f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80dd3eeb84bfc98b57ecd2dae31116be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a80dd3eeb84bfc98b57ecd2dae31116be">saveValidatedLedger</a> (<a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;ldgDB, <a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;txnDB, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt; const  &amp;ledger, bool current)</td></tr>
+<tr class="memdesc:a80dd3eeb84bfc98b57ecd2dae31116be"><td class="mdescLeft">&#160;</td><td class="mdescRight">saveValidatedLedger Saves ledger into database.  <a href="namespaceripple_1_1detail.html#a80dd3eeb84bfc98b57ecd2dae31116be">More...</a><br /></td></tr>
+<tr class="separator:a80dd3eeb84bfc98b57ecd2dae31116be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c2b0ec758848c790adaa26d3c92ed11"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a1c2b0ec758848c790adaa26d3c92ed11">getLedgerInfo</a> (soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;sqlSuffix, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a1c2b0ec758848c790adaa26d3c92ed11"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfo Returns the info of the ledger retrieved from the database by using the provided SQL query suffix.  <a href="namespaceripple_1_1detail.html#a1c2b0ec758848c790adaa26d3c92ed11">More...</a><br /></td></tr>
+<tr class="separator:a1c2b0ec758848c790adaa26d3c92ed11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0faae54c95ea279c12796d020425225"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ac0faae54c95ea279c12796d020425225">getLedgerInfoByIndex</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:ac0faae54c95ea279c12796d020425225"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfoByIndex Returns ledger by its sequence.  <a href="namespaceripple_1_1detail.html#ac0faae54c95ea279c12796d020425225">More...</a><br /></td></tr>
+<tr class="separator:ac0faae54c95ea279c12796d020425225"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38d07212e5ba7aa00ef07b35dd4dd727"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a38d07212e5ba7aa00ef07b35dd4dd727">getNewestLedgerInfo</a> (soci::session &amp;session, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a38d07212e5ba7aa00ef07b35dd4dd727"><td class="mdescLeft">&#160;</td><td class="mdescRight">getNewestLedgerInfo Returns info of newest saved ledger.  <a href="namespaceripple_1_1detail.html#a38d07212e5ba7aa00ef07b35dd4dd727">More...</a><br /></td></tr>
+<tr class="separator:a38d07212e5ba7aa00ef07b35dd4dd727"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c58f0c1b53f9763a3889c2767295385"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8c58f0c1b53f9763a3889c2767295385">getLimitedOldestLedgerInfo</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerFirstIndex, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a8c58f0c1b53f9763a3889c2767295385"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLimitedOldestLedgerInfo Returns info of oldest ledger from ledgers with sequences greather or equal to given.  <a href="namespaceripple_1_1detail.html#a8c58f0c1b53f9763a3889c2767295385">More...</a><br /></td></tr>
+<tr class="separator:a8c58f0c1b53f9763a3889c2767295385"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b0d9b76795929090150cd60dc6fbdca"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a2b0d9b76795929090150cd60dc6fbdca">getLimitedNewestLedgerInfo</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerFirstIndex, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a2b0d9b76795929090150cd60dc6fbdca"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLimitedNewestLedgerInfo Returns info of newest ledger from ledgers with sequences greather or equal to given.  <a href="namespaceripple_1_1detail.html#a2b0d9b76795929090150cd60dc6fbdca">More...</a><br /></td></tr>
+<tr class="separator:a2b0d9b76795929090150cd60dc6fbdca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad37ddc47b141d2270e5cad7f625f4094"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad37ddc47b141d2270e5cad7f625f4094">getLedgerInfoByHash</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;ledgerHash, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:ad37ddc47b141d2270e5cad7f625f4094"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfoByHash Returns info of ledger with given hash.  <a href="namespaceripple_1_1detail.html#ad37ddc47b141d2270e5cad7f625f4094">More...</a><br /></td></tr>
+<tr class="separator:ad37ddc47b141d2270e5cad7f625f4094"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16cbecb925fb26e8657b67c6c53214d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a16cbecb925fb26e8657b67c6c53214d7">getHashByIndex</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex)</td></tr>
+<tr class="memdesc:a16cbecb925fb26e8657b67c6c53214d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">getHashByIndex Returns hash of ledger with given sequence.  <a href="namespaceripple_1_1detail.html#a16cbecb925fb26e8657b67c6c53214d7">More...</a><br /></td></tr>
+<tr class="separator:a16cbecb925fb26e8657b67c6c53214d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee946eb51d94f29199c095c21369b36b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerHashPair.html">LedgerHashPair</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aee946eb51d94f29199c095c21369b36b">getHashesByIndex</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:aee946eb51d94f29199c095c21369b36b"><td class="mdescLeft">&#160;</td><td class="mdescRight">getHashesByIndex Returns hash of the ledger and hash of parent ledger for the ledger of given sequence.  <a href="namespaceripple_1_1detail.html#aee946eb51d94f29199c095c21369b36b">More...</a><br /></td></tr>
+<tr class="separator:aee946eb51d94f29199c095c21369b36b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfb393d7c85f7ba8d0f8495ef9c286a9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>, <a class="el" href="structripple_1_1LedgerHashPair.html">LedgerHashPair</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#adfb393d7c85f7ba8d0f8495ef9c286a9">getHashesByIndex</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> minSeq, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> maxSeq, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:adfb393d7c85f7ba8d0f8495ef9c286a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">getHashesByIndex Returns hash of the ledger and hash of parent ledger for all ledgers with seqyences from given minimum limit to fiven maximum limit.  <a href="namespaceripple_1_1detail.html#adfb393d7c85f7ba8d0f8495ef9c286a9">More...</a><br /></td></tr>
+<tr class="separator:adfb393d7c85f7ba8d0f8495ef9c286a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad59a5fc0f6a9f503b07a183beefef591"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad59a5fc0f6a9f503b07a183beefef591">getTxHistory</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> startIndex, int quantity, bool count)</td></tr>
+<tr class="memdesc:ad59a5fc0f6a9f503b07a183beefef591"><td class="mdescLeft">&#160;</td><td class="mdescRight">getTxHistory Returns given number of most recent transactions starting from given number of entry.  <a href="namespaceripple_1_1detail.html#ad59a5fc0f6a9f503b07a183beefef591">More...</a><br /></td></tr>
+<tr class="separator:ad59a5fc0f6a9f503b07a183beefef591"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af518019ee1fbe40a13c4f800e6e85e62"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#af518019ee1fbe40a13c4f800e6e85e62">transactionsSQL</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> selection, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;limit_used, bool descending, bool binary, bool count, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:af518019ee1fbe40a13c4f800e6e85e62"><td class="mdescLeft">&#160;</td><td class="mdescRight">transactionsSQL Returns a SQL query for selecting the oldest or newest transactions in decoded or binary form for the account that matches the given criteria starting from the provided offset.  <a href="namespaceripple_1_1detail.html#af518019ee1fbe40a13c4f800e6e85e62">More...</a><br /></td></tr>
+<tr class="separator:af518019ee1fbe40a13c4f800e6e85e62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fdc34c5b4b51a43b306fe406d9fbb1f"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a5fdc34c5b4b51a43b306fe406d9fbb1f">getAccountTxs</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;ledgerMaster, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;limit_used, bool descending, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a5fdc34c5b4b51a43b306fe406d9fbb1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">getAccountTxs Returns the oldest or newest transactions for the account that matches the given criteria starting from the provided offset.  <a href="namespaceripple_1_1detail.html#a5fdc34c5b4b51a43b306fe406d9fbb1f">More...</a><br /></td></tr>
+<tr class="separator:a5fdc34c5b4b51a43b306fe406d9fbb1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae6a1cd6a0f1d41264bad9363e3715aa"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aae6a1cd6a0f1d41264bad9363e3715aa">getOldestAccountTxs</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;ledgerMaster, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const  &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const  &amp;limit_used, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:aae6a1cd6a0f1d41264bad9363e3715aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">getOldestAccountTxs Returns oldest transactions for given account which match given criteria starting from given offset.  <a href="namespaceripple_1_1detail.html#aae6a1cd6a0f1d41264bad9363e3715aa">More...</a><br /></td></tr>
+<tr class="separator:aae6a1cd6a0f1d41264bad9363e3715aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b6f99cc7d09f4c98038d1ec0c3c1d96"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8b6f99cc7d09f4c98038d1ec0c3c1d96">getNewestAccountTxs</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;ledgerMaster, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const  &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const  &amp;limit_used, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a8b6f99cc7d09f4c98038d1ec0c3c1d96"><td class="mdescLeft">&#160;</td><td class="mdescRight">getNewestAccountTxs Returns newest transactions for given account which match given criteria starting from given offset.  <a href="namespaceripple_1_1detail.html#a8b6f99cc7d09f4c98038d1ec0c3c1d96">More...</a><br /></td></tr>
+<tr class="separator:a8b6f99cc7d09f4c98038d1ec0c3c1d96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af481f07bf92137a519fad104457e734d"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#af481f07bf92137a519fad104457e734d">getAccountTxsB</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;limit_used, bool descending, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:af481f07bf92137a519fad104457e734d"><td class="mdescLeft">&#160;</td><td class="mdescRight">getAccountTxsB Returns the oldest or newest transactions in binary form for the account that matches given criteria starting from the provided offset.  <a href="namespaceripple_1_1detail.html#af481f07bf92137a519fad104457e734d">More...</a><br /></td></tr>
+<tr class="separator:af481f07bf92137a519fad104457e734d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a200b53f197260a928dbcbb777a2e3b6f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a200b53f197260a928dbcbb777a2e3b6f">getOldestAccountTxsB</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const  &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const  &amp;limit_used, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a200b53f197260a928dbcbb777a2e3b6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">getOldestAccountTxsB Returns oldest transactions in binary form for given account which match given criteria starting from given offset.  <a href="namespaceripple_1_1detail.html#a200b53f197260a928dbcbb777a2e3b6f">More...</a><br /></td></tr>
+<tr class="separator:a200b53f197260a928dbcbb777a2e3b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f544f38cf755215588e5759421b4420"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9f544f38cf755215588e5759421b4420">getNewestAccountTxsB</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const  &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const  &amp;limit_used, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a9f544f38cf755215588e5759421b4420"><td class="mdescLeft">&#160;</td><td class="mdescRight">getNewestAccountTxsB Returns newest transactions in binary form for given account which match given criteria starting from given offset.  <a href="namespaceripple_1_1detail.html#a9f544f38cf755215588e5759421b4420">More...</a><br /></td></tr>
+<tr class="separator:a9f544f38cf755215588e5759421b4420"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0c1e6ad71c5f213105e25412e796666"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aa0c1e6ad71c5f213105e25412e796666">accountTxPage</a> (soci::session &amp;session, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;idCache, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length, bool forward)</td></tr>
+<tr class="memdesc:aa0c1e6ad71c5f213105e25412e796666"><td class="mdescLeft">&#160;</td><td class="mdescRight">accountTxPage Searches for the oldest or newest transactions for the account that matches the given criteria starting from the provided marker and invokes the callback parameter for each found transaction.  <a href="namespaceripple_1_1detail.html#aa0c1e6ad71c5f213105e25412e796666">More...</a><br /></td></tr>
+<tr class="separator:aa0c1e6ad71c5f213105e25412e796666"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adab1115ffb405412540fc262c146c4f5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#adab1115ffb405412540fc262c146c4f5">oldestAccountTxPage</a> (soci::session &amp;session, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const  &amp;idCache, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const  &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const  &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const  &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length)</td></tr>
+<tr class="memdesc:adab1115ffb405412540fc262c146c4f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">oldestAccountTxPage Searches oldest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction.  <a href="namespaceripple_1_1detail.html#adab1115ffb405412540fc262c146c4f5">More...</a><br /></td></tr>
+<tr class="separator:adab1115ffb405412540fc262c146c4f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32e747530613ca57a950315769baa323"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a32e747530613ca57a950315769baa323">newestAccountTxPage</a> (soci::session &amp;session, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const  &amp;idCache, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const  &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const  &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const  &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length)</td></tr>
+<tr class="memdesc:a32e747530613ca57a950315769baa323"><td class="mdescLeft">&#160;</td><td class="mdescRight">newestAccountTxPage Searches newest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction.  <a href="namespaceripple_1_1detail.html#a32e747530613ca57a950315769baa323">More...</a><br /></td></tr>
+<tr class="separator:a32e747530613ca57a950315769baa323"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aceb06a4c305fb22f61cfc9e65e36effe"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a251e55e3d5aa9b4e4d1a7eebe2157d46">RelationalDatabase::AccountTx</a>, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aceb06a4c305fb22f61cfc9e65e36effe">getTransaction</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;id, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt;&gt; const  &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
+<tr class="memdesc:aceb06a4c305fb22f61cfc9e65e36effe"><td class="mdescLeft">&#160;</td><td class="mdescRight">getTransaction Returns transaction with given hash.  <a href="namespaceripple_1_1detail.html#aceb06a4c305fb22f61cfc9e65e36effe">More...</a><br /></td></tr>
+<tr class="separator:aceb06a4c305fb22f61cfc9e65e36effe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb3e941928e4b3997a5f46821622f625"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#acb3e941928e4b3997a5f46821622f625">dbHasSpace</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:acb3e941928e4b3997a5f46821622f625"><td class="mdescLeft">&#160;</td><td class="mdescRight">dbHasSpace Checks if given database has available space.  <a href="namespaceripple_1_1detail.html#acb3e941928e4b3997a5f46821622f625">More...</a><br /></td></tr>
+<tr class="separator:acb3e941928e4b3997a5f46821622f625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a131118ac74fb5f75f95f3cc038d9240c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1DatabasePair.html">DatabasePair</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a131118ac74fb5f75f95f3cc038d9240c">makeMetaDBs</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> const  &amp;setup, <a class="el" href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">DatabaseCon::CheckpointerSetup</a> const  &amp;checkpointerSetup)</td></tr>
+<tr class="memdesc:a131118ac74fb5f75f95f3cc038d9240c"><td class="mdescLeft">&#160;</td><td class="mdescRight">makeMetaDBs Opens ledger and transaction 'meta' databases which map ledger hashes and transaction IDs to the index of the shard that holds the ledger or transaction.  <a href="namespaceripple_1_1detail.html#a131118ac74fb5f75f95f3cc038d9240c">More...</a><br /></td></tr>
+<tr class="separator:a131118ac74fb5f75f95f3cc038d9240c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab91a734fd58da3e9628afe37bd4b6204"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ab91a734fd58da3e9628afe37bd4b6204">saveLedgerMeta</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt; const  &amp;ledger, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, soci::session &amp;lgrMetaSession, soci::session &amp;txnMetaSession, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> shardIndex)</td></tr>
+<tr class="memdesc:ab91a734fd58da3e9628afe37bd4b6204"><td class="mdescLeft">&#160;</td><td class="mdescRight">saveLedgerMeta Stores (transaction ID -&gt; shard index) and (ledger hash -&gt; shard index) mappings in the meta databases.  <a href="namespaceripple_1_1detail.html#ab91a734fd58da3e9628afe37bd4b6204">More...</a><br /></td></tr>
+<tr class="separator:ab91a734fd58da3e9628afe37bd4b6204"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad54aa93bcb0bf57d942f1b9bb54f8d16"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad54aa93bcb0bf57d942f1b9bb54f8d16">getShardIndexforLedger</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a> const  &amp;hash)</td></tr>
+<tr class="memdesc:ad54aa93bcb0bf57d942f1b9bb54f8d16"><td class="mdescLeft">&#160;</td><td class="mdescRight">getShardIndexforLedger Queries the ledger meta database to retrieve the index of the shard that contains this ledger.  <a href="namespaceripple_1_1detail.html#ad54aa93bcb0bf57d942f1b9bb54f8d16">More...</a><br /></td></tr>
+<tr class="separator:ad54aa93bcb0bf57d942f1b9bb54f8d16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab126eebd8d37a5cfee0882a45977d1d9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ab126eebd8d37a5cfee0882a45977d1d9">getShardIndexforTransaction</a> (soci::session &amp;session, <a class="el" href="namespaceripple.html#a3f39560bfd60c64700b109c412e90f72">TxID</a> const  &amp;id)</td></tr>
+<tr class="memdesc:ab126eebd8d37a5cfee0882a45977d1d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">getShardIndexforTransaction Queries the transaction meta database to retrieve the index of the shard that contains this transaction.  <a href="namespaceripple_1_1detail.html#ab126eebd8d37a5cfee0882a45977d1d9">More...</a><br /></td></tr>
+<tr class="separator:ab126eebd8d37a5cfee0882a45977d1d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9769881a083fcc3aba7e9ddaaa7ece28">toString</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info)</td></tr>
 <tr class="memdesc:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function for printing out basic ledger info.  <a href="namespaceripple_1_1detail.html#a9769881a083fcc3aba7e9ddaaa7ece28">More...</a><br /></td></tr>
 <tr class="separator:a9769881a083fcc3aba7e9ddaaa7ece28"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -252,7 +368,9 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 47</td></tr>
+<tr class="memitem:a8ae7bb2924041d323f1d27c2f7b8af9f"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8ae7bb2924041d323f1d27c2f7b8af9f">TableTypeCount</a> = 3</td></tr>
+<tr class="separator:a8ae7bb2924041d323f1d27c2f7b8af9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 48</td></tr>
 <tr class="separator:a21f3cf18de89d49823e064f09526cb5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1detail_1_1defaultObject__t.html">defaultObject_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad7cc030b8a64621b81be32a2dc7ad84f">defaultObject</a></td></tr>
 <tr class="separator:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -388,6 +506,36 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a389870f45417a1e9cef591f28a0c05b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a389870f45417a1e9cef591f28a0c05b0">&#9670;&nbsp;</a></span>TableType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">ripple::detail::TableType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a389870f45417a1e9cef591f28a0c05b0abf53b9dc929f4f311bd89ae2a9bc4c30"></a>Ledgers&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a389870f45417a1e9cef591f28a0c05b0a31112aca11d0e9e6eb7db96f317dda49"></a>Transactions&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a389870f45417a1e9cef591f28a0c05b0a905a88ab91dd81b2eac7aee14c283b7c"></a>AccountTransactions&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="Node_8h_source.html#l00035">35</a> of file <a class="el" href="Node_8h_source.html">Node.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a09fb4bb46d61698f0d5479f403da7ff8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a09fb4bb46d61698f0d5479f403da7ff8">&#9670;&nbsp;</a></span>sumOfFirstSquares()</h2>
@@ -417,8 +565,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a2b47b0fc82082f029218f76e160a2396"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b47b0fc82082f029218f76e160a2396">&#9670;&nbsp;</a></span>getTrustLineItems()</h2>
+<a id="a14715cbef0283f3f91a9d7dc8b906969"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14715cbef0283f3f91a9d7dc8b906969">&#9670;&nbsp;</a></span>getTrustLineItems()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -435,7 +583,13 @@ template&lt;class T &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
-          <td class="paramname"><em>view</em>&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#afaeac9ab95c58b4359cdd27f59d18568">LineDirection</a>&#160;</td>
+          <td class="paramname"><em>direction</em> = <code><a class="el" href="namespaceripple.html#afaeac9ab95c58b4359cdd27f59d18568a1186f94907928a1412cf4ecfdf8bc476">LineDirection::outgoing</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -446,6 +600,1931 @@ template&lt;class T &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="TrustLine_8cpp_source.html#l00064">64</a> of file <a class="el" href="TrustLine_8cpp_source.html">TrustLine.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a3410327039220be654fb0df46fc719e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3410327039220be654fb0df46fc719e1">&#9670;&nbsp;</a></span>to_string()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::detail::to_string </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>to_string Returns the name of a table according to its TableType. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">type</td><td>An enum denoting the table's type. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Name of the table. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00046">46</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa895b94bbde9d15d425aa0914d8e63d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa895b94bbde9d15d425aa0914d8e63d2">&#9670;&nbsp;</a></span>makeLedgerDBs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1detail_1_1DatabasePairValid.html">DatabasePairValid</a> ripple::detail::makeLedgerDBs </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> const &amp;&#160;</td>
+          <td class="paramname"><em>setup</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">DatabaseCon::CheckpointerSetup</a> const &amp;&#160;</td>
+          <td class="paramname"><em>checkpointerSetup</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>makeLedgerDBs Opens ledger and transactions databases. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">config</td><td><a class="el" href="classripple_1_1Config.html">Config</a> object. </td></tr>
+    <tr><td class="paramname">setup</td><td>Path to database and opening parameters. </td></tr>
+    <tr><td class="paramname">checkpointerSetup</td><td>Database checkpointer setup. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Struct <a class="el" href="structripple_1_1detail_1_1DatabasePairValid.html">DatabasePairValid</a> which contain unique pointers to ledger and transaction databases and flag if opening was successfull. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00067">67</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adc8d0c614720abac7de8d062fbbbf254"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc8d0c614720abac7de8d062fbbbf254">&#9670;&nbsp;</a></span>getMinLedgerSeq()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt; ripple::detail::getMinLedgerSeq </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getMinLedgerSeq Returns minimum ledger sequence in given table. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">type</td><td>Table ID for which the result is returned. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence or none if no ledgers exist. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00123">123</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af3608c4d21da52134a2f6d23f9d20c04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3608c4d21da52134a2f6d23f9d20c04">&#9670;&nbsp;</a></span>getMaxLedgerSeq()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt; ripple::detail::getMaxLedgerSeq </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getMaxLedgerSeq Returns maximum ledger sequence in given table. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">type</td><td>Table ID for which the result is returned. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence or none if no ledgers exist. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00133">133</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5ed708674ac24e343fd48251bb4f52df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ed708674ac24e343fd48251bb4f52df">&#9670;&nbsp;</a></span>deleteByLedgerSeq()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::detail::deleteByLedgerSeq </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>deleteByLedgerSeq Deletes all entries in given table for the ledger with given sequence. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">type</td><td>Table ID from which entries will be deleted. </td></tr>
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00143">143</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a808cc852ebb93c50964285e2831d36a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a808cc852ebb93c50964285e2831d36a2">&#9670;&nbsp;</a></span>deleteBeforeLedgerSeq()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::detail::deleteBeforeLedgerSeq </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>deleteBeforeLedgerSeq Deletes all entries in given table for the ledgers with given sequence and all sequences below it. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">type</td><td>Table ID from which entries will be deleted. </td></tr>
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00150">150</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6323779b9b85253c2d4978fcc7161584"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6323779b9b85253c2d4978fcc7161584">&#9670;&nbsp;</a></span>getRows()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::getRows </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getRows Returns number of rows in given table. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">type</td><td>Table ID for which the result is returned. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of rows. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00160">160</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a09889694dc0604db676d0f912f031f61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09889694dc0604db676d0f912f031f61">&#9670;&nbsp;</a></span>getRowsMinMax()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1RelationalDatabase_1_1CountMinMax.html">RelationalDatabase::CountMinMax</a> ripple::detail::getRowsMinMax </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1detail.html#a389870f45417a1e9cef591f28a0c05b0">TableType</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getRowsMinMax Returns minumum ledger sequence, maximum ledger sequence and total number of rows in given table. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">type</td><td>Table ID for which the result is returned. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Struct CountMinMax which contain minimum sequence, maximum sequence and number of rows. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00172">172</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a80dd3eeb84bfc98b57ecd2dae31116be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80dd3eeb84bfc98b57ecd2dae31116be">&#9670;&nbsp;</a></span>saveValidatedLedger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::detail::saveValidatedLedger </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;&#160;</td>
+          <td class="paramname"><em>ldgDB</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1DatabaseCon.html">DatabaseCon</a> &amp;&#160;</td>
+          <td class="paramname"><em>txnDB</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>ledger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>current</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>saveValidatedLedger Saves ledger into database. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">lgrDB</td><td>Link to ledgers database. </td></tr>
+    <tr><td class="paramname">txnDB</td><td>Link to transactions database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">ledger</td><td>The ledger. </td></tr>
+    <tr><td class="paramname">current</td><td>True if ledger is current. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True is saving was successfull. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00187">187</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1c2b0ec758848c790adaa26d3c92ed11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c2b0ec758848c790adaa26d3c92ed11">&#9670;&nbsp;</a></span>getLedgerInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&gt; ripple::detail::getLedgerInfo </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sqlSuffix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>getLedgerInfo Returns the info of the ledger retrieved from the database by using the provided SQL query suffix. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with the database. </td></tr>
+    <tr><td class="paramname">sqlSuffix</td><td>SQL string used to specify the sought ledger. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> info or no value if the ledger was not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00386">386</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ac0faae54c95ea279c12796d020425225"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0faae54c95ea279c12796d020425225">&#9670;&nbsp;</a></span>getLedgerInfoByIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt; ripple::detail::getLedgerInfoByIndex </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getLedgerInfoByIndex Returns ledger by its sequence. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> or none if ledger not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00456">456</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a38d07212e5ba7aa00ef07b35dd4dd727"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38d07212e5ba7aa00ef07b35dd4dd727">&#9670;&nbsp;</a></span>getNewestLedgerInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt; ripple::detail::getNewestLedgerInfo </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getNewestLedgerInfo Returns info of newest saved ledger. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> info or none if ledger not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00467">467</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8c58f0c1b53f9763a3889c2767295385"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c58f0c1b53f9763a3889c2767295385">&#9670;&nbsp;</a></span>getLimitedOldestLedgerInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt; ripple::detail::getLimitedOldestLedgerInfo </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerFirstIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getLimitedOldestLedgerInfo Returns info of oldest ledger from ledgers with sequences greather or equal to given. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">ledgerFirstIndex</td><td>Minimum ledger sequence. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> info or none if ledger not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00475">475</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a2b0d9b76795929090150cd60dc6fbdca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b0d9b76795929090150cd60dc6fbdca">&#9670;&nbsp;</a></span>getLimitedNewestLedgerInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt; ripple::detail::getLimitedNewestLedgerInfo </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerFirstIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getLimitedNewestLedgerInfo Returns info of newest ledger from ledgers with sequences greather or equal to given. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">ledgerFirstIndex</td><td>Minimum ledger sequence. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> info or none if ledger not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00487">487</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad37ddc47b141d2270e5cad7f625f4094"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad37ddc47b141d2270e5cad7f625f4094">&#9670;&nbsp;</a></span>getLedgerInfoByHash()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt; ripple::detail::getLedgerInfoByHash </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ledgerHash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getLedgerInfoByHash Returns info of ledger with given hash. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">ledgerHash</td><td>Hash of the ledger. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> or none if ledger not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00499">499</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a16cbecb925fb26e8657b67c6c53214d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16cbecb925fb26e8657b67c6c53214d7">&#9670;&nbsp;</a></span>getHashByIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::detail::getHashByIndex </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getHashByIndex Returns hash of ledger with given sequence. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">ledgerIndex</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Hash of the ledger. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00510">510</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aee946eb51d94f29199c095c21369b36b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee946eb51d94f29199c095c21369b36b">&#9670;&nbsp;</a></span>getHashesByIndex() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerHashPair.html">LedgerHashPair</a> &gt; ripple::detail::getHashesByIndex </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>ledgerIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getHashesByIndex Returns hash of the ledger and hash of parent ledger for the ledger of given sequence. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">ledgerIndex</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Struct <a class="el" href="structripple_1_1LedgerHashPair.html">LedgerHashPair</a> which contain hashes of the ledger and its parent ledger. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00540">540</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adfb393d7c85f7ba8d0f8495ef9c286a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfb393d7c85f7ba8d0f8495ef9c286a9">&#9670;&nbsp;</a></span>getHashesByIndex() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>, <a class="el" href="structripple_1_1LedgerHashPair.html">LedgerHashPair</a> &gt; ripple::detail::getHashesByIndex </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>minSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>maxSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getHashesByIndex Returns hash of the ledger and hash of parent ledger for all ledgers with seqyences from given minimum limit to fiven maximum limit. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">minSeq</td><td>Minimum ledger sequence. </td></tr>
+    <tr><td class="paramname">maxSeq</td><td>Maximum ledger sequence. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Map which points sequence number of found ledger to the struct <a class="el" href="structripple_1_1LedgerHashPair.html">LedgerHashPair</a> which contains ledger hash and its parent hash. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00571">571</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad59a5fc0f6a9f503b07a183beefef591"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad59a5fc0f6a9f503b07a183beefef591">&#9670;&nbsp;</a></span>getTxHistory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; &gt;, int &gt; ripple::detail::getTxHistory </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
+          <td class="paramname"><em>startIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>quantity</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getTxHistory Returns given number of most recent transactions starting from given number of entry. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">startIndex</td><td>Offset of first returned entry. </td></tr>
+    <tr><td class="paramname">quantity</td><td>Number of returned entries. </td></tr>
+    <tr><td class="paramname">count</td><td>True if counting of all transaction in that shard required. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of shared pointers to transactions sorted in descending order by ledger sequence. Also number of transactions if count == true. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00616">616</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af518019ee1fbe40a13c4f800e6e85e62"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af518019ee1fbe40a13c4f800e6e85e62">&#9670;&nbsp;</a></span>transactionsSQL()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::detail::transactionsSQL </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td>
+          <td class="paramname"><em>selection</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>descending</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>binary</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>transactionsSQL Returns a SQL query for selecting the oldest or newest transactions in decoded or binary form for the account that matches the given criteria starting from the provided offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">selection</td><td>List of table fields to select from the database. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contains the criteria to match: the account, the ledger search range, the offset of the first entry to return, the number of transactions to return, and a flag if this number is unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number of transactions already returned in calls to other shard databases, if shard databases are used. No value if the node database is used. </td></tr>
+    <tr><td class="paramname">descending</td><td>True for descending order, false for ascending. </td></tr>
+    <tr><td class="paramname">binary</td><td>True for binary form, false for decoded. </td></tr>
+    <tr><td class="paramname">count</td><td>True for counting the number of transactions, false for selecting them. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>SQL query string. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00694">694</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5fdc34c5b4b51a43b306fe406d9fbb1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fdc34c5b4b51a43b306fe406d9fbb1f">&#9670;&nbsp;</a></span>getAccountTxs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>, int&gt; ripple::detail::getAccountTxs </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;&#160;</td>
+          <td class="paramname"><em>ledgerMaster</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>descending</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>getAccountTxs Returns the oldest or newest transactions for the account that matches the given criteria starting from the provided offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with the database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">ledgerMaster</td><td><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> object. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contains the criteria to match: the account, the ledger search range, the offset of the first entry to return, the number of transactions to return, and a flag if this number is unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number of transactions already returned in calls to other shard databases, if shard databases are used. No value if the node database is used. </td></tr>
+    <tr><td class="paramname">descending</td><td>True for descending order, false for ascending. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of pairs of found transactions and their metadata sorted by account sequence in the specified order along with the number of transactions processed or skipped. If this number is &gt;= 0, then it represents the number of transactions processed, if it is &lt; 0, then -number represents the number of transactions skipped. We need to skip some number of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00806">806</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aae6a1cd6a0f1d41264bad9363e3715aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae6a1cd6a0f1d41264bad9363e3715aa">&#9670;&nbsp;</a></span>getOldestAccountTxs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>, int &gt; ripple::detail::getOldestAccountTxs </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;&#160;</td>
+          <td class="paramname"><em>ledgerMaster</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getOldestAccountTxs Returns oldest transactions for given account which match given criteria starting from given offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">ledgerMaster</td><td><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> object. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, offset of first entry to return, number of transactions to return, flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number or transactions already returned in calls to another shard databases, if shard databases are used. None if node database is used. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of pairs of found transactions and their metadata sorted in ascending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00900">900</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8b6f99cc7d09f4c98038d1ec0c3c1d96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b6f99cc7d09f4c98038d1ec0c3c1d96">&#9670;&nbsp;</a></span>getNewestAccountTxs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>, int &gt; ripple::detail::getNewestAccountTxs </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;&#160;</td>
+          <td class="paramname"><em>ledgerMaster</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getNewestAccountTxs Returns newest transactions for given account which match given criteria starting from given offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">ledgerMaster</td><td><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> object. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, offset of first entry to return, number of transactions to return, flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number or transactions already returned in calls to another shard databases, if shard databases are used. None if node database is used. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of pairs of found transactions and their metadata sorted in descending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00913">913</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af481f07bf92137a519fad104457e734d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af481f07bf92137a519fad104457e734d">&#9670;&nbsp;</a></span>getAccountTxsB()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a>&gt;, int&gt; ripple::detail::getAccountTxsB </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>descending</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>getAccountTxsB Returns the oldest or newest transactions in binary form for the account that matches given criteria starting from the provided offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with the database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contains the criteria to match: the account, the ledger search range, the offset of the first entry to return, the number of transactions to return, and a flag if this number is unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number of transactions already returned in calls to other shard databases, if shard databases are used. No value if the node database is used. </td></tr>
+    <tr><td class="paramname">descending</td><td>True for descending order, false for ascending. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of tuples each containing (the found transactions, their metadata, and their account sequences) sorted by account sequence in the specified order along with the number of transactions processed or skipped. If this number is &gt;= 0, then it represents the number of transactions processed, if it is &lt; 0, then -number represents the number of transactions skipped. We need to skip some number of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00949">949</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a200b53f197260a928dbcbb777a2e3b6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a200b53f197260a928dbcbb777a2e3b6f">&#9670;&nbsp;</a></span>getOldestAccountTxsB()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a> &gt;, int &gt; ripple::detail::getOldestAccountTxsB </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getOldestAccountTxsB Returns oldest transactions in binary form for given account which match given criteria starting from given offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, offset of first entry to return, number of transactions to return, flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number or transactions already returned in calls to another shard databases, if shard databases are used. None if node database is used. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in ascending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01021">1021</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9f544f38cf755215588e5759421b4420"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f544f38cf755215588e5759421b4420">&#9670;&nbsp;</a></span>getNewestAccountTxsB()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a> &gt;, int &gt; ripple::detail::getNewestAccountTxsB </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getNewestAccountTxsB Returns newest transactions in binary form for given account which match given criteria starting from given offset. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, offset of first entry to return, number of transactions to return, flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number or transactions already returned in calls to another shard databases, if shard databases are used. None if node database is used. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in descending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01032">1032</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa0c1e6ad71c5f213105e25412e796666"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0c1e6ad71c5f213105e25412e796666">&#9670;&nbsp;</a></span>accountTxPage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a>&gt;, int&gt; ripple::detail::accountTxPage </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
+          <td class="paramname"><em>idCache</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>onUnsavedLedger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>onTransaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>page_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>forward</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>accountTxPage Searches for the oldest or newest transactions for the account that matches the given criteria starting from the provided marker and invokes the callback parameter for each found transaction. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with the database. </td></tr>
+    <tr><td class="paramname">idCache</td><td>Account ID cache. </td></tr>
+    <tr><td class="paramname">onUnsavedLedger</td><td>Callback function to call on each found unsaved ledger within the given range. </td></tr>
+    <tr><td class="paramname">onTransaction</td><td>Callback function to call on each found transaction. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxPageOptions which contains the criteria to match: the account, the ledger search range, the marker of the first returned entry, the number of transactions to return, and a flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number of transactions already returned in calls to other shard databases. </td></tr>
+    <tr><td class="paramname">page_length</td><td>Total number of transactions to return. </td></tr>
+    <tr><td class="paramname">forward</td><td>True for ascending order, false for descending. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in the specified order by account sequence, a marker for the next search if the search was not finished and the number of transactions processed during this call. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01065">1065</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adab1115ffb405412540fc262c146c4f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adab1115ffb405412540fc262c146c4f5">&#9670;&nbsp;</a></span>oldestAccountTxPage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt; ripple::detail::oldestAccountTxPage </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
+          <td class="paramname"><em>idCache</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>onUnsavedLedger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>onTransaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>page_length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>oldestAccountTxPage Searches oldest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">idCache</td><td>Account ID cache. </td></tr>
+    <tr><td class="paramname">onUnsavedLedger</td><td>Callback function to call on each found unsaved ledger within given range. </td></tr>
+    <tr><td class="paramname">onTransaction</td><td>Callback function to call on each found transaction. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxPageOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, marker of first returned entry, number of transactions to return, flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number or transactions already returned in calls to another shard databases. </td></tr>
+    <tr><td class="paramname">page_length</td><td>Total number of transactions to return. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in ascending order by account sequence and marker for next search if search not finished. Also number of transactions processed during this call. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01227">1227</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a32e747530613ca57a950315769baa323"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32e747530613ca57a950315769baa323">&#9670;&nbsp;</a></span>newestAccountTxPage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt; ripple::detail::newestAccountTxPage </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
+          <td class="paramname"><em>idCache</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>onUnsavedLedger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>onTransaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>limit_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>page_length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>newestAccountTxPage Searches newest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">idCache</td><td>Account ID cache. </td></tr>
+    <tr><td class="paramname">onUnsavedLedger</td><td>Callback function to call on each found unsaved ledger within given range. </td></tr>
+    <tr><td class="paramname">onTransaction</td><td>Callback function to call on each found transaction. </td></tr>
+    <tr><td class="paramname">options</td><td>Struct AccountTxPageOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, marker of first returned entry, number of transactions to return, flag if this number unlimited. </td></tr>
+    <tr><td class="paramname">limit_used</td><td>Number or transactions already returned in calls to another shard databases. </td></tr>
+    <tr><td class="paramname">page_length</td><td>Total number of transactions to return. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in descending order by account sequence and marker for next search if search not finished. Also number of transactions processed during this call. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01250">1250</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aceb06a4c305fb22f61cfc9e65e36effe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aceb06a4c305fb22f61cfc9e65e36effe">&#9670;&nbsp;</a></span>getTransaction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a251e55e3d5aa9b4e4d1a7eebe2157d46">RelationalDatabase::AccountTx</a>, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt; ripple::detail::getTransaction </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt;&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>range</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;&#160;</td>
+          <td class="paramname"><em>ec</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getTransaction Returns transaction with given hash. </p>
+<p>If not found and range given then check if all ledgers from the range are present in the database. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">id</td><td>Hash of the transaction. </td></tr>
+    <tr><td class="paramname">range</td><td>Range of ledgers to check, if present. </td></tr>
+    <tr><td class="paramname">ec</td><td>Default value of error code. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Transaction.html">Transaction</a> and its metadata if found, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">TxSearched::all</a> if range given and all ledgers from range are present in the database, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">TxSearched::some</a> if range given and not all ledgers are present, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaad921d60486366258809553a3db49a4a">TxSearched::unknown</a> if range not given or deserializing error occured. In the last case error code modified in ec link parameter, in other cases default error code remained. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01273">1273</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="acb3e941928e4b3997a5f46821622f625"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb3e941928e4b3997a5f46821622f625">&#9670;&nbsp;</a></span>dbHasSpace()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::detail::dbHasSpace </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>dbHasSpace Checks if given database has available space. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
+    <tr><td class="paramname">config</td><td><a class="el" href="classripple_1_1Config.html">Config</a> object. </td></tr>
+    <tr><td class="paramname">j</td><td>Journal. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True if space is available. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01354">1354</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a131118ac74fb5f75f95f3cc038d9240c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a131118ac74fb5f75f95f3cc038d9240c">&#9670;&nbsp;</a></span>makeMetaDBs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1DatabasePair.html">DatabasePair</a> ripple::detail::makeMetaDBs </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> const &amp;&#160;</td>
+          <td class="paramname"><em>setup</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">DatabaseCon::CheckpointerSetup</a> const &amp;&#160;</td>
+          <td class="paramname"><em>checkpointerSetup</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>makeMetaDBs Opens ledger and transaction 'meta' databases which map ledger hashes and transaction IDs to the index of the shard that holds the ledger or transaction. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">config</td><td><a class="el" href="classripple_1_1Config.html">Config</a> object. </td></tr>
+    <tr><td class="paramname">setup</td><td>Path to database and opening parameters. </td></tr>
+    <tr><td class="paramname">checkpointerSetup</td><td>Database checkpointer setup. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Struct <a class="el" href="structripple_1_1DatabasePair.html">DatabasePair</a> which contains unique pointers to the ledger and transaction databases. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html#l00032">32</a> of file <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html">app/rdb/backend/detail/impl/Shard.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab91a734fd58da3e9628afe37bd4b6204"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab91a734fd58da3e9628afe37bd4b6204">&#9670;&nbsp;</a></span>saveLedgerMeta()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::detail::saveLedgerMeta </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>ledger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
+          <td class="paramname"><em>app</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>lgrMetaSession</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>txnMetaSession</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>shardIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>saveLedgerMeta Stores (transaction ID -&gt; shard index) and (ledger hash -&gt; shard index) mappings in the meta databases. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ledger</td><td>The ledger. </td></tr>
+    <tr><td class="paramname">app</td><td><a class="el" href="classripple_1_1Application.html">Application</a> object. </td></tr>
+    <tr><td class="paramname">lgrMetaSession</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> to ledger meta database. </td></tr>
+    <tr><td class="paramname">txnMetaSession</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> to transaction meta database. </td></tr>
+    <tr><td class="paramname">shardIndex</td><td>The index of the shard that contains this ledger. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True on success. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html#l00056">56</a> of file <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html">app/rdb/backend/detail/impl/Shard.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad54aa93bcb0bf57d942f1b9bb54f8d16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad54aa93bcb0bf57d942f1b9bb54f8d16">&#9670;&nbsp;</a></span>getShardIndexforLedger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; ripple::detail::getShardIndexforLedger </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a> const &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getShardIndexforLedger Queries the ledger meta database to retrieve the index of the shard that contains this ledger. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> to the database. </td></tr>
+    <tr><td class="paramname">hash</td><td>Hash of the ledger. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The index of the shard on success, otherwise an unseated value. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html#l00117">117</a> of file <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html">app/rdb/backend/detail/impl/Shard.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab126eebd8d37a5cfee0882a45977d1d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab126eebd8d37a5cfee0882a45977d1d9">&#9670;&nbsp;</a></span>getShardIndexforTransaction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; ripple::detail::getShardIndexforTransaction </td>
+          <td>(</td>
+          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramname"><em>session</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a3f39560bfd60c64700b109c412e90f72">TxID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>getShardIndexforTransaction Queries the transaction meta database to retrieve the index of the shard that contains this transaction. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> to the database. </td></tr>
+    <tr><td class="paramname">id</td><td>ID of the transaction. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The index of the shard on success, otherwise an unseated value. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html#l00131">131</a> of file <a class="el" href="app_2rdb_2backend_2detail_2impl_2Shard_8cpp_source.html">app/rdb/backend/detail/impl/Shard.cpp</a>.</p>
 
 </div>
 </div>
@@ -1297,6 +3376,30 @@ template&lt;class T , class... Args&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="a8ae7bb2924041d323f1d27c2f7b8af9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ae7bb2924041d323f1d27c2f7b8af9f">&#9670;&nbsp;</a></span>TableTypeCount</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int ripple::detail::TableTypeCount = 3</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Node_8h_source.html#l00036">36</a> of file <a class="el" href="Node_8h_source.html">Node.h</a>.</p>
+
+</div>
+</div>
 <a id="a21f3cf18de89d49823e064f09526cb5f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a21f3cf18de89d49823e064f09526cb5f">&#9670;&nbsp;</a></span>numFeatures</h2>
 
@@ -1307,7 +3410,7 @@ template&lt;class T , class... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 47</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 48</td>
         </tr>
       </table>
   </td>

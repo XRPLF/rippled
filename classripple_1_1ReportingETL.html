@@ -165,10 +165,10 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a3633d41f7c40d383530f36a8d326d4b7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; org::xrpl::rpc::v1::GetLedgerResponse &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReportingETL.html#a3633d41f7c40d383530f36a8d326d4b7">fetchLedgerDataAndDiff</a> (uint32_t sequence)</td></tr>
 <tr class="memdesc:a3633d41f7c40d383530f36a8d326d4b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extract data for a particular ledger from an ETL source.  <a href="classripple_1_1ReportingETL.html#a3633d41f7c40d383530f36a8d326d4b7">More...</a><br /></td></tr>
 <tr class="separator:a3633d41f7c40d383530f36a8d326d4b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a956bf91e816d4c7942c8933aabca3111"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a23897c7dba56380098c87c1d2d1ca302">AccountTransactionsData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReportingETL.html#a956bf91e816d4c7942c8933aabca3111">insertTransactions</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;ledger, org::xrpl::rpc::v1::GetLedgerResponse &amp;data)</td></tr>
+<tr class="memitem:a956bf91e816d4c7942c8933aabca3111"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a6ccd779019affe95ed50802a06d731d8">AccountTransactionsData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReportingETL.html#a956bf91e816d4c7942c8933aabca3111">insertTransactions</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;ledger, org::xrpl::rpc::v1::GetLedgerResponse &amp;data)</td></tr>
 <tr class="memdesc:a956bf91e816d4c7942c8933aabca3111"><td class="mdescLeft">&#160;</td><td class="mdescRight">Insert all of the extracted transactions into the ledger.  <a href="classripple_1_1ReportingETL.html#a956bf91e816d4c7942c8933aabca3111">More...</a><br /></td></tr>
 <tr class="separator:a956bf91e816d4c7942c8933aabca3111"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29cdba905b9bf95b9d3b1396315e434b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a23897c7dba56380098c87c1d2d1ca302">AccountTransactionsData</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReportingETL.html#a29cdba905b9bf95b9d3b1396315e434b">buildNextLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;parent, org::xrpl::rpc::v1::GetLedgerResponse &amp;rawData)</td></tr>
+<tr class="memitem:a29cdba905b9bf95b9d3b1396315e434b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a6ccd779019affe95ed50802a06d731d8">AccountTransactionsData</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReportingETL.html#a29cdba905b9bf95b9d3b1396315e434b">buildNextLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;parent, org::xrpl::rpc::v1::GetLedgerResponse &amp;rawData)</td></tr>
 <tr class="memdesc:a29cdba905b9bf95b9d3b1396315e434b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build the next ledger using the previous ledger and the extracted data.  <a href="classripple_1_1ReportingETL.html#a29cdba905b9bf95b9d3b1396315e434b">More...</a><br /></td></tr>
 <tr class="separator:a29cdba905b9bf95b9d3b1396315e434b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ec64d56f16ec446b786b27f2491c361"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReportingETL.html#a9ec64d56f16ec446b786b27f2491c361">flushLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;ledger)</td></tr>
@@ -257,7 +257,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00834">834</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00833">833</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -406,7 +406,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the last ledger written to the database, if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00465">465</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00464">464</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -436,7 +436,7 @@ Private Attributes</h2></td></tr>
 <p>Monitor the network for newly validated ledgers. </p>
 <p>Also monitor the database to see if any process is writing those ledgers. This function is called when the application starts, and will only return when the application is shutting down. If the software detects the database is empty, this function will call <a class="el" href="classripple_1_1ReportingETL.html#a99f99fa676db643dc5144e8e445a1c50" title="Download a ledger with specified sequence in full, via GetLedgerData, and write the data to the datab...">loadInitialLedger()</a>. If the software detects ledgers are not being written, this function calls <a class="el" href="classripple_1_1ReportingETL.html#a2ca1423e114e2ffe04197c9f0fa48e57" title="Run ETL.">runETLPipeline()</a>. Otherwise, this function publishes ledgers as they are written to the database. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00685">685</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00684">684</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -466,7 +466,7 @@ Private Attributes</h2></td></tr>
 <p>Monitor the database for newly written ledgers. </p>
 <p>Similar to the <a class="el" href="classripple_1_1ReportingETL.html#a8d4c5283fb672759378e44b8a3d0f04d" title="Monitor the network for newly validated ledgers.">monitor()</a>, except this function will never call <a class="el" href="classripple_1_1ReportingETL.html#a2ca1423e114e2ffe04197c9f0fa48e57" title="Run ETL.">runETLPipeline()</a> or <a class="el" href="classripple_1_1ReportingETL.html#a99f99fa676db643dc5144e8e445a1c50" title="Download a ledger with specified sequence in full, via GetLedgerData, and write the data to the datab...">loadInitialLedger()</a>. This function only publishes ledgers as they are written to the database. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00805">805</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00804">804</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -503,7 +503,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>ledger header and transaction+metadata blobs. Empty optional if the server is shutting down </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00351">351</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00350">350</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -540,7 +540,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>ledger header, transaction+metadata blobs, and all ledger objects created, modified or deleted between this ledger and the parent. Empty optional if the server is shutting down </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00365">365</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00364">364</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -554,7 +554,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a23897c7dba56380098c87c1d2d1ca302">AccountTransactionsData</a> &gt; ripple::ReportingETL::insertTransactions </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a6ccd779019affe95ed50802a06d731d8">AccountTransactionsData</a> &gt; ripple::ReportingETL::insertTransactions </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>ledger</em>, </td>
@@ -602,7 +602,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a23897c7dba56380098c87c1d2d1ca302">AccountTransactionsData</a> &gt; &gt; ripple::ReportingETL::buildNextLedger </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a6ccd779019affe95ed50802a06d731d8">AccountTransactionsData</a> &gt; &gt; ripple::ReportingETL::buildNextLedger </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>parent</em>, </td>
@@ -637,7 +637,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the newly built ledger and data to write to Postgres </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00379">379</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00378">378</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -673,7 +673,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00183">183</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00182">182</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -721,7 +721,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether the ledger was found in the database and published </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00284">284</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00283">283</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -757,7 +757,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00276">276</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00275">275</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>
@@ -1007,7 +1007,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00823">823</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReportingETL_8cpp_source.html#l00822">822</a> of file <a class="el" href="ReportingETL_8cpp_source.html">ReportingETL.cpp</a>.</p>
 
 </div>
 </div>

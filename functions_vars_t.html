@@ -89,6 +89,8 @@ $(function() {
 <li>tag
 : <a class="el" href="structripple_1_1cryptoconditions_1_1der_1_1Preamble.html#ab6d02b42983eb761e34f28ef6cf73e32">ripple::cryptoconditions::der::Preamble</a>
 , <a class="el" href="classripple_1_1Session.html#a8e66069a5970203f04fc737b84d53c72">ripple::Session</a>
+, <a class="el" href="structripple_1_1SignerEntries_1_1SignerEntry.html#a897e72183f65042ab24d39d0c22ba64f">ripple::SignerEntries::SignerEntry</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html#a01407e47cd055e0bc9bab47e6b2f27b7">ripple::test::jtx::signer</a>
 </li>
 <li>tag_
 : <a class="el" href="classripple_1_1SHAMapItem.html#afdad3ab4c09ac9c13e5cbb4a8012c4d3">ripple::SHAMapItem</a>
@@ -310,6 +312,9 @@ $(function() {
 <li>totalLedgers_
 : <a class="el" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html#a7c5fe6c97805e13d469ea5a0add7dbd8">ripple::LedgerReplayTask::TaskParameter</a>
 </li>
+<li>totalLineCount_
+: <a class="el" href="classripple_1_1RippleLineCache.html#a575f324d2b34dbff7feeb89aba03f4f5">ripple::RippleLineCache</a>
+</li>
 <li>tp_
 : <a class="el" href="classripple_1_1TaggedPointer.html#ab40eb19b4a834bbf0316bf8b00f985f0">ripple::TaggedPointer</a>
 </li>
@@ -342,14 +347,14 @@ $(function() {
 </li>
 <li>transactionDb
 : <a class="el" href="structripple_1_1DatabasePair.html#ade52e85e7e92395ea2f6a9a62953c3eb">ripple::DatabasePair</a>
-, <a class="el" href="structripple_1_1DatabasePairValid.html#a7f02ef0d8a03ab903c9bd7314f53e30e">ripple::DatabasePairValid</a>
+, <a class="el" href="structripple_1_1detail_1_1DatabasePairValid.html#ad96c2e187edc2d1adf963c0110d2e939">ripple::detail::DatabasePairValid</a>
 </li>
 <li>transactionIndex
-: <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTransactionsData.html#a116fb433427cfa2f659a899525855a7b">ripple::RelationalDBInterface::AccountTransactionsData</a>
+: <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTransactionsData.html#a1b5fcc36c5638e4c5b88c8b40822366f">ripple::RelationalDatabase::AccountTransactionsData</a>
 </li>
 <li>transactions
 : <a class="el" href="structripple_1_1metrics_1_1TxMetrics.html#a9416b0fb9630d3f3bb6f827d19e2b5fc">ripple::metrics::TxMetrics</a>
-, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxResult.html#af8075e7bd765a5901243c6fac0f53706">ripple::RelationalDBInterface::AccountTxResult</a>
+, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">ripple::RelationalDatabase::AccountTxResult</a>
 , <a class="el" href="classripple_1_1TxQ_1_1TxQAccount.html#a278169eda7bcc599bc4061359cf33b48">ripple::TxQ::TxQAccount</a>
 </li>
 <li>transactions_
@@ -429,11 +434,11 @@ $(function() {
 : <a class="el" href="structripple_1_1TxQ_1_1Metrics.html#ade3363912328dbd806a24207929c4fb3">ripple::TxQ::Metrics</a>
 </li>
 <li>txdb_
-: <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#a0a4e6955e633f464c48b202aeb7eff3b">ripple::RelationalDBInterfaceSqliteImp</a>
+: <a class="el" href="classripple_1_1SQLiteDatabaseImp.html#a0b469edba2587706cdf5094ac67b8a7d">ripple::SQLiteDatabaseImp</a>
 </li>
 <li>txHash
 : <a class="el" href="structripple_1_1LedgerInfo.html#a1ddad764a35cb7eb22d0b4b62df047d5">ripple::LedgerInfo</a>
-, <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTransactionsData.html#a9ed3b0eda25b07fd4a08adee616f1d09">ripple::RelationalDBInterface::AccountTransactionsData</a>
+, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTransactionsData.html#a441541b8fb78df2af54fdef4ec08ac07">ripple::RelationalDatabase::AccountTransactionsData</a>
 </li>
 <li>txid
 : <a class="el" href="structripple_1_1RCLCensorshipDetector_1_1TxIDSeq.html#a582d5d20a720234907544dc68150f29d">ripple::RCLCensorshipDetector&lt; TxID, Sequence &gt;::TxIDSeq</a>
@@ -457,7 +462,7 @@ $(function() {
 : <a class="el" href="classripple_1_1Ledger.html#a6bb1b6a13fe4c60edbfd502c39fa687c">ripple::Ledger</a>
 </li>
 <li>txMetaDB_
-: <a class="el" href="classripple_1_1RelationalDBInterfaceSqliteImp.html#ac1013d41cc136b4e3f49b37247a38554">ripple::RelationalDBInterfaceSqliteImp</a>
+: <a class="el" href="classripple_1_1SQLiteDatabaseImp.html#a8b3af9dd1fb7aed2437c7610e7bc3e54">ripple::SQLiteDatabaseImp</a>
 </li>
 <li>txMetrics_
 : <a class="el" href="classripple_1_1OverlayImpl.html#a6fcecedab437fc1bf8ab7e7bbf87f866">ripple::OverlayImpl</a>
@@ -472,7 +477,7 @@ $(function() {
 : <a class="el" href="structripple_1_1ConsensusResult.html#aadd381cc66700d0cbb8a4db94ee1c214">ripple::ConsensusResult&lt; Traits &gt;</a>
 </li>
 <li>txnSeq
-: <a class="el" href="structripple_1_1RelationalDBInterface_1_1AccountTxMarker.html#aff71be0595b33e8bf49ce60a099f9b47">ripple::RelationalDBInterface::AccountTxMarker</a>
+: <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html#a37a8d158fa4d5ac84604b010fb74bf6d">ripple::RelationalDatabase::AccountTxMarker</a>
 </li>
 <li>txnsExpected
 : <a class="el" href="structripple_1_1TxQ_1_1FeeMetrics_1_1Snapshot.html#a884693a7f5484c252c856f9c0af88371">ripple::TxQ::FeeMetrics::Snapshot</a>

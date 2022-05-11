@@ -153,6 +153,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a0438f2d57582abab6b9ef9b942af9b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cc01b14ab0986172ad9fbc41616662a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPDownloader.html#a9cc01b14ab0986172ad9fbc41616662a">stop</a> ()</td></tr>
 <tr class="separator:a9cc01b14ab0986172ad9fbc41616662a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7ff90c8c2234b945ee6b03820b47cdd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPDownloader.html#ad7ff90c8c2234b945ee6b03820b47cdd">sessionIsActive</a> () const</td></tr>
+<tr class="separator:ad7ff90c8c2234b945ee6b03820b47cdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04aaa659ee883cc46ecdc2bc60987f0a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPDownloader.html#a04aaa659ee883cc46ecdc2bc60987f0a">isStopping</a> () const</td></tr>
+<tr class="separator:a04aaa659ee883cc46ecdc2bc60987f0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
@@ -267,7 +271,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00072">72</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00078">78</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -573,6 +577,60 @@ Friends</h2></td></tr>
 
 </div>
 </div>
+<a id="ad7ff90c8c2234b945ee6b03820b47cdd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7ff90c8c2234b945ee6b03820b47cdd">&#9670;&nbsp;</a></span>sessionIsActive()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::HTTPDownloader::sessionIsActive </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8cpp_source.html#l00297">297</a> of file <a class="el" href="HTTPDownloader_8cpp_source.html">HTTPDownloader.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a04aaa659ee883cc46ecdc2bc60987f0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04aaa659ee883cc46ecdc2bc60987f0a">&#9670;&nbsp;</a></span>isStopping()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::HTTPDownloader::isStopping </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8cpp_source.html#l00304">304</a> of file <a class="el" href="HTTPDownloader_8cpp_source.html">HTTPDownloader.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a02ca1f8a329e2075a29226089e751096"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a02ca1f8a329e2075a29226089e751096">&#9670;&nbsp;</a></span>fail()</h2>
 
@@ -619,7 +677,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8cpp_source.html#l00297">297</a> of file <a class="el" href="HTTPDownloader_8cpp_source.html">HTTPDownloader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8cpp_source.html#l00311">311</a> of file <a class="el" href="HTTPDownloader_8cpp_source.html">HTTPDownloader.cpp</a>.</p>
 
 </div>
 </div>
@@ -837,7 +895,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00074">74</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00080">80</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -861,7 +919,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00085">85</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00091">91</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -885,7 +943,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00086">86</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00092">92</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -909,7 +967,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00087">87</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00093">93</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -933,7 +991,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00088">88</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00094">94</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -952,12 +1010,12 @@ Friends</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00091">91</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00097">97</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -981,7 +1039,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00092">92</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00098">98</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -1005,7 +1063,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00093">93</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPDownloader_8h_source.html#l00099">99</a> of file <a class="el" href="HTTPDownloader_8h_source.html">HTTPDownloader.h</a>.</p>
 
 </div>
 </div>
