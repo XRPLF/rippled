@@ -106,14 +106,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         asset1Out ? std::optional<Issue>(asset1Out->issue()) : std::nullopt,
         asset2Out ? std::optional<Issue>(asset2Out->issue()) : std::nullopt,
         ctx.j);
-    auto const lpTokens = [&]() -> std::optional<STAmount> {
-        auto const tokens = ctx.tx[~sfLPTokens];
-        // special case - withdraw all tokens
-        if (tokens && *tokens == beast::zero)
-            return getLPTokens(
-                ctx.view, ammAccountID, ctx.tx[sfAccount], ctx.j);
-        return tokens;
-    }();
+    auto const lpTokens = getTxLPTokens(ctx.view, ammAccountID, ctx.tx, ctx.j);
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
         lptBalance <= beast::zero)
     {
@@ -124,16 +117,6 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (lpTokens && *lpTokens > lptBalance)
     {
         JLOG(ctx.j.error()) << "AMM Withdraw: invalid tokens balance";
-        return tecAMM_BALANCE;
-    }
-    if (asset1Out && *asset1Out > asset1)
-    {
-        JLOG(ctx.j.error()) << "AMM Withdraw: invalid asset1 balance";
-        return tecAMM_BALANCE;
-    }
-    if (asset2Out && *asset2Out > asset2)
-    {
-        JLOG(ctx.j.error()) << "AMM Withdraw: invalid asset2 balance";
         return tecAMM_BALANCE;
     }
     if (isFrozen(ctx.view, ctx.tx[~sfAsset1Out]) ||
@@ -160,13 +143,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const sleAMM = ctx_.view().peek(keylet::amm(ctx_.tx[sfAMMHash]));
     assert(sleAMM);
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
-    auto const lpTokens = [&]() -> std::optional<STAmount> {
-        auto const tokens = ctx_.tx[~sfLPTokens];
-        // special case - withdraw all tokens
-        if (tokens && *tokens == beast::zero)
-            return getLPTokens(sb, ammAccountID, account_, ctx_.journal);
-        return tokens;
-    }();
+    auto const lpTokens =
+        getTxLPTokens(ctx_.view(), ammAccountID, ctx_.tx, ctx_.journal);
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
         sb,
         ammAccountID,
@@ -283,10 +261,9 @@ AMMWithdraw::withdraw(
         view, ammAccount, account_, asset1.issue(), std::nullopt, ctx_.journal);
     // The balances exceed LP holding or withdrawing all tokens and
     // there is some balance remaining.
-    if (lpTokens == beast::zero || lpTokens > lptAMM || asset1 > lpAsset1 ||
-        (asset2 && *asset2 > lpAsset2) ||
-        (lpTokens == lptAMMBalance &&
-         (lpAsset1 != asset1 || (asset2 && *asset2 != lpAsset2))))
+    if (lpTokens == beast::zero || lpTokens > lptAMM ||
+        (lpTokens == lptAMMBalance && asset1 != lpAsset1 &&
+         (!asset2.has_value() || *asset2 != lpAsset2)))
     {
         JLOG(ctx_.journal.debug())
             << "AMM Instance: failed to withdraw, invalid LP balance "
@@ -455,6 +432,20 @@ AMMWithdraw::singleWithdrawEPrice(
         view, ammAccount, *asset1Deposit, std::nullopt, lptAMMBalance, tokens);
 #endif
     return tecAMM_FAILED_DEPOSIT;
+}
+
+std::optional<STAmount>
+AMMWithdraw::getTxLPTokens(
+    ReadView const& view,
+    AccountID const& ammAccount,
+    STTx const& tx,
+    beast::Journal const journal)
+{
+    // special case - withdraw all tokens
+    if (auto const tokens = tx[~sfLPTokens]; tokens && *tokens == beast::zero)
+        return getLPTokens(view, ammAccount, tx[sfAccount], journal);
+    else
+        return tokens;
 }
 
 }  // namespace ripple

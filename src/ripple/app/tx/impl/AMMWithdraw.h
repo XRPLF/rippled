@@ -194,6 +194,16 @@ private:
      */
     TER
     deleteAccount(Sandbox& view, AccountID const& ammAccountID);
+
+    /** Get transaction's LP Tokens. If 0 then
+     * return all LP Tokens of the withdrawer.
+     */
+    static std::optional<STAmount>
+    getTxLPTokens(
+        ReadView const& view,
+        AccountID const& ammAccount,
+        STTx const& tx,
+        beast::Journal const journal);
 };
 
 }  // namespace ripple

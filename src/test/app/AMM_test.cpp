@@ -144,7 +144,8 @@ private:
     proc(
         F&& cb,
         std::optional<std::pair<std::uint32_t, std::uint32_t>> const& pool = {},
-        std::optional<IOUAmount> const& lpt = {})
+        std::optional<IOUAmount> const& lpt = {},
+        std::uint32_t fee = 0)
     {
         using namespace jtx;
         Env env{*this};
@@ -167,7 +168,7 @@ private:
                 return *lpt;
             return IOUAmount{10000000, 0};
         }();
-        AMM ammAlice(env, alice, XRP(asset1), USD(asset2));
+        AMM ammAlice(env, alice, XRP(asset1), USD(asset2), false, 50, fee);
         BEAST_EXPECT(ammAlice.expectBalances(XRP(asset1), USD(asset2), tokens));
         cb(ammAlice, env);
     }
@@ -241,7 +242,7 @@ private:
         {
             Env env{*this};
             fund(env);
-            // Can't have both XRP
+            // Can't have both XRP tokens
             AMM ammAlice(env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.accountRootExists());
         }
@@ -249,7 +250,7 @@ private:
         {
             Env env{*this};
             fund(env);
-            // Can't have both IOU
+            // Can't have both tokens the same IOU
             AMM ammAlice(env, alice, USD(10000), USD(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.accountRootExists());
         }
@@ -258,7 +259,7 @@ private:
             Env env{*this};
             fund(env);
             // Can't have zero amounts
-            AMM ammAlice(env, alice, XRP(0), USD(0), ter(temBAD_AMOUNT));
+            AMM ammAlice(env, alice, XRP(0), USD(10000), ter(temBAD_AMOUNT));
             BEAST_EXPECT(!ammAlice.accountRootExists());
         }
 
@@ -354,33 +355,33 @@ private:
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(11000), IOUAmount{102469507659596, -7}));
+                XRP(10000), USD(11000), IOUAmount{1048808848170152, -8}));
         });
 
         // Single deposit: 1000 XRP
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(11000), USD(10000), IOUAmount{102469507659596, -7}));
+                XRP(11000), USD(10000), IOUAmount{1048808848170152, -8}));
         });
 
         // Single deposit: 100000 tokens worth of USD
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 100000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10402), IOUAmount{10100000, 0}));
+                XRP(10000), USD(10201), IOUAmount{10100000, 0}));
         });
 
         // Single deposit: 100000 tokens worth of XRP
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 100000, XRP(0));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10402), USD(10000), IOUAmount{10100000, 0}));
+                XRP(10201), USD(10000), IOUAmount{10100000, 0}));
         });
 
-#if 0
-        // Single deposit with SP not exceeding specified:
-        // 100USD with SP not to exceed 100000 (USD relative to XRP)
+#if 0  // specs in works
+       // Single deposit with SP not exceeding specified:
+       // 100USD with SP not to exceed 100000 (USD relative to XRP)
         proc([&](AMM& ammAlice) {
             ammAlice.deposit(
                 carol, USD(1000), std::nullopt, XRPAmount{1000000});
@@ -464,23 +465,23 @@ private:
                 XRP(9900), USD(9900), IOUAmount{9900000, 0}));
         });
 
-        // Single withdraw by amount XRP100
+        // Single withdraw by amount XRP1000
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(9000), USD(10000), IOUAmount{894427190999916, -8}));
+                XRP(9000), USD(10000), IOUAmount{948683298050514, -8}));
         });
 
         // Single withdraw by tokens 10000.
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, 10000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(9990.005), IOUAmount{9990000, 0}));
+                XRP(10000), USD(9980.01), IOUAmount{9990000, 0}));
         });
 
-#if 0
-        // Single withdraw maxSP limit. SP after the trade is 1111111.111,
-        // less than 1200000.
+#if 0  // specs in works
+       // Single withdraw maxSP limit. SP after the trade is 1111111.111,
+       // less than 1200000.
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(
                 alice, USD(1000), std::nullopt, XRPAmount{1200000});
@@ -501,7 +502,7 @@ private:
 
 #endif
 
-        // Withdraw all tokens. 0 means withdraw all tokens.
+        // Withdraw all tokens. 0 is a special case to withdraw all tokens.
         proc([&](AMM& ammAlice, Env& env) {
             ammAlice.withdraw(alice, 0);
             BEAST_EXPECT(
@@ -511,6 +512,56 @@ private:
             AMM ammCarol(env, carol, XRP(10000), USD(10000));
             BEAST_EXPECT(ammCarol.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
+
+        // Single deposit 1000USD, withdraw all tokens in USD
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(1000));
+            ammAlice.withdraw(carol, 0, USD(0));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
+
+        // Single deposit 1000USD, withdraw all tokens in XRP
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(1000));
+            ammAlice.withdraw(carol, 0, XRP(0));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
+        });
+
+        // Single deposit/withdraw 1000USD
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(1000));
+            ammAlice.withdraw(carol, USD(1000));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
+
+        // Equal deposit 10%, withdraw all tokens
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(carol, 0);
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
+
+        // Equal deposit 10%, withdraw all tokens in USD
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(carol, 0, USD(0));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(11000),
+                STAmount{USD.issue(), 90909090909091llu, -10},
+                IOUAmount{10000000, 0}));
+        });
+
+        // Equal deposit 10%, withdraw all tokens in XRP
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(carol, 0, XRP(0));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
         });
     }
 

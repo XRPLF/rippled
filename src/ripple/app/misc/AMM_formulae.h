@@ -50,13 +50,22 @@ calcAMMLPT(
     Issue const& lptIssue,
     std::uint8_t weight1);
 
+/** Convert to the fee from the basis points
+ * @param tfee  trading fee in basis points
+ */
+inline Number
+getFee(std::uint16_t tfee)
+{
+    return Number{tfee} / Number{100000};
+}
+
 /** Get fee multiplier (1 - tfee)
  * @tfee trading fee in basis points
  */
 inline Number
 feeMult(std::uint16_t tfee)
 {
-    return Number{1} - Number{tfee} / Number{100000};
+    return 1 - getFee(tfee);
 }
 
 /** Get fee multiplier (1 - tfee * (1 - weight))
@@ -66,7 +75,7 @@ feeMult(std::uint16_t tfee)
 inline Number
 feeMult(std::uint16_t tfee, std::uint16_t weight)
 {
-    return 1 - feeMult(tfee) * (1 - Number{weight} / 100);
+    return 1 - getFee(tfee) * (1 - Number{weight} / 100);
 }
 
 /** Calculate LP Tokens given asset's deposit amount.
