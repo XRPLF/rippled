@@ -153,7 +153,11 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
             !std::is_same_v<TTakerGets, XRPAmount>,
         "Cannot have XRP/XRP offers");
 
-    if (!view_.rules().enabled(fixRmSmallIncreasedQOffers))
+
+    bool enabledVersion1 = view_.rules().enabled(fixRmSmallIncreasedQOffers);
+    bool enabledVersion2 = view_.rules().enabled(fixRmSmallIncreasedQOffersV2);
+
+    if (!enabledVersion1 && !enabledVersion2)
         return false;
 
     // Consider removing the offer if:
@@ -193,9 +197,19 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return ofrAmts;
     }();
 
-    if (effectiveAmounts.in > TTakerPays::minPositiveAmount())
-        return false;
 
+    if(enabledVersion2)
+    {
+        if (effectiveAmounts.in >= TTakerPays::minFundedOfferAmount())
+            return false;
+    }
+    else
+    {
+        if (effectiveAmounts.in > TTakerPays::minPositiveAmount())
+            return false;
+    }
+
+    
     Quality const effectiveQuality{effectiveAmounts};
     return effectiveQuality < offer_.quality();
 }

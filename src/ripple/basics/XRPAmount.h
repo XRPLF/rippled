@@ -244,6 +244,12 @@ public:
     {
         return XRPAmount{1};
     }
+
+    static XRPAmount
+    minFundedOfferAmount()
+    {
+        return XRPAmount{1000};
+    }
 };
 
 /** Number of drops per 1 XRP */
