@@ -17,7 +17,6 @@
 */
 //==============================================================================
 #include <ripple/app/misc/AMM.h>
-#include <ripple/app/misc/AMM_formulae.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
@@ -42,35 +41,6 @@ getAccount(Json::Value const& v, Json::Value& result)
         return std::nullopt;
     }
     return std::optional<AccountID>(accountID);
-}
-
-std::tuple<STAmount, STAmount, STAmount>
-getBalances(
-    ReadView const& view,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& accountID,
-    std::uint8_t weight,
-    std::uint32_t tfee,
-    beast::Journal const j)
-{
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
-        view, ammAccountID, std::nullopt, std::nullopt, std::nullopt, j);
-    if (!accountID.has_value())
-        return std::make_tuple(asset1Balance, asset2Balance, lptAMMBalance);
-    // for LP request return max balance of single token
-    auto const tokens = getLPTokens(view, ammAccountID, *accountID, j);
-    auto maxWithdraw = [&](auto const& assetBalance,
-                           auto const& lptAMMBalance) {
-        return toSTAmount(
-            assetBalance.issue(),
-            assetBalance *
-                (1 - power(1 - tokens / lptAMMBalance, 100, weight)) *
-                feeMult(tfee, weight));
-    };
-    return std::make_tuple(
-        maxWithdraw(asset1Balance, lptAMMBalance),
-        maxWithdraw(asset2Balance, lptAMMBalance),
-        lptAMMBalance);
 }
 
 Json::Value
@@ -126,13 +96,14 @@ doAMMInfo(RPC::JsonContext& context)
 
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getBalances(
+    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
         ammAccountID,
         accountID,
-        sleAMM->getFieldU8(sfAssetWeight),
-        sleAMM->getFieldU32(sfTradingFee),
+        std::nullopt,
+        std::nullopt,
         context.j);
+
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
     lptAMMBalance.setJson(result[jss::balance]);
@@ -234,12 +205,12 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
 
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getBalances(
+    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
         ammAccountID,
         accountID,
-        sleAMM->getFieldU8(sfAssetWeight),
-        sleAMM->getFieldU32(sfTradingFee),
+        std::nullopt,
+        std::nullopt,
         context.j);
 
     auto asset1 = result.mutable_asset1();
