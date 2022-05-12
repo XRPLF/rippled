@@ -126,6 +126,22 @@ calcLPTokensOut(
     std::uint16_t weight1,
     std::uint16_t tfee);
 
+/** Calculate asset withdrawal by tokens
+ * @param assetBalance balance of the asset being withdrawn
+ * @param lptAMMBalance total AMM Tokens balance
+ * @param lpTokens LP Tokens balance
+ * @param weight asset pool weight
+ * @param tfee trading fee in basis points
+ * @return calculated asset amount
+ */
+STAmount
+calcWithdrawalByTokens(
+    STAmount const& assetBalance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint8_t weight,
+    std::uint32_t tfee);
+
 /** Calculate AMM's Spot Price
  * @param asset1Balance current AMM asset1 balance
  * @param asset2Balance current AMM asset2 balance

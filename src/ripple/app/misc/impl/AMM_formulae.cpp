@@ -151,6 +151,20 @@ swapAssetOut(
             feeMult(tfee));
 }
 
+STAmount
+calcWithdrawalByTokens(
+    STAmount const& assetBalance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint8_t weight,
+    std::uint32_t tfee)
+{
+    return toSTAmount(
+        assetBalance.issue(),
+        assetBalance * (1 - power(1 - lpTokens / lptAMMBalance, 100, weight)) *
+            feeMult(tfee, weight));
+}
+
 Number
 slippageSlopeIn(
     STAmount const& assetBalance,

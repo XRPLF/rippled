@@ -386,9 +386,8 @@ AMMWithdraw::singleWithdrawalTokens(
     std::uint8_t weight,
     std::uint16_t tfee)
 {
-    auto const asset1Withdraw = asset1Balance *
-        (1 - power(1 - tokens / lptAMMBalance, 100, weight)) *
-        feeMult(tfee, weight);
+    auto const asset1Withdraw = calcWithdrawalByTokens(
+        asset1Balance, lptAMMBalance, tokens, weight, tfee);
     if (asset1Out == beast::zero || asset1Withdraw >= asset1Out)
         return withdraw(
             view,
