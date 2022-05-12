@@ -23,8 +23,8 @@
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/Manifest.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
-#include <ripple/app/rdb/RelationalDBInterface_nodes.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/rdb/backend/detail/Node.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/DatabaseCon.h>
@@ -35,10 +35,11 @@
 #include <soci/sqlite3/soci-sqlite3.h>
 
 namespace ripple {
+namespace detail {
 
 /**
- * @brief to_string Returns name of table by table ID.
- * @param type Table ID.
+ * @brief to_string Returns the name of a table according to its TableType.
+ * @param type An enum denoting the table's type.
  * @return Name of the table.
  */
 static std::string
@@ -47,6 +48,7 @@ to_string(TableType type)
     static_assert(
         TableTypeCount == 3,
         "Need to modify switch statement if enum is modified");
+
     switch (type)
     {
         case TableType::Ledgers:
@@ -56,7 +58,7 @@ to_string(TableType type)
         case TableType::AccountTransactions:
             return "AccountTransactions";
         default:
-            assert(0);
+            assert(false);
             return "Unknown";
     }
 }
@@ -166,10 +168,10 @@ getRows(soci::session& session, TableType type)
     return rows;
 }
 
-RelationalDBInterface::CountMinMax
+RelationalDatabase::CountMinMax
 getRowsMinMax(soci::session& session, TableType type)
 {
-    RelationalDBInterface::CountMinMax res;
+    RelationalDatabase::CountMinMax res;
     session << "SELECT COUNT(*) AS rows, "
                "MIN(LedgerSeq) AS first, "
                "MAX(LedgerSeq) AS last "
@@ -378,12 +380,12 @@ saveValidatedLedger(
 }
 
 /**
- * @brief getLedgerInfo Returns info of ledger with special condition
- *        given as SQL query.
- * @param session Session with database.
- * @param sqlSuffix Special condition for found the ledger.
+ * @brief getLedgerInfo Returns the info of the ledger retrieved from the
+ *        database by using the provided SQL query suffix.
+ * @param session Session with the database.
+ * @param sqlSuffix SQL string used to specify the sought ledger.
  * @param j Journal.
- * @return Ledger info or none if ledger not found.
+ * @return Ledger info or no value if the ledger was not found.
  */
 static std::optional<LedgerInfo>
 getLedgerInfo(
@@ -674,21 +676,22 @@ getTxHistory(
 }
 
 /**
- * @brief transactionsSQL Returns SQL query to select oldest or newest
- *        transactions in decoded or binary form for given account which
- *        match given criteria starting from given offset.
+ * @brief transactionsSQL Returns a SQL query for selecting the oldest or newest
+ *        transactions in decoded or binary form for the account that matches
+ *        the given criteria starting from the provided offset.
  * @param app Application object.
- * @param selection List of table fields to select from database.
- * @param options Struct AccountTxOptions which contain criteria to match:
- *        the account, minimum and maximum ledger numbers to search,
- *        offset of first entry to return, number of transactions to return,
- *        flag if this number unlimited.
+ * @param selection List of table fields to select from the database.
+ * @param options Struct AccountTxOptions which contains the criteria to match:
+ *        the account, the ledger search range, the offset of the first entry to
+ *        return, the number of transactions to return, and a flag if this
+ *        number is unlimited.
  * @param limit_used Number of transactions already returned in calls
- *        to another shard databases, if shard databases are used.
- *        None if node database is used.
+ *        to other shard databases, if shard databases are used.
+ *        No value if the node database is used.
  * @param descending True for descending order, false for ascending.
  * @param binary True for binary form, false for decoded.
- * @param count True for count number of transaction, false for select it.
+ * @param count True for counting the number of transactions, false for
+ *        selecting them.
  * @param j Journal.
  * @return SQL query string.
  */
@@ -696,7 +699,7 @@ static std::string
 transactionsSQL(
     Application& app,
     std::string selection,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     bool descending,
     bool binary,
@@ -781,39 +784,40 @@ transactionsSQL(
 }
 
 /**
- * @brief getAccountTxs Returns oldest or newest transactions for given
- *        account which match given criteria starting from given offset.
- * @param session Session with database.
+ * @brief getAccountTxs Returns the oldest or newest transactions for the
+ *        account that matches the given criteria starting from the provided
+ *        offset.
+ * @param session Session with the database.
  * @param app Application object.
  * @param ledgerMaster LedgerMaster object.
- * @param options Struct AccountTxOptions which contain criteria to match:
- *        the account, minimum and maximum ledger numbers to search,
- *        offset of first entry to return, number of transactions to return,
- *        flag if this number unlimited.
+ * @param options Struct AccountTxOptions which contains the criteria to match:
+ *        the account, the ledger search range, the offset of the first entry to
+ *        return, the number of transactions to return, and a flag if this
+ *        number is unlimited.
  * @param limit_used Number of transactions already returned in calls
- *        to another shard databases, if shard databases are used.
- *        None if node database is used.
+ *        to other shard databases, if shard databases are used.
+ *        No value if the node database is used.
  * @param descending True for descending order, false for ascending.
  * @param j Journal.
- * @return Vector of pairs of found transactions and its metadata
- *         sorted in given order by account sequence.
- *         Also the number of transactions processed or skipped.
- *         If this number is >= 0, then it means number of transactions
- *         processed, if it is < 0, then -number means number of transactions
- *         skipped. We need to skip some quantity of transactions if option
- *         offset is > 0 in the options structure.
+ * @return Vector of pairs of found transactions and their metadata sorted by
+ *         account sequence in the specified order along with the number of
+ *         transactions processed or skipped. If this number is >= 0, then it
+ *         represents the number of transactions processed, if it is < 0, then
+ *         -number represents the number of transactions skipped. We need to
+ *         skip some number of transactions if option offset is > 0 in the
+ *         options structure.
  */
-static std::pair<RelationalDBInterface::AccountTxs, int>
+static std::pair<RelationalDatabase::AccountTxs, int>
 getAccountTxs(
     soci::session& session,
     Application& app,
     LedgerMaster& ledgerMaster,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     bool descending,
     beast::Journal j)
 {
-    RelationalDBInterface::AccountTxs ret;
+    RelationalDatabase::AccountTxs ret;
 
     std::string sql = transactionsSQL(
         app,
@@ -883,7 +887,7 @@ getAccountTxs(
 
         if (!total && limit_used)
         {
-            RelationalDBInterface::AccountTxOptions opt = options;
+            RelationalDatabase::AccountTxOptions opt = options;
             opt.offset = 0;
             std::string sql1 = transactionsSQL(
                 app, "COUNT(*)", opt, limit_used, descending, false, false, j);
@@ -897,12 +901,12 @@ getAccountTxs(
     return {ret, total};
 }
 
-std::pair<RelationalDBInterface::AccountTxs, int>
+std::pair<RelationalDatabase::AccountTxs, int>
 getOldestAccountTxs(
     soci::session& session,
     Application& app,
     LedgerMaster& ledgerMaster,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j)
 {
@@ -910,12 +914,12 @@ getOldestAccountTxs(
         session, app, ledgerMaster, options, limit_used, false, j);
 }
 
-std::pair<RelationalDBInterface::AccountTxs, int>
+std::pair<RelationalDatabase::AccountTxs, int>
 getNewestAccountTxs(
     soci::session& session,
     Application& app,
     LedgerMaster& ledgerMaster,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j)
 {
@@ -924,38 +928,38 @@ getNewestAccountTxs(
 }
 
 /**
- * @brief getAccountTxsB Returns oldest or newset transactions in binary
- *        form for given account which match given criteria starting from
- *        given offset.
- * @param session Session with database.
+ * @brief getAccountTxsB Returns the oldest or newest transactions in binary
+ *        form for the account that matches given criteria starting from
+ *        the provided offset.
+ * @param session Session with the database.
  * @param app Application object.
- * @param options Struct AccountTxOptions which contain criteria to match:
- *        the account, minimum and maximum ledger numbers to search,
- *        offset of first entry to return, number of transactions to return,
- *        flag if this number unlimited.
- * @param limit_used Number or transactions already returned in calls
- *        to another shard databases, if shard databases are used.
- *        None if node database is used.
+ * @param options Struct AccountTxOptions which contains the criteria to match:
+ *        the account, the ledger search range, the offset of the first entry to
+ *        return, the number of transactions to return, and a flag if this
+ *        number is unlimited.
+ * @param limit_used Number of transactions already returned in calls to other
+ *        shard databases, if shard databases are used. No value if the node
+ *        database is used.
  * @param descending True for descending order, false for ascending.
  * @param j Journal.
- * @return Vector of tuples of found transactions, its metadata and
- *         account sequences sorted in given order by account
- *         sequence. Also number of transactions processed or skipped.
- *         If this number is >= 0, then it means number of transactions
- *         processed, if it is < 0, then -number means number of transactions
- *         skipped. We need to skip some quantity of transactions if option
- *         offset is > 0 in the options structure.
+ * @return Vector of tuples each containing (the found transactions, their
+ *         metadata, and their account sequences) sorted by account sequence in
+ *         the specified order along with the number of transactions processed
+ *         or skipped. If this number is >= 0, then it represents the number of
+ *         transactions processed, if it is < 0, then -number represents the
+ *         number of transactions skipped. We need to skip some number of
+ *         transactions if option offset is > 0 in the options structure.
  */
-static std::pair<std::vector<RelationalDBInterface::txnMetaLedgerType>, int>
+static std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
 getAccountTxsB(
     soci::session& session,
     Application& app,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     bool descending,
     beast::Journal j)
 {
-    std::vector<RelationalDBInterface::txnMetaLedgerType> ret;
+    std::vector<RelationalDatabase::txnMetaLedgerType> ret;
 
     std::string sql = transactionsSQL(
         app,
@@ -1004,7 +1008,7 @@ getAccountTxsB(
 
         if (!total && limit_used)
         {
-            RelationalDBInterface::AccountTxOptions opt = options;
+            RelationalDatabase::AccountTxOptions opt = options;
             opt.offset = 0;
             std::string sql1 = transactionsSQL(
                 app, "COUNT(*)", opt, limit_used, descending, true, false, j);
@@ -1018,22 +1022,22 @@ getAccountTxsB(
     return {ret, total};
 }
 
-std::pair<std::vector<RelationalDBInterface::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
     Application& app,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j)
 {
     return getAccountTxsB(session, app, options, limit_used, false, j);
 }
 
-std::pair<std::vector<RelationalDBInterface::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
     Application& app,
-    RelationalDBInterface::AccountTxOptions const& options,
+    RelationalDatabase::AccountTxOptions const& options,
     std::optional<int> const& limit_used,
     beast::Journal j)
 {
@@ -1041,28 +1045,28 @@ getNewestAccountTxsB(
 }
 
 /**
- * @brief accountTxPage Searches oldest or newest transactions for given
- *        account which match given criteria starting from given marker
- *        and calls callback for each found transaction.
- * @param session Session with database.
+ * @brief accountTxPage Searches for the oldest or newest transactions for the
+ *        account that matches the given criteria starting from the provided
+ *        marker and invokes the callback parameter for each found transaction.
+ * @param session Session with the database.
  * @param idCache Account ID cache.
  * @param onUnsavedLedger Callback function to call on each found unsaved
- *        ledger within given range.
- * @param onTransaction Callback function to call on eahc found transaction.
- * @param options Struct AccountTxPageOptions which contain criteria to
- *        match: the account, minimum and maximum ledger numbers to search,
- *        marker of first returned entry, number of transactions to return,
- *        flag if this number unlimited.
- * @param limit_used Number or transactions already returned in calls
- *        to another shard databases.
+ *        ledger within the given range.
+ * @param onTransaction Callback function to call on each found transaction.
+ * @param options Struct AccountTxPageOptions which contains the criteria to
+ *        match: the account, the ledger search range, the marker of the first
+ *        returned entry, the number of transactions to return, and a flag if
+ *        this number unlimited.
+ * @param limit_used Number of transactions already returned in calls
+ *        to other shard databases.
  * @param page_length Total number of transactions to return.
  * @param forward True for ascending order, false for descending.
- * @return Vector of tuples of found transactions, its metadata and
- *         account sequences sorted in given order by account
- *         sequence and marker for next search if search not finished.
- *         Also number of transactions processed during this call.
+ * @return Vector of tuples of found transactions, their metadata and account
+ *         sequences sorted in the specified order by account sequence, a marker
+ *         for the next search if the search was not finished and the number of
+ *         transactions processed during this call.
  */
-static std::pair<std::optional<RelationalDBInterface::AccountTxMarker>, int>
+static std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 accountTxPage(
     soci::session& session,
     AccountIDCache const& idCache,
@@ -1070,7 +1074,7 @@ accountTxPage(
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
-    RelationalDBInterface::AccountTxPageOptions const& options,
+    RelationalDatabase::AccountTxPageOptions const& options,
     int limit_used,
     std::uint32_t page_length,
     bool forward)
@@ -1105,7 +1109,7 @@ accountTxPage(
         findSeq = options.marker->txnSeq;
     }
 
-    std::optional<RelationalDBInterface::AccountTxMarker> newmarker;
+    std::optional<RelationalDatabase::AccountTxMarker> newmarker;
     if (limit_used > 0)
         newmarker = options.marker;
 
@@ -1243,7 +1247,7 @@ accountTxPage(
     return {newmarker, total};
 }
 
-std::pair<std::optional<RelationalDBInterface::AccountTxMarker>, int>
+std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 oldestAccountTxPage(
     soci::session& session,
     AccountIDCache const& idCache,
@@ -1251,7 +1255,7 @@ oldestAccountTxPage(
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
-    RelationalDBInterface::AccountTxPageOptions const& options,
+    RelationalDatabase::AccountTxPageOptions const& options,
     int limit_used,
     std::uint32_t page_length)
 {
@@ -1266,7 +1270,7 @@ oldestAccountTxPage(
         true);
 }
 
-std::pair<std::optional<RelationalDBInterface::AccountTxMarker>, int>
+std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 newestAccountTxPage(
     soci::session& session,
     AccountIDCache const& idCache,
@@ -1274,7 +1278,7 @@ newestAccountTxPage(
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
-    RelationalDBInterface::AccountTxPageOptions const& options,
+    RelationalDatabase::AccountTxPageOptions const& options,
     int limit_used,
     std::uint32_t page_length)
 {
@@ -1289,7 +1293,7 @@ newestAccountTxPage(
         false);
 }
 
-std::variant<RelationalDBInterface::AccountTx, TxSearched>
+std::variant<RelationalDatabase::AccountTx, TxSearched>
 getTransaction(
     soci::session& session,
     Application& app,
@@ -1435,4 +1439,5 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     return true;
 }
 
+}  // namespace detail
 }  // namespace ripple

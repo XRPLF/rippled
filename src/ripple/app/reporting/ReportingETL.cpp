@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -167,8 +167,7 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
         if (app_.config().reporting())
         {
 #ifdef RIPPLED_REPORTING
-            dynamic_cast<RelationalDBInterfacePostgres*>(
-                &app_.getRelationalDBInterface())
+            dynamic_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
                 ->writeLedgerAndTransactions(ledger->info(), accountTxData);
 #endif
         }
@@ -595,69 +594,69 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
         loadQueue.push({});
     }};
 
-    std::thread loader{
-        [this, &lastPublishedSequence, &loadQueue, &writeConflict]() {
-            beast::setCurrentThreadName("rippled: ReportingETL load");
-            size_t totalTransactions = 0;
-            double totalTime = 0;
-            while (!writeConflict)
-            {
-                std::optional<std::pair<
-                    std::shared_ptr<Ledger>,
-                    std::vector<AccountTransactionsData>>>
-                    result{loadQueue.pop()};
-                // if result is an empty optional, the transformer thread has
-                // stopped and the loader should stop as well
-                if (!result)
-                    break;
-                if (isStopping())
-                    continue;
+    std::thread loader{[this,
+                        &lastPublishedSequence,
+                        &loadQueue,
+                        &writeConflict]() {
+        beast::setCurrentThreadName("rippled: ReportingETL load");
+        size_t totalTransactions = 0;
+        double totalTime = 0;
+        while (!writeConflict)
+        {
+            std::optional<std::pair<
+                std::shared_ptr<Ledger>,
+                std::vector<AccountTransactionsData>>>
+                result{loadQueue.pop()};
+            // if result is an empty optional, the transformer thread has
+            // stopped and the loader should stop as well
+            if (!result)
+                break;
+            if (isStopping())
+                continue;
 
-                auto& ledger = result->first;
-                auto& accountTxData = result->second;
+            auto& ledger = result->first;
+            auto& accountTxData = result->second;
 
-                auto start = std::chrono::system_clock::now();
-                // write to the key-value store
-                flushLedger(ledger);
+            auto start = std::chrono::system_clock::now();
+            // write to the key-value store
+            flushLedger(ledger);
 
-                auto mid = std::chrono::system_clock::now();
+            auto mid = std::chrono::system_clock::now();
             // write to RDBMS
             // if there is a write conflict, some other process has already
             // written this ledger and has taken over as the ETL writer
 #ifdef RIPPLED_REPORTING
-                if (!dynamic_cast<RelationalDBInterfacePostgres*>(
-                         &app_.getRelationalDBInterface())
-                         ->writeLedgerAndTransactions(
-                             ledger->info(), accountTxData))
-                    writeConflict = true;
+            if (!dynamic_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
+                     ->writeLedgerAndTransactions(
+                         ledger->info(), accountTxData))
+                writeConflict = true;
 #endif
-                auto end = std::chrono::system_clock::now();
+            auto end = std::chrono::system_clock::now();
 
-                if (!writeConflict)
-                {
-                    publishLedger(ledger);
-                    lastPublishedSequence = ledger->info().seq;
-                }
-                // print some performance numbers
-                auto kvTime = ((mid - start).count()) / 1000000000.0;
-                auto relationalTime = ((end - mid).count()) / 1000000000.0;
-
-                size_t numTxns = accountTxData.size();
-                totalTime += kvTime;
-                totalTransactions += numTxns;
-                JLOG(journal_.info())
-                    << "Load phase of etl : "
-                    << "Successfully published ledger! Ledger info: "
-                    << detail::toString(ledger->info())
-                    << ". txn count = " << numTxns
-                    << ". key-value write time = " << kvTime
-                    << ". relational write time = " << relationalTime
-                    << ". key-value tps = " << numTxns / kvTime
-                    << ". relational tps = " << numTxns / relationalTime
-                    << ". total key-value tps = "
-                    << totalTransactions / totalTime;
+            if (!writeConflict)
+            {
+                publishLedger(ledger);
+                lastPublishedSequence = ledger->info().seq;
             }
-        }};
+            // print some performance numbers
+            auto kvTime = ((mid - start).count()) / 1000000000.0;
+            auto relationalTime = ((end - mid).count()) / 1000000000.0;
+
+            size_t numTxns = accountTxData.size();
+            totalTime += kvTime;
+            totalTransactions += numTxns;
+            JLOG(journal_.info())
+                << "Load phase of etl : "
+                << "Successfully published ledger! Ledger info: "
+                << detail::toString(ledger->info())
+                << ". txn count = " << numTxns
+                << ". key-value write time = " << kvTime
+                << ". relational write time = " << relationalTime
+                << ". key-value tps = " << numTxns / kvTime
+                << ". relational tps = " << numTxns / relationalTime
+                << ". total key-value tps = " << totalTransactions / totalTime;
+        }
+    }};
 
     // wait for all of the threads to stop
     loader.join();

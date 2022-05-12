@@ -31,6 +31,15 @@
 
 namespace ripple {
 
+/** Describes how an account was found in a path, and how to find the next set
+of paths. "Outgoing" is defined as the source account, or an account found via a
+trustline that has rippling enabled on the account's side.
+"Incoming" is defined as an account found via a trustline that has rippling
+disabled on the account's side. Any trust lines for an incoming account that
+have rippling disabled are unusable in paths.
+*/
+enum class LineDirection : bool { incoming = false, outgoing = true };
+
 /** Wraps a trust line SLE for convenience.
     The complication of trust lines is that there is a
     "low" account and a "high" account. This wraps the
@@ -109,6 +118,20 @@ public:
         return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
+    LineDirection
+    getDirection() const
+    {
+        return getNoRipple() ? LineDirection::incoming
+                             : LineDirection::outgoing;
+    }
+
+    LineDirection
+    getDirectionPeer() const
+    {
+        return getNoRipplePeer() ? LineDirection::incoming
+                                 : LineDirection::outgoing;
+    }
+
     /** Have we set the freeze flag on our peer */
     bool
     getFreeze() const
@@ -170,7 +193,10 @@ public:
     makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
 
     static std::vector<PathFindTrustLine>
-    getItems(AccountID const& accountID, ReadView const& view);
+    getItems(
+        AccountID const& accountID,
+        ReadView const& view,
+        LineDirection direction);
 };
 
 // This wrapper is used for the `AccountLines` command and includes the quality

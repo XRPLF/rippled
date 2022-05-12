@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/Wallet.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STValidation.h>

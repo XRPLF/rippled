@@ -595,8 +595,11 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testWithFeats(sa);
+        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+
+        testWithFeats(all - fixNFTDir);
+        testWithFeats(all);
     }
 };
 

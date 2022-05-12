@@ -19,17 +19,13 @@
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <ripple/protocol/digest.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 namespace NodeStore {

@@ -37,9 +37,8 @@
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/PerfLog.h>
@@ -1749,7 +1748,7 @@ NetworkOPsImp::switchLastClosedLedger(
         auto const lastVal = app_.getLedgerMaster().getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)
-            rules.emplace(*lastVal, app_.config().features);
+            rules = makeRulesGivenLedger(*lastVal, app_.config().features);
         else
             rules.emplace(app_.config().features);
         app_.openLedger().accept(
@@ -3366,8 +3365,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 #ifdef RIPPLED_REPORTING
         if (app_.config().reporting())
         {
-            if (dynamic_cast<RelationalDBInterfacePostgres*>(
-                    &app_.getRelationalDBInterface()))
+            // Use a dynamic_cast to return DatabaseType::None
+            // on failure.
+            if (dynamic_cast<PostgresDatabase*>(&app_.getRelationalDatabase()))
             {
                 return DatabaseType::Postgres;
             }
@@ -3375,16 +3375,18 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
         }
         else
         {
-            if (dynamic_cast<RelationalDBInterfaceSqlite*>(
-                    &app_.getRelationalDBInterface()))
+            // Use a dynamic_cast to return DatabaseType::None
+            // on failure.
+            if (dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase()))
             {
                 return DatabaseType::Sqlite;
             }
             return DatabaseType::None;
         }
 #else
-        if (dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &app_.getRelationalDBInterface()))
+        // Use a dynamic_cast to return DatabaseType::None
+        // on failure.
+        if (dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase()))
         {
             return DatabaseType::Sqlite;
         }
@@ -3470,17 +3472,16 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             auto getMoreTxns =
                 [&](std::uint32_t minLedger,
                     std::uint32_t maxLedger,
-                    std::optional<RelationalDBInterface::AccountTxMarker>
-                        marker)
+                    std::optional<RelationalDatabase::AccountTxMarker> marker)
                 -> std::optional<std::pair<
-                    RelationalDBInterface::AccountTxs,
-                    std::optional<RelationalDBInterface::AccountTxMarker>>> {
+                    RelationalDatabase::AccountTxs,
+                    std::optional<RelationalDatabase::AccountTxMarker>>> {
                 switch (dbType)
                 {
                     case Postgres: {
-                        auto db = static_cast<RelationalDBInterfacePostgres*>(
-                            &app_.getRelationalDBInterface());
-                        RelationalDBInterface::AccountTxArgs args;
+                        auto db = static_cast<PostgresDatabase*>(
+                            &app_.getRelationalDatabase());
+                        RelationalDatabase::AccountTxArgs args;
                         args.account = accountId;
                         LedgerRange range{minLedger, maxLedger};
                         args.ledger = range;
@@ -3496,7 +3497,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
 
                         if (auto txns =
-                                std::get_if<RelationalDBInterface::AccountTxs>(
+                                std::get_if<RelationalDatabase::AccountTxs>(
                                     &txResult.transactions);
                             txns)
                         {
@@ -3512,9 +3513,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
                     }
                     case Sqlite: {
-                        auto db = static_cast<RelationalDBInterfaceSqlite*>(
-                            &app_.getRelationalDBInterface());
-                        RelationalDBInterface::AccountTxPageOptions options{
+                        auto db = static_cast<SQLiteDatabase*>(
+                            &app_.getRelationalDatabase());
+                        RelationalDatabase::AccountTxPageOptions options{
                             accountId, minLedger, maxLedger, marker, 0, true};
                         return db->newestAccountTxPage(options);
                     }
@@ -3575,7 +3576,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     return;
                 }
 
-                std::optional<RelationalDBInterface::AccountTxMarker> marker{};
+                std::optional<RelationalDatabase::AccountTxMarker> marker{};
                 while (!subInfo.index_->stopHistorical_)
                 {
                     auto dbResult =

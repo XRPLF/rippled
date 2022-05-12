@@ -33,18 +33,23 @@ accountSourceCurrencies(
     if (includeXRP)
         currencies.insert(xrpCurrency());
 
-    for (auto const& rspEntry : lrCache->getRippleLines(account))
+    if (auto const lines =
+            lrCache->getRippleLines(account, LineDirection::outgoing))
     {
-        auto& saBalance = rspEntry.getBalance();
-
-        // Filter out non
-        if (saBalance > beast::zero
-            // Have IOUs to send.
-            || (rspEntry.getLimitPeer()
-                // Peer extends credit.
-                && ((-saBalance) < rspEntry.getLimitPeer())))  // Credit left.
+        for (auto const& rspEntry : *lines)
         {
-            currencies.insert(saBalance.getCurrency());
+            auto& saBalance = rspEntry.getBalance();
+
+            // Filter out non
+            if (saBalance > beast::zero
+                // Have IOUs to send.
+                ||
+                (rspEntry.getLimitPeer()
+                 // Peer extends credit.
+                 && ((-saBalance) < rspEntry.getLimitPeer())))  // Credit left.
+            {
+                currencies.insert(saBalance.getCurrency());
+            }
         }
     }
 
@@ -64,12 +69,16 @@ accountDestCurrencies(
         currencies.insert(xrpCurrency());
     // Even if account doesn't exist
 
-    for (auto const& rspEntry : lrCache->getRippleLines(account))
+    if (auto const lines =
+            lrCache->getRippleLines(account, LineDirection::outgoing))
     {
-        auto& saBalance = rspEntry.getBalance();
+        for (auto const& rspEntry : *lines)
+        {
+            auto& saBalance = rspEntry.getBalance();
 
-        if (saBalance < rspEntry.getLimit())  // Can take more
-            currencies.insert(saBalance.getCurrency());
+            if (saBalance < rspEntry.getLimit())  // Can take more
+                currencies.insert(saBalance.getCurrency());
+        }
     }
 
     currencies.erase(badCurrency());

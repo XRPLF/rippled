@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/Manifest.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/Wallet.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>

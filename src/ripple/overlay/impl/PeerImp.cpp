@@ -3404,7 +3404,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
     else
     {
-        JLOG(p_journal_.warn()) << "getLedger: Unable to find ledger";
+        JLOG(p_journal_.debug()) << "getLedger: Unable to find ledger";
     }
 
     return ledger;

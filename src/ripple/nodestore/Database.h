@@ -324,6 +324,11 @@ protected:
     // The earliest shard index
     std::uint32_t const earliestShardIndex_;
 
+    // The maximum number of requests a thread extracts from the queue in an
+    // attempt to minimize the overhead of mutex acquisition. This is an
+    // advanced tunable, via the config file. The default value is 4.
+    int const requestBundle_;
+
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
@@ -368,6 +373,7 @@ private:
 
     std::atomic<bool> readStopping_ = false;
     std::atomic<int> readThreads_ = 0;
+    std::atomic<int> runningThreads_ = 0;
 
     virtual std::shared_ptr<NodeObject>
     fetchNodeObject(

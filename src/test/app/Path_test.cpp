@@ -1379,6 +1379,69 @@ public:
     }
 
     void
+    noripple_combinations()
+    {
+        using namespace jtx;
+        // This test will create trust lines with various values of the noRipple
+        // flag. alice <-> george <-> bob george will sort of act like a
+        // gateway, but use a different name to avoid the usual assumptions
+        // about gateways.
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const george = Account("george");
+        auto const USD = george["USD"];
+        auto test = [&](std::string casename,
+                        bool aliceRipple,
+                        bool bobRipple,
+                        bool expectPath) {
+            testcase(casename);
+
+            Env env = pathTestEnv();
+            env.fund(XRP(10000), noripple(alice, bob, george));
+            env.close();
+            // Set the same flags at both ends of the trustline, even though
+            // only george's matter.
+            env(trust(
+                alice,
+                USD(100),
+                aliceRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(
+                george,
+                alice["USD"](100),
+                aliceRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(
+                bob, USD(100), bobRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(
+                george,
+                bob["USD"](100),
+                bobRipple ? tfClearNoRipple : tfSetNoRipple));
+            env.close();
+            env(pay(george, alice, USD(70)));
+            env.close();
+
+            auto [st, sa, da] =
+                find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+            BEAST_EXPECT(equal(da, bob["USD"](5)));
+
+            if (expectPath)
+            {
+                BEAST_EXPECT(st.size() == 1);
+                BEAST_EXPECT(same(st, stpath("george")));
+                BEAST_EXPECT(equal(sa, alice["USD"](5)));
+            }
+            else
+            {
+                BEAST_EXPECT(st.size() == 0);
+                BEAST_EXPECT(equal(sa, XRP(0)));
+            }
+        };
+        test("ripple -> ripple", true, true, true);
+        test("ripple -> no ripple", true, false, true);
+        test("no ripple -> ripple", false, true, true);
+        test("no ripple -> no ripple", false, false, false);
+    }
+
+    void
     run() override
     {
         source_currencies_limit();
@@ -1401,6 +1464,7 @@ public:
         trust_auto_clear_trust_auto_clear();
         xrp_to_xrp();
         receive_max();
+        noripple_combinations();
 
         // The following path_find_NN tests are data driven tests
         // that were originally implemented in js/coffee and migrated

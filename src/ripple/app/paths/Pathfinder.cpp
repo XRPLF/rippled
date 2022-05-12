@@ -708,6 +708,7 @@ int
 Pathfinder::getPathsOut(
     Currency const& currency,
     AccountID const& account,
+    LineDirection direction,
     bool isDstCurrency,
     AccountID const& dstAccount,
     std::function<bool(void)> const& continueCallback)
@@ -735,33 +736,37 @@ Pathfinder::getPathsOut(
     {
         count = app_.getOrderBookDB().getBookSize(issue);
 
-        for (auto const& rspEntry : mRLCache->getRippleLines(account))
+        if (auto const lines = mRLCache->getRippleLines(account, direction))
         {
-            if (currency != rspEntry.getLimit().getCurrency())
+            for (auto const& rspEntry : *lines)
             {
-            }
-            else if (
-                rspEntry.getBalance() <= beast::zero &&
-                (!rspEntry.getLimitPeer() ||
-                 -rspEntry.getBalance() >= rspEntry.getLimitPeer() ||
-                 (bAuthRequired && !rspEntry.getAuth())))
-            {
-            }
-            else if (isDstCurrency && dstAccount == rspEntry.getAccountIDPeer())
-            {
-                count += 10000;  // count a path to the destination extra
-            }
-            else if (rspEntry.getNoRipplePeer())
-            {
-                // This probably isn't a useful path out
-            }
-            else if (rspEntry.getFreezePeer())
-            {
-                // Not a useful path out
-            }
-            else
-            {
-                ++count;
+                if (currency != rspEntry.getLimit().getCurrency())
+                {
+                }
+                else if (
+                    rspEntry.getBalance() <= beast::zero &&
+                    (!rspEntry.getLimitPeer() ||
+                     -rspEntry.getBalance() >= rspEntry.getLimitPeer() ||
+                     (bAuthRequired && !rspEntry.getAuth())))
+                {
+                }
+                else if (
+                    isDstCurrency && dstAccount == rspEntry.getAccountIDPeer())
+                {
+                    count += 10000;  // count a path to the destination extra
+                }
+                else if (rspEntry.getNoRipplePeer())
+                {
+                    // This probably isn't a useful path out
+                }
+                else if (rspEntry.getFreezePeer())
+                {
+                    // Not a useful path out
+                }
+                else
+                {
+                    ++count;
+                }
             }
         }
     }
@@ -976,117 +981,128 @@ Pathfinder::addLink(
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly(addFlags & afAC_LAST);
 
-                auto& rippleLines(mRLCache->getRippleLines(uEndAccount));
-
-                AccountCandidates candidates;
-                candidates.reserve(rippleLines.size());
-
-                for (auto const& rs : rippleLines)
+                if (auto const lines = mRLCache->getRippleLines(
+                        uEndAccount,
+                        bIsNoRippleOut ? LineDirection::incoming
+                                       : LineDirection::outgoing))
                 {
-                    if (continueCallback && !continueCallback())
-                        return;
-                    auto const& acct = rs.getAccountIDPeer();
+                    auto& rippleLines = *lines;
 
-                    if (hasEffectiveDestination && (acct == mDstAccount))
-                    {
-                        // We skipped the gateway
-                        continue;
-                    }
+                    AccountCandidates candidates;
+                    candidates.reserve(rippleLines.size());
 
-                    bool bToDestination = acct == mEffectiveDst;
-
-                    if (bDestOnly && !bToDestination)
-                    {
-                        continue;
-                    }
-
-                    if ((uEndCurrency == rs.getLimit().getCurrency()) &&
-                        !currentPath.hasSeen(acct, uEndCurrency, acct))
-                    {
-                        // path is for correct currency and has not been seen
-                        if (rs.getBalance() <= beast::zero &&
-                            (!rs.getLimitPeer() ||
-                             -rs.getBalance() >= rs.getLimitPeer() ||
-                             (bRequireAuth && !rs.getAuth())))
-                        {
-                            // path has no credit
-                        }
-                        else if (bIsNoRippleOut && rs.getNoRipple())
-                        {
-                            // Can't leave on this path
-                        }
-                        else if (bToDestination)
-                        {
-                            // destination is always worth trying
-                            if (uEndCurrency == mDstAmount.getCurrency())
-                            {
-                                // this is a complete path
-                                if (!currentPath.empty())
-                                {
-                                    JLOG(j_.trace())
-                                        << "complete path found ae: "
-                                        << currentPath.getJson(
-                                               JsonOptions::none);
-                                    addUniquePath(mCompletePaths, currentPath);
-                                }
-                            }
-                            else if (!bDestOnly)
-                            {
-                                // this is a high-priority candidate
-                                candidates.push_back(
-                                    {AccountCandidate::highPriority, acct});
-                            }
-                        }
-                        else if (acct == mSrcAccount)
-                        {
-                            // going back to the source is bad
-                        }
-                        else
-                        {
-                            // save this candidate
-                            int out = getPathsOut(
-                                uEndCurrency,
-                                acct,
-                                bIsEndCurrency,
-                                mEffectiveDst,
-                                continueCallback);
-                            if (out)
-                                candidates.push_back({out, acct});
-                        }
-                    }
-                }
-
-                if (!candidates.empty())
-                {
-                    std::sort(
-                        candidates.begin(),
-                        candidates.end(),
-                        std::bind(
-                            compareAccountCandidate,
-                            mLedger->seq(),
-                            std::placeholders::_1,
-                            std::placeholders::_2));
-
-                    int count = candidates.size();
-                    // allow more paths from source
-                    if ((count > 10) && (uEndAccount != mSrcAccount))
-                        count = 10;
-                    else if (count > 50)
-                        count = 50;
-
-                    auto it = candidates.begin();
-                    while (count-- != 0)
+                    for (auto const& rs : rippleLines)
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        // Add accounts to incompletePaths
-                        STPathElement pathElement(
-                            STPathElement::typeAccount,
-                            it->account,
-                            uEndCurrency,
-                            it->account);
-                        incompletePaths.assembleAdd(currentPath, pathElement);
-                        ++it;
+                        auto const& acct = rs.getAccountIDPeer();
+                        LineDirection const direction = rs.getDirectionPeer();
+
+                        if (hasEffectiveDestination && (acct == mDstAccount))
+                        {
+                            // We skipped the gateway
+                            continue;
+                        }
+
+                        bool bToDestination = acct == mEffectiveDst;
+
+                        if (bDestOnly && !bToDestination)
+                        {
+                            continue;
+                        }
+
+                        if ((uEndCurrency == rs.getLimit().getCurrency()) &&
+                            !currentPath.hasSeen(acct, uEndCurrency, acct))
+                        {
+                            // path is for correct currency and has not been
+                            // seen
+                            if (rs.getBalance() <= beast::zero &&
+                                (!rs.getLimitPeer() ||
+                                 -rs.getBalance() >= rs.getLimitPeer() ||
+                                 (bRequireAuth && !rs.getAuth())))
+                            {
+                                // path has no credit
+                            }
+                            else if (bIsNoRippleOut && rs.getNoRipple())
+                            {
+                                // Can't leave on this path
+                            }
+                            else if (bToDestination)
+                            {
+                                // destination is always worth trying
+                                if (uEndCurrency == mDstAmount.getCurrency())
+                                {
+                                    // this is a complete path
+                                    if (!currentPath.empty())
+                                    {
+                                        JLOG(j_.trace())
+                                            << "complete path found ae: "
+                                            << currentPath.getJson(
+                                                   JsonOptions::none);
+                                        addUniquePath(
+                                            mCompletePaths, currentPath);
+                                    }
+                                }
+                                else if (!bDestOnly)
+                                {
+                                    // this is a high-priority candidate
+                                    candidates.push_back(
+                                        {AccountCandidate::highPriority, acct});
+                                }
+                            }
+                            else if (acct == mSrcAccount)
+                            {
+                                // going back to the source is bad
+                            }
+                            else
+                            {
+                                // save this candidate
+                                int out = getPathsOut(
+                                    uEndCurrency,
+                                    acct,
+                                    direction,
+                                    bIsEndCurrency,
+                                    mEffectiveDst,
+                                    continueCallback);
+                                if (out)
+                                    candidates.push_back({out, acct});
+                            }
+                        }
+                    }
+
+                    if (!candidates.empty())
+                    {
+                        std::sort(
+                            candidates.begin(),
+                            candidates.end(),
+                            std::bind(
+                                compareAccountCandidate,
+                                mLedger->seq(),
+                                std::placeholders::_1,
+                                std::placeholders::_2));
+
+                        int count = candidates.size();
+                        // allow more paths from source
+                        if ((count > 10) && (uEndAccount != mSrcAccount))
+                            count = 10;
+                        else if (count > 50)
+                            count = 50;
+
+                        auto it = candidates.begin();
+                        while (count-- != 0)
+                        {
+                            if (continueCallback && !continueCallback())
+                                return;
+                            // Add accounts to incompletePaths
+                            STPathElement pathElement(
+                                STPathElement::typeAccount,
+                                it->account,
+                                uEndCurrency,
+                                it->account);
+                            incompletePaths.assembleAdd(
+                                currentPath, pathElement);
+                            ++it;
+                        }
                     }
                 }
             }
