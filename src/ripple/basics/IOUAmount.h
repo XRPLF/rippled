@@ -132,6 +132,9 @@ public:
 
     static IOUAmount
     minPositiveAmount();
+
+    static IOUAmount
+    minFundedOfferAmount();
 };
 
 std::string

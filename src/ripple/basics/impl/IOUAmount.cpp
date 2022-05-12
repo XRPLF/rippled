@@ -40,6 +40,13 @@ IOUAmount::minPositiveAmount()
     return IOUAmount(minMantissa, minExponent);
 }
 
+IOUAmount
+IOUAmount::minFundedOfferAmount()
+{
+    return minPositiveAmount();
+}
+
+
 void
 IOUAmount::normalize()
 {

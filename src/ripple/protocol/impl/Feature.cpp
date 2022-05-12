@@ -436,6 +436,7 @@ REGISTER_FEATURE(TicketBatch,                   Supported::yes, DefaultVote::yes
 REGISTER_FEATURE(FlowSortStrands,               Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixRmSmallIncreasedQOffersV2,  Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, DefaultVote::no);
 REGISTER_FEATURE(NonFungibleTokensV1,           Supported::yes, DefaultVote::no);
 REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, DefaultVote::no);

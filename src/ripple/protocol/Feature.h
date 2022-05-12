@@ -332,6 +332,7 @@ extern uint256 const featureTicketBatch;
 extern uint256 const featureFlowSortStrands;
 extern uint256 const fixSTAmountCanonicalize;
 extern uint256 const fixRmSmallIncreasedQOffers;
+extern uint256 const fixRmSmallIncreasedQOffersV2;
 extern uint256 const featureCheckCashMakesTrustLine;
 extern uint256 const featureNonFungibleTokensV1;
 extern uint256 const featureExpandedSignerList;
