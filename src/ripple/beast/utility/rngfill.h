@@ -21,7 +21,7 @@
 #define BEAST_RANDOM_RNGFILL_H_INCLUDED
 
 #include <array>
-#include <assert.h>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
