@@ -69,7 +69,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this);
+        Env env(*this, envconfig(), nullptr, beast::severities::kDisabled);
         auto trustedSites =
             std::make_unique<ValidatorSite>(env.app(), env.journal);
 

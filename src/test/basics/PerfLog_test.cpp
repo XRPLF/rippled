@@ -24,12 +24,13 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
+#include <test/jtx/Env.h>
+
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <random>
 #include <string>
-#include <test/jtx/Env.h>
 #include <thread>
 
 //------------------------------------------------------------------------------
@@ -44,7 +45,11 @@ class PerfLog_test : public beast::unit_test::suite
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this};
+    test::jtx::Env env_{
+        *this,
+        test::jtx::envconfig(),
+        nullptr,
+        beast::severities::kDisabled};
     beast::Journal j_{env_.app().journal("PerfLog_test")};
 
     struct Fixture
