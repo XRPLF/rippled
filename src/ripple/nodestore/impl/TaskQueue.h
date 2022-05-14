@@ -55,7 +55,7 @@ private:
     std::uint64_t processing_{0};
 
     void
-    processTask(int instance) override;
+    processTask(unsigned int instance) override;
 };
 
 }  // namespace NodeStore

@@ -802,7 +802,6 @@ if (tests)
     src/test/core/CryptoPRNG_test.cpp
     src/test/core/JobQueue_test.cpp
     src/test/core/SociDB_test.cpp
-    src/test/core/Workers_test.cpp
     #[===============================[
        test sources:
          subdir: csf

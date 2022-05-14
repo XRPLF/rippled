@@ -19,6 +19,7 @@
 
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/contract.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/JobQueue.h>
 #include <mutex>
 
@@ -34,11 +35,15 @@ JobQueue::JobQueue(
     , m_lastJob(0)
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
-    , m_workers(*this, &perfLog, "JobQueue", threadCount)
+    , m_workers(*this, "JobQueue", threadCount)
     , perfLog_(perfLog)
     , m_collector(collector)
 {
     JLOG(m_journal.info()) << "Using " << threadCount << "  threads";
+
+    // This is important to do before dispatching any jobs
+    // so that the logger knows the number of threads.
+    perfLog_.resizeJobs(threadCount);
 
     hook = m_collector->make_hook(std::bind(&JobQueue::collect, this));
     job_count = m_collector->make_gauge("job_count");
@@ -95,7 +100,7 @@ JobQueue::addRefCountedJob(
     // do not add jobs to a queue with no threads
     assert(
         (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) ||
-        m_workers.getNumberOfThreads() > 0);
+        m_workers.count() > 0);
 
     {
         std::lock_guard lock(m_mutex);
@@ -198,7 +203,7 @@ JobQueue::getJson(int c)
     using namespace std::chrono_literals;
     Json::Value ret(Json::objectValue);
 
-    ret["threads"] = m_workers.getNumberOfThreads();
+    ret["threads"] = m_workers.count();
 
     Json::Value priorities = Json::arrayValue;
 
@@ -348,7 +353,33 @@ JobQueue::finishJob(JobType type)
 }
 
 void
-JobQueue::processTask(int instance)
+JobQueue::uncaughtException(unsigned int instance, std::exception_ptr eptr)
+{
+    try
+    {
+        if (eptr)
+            std::rethrow_exception(eptr);
+
+        LogicError(
+            beast::getCurrentThreadName() +
+            ": Uncaught exception handler invoked with no exception_ptr");
+    }
+    catch (std::exception const& e)
+    {
+        LogicError(
+            beast::getCurrentThreadName() +
+            ": Exception caught during task processing: " + e.what());
+    }
+    catch (...)
+    {
+        LogicError(
+            beast::getCurrentThreadName() +
+            ": Unknown exception caught during task processing");
+    }
+}
+
+void
+JobQueue::processTask(unsigned int instance)
 {
     JobType type;
 
