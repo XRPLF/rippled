@@ -388,7 +388,12 @@ class NFTokenDir_test : public beast::unit_test::suite
         auto exerciseFixNFTokenDirV1 =
             [this,
              &features](std::initializer_list<std::string_view const> seeds) {
-                Env env{*this, features};
+                Env env{
+                    *this,
+                    envconfig(),
+                    features,
+                    nullptr,
+                    beast::severities::kDisabled};
 
                 // Eventually all of the NFTokens will be owned by buyer.
                 Account const buyer{"buyer"};

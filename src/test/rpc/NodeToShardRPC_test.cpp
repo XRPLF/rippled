@@ -276,7 +276,8 @@ public:
             sectionNode.set("ledgers_per_shard", "256");
             c->setupControl(true, true, true);
 
-            return jtx::Env(*this, std::move(c));
+            return jtx::Env(
+                *this, std::move(c), nullptr, beast::severities::kDisabled);
         }();
 
         std::uint8_t const numberOfShards = 10;

@@ -86,9 +86,6 @@ public:
 
             if (rmSubDir_)
                 rmDir(subDir_);
-            else
-                test_.log << "Skipping rm dir: " << subDir_.string()
-                          << std::endl;
         }
         catch (std::exception& e)
         {
