@@ -334,7 +334,14 @@ private:
     // Invariants:
     //  <none>
     void
-    processTask(int instance) override;
+    processTask(unsigned int instance) override;
+
+    // Called when an uncaught exception occurs while processing a task
+    //
+    // Invariants:
+    //  <none>
+    void
+    uncaughtException(unsigned int instance, std::exception_ptr eptr) override;
 
     // Returns the limit of running jobs for the given job type.
     // For jobs with no limit, we return the largest int. Hopefully that

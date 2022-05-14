@@ -24,7 +24,7 @@
 namespace ripple {
 namespace NodeStore {
 
-TaskQueue::TaskQueue() : workers_(*this, nullptr, "Shard store taskQueue", 1)
+TaskQueue::TaskQueue() : workers_(*this, "ShardTaskQ", 1)
 {
 }
 
@@ -52,7 +52,7 @@ TaskQueue::size() const
 }
 
 void
-TaskQueue::processTask(int instance)
+TaskQueue::processTask(unsigned int instance)
 {
     std::function<void()> task;
 
