@@ -381,16 +381,16 @@ public:
     }
 
     void
-    test_clip()
+    test_noiseGate()
     {
-        testcase("test_clip");
+        testcase("test_noiseGate");
         Number limit{1, -6};
-        BEAST_EXPECT((clip(Number{2, -6}, limit) == Number{2, -6}));
-        BEAST_EXPECT((clip(Number{1, -6}, limit) == Number{1, -6}));
-        BEAST_EXPECT((clip(Number{9, -7}, limit) == Number{0}));
-        BEAST_EXPECT((clip(Number{-2, -6}, limit) == Number{-2, -6}));
-        BEAST_EXPECT((clip(Number{-1, -6}, limit) == Number{-1, -6}));
-        BEAST_EXPECT((clip(Number{-9, -7}, limit) == Number{0}));
+        BEAST_EXPECT((noiseGate(Number{2, -6}, limit) == Number{2, -6}));
+        BEAST_EXPECT((noiseGate(Number{1, -6}, limit) == Number{1, -6}));
+        BEAST_EXPECT((noiseGate(Number{9, -7}, limit) == Number{0}));
+        BEAST_EXPECT((noiseGate(Number{-2, -6}, limit) == Number{-2, -6}));
+        BEAST_EXPECT((noiseGate(Number{-1, -6}, limit) == Number{-1, -6}));
+        BEAST_EXPECT((noiseGate(Number{-9, -7}, limit) == Number{0}));
     }
 
     void
@@ -455,7 +455,7 @@ public:
         test_power2();
         testConversions();
         test_to_integer();
-        test_clip();
+        test_noiseGate();
         testToString();
         test_relationals();
         test_stream();

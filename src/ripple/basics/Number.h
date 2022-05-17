@@ -311,7 +311,7 @@ abs(Number x) noexcept
 // Uses a log_2(n) number of multiplications
 
 Number
-power(Number f, unsigned n);
+power(Number const& f, unsigned n);
 
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
@@ -323,12 +323,12 @@ root(Number f, unsigned d);
 // Returns f^(n/d)
 
 Number
-power(Number f, unsigned n, unsigned d);
+power(Number const& f, unsigned n, unsigned d);
 
 // Return 0 if abs(x) < limit, else returns x
 
 inline constexpr Number
-clip(Number const& x, Number const& limit) noexcept
+noiseGate(Number const& x, Number const& limit) noexcept
 {
     if (abs(x) < limit)
         return Number{};

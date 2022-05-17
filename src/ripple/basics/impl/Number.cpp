@@ -532,7 +532,7 @@ to_string(Number const& amount)
 // Uses a log_2(n) number of multiplications
 
 Number
-power(Number f, unsigned n)
+power(Number const& f, unsigned n)
 {
     if (n == 0)
         return one;
@@ -548,6 +548,11 @@ power(Number f, unsigned n)
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
 // to find the non-negative root of the polynomial g(x) = x^d - f
+
+// This function, and power(Number f, unsigned n, unsigned d)
+// treat corner cases such as 0 roots as advised by Annex F of
+// the C standard, which itself is consistent with the IEEE
+// floating point standards.
 
 Number
 root(Number f, unsigned d)
@@ -617,7 +622,7 @@ root(Number f, unsigned d)
 // Returns f^(n/d)
 
 Number
-power(Number f, unsigned n, unsigned d)
+power(Number const& f, unsigned n, unsigned d)
 {
     if (f == one)
         return f;
