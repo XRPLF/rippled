@@ -97,10 +97,17 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;
-    auto const id = tx[sfAccount];
-
+    auto const accountID = tx[sfAccount];
     auto const saAsset1 = tx[sfAsset1];
     auto const saAsset2 = tx[sfAsset2];
+
+    if (requireAuth(ctx.view, saAsset1.issue(), accountID) ||
+        requireAuth(ctx.view, saAsset2.issue(), accountID))
+    {
+        JLOG(j.debug()) << "AMM Instance account is not authorized";
+        return tecNO_PERMISSION;
+    }
+
     if ((!saAsset1.native() &&
          isGlobalFrozen(ctx.view, saAsset1.getIssuer())) ||
         (!saAsset2.native() && isGlobalFrozen(ctx.view, saAsset2.getIssuer())))
@@ -111,14 +118,14 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     auto const issue1Balance = accountHolds(
         ctx.view,
-        id,
+        accountID,
         saAsset1.issue().currency,
         saAsset1.issue().account,
         FreezeHandling::fhZERO_IF_FROZEN,
         ctx.j);
     auto const issue2Balance = accountHolds(
         ctx.view,
-        id,
+        accountID,
         saAsset2.issue().currency,
         saAsset2.issue().account,
         FreezeHandling::fhZERO_IF_FROZEN,

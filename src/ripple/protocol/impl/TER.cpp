@@ -42,8 +42,8 @@ transResults()
             TERUnderlyingType,
             std::pair<char const* const, char const* const>> const results
     {
-        MAKE_ERROR(tecAMM_BALANCE,                   "AMM instance has invalid balance."),
-        MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM Trade exceeded 30%."),
+        MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
+        MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
         MAKE_ERROR(tecAMM_FAILED_DEPOSIT,            "AMM failed deposit."),
         MAKE_ERROR(tecAMM_FAILED_WITHDRAW,           "AMM failed withdraw."),
         MAKE_ERROR(tecAMM_FAILED_SWAP,               "AMM failed swap."),

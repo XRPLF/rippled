@@ -106,7 +106,7 @@ doAMMInfo(RPC::JsonContext& context)
 
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
-    lptAMMBalance.setJson(result[jss::balance]);
+    lptAMMBalance.setJson(result[jss::LPTokens]);
     result[jss::AMMAccount] = to_string(ammAccountID);
     if (!params.isMember(jss::AMMHash))
         result[jss::AMMHash] = to_string(ammHash);
@@ -217,8 +217,8 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
     ripple::RPC::convert(*asset1, asset1Balance);
     auto asset2 = result.mutable_asset2();
     ripple::RPC::convert(*asset2, asset2Balance);
-    auto balance = result.mutable_balance();
-    ripple::RPC::convert(*balance, lptAMMBalance);
+    auto tokens = result.mutable_tokens();
+    ripple::RPC::convert(*tokens, lptAMMBalance);
     *result.mutable_ammaccount()->mutable_value()->mutable_address() =
         toBase58(ammAccountID);
     if (!params.has_ammhash())

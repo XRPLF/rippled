@@ -37,7 +37,7 @@ message GetAmmInfoResponse
 
   AMMAccount ammaccount = 3;
 
-  Balance balance = 4;
+  Tokens tokens = 4;
 
   AMMHash ammHash = 5;
 

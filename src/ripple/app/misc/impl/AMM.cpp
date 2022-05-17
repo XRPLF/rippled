@@ -225,4 +225,24 @@ orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2)
         return 100 - weight;
 }
 
+bool
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
+{
+    if (isXRP(issue) || issue.account == account)
+        return false;
+
+    if (auto const issuerAccount = view.read(keylet::account(issue.account));
+        issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
+    {
+        if (auto const trustLine =
+                view.read(keylet::line(account, issue.account, issue.currency));
+            trustLine)
+            return !(
+                (*trustLine)[sfFlags] &
+                ((account > issue.account) ? lsfLowAuth : lsfHighAuth));
+    }
+
+    return false;
+}
+
 }  // namespace ripple

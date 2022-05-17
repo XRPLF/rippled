@@ -44,7 +44,6 @@ AMM::AMM(
     , ammAccountID_{}
     , asset1_(asset1)
     , asset2_(asset2)
-    , weight1_(weight1)
     , ter_(ter)
     , log_(log)
 {
@@ -162,7 +161,6 @@ AMM::ammgRPCInfo(
     }
     auto const ammAccountID =
         parseBase58<AccountID>(client.reply.ammaccount().value().address());
-    uint256 ammHashRet;
     auto getAmt = [&](auto const& amt) {
         if (amt.value().has_xrp_amount())
             return STAmount{xrpIssue(), amt.value().xrp_amount().drops(), 0};
@@ -177,7 +175,7 @@ AMM::ammgRPCInfo(
     };
     getAmt(client.reply.asset1()).setJson(jv[jss::Asset1]);
     getAmt(client.reply.asset2()).setJson(jv[jss::Asset2]);
-    getAmt(client.reply.balance()).setJson(jv[jss::balance]);
+    getAmt(client.reply.tokens()).setJson(jv[jss::LPTokens]);
     jv[jss::AMMAccount] = ammAccountID ? to_string(*ammAccountID) : "";
     jv[jss::AMMHash] = client.reply.ammhash().value();
     return jv;
@@ -251,7 +249,7 @@ AMM::expectAmmInfo(
     Json::Value const& jv)
 {
     if (!jv.isMember(jss::Asset1) || !jv.isMember(jss::Asset2) ||
-        !jv.isMember(jss::balance))
+        !jv.isMember(jss::LPTokens))
         return false;
     STAmount asset1Info;
     if (!amountFromJsonNoThrow(asset1Info, jv[jss::Asset1]))
@@ -260,7 +258,7 @@ AMM::expectAmmInfo(
     if (!amountFromJsonNoThrow(asset2Info, jv[jss::Asset2]))
         return false;
     STAmount lptBalance;
-    if (!amountFromJsonNoThrow(lptBalance, jv[jss::balance]))
+    if (!amountFromJsonNoThrow(lptBalance, jv[jss::LPTokens]))
         return false;
     // ammRpcInfo returns unordered assets
     if (asset1Info.issue() != asset1.issue())

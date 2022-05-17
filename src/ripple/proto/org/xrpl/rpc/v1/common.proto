@@ -595,6 +595,11 @@ message LimitSpotPrice
     CurrencyAmount value = 1;
 }
 
+message Tokens
+{
+    CurrencyAmount value = 1;
+}
+
 
 // *** Messages wrapping an AccountAddress ***
 

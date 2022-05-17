@@ -142,6 +142,13 @@ getAMMSle(ReadView const& view, uint256 ammHash);
 std::uint8_t
 orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2);
 
+/** Check if the account requires authorization.
+ *  Return true if issuer's account, account, and trust line exist
+ *  and the account requires authorization.
+ */
+bool
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
 }  // namespace ripple
 
 #endif  // RIPPLE_APP_MISC_AMM_H_INLCUDED

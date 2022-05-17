@@ -41,7 +41,6 @@ class AMM
     Issue lptIssue_;
     STAmount asset1_;
     STAmount asset2_;
-    std::uint8_t weight1_;
     std::optional<ter> ter_;
     bool log_ = false;
 

@@ -95,7 +95,7 @@ AMMSwap::preclaim(PreclaimContext const& ctx)
     auto const [asset1, asset2, lpTokens] = getAMMBalances(
         ctx.view,
         sleAMM->getAccountID(sfAMMAccount),
-        ctx.tx[sfAccount],
+        std::nullopt,
         assetIn ? std::optional<Issue>(assetIn->issue()) : std::nullopt,
         assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
         ctx.j);
@@ -150,14 +150,6 @@ AMMSwap::applyGuts(Sandbox& sb)
         assetIn ? std::optional<Issue>(assetIn->issue()) : std::nullopt,
         assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
         ctx_.journal);
-    // lpAsset1, lpAsset2 ordered same as above
-    auto const [lpAsset1, lpAsset2, lpTokens] = getAMMBalances(
-        sb,
-        ammAccountID,
-        account_,
-        assetIn ? std::optional<Issue>(assetIn->issue()) : std::nullopt,
-        assetOut ? std::optional<Issue>(assetOut->issue()) : std::nullopt,
-        ctx_.journal);
 
     auto const tfee = sleAMM->getFieldU32(sfTradingFee);
     auto const weight1 = orderWeight(
@@ -174,7 +166,6 @@ AMMSwap::applyGuts(Sandbox& sb)
                 asset1,
                 asset2,
                 *assetIn,
-                lpAsset2,
                 *limitSP,
                 weight1,
                 tfee);
@@ -185,20 +176,12 @@ AMMSwap::applyGuts(Sandbox& sb)
                 asset1,
                 asset2,
                 *assetIn,
-                lpAsset2,
                 *slippage,
                 weight1,
                 tfee);
         else
             result = swapIn(
-                sb,
-                ammAccountID,
-                asset1,
-                asset2,
-                *assetIn,
-                lpAsset2,
-                weight1,
-                tfee);
+                sb, ammAccountID, asset1, asset2, *assetIn, weight1, tfee);
     }
     else if (assetOut)
     {
@@ -209,7 +192,6 @@ AMMSwap::applyGuts(Sandbox& sb)
                 asset1,
                 asset2,
                 *assetOut,
-                lpAsset2,
                 *limitSP,
                 weight1,
                 tfee);
@@ -220,20 +202,12 @@ AMMSwap::applyGuts(Sandbox& sb)
                 asset1,
                 asset2,
                 *assetOut,
-                lpAsset2,
                 *slippage,
                 weight1,
                 tfee);
         else
             result = swapOut(
-                sb,
-                ammAccountID,
-                asset1,
-                asset2,
-                *assetOut,
-                lpAsset2,
-                weight1,
-                tfee);
+                sb, ammAccountID, asset1, asset2, *assetOut, weight1, tfee);
     }
 
     return {result, result == tesSUCCESS};
@@ -266,9 +240,9 @@ AMMSwap::swapAssets(
     AccountID const& ammAccount,
     STAmount const& assetIn,
     STAmount const& assetOut,
-    STAmount const& lpAsset2)
+    STAmount const& asset2Balance)
 {
-    if (assetOut > lpAsset2)
+    if (assetOut > asset2Balance)
         return tecAMM_BALANCE;
 
     auto res = accountSend(view, account_, ammAccount, assetIn, ctx_.journal);
@@ -296,13 +270,12 @@ AMMSwap::swapIn(
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& assetIn,
-    STAmount const& lpAsset2,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
     auto const assetOut =
         swapAssetIn(asset1Balance, asset2Balance, assetIn, weight1, tfee);
-    return swapAssets(view, ammAccount, assetIn, assetOut, lpAsset2);
+    return swapAssets(view, ammAccount, assetIn, assetOut, asset2Balance);
 }
 
 TER
@@ -312,13 +285,12 @@ AMMSwap::swapOut(
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& assetOut,
-    STAmount const& lpAsset2,
     std::uint8_t weight1,
     std::uint16_t tfee)
 {
     auto const assetIn = swapAssetOut(
         asset2Balance, asset1Balance, assetOut, 100 - weight1, tfee);
-    return swapAssets(view, ammAccount, assetIn, assetOut, lpAsset2);
+    return swapAssets(view, ammAccount, assetIn, assetOut, asset2Balance);
 }
 
 TER
@@ -328,7 +300,6 @@ AMMSwap::swapInLimitSP(
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& assetIn,
-    STAmount const& lpAsset2,
     STAmount const& limitSP,
     std::uint8_t weight1,
     std::uint16_t tfee)
@@ -344,18 +315,10 @@ AMMSwap::swapInLimitSP(
             asset1Balance,
             asset2Balance,
             *assetInDeposit,
-            lpAsset2,
             weight1,
             tfee);
     return swapIn(
-        view,
-        ammAccount,
-        asset1Balance,
-        asset2Balance,
-        assetIn,
-        lpAsset2,
-        weight1,
-        tfee);
+        view, ammAccount, asset1Balance, asset2Balance, assetIn, weight1, tfee);
 }
 
 TER
@@ -365,7 +328,6 @@ AMMSwap::swapOutLimitSP(
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& assetOut,
-    STAmount const& lpAsset2,
     STAmount const& limitSP,
     std::uint8_t weight1,
     std::uint16_t tfee)
@@ -380,7 +342,6 @@ AMMSwap::swapOutLimitSP(
             ammAccount,
             asset1Balance,
             asset2Balance,
-            lpAsset2,
             *assetOutDeposit,
             weight1,
             tfee);
@@ -394,7 +355,6 @@ AMMSwap::swapInSlippage(
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& assetIn,
-    STAmount const& lpAsset2,
     std::uint16_t slippage,
     std::uint8_t weight1,
     std::uint16_t tfee)
@@ -408,7 +368,6 @@ AMMSwap::swapInSlippage(
             asset1Balance,
             asset2Balance,
             assetIn,
-            lpAsset2,
             weight1,
             tfee);
 
@@ -420,7 +379,6 @@ AMMSwap::swapInSlippage(
         asset1Balance,
         asset2Balance,
         assetInUpd,
-        lpAsset2,
         weight1,
         tfee);
 }
@@ -432,7 +390,6 @@ AMMSwap::swapOutSlippage(
     STAmount const& asset1Balance,
     STAmount const& asset2Balance,
     STAmount const& assetOut,
-    STAmount const& lpAsset2,
     std::uint16_t slippage,
     std::uint8_t weight1,
     std::uint16_t tfee)
@@ -446,7 +403,6 @@ AMMSwap::swapOutSlippage(
             asset1Balance,
             asset2Balance,
             assetOut,
-            lpAsset2,
             weight1,
             tfee);
 
@@ -458,7 +414,6 @@ AMMSwap::swapOutSlippage(
         asset1Balance,
         asset2Balance,
         assetOutUpd,
-        lpAsset2,
         weight1,
         tfee);
 }

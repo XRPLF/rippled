@@ -318,9 +318,9 @@ private:
     }
 
     void
-    testAddLiquidity()
+    testDeposit()
     {
-        testcase("Add Liquidity");
+        testcase("Deposit");
 
         using namespace jtx;
 
@@ -392,9 +392,9 @@ private:
     }
 
     void
-    testWithdrawLiquidity()
+    testWithdraw()
     {
-        testcase("Withdraw Liquidity");
+        testcase("Withdraw");
 
         using namespace jtx;
 
@@ -418,7 +418,7 @@ private:
                 carol,
                 2000000,
                 std::nullopt,
-                std::optional<ter>(tecAMM_BALANCE));
+                std::optional<ter>(tecAMM_INVALID_TOKENS));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
         });
@@ -515,11 +515,13 @@ private:
         });
 
         // Single deposit 1000USD, withdraw all tokens in USD
-        proc([&](AMM& ammAlice, Env&) {
+        proc([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, USD(1000));
             ammAlice.withdraw(carol, 0, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(0), USD(0), IOUAmount{0, 0}, carol));
         });
 
         // Single deposit 1000USD, withdraw all tokens in XRP
@@ -531,11 +533,44 @@ private:
         });
 
         // Single deposit/withdraw 1000USD
+        // TODO There is a round-off error. The number of
+        // tokens to withdraw exceeds the LP tokens balance.
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(10000));
+            ammAlice.withdraw(
+                carol,
+                USD(10000),
+                std::nullopt,
+                std::nullopt,
+                std::optional<ter>(tecAMM_INVALID_TOKENS));
+        });
+
+        // Single deposit/withdraw 1000USD
+        // TODO There is a round-off error. There remains
+        // a dust amount of tokens
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
             ammAlice.withdraw(carol, USD(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(0), STAmount{USD, 63, -13}, IOUAmount{63, -10}, carol));
+        });
+
+        // Single deposit by different accounts and then withdraw
+        // in reverse must result in all balances back to the original
+        // state.
+        // TODO There is a round-off error. There remains
+        // a dust amount of tokens.
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(1000));
+            ammAlice.deposit(alice, USD(1000));
+            ammAlice.withdraw(alice, USD(1000));
+            ammAlice.withdraw(carol, USD(1000));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(0), STAmount{USD, 63, -13}, IOUAmount{63, -10}, carol));
         });
 
         // Equal deposit 10%, withdraw all tokens
@@ -563,6 +598,13 @@ private:
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
         });
+
+        // TODO there should be a limit on a single withdrawal amount.
+        // For instance, in 10000USD and 10000XRP amm with all liquidity
+        // provided by one LP, LP can not withdraw all tokens in USD.
+        // Withdrawing 90% in USD is also invalid. Besides the impact
+        // on the pool there should be a max threshold for single
+        // deposit.
     }
 
     void
@@ -712,6 +754,24 @@ private:
     }
 
     void
+    testRequireAuth()
+    {
+        testcase("Require Authorization");
+        using namespace jtx;
+
+        Env env{*this};
+        auto const aliceUSD = alice["USD"];
+        env.fund(XRP(20000), alice, gw);
+        env(fset(gw, asfRequireAuth));
+        env(trust(gw, aliceUSD(10000)), txflags(tfSetfAuth));
+        env(trust(alice, USD(10000)));
+        env(pay(gw, alice, USD(10000)));
+        AMM ammAlice(env, alice, XRP(10000), USD(10000));
+        BEAST_EXPECT(ammAlice.expectBalances(
+            XRP(10000), USD(10000), IOUAmount{10000000, 0}, alice));
+    }
+
+    void
     testAmendment()
     {
         testcase("Amendment");
@@ -728,9 +788,10 @@ private:
     {
         testInvalidInstance();
         testInstanceCreate();
-        testAddLiquidity();
-        testWithdrawLiquidity();
+        testDeposit();
+        testWithdraw();
         testSwap();
+        testRequireAuth();
     }
 };
 

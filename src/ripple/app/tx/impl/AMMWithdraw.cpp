@@ -97,30 +97,21 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     }
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
-    auto const ePrice = ctx.tx[~sfEPrice];
     auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
-    auto const [asset1, asset2, lptBalance] = getAMMBalances(
-        ctx.view,
-        ammAccountID,
-        ctx.tx[sfAccount],
-        asset1Out ? std::optional<Issue>(asset1Out->issue()) : std::nullopt,
-        asset2Out ? std::optional<Issue>(asset2Out->issue()) : std::nullopt,
-        ctx.j);
+    auto const lptBalance =
+        getLPTokens(ctx.view, ammAccountID, ctx.tx[sfAccount], ctx.j);
     auto const lpTokens = getTxLPTokens(ctx.view, ammAccountID, ctx.tx, ctx.j);
-    if (asset1 <= beast::zero || asset2 <= beast::zero ||
-        lptBalance <= beast::zero)
+    if (lptBalance <= beast::zero)
     {
-        JLOG(ctx.j.error())
-            << "AMM Withdraw: reserves or tokens balance is zero";
+        JLOG(ctx.j.error()) << "AMM Withdraw: tokens balance is zero";
         return tecAMM_BALANCE;
     }
     if (lpTokens && *lpTokens > lptBalance)
     {
-        JLOG(ctx.j.error()) << "AMM Withdraw: invalid tokens balance";
-        return tecAMM_BALANCE;
+        JLOG(ctx.j.error()) << "AMM Withdraw: invalid tokens";
+        return tecAMM_INVALID_TOKENS;
     }
-    if (isFrozen(ctx.view, ctx.tx[~sfAsset1Out]) ||
-        isFrozen(ctx.view, ctx.tx[~sfAsset2Out]))
+    if (isFrozen(ctx.view, asset1Out) || isFrozen(ctx.view, sfAsset2Out))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset";
         return tecFROZEN;
@@ -261,13 +252,19 @@ AMMWithdraw::withdraw(
         view, ammAccount, account_, asset1.issue(), std::nullopt, ctx_.journal);
     // The balances exceed LP holding or withdrawing all tokens and
     // there is some balance remaining.
-    if (lpTokens == beast::zero || lpTokens > lptAMM ||
-        (lpTokens == lptAMMBalance && asset1 != lpAsset1 &&
-         (!asset2.has_value() || *asset2 != lpAsset2)))
+    // TODO, needs work. Also see Swap balance validation
+    if (lpTokens == beast::zero || lpTokens > lptAMM)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Instance: failed to withdraw, invalid LP balance "
-            << " tokens: " << lpTokens << " " << lptAMM
+            << "AMM Withdraw: failed to withdraw, invalid LP tokens "
+            << " tokens: " << lpTokens << " " << lptAMM;
+        return tecAMM_INVALID_TOKENS;
+    }
+    if (lpTokens == lptAMMBalance && asset1 != lpAsset1 &&
+        (!asset2.has_value() || *asset2 != lpAsset2))
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Withdraw: failed to withdraw, invalid LP balance "
             << " asset1: " << lpAsset1 << " " << asset1
             << " asset2: " << lpAsset2 << (asset2 ? to_string(*asset2) : "");
         return tecAMM_BALANCE;
