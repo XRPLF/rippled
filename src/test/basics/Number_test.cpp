@@ -381,16 +381,16 @@ public:
     }
 
     void
-    test_noiseGate()
+    test_squelch()
     {
-        testcase("test_noiseGate");
+        testcase("test_squelch");
         Number limit{1, -6};
-        BEAST_EXPECT((noiseGate(Number{2, -6}, limit) == Number{2, -6}));
-        BEAST_EXPECT((noiseGate(Number{1, -6}, limit) == Number{1, -6}));
-        BEAST_EXPECT((noiseGate(Number{9, -7}, limit) == Number{0}));
-        BEAST_EXPECT((noiseGate(Number{-2, -6}, limit) == Number{-2, -6}));
-        BEAST_EXPECT((noiseGate(Number{-1, -6}, limit) == Number{-1, -6}));
-        BEAST_EXPECT((noiseGate(Number{-9, -7}, limit) == Number{0}));
+        BEAST_EXPECT((squelch(Number{2, -6}, limit) == Number{2, -6}));
+        BEAST_EXPECT((squelch(Number{1, -6}, limit) == Number{1, -6}));
+        BEAST_EXPECT((squelch(Number{9, -7}, limit) == Number{0}));
+        BEAST_EXPECT((squelch(Number{-2, -6}, limit) == Number{-2, -6}));
+        BEAST_EXPECT((squelch(Number{-1, -6}, limit) == Number{-1, -6}));
+        BEAST_EXPECT((squelch(Number{-9, -7}, limit) == Number{0}));
     }
 
     void
@@ -455,7 +455,7 @@ public:
         test_power2();
         testConversions();
         test_to_integer();
-        test_noiseGate();
+        test_squelch();
         testToString();
         test_relationals();
         test_stream();
