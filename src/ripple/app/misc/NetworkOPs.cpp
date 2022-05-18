@@ -919,7 +919,10 @@ void
 NetworkOPsImp::setStateTimer()
 {
     setHeartbeatTimer();
-    setClusterTimer();
+
+    // Only do this work if a cluster is configured
+    if (app_.cluster().size() != 0)
+        setClusterTimer();
 }
 
 void
@@ -972,6 +975,7 @@ void
 NetworkOPsImp::setClusterTimer()
 {
     using namespace std::chrono_literals;
+
     setTimer(
         clusterTimer_,
         10s,
@@ -1057,7 +1061,11 @@ NetworkOPsImp::processHeartbeatTimer()
 void
 NetworkOPsImp::processClusterTimer()
 {
+    if (app_.cluster().size() == 0)
+        return;
+
     using namespace std::chrono_literals;
+
     bool const update = app_.cluster().update(
         app_.nodeIdentity().first,
         "",
