@@ -17,11 +17,12 @@
 */
 //==============================================================================
 #include <ripple/app/misc/AMM.h>
+#include <ripple/app/misc/AMM_formulae.h>
 #include <boost/regex.hpp>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
-#include <test/jtx/PathSet.h>
 
+#include <chrono>
 #include <utility>
 
 namespace ripple {
@@ -795,7 +796,40 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, ripple, 2);
+struct AMM_manual_test : public beast::unit_test::suite
+{
+    void
+    perfTest()
+    {
+        testcase("Performance");
+        using namespace std::chrono;
+
+        auto const start = high_resolution_clock::now();
+        for (int i = 0; i < 10000; ++i)
+        {
+            swapAssetOut(
+                STAmount{noIssue(), 10000 + 1, 0},
+                STAmount{noIssue(), 10000 + 1, 0},
+                STAmount{noIssue(), i, 0},
+                80,
+                1000);
+        }
+        auto const elapsed = high_resolution_clock::now() - start;
+
+        std::cout << duration_cast<std::chrono::microseconds>(elapsed).count()
+                  << std::endl;
+        BEAST_EXPECT(true);
+    }
+
+    void
+    run() override
+    {
+        perfTest();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(AMM, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AMM_manual, tx, ripple);
 
 }  // namespace test
 }  // namespace ripple

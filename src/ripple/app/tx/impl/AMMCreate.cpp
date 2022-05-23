@@ -168,7 +168,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (sb.peek(keylet::amm(ammHash)) || sb.peek(keylet::account(ammAccountID)))
     {
         JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
-        return {tefINTERNAL, false};
+        return {tecAMM_EXISTS, false};
     }
 
     // LP Token already exists.
@@ -176,7 +176,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (sb.read(keylet::line(ammAccountID, lptIssue)))
     {
         JLOG(j_.debug()) << "AMM Instance: LP Token already exists.";
-        return {tefINTERNAL, false};
+        return {tecAMM_EXISTS, false};
     }
 
     // Create AMM Root Account.
