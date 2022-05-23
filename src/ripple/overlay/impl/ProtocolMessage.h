@@ -292,7 +292,8 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
         if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
             return {};
     }
-    else if (!m->ParseFromZeroCopyStream(&stream))
+    else if (!m->ParseFromBoundedZeroCopyStream(
+                 &stream, header.payload_wire_size))
         return {};
 
     return m;
