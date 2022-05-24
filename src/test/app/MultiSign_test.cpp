@@ -1637,7 +1637,10 @@ public:
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon, demon), fee(3 * baseFee), ter(temINVALID));
+        env(noop(alice),
+            msig(demon, demon),
+            fee(3 * baseFee),
+            ter(telLOCAL_ERROR));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
