@@ -130,7 +130,7 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
  * @param ammHash
  * @return
  */
-std::shared_ptr<SLE const>
+std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash);
 
 /** Return weight that corresponds to issue1.

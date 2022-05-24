@@ -207,7 +207,7 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a)
     return a && !a->native() && isGlobalFrozen(view, a->getIssuer());
 }
 
-std::shared_ptr<SLE const>
+std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash)
 {
     auto const sle = view.read(keylet::amm(ammHash));
