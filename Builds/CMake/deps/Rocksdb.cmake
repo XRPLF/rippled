@@ -59,6 +59,8 @@ if (local_rocksdb)
   message (STATUS "Using local build of RocksDB.")
   ExternalProject_Add (rocksdb
     PREFIX ${nih_cache_path}
+    SOURCE_DIR ${nih_src_path}/rocksdb
+    STAMP_DIR ${nih_stamp_path}/rocksdb
     GIT_REPOSITORY https://github.com/facebook/rocksdb.git
     GIT_TAG v6.27.3
     PATCH_COMMAND

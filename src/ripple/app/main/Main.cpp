@@ -799,7 +799,5 @@ main(int argc, char** argv)
     }
 #endif
 
-    atexit(&google::protobuf::ShutdownProtobufLibrary);
-
     return ripple::run(argc, argv);
 }

@@ -69,6 +69,8 @@ if (local_libarchive)
   endif ()
   ExternalProject_Add (libarchive
     PREFIX ${nih_cache_path}
+    SOURCE_DIR ${nih_src_path}/libarchive
+    STAMP_DIR ${nih_stamp_path}/libarchive
     GIT_REPOSITORY https://github.com/libarchive/libarchive.git
     GIT_TAG v3.4.3
     CMAKE_ARGS

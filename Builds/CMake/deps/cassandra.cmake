@@ -10,6 +10,8 @@ if(reporting)
             add_library(zlib STATIC IMPORTED GLOBAL)
             ExternalProject_Add(zlib_src
                 PREFIX ${nih_cache_path}
+                SOURCE_DIR ${nih_src_path}/zlib
+                STAMP_DIR ${nih_stamp_path}/zlib
                 GIT_REPOSITORY https://github.com/madler/zlib.git
                 GIT_TAG master
                 INSTALL_COMMAND ""
@@ -44,6 +46,8 @@ if(reporting)
             add_library(krb5 STATIC IMPORTED GLOBAL)
             ExternalProject_Add(krb5_src
                 PREFIX ${nih_cache_path}
+                SOURCE_DIR ${nih_src_path}/krb5
+                STAMP_DIR ${nih_stamp_path}/krb5
                 GIT_REPOSITORY https://github.com/krb5/krb5.git
                 GIT_TAG master
                 UPDATE_COMMAND ""
@@ -79,6 +83,8 @@ if(reporting)
             add_library(libuv1 STATIC IMPORTED GLOBAL)
             ExternalProject_Add(libuv_src
                 PREFIX ${nih_cache_path}
+                SOURCE_DIR ${nih_src_path}/libuv
+                STAMP_DIR ${nih_stamp_path}/libuv
                 GIT_REPOSITORY https://github.com/libuv/libuv.git
                 GIT_TAG v1.x
                 INSTALL_COMMAND ""
@@ -105,6 +111,8 @@ if(reporting)
         add_library (cassandra STATIC IMPORTED GLOBAL)
         ExternalProject_Add(cassandra_src
             PREFIX ${nih_cache_path}
+            SOURCE_DIR ${nih_src_path}/cassandra
+            STAMP_DIR ${nih_stamp_path}/cassandra
             GIT_REPOSITORY https://github.com/datastax/cpp-driver.git
             GIT_TAG master
             CMAKE_ARGS

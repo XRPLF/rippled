@@ -21,7 +21,8 @@ services:
   - docker
 
 stages:
-  - windep-vcpkg
+  - windep-vcpkg1
+  - windep-vcpkg2
   - windep-boost
   - build
 
@@ -31,7 +32,7 @@ env:
     - CMAKE_EXTRA_ARGS="-Dwerr=ON -Dwextra=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
-    - MAX_TIME_MIN=80
+    - MAX_TIME_MIN=120
     - CACHE_DIR=${TRAVIS_HOME}/_cache
     - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
     - PARALLEL_TESTS=true
@@ -50,7 +51,7 @@ env:
     - CCACHE_DIR=${CACHE_DIR}/ccache
 
 before_install:
-  - export NUM_PROCESSORS=$(nproc)
+  - export NUM_PROCESSORS=${NUM_PROCESSORS:-$(nproc)}
   - echo "NUM PROC is ${NUM_PROCESSORS}"
   - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
   - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
@@ -70,7 +71,8 @@ matrix:
     # allow the rest of the builds to continue. They may succeed if the
     # dependency is already cached. These do not need to be retried if
     # _any_ of the Windows builds succeed.
-    - stage: windep-vcpkg
+    - stage: windep-vcpkg1
+    - stage: windep-vcpkg2
     - stage: windep-boost
 
   # https://docs.travis-ci.com/user/build-config-yaml#usage-of-yaml-anchors-and-aliases
@@ -78,7 +80,7 @@ matrix:
     # debug builds
     - &linux
       stage: build
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/
       compiler: gcc-8
       name: gcc-8, debug
       env:
@@ -104,7 +106,7 @@ matrix:
         - CMAKE_ADD="-Dreporting=ON"
     # coverage builds
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_cov/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_cov/
       compiler: gcc-8
       name: coverage, gcc-8
       env:
@@ -114,7 +116,7 @@ matrix:
         - TARGET=coverage_report
         - SKIP_TESTS=true
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_cov/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_cov/
       compiler: clang-8
       name: coverage, clang-8
       env:
@@ -144,7 +146,7 @@ matrix:
         - SKIP_TESTS=true
     # nounity
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_nounity/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_nounity/
       compiler: gcc-8
       name: non-unity, gcc-8
       env:
@@ -152,7 +154,7 @@ matrix:
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dunity=OFF"
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_nounity/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_nounity/
       compiler: clang-8
       name: non-unity, clang-8
       env:
@@ -161,7 +163,7 @@ matrix:
         - CMAKE_ADD="-Dunity=OFF"
     # manual tests
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_man/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_man/
       compiler: gcc-8
       name: manual tests, gcc-8, debug
       env:
@@ -170,7 +172,7 @@ matrix:
         - MANUAL_TESTS=true
     # manual tests
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_man/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_man/
       compiler: gcc-8
       name: manual tests, gcc-8, release
       env:
@@ -180,7 +182,7 @@ matrix:
         - MANUAL_TESTS=true
     # release builds
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_release/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_release/
       compiler: gcc-8
       name: gcc-8, release
       env:
@@ -188,7 +190,7 @@ matrix:
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dassert=ON -Dunity=OFF"
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_release/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_release/
       compiler: clang-8
       name: clang-8, release
       env:
@@ -197,7 +199,7 @@ matrix:
         - CMAKE_ADD="-Dassert=ON"
     # asan
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_san/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_san/
       compiler: clang-8
       name: asan, clang-8
       env:
@@ -209,7 +211,7 @@ matrix:
         - PARALLEL_TESTS=false
     # ubsan
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_san/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_san/
       compiler: clang-8
       name: ubsan, clang-8
       env:
@@ -224,7 +226,7 @@ matrix:
     # https://github.com/google/sanitizers/issues/1104
     #  but we can't get it to run, so leave it disabled for now
     #    - <<: *linux
-    #      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_san/
+    #      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_linux/ OR commit_message =~ /ci_run_san/
     #      compiler: clang-8
     #      name: tsan, clang-8
     #      env:
@@ -286,7 +288,7 @@ matrix:
         - SKIP_TESTS=true
     # validator keys project as subproj of rippled
     - <<: *linux
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_vkeys/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_vkeys/
       compiler: gcc-8
       name: validator-keys
       env:
@@ -296,7 +298,7 @@ matrix:
         - TARGET=validator-keys
     # macos
     - &macos
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_mac/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_mac/
       stage: build
       os: osx
       osx_image: xcode13.1
@@ -351,7 +353,7 @@ matrix:
       name: xcode13.1, debug
     # windows
     - &windows
-      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_win/
+      if: commit_message !~ /ci_run_/ OR commit_message =~ /ci_run_win/
       os: windows
       env:
         # put NIH in a non-cached location until
@@ -372,8 +374,8 @@ matrix:
           -DCMAKE_VERBOSE_MAKEFILE=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
-      stage: windep-vcpkg
-      name: prereq-vcpkg
+      stage: windep-vcpkg1
+      name: prereq-vcpkg1
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
@@ -381,8 +383,15 @@ matrix:
         - df -h
         - env
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh openssl
-        - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh grpc
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh libarchive[lz4]
+    - <<: *windows
+      stage: windep-vcpkg2
+      name: prereq-keep-vcpkg2
+      script:
+        - df -h
+        - env
+        # grpc takes a while to install, so it needs its own stage
+        - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh grpc
         # TBD consider rocksdb via vcpkg if/when we can build with the
         # vcpkg version
         # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
@@ -420,7 +429,7 @@ matrix:
       script:
         - mkdir -p build.ms && cd build.ms
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -DCMAKE_GENERATOR_TOOLSET=host=x64"
-        - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
+        - cmake -G "Visual Studio 15 2017" -A x64 ${CMAKE_EXTRA_ARGS} ..
         - export DESTDIR=${PWD}/_installed_
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose --config ${BLD_CONFIG} --target install
         # override num procs to force fewer unit test jobs

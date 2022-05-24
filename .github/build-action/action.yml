@@ -1,0 +1,82 @@
+name: 'Build and Test'
+description: 'Build and Test rippled or an alternate target'
+# Pre-condition: The environment has all the necessary base
+# build variables set
+# WARNING: This cache cannot be used to build with a different compiler.
+runs:
+  using: "composite"
+  steps:
+    - name: Dump-environment
+      shell: bash
+      run: |
+        env
+        set | grep =
+
+    - name: Install ccache
+      shell: bash
+      run: |
+        if ! type -a ccache
+        then
+          apt install ccache
+        fi
+
+    - name: Reset ccache stats
+      shell: bash
+      run: |
+          ccache -s
+          # Reset the stats so only this build counts
+          ccache -z
+
+    - name: Disk space
+      shell: bash
+      run: |
+        df -h
+        if [[ -d "${CACHE_DIR}" ]]
+        then
+            du -sh ${CACHE_DIR}
+        fi
+        if [[ -d "${CCACHE_DIR}" ]]
+        then
+            du -sh ${CCACHE_DIR}
+        fi
+        find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+          -type d -exec du -sh {} \; || true
+
+    - name: Build and test
+      shell: bash
+      run: |
+          export NUM_PROCESSORS=${NUM_PROCESSORS:-$( nproc )}
+          echo NUM_PROCESSORS is ${NUM_PROCESSORS}
+          if [ "${BUILD_TYPE}" == "Release" ]
+          then
+              export CMAKE_EXTRA_ARGS+=" -Dassert=ON"
+          fi
+
+          # Set and/or override some environment variables based on
+          # inputs to the action.
+          if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS+=" ${CMAKE_ADD}"; fi
+          # Do the build
+          bin/ci/ubuntu/build-and-test.sh
+
+    - name: Debug output
+      shell: bash
+      run: |
+        if [ -e build ] ; then find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \; ; fi
+        df -h
+        if [[ -d "${CACHE_DIR}" ]]
+        then
+            du -sh ${CACHE_DIR}
+        fi
+        if [[ -d "${CCACHE_DIR}" ]]
+        then
+            du -sh ${CCACHE_DIR}
+        fi
+        if [[ -d "${NIH_CACHE_ROOT}" ]]
+        then
+            find ${NIH_CACHE_ROOT} -maxdepth 3 \( -iname src -prune -o \
+              -type d -exec du -sh {} \; \)
+        fi
+
+    - name: Post-run ccache stats
+      shell: bash
+      run: ccache -s

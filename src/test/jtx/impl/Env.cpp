@@ -117,6 +117,25 @@ Env::closed()
     return app().getLedgerMaster().getClosedLedger();
 }
 
+std::string
+errorMessage(Json::Value const& resp)
+{
+    if (resp.isMember("error_what") && !resp["error_what"].isNull())
+        return resp["error_what"].asString();
+    else if (
+        resp.isMember(jss::error_exception) &&
+        !resp[jss::error_exception].isNull())
+        return resp[jss::error_exception].asString();
+    else if (
+        resp.isMember(jss::error_message) && !resp[jss::error_message].isNull())
+        return resp[jss::error_message].asString();
+    else if (resp.isMember(jss::error) && !resp[jss::error].isNull())
+        return resp[jss::error].asString();
+    else if (resp.isMember(jss::result) && resp[jss::result].isObject())
+        return errorMessage(resp[jss::result]);
+    return "internal error";
+}
+
 bool
 Env::close(
     NetClock::time_point closeTime,
@@ -136,15 +155,8 @@ Env::close(
         auto resp = rpc("ledger_accept");
         if (resp["result"]["status"] != std::string("success"))
         {
-            std::string reason = "internal error";
-            if (resp.isMember("error_what"))
-                reason = resp["error_what"].asString();
-            else if (resp.isMember("error_message"))
-                reason = resp["error_message"].asString();
-            else if (resp.isMember("error"))
-                reason = resp["error"].asString();
-
-            JLOG(journal.error()) << "Env::close() failed: " << reason;
+            JLOG(journal.error())
+                << "Env::close() failed: " << errorMessage(resp);
             res = false;
         }
     }
@@ -269,22 +281,29 @@ Env::trust(STAmount const& amount, Account const& account)
     test.expect(balance(account) == start);
 }
 
-std::pair<TER, bool>
+std::tuple<TER, bool, std::string>
 Env::parseResult(Json::Value const& jr)
 {
     TER ter;
+    std::string err;
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::engine_result_code))
         ter = TER::fromInt(jr[jss::result][jss::engine_result_code].asInt());
     else
-        ter = temINVALID;
-    return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
+    {
+        // Use an error code that is not used anywhere in the transaction engine
+        // to distinguish this case.
+        ter = telLOCAL_ERROR;
+        err = errorMessage(jr);
+    }
+    return {ter, isTesSuccess(ter) || isTecClaim(ter), err};
 }
 
 void
 Env::submit(JTx const& jt)
 {
     bool didApply;
+    std::string err;
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
@@ -292,7 +311,7 @@ Env::submit(JTx const& jt)
         jt.stx->add(s);
         auto const jr = rpc("submit", strHex(s.slice()));
 
-        std::tie(ter_, didApply) = parseResult(jr);
+        std::tie(ter_, didApply, err) = parseResult(jr);
     }
     else
     {
@@ -300,14 +319,16 @@ Env::submit(JTx const& jt)
         // otherwise missing the stx field.
         ter_ = temMALFORMED;
         didApply = false;
+        err = "Invalid JTx";
     }
-    return postconditions(jt, ter_, didApply);
+    return postconditions(jt, ter_, didApply, err);
 }
 
 void
 Env::sign_and_submit(JTx const& jt, Json::Value params)
 {
     bool didApply;
+    std::string err;
 
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
@@ -337,20 +358,24 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
         txid_.zero();
 
-    std::tie(ter_, didApply) = parseResult(jr);
+    std::tie(ter_, didApply, err) = parseResult(jr);
 
-    return postconditions(jt, ter_, didApply);
+    return postconditions(jt, ter_, didApply, err);
 }
 
 void
-Env::postconditions(JTx const& jt, TER ter, bool didApply)
+Env::postconditions(
+    JTx const& jt,
+    TER ter,
+    bool didApply,
+    std::string const& err)
 {
     if (jt.ter &&
         !test.expect(
             ter == *jt.ter,
             "apply: Got " + transToken(ter) + " (" + transHuman(ter) +
                 "); Expected " + transToken(*jt.ter) + " (" +
-                transHuman(*jt.ter) + ")"))
+                transHuman(*jt.ter) + "); Error: " + err))
     {
         test.log << pretty(jt.jv) << std::endl;
         // Don't check postconditions if

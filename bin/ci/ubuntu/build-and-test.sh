@@ -21,7 +21,8 @@ echo "BUILD TYPE: ${BUILD_TYPE}"
 echo "BUILD TARGET: ${TARGET}"
 
 JOBS=${NUM_PROCESSORS:-2}
-if [[ ${TRAVIS:-false} != "true" ]]; then
+if [[ ${TRAVIS:-false} != "true" && ${GITHUB_ACTIONS:-false} != "true" ]]
+then
     JOBS=$((JOBS+1))
 fi
 
@@ -63,7 +64,7 @@ if version_ge $CMAKE_VER "3.12.0" ; then
     BUILDARGS+=" --parallel"
 fi
 
-if [[ ${NINJA_BUILD:-} == false ]]; then
+if [[ ${NINJA_BUILD:-} != true ]]; then
     if version_ge $CMAKE_VER "3.12.0" ; then
         BUILDARGS+=" ${JOBS}"
     else
@@ -76,7 +77,7 @@ if [[ ${VERBOSE_BUILD:-} == true ]]; then
     if version_ge $CMAKE_VER "3.14.0" ; then
         BUILDARGS+=" --verbose"
     else
-        if [[ ${NINJA_BUILD:-} == false ]]; then
+        if [[ ${NINJA_BUILD:-} != true ]]; then
             BUILDTOOLARGS+=" verbose=1"
         else
             BUILDTOOLARGS+=" -v"
@@ -84,7 +85,7 @@ if [[ ${VERBOSE_BUILD:-} == true ]]; then
     fi
 fi
 
-if [[ ${USE_CCACHE:-} == true ]]; then
+if [[ ${USE_CCACHE:-} == true ]] && type -a ccache; then
     echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
     CMAKE_EXTRA_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 fi
@@ -111,20 +112,51 @@ do
 done
 
 # generate
-${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
-# Display the cmake output, to help with debugging if something fails
-for file in CMakeOutput.log CMakeError.log
-do
-  if [ -f CMakeFiles/${file} ]
-  then
-    ls -l CMakeFiles/${file}
-    cat CMakeFiles/${file}
-  fi
-done
+if ! ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS} \
+  && [[ -e "${NIH_CACHE_ROOT}" ]]
+then
+    # Only the *-stamp directories, which track the source location
+    # and git info of the NIH cache, are safe to use across builds.
+    # The build folders, which are more specific need to be removed
+    # before being cached. That means wasted build effort for one job
+    # (gcc-9, Debug), but the saved source space and download time
+    # across all jobs should make up for it.
+    find ${NIH_CACHE_ROOT} -depth -type d \
+        \( -iname '*-stamp' -printf "Keep %p\n" -prune -o \
+        \( -iname '*-build' -o -name 'tmp' \) -printf "Delete %p\n" \
+            -exec rm -rf {} \; -o \
+        -iname '*-subbuild' -printf "Clean %p\n" \
+            -exec rm -rfv {}/CMakeCache.txt {}/CMakeFiles \
+                {}/cmake_install.cmake {}/CMakeLists.txt\
+                {}/Makefile \; -exec ls {} \;  \)
+    ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
+fi
+
+
+# Display the cmake output, to help with debugging if something fails,
+# unless this is running under a Github action. They have another
+# mechanism to dump the logs.
+if [[ ! -v GITHUB_ACTIONS || "${GITHUB_ACTIONS}" != "true" ]]
+then
+    for file in CMakeOutput.log CMakeError.log
+    do
+      if [ -f CMakeFiles/${file} ]
+      then
+        ls -l CMakeFiles/${file}
+        cat CMakeFiles/${file}
+      fi
+    done
+fi
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
 
-${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
+if ! ${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS} \
+  && [[ -e "${NIH_CACHE_ROOT}" ]]
+then
+    # Caching isn't perfect
+    rm -rf ${NIH_CACHE_ROOT}
+    ${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
+fi
 
 if [[ ${TARGET} == "docs" ]]; then
     ## mimic the standard test output for docs build
@@ -153,43 +185,14 @@ ldd ${APP_PATH}
 if [[ "${TARGET}" == "validator-keys" ]] ; then
     APP_ARGS="--unittest"
 else
-    function join_by { local IFS="$1"; shift; echo "$*"; }
-
-    # This is a list of manual tests
-    # in rippled that we want to run
-    # ORDER matters here...sorted in approximately
-    # descending execution time (longest running tests at top)
-    declare -a manual_tests=(
-        'ripple.ripple_data.reduce_relay_simulate'
-        'ripple.tx.Offer_manual'
-        'ripple.tx.CrossingLimits'
-        'ripple.tx.PlumpBook'
-        'ripple.app.Flow_manual'
-        'ripple.tx.OversizeMeta'
-        'ripple.consensus.DistributedValidators'
-        'ripple.app.NoRippleCheckLimits'
-        'ripple.ripple_data.compression'
-        'ripple.NodeStore.Timing'
-        'ripple.consensus.ByzantineFailureSim'
-        'beast.chrono.abstract_clock'
-        'beast.unit_test.print'
-    )
-    if [[ ${TRAVIS:-false} != "true" ]]; then
-        # these two tests cause travis CI to run out of memory.
-        # TODO: investigate possible workarounds.
-        manual_tests=(
-            'ripple.consensus.ScaleFreeSim'
-            'ripple.tx.FindOversizeCross'
-            "${manual_tests[@]}"
-        )
-    fi
+    declare -a manual_tests=$( $(dirname "$0")/manual-tests.sh "${APP_PATH}" )
 
     if [[ ${MANUAL_TESTS:-} == true ]]; then
-        APP_ARGS+=" --unittest=$(join_by , "${manual_tests[@]}")"
+        APP_ARGS+=" --unittest=${manual_tests}"
     else
         APP_ARGS+=" --unittest --quiet --unittest-log"
     fi
-    if [[ ${coverage} == false && ${PARALLEL_TESTS:-} == true ]]; then
+    if [[ ${coverage} != true && ${PARALLEL_TESTS:-} == true ]]; then
         APP_ARGS+=" --unittest-jobs ${JOBS}"
     fi
 
@@ -222,6 +225,17 @@ if [[ ${look_core} == true ]]; then
     before=$(ls -A1 ${coredir})
 fi
 
+if [[ -v MINTESTAVAIL && \
+  $( df  . --output=avail | tail -1 ) -lt ${MINTESTAVAIL} ]]
+then
+  echo Removing install dir for space: ${DESTDIR}
+  rm -rf ${DESTDIR}
+fi
+df -h
+du -sh ${CACHE_DIR}
+du -sh ${CCACHE_DIR} || true
+find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o -type d -exec du -sh {} \; \)
+find build -maxdepth 3 \( -iname src -prune -o -type d -exec du -sh {} \; \)
 set +e
 echo "Running tests for ${APP_PATH}"
 if [[ ${MANUAL_TESTS:-} == true && ${PARALLEL_TESTS:-} != true ]]; then
@@ -239,6 +253,7 @@ fi
 set -e
 
 if [[ ${look_core} == true ]]; then
+    echo "current path: $(pwd), core dir: ${coredir}"
     after=$(ls -A1 ${coredir})
     oIFS="${IFS}"
     IFS=$'\n\r'
@@ -246,21 +261,24 @@ if [[ ${look_core} == true ]]; then
     for l in $(diff -w --suppress-common-lines <(echo "$before") <(echo "$after")) ; do
         if [[ "$l" =~ ^[[:space:]]*\>[[:space:]]*(.+)$ ]] ; then
             corefile="${BASH_REMATCH[1]}"
-            echo "FOUND core dump file at '${coredir}/${corefile}'"
-            gdb_output=$(/bin/mktemp /tmp/gdb_output_XXXXXXXXXX.txt)
-            found_core=true
-            gdb \
-                -ex "set height 0" \
-                -ex "set logging file ${gdb_output}" \
-                -ex "set logging on" \
-                -ex "print 'ripple::BuildInfo::versionString'" \
-                -ex "thread apply all backtrace full" \
-                -ex "info inferiors" \
-                -ex quit \
-                "$APP_PATH" \
-                "${coredir}/${corefile}" &> /dev/null
+            if [[ "$( file -b ${coredir}/${corefile} )" =~ "core" ]];
+            then
+              echo "FOUND core dump file at '${coredir}/${corefile}'"
+              gdb_output=$(/bin/mktemp /tmp/gdb_output_XXXXXXXXXX.txt)
+              found_core=true
+              gdb \
+                  -ex "set height 0" \
+                  -ex "set logging file ${gdb_output}" \
+                  -ex "set logging on" \
+                  -ex "print 'ripple::BuildInfo::versionString'" \
+                  -ex "thread apply all backtrace full" \
+                  -ex "info inferiors" \
+                  -ex quit \
+                  "$APP_PATH" \
+                  "${coredir}/${corefile}" &> /dev/null
 
-            echo -e "CORE INFO: \n\n $(cat ${gdb_output}) \n\n)"
+              echo -e "CORE INFO: \n\n $(cat ${gdb_output}) \n\n)"
+            fi
         fi
     done
     IFS="${oIFS}"

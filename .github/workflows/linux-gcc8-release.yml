@@ -1,0 +1,225 @@
+name: "Linux build, gcc-8 release unity"
+on: [workflow_dispatch]
+
+# The files starting with "linux-" are all interdependent.
+# If any significant changes are made, be sure to update them
+# to keep them in sync.
+
+env:
+  CC: "gcc-8"
+  CXX: "g++-8"
+  BUILD_TYPE: "Release"
+  unity: "ON"
+  image_user: "rippleci"
+  image_name: "rippled-ci-builder"
+  image_tag: "2020-01-08"
+  CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
+  NINJA_BUILD: true
+  CACHE_DIR: ${{ github.workspace }}/_cache
+  NIH_CACHE_ROOT: ${{ github.workspace }}/_cache/nih_c
+  NIH_SRC_PATH: ${{ github.workspace }}/_srccache
+  PARALLEL_TESTS: true
+  USE_CCACHE: true
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_NOHASHDIR: true
+  CCACHE_DIR: ${{ github.workspace }}/_cache/ccache
+
+jobs:
+  base:
+    # Can't access env in the name, so hard code
+    name: Linux gcc-8, Release, unity, base
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_linux') }}
+    strategy:
+      fail-fast: false
+    container:
+      # The env object is not accessible from here, so specify directly
+      image: rippleci/rippled-ci-builder:2020-01-08
+    env:
+      # The higher-level env is not accessible from here, so specify
+      # unity directly.
+      CMAKE_ADD: "-Dunity=ON"
+      name: "base"
+    steps:
+      - name: Cancel Previous Runs
+        # https://github.com/styfle/cancel-workflow-action/tree/0.9.0
+        # Note this will not cancel jobs triggered by a pull request event
+        # when the PR is created from a fork, even if for the same PR.
+        # It works fine within the same fork, and is intended to allow
+        # multiple pushes during development without ending up with a
+        # huge backlog of jobs.
+        if: ${{ !contains(github.event.head_commit.message, 'ci_no_cancel') }}
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build cache keys
+        id: cachekeys
+        shell: bash
+        run: |
+          echo "::set-output name=cmakeconfig::${{ hashfiles('CMakeFiles.txt',
+            'Builds/CMake/**', '.github/**/cache-invalidate.txt') }}"
+          echo "::set-output name=headers::${{ hashfiles('src/**/*.h',
+            'src/**/*.hpp', 'src/**/*.ipp') }}"
+          echo "::set-output name=source::${{ hashfiles('src/**',
+            '!src/**/*.md', '!src/**/*.uml', '!src/**/*.png', '!src/**/*.php') }}"
+          echo "::set-output name=instructions::${{ hashfiles(
+            '.github/**/linux-gcc8-release.yml', '.github/**/action.yml') }}"
+
+      - name: Build cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        # The cache key is built on the following in order
+        # 1) OS.
+        # 2) The hash of all the CMake config files.
+        # 3) The build compiler
+        # 4) The build type
+        # 5) The build unity setting
+        # 6) The build custom name.
+        # 7) The hash of all the header files under the source dir.
+        # 8) The hash of all the code files under the source dir.
+        # 9) The hash of the files controlling this job
+        # When restoring, if the matching cache is not found, search for a usable
+        # cache by chopping pieces off the end of the cache key until a match is
+        # found, with a special case for the NIH which may have been built by
+        # the "linux-general.yml" workflow
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}-${{ steps.cachekeys.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}-${{ steps.cachekeys.outputs.source }}
+            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}-${{ steps.cachekeys.outputs.headers }}
+            ${{ runner.os }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ env.name }}
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          # If this cache key exists when the job starts, it will use that
+          # cache read-only. However, if it does not exist, this process will
+          # build a fresh cache, and try to write it out. Because this is the
+          # same cache key used across the Linux jobs, that may cause a
+          # collision. That collision is safe to ignore.
+          key: ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.image_tag }}-${{ steps.cachekeys.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ env.image_tag }}-
+
+      - name: Dump-environment
+        run: |
+          env
+          set | grep =
+
+      - name: Reset ccache stats
+        shell: bash
+        run: |
+            if ! type -a ccache
+            then
+              apt install ccache
+            fi
+            ccache -s
+            # Reset the stats so only this build counts
+            ccache -z
+
+      - name: Disk space before
+        shell: bash
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Build and test
+        uses: ./.github/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+
+      - name: Disk space after
+        shell: bash
+        if: always()
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Post-run ccache stats
+        shell: bash
+        run: ccache -s
+
+      - name: Debug output artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output ${{ env.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/CMakeOutput.log
+            build/**/CMakeError.log
+
+      - name: rippled executable artifact
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: rippled ${{ env.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/rippled
+            !build/**/_INSTALLED_/**
+
+  runner:
+    # Can't access env in the name, so hard code
+    name: Linux manual tests gcc-8, Release, unity
+    needs: base
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download rippled artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: rippled base ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+
+      - name: Run manual tests
+        shell: bash
+        env:
+          verbose: ${{ contains(env.commit_message, 'ci_verbose') }}
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            find -iname rippled -ls
+            # There can be only one
+            [[ $( find -name rippled | wc -l ) -eq 1 ]]
+            APP_PATH="$( find -iname rippled )"
+            chmod a+rx "${APP_PATH}"
+
+            : ${APP_ARGS:=}
+            declare -a manual_tests=$( bin/ci/ubuntu/manual-tests.sh "${APP_PATH}" )
+            APP_ARGS+=" --unittest=${manual_tests}"
+
+            APP_ARGS+=" --unittest-jobs ${NUM_PROCESSORS:-$(nproc)}"
+
+            # Verbose or not, it's good to see the right params are being used
+            echo Run: "${APP_PATH}" ${APP_ARGS}
+            "${APP_PATH}" ${APP_ARGS}

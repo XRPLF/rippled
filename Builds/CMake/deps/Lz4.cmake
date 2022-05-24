@@ -20,6 +20,8 @@ if(lz4)
 else()
   ExternalProject_Add (lz4
     PREFIX ${nih_cache_path}
+    SOURCE_DIR ${nih_src_path}/lz4
+    STAMP_DIR ${nih_stamp_path}/lz4
     GIT_REPOSITORY https://github.com/lz4/lz4.git
     GIT_TAG v1.9.2
     SOURCE_SUBDIR contrib/cmake_unofficial
