@@ -609,78 +609,6 @@ private:
     }
 
     void
-    testPerformance()
-    {
-        testcase("Performance");
-
-        auto const N = 1;
-        std::vector<std::uint64_t> t(N);
-        auto stats = [&](std::string const& msg) {
-            auto const avg =
-                static_cast<float>(std::accumulate(t.begin(), t.end(), 0)) /
-                static_cast<float>(N);
-            auto const sd = std::accumulate(
-                t.begin(), t.end(), 0., [&](auto accum, auto const& v) {
-                    return accum + (v - avg) * (v - avg);
-                });
-            std::cout << msg << " avg " << avg << " sd "
-                      << std::sqrt(sd / static_cast<float>(N)) << std::endl;
-        };
-
-        for (auto i = 0; i < N; i++)
-        {
-            using namespace jtx;
-            Env env(*this);
-
-            env.fund(XRP(1000), alice, carol, bob, gw);
-            env.trust(USD(1000), carol);
-            env.trust(EUR(1000), alice);
-            env.trust(USD(1000), bob);
-
-            env(pay(gw, alice, EUR(1000)));
-            env(pay(gw, bob, USD(1000)));
-
-            env(offer(bob, EUR(1000), USD(1000)));
-
-            auto start = std::chrono::high_resolution_clock::now();
-            env(pay(alice, carol, USD(1000)), path(~USD), sendmax(EUR(1000)));
-            auto elapsed = std::chrono::high_resolution_clock::now() - start;
-            std::uint64_t microseconds =
-                std::chrono::duration_cast<std::chrono::microseconds>(elapsed)
-                    .count();
-            t.push_back(microseconds);
-        }
-        stats("single offer");
-
-        t.clear();
-        for (auto i = 0; i < N; i++)
-        {
-            using namespace jtx;
-            Env env(*this);
-
-            env.fund(XRP(1000), alice, carol, bob, gw);
-            env.trust(USD(1000), carol);
-            env.trust(EUR(1100), alice);
-            env.trust(USD(1000), bob);
-
-            env(pay(gw, alice, EUR(1100)));
-            env(pay(gw, bob, USD(1000)));
-
-            for (auto j = 0; j < 10; j++)
-                env(offer(bob, EUR(100 + j), USD(100)));
-
-            auto start = std::chrono::high_resolution_clock::now();
-            env(pay(alice, carol, USD(1000)), path(~USD), sendmax(EUR(1100)));
-            auto elapsed = std::chrono::high_resolution_clock::now() - start;
-            std::uint64_t microseconds =
-                std::chrono::duration_cast<std::chrono::microseconds>(elapsed)
-                    .count();
-            t.push_back(microseconds);
-        }
-        stats("multiple offers");
-    }
-
-    void
     testSwap()
     {
         testcase("Swap");
@@ -799,13 +727,13 @@ private:
 struct AMM_manual_test : public beast::unit_test::suite
 {
     void
-    perfTest()
+    testSwapOutPerf()
     {
-        testcase("Performance");
+        testcase("Performance 100 Swap Out");
         using namespace std::chrono;
 
         auto const start = high_resolution_clock::now();
-        for (int i = 0; i < 10000; ++i)
+        for (int i = 0; i < 100; ++i)
         {
             swapAssetOut(
                 STAmount{noIssue(), 10000 + 1, 0},
@@ -816,15 +744,141 @@ struct AMM_manual_test : public beast::unit_test::suite
         }
         auto const elapsed = high_resolution_clock::now() - start;
 
-        std::cout << duration_cast<std::chrono::microseconds>(elapsed).count()
+        std::cout << "100 swap out "
+                  << duration_cast<std::chrono::microseconds>(elapsed).count()
                   << std::endl;
         BEAST_EXPECT(true);
     }
 
     void
+    testFibonnaciPerf()
+    {
+        testcase("Performance Fibonnaci");
+        using namespace std::chrono;
+        auto const start = high_resolution_clock::now();
+
+        auto const fee = Number(1) / 100;
+        auto const c1_fee = 1 - fee;
+        Number poolPays = 1000000;
+        Number poolGets = 1000000;
+        auto SP = poolPays / (poolGets * c1_fee);
+        auto ftakerPays = (Number(5) / 10000) * poolGets / 2;
+        auto ftakerGets = SP * ftakerPays;
+        poolGets += ftakerPays;
+        poolPays -= ftakerGets;
+        auto product = poolPays * poolGets;
+        Number x(0);
+        Number y = ftakerGets;
+        Number ftotal(0);
+        for (int i = 0; i < 100; ++i)
+        {
+            ftotal = x + y;
+            ftakerGets = ftotal;
+            auto ftakerPaysPrime = product / (poolPays - ftakerGets) - poolGets;
+            ftakerPays = ftakerPaysPrime / c1_fee;
+            poolGets += ftakerPays;
+            poolPays -= ftakerGets;
+            x = y;
+            y = ftotal;
+            product = poolPays * poolGets;
+        }
+        auto const elapsed = high_resolution_clock::now() - start;
+
+        std::cout << "100 fibonnaci "
+                  << duration_cast<std::chrono::microseconds>(elapsed).count()
+                  << std::endl;
+        BEAST_EXPECT(true);
+    }
+
+    void
+    testOffersPerf()
+    {
+        testcase("Performance Offers");
+
+        auto const N = 1;
+        std::vector<std::uint64_t> t(N);
+        auto stats = [&](std::string const& msg) {
+            auto const avg =
+                static_cast<float>(std::accumulate(t.begin(), t.end(), 0)) /
+                static_cast<float>(N);
+            auto const sd = std::accumulate(
+                t.begin(), t.end(), 0., [&](auto accum, auto const& v) {
+                    return accum + (v - avg) * (v - avg);
+                });
+            std::cout << msg << " avg " << avg << " sd "
+                      << std::sqrt(sd / static_cast<float>(N)) << std::endl;
+        };
+
+        for (auto i = 0; i < N; i++)
+        {
+            using namespace jtx;
+            Env env(*this);
+            Account gw("gw");
+            Account alice("alice");
+            Account carol("alice");
+            Account bob("alice");
+            auto const USD = gw["USD"];
+            auto const EUR = gw["EUR"];
+
+            env.fund(XRP(1000), alice, carol, bob, gw);
+            env.trust(USD(1000), carol);
+            env.trust(EUR(1000), alice);
+            env.trust(USD(1000), bob);
+
+            env(pay(gw, alice, EUR(1000)));
+            env(pay(gw, bob, USD(1000)));
+
+            env(offer(bob, EUR(1000), USD(1000)));
+
+            auto start = std::chrono::high_resolution_clock::now();
+            env(pay(alice, carol, USD(1000)), path(~USD), sendmax(EUR(1000)));
+            auto elapsed = std::chrono::high_resolution_clock::now() - start;
+            std::uint64_t microseconds =
+                std::chrono::duration_cast<std::chrono::microseconds>(elapsed)
+                    .count();
+            t.push_back(microseconds);
+        }
+        stats("single offer");
+
+        t.clear();
+        for (auto i = 0; i < N; i++)
+        {
+            using namespace jtx;
+            Env env(*this);
+            Account gw("gw");
+            Account alice("alice");
+            Account carol("alice");
+            Account bob("alice");
+            auto const USD = gw["USD"];
+            auto const EUR = gw["EUR"];
+
+            env.fund(XRP(1000), alice, carol, bob, gw);
+            env.trust(USD(1000), carol);
+            env.trust(EUR(1100), alice);
+            env.trust(USD(1000), bob);
+
+            env(pay(gw, alice, EUR(1100)));
+            env(pay(gw, bob, USD(1000)));
+
+            for (auto j = 0; j < 10; j++)
+                env(offer(bob, EUR(100 + j), USD(100)));
+
+            auto start = std::chrono::high_resolution_clock::now();
+            env(pay(alice, carol, USD(1000)), path(~USD), sendmax(EUR(1100)));
+            auto elapsed = std::chrono::high_resolution_clock::now() - start;
+            std::uint64_t microseconds =
+                std::chrono::duration_cast<std::chrono::microseconds>(elapsed)
+                    .count();
+            t.push_back(microseconds);
+        }
+        stats("multiple offers");
+    }
+
+    void
     run() override
     {
-        perfTest();
+        testSwapOutPerf();
+        testFibonnaciPerf();
     }
 };
 
