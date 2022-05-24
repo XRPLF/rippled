@@ -145,14 +145,16 @@ message AccountDelete
    DestinationTag destination_tag = 2;
 }
 
-// Next field: 3
+// Next field: 4
 message AMMInstanceCreate
 {
-    Asset1 asset1 = 1;
+    AMMAccount account = 1;
 
-    Asset2 asset2 = 2;
+    Asset1 asset1 = 2;
 
-    TradingFee trading_fee = 3;
+    Asset2 asset2 = 3;
+
+    TradingFee trading_fee = 4;
 }
 
 // Next field: 5

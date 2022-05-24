@@ -1106,6 +1106,14 @@ populateNFTokens(T& to, STObject const& from)
 
 template <class T>
 void
+populateAMMAccount(T& to, STObject const& from)
+{
+    populateProtoAccount(
+        [&to]() { return to.mutable_account(); }, from, sfAMMAccount);
+}
+
+template <class T>
+void
 populateTradingFee(T& to, STObject const& from)
 {
     populateProtoPrimitive(
@@ -1879,6 +1887,8 @@ convert(org::xrpl::rpc::v1::NFTokenPage& to, STObject const& from)
 void
 convert(org::xrpl::rpc::v1::AMMInstanceCreate& to, STObject const& from)
 {
+    populateAMMAccount(to, from);
+
     populateAsset1(to, from);
 
     populateAsset2(to, from);

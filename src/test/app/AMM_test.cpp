@@ -314,7 +314,8 @@ private:
             AMM ammAlice(env, alice, XRP(10000), USD(10000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-            AMM ammCarol(env, carol, XRP(10000), USD(10000), ter(tefINTERNAL));
+            AMM ammCarol(
+                env, carol, XRP(10000), USD(10000), ter(tecAMM_EXISTS));
         }
     }
 
