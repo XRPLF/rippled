@@ -20,7 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/Pg.h>
 #include <ripple/core/SociDB.h>
@@ -54,8 +54,7 @@ doTxHistory(RPC::JsonContext& context)
     if ((startIndex > 10000) && (!isUnlimited(context.role)))
         return rpcError(rpcNO_PERMISSION);
 
-    auto trans =
-        context.app.getRelationalDBInterface().getTxHistory(startIndex);
+    auto trans = context.app.getRelationalDatabase().getTxHistory(startIndex);
 
     Json::Value obj;
     Json::Value& txs = obj[jss::txs];

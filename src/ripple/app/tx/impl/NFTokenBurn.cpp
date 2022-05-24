@@ -77,27 +77,9 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const id = ctx.tx[sfNFTokenID];
-
-    std::size_t totalOffers = 0;
-
-    {
-        Dir buys(ctx.view, keylet::nft_buys(id));
-        totalOffers += std::distance(buys.begin(), buys.end());
-    }
-
-    if (totalOffers > maxDeletableTokenOfferEntries)
-        return tefTOO_BIG;
-
-    {
-        Dir sells(ctx.view, keylet::nft_sells(id));
-        totalOffers += std::distance(sells.begin(), sells.end());
-    }
-
-    if (totalOffers > maxDeletableTokenOfferEntries)
-        return tefTOO_BIG;
-
-    return tesSUCCESS;
+    // If there are too many offers, then burning the token would produce too
+    // much metadata.  Disallow burning a token with too many offers.
+    return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
 }
 
 TER

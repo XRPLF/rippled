@@ -22,8 +22,8 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/rdb/State.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 
@@ -40,8 +40,6 @@ class NetworkOPs;
 class SHAMapStoreImp : public SHAMapStore
 {
 private:
-    enum Health : std::uint8_t { ok = 0, stopping, unhealthy };
-
     class SavedStateDB
     {
     public:
@@ -106,12 +104,12 @@ private:
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
-    /// If set, and the node is out of sync during an
+    /// If  the node is out of sync during an
     /// online_delete health check, sleep the thread
-    /// for this time and check again so the node can
-    /// recover.
+    /// for this time, and continue checking until
+    /// recovery.
     /// See also: "recovery_wait_seconds" in rippled-example.cfg
-    std::optional<std::chrono::seconds> recoveryWaitTime_;
+    std::chrono::seconds recoveryWaitTime_{5};
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
@@ -136,7 +134,7 @@ public:
     }
 
     std::unique_ptr<NodeStore::Database>
-    makeNodeStore(std::int32_t readThreads) override;
+    makeNodeStore(int readThreads) override;
 
     LedgerIndex
     setCanDelete(LedgerIndex seq) override
@@ -201,7 +199,7 @@ private:
         {
             dbRotating_->fetchNodeObject(
                 key, 0, NodeStore::FetchType::synchronous, true);
-            if (!(++check % checkHealthInterval_) && health())
+            if (!(++check % checkHealthInterval_) && stopping())
                 return true;
         }
 
@@ -225,16 +223,15 @@ private:
     void
     clearPrior(LedgerIndex lastRotated);
 
-    // If rippled is not healthy, defer rotate-delete.
-    // If already unhealthy, do not change state on further check.
-    // Assume that, once unhealthy, a necessary step has been
-    // aborted, so the online-delete process needs to restart
-    // at next ledger.
-    // If recoveryWaitTime_ is set, this may sleep to give rippled
-    // time to recover, so never call it from any thread other than
-    // the main "run()".
-    Health
-    health();
+    /**
+     * This is a health check for online deletion that waits until rippled is
+     * stable until returning. If the server is stopping, then it returns
+     * "true" to inform the caller to allow the server to stop.
+     *
+     * @return Whether the server is stopping.
+     */
+    bool
+    stopping();
 
 public:
     void

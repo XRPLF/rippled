@@ -29,8 +29,8 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/contract.h>
@@ -626,7 +626,7 @@ Ledger::setup(Config const& config)
 
     try
     {
-        rules_ = Rules(*this, config.features);
+        rules_ = makeRulesGivenLedger(*this, config.features);
     }
     catch (SHAMapMissingNode const&)
     {
@@ -930,9 +930,11 @@ saveValidatedLedger(
         return true;
     }
 
-    auto res = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                   &app.getRelationalDBInterface())
-                   ->saveValidatedLedger(ledger, current);
+    auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+    if (!db)
+        Throw<std::runtime_error>("Failed to get relational database");
+
+    auto const res = db->saveValidatedLedger(ledger, current);
 
     // Clients can now trust the database for
     // information about this ledger sequence.
@@ -1053,7 +1055,7 @@ std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Application& app)
 {
     const std::optional<LedgerInfo> info =
-        app.getRelationalDBInterface().getNewestLedgerInfo();
+        app.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
     return {loadLedgerHelper(*info, app, true), info->seq, info->hash};
@@ -1063,7 +1065,7 @@ std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 {
     if (std::optional<LedgerInfo> info =
-            app.getRelationalDBInterface().getLedgerInfoByIndex(ledgerIndex))
+            app.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
@@ -1076,7 +1078,7 @@ std::shared_ptr<Ledger>
 loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
 {
     if (std::optional<LedgerInfo> info =
-            app.getRelationalDBInterface().getLedgerInfoByHash(ledgerHash))
+            app.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
@@ -1165,9 +1167,12 @@ flatFetchTransactions(ReadView const& ledger, Application& app)
         return {};
     }
 
-    auto nodestoreHashes = dynamic_cast<RelationalDBInterfacePostgres*>(
-                               &app.getRelationalDBInterface())
-                               ->getTxHashes(ledger.info().seq);
+    auto const db =
+        dynamic_cast<PostgresDatabase*>(&app.getRelationalDatabase());
+    if (!db)
+        Throw<std::runtime_error>("Failed to get relational database");
+
+    auto nodestoreHashes = db->getTxHashes(ledger.info().seq);
 
     return flatFetchTransactions(app, nodestoreHashes);
 }

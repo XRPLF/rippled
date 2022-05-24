@@ -20,7 +20,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/basics/chrono.h>
@@ -799,14 +799,12 @@ DatabaseShardImp::doImportDatabase()
         std::optional<LedgerInfo> info;
         if (sortOrder == std::string("asc"))
         {
-            info = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                       &app_.getRelationalDBInterface())
+            info = dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase())
                        ->getLimitedOldestLedgerInfo(earliestLedgerSeq());
         }
         else
         {
-            info = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                       &app_.getRelationalDBInterface())
+            info = dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase())
                        ->getLimitedNewestLedgerInfo(earliestLedgerSeq());
         }
         if (info)
@@ -925,7 +923,7 @@ DatabaseShardImp::doImportDatabase()
         // Verify SQLite ledgers are in the node store
         {
             auto const ledgerHashes{
-                app_.getRelationalDBInterface().getHashesByIndex(
+                app_.getRelationalDatabase().getHashesByIndex(
                     firstSeq, lastSeq)};
             if (ledgerHashes.size() != maxLedgers(shardIndex))
                 continue;
@@ -2026,6 +2024,13 @@ DatabaseShardImp::callForLedgerSQLByLedgerSeq(
     LedgerIndex ledgerSeq,
     std::function<bool(soci::session& session)> const& callback)
 {
+    if (ledgerSeq < earliestLedgerSeq_)
+    {
+        JLOG(j_.warn()) << "callForLedgerSQLByLedgerSeq ledger seq too early: "
+                        << ledgerSeq;
+        return false;
+    }
+
     return callForLedgerSQLByShardIndex(seqToShardIndex(ledgerSeq), callback);
 }
 

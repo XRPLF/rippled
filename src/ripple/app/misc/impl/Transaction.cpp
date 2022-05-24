@@ -21,9 +21,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDBInterface_postgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
@@ -134,9 +133,15 @@ Transaction::load(
 Transaction::Locator
 Transaction::locate(uint256 const& id, Application& app)
 {
-    return dynamic_cast<RelationalDBInterfacePostgres*>(
-               &app.getRelationalDBInterface())
-        ->locateTransaction(id);
+    auto const db =
+        dynamic_cast<PostgresDatabase*>(&app.getRelationalDatabase());
+
+    if (!db)
+    {
+        Throw<std::runtime_error>("Failed to get relational database");
+    }
+
+    return db->locateTransaction(id);
 }
 
 std::variant<
@@ -148,9 +153,14 @@ Transaction::load(
     std::optional<ClosedInterval<uint32_t>> const& range,
     error_code_i& ec)
 {
-    return dynamic_cast<RelationalDBInterfaceSqlite*>(
-               &app.getRelationalDBInterface())
-        ->getTransaction(id, range, ec);
+    auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+
+    if (!db)
+    {
+        Throw<std::runtime_error>("Failed to get relational database");
+    }
+
+    return db->getTransaction(id, range, ec);
 }
 
 // options 1 to include the date of the transaction

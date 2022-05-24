@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -65,7 +65,7 @@ class SHAMapStore_test : public beast::unit_test::suite
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
         std::optional<LedgerInfo> oinfo =
-            env.app().getRelationalDBInterface().getLedgerInfoByIndex(seq);
+            env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
         if (!oinfo)
             return false;
         const LedgerInfo& info = oinfo.value();
@@ -120,8 +120,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
         const auto [actualRows, actualFirst, actualLast] =
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getLedgerCountMinMax();
 
         BEAST_EXPECT(actualRows == rows);
@@ -133,8 +132,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     transactionCheck(jtx::Env& env, int const rows)
     {
         BEAST_EXPECT(
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getTransactionCount() == rows);
     }
 
@@ -142,8 +140,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     accountTransactionCheck(jtx::Env& env, int const rows)
     {
         BEAST_EXPECT(
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getAccountTransactionCount() == rows);
     }
 

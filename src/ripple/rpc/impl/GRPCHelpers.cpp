@@ -748,6 +748,14 @@ populateSignerListID(T& to, STObject const& from)
 
 template <class T>
 void
+populateWalletLocator(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_wallet_locator(); }, from, sfWalletLocator);
+}
+
+template <class T>
+void
 populateTicketSequence(T& to, STObject const& from)
 {
     populateProtoPrimitive(
@@ -1012,6 +1020,7 @@ populateSignerEntries(T& to, STObject const& from)
         [](auto& innerObj, auto& innerProto) {
             populateAccount(innerProto, innerObj);
             populateSignerWeight(innerProto, innerObj);
+            populateWalletLocator(innerProto, innerObj);
         },
         from,
         sfSignerEntries,

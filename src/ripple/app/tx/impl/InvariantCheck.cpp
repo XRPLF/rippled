@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/InvariantCheck.h>
+
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/ReadView.h>
@@ -493,23 +495,27 @@ ValidNewAccountRoot::finalize(
 
 void
 ValidNFTokenPage::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
     static constexpr uint256 const& pageBits = nft::pageMask;
     static constexpr uint256 const accountBits = ~pageBits;
 
-    auto check = [this](std::shared_ptr<SLE const> const& sle) {
-        auto const account = sle->key() & accountBits;
-        auto const limit = sle->key() & pageBits;
+    auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
+        uint256 const account = sle->key() & accountBits;
+        uint256 const hiLimit = sle->key() & pageBits;
+        std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
 
-        if (auto const prev = (*sle)[~sfPreviousPageMin])
+        // Make sure that any page links...
+        //  1. Are properly associated with the owning account and
+        //  2. The page is correctly ordered between links.
+        if (prev)
         {
             if (account != (*prev & accountBits))
                 badLink_ = true;
 
-            if (limit <= (*prev & pageBits))
+            if (hiLimit <= (*prev & pageBits))
                 badLink_ = true;
         }
 
@@ -518,17 +524,42 @@ ValidNFTokenPage::visitEntry(
             if (account != (*next & accountBits))
                 badLink_ = true;
 
-            if (limit >= (*next & pageBits))
+            if (hiLimit >= (*next & pageBits))
                 badLink_ = true;
         }
 
-        for (auto const& obj : sle->getFieldArray(sfNFTokens))
         {
-            if ((obj[sfNFTokenID] & pageBits) >= limit)
-                badEntry_ = true;
+            auto const& nftokens = sle->getFieldArray(sfNFTokens);
 
-            if (auto uri = obj[~sfURI]; uri && uri->empty())
-                badURI_ = true;
+            // An NFTokenPage should never contain too many tokens or be empty.
+            if (std::size_t const nftokenCount = nftokens.size();
+                (!isDelete && nftokenCount == 0) ||
+                nftokenCount > dirMaxTokensPerPage)
+                invalidSize_ = true;
+
+            // If prev is valid, use it to establish a lower bound for
+            // page entries.  If prev is not valid the lower bound is zero.
+            uint256 const loLimit =
+                prev ? *prev & pageBits : uint256(beast::zero);
+
+            // Also verify that all NFTokenIDs in the page are sorted.
+            uint256 loCmp = loLimit;
+            for (auto const& obj : nftokens)
+            {
+                uint256 const tokenID = obj[sfNFTokenID];
+                if (!nft::compareTokens(loCmp, tokenID))
+                    badSort_ = true;
+                loCmp = tokenID;
+
+                // None of the NFTs on this page should belong on lower or
+                // higher pages.
+                if (uint256 const tokenPageBits = tokenID & pageBits;
+                    tokenPageBits < loLimit || tokenPageBits >= hiLimit)
+                    badEntry_ = true;
+
+                if (auto uri = obj[~sfURI]; uri && uri->empty())
+                    badURI_ = true;
+            }
         }
     };
 
@@ -559,9 +590,21 @@ ValidNFTokenPage::finalize(
         return false;
     }
 
+    if (badSort_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFTs on page are not sorted.";
+        return false;
+    }
+
     if (badURI_)
     {
         JLOG(j.fatal()) << "Invariant failed: NFT contains empty URI.";
+        return false;
+    }
+
+    if (invalidSize_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT page has invalid size.";
         return false;
     }
 

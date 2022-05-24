@@ -81,6 +81,11 @@ if("${CMAKE_GENERATOR}" MATCHES "Visual Studio" AND
     "for more information.")
 endif()
 
+if (MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
+  message (FATAL_ERROR "Visual Studio 32-bit build is not supported.")
+endif ()
+
+
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
   message (FATAL_ERROR "Rippled requires a 64 bit target architecture.\n"
     "The most likely cause of this warning is trying to build rippled with a 32-bit OS.")

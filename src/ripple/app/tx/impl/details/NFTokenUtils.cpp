@@ -21,6 +21,7 @@
 #include <ripple/basics/algorithm.h>
 #include <ripple/ledger/Directory.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TxFlags.h>
@@ -131,14 +132,39 @@ getPageForToken(
                         cmp;
                 });
 
-        // If splitIter == begin(), then the entire page is filled with
-        // equivalent tokens.  We cannot split the page, so we cannot
-        // insert the requested token.
-        //
         // There should be no circumstance when splitIter == end(), but if it
         // were to happen we should bail out because something is confused.
-        if (splitIter == narr.begin() || splitIter == narr.end())
+        if (splitIter == narr.end())
             return nullptr;
+
+        // If splitIter == begin(), then the entire page is filled with
+        // equivalent tokens.  This requires special handling.
+        if (splitIter == narr.begin())
+        {
+            // Prior to fixNFTokenDirV1 we simply stopped.
+            if (!view.rules().enabled(fixNFTokenDirV1))
+                return nullptr;
+            else
+            {
+                // This would be an ideal place for the spaceship operator...
+                int const relation = compare(id & nft::pageMask, cmp);
+                if (relation == 0)
+                    // If the passed in id belongs exactly on this (full) page
+                    // this account simply cannot store the NFT.
+                    return nullptr;
+
+                else if (relation > 0)
+                    // We need to leave the entire contents of this page in
+                    // narr so carr stays empty.  The new NFT will be
+                    // inserted in carr.  This keeps the NFTs that must be
+                    // together all on their own page.
+                    splitIter = narr.end();
+
+                // If neither of those conditions apply then put all of
+                // narr into carr and produce an empty narr where the new NFT
+                // will be inserted.  Leave the split at narr.begin().
+            }
+        }
 
         // Split narr at splitIter.
         STArray newCarr(
@@ -148,8 +174,20 @@ getPageForToken(
         std::swap(carr, newCarr);
     }
 
-    auto np = std::make_shared<SLE>(
-        keylet::nftpage(base, carr[0].getFieldH256(sfNFTokenID)));
+    // Determine the ID for the page index.  This decision is conditional on
+    // fixNFTokenDirV1 being enabled.  But the condition for the decision
+    // is not possible unless fixNFTokenDirV1 is enabled.
+    //
+    // Note that we use uint256::next() because there's a subtlety in the way
+    // NFT pages are structured.  The low 96-bits of NFT ID must be strictly
+    // less than the low 96-bits of the enclosing page's index.  In order to
+    // accommodate that requirement we use an index one higher than the
+    // largest NFT in the page.
+    uint256 const tokenIDForNewPage = narr.size() == dirMaxTokensPerPage
+        ? narr[dirMaxTokensPerPage - 1].getFieldH256(sfNFTokenID).next()
+        : carr[0].getFieldH256(sfNFTokenID);
+
+    auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
 
@@ -172,10 +210,17 @@ getPageForToken(
 
     createCallback(view, owner);
 
-    return (first.key <= np->key()) ? np : cp;
+    // fixNFTokenDirV1 corrects a bug in the initial implementation that
+    // would put an NFT in the wrong page.  The problem was caused by an
+    // off-by-one subtlety that the NFT can only be stored in the first page
+    // with a key that's strictly greater than `first`
+    if (!view.rules().enabled(fixNFTokenDirV1))
+        return (first.key <= np->key()) ? np : cp;
+
+    return (first.key < np->key()) ? np : cp;
 }
 
-static bool
+bool
 compareTokens(uint256 const& a, uint256 const& b)
 {
     // The sort of NFTokens needs to be fully deterministic, but the sort
@@ -503,6 +548,33 @@ removeAllTokenOffers(ApplyView& view, Keylet const& directory)
 
         view.erase(offer);
     });
+}
+
+TER
+notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
+{
+    std::size_t totalOffers = 0;
+
+    {
+        Dir buys(view, keylet::nft_buys(nftokenID));
+        for (auto iter = buys.begin(); iter != buys.end(); iter.next_page())
+        {
+            totalOffers += iter.page_size();
+            if (totalOffers > maxDeletableTokenOfferEntries)
+                return tefTOO_BIG;
+        }
+    }
+
+    {
+        Dir sells(view, keylet::nft_sells(nftokenID));
+        for (auto iter = sells.begin(); iter != sells.end(); iter.next_page())
+        {
+            totalOffers += iter.page_size();
+            if (totalOffers > maxDeletableTokenOfferEntries)
+                return tefTOO_BIG;
+        }
+    }
+    return tesSUCCESS;
 }
 
 bool

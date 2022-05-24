@@ -45,8 +45,8 @@
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/Wallet.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ByteUtilities.h>
@@ -219,7 +219,7 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::unique_ptr<RelationalDBInterface> mRelationalDBInterface;
+    std::unique_ptr<RelationalDatabase> mRelationalDatabase;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
 
@@ -877,11 +877,11 @@ public:
         return *txQ_;
     }
 
-    RelationalDBInterface&
-    getRelationalDBInterface() override
+    RelationalDatabase&
+    getRelationalDatabase() override
     {
-        assert(mRelationalDBInterface.get() != nullptr);
-        return *mRelationalDBInterface;
+        assert(mRelationalDatabase.get() != nullptr);
+        return *mRelationalDatabase;
     }
 
     DatabaseCon&
@@ -907,14 +907,14 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    initRDBMS()
+    initRelationalDatabase()
     {
         assert(mWalletDB.get() == nullptr);
 
         try
         {
-            mRelationalDBInterface =
-                RelationalDBInterface::init(*this, *config_, *m_jobQueue);
+            mRelationalDatabase =
+                RelationalDatabase::init(*this, *config_, *m_jobQueue);
 
             // wallet database
             auto setup = setup_DatabaseCon(*config_, m_journal);
@@ -1041,7 +1041,7 @@ public:
     doSweep()
     {
         if (!config_->standalone() &&
-            !getRelationalDBInterface().transactionDbHasSpace(*config_))
+            !getRelationalDatabase().transactionDbHasSpace(*config_))
         {
             signalStop();
         }
@@ -1066,8 +1066,7 @@ public:
         cachedSLEs_.sweep();
 
 #ifdef RIPPLED_REPORTING
-        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
-                &*mRelationalDBInterface))
+        if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
             pg->sweep();
 #endif
 
@@ -1162,7 +1161,7 @@ ApplicationImp::setup()
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
 
-    if (!initRDBMS() || !initNodeStore())
+    if (!initRelationalDatabase() || !initNodeStore())
         return false;
 
     if (shardStore_)
@@ -1619,8 +1618,7 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     if (reportingETL_)
         reportingETL_->stop();
-    if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
-            &*mRelationalDBInterface))
+    if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
         pg->stop();
     m_nodeStore->stop();
     perfLog_->stop();
@@ -2137,7 +2135,7 @@ ApplicationImp::nodeToShards()
 void
 ApplicationImp::setMaxDisallowedLedger()
 {
-    auto seq = getRelationalDBInterface().getMaxLedgerSeq();
+    auto seq = getRelationalDatabase().getMaxLedgerSeq();
     if (seq)
         maxDisallowedLedger_ = *seq;
 

@@ -21,7 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -152,7 +152,7 @@ doAccountTxOld(RPC::JsonContext& context)
         ret[jss::account] = context.app.accountIDCache().toBase58(*raAccount);
         Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
-        RelationalDBInterface::AccountTxOptions options = {
+        RelationalDatabase::AccountTxOptions options = {
             *raAccount,
             uLedgerMin,
             uLedgerMax,
@@ -162,15 +162,15 @@ doAccountTxOld(RPC::JsonContext& context)
 
         if (bBinary)
         {
-            std::vector<RelationalDBInterface::txnMetaLedgerType> txns;
+            std::vector<RelationalDatabase::txnMetaLedgerType> txns;
 
             if (bDescending)
-                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                           &context.app.getRelationalDBInterface())
+                txns = dynamic_cast<SQLiteDatabase*>(
+                           &context.app.getRelationalDatabase())
                            ->getNewestAccountTxsB(options);
             else
-                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                           &context.app.getRelationalDBInterface())
+                txns = dynamic_cast<SQLiteDatabase*>(
+                           &context.app.getRelationalDatabase())
                            ->getOldestAccountTxsB(options);
 
             for (auto it = txns.begin(), end = txns.end(); it != end; ++it)
@@ -189,15 +189,15 @@ doAccountTxOld(RPC::JsonContext& context)
         }
         else
         {
-            RelationalDBInterface::AccountTxs txns;
+            RelationalDatabase::AccountTxs txns;
 
             if (bDescending)
-                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                           &context.app.getRelationalDBInterface())
+                txns = dynamic_cast<SQLiteDatabase*>(
+                           &context.app.getRelationalDatabase())
                            ->getNewestAccountTxs(options);
             else
-                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                           &context.app.getRelationalDBInterface())
+                txns = dynamic_cast<SQLiteDatabase*>(
+                           &context.app.getRelationalDatabase())
                            ->getOldestAccountTxs(options);
 
             for (auto it = txns.begin(), end = txns.end(); it != end; ++it)

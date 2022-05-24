@@ -99,7 +99,7 @@ class ValidatorList;
 class ValidatorSite;
 class Cluster;
 
-class RelationalDBInterface;
+class RelationalDatabase;
 class DatabaseCon;
 class SHAMapStore;
 
@@ -251,8 +251,8 @@ public:
     openLedger() = 0;
     virtual OpenLedger const&
     openLedger() const = 0;
-    virtual RelationalDBInterface&
-    getRelationalDBInterface() = 0;
+    virtual RelationalDatabase&
+    getRelationalDatabase() = 0;
 
     virtual std::chrono::milliseconds
     getIOLatency() = 0;

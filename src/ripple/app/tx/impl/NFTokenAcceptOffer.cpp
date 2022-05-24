@@ -63,36 +63,33 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const checkOffer = [&ctx](std::optional<uint256> id) -> TER {
+    auto const checkOffer = [&ctx](std::optional<uint256> id)
+        -> std::pair<std::shared_ptr<const SLE>, TER> {
         if (id)
         {
-            auto const offer = ctx.view.read(keylet::nftoffer(*id));
+            auto offerSLE = ctx.view.read(keylet::nftoffer(*id));
 
-            if (!offer)
-                return tecOBJECT_NOT_FOUND;
+            if (!offerSLE)
+                return {nullptr, tecOBJECT_NOT_FOUND};
 
-            if (hasExpired(ctx.view, (*offer)[~sfExpiration]))
-                return tecEXPIRED;
+            if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
+                return {nullptr, tecEXPIRED};
+
+            return {std::move(offerSLE), tesSUCCESS};
         }
-
-        return tesSUCCESS;
+        return {nullptr, tesSUCCESS};
     };
 
-    auto const buy = ctx.tx[~sfNFTokenBuyOffer];
-    auto const sell = ctx.tx[~sfNFTokenSellOffer];
+    auto const [bo, err1] = checkOffer(ctx.tx[~sfNFTokenBuyOffer]);
+    if (!isTesSuccess(err1))
+        return err1;
+    auto const [so, err2] = checkOffer(ctx.tx[~sfNFTokenSellOffer]);
+    if (!isTesSuccess(err2))
+        return err2;
 
-    if (auto const ret = checkOffer(buy); !isTesSuccess(ret))
-        return ret;
-
-    if (auto const ret = checkOffer(sell); !isTesSuccess(ret))
-        return ret;
-
-    if (buy && sell)
+    if (bo && so)
     {
         // Brokered mode:
-        auto const bo = ctx.view.read(keylet::nftoffer(*buy));
-        auto const so = ctx.view.read(keylet::nftoffer(*sell));
-
         // The two offers being brokered must be for the same token:
         if ((*bo)[sfNFTokenID] != (*so)[sfNFTokenID])
             return tecNFTOKEN_BUY_SELL_MISMATCH;
@@ -131,10 +128,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (buy)
+    if (bo)
     {
-        auto const bo = ctx.view.read(keylet::nftoffer(*buy));
-
         if (((*bo)[sfFlags] & lsfSellNFToken) == lsfSellNFToken)
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
@@ -143,7 +138,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
         // If not in bridged mode, the account must own the token:
-        if (!sell &&
+        if (!so &&
             !nft::findToken(ctx.view, ctx.tx[sfAccount], (*bo)[sfNFTokenID]))
             return tecNO_PERMISSION;
 
@@ -160,10 +155,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecINSUFFICIENT_FUNDS;
     }
 
-    if (sell)
+    if (so)
     {
-        auto const so = ctx.view.read(keylet::nftoffer(*sell));
-
         if (((*so)[sfFlags] & lsfSellNFToken) != lsfSellNFToken)
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
@@ -176,7 +169,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
 
         // If not in bridged mode...
-        if (!buy)
+        if (!bo)
         {
             // If the offer has a Destination field, the acceptor must be the
             // Destination.
