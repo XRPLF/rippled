@@ -41,43 +41,40 @@ namespace ripple {
     the result of the a consensus process (though haven't validated
     it yet).
 */
-class AcceptedLedger
+class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    using pointer = std::shared_ptr<AcceptedLedger>;
-    using ret = const pointer&;
-    using map_t = std::map<int, AcceptedLedgerTx::pointer>;
-    // mapt_t must be an ordered map!
-    using value_type = map_t::value_type;
-    using const_iterator = map_t::const_iterator;
+    AcceptedLedger(
+        std::shared_ptr<ReadView const> const& ledger,
+        Application& app);
 
-public:
     std::shared_ptr<ReadView const> const&
     getLedger() const
     {
         return mLedger;
     }
-    const map_t&
-    getMap() const
+
+    std::size_t
+    size() const
     {
-        return mMap;
+        return transactions_.size();
     }
 
-    int
-    getTxnCount() const
+    auto
+    begin() const
     {
-        return mMap.size();
+        return transactions_.begin();
     }
 
-    AcceptedLedger(
-        std::shared_ptr<ReadView const> const& ledger,
-        Application& app);
+    auto
+    end() const
+    {
+        return transactions_.end();
+    }
 
 private:
-    void insert(AcceptedLedgerTx::ref);
-
     std::shared_ptr<ReadView const> mLedger;
-    map_t mMap;
+    std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 
 }  // namespace ripple

@@ -46,7 +46,8 @@ public:
     TestNodeFamily(beast::Journal j)
         : fbCache_(std::make_shared<FullBelowCache>(
               "App family full below cache",
-              clock_))
+              clock_,
+              j))
         , tnCache_(std::make_shared<TreeNodeCache>(
               "App family tree node cache",
               65536,
@@ -57,7 +58,7 @@ public:
     {
         Section testSection;
         testSection.set("type", "memory");
-        testSection.set("Path", "SHAMap_test");
+        testSection.set("path", "SHAMap_test");
         db_ = NodeStore::Manager::instance().make_Database(
             megabytes(4), scheduler_, 1, testSection, j);
     }

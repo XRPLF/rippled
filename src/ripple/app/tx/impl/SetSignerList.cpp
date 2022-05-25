@@ -58,13 +58,13 @@ SetSignerList::determineOperation(
     {
         auto signers = SignerEntries::deserialize(tx, j, "transaction");
 
-        if (signers.second != tesSUCCESS)
-            return std::make_tuple(signers.second, quorum, sign, op);
+        if (!signers)
+            return std::make_tuple(signers.error(), quorum, sign, op);
 
-        std::sort(signers.first.begin(), signers.first.end());
+        std::sort(signers->begin(), signers->end());
 
         // Save deserialized list for later.
-        sign = std::move(signers.first);
+        sign = std::move(*signers);
         op = set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
@@ -78,11 +78,11 @@ SetSignerList::determineOperation(
 NotTEC
 SetSignerList::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
+
     if (std::get<0>(result) != tesSUCCESS)
         return std::get<0>(result);
 
@@ -99,7 +99,11 @@ SetSignerList::preflight(PreflightContext const& ctx)
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
         NotTEC const ter = validateQuorumAndSignerEntries(
-            std::get<1>(result), std::get<2>(result), account, ctx.j);
+            std::get<1>(result),
+            std::get<2>(result),
+            account,
+            ctx.j,
+            ctx.rules);
         if (ter != tesSUCCESS)
         {
             return ter;
@@ -150,7 +154,7 @@ SetSignerList::preCompute()
 // is valid until the featureMultiSignReserve amendment passes.  Once it
 // passes then just 1 OwnerCount is associated with a SignerList.
 static int
-signerCountBasedOwnerCountDelta(std::size_t entryCount)
+signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
     // We always compute the full change in OwnerCount, taking into account:
     //  o The fact that we're adding/removing a SignerList and
@@ -165,9 +169,10 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount)
     // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
     //
     // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 8.  We've got a lot of room to grow.
+    // be in the range from 1 to 8 (or 32 if ExpandedSignerList is enabled).
+    // We've got a lot of room to grow.
     assert(entryCount >= STTx::minMultiSigners);
-    assert(entryCount <= STTx::maxMultiSigners);
+    assert(entryCount <= STTx::maxMultiSigners(&rules));
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -196,7 +201,8 @@ removeSignersFromLedger(
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
         removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta(actualList.size()) * -1;
+            signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) *
+            -1;
     }
 
     // Remove the node from the account directory.
@@ -239,13 +245,14 @@ SetSignerList::validateQuorumAndSignerEntries(
     std::uint32_t quorum,
     std::vector<SignerEntries::SignerEntry> const& signers,
     AccountID const& account,
-    beast::Journal j)
+    beast::Journal j,
+    Rules const& rules)
 {
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
         if ((signerCount < STTx::minMultiSigners) ||
-            (signerCount > STTx::maxMultiSigners))
+            (signerCount > STTx::maxMultiSigners(&rules)))
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
@@ -259,6 +266,9 @@ SetSignerList::validateQuorumAndSignerEntries(
         JLOG(j.trace()) << "Duplicate signers in signer list";
         return temBAD_SIGNER;
     }
+
+    // Is the ExpandedSignerList amendment active?
+    bool const expandedSignerList = rules.enabled(featureExpandedSignerList);
 
     // Make sure no signers reference this account.  Also make sure the
     // quorum can be reached.
@@ -278,6 +288,14 @@ SetSignerList::validateQuorumAndSignerEntries(
         {
             JLOG(j.trace()) << "A signer may not self reference account.";
             return temBAD_SIGNER;
+        }
+
+        if (signer.tag && !expandedSignerList)
+        {
+            JLOG(j.trace()) << "Malformed transaction: sfWalletLocator "
+                               "specified in SignerEntry "
+                            << "but featureExpandedSignerList is not enabled.";
+            return temMALFORMED;
         }
 
         // Don't verify that the signer accounts exist.  Non-existent accounts
@@ -322,7 +340,8 @@ SetSignerList::replaceSignerList()
     std::uint32_t flags{lsfOneOwnerCount};
     if (!ctx_.view().rules().enabled(featureMultiSignReserve))
     {
-        addedOwnerCount = signerCountBasedOwnerCountDelta(signers_.size());
+        addedOwnerCount = signerCountBasedOwnerCountDelta(
+            signers_.size(), ctx_.view().rules());
         flags = 0;
     }
 
@@ -390,6 +409,9 @@ SetSignerList::writeSignersToSLE(
     if (flags)  // Only set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 
+    bool const expandedSignerList =
+        ctx_.view().rules().enabled(featureExpandedSignerList);
+
     // Create the SignerListArray one SignerEntry at a time.
     STArray toLedger(signers_.size());
     for (auto const& entry : signers_)
@@ -399,6 +421,11 @@ SetSignerList::writeSignersToSLE(
         obj.reserve(2);
         obj.setAccountID(sfAccount, entry.account);
         obj.setFieldU16(sfSignerWeight, entry.weight);
+
+        // This is a defensive check to make absolutely sure we will never write
+        // a tag into the ledger while featureExpandedSignerList is not enabled
+        if (expandedSignerList && entry.tag)
+            obj.setFieldH256(sfWalletLocator, *(entry.tag));
     }
 
     // Assign the SignerEntries.

@@ -33,7 +33,8 @@ paths::operator()(Env& env, JTx& jt) const
     auto const to = env.lookup(jv[jss::Destination].asString());
     auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(env.current()),
+        std::make_shared<RippleLineCache>(
+            env.current(), env.app().journal("RippleLineCache")),
         from,
         to,
         in_.currency,

@@ -125,7 +125,8 @@ std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchNodeObject(
     uint256 const& hash,
     std::uint32_t,
-    FetchReport& fetchReport)
+    FetchReport& fetchReport,
+    bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
         Status status;
@@ -143,10 +144,6 @@ DatabaseRotatingImp::fetchNodeObject(
         switch (status)
         {
             case ok:
-                ++fetchHitCount_;
-                if (nodeObject)
-                    fetchSz_ += nodeObject->getData().size();
-                break;
             case notFound:
                 break;
             case dataCorrupt:
@@ -183,7 +180,8 @@ DatabaseRotatingImp::fetchNodeObject(
             }
 
             // Update writable backend with data from the archive backend
-            writable->store(nodeObject);
+            if (duplicate)
+                writable->store(nodeObject);
         }
     }
 

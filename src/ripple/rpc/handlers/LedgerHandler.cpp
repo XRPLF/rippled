@@ -90,11 +90,11 @@ LedgerHandler::check()
         if (!ledger_ || !ledger_->open())
         {
             // It doesn't make sense to request the queue
-            // with a non-existant or closed/validated ledger.
+            // with a non-existent or closed/validated ledger.
             return rpcINVALID_PARAMS;
         }
 
-        queueTxs_ = context_.app.getTxQ().getTxs(*ledger_);
+        queueTxs_ = context_.app.getTxQ().getTxs();
     }
 
     return Status::OK;
@@ -105,15 +105,25 @@ LedgerHandler::check()
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
+    auto begin = std::chrono::system_clock::now();
     org::xrpl::rpc::v1::GetLedgerRequest& request = context.params;
     org::xrpl::rpc::v1::GetLedgerResponse response;
     grpc::Status status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (RPC::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        grpc::Status errorStatus;
+        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        {
+            errorStatus = grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+        }
+        else
+        {
+            errorStatus =
+                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+        }
         return {response, errorStatus};
     }
 
@@ -196,12 +206,107 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 assert(inDesired->size() > 0);
                 obj->set_data(inDesired->data(), inDesired->size());
             }
+            if (inBase && inDesired)
+                obj->set_mod_type(
+                    org::xrpl::rpc::v1::RawLedgerObject::MODIFIED);
+            else if (inBase && !inDesired)
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::DELETED);
+            else
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
+            auto const blob = inDesired ? inDesired->slice() : inBase->slice();
+            auto const objectType =
+                static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
+
+            if (request.get_object_neighbors())
+            {
+                if (!(inBase && inDesired))
+                {
+                    auto lb = desired->stateMap().lower_bound(k);
+                    auto ub = desired->stateMap().upper_bound(k);
+                    if (lb != desired->stateMap().end())
+                        obj->set_predecessor(
+                            lb->key().data(), lb->key().size());
+                    if (ub != desired->stateMap().end())
+                        obj->set_successor(ub->key().data(), ub->key().size());
+                    if (objectType == ltDIR_NODE)
+                    {
+                        auto sle = std::make_shared<SLE>(SerialIter{blob}, k);
+                        if (!sle->isFieldPresent(sfOwner))
+                        {
+                            auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
+                            if (!inBase && inDesired)
+                            {
+                                auto firstBook =
+                                    desired->stateMap().upper_bound(
+                                        bookBase.key);
+                                if (firstBook != desired->stateMap().end() &&
+                                    firstBook->key() <
+                                        getQualityNext(bookBase.key) &&
+                                    firstBook->key() == k)
+                                {
+                                    auto succ = response.add_book_successors();
+                                    succ->set_book_base(
+                                        bookBase.key.data(),
+                                        bookBase.key.size());
+                                    succ->set_first_book(
+                                        firstBook->key().data(),
+                                        firstBook->key().size());
+                                }
+                            }
+                            if (inBase && !inDesired)
+                            {
+                                auto oldFirstBook =
+                                    base->stateMap().upper_bound(bookBase.key);
+                                if (oldFirstBook != base->stateMap().end() &&
+                                    oldFirstBook->key() <
+                                        getQualityNext(bookBase.key) &&
+                                    oldFirstBook->key() == k)
+                                {
+                                    auto succ = response.add_book_successors();
+                                    succ->set_book_base(
+                                        bookBase.key.data(),
+                                        bookBase.key.size());
+                                    auto newFirstBook =
+                                        desired->stateMap().upper_bound(
+                                            bookBase.key);
+
+                                    if (newFirstBook !=
+                                            desired->stateMap().end() &&
+                                        newFirstBook->key() <
+                                            getQualityNext(bookBase.key))
+                                    {
+                                        succ->set_first_book(
+                                            newFirstBook->key().data(),
+                                            newFirstBook->key().size());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+        response.set_objects_included(true);
+        response.set_object_neighbors_included(request.get_object_neighbors());
         response.set_skiplist_included(true);
     }
 
     response.set_validated(
         RPC::isValidated(context.ledgerMaster, *ledger, context.app));
+
+    auto end = std::chrono::system_clock::now();
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - begin)
+            .count() *
+        1.0;
+    JLOG(context.j.warn())
+        << __func__ << " - Extract time = " << duration
+        << " - num objects = " << response.ledger_objects().objects_size()
+        << " - num txns = " << response.transactions_list().transactions_size()
+        << " - ms per obj "
+        << duration / response.ledger_objects().objects_size()
+        << " - ms per txn "
+        << duration / response.transactions_list().transactions_size();
 
     return {response, status};
 }

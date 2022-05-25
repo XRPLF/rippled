@@ -25,8 +25,11 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/Port.h>
+#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/network_v6.hpp>
 #include <boost/utility/string_view.hpp>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace ripple {
@@ -79,7 +82,8 @@ isUnlimited(Role const& role);
 bool
 ipAllowed(
     beast::IP::Address const& remoteIp,
-    std::vector<beast::IP::Address> const& adminIp);
+    std::vector<boost::asio::ip::network_v4> const& nets4,
+    std::vector<boost::asio::ip::network_v6> const& nets6);
 
 boost::string_view
 forwardedFor(http_request_type const& request);

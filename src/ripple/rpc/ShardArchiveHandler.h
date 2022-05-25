@@ -31,9 +31,11 @@
 #include <boost/filesystem.hpp>
 
 namespace ripple {
+#ifdef ENABLE_TESTS
 namespace test {
 class ShardArchiveHandler_test;
 }
+#endif  // ENABLE_TESTS
 namespace RPC {
 
 /** Handles the download and import of one or more shard archives. */
@@ -42,7 +44,9 @@ class ShardArchiveHandler
 public:
     using TimerOpCounter =
         ClosureCounter<void, boost::system::error_code const&>;
+#ifdef ENABLE_TESTS
     friend class test::ShardArchiveHandler_test;
+#endif  // ENABLE_TESTS
 
     static boost::filesystem::path
     getDownloadDirectory(Config const& config);
@@ -56,7 +60,7 @@ public:
     static std::unique_ptr<ShardArchiveHandler>
     tryMakeRecoveryHandler(Application& app);
 
-    ShardArchiveHandler(Application& app);
+    explicit ShardArchiveHandler(Application& app);
 
     virtual ~ShardArchiveHandler() = default;
 
@@ -163,7 +167,7 @@ private:
 class RecoveryHandler : public ShardArchiveHandler
 {
 public:
-    RecoveryHandler(Application& app);
+    explicit RecoveryHandler(Application& app);
 };
 
 }  // namespace RPC

@@ -112,7 +112,7 @@ else ()
         ${CMAKE_COMMAND}
           --build .
           --config $<CONFIG>
-          $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+          --parallel ${ep_procs}
       TEST_COMMAND ""
       INSTALL_COMMAND
         ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
@@ -169,7 +169,7 @@ else ()
           ${CMAKE_COMMAND}
             --build .
             --config $<CONFIG>
-            $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+            --parallel ${ep_procs}
         TEST_COMMAND ""
         INSTALL_COMMAND
           ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
@@ -211,6 +211,7 @@ else ()
         -DCMAKE_DEBUG_POSTFIX=_d
         $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
         -DgRPC_BUILD_TESTS=OFF
+        -DgRPC_BENCHMARK_PROVIDER=""
         -DgRPC_BUILD_CSHARP_EXT=OFF
         -DgRPC_MSVC_STATIC_RUNTIME=ON
         -DgRPC_INSTALL=OFF
@@ -236,7 +237,7 @@ else ()
         ${CMAKE_COMMAND}
         --build .
         --config $<CONFIG>
-        $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+        --parallel ${ep_procs}
         $<$<BOOL:${is_multiconfig}>:
           COMMAND
             ${CMAKE_COMMAND} -E copy

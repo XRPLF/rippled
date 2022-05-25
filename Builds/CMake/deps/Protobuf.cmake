@@ -9,9 +9,21 @@ if (static)
   set (Protobuf_USE_STATIC_LIBS ON)
 endif ()
 find_package (Protobuf 3.8)
-if (local_protobuf OR NOT Protobuf_FOUND)
+if (is_multiconfig)
+    set(protobuf_protoc_lib ${Protobuf_PROTOC_LIBRARIES})
+else ()
+    string(TOUPPER ${CMAKE_BUILD_TYPE} upper_cmake_build_type)
+    set(protobuf_protoc_lib ${Protobuf_PROTOC_LIBRARY_${upper_cmake_build_type}})
+endif ()
+if (local_protobuf OR NOT (Protobuf_FOUND AND Protobuf_PROTOC_EXECUTABLE AND protobuf_protoc_lib))
   include (GNUInstallDirs)
   message (STATUS "using local protobuf build.")
+  set(protobuf_reqs Protobuf_PROTOC_EXECUTABLE protobuf_protoc_lib)
+  foreach(lib ${protobuf_reqs})
+    if(NOT ${lib})
+      message(STATUS "Couldn't find ${lib}")
+    endif()
+  endforeach()
   if (WIN32)
     # protobuf prepends lib even on windows
     set (pbuf_lib_pre "lib")
@@ -53,7 +65,7 @@ if (local_protobuf OR NOT Protobuf_FOUND)
       ${CMAKE_COMMAND}
       --build .
       --config $<CONFIG>
-      $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+      --parallel ${ep_procs}
     TEST_COMMAND ""
     INSTALL_COMMAND
       ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install

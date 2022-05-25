@@ -16,7 +16,7 @@ need these software components
 |-----------|-----------------------|
 | [Visual Studio 2017](README.md#install-visual-studio-2017)| 15.5.4 |
 | [Git for Windows](README.md#install-git-for-windows)| 2.16.1 |
-| [OpenSSL Library](README.md#install-openssl) | 1.0.2n |
+| [OpenSSL Library](README.md#install-openssl) | 1.1.1L |
 | [Boost library](README.md#build-boost) | 1.70.0 |
 | [CMake for Windows](README.md#optional-install-cmake-for-windows)* | 3.12 |
 
@@ -50,17 +50,19 @@ Windows is mandatory for running the unit tests.
 
 ### Install OpenSSL
 
-[Download OpenSSL.](http://slproweb.com/products/Win32OpenSSL.html) There will
-four `Win64` bit variants available, you want the non-light `v1.0` line. As of
-this writing, you **should** select
+[Download the latest version of
+OpenSSL.](http://slproweb.com/products/Win32OpenSSL.html) There will
+several `Win64` bit variants available, you want the non-light
+`v1.1` line. As of this writing, you **should** select
 
-* Win64 OpenSSL v1.0.2n. 
+* Win64 OpenSSL v1.1.1L
 
 and should **not** select
 
-* Win64 OpenSSL v1.0.2n light
-* Win64 OpenSSL v1.1.0g
-* Win64 OpenSSL v1.1.0g light
+* Anything with "Win32" in the name
+* Anything with "light" in the name
+* Anything with "EXPERIMENTAL" in the name
+* Anything in the 3.0 line - rippled won't currently build with this version.
 
 Run the installer, and choose an appropriate location for your OpenSSL
 installation. In this guide we use `C:\lib\OpenSSL-Win64` as the destination
@@ -146,7 +148,7 @@ If you receive an error about not having the "correct access rights" make sure
 you have Github ssh keys, as described above.
 
 For a stable release, choose the `master` branch or one of the tagged releases
-listed on [rippled's GitHub page](https://github.com/ripple/rippled/releases). 
+listed on [rippled's GitHub page](https://github.com/ripple/rippled/releases).
 
 ```
 git checkout master
@@ -175,7 +177,7 @@ To begin, simply:
    cloned rippled folder.
 2. Right-click on `CMakeLists.txt` in the **Solution Explorer - Folder View** to
    generate a `CMakeSettings.json` file. A sample settings file is provided
-   [here](/Builds/VisualStudio2017/CMakeSettings-example.json). Customize the 
+   [here](/Builds/VisualStudio2017/CMakeSettings-example.json). Customize the
    settings for `BOOST_ROOT`, `OPENSSL_ROOT` to match the install paths if they
    differ from those in the file.
 4. Select either the `x64-Release` or `x64-Debug` configuration from the
@@ -221,7 +223,7 @@ Navigate to the `build\cmake` folder created above and select the `rippled.sln`
 file. You can then choose whether to build the `Debug` or `Release` solution
 configuration.
 
-The executable will be in 
+The executable will be in
 ```
 .\build\cmake\Release\rippled.exe
 ```
@@ -233,21 +235,24 @@ These paths are relative to your cloned git repository.
 
 # Unity/No-Unity Builds
 
-The rippled build system defaults to using [unity source files](http://onqtam.com/programming/2018-07-07-unity-builds/)
-to improve build times. In some cases it might be desirable to disable the unity build and compile
-individual translation units. Here is how you can switch to a "no-unity" build configuration:
+The rippled build system defaults to using
+[unity source files](http://onqtam.com/programming/2018-07-07-unity-builds/)
+to improve build times. In some cases it might be desirable to disable the
+unity build and compile individual translation units. Here is how you can
+switch to a "no-unity" build configuration:
 
 ## Visual Studio Integrated CMake
- 
-Edit your `CmakeSettings.json` (described above) by adding `-Dunity=OFF` to the `cmakeCommandArgs` entry 
-for each build configuration.
+
+Edit your `CmakeSettings.json` (described above) by adding `-Dunity=OFF`
+to the `cmakeCommandArgs` entry for each build configuration.
 
 ## Standalone CMake Builds
 
-When running cmake to generate the Visual Studio project files, add `-Dunity=OFF` to the 
-command line options passed to cmake.
+When running cmake to generate the Visual Studio project files, add
+`-Dunity=OFF` to the command line options passed to cmake.
 
-**Note:** you will need to re-run the cmake configuration step anytime you want to switch between unity/no-unity builds.
+**Note:** you will need to re-run the cmake configuration step anytime you
+want to switch between unity/no-unity builds.
 
 # Unit Test (Recommended)
 

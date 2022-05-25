@@ -255,16 +255,23 @@ public:
     pubLedger(std::shared_ptr<ReadView const> const& lpAccepted) = 0;
     virtual void
     pubProposedTransaction(
-        std::shared_ptr<ReadView const> const& lpCurrent,
-        std::shared_ptr<STTx const> const& stTxn,
-        TER terResult) = 0;
+        std::shared_ptr<ReadView const> const& ledger,
+        std::shared_ptr<STTx const> const& transaction,
+        TER result) = 0;
     virtual void
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
     virtual void
+    forwardValidation(Json::Value const& jvObj) = 0;
+    virtual void
+    forwardManifest(Json::Value const& jvObj) = 0;
+    virtual void
     forwardProposedTransaction(Json::Value const& jvObj) = 0;
     virtual void
     forwardProposedAccountTransaction(Json::Value const& jvObj) = 0;
+
+    virtual void
+    stateAccounting(Json::Value& obj) = 0;
 };
 
 //------------------------------------------------------------------------------

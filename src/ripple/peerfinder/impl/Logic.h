@@ -762,6 +762,13 @@ public:
     void
     on_endpoints(SlotImp::ptr const& slot, Endpoints list)
     {
+        // If we're sent too many endpoints, sample them at random:
+        if (list.size() > Tuning::numberOfEndpointsMax)
+        {
+            std::shuffle(list.begin(), list.end(), default_prng());
+            list.resize(Tuning::numberOfEndpointsMax);
+        }
+
         JLOG(m_journal.trace())
             << beast::leftw(18) << "Endpoints from " << slot->remote_endpoint()
             << " contained " << list.size()

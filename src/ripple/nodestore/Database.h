@@ -20,7 +20,6 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
-#include <ripple/basics/KeyCache.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -142,7 +141,8 @@ public:
     fetchNodeObject(
         uint256 const& hash,
         std::uint32_t ledgerSeq = 0,
-        FetchType fetchType = FetchType::synchronous);
+        FetchType fetchType = FetchType::synchronous,
+        bool duplicate = false);
 
     /** Fetch an object without waiting.
         If I/O is required to determine whether or not the object is present,
@@ -156,7 +156,7 @@ public:
                 object is stored, used by the shard store.
         @param callback Callback function when read completes
     */
-    void
+    virtual void
     asyncFetch(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
@@ -324,6 +324,11 @@ protected:
     // The earliest shard index
     std::uint32_t const earliestShardIndex_;
 
+    // The maximum number of requests a thread extracts from the queue in an
+    // attempt to minimize the overhead of mutex acquisition. This is an
+    // advanced tunable, via the config file. The default value is 4.
+    int const requestBundle_;
+
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
@@ -366,17 +371,16 @@ private:
             std::function<void(std::shared_ptr<NodeObject> const&)>>>>
         read_;
 
-    // last read
-    uint256 readLastHash_;
-
-    std::vector<std::thread> readThreads_;
-    bool readStopping_{false};
+    std::atomic<bool> readStopping_ = false;
+    std::atomic<int> readThreads_ = 0;
+    std::atomic<int> runningThreads_ = 0;
 
     virtual std::shared_ptr<NodeObject>
     fetchNodeObject(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
-        FetchReport& fetchReport) = 0;
+        FetchReport& fetchReport,
+        bool duplicate) = 0;
 
     /** Visit every object in the database
         This is usually called during import.

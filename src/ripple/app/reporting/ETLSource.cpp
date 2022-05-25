@@ -261,6 +261,10 @@ ETLSource::onHandshake(boost::beast::error_code ec)
         jv["streams"].append(ledgerStream);
         Json::Value txnStream("transactions_proposed");
         jv["streams"].append(txnStream);
+        Json::Value validationStream("validations");
+        jv["streams"].append(validationStream);
+        Json::Value manifestStream("manifests");
+        jv["streams"].append(manifestStream);
         Json::FastWriter fastWriter;
 
         JLOG(journal_.trace()) << "Sending subscribe stream message";
@@ -352,15 +356,28 @@ ETLSource::handleMessage()
         }
         else
         {
-            if (response.isMember(jss::transaction))
+            if (etl_.getETLLoadBalancer().shouldPropagateStream(this))
             {
-                if (etl_.getETLLoadBalancer().shouldPropagateTxnStream(this))
+                if (response.isMember(jss::transaction))
                 {
                     etl_.getApplication().getOPs().forwardProposedTransaction(
                         response);
                 }
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "validationReceived")
+                {
+                    etl_.getApplication().getOPs().forwardValidation(response);
+                }
+                else if (
+                    response.isMember("type") &&
+                    response["type"] == "manifestReceived")
+                {
+                    etl_.getApplication().getOPs().forwardManifest(response);
+                }
             }
-            else
+
+            if (response.isMember("type") && response["type"] == "ledgerClosed")
             {
                 JLOG(journal_.debug())
                     << __func__ << " : "
@@ -495,11 +512,14 @@ public:
 
         for (auto& obj : cur_->ledger_objects().objects())
         {
-            auto key = uint256::fromVoid(obj.key().data());
+            auto key = uint256::fromVoidChecked(obj.key());
+            if (!key)
+                throw std::runtime_error("Received malformed object ID");
+
             auto& data = obj.data();
 
             SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, key);
+            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
 
             queue.push(sle);
         }
@@ -740,13 +760,24 @@ ETLLoadBalancer::forwardToP2p(RPC::JsonContext& context) const
     srand((unsigned)time(0));
     auto sourceIdx = rand() % sources_.size();
     auto numAttempts = 0;
+
+    auto mostRecent = etl_.getNetworkValidatedLedgers().tryGetMostRecent();
     while (numAttempts < sources_.size())
     {
-        res = sources_[sourceIdx]->forwardToP2p(context);
-        if (!res.isMember("forwarded") || res["forwarded"] != true)
-        {
+        auto increment = [&]() {
             sourceIdx = (sourceIdx + 1) % sources_.size();
             ++numAttempts;
+        };
+        auto& src = sources_[sourceIdx];
+        if (mostRecent && !src->hasLedger(*mostRecent))
+        {
+            increment();
+            continue;
+        }
+        res = src->forwardToP2p(context);
+        if (!res.isMember("forwarded") || res["forwarded"] != true)
+        {
+            increment();
             continue;
         }
         return res;
@@ -921,7 +952,7 @@ ETLLoadBalancer::execute(Func f, uint32_t ledgerSequence)
                     << "Error executing function. "
                     << " Tried all sources, but ledger was found in db."
                     << " Sequence = " << ledgerSequence;
-                break;
+                return false;
             }
             JLOG(journal_.error())
                 << __func__ << " : "

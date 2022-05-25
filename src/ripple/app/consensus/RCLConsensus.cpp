@@ -131,9 +131,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             acquiringLedger_ = hash;
 
             app_.getJobQueue().addJob(
-                jtADVANCE,
-                "getConsensusLedger",
-                [id = hash, &app = app_](Job&) {
+                jtADVANCE, "getConsensusLedger", [id = hash, &app = app_]() {
                     app.getInboundLedgers().acquire(
                         id, 0, InboundLedger::Reason::CONSENSUS);
                 });
@@ -187,8 +185,8 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(
             app_.timeKeeper().now().time_since_epoch().count());
-        app_.overlay().foreach(send_always(
-            std::make_shared<Message>(msg, protocol::mtTRANSACTION)));
+        static std::set<Peer::id_t> skip{};
+        app_.overlay().relay(tx.id(), msg, skip);
     }
     else
     {
@@ -423,9 +421,7 @@ RCLConsensus::Adaptor::onAccept(
     Json::Value&& consensusJson)
 {
     app_.getJobQueue().addJob(
-        jtACCEPT,
-        "acceptLedger",
-        [=, cj = std::move(consensusJson)](auto&) mutable {
+        jtACCEPT, "acceptLedger", [=, cj = std::move(consensusJson)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
@@ -636,7 +632,7 @@ RCLConsensus::Adaptor::doAccept(
         auto const lastVal = ledgerMaster_.getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)
-            rules.emplace(*lastVal, app_.config().features);
+            rules = makeRulesGivenLedger(*lastVal, app_.config().features);
         else
             rules.emplace(app_.config().features);
         app_.openLedger().accept(

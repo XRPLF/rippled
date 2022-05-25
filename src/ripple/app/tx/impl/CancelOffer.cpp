@@ -27,8 +27,7 @@ namespace ripple {
 NotTEC
 CancelOffer::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto const uTxFlags = ctx.tx.getFlags();

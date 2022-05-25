@@ -116,20 +116,6 @@ private:
             return true;
         }
 
-        /** Determines if this item should be recovered from the open ledger.
-
-            Counts the number of times the item has been recovered.
-            Every `limit` times the function is called, return false.
-            Else return true.
-
-            @note The limit must be > 0
-        */
-        bool
-        shouldRecover(std::uint32_t limit)
-        {
-            return ++recoveries_ % limit != 0;
-        }
-
         bool
         shouldProcess(Stopwatch::time_point now, std::chrono::seconds interval)
         {
@@ -146,7 +132,6 @@ private:
         // than one flag needs to expire independently.
         std::optional<Stopwatch::time_point> relayed_;
         std::optional<Stopwatch::time_point> processed_;
-        std::uint32_t recoveries_ = 0;
     };
 
 public:
@@ -158,19 +143,8 @@ public:
         return 300s;
     }
 
-    static inline std::uint32_t
-    getDefaultRecoverLimit()
-    {
-        return 1;
-    }
-
-    HashRouter(
-        Stopwatch& clock,
-        std::chrono::seconds entryHoldTimeInSeconds,
-        std::uint32_t recoverLimit)
-        : suppressionMap_(clock)
-        , holdTime_(entryHoldTimeInSeconds)
-        , recoverLimit_(recoverLimit + 1u)
+    HashRouter(Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
+        : suppressionMap_(clock), holdTime_(entryHoldTimeInSeconds)
     {
     }
 
@@ -231,15 +205,6 @@ public:
     std::optional<std::set<PeerShortID>>
     shouldRelay(uint256 const& key);
 
-    /** Determines whether the hashed item should be recovered
-        from the open ledger into the next open ledger or the transaction
-        queue.
-
-        @return `bool` indicates whether the item should be recovered
-    */
-    bool
-    shouldRecover(uint256 const& key);
-
 private:
     // pair.second indicates whether the entry was created
     std::pair<Entry&, bool>
@@ -256,8 +221,6 @@ private:
         suppressionMap_;
 
     std::chrono::seconds const holdTime_;
-
-    std::uint32_t const recoverLimit_;
 };
 
 }  // namespace ripple

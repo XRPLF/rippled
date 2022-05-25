@@ -320,7 +320,7 @@ public:
                 "account_lines",
                 R"({"account": ")" + alice.human() +
                     R"(", )"
-                    R"("limit": 1, )"
+                    R"("limit": 10, )"
                     R"("peer": ")" +
                     gw2.human() + R"("})");
             auto const& line = lines[jss::result][jss::lines][0u];
@@ -364,6 +364,91 @@ public:
     }
 
     void
+    testAccountLinesMarker()
+    {
+        testcase("Entry pointed to by marker is not owned by account");
+        using namespace test::jtx;
+        Env env(*this);
+
+        // The goal of this test is observe account_lines RPC calls return an
+        // error message when the SLE pointed to by the marker is not owned by
+        // the Account being traversed.
+        //
+        // To start, we'll create an environment with some trust lines, offers
+        // and a signers list.
+        Account const alice{"alice"};
+        Account const becky{"becky"};
+        Account const gw1{"gw1"};
+        env.fund(XRP(10000), alice, becky, gw1);
+        env.close();
+
+        // Give alice a SignerList.
+        Account const bogie{"bogie"};
+        env(signers(alice, 2, {{bogie, 3}}));
+        env.close();
+
+        auto const EUR = gw1["EUR"];
+        env(trust(alice, EUR(200)));
+        env(trust(becky, EUR(200)));
+        env.close();
+
+        // Get all account objects for alice and verify that her
+        // signerlist is first.  This is only a (reliable) coincidence of
+        // object naming.  So if any of alice's objects are renamed this
+        // may fail.
+        Json::Value const aliceObjects = env.rpc(
+            "json",
+            "account_objects",
+            R"({"account": ")" + alice.human() +
+                R"(", )"
+                R"("limit": 10})");
+        Json::Value const& aliceSignerList =
+            aliceObjects[jss::result][jss::account_objects][0u];
+        if (!(aliceSignerList[sfLedgerEntryType.jsonName] == jss::SignerList))
+        {
+            fail(
+                "alice's account objects are misordered.  "
+                "Please reorder the objects so the SignerList is first.",
+                __FILE__,
+                __LINE__);
+            return;
+        }
+
+        // Get account_lines for alice.  Limit at 1, so we get a marker
+        // pointing to her SignerList.
+        auto const aliceLines1 = env.rpc(
+            "json",
+            "account_lines",
+            R"({"account": ")" + alice.human() + R"(", "limit": 1})");
+        BEAST_EXPECT(aliceLines1[jss::result].isMember(jss::marker));
+
+        // Verify that the marker points at the signer list.
+        std::string const aliceMarker =
+            aliceLines1[jss::result][jss::marker].asString();
+        std::string const markerIndex =
+            aliceMarker.substr(0, aliceMarker.find(','));
+        BEAST_EXPECT(markerIndex == aliceSignerList[jss::index].asString());
+
+        // When we fetch Alice's remaining lines we should find one and no more.
+        auto const aliceLines2 = env.rpc(
+            "json",
+            "account_lines",
+            R"({"account": ")" + alice.human() + R"(", "marker": ")" +
+                aliceMarker + R"("})");
+        BEAST_EXPECT(aliceLines2[jss::result][jss::lines].size() == 1);
+        BEAST_EXPECT(!aliceLines2[jss::result].isMember(jss::marker));
+
+        // Get account lines for beckys account, using alices SignerList as a
+        // marker. This should cause an error.
+        auto const beckyLines = env.rpc(
+            "json",
+            "account_lines",
+            R"({"account": ")" + becky.human() + R"(", "marker": ")" +
+                aliceMarker + R"("})");
+        BEAST_EXPECT(beckyLines[jss::result].isMember(jss::error_message));
+    }
+
+    void
     testAccountLineDelete()
     {
         testcase("Entry pointed to by marker is removed");
@@ -390,8 +475,10 @@ public:
         env.close();
 
         auto const USD = gw1["USD"];
+        auto const AUD = gw1["AUD"];
         auto const EUR = gw2["EUR"];
         env(trust(alice, USD(200)));
+        env(trust(alice, AUD(200)));
         env(trust(becky, EUR(200)));
         env(trust(cheri, EUR(200)));
         env.close();
@@ -414,7 +501,7 @@ public:
             "account_lines",
             R"({"account": ")" + alice.human() +
                 R"(", )"
-                R"("limit": 1})");
+                R"("limit": 2})");
         BEAST_EXPECT(
             linesBeg[jss::result][jss::lines][0u][jss::currency] == "USD");
         BEAST_EXPECT(linesBeg[jss::result].isMember(jss::marker));
@@ -966,7 +1053,7 @@ public:
                 R"({"account": ")" +
                     alice.human() +
                     R"(", )"
-                    R"("limit": 1, )"
+                    R"("limit": 10, )"
                     R"("peer": ")" +
                     gw2.human() + R"("}})");
             auto const& line = lines[jss::result][jss::lines][0u];
@@ -1068,8 +1155,10 @@ public:
         env.close();
 
         auto const USD = gw1["USD"];
+        auto const AUD = gw1["AUD"];
         auto const EUR = gw2["EUR"];
         env(trust(alice, USD(200)));
+        env(trust(alice, AUD(200)));
         env(trust(becky, EUR(200)));
         env(trust(cheri, EUR(200)));
         env.close();
@@ -1098,7 +1187,7 @@ public:
             R"({"account": ")" +
                 alice.human() +
                 R"(", )"
-                R"("limit": 1}})");
+                R"("limit": 2}})");
         BEAST_EXPECT(
             linesBeg[jss::result][jss::lines][0u][jss::currency] == "USD");
         BEAST_EXPECT(linesBeg[jss::result].isMember(jss::marker));
@@ -1143,6 +1232,7 @@ public:
     run() override
     {
         testAccountLines();
+        testAccountLinesMarker();
         testAccountLineDelete();
         testAccountLines2();
         testAccountLineDelete2();

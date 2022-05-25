@@ -33,6 +33,10 @@ namespace ripple {
 
 enum class JsonOptions { none = 0, include_date = 1 };
 
+namespace detail {
+class STVar;
+}
+
 // VFALCO TODO fix this restriction on copy assignment.
 //
 // CAUTION: Do not create a vector (or similar container) of any object derived
@@ -61,53 +65,29 @@ enum class JsonOptions { none = 0, include_date = 1 };
 */
 class STBase
 {
+    SField const* fName;
+
 public:
-    STBase();
-
-    explicit STBase(SField const& n);
-
     virtual ~STBase() = default;
-
-    STBase(const STBase& t) = default;
+    STBase();
+    STBase(const STBase&) = default;
     STBase&
     operator=(const STBase& t);
+
+    explicit STBase(SField const& n);
 
     bool
     operator==(const STBase& t) const;
     bool
     operator!=(const STBase& t) const;
 
-    virtual STBase*
-    copy(std::size_t n, void* buf) const
-    {
-        return emplace(n, buf, *this);
-    }
-
-    virtual STBase*
-    move(std::size_t n, void* buf)
-    {
-        return emplace(n, buf, std::move(*this));
-    }
-
     template <class D>
     D&
-    downcast()
-    {
-        D* ptr = dynamic_cast<D*>(this);
-        if (ptr == nullptr)
-            Throw<std::bad_cast>();
-        return *ptr;
-    }
+    downcast();
 
     template <class D>
     D const&
-    downcast() const
-    {
-        D const* ptr = dynamic_cast<D const*>(this);
-        if (ptr == nullptr)
-            Throw<std::bad_cast>();
-        return *ptr;
-    }
+    downcast() const;
 
     virtual SerializedTypeID
     getSType() const;
@@ -142,23 +122,53 @@ public:
     addFieldID(Serializer& s) const;
 
 protected:
-    SField const* fName;
-
     template <class T>
     static STBase*
-    emplace(std::size_t n, void* buf, T&& val)
-    {
-        using U = std::decay_t<T>;
-        if (sizeof(U) > n)
-            return new U(std::forward<T>(val));
-        return new (buf) U(std::forward<T>(val));
-    }
+    emplace(std::size_t n, void* buf, T&& val);
+
+private:
+    virtual STBase*
+    copy(std::size_t n, void* buf) const;
+    virtual STBase*
+    move(std::size_t n, void* buf);
+
+    friend class detail::STVar;
 };
 
 //------------------------------------------------------------------------------
 
 std::ostream&
 operator<<(std::ostream& out, const STBase& t);
+
+template <class D>
+D&
+STBase::downcast()
+{
+    D* ptr = dynamic_cast<D*>(this);
+    if (ptr == nullptr)
+        Throw<std::bad_cast>();
+    return *ptr;
+}
+
+template <class D>
+D const&
+STBase::downcast() const
+{
+    D const* ptr = dynamic_cast<D const*>(this);
+    if (ptr == nullptr)
+        Throw<std::bad_cast>();
+    return *ptr;
+}
+
+template <class T>
+STBase*
+STBase::emplace(std::size_t n, void* buf, T&& val)
+{
+    using U = std::decay_t<T>;
+    if (sizeof(U) > n)
+        return new U(std::forward<T>(val));
+    return new (buf) U(std::forward<T>(val));
+}
 
 }  // namespace ripple
 

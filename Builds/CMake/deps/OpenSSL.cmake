@@ -22,7 +22,7 @@ if (static)
   set (OPENSSL_USE_STATIC_LIBS ON)
 endif ()
 set (OPENSSL_MSVC_STATIC_RT ON)
-find_package (OpenSSL 1.0.2 REQUIRED)
+find_package (OpenSSL 1.1.1 REQUIRED)
 target_link_libraries (ripple_libs
   INTERFACE
     OpenSSL::SSL

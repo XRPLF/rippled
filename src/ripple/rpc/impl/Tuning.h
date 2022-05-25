@@ -46,10 +46,16 @@ static LimitRange constexpr accountObjects = {10, 200, 400};
 static LimitRange constexpr accountOffers = {10, 200, 400};
 
 /** Limits for the book_offers command. */
-static LimitRange constexpr bookOffers = {0, 300, 400};
+static LimitRange constexpr bookOffers = {0, 60, 100};
 
 /** Limits for the no_ripple_check command. */
 static LimitRange constexpr noRippleCheck = {10, 300, 400};
+
+/** Limits for the account_nftokens command, in pages. */
+static LimitRange constexpr accountNFTokens = {20, 100, 400};
+
+/** Limits for the nft_buy_offers & nft_sell_offers commands. */
+static LimitRange constexpr nftOffers = {50, 250, 500};
 
 static int constexpr defaultAutoFillFeeMultiplier = 10;
 static int constexpr defaultAutoFillFeeDivisor = 1;

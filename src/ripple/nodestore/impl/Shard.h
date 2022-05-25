@@ -21,8 +21,9 @@
 #define RIPPLE_NODESTORE_SHARD_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/KeyCache.h>
 #include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/core/DatabaseCon.h>
@@ -39,7 +40,7 @@ namespace ripple {
 namespace NodeStore {
 
 using PCache = TaggedCache<uint256, NodeObject>;
-using NCache = KeyCache<uint256>;
+using NCache = KeyCache;
 class DatabaseShard;
 
 /* A range of historical ledgers backed by a node store.
@@ -262,7 +263,8 @@ private:
             other.counter_ = nullptr;
         }
 
-        Count(std::atomic<std::uint32_t>* counter) noexcept : counter_(counter)
+        explicit Count(std::atomic<std::uint32_t>* counter) noexcept
+            : counter_(counter)
         {
             if (counter_)
                 ++(*counter_);
@@ -274,7 +276,7 @@ private:
                 --(*counter_);
         }
 
-        operator bool() const noexcept
+        explicit operator bool() const noexcept
         {
             return counter_ != nullptr;
         }

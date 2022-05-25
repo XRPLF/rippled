@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 #define RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Issue.h>
 #include <boost/utility/base_from_member.hpp>
 
@@ -29,7 +30,7 @@ namespace ripple {
     The order book is a pair of Issues called in and out.
     @see Issue.
 */
-class Book
+class Book final : public CountedObject<Book>
 {
 public:
     Issue in;

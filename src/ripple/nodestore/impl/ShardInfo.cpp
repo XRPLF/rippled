@@ -23,8 +23,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
 
-#include <boost/algorithm/clamp.hpp>
-
 namespace ripple {
 namespace NodeStore {
 

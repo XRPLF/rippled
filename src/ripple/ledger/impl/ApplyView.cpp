@@ -334,4 +334,29 @@ ApplyView::dirRemove(
     return true;
 }
 
+bool
+ApplyView::dirDelete(
+    Keylet const& directory,
+    std::function<void(uint256 const&)> const& callback)
+{
+    std::optional<std::uint64_t> pi;
+
+    do
+    {
+        auto const page = peek(keylet::page(directory, pi.value_or(0)));
+
+        if (!page)
+            return false;
+
+        for (auto const& item : page->getFieldV256(sfIndexes))
+            callback(item);
+
+        pi = (*page)[~sfIndexNext];
+
+        erase(page);
+    } while (pi);
+
+    return true;
+}
+
 }  // namespace ripple

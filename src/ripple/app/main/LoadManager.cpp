@@ -108,86 +108,86 @@ LoadManager::run()
 
     while (true)
     {
+        t += 1s;
+
+        std::unique_lock sl(mutex_);
+        if (cv_.wait_until(sl, t, [this] { return stop_; }))
+            break;
+
+        // Copy out shared data under a lock.  Use copies outside lock.
+        auto const deadLock = deadLock_;
+        auto const armed = armed_;
+        sl.unlock();
+
+        // Measure the amount of time we have been deadlocked, in seconds.
+        using namespace std::chrono;
+        auto const timeSpentDeadlocked =
+            duration_cast<seconds>(steady_clock::now() - deadLock);
+
+        constexpr auto reportingIntervalSeconds = 10s;
+        constexpr auto deadlockFatalLogMessageTimeLimit = 90s;
+        constexpr auto deadlockLogicErrorTimeLimit = 600s;
+
+        if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
         {
-            t += 1s;
-            std::unique_lock sl(mutex_);
-            if (cv_.wait_until(sl, t, [this] { return stop_; }))
+            // Report the deadlocked condition every
+            // reportingIntervalSeconds
+            if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
             {
-                break;
-            }
-            // Copy out shared data under a lock.  Use copies outside lock.
-            auto const deadLock = deadLock_;
-            auto const armed = armed_;
-            sl.unlock();
-
-            // Measure the amount of time we have been deadlocked, in seconds.
-            using namespace std::chrono;
-            auto const timeSpentDeadlocked =
-                duration_cast<seconds>(steady_clock::now() - deadLock);
-
-            constexpr auto reportingIntervalSeconds = 10s;
-            constexpr auto deadlockFatalLogMessageTimeLimit = 90s;
-            constexpr auto deadlockLogicErrorTimeLimit = 600s;
-            if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
-            {
-                // Report the deadlocked condition every
-                // reportingIntervalSeconds
-                if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
+                if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
                 {
-                    if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
-                    {
-                        JLOG(journal_.warn())
-                            << "Server stalled for "
-                            << timeSpentDeadlocked.count() << " seconds.";
-                    }
-                    else
-                    {
-                        JLOG(journal_.fatal())
-                            << "Deadlock detected. Deadlocked time: "
-                            << timeSpentDeadlocked.count() << "s";
-                        if (app_.getJobQueue().isOverloaded())
-                        {
-                            JLOG(journal_.fatal())
-                                << app_.getJobQueue().getJson(0);
-                        }
-                    }
-                }
-
-                // If we go over the deadlockTimeLimit spent deadlocked, it
-                // means that the deadlock resolution code has failed, which
-                // qualifies as undefined behavior.
-                //
-                if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
-                {
-                    JLOG(journal_.fatal())
-                        << "LogicError: Deadlock detected. Deadlocked time: "
-                        << timeSpentDeadlocked.count() << "s";
+                    JLOG(journal_.warn())
+                        << "Server stalled for " << timeSpentDeadlocked.count()
+                        << " seconds.";
                     if (app_.getJobQueue().isOverloaded())
                     {
-                        JLOG(journal_.fatal()) << app_.getJobQueue().getJson(0);
+                        JLOG(journal_.warn()) << app_.getJobQueue().getJson(0);
                     }
-                    LogicError("Deadlock detected");
+                }
+                else
+                {
+                    JLOG(journal_.fatal())
+                        << "Deadlock detected. Deadlocked time: "
+                        << timeSpentDeadlocked.count() << "s";
+                    JLOG(journal_.fatal())
+                        << "JobQueue: " << app_.getJobQueue().getJson(0);
                 }
             }
-        }
 
-        bool change = false;
-        if (app_.getJobQueue().isOverloaded())
-        {
-            JLOG(journal_.info()) << app_.getJobQueue().getJson(0);
-            change = app_.getFeeTrack().raiseLocalFee();
+            // If we go over the deadlockTimeLimit spent deadlocked, it
+            // means that the deadlock resolution code has failed, which
+            // qualifies as undefined behavior.
+            //
+            if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
+            {
+                JLOG(journal_.fatal())
+                    << "LogicError: Deadlock detected. Deadlocked time: "
+                    << timeSpentDeadlocked.count() << "s";
+                JLOG(journal_.fatal())
+                    << "JobQueue: " << app_.getJobQueue().getJson(0);
+                LogicError("Deadlock detected");
+            }
         }
-        else
-        {
-            change = app_.getFeeTrack().lowerLocalFee();
-        }
+    }
 
-        if (change)
-        {
-            // VFALCO TODO replace this with a Listener / observer and
-            // subscribe in NetworkOPs or Application.
-            app_.getOPs().reportFeeChange();
-        }
+    bool change;
+
+    if (app_.getJobQueue().isOverloaded())
+    {
+        JLOG(journal_.info()) << "Raising local fee (JQ overload): "
+                              << app_.getJobQueue().getJson(0);
+        change = app_.getFeeTrack().raiseLocalFee();
+    }
+    else
+    {
+        change = app_.getFeeTrack().lowerLocalFee();
+    }
+
+    if (change)
+    {
+        // VFALCO TODO replace this with a Listener / observer and
+        // subscribe in NetworkOPs or Application.
+        app_.getOPs().reportFeeChange();
     }
 }
 

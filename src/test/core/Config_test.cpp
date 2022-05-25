@@ -810,11 +810,11 @@ trustthesevalidators.gov
         ParsedPort rpc;
         if (!unexcept([&]() { parse_Port(rpc, conf["port_rpc"], log); }))
             return;
-        BEAST_EXPECT(rpc.admin_ip && (rpc.admin_ip.value().size() == 2));
+        BEAST_EXPECT(rpc.admin_nets_v4.size() + rpc.admin_nets_v6.size() == 2);
         ParsedPort wss;
         if (!unexcept([&]() { parse_Port(wss, conf["port_wss_admin"], log); }))
             return;
-        BEAST_EXPECT(wss.admin_ip && (wss.admin_ip.value().size() == 1));
+        BEAST_EXPECT(wss.admin_nets_v4.size() + wss.admin_nets_v6.size() == 1);
     }
 
     void

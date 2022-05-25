@@ -20,7 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STTX_H_INCLUDED
 #define RIPPLE_PROTOCOL_STTX_H_INCLUDED
 
+#include <ripple/basics/Expected.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/SeqProxy.h>
@@ -41,23 +44,30 @@ enum TxnSql : char {
 
 class STTx final : public STObject, public CountedObject<STTx>
 {
-public:
-    static std::size_t const minMultiSigners = 1;
-    static std::size_t const maxMultiSigners = 8;
+    uint256 tid_;
+    TxType tx_type_;
 
 public:
+    static std::size_t const minMultiSigners = 1;
+
+    // if rules are not supplied then the largest possible value is returned
+    static std::size_t
+    maxMultiSigners(Rules const* rules = 0)
+    {
+        if (rules && !rules->enabled(featureExpandedSignerList))
+            return 8;
+
+        return 32;
+    }
+
     STTx() = delete;
+    STTx(STTx const& other) = default;
     STTx&
     operator=(STTx const& other) = delete;
 
-    STTx(STTx const& other) = default;
-
-    explicit STTx(SerialIter& sit) noexcept(false);
-    explicit STTx(SerialIter&& sit) noexcept(false) : STTx(sit)
-    {
-    }
-
-    explicit STTx(STObject&& object) noexcept(false);
+    explicit STTx(SerialIter& sit);
+    explicit STTx(SerialIter&& sit);
+    explicit STTx(STObject&& object);
 
     /** Constructs a transaction.
 
@@ -67,24 +77,10 @@ public:
     */
     STTx(TxType type, std::function<void(STObject&)> assembler);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
-
-    STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
-
     // STObject functions.
     SerializedTypeID
-    getSType() const override
-    {
-        return STI_TRANSACTION;
-    }
+    getSType() const override;
+
     std::string
     getFullText() const override;
 
@@ -96,16 +92,10 @@ public:
     getSigningHash() const;
 
     TxType
-    getTxnType() const
-    {
-        return tx_type_;
-    }
+    getTxnType() const;
 
     Blob
-    getSigningPubKey() const
-    {
-        return getFieldVL(sfSigningPubKey);
-    }
+    getSigningPubKey() const;
 
     SeqProxy
     getSeqProxy() const;
@@ -114,10 +104,7 @@ public:
     getMentionedAccounts() const;
 
     uint256
-    getTransactionID() const
-    {
-        return tid_;
-    }
+    getTransactionID() const;
 
     Json::Value
     getJson(JsonOptions options) const override;
@@ -131,8 +118,9 @@ public:
         @return `true` if valid signature. If invalid, the error message string.
     */
     enum class RequireFullyCanonicalSig : bool { no, yes };
-    std::pair<bool, std::string>
-    checkSign(RequireFullyCanonicalSig requireCanonicalSig) const;
+    Expected<void, std::string>
+    checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
+        const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -150,14 +138,20 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    std::pair<bool, std::string>
+    Expected<void, std::string>
     checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const;
 
-    std::pair<bool, std::string>
-    checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const;
+    Expected<void, std::string>
+    checkMultiSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
 
-    uint256 tid_;
-    TxType tx_type_;
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
 };
 
 bool
@@ -176,6 +170,28 @@ sterilize(STTx const& stx);
 /** Check whether a transaction is a pseudo-transaction */
 bool
 isPseudoTx(STObject const& tx);
+
+inline STTx::STTx(SerialIter&& sit) : STTx(sit)
+{
+}
+
+inline TxType
+STTx::getTxnType() const
+{
+    return tx_type_;
+}
+
+inline Blob
+STTx::getSigningPubKey() const
+{
+    return getFieldVL(sfSigningPubKey);
+}
+
+inline uint256
+STTx::getTransactionID() const
+{
+    return tid_;
+}
 
 }  // namespace ripple
 

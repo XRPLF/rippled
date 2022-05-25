@@ -52,7 +52,19 @@ class ShardArchiveHandler;
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
-class CachedSLEs;
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+class TaggedCache;
+class STLedgerEntry;
+using SLE = STLedgerEntry;
+using CachedSLEs = TaggedCache<uint256, SLE const>;
+
 class CollectorManager;
 class Family;
 class HashRouter;
@@ -87,7 +99,7 @@ class ValidatorList;
 class ValidatorSite;
 class Cluster;
 
-class RelationalDBInterface;
+class RelationalDatabase;
 class DatabaseCon;
 class SHAMapStore;
 
@@ -239,8 +251,8 @@ public:
     openLedger() = 0;
     virtual OpenLedger const&
     openLedger() const = 0;
-    virtual RelationalDBInterface&
-    getRelationalDBInterface() = 0;
+    virtual RelationalDatabase&
+    getRelationalDatabase() = 0;
 
     virtual std::chrono::milliseconds
     getIOLatency() = 0;

@@ -21,10 +21,13 @@
 #define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>  // NotTEC
+#include <ripple/basics/Expected.h>         //
 #include <ripple/beast/utility/Journal.h>   // beast::Journal
+#include <ripple/protocol/Rules.h>          // Rules
 #include <ripple/protocol/STTx.h>           // STTx::maxMultiSigners
 #include <ripple/protocol/TER.h>            // temMALFORMED
 #include <ripple/protocol/UintTypes.h>      // AccountID
+#include <optional>
 
 namespace ripple {
 
@@ -41,9 +44,13 @@ public:
     {
         AccountID account;
         std::uint16_t weight;
+        std::optional<uint256> tag;
 
-        SignerEntry(AccountID const& inAccount, std::uint16_t inWeight)
-            : account(inAccount), weight(inWeight)
+        SignerEntry(
+            AccountID const& inAccount,
+            std::uint16_t inWeight,
+            std::optional<uint256> inTag)
+            : account(inAccount), weight(inWeight), tag(inTag)
         {
         }
 
@@ -62,7 +69,7 @@ public:
     };
 
     // Deserialize a SignerEntries array from the network or from the ledger.
-    static std::pair<std::vector<SignerEntry>, NotTEC>
+    static Expected<std::vector<SignerEntry>, NotTEC>
     deserialize(
         STObject const& obj,
         beast::Journal journal,

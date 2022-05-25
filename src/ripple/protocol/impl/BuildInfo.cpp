@@ -33,11 +33,15 @@ namespace BuildInfo {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "1.8.0-b3"
+char const* const versionString = "1.9.1"
 // clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)
     "+"
+#ifdef GIT_COMMIT_HASH
+    GIT_COMMIT_HASH
+    "."
+#endif
 #ifdef DEBUG
     "DEBUG"
 #ifdef SANITIZER

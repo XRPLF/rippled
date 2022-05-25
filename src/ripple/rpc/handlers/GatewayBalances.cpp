@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -144,7 +144,7 @@ doGatewayBalances(RPC::JsonContext& context)
     {
         forEachItem(
             *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
-                auto rs = RippleState::makeItem(accountID, sle);
+                auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
                 if (!rs)
                     return;

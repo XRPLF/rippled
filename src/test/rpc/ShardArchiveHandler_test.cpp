@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/ShardArchive.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -696,7 +696,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ShardArchiveHandler, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(ShardArchiveHandler, app, ripple, 3);
 
 }  // namespace test
 }  // namespace ripple

@@ -1,0 +1,3 @@
+/var/log/rippled-reporting/
+/var/lib/rippled-reporting/
+/etc/systemd/system/rippled-reporting.service.d/

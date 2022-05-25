@@ -118,7 +118,7 @@ public:
 
 private:
     // This has the same representation as STAmount, see the comment on the
-    // STAmount. However, this class does not alway use the canonical
+    // STAmount. However, this class does not always use the canonical
     // representation. In particular, the increment and decrement operators may
     // cause a non-canonical representation.
     value_type m_value;
@@ -134,7 +134,7 @@ public:
 
     /** Create a quality from the ratio of two amounts. */
     template <class In, class Out>
-    Quality(TAmounts<In, Out> const& amount)
+    explicit Quality(TAmounts<In, Out> const& amount)
         : Quality(Amounts(toSTAmount(amount.in), toSTAmount(amount.out)))
     {
     }

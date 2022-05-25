@@ -328,9 +328,38 @@ doLedgerEntry(RPC::JsonContext& context)
                     *id, context.params[jss::ticket][jss::ticket_seq].asUInt());
         }
     }
+    else if (context.params.isMember(jss::nft_page))
+    {
+        expectedType = ltNFTOKEN_PAGE;
+
+        if (context.params[jss::nft_page].isString())
+        {
+            if (!uNodeIndex.parseHex(context.params[jss::nft_page].asString()))
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else
+        {
+            jvResult[jss::error] = "malformedRequest";
+        }
+    }
     else
     {
-        jvResult[jss::error] = "unknownOption";
+        if (context.params.isMember("params") &&
+            context.params["params"].isArray() &&
+            context.params["params"].size() == 1 &&
+            context.params["params"][0u].isString())
+        {
+            if (!uNodeIndex.parseHex(context.params["params"][0u].asString()))
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else
+            jvResult[jss::error] = "unknownOption";
     }
 
     if (uNodeIndex.isNonZero())
@@ -347,7 +376,7 @@ doLedgerEntry(RPC::JsonContext& context)
         else if (
             (expectedType != ltANY) && (expectedType != sleNode->getType()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            jvResult[jss::error] = "unexpectedLedgerType";
         }
         else if (bNodeBinary)
         {
@@ -377,23 +406,31 @@ doLedgerEntryGrpc(
     grpc::Status status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (RPC::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        grpc::Status errorStatus;
+        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        {
+            errorStatus = grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+        }
+        else
+        {
+            errorStatus =
+                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+        }
         return {response, errorStatus};
     }
 
-    std::string const& keyBytes = request.key();
-    auto key = uint256::fromVoid(keyBytes.data());
-    if (keyBytes.size() != key.size())
+    auto key = uint256::fromVoidChecked(request.key());
+    if (!key)
     {
         grpc::Status errorStatus{
             grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
         return {response, errorStatus};
     }
 
-    auto const sleNode = ledger->read(keylet::unchecked(key));
+    auto const sleNode = ledger->read(keylet::unchecked(*key));
     if (!sleNode)
     {
         grpc::Status errorStatus{

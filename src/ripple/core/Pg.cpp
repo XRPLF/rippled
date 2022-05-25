@@ -347,7 +347,7 @@ PgPool::PgPool(Section const& pgConfig, beast::Journal j) : j_(j)
 
     // The connection object must be freed using the libpq API PQfinish() call.
     pg_connection_type conn(
-        PQconnectdb(get<std::string>(pgConfig, "conninfo").c_str()),
+        PQconnectdb(get(pgConfig, "conninfo").c_str()),
         [](PGconn* conn) { PQfinish(conn); });
     if (!conn)
         Throw<std::runtime_error>("Can't create DB connection.");
@@ -792,11 +792,7 @@ CREATE OR REPLACE FUNCTION tx (
     _in_trans_id bytea
 ) RETURNS jsonb AS $$
 DECLARE
-    _min_ledger        bigint := min_ledger();
-    _min_seq           bigint := (SELECT ledger_seq
-                                    FROM ledgers
-                                   WHERE ledger_seq = _min_ledger
-                                     FOR SHARE);
+    _min_seq           bigint := min_ledger();
     _max_seq           bigint := max_ledger();
     _ledger_seq        bigint;
     _nodestore_hash    bytea;

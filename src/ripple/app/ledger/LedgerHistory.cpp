@@ -26,14 +26,6 @@
 
 namespace ripple {
 
-// VFALCO TODO replace macros
-
-#ifndef CACHED_LEDGER_NUM
-#define CACHED_LEDGER_NUM 96
-#endif
-
-std::chrono::seconds constexpr CachedLedgerAge = std::chrono::minutes{2};
-
 // FIXME: Need to clean up ledgers by index at some point
 
 LedgerHistory::LedgerHistory(
@@ -44,8 +36,8 @@ LedgerHistory::LedgerHistory(
     , mismatch_counter_(collector->make_counter("ledger.history", "mismatch"))
     , m_ledgers_by_hash(
           "LedgerCache",
-          CACHED_LEDGER_NUM,
-          CachedLedgerAge,
+          app_.config().getValueFor(SizedItem::ledgerSize),
+          std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
           stopwatch(),
           app_.journal("TaggedCache"))
     , m_consensus_validated(
@@ -521,13 +513,6 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
         return false;
     }
     return true;
-}
-
-void
-LedgerHistory::tune(int size, std::chrono::seconds age)
-{
-    m_ledgers_by_hash.setTargetSize(size);
-    m_ledgers_by_hash.setTargetAge(age);
 }
 
 void

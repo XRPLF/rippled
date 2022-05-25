@@ -20,7 +20,8 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/paths/TrustLine.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
@@ -89,6 +90,47 @@ accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
         return Json::objectValue;
 }
 
+std::uint64_t
+getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+            return sle->getFieldU64(sfLowNode);
+        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+            return sle->getFieldU64(sfHighNode);
+    }
+
+    if (!sle->isFieldPresent(sfOwnerNode))
+        return 0;
+
+    return sle->getFieldU64(sfOwnerNode);
+}
+
+bool
+isOwnedByAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
+            (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
+    }
+    else if (sle->isFieldPresent(sfAccount))
+    {
+        return sle->getAccountID(sfAccount) == accountID;
+    }
+    else if (sle->getType() == ltSIGNER_LIST)
+    {
+        Keylet const accountSignerList = keylet::signers(accountID);
+        return sle->key() == accountSignerList.key;
+    }
+
+    return false;
+}
+
 bool
 getAccountObjects(
     ReadView const& ledger,
@@ -144,19 +186,19 @@ getAccountObjects(
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
+            }
 
-                if (++i == limit)
+            if (++i == limit)
+            {
+                if (++iter != entries.end())
                 {
-                    if (++iter != entries.end())
-                    {
-                        jvResult[jss::limit] = limit;
-                        jvResult[jss::marker] =
-                            to_string(dirIndex) + ',' + to_string(*iter);
-                        return true;
-                    }
-
-                    break;
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] =
+                        to_string(dirIndex) + ',' + to_string(*iter);
+                    return true;
                 }
+
+                break;
             }
         }
 
@@ -294,8 +336,11 @@ ledgerFromSpecifier(
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            uint256 ledgerHash = uint256::fromVoid(specifier.hash().data());
-            return getLedger(ledger, ledgerHash, context);
+            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            {
+                return getLedger(ledger, *hash, context);
+            }
+            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         }
         case LedgerCase::kSequence:
             return getLedger(ledger, specifier.sequence(), context);
@@ -492,7 +537,7 @@ isValidated(
             {
                 assert(hash->isNonZero());
                 uint256 valHash =
-                    app.getRelationalDBInterface().getHashByIndex(seq);
+                    app.getRelationalDatabase().getHashByIndex(seq);
                 if (valHash == ledger.info().hash)
                 {
                     // SQL database doesn't match ledger chain
@@ -651,19 +696,31 @@ parseRippleLibSeed(Json::Value const& value)
 std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
-    // The array should be constexpr, but that makes Visual Studio unhappy.
-    static char const* const seedTypes[]{
-        jss::passphrase.c_str(), jss::seed.c_str(), jss::seed_hex.c_str()};
+    using string_to_seed_t =
+        std::function<std::optional<Seed>(std::string const&)>;
+    using seed_match_t = std::pair<char const*, string_to_seed_t>;
+
+    static seed_match_t const seedTypes[]{
+        {jss::passphrase.c_str(),
+         [](std::string const& s) { return parseGenericSeed(s); }},
+        {jss::seed.c_str(),
+         [](std::string const& s) { return parseBase58<Seed>(s); }},
+        {jss::seed_hex.c_str(), [](std::string const& s) {
+             uint128 i;
+             if (i.parseHex(s))
+                 return std::optional<Seed>(Slice(i.data(), i.size()));
+             return std::optional<Seed>{};
+         }}};
 
     // Identify which seed type is in use.
-    char const* seedType = nullptr;
+    seed_match_t const* seedType = nullptr;
     int count = 0;
-    for (auto t : seedTypes)
+    for (auto const& t : seedTypes)
     {
-        if (params.isMember(t))
+        if (params.isMember(t.first))
         {
             ++count;
-            seedType = t;
+            seedType = &t;
         }
     }
 
@@ -677,28 +734,17 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     }
 
     // Make sure a string is present
-    if (!params[seedType].isString())
+    auto const& param = params[seedType->first];
+    if (!param.isString())
     {
-        error = RPC::expected_field_error(seedType, "string");
+        error = RPC::expected_field_error(seedType->first, "string");
         return std::nullopt;
     }
 
-    auto const fieldContents = params[seedType].asString();
+    auto const fieldContents = param.asString();
 
     // Convert string to seed.
-    std::optional<Seed> seed;
-
-    if (seedType == jss::seed.c_str())
-        seed = parseBase58<Seed>(fieldContents);
-    else if (seedType == jss::passphrase.c_str())
-        seed = parseGenericSeed(fieldContents);
-    else if (seedType == jss::seed_hex.c_str())
-    {
-        uint128 s;
-
-        if (s.parseHex(fieldContents))
-            seed.emplace(Slice(s.data(), s.size()));
-    }
+    std::optional<Seed> seed = seedType->second(fieldContents);
 
     if (!seed)
         error = rpcError(rpcBAD_SEED);
@@ -712,7 +758,6 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     bool const has_key_type = params.isMember(jss::key_type);
 
     // All of the secret types we allow, but only one at a time.
-    // The array should be constexpr, but that makes Visual Studio unhappy.
     static char const* const secretTypes[]{
         jss::passphrase.c_str(),
         jss::secret.c_str(),
@@ -766,7 +811,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
             return {};
         }
 
-        if (secretType == jss::secret.c_str())
+        // using strcmp as pointers may not match (see
+        // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
+        if (strcmp(secretType, jss::secret.c_str()) == 0)
         {
             error = RPC::make_param_error(
                 "The secret field is not allowed if " +
@@ -778,7 +825,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
-    if (secretType != jss::seed_hex.c_str())
+    // using strcmp as pointers may not match (see
+    // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
+    if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
         seed = RPC::parseRippleLibSeed(params[secretType]);
 
@@ -836,10 +885,10 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 std::pair<RPC::Status, LedgerEntryType>
 chooseLedgerEntryType(Json::Value const& params)
 {
-    std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltINVALID};
+    std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 13>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 14>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -853,7 +902,8 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::payment_channel, ltPAYCHAN},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET}}};
+                 {jss::ticket, ltTICKET},
+                 {jss::nft_offer, ltNFTOKEN_OFFER}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())

@@ -209,7 +209,7 @@ fillJsonState(Object& json, LedgerFill const& fill)
 
     for (auto const& sle : ledger.sles)
     {
-        if (fill.type == ltINVALID || sle->getType() == fill.type)
+        if (fill.type == ltANY || sle->getType() == fill.type)
         {
             if (binary)
             {

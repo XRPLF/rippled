@@ -19,11 +19,9 @@
 
 #include <ripple/shamap/SHAMapInnerNode.h>
 
-#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
@@ -33,14 +31,92 @@
 #include <openssl/sha.h>
 
 #include <algorithm>
-#include <array>
 #include <iterator>
-#include <mutex>
 #include <utility>
+
+#ifndef __aarch64__
+// This is used for the _mm_pause instruction:
+#include <immintrin.h>
+#endif
 
 namespace ripple {
 
-std::mutex SHAMapInnerNode::childLock;
+/** A specialized 16-way spinlock used to protect inner node branches.
+
+    This class packs 16 separate spinlocks into a single 16-bit value. It makes
+    it possible to lock any one lock at once or, alternatively, all together.
+
+    The implementation tries to use portable constructs but has to be low-level
+    for performance.
+ */
+class SpinBitlock
+{
+private:
+    std::atomic<std::uint16_t>& bits_;
+    std::uint16_t mask_;
+
+public:
+    SpinBitlock(std::atomic<std::uint16_t>& lock) : bits_(lock), mask_(0xFFFF)
+    {
+    }
+
+    SpinBitlock(std::atomic<std::uint16_t>& lock, int index)
+        : bits_(lock), mask_(1 << index)
+    {
+        assert(index >= 0 && index < 16);
+    }
+
+    [[nodiscard]] bool
+    try_lock()
+    {
+        // If we want to grab all the individual bitlocks at once we cannot
+        // use `fetch_or`! To see why, imagine that `lock_ == 0x0020` which
+        // means that the `fetch_or` would return `0x0020` but all the bits
+        // would already be (incorrectly!) set. Oops!
+        std::uint16_t expected = 0;
+
+        if (mask_ != 0xFFFF)
+            return (bits_.fetch_or(mask_, std::memory_order_acquire) & mask_) ==
+                expected;
+
+        return bits_.compare_exchange_weak(
+            expected,
+            mask_,
+            std::memory_order_acquire,
+            std::memory_order_relaxed);
+    }
+
+    void
+    lock()
+    {
+        // Testing suggests that 99.9999% of the time this will succeed, so
+        // we try to optimize the fast path.
+        if (try_lock())
+            return;
+
+        do
+        {
+            // We try to spin for a few times:
+            for (int i = 0; i != 100; ++i)
+            {
+                if (try_lock())
+                    return;
+
+#ifndef __aarch64__
+                _mm_pause();
+#endif
+            }
+
+            std::this_thread::yield();
+        } while ((bits_.load(std::memory_order_relaxed) & mask_) == 0);
+    }
+
+    void
+    unlock()
+    {
+        bits_.fetch_and(~mask_, std::memory_order_release);
+    }
+};
 
 SHAMapInnerNode::SHAMapInnerNode(
     std::uint32_t cowid,
@@ -108,7 +184,10 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
             cloneHashes[branchNum] = thisHashes[indexNum];
         });
     }
-    std::lock_guard lock(childLock);
+
+    SpinBitlock sl(lock_);
+    std::lock_guard lock(sl);
+
     if (thisIsSparse)
     {
         int cloneChildIndex = 0;
@@ -132,19 +211,21 @@ SHAMapInnerNode::makeFullInner(
     SHAMapHash const& hash,
     bool hashValid)
 {
-    if (data.size() != 512)
+    // A full inner node is serialized as 16 256-bit hashes, back to back:
+    if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
     auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
 
-    Serializer s(data.data(), data.size());
+    SerialIter si(data);
 
-    auto retHashes = ret->hashesAndChildren_.getHashes();
+    auto hashes = ret->hashesAndChildren_.getHashes();
+
     for (int i = 0; i < branchFactor; ++i)
     {
-        s.getBitString(retHashes[i].as_uint256(), i * 32);
+        hashes[i].as_uint256() = si.getBitString<256>();
 
-        if (retHashes[i].isNonZero())
+        if (hashes[i].isNonZero())
             ret->isBranch_ |= (1 << i);
     }
 
@@ -154,39 +235,43 @@ SHAMapInnerNode::makeFullInner(
         ret->hash_ = hash;
     else
         ret->updateHash();
+
     return ret;
 }
 
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
-    Serializer s(data.data(), data.size());
+    // A compressed inner node is serialized as a series of 33 byte chunks,
+    // representing a one byte "position" and a 256-bit hash:
+    constexpr std::size_t chunkSize = uint256::bytes + 1;
 
-    int len = s.getLength();
+    if (auto const s = data.size();
+        (s % chunkSize != 0) || (s > chunkSize * branchFactor))
+        Throw<std::runtime_error>("Invalid CI node");
+
+    SerialIter si(data);
 
     auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
 
-    auto retHashes = ret->hashesAndChildren_.getHashes();
-    for (int i = 0; i < (len / 33); ++i)
+    auto hashes = ret->hashesAndChildren_.getHashes();
+
+    while (!si.empty())
     {
-        int pos;
+        auto const hash = si.getBitString<256>();
+        auto const pos = si.get8();
 
-        if (!s.get8(pos, 32 + (i * 33)))
-            Throw<std::runtime_error>("short CI node");
-
-        if ((pos < 0) || (pos >= branchFactor))
+        if (pos >= branchFactor)
             Throw<std::runtime_error>("invalid CI node");
 
-        s.getBitString(retHashes[pos].as_uint256(), i * 33);
+        hashes[pos].as_uint256() = hash;
 
-        if (retHashes[pos].isNonZero())
+        if (hashes[pos].isNonZero())
             ret->isBranch_ |= (1 << pos);
     }
 
     ret->resizeChildArrays(ret->getBranchCount());
-
     ret->updateHash();
-
     return ret;
 }
 
@@ -335,8 +420,11 @@ SHAMapInnerNode::getChildPointer(int branch)
     assert(branch >= 0 && branch < branchFactor);
     assert(!isEmptyBranch(branch));
 
-    std::lock_guard lock(childLock);
-    return hashesAndChildren_.getChildren()[*getChildIndex(branch)].get();
+    auto const index = *getChildIndex(branch);
+
+    SpinBitlock sl(lock_, index);
+    std::lock_guard lock(sl);
+    return hashesAndChildren_.getChildren()[index].get();
 }
 
 std::shared_ptr<SHAMapTreeNode>
@@ -345,8 +433,11 @@ SHAMapInnerNode::getChild(int branch)
     assert(branch >= 0 && branch < branchFactor);
     assert(!isEmptyBranch(branch));
 
-    std::lock_guard lock(childLock);
-    return hashesAndChildren_.getChildren()[*getChildIndex(branch)];
+    auto const index = *getChildIndex(branch);
+
+    SpinBitlock sl(lock_, index);
+    std::lock_guard lock(sl);
+    return hashesAndChildren_.getChildren()[index];
 }
 
 SHAMapHash const&
@@ -371,7 +462,9 @@ SHAMapInnerNode::canonicalizeChild(
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
     assert(node->getHash() == hashes[childIndex]);
 
-    std::lock_guard lock(childLock);
+    SpinBitlock sl(lock_, childIndex);
+    std::lock_guard lock(sl);
+
     if (children[childIndex])
     {
         // There is already a node hooked up, return it

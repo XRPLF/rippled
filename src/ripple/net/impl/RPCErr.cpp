@@ -26,8 +26,9 @@ struct RPCErr;
 
 // VFALCO NOTE Deprecated function
 Json::Value
-rpcError(int iError, Json::Value jvResult)
+rpcError(int iError)
 {
+    Json::Value jvResult(Json::objectValue);
     RPC::inject_error(iError, jvResult);
     return jvResult;
 }

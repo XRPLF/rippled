@@ -149,7 +149,7 @@ encodeBase58(
 static std::string
 decodeBase58(std::string const& s)
 {
-    auto psz = s.c_str();
+    auto psz = reinterpret_cast<unsigned char const*>(s.c_str());
     auto remain = s.size();
     // Skip and count leading zeroes
     int zeroes = 0;

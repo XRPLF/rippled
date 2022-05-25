@@ -257,7 +257,7 @@ public:
                 BEAST_EXPECT(shouldBeInvalid == sfInvalid);
             };
             testInvalid(STI_VL, 255);
-            testInvalid(STI_HASH256, 255);
+            testInvalid(STI_UINT256, 255);
             testInvalid(STI_UINT32, 255);
             testInvalid(STI_VECTOR256, 255);
             testInvalid(STI_OBJECT, 255);

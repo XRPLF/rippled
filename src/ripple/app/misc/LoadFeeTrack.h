@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
 
 #include <ripple/basics/FeeUnits.h>
+#include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/json/json_value.h>
 #include <algorithm>
@@ -58,6 +59,7 @@ public:
     void
     setRemoteFee(std::uint32_t f)
     {
+        JLOG(j_.trace()) << "setRemoteFee: " << f;
         std::lock_guard sl(lock_);
         remoteTxnLoadFee_ = f;
     }
@@ -110,6 +112,7 @@ public:
     void
     setClusterFee(std::uint32_t fee)
     {
+        JLOG(j_.trace()) << "setClusterFee: " << fee;
         std::lock_guard sl(lock_);
         clusterTxnLoadFee_ = fee;
     }

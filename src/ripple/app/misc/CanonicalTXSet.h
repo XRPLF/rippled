@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MISC_CANONICALTXSET_H_INCLUDED
 #define RIPPLE_APP_MISC_CANONICALTXSET_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/SeqProxy.h>
@@ -34,7 +35,7 @@ namespace ripple {
 
 */
 // VFALCO TODO rename to SortedTxSet
-class CanonicalTXSet
+class CanonicalTXSet : public CountedObject<CanonicalTXSet>
 {
 private:
     class Key

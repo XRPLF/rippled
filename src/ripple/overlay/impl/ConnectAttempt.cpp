@@ -204,8 +204,9 @@ ConnectAttempt::onHandshake(error_code ec)
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
         app_.config().COMPRESSION,
-        app_.config().VP_REDUCE_RELAY_ENABLE,
-        app_.config().LEDGER_REPLAY);
+        app_.config().LEDGER_REPLAY,
+        app_.config().TX_REDUCE_RELAY_ENABLE,
+        app_.config().VP_REDUCE_RELAY_ENABLE);
 
     buildHandshake(
         req_,

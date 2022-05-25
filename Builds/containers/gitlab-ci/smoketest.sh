@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -ex
+set -e
 install_from=$1
 use_private=${2:-0} # this option not currently needed by any CI scripts,
                     # reserved for possible future use
@@ -16,7 +16,7 @@ case ${ID} in
     ubuntu|debian)
         pkgtype="dpkg"
         ;;
-    fedora|centos|rhel|scientific)
+    fedora|centos|rhel|scientific|rocky)
         pkgtype="rpm"
         ;;
     *)
@@ -51,7 +51,7 @@ if [ "${pkgtype}" = "dpkg" ] ; then
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
         updateWithRetry
-        apt-get -y install libprotobuf-dev libssl-dev
+        apt-get -y install libprotobuf-dev libprotoc-dev protobuf-compiler libssl-dev
         rm -f build/dpkg/packages/rippled-dbgsym*.*
         dpkg --no-debsig -i build/dpkg/packages/*.deb
     else
@@ -61,7 +61,11 @@ if [ "${pkgtype}" = "dpkg" ] ; then
 else
     yum -y update
     if [ "${install_from}" = "repo" ] ; then
-        yum -y install yum-utils coreutils util-linux
+        pkgs=("yum-utils coreutils util-linux")
+        if [ "$ID" = "rocky" ]; then
+            pkgs="${pkgs[@]/coreutils}"
+        fi
+        yum install -y $pkgs
         REPOFILE="/etc/yum.repos.d/artifactory.repo"
         echo "[Artifactory]" > ${REPOFILE}
         echo "name=Artifactory" >> ${REPOFILE}
@@ -76,7 +80,12 @@ else
         yum -y install ${rpm_version_release}
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
-        yum install -y yum-utils openssl-static zlib-static
+        pkgs=("yum-utils openssl-static zlib-static")
+        if [ "$ID" = "rocky" ]; then
+            sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
+            pkgs="${pkgs[@]/openssl-static}"
+        fi
+        yum install -y $pkgs
         rm -f build/rpm/packages/rippled-debug*.rpm
         rm -f build/rpm/packages/*.src.rpm
         rpm -i build/rpm/packages/*.rpm
@@ -95,5 +104,3 @@ fi
 # run unit tests
 /opt/ripple/bin/rippled --unittest --unittest-jobs $(nproc)
 /opt/ripple/bin/validator-keys --unittest
-
-

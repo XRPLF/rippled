@@ -43,15 +43,88 @@ Database::Database(
     , earliestLedgerSeq_(
           get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
     , earliestShardIndex_((earliestLedgerSeq_ - 1) / ledgersPerShard_)
+    , requestBundle_(get<int>(config, "rq_bundle", 4))
+    , readThreads_(std::max(1, readThreads))
 {
+    assert(readThreads != 0);
+
     if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
         Throw<std::runtime_error>("Invalid ledgers_per_shard");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
 
-    while (readThreads-- > 0)
-        readThreads_.emplace_back(&Database::threadEntry, this);
+    if (requestBundle_ < 1 || requestBundle_ > 64)
+        Throw<std::runtime_error>("Invalid rq_bundle");
+
+    for (int i = readThreads_.load(); i != 0; --i)
+    {
+        std::thread t(
+            [this](int i) {
+                runningThreads_++;
+
+                beast::setCurrentThreadName(
+                    "db prefetch #" + std::to_string(i));
+
+                decltype(read_) read;
+
+                while (!isStopping())
+                {
+                    {
+                        std::unique_lock<std::mutex> lock(readLock_);
+
+                        if (read_.empty())
+                        {
+                            runningThreads_--;
+                            readCondVar_.wait(lock);
+                            runningThreads_++;
+                        }
+
+                        if (isStopping())
+                            continue;
+
+                        // If configured, extract multiple object at a time to
+                        // minimize the overhead of acquiring the mutex.
+                        for (int cnt = 0;
+                             !read_.empty() && cnt != requestBundle_;
+                             ++cnt)
+                            read.insert(read_.extract(read_.begin()));
+                    }
+
+                    for (auto it = read.begin(); it != read.end(); ++it)
+                    {
+                        assert(!it->second.empty());
+
+                        auto const& hash = it->first;
+                        auto const& data = it->second;
+                        auto const seqn = data[0].first;
+
+                        auto obj =
+                            fetchNodeObject(hash, seqn, FetchType::async);
+
+                        // This could be further optimized: if there are
+                        // multiple requests for sequence numbers mapping to
+                        // multiple databases by sorting requests such that all
+                        // indices mapping to the same database are grouped
+                        // together and serviced by a single read.
+                        for (auto const& req : data)
+                        {
+                            req.second(
+                                (seqn == req.first) || isSameDB(req.first, seqn)
+                                    ? obj
+                                    : fetchNodeObject(
+                                          hash, req.first, FetchType::async));
+                        }
+                    }
+
+                    read.clear();
+                }
+
+                --readThreads_;
+            },
+            i);
+        t.detach();
+    }
 }
 
 Database::~Database()
@@ -68,8 +141,7 @@ Database::~Database()
 bool
 Database::isStopping() const
 {
-    std::lock_guard lock(readLock_);
-    return readStopping_;
+    return readStopping_.load(std::memory_order_relaxed);
 }
 
 std::uint32_t
@@ -88,19 +160,15 @@ Database::maxLedgers(std::uint32_t shardIndex) const noexcept
 void
 Database::stop()
 {
-    // After stop time we can no longer use the JobQueue for background
-    // reads.  Join the background read threads.
+    if (!readStopping_.exchange(true, std::memory_order_relaxed))
     {
         std::lock_guard lock(readLock_);
-        if (readStopping_)  // Only stop threads once.
-            return;
-
-        readStopping_ = true;
+        read_.clear();
         readCondVar_.notify_all();
     }
 
-    for (auto& e : readThreads_)
-        e.join();
+    while (readThreads_.load() != 0)
+        std::this_thread::yield();
 }
 
 void
@@ -158,14 +226,17 @@ std::shared_ptr<NodeObject>
 Database::fetchNodeObject(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
-    FetchType fetchType)
+    FetchType fetchType,
+    bool duplicate)
 {
     FetchReport fetchReport(fetchType);
 
     using namespace std::chrono;
     auto const begin{steady_clock::now()};
 
-    auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport)};
+    auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
+    auto dur = steady_clock::now() - begin;
+    fetchDurationUs_ += duration_cast<microseconds>(dur).count();
     if (nodeObject)
     {
         ++fetchHitCount_;
@@ -173,8 +244,7 @@ Database::fetchNodeObject(
     }
     ++fetchTotalCount_;
 
-    fetchReport.elapsed =
-        duration_cast<milliseconds>(steady_clock::now() - begin);
+    fetchReport.elapsed = duration_cast<milliseconds>(dur);
     scheduler_.onFetch(fetchReport);
     return nodeObject;
 }
@@ -278,57 +348,20 @@ Database::storeLedger(
     return true;
 }
 
-// Entry point for async read threads
-void
-Database::threadEntry()
-{
-    beast::setCurrentThreadName("prefetch");
-    while (true)
-    {
-        uint256 lastHash;
-        std::vector<std::pair<
-            std::uint32_t,
-            std::function<void(std::shared_ptr<NodeObject> const&)>>>
-            entry;
-
-        {
-            std::unique_lock<std::mutex> lock(readLock_);
-            readCondVar_.wait(
-                lock, [this] { return readStopping_ || !read_.empty(); });
-            if (readStopping_)
-                break;
-
-            // Read in key order to make the back end more efficient
-            auto it = read_.lower_bound(readLastHash_);
-            if (it == read_.end())
-            {
-                // start over from the beginning
-                it = read_.begin();
-            }
-            lastHash = it->first;
-            entry = std::move(it->second);
-            read_.erase(it);
-            readLastHash_ = lastHash;
-        }
-
-        auto seq = entry[0].first;
-        auto obj = fetchNodeObject(lastHash, seq, FetchType::async);
-
-        for (auto const& req : entry)
-        {
-            if ((seq == req.first) || isSameDB(req.first, seq))
-                req.second(obj);
-            else
-                req.second(
-                    fetchNodeObject(lastHash, req.first, FetchType::async));
-        }
-    }
-}
-
 void
 Database::getCountsJson(Json::Value& obj)
 {
     assert(obj.isObject());
+
+    {
+        std::unique_lock<std::mutex> lock(readLock_);
+        obj["read_queue"] = static_cast<Json::UInt>(read_.size());
+    }
+
+    obj["read_threads_total"] = readThreads_.load();
+    obj["read_threads_running"] = runningThreads_.load();
+    obj["read_request_bundle"] = requestBundle_;
+
     obj[jss::node_writes] = std::to_string(storeCount_);
     obj[jss::node_reads_total] = std::to_string(fetchTotalCount_);
     obj[jss::node_reads_hit] = std::to_string(fetchHitCount_);

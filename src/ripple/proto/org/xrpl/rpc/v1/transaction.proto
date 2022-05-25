@@ -9,7 +9,7 @@ import "org/xrpl/rpc/v1/amount.proto";
 import "org/xrpl/rpc/v1/account.proto";
 
 // A message encompassing all transaction types
-// Next field: 32
+// Next field: 37
 message Transaction
 {
     Account account = 1;
@@ -40,6 +40,16 @@ message Transaction
         EscrowCreate escrow_create = 20;
 
         EscrowFinish escrow_finish = 21;
+
+        NFTokenAcceptOffer nftoken_accept_offer = 32;
+
+        NFTokenBurn nftoken_burn = 33;
+
+        NFTokenCancelOffer nftoken_cancel_offer = 34;
+
+        NFTokenCreateOffer nftoken_create_offer = 35;
+
+        NFTokenMint nftoken_mint = 36;
 
         OfferCancel offer_cancel = 22;
 
@@ -99,7 +109,7 @@ message Signer
     SigningPublicKey signing_public_key = 3;
 }
 
-// Next field: 8
+// Next field: 9
 message AccountSet
 {
     ClearFlag clear_flag = 1;
@@ -115,6 +125,8 @@ message AccountSet
     TransferRate transfer_rate = 6;
 
     TickSize tick_size = 7;
+
+    NFTokenMinter nftoken_minter = 8;
 }
 
 // Next field: 3
@@ -203,6 +215,56 @@ message EscrowFinish
     Condition condition = 3;
 
     Fulfillment fulfillment = 4;
+}
+
+// Next field: 4
+message NFTokenAcceptOffer
+{
+    NFTokenBrokerFee nftoken_broker_fee = 1;
+
+    NFTokenBuyOffer nftoken_buy_offer = 2;
+
+    NFTokenSellOffer nftoken_sell_offer = 3;
+}
+
+// Next field: 3
+message NFTokenBurn
+{
+    Owner owner = 1;
+
+    NFTokenID nftoken_id = 2;
+}
+
+// Next field: 2
+message NFTokenCancelOffer
+{
+    repeated Index nftoken_offers = 1;
+}
+
+// Next field: 6
+message NFTokenCreateOffer
+{
+    Amount amount = 1;
+
+    Destination destination = 2;
+
+    Expiration expiration = 3;
+
+    Owner owner = 4;
+
+    NFTokenID nftoken_id = 5;
+}
+
+// Next field: 5
+message NFTokenMint
+{
+    Issuer issuer = 1;
+
+    NFTokenTaxon nftoken_taxon = 2;
+
+    TransferFee transfer_fee = 3;
+
+    URI uri = 4;
 }
 
 // Next field: 2

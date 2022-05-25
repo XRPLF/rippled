@@ -101,6 +101,9 @@ doAccountChannels(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
         return *err;
 
+    if (limit == 0u)
+        return rpcError(rpcINVALID_PARAMS);
+
     Json::Value jsonChannels{Json::arrayValue};
     struct VisitData
     {
@@ -110,71 +113,93 @@ doAccountChannels(RPC::JsonContext& context)
         AccountID const& raDstAccount;
     };
     VisitData visitData = {{}, accountID, hasDst, raDstAccount};
-    visitData.items.reserve(limit + 1);
-    uint256 startAfter;
-    std::uint64_t startHint;
+    visitData.items.reserve(limit);
+    uint256 startAfter = beast::zero;
+    std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
     {
-        Json::Value const& marker(params[jss::marker]);
-
-        if (!marker.isString())
+        if (!params[jss::marker].isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        if (!startAfter.parseHex(marker.asString()))
+        // Marker is composed of a comma separated index and start hint. The
+        // former will be read as hex, and the latter using boost lexical cast.
+        std::stringstream marker(params[jss::marker].asString());
+        std::string value;
+        if (!std::getline(marker, value, ','))
+            return rpcError(rpcINVALID_PARAMS);
+
+        if (!startAfter.parseHex(value))
+            return rpcError(rpcINVALID_PARAMS);
+
+        if (!std::getline(marker, value, ','))
+            return rpcError(rpcINVALID_PARAMS);
+
+        try
+        {
+            startHint = boost::lexical_cast<std::uint64_t>(value);
+        }
+        catch (boost::bad_lexical_cast&)
         {
             return rpcError(rpcINVALID_PARAMS);
         }
 
-        auto const sleChannel = ledger->read({ltPAYCHAN, startAfter});
+        // We then must check if the object pointed to by the marker is actually
+        // owned by the account in the request.
+        auto const sle = ledger->read({ltANY, startAfter});
 
-        if (!sleChannel)
+        if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!visitData.hasDst ||
-            visitData.raDstAccount == (*sleChannel)[sfDestination])
-        {
-            visitData.items.emplace_back(sleChannel);
-            startHint = sleChannel->getFieldU64(sfOwnerNode);
-        }
-        else
-        {
+        if (!RPC::isOwnedByAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
-        }
     }
-    else
-    {
-        startHint = 0;
-    }
 
+    auto count = 0;
+    std::optional<uint256> marker = {};
+    std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
             accountID,
             startAfter,
             startHint,
-            limit - visitData.items.size() + 1,
-            [&visitData, &accountID](std::shared_ptr<SLE const> const& sleCur) {
-                if (sleCur && sleCur->getType() == ltPAYCHAN &&
+            limit + 1,
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
+                std::shared_ptr<SLE const> const& sleCur) {
+                if (!sleCur)
+                {
+                    assert(false);
+                    return false;
+                }
+
+                if (++count == limit)
+                {
+                    marker = sleCur->key();
+                    nextHint = RPC::getStartHint(sleCur, visitData.accountID);
+                }
+
+                if (count <= limit && sleCur->getType() == ltPAYCHAN &&
                     (*sleCur)[sfAccount] == accountID &&
                     (!visitData.hasDst ||
                      visitData.raDstAccount == (*sleCur)[sfDestination]))
                 {
                     visitData.items.emplace_back(sleCur);
-                    return true;
                 }
 
-                return false;
+                return true;
             }))
     {
         return rpcError(rpcINVALID_PARAMS);
     }
 
-    if (visitData.items.size() == limit + 1)
+    // Both conditions need to be checked because marker is set on the limit-th
+    // item, but if there is no item on the limit + 1 iteration, then there is
+    // no need to return a marker.
+    if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-
-        result[jss::marker] = to_string(visitData.items.back()->key());
-        visitData.items.pop_back();
+        result[jss::marker] =
+            to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     result[jss::account] = context.app.accountIDCache().toBase58(accountID);

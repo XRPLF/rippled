@@ -33,7 +33,10 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 
+#include <boost/iterator/function_output_iterator.hpp>
+
 #include <algorithm>
+#include <random>
 
 namespace ripple {
 
@@ -41,19 +44,19 @@ using namespace std::chrono_literals;
 
 enum {
     // Number of peers to start with
-    peerCountStart = 4
+    peerCountStart = 5
 
     // Number of peers to add on a timeout
     ,
-    peerCountAdd = 2
+    peerCountAdd = 3
 
     // how many timeouts before we give up
     ,
-    ledgerTimeoutRetriesMax = 10
+    ledgerTimeoutRetriesMax = 6
 
     // how many timeouts before we get aggressive
     ,
-    ledgerBecomeAggressiveThreshold = 6
+    ledgerBecomeAggressiveThreshold = 4
 
     // Number of nodes to find initially
     ,
@@ -65,11 +68,11 @@ enum {
 
     // Number of nodes to request blindly
     ,
-    reqNodes = 8
+    reqNodes = 12
 };
 
 // millisecond for each ledger timeout
-auto constexpr ledgerAcquireTimeout = 2500ms;
+auto constexpr ledgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
@@ -527,7 +530,7 @@ InboundLedger::done()
 
     // We hold the PeerSet lock, so must dispatch
     app_.getJobQueue().addJob(
-        jtLEDGER_DATA, "AcquisitionDone", [self = shared_from_this()](Job&) {
+        jtLEDGER_DATA, "AcquisitionDone", [self = shared_from_this()]() {
             if (self->complete_ && !self->failed_)
             {
                 self->app_.getLedgerMaster().checkAccept(self->getLedger());
@@ -601,7 +604,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 tmBH.set_ledgerhash(hash_.begin(), hash_.size());
                 for (auto const& p : need)
                 {
-                    JLOG(journal_.warn()) << "Want: " << p.second;
+                    JLOG(journal_.debug()) << "Want: " << p.second;
 
                     if (!typeSet)
                     {
@@ -952,22 +955,23 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 
     try
     {
+        auto const f = filter.get();
+
         for (auto const& node : packet.nodes())
         {
             auto const nodeID = deserializeSHAMapNodeID(node.nodeid());
 
             if (!nodeID)
-            {
-                san.incInvalid();
-                return;
-            }
+                throw std::runtime_error("data does not properly deserialize");
 
             if (nodeID->isRoot())
-                san += map.addRootNode(
-                    rootHash, makeSlice(node.nodedata()), filter.get());
+            {
+                san += map.addRootNode(rootHash, makeSlice(node.nodedata()), f);
+            }
             else
-                san += map.addKnownNode(
-                    *nodeID, makeSlice(node.nodedata()), filter.get());
+            {
+                san += map.addKnownNode(*nodeID, makeSlice(node.nodedata()), f);
+            }
 
             if (!san.isGood())
             {
@@ -1120,18 +1124,18 @@ InboundLedger::processData(
     std::shared_ptr<Peer> peer,
     protocol::TMLedgerData& packet)
 {
-    ScopedLockType sl(mtx_);
-
     if (packet.type() == protocol::liBASE)
     {
-        if (packet.nodes_size() < 1)
+        if (packet.nodes().empty())
         {
-            JLOG(journal_.warn()) << "Got empty header data";
+            JLOG(journal_.warn()) << peer->id() << ": empty header data";
             peer->charge(Resource::feeInvalidRequest);
             return -1;
         }
 
         SHAMapAddNode san;
+
+        ScopedLockType sl(mtx_);
 
         try
         {
@@ -1177,12 +1181,17 @@ InboundLedger::processData(
     if ((packet.type() == protocol::liTX_NODE) ||
         (packet.type() == protocol::liAS_NODE))
     {
-        if (packet.nodes().size() == 0)
+        std::string type = packet.type() == protocol::liTX_NODE ? "liTX_NODE: "
+                                                                : "liAS_NODE: ";
+
+        if (packet.nodes().empty())
         {
-            JLOG(journal_.info()) << "Got response with no nodes";
+            JLOG(journal_.info()) << peer->id() << ": response with no nodes";
             peer->charge(Resource::feeInvalidRequest);
             return -1;
         }
+
+        ScopedLockType sl(mtx_);
 
         // Verify node IDs and data are complete
         for (auto const& node : packet.nodes())
@@ -1198,14 +1207,10 @@ InboundLedger::processData(
         SHAMapAddNode san;
         receiveNode(packet, san);
 
-        if (packet.type() == protocol::liTX_NODE)
-        {
-            JLOG(journal_.debug()) << "Ledger TX node stats: " << san.get();
-        }
-        else
-        {
-            JLOG(journal_.debug()) << "Ledger AS node stats: " << san.get();
-        }
+        JLOG(journal_.debug())
+            << "Ledger "
+            << ((packet.type() == protocol::liTX_NODE) ? "TX" : "AS")
+            << " node stats: " << san.get();
 
         if (san.isUseful())
             progress_ = true;
@@ -1217,20 +1222,100 @@ InboundLedger::processData(
     return -1;
 }
 
+namespace detail {
+// Track the amount of useful data that each peer returns
+struct PeerDataCounts
+{
+    // Map from peer to amount of useful the peer returned
+    std::unordered_map<std::shared_ptr<Peer>, int> counts;
+    // The largest amount of useful data that any peer returned
+    int maxCount = 0;
+
+    // Update the data count for a peer
+    void
+    update(std::shared_ptr<Peer>&& peer, int dataCount)
+    {
+        if (dataCount <= 0)
+            return;
+        maxCount = std::max(maxCount, dataCount);
+        auto i = counts.find(peer);
+        if (i == counts.end())
+        {
+            counts.emplace(std::move(peer), dataCount);
+            return;
+        }
+        i->second = std::max(i->second, dataCount);
+    }
+
+    // Prune all the peers that didn't return enough data.
+    void
+    prune()
+    {
+        // Remove all the peers that didn't return at least half as much data as
+        // the best peer
+        auto const thresh = maxCount / 2;
+        auto i = counts.begin();
+        while (i != counts.end())
+        {
+            if (i->second < thresh)
+                i = counts.erase(i);
+            else
+                ++i;
+        }
+    }
+
+    // call F with the `peer` parameter with a random sample of at most n values
+    // of the counts vector.
+    template <class F>
+    void
+    sampleN(std::size_t n, F&& f)
+    {
+        if (counts.empty())
+            return;
+
+        auto outFunc = [&f](auto&& v) { f(v.first); };
+        std::minstd_rand rng{std::random_device{}()};
+#if _MSC_VER
+        std::vector<std::pair<std::shared_ptr<Peer>, int>> s;
+        s.reserve(n);
+        std::sample(
+            counts.begin(), counts.end(), std::back_inserter(s), n, rng);
+        for (auto& v : s)
+        {
+            outFunc(v);
+        }
+#else
+        std::sample(
+            counts.begin(),
+            counts.end(),
+            boost::make_function_output_iterator(outFunc),
+            n,
+            rng);
+#endif
+    }
+};
+}  // namespace detail
+
 /** Process pending TMLedgerData
-    Query the 'best' peer
+    Query the a random sample of the 'best' peers
 */
 void
 InboundLedger::runData()
 {
-    std::shared_ptr<Peer> chosenPeer;
-    int chosenPeerCount = -1;
+    // Maximum number of peers to request data from
+    constexpr std::size_t maxUsefulPeers = 6;
 
-    std::vector<PeerDataPairType> data;
+    decltype(mReceivedData) data;
+
+    // Reserve some memory so the first couple iterations don't reallocate
+    data.reserve(8);
+
+    detail::PeerDataCounts dataCounts;
 
     for (;;)
     {
         data.clear();
+
         {
             std::lock_guard sl(mReceivedDataLock);
 
@@ -1243,24 +1328,22 @@ InboundLedger::runData()
             data.swap(mReceivedData);
         }
 
-        // Select the peer that gives us the most nodes that are useful,
-        // breaking ties in favor of the peer that responded first.
         for (auto& entry : data)
         {
             if (auto peer = entry.first.lock())
             {
                 int count = processData(peer, *(entry.second));
-                if (count > chosenPeerCount)
-                {
-                    chosenPeerCount = count;
-                    chosenPeer = std::move(peer);
-                }
+                dataCounts.update(std::move(peer), count);
             }
         }
     }
 
-    if (chosenPeer)
-        trigger(chosenPeer, TriggerReason::reply);
+    // Select a random sample of the peers that gives us the most nodes that are
+    // useful
+    dataCounts.prune();
+    dataCounts.sampleN(maxUsefulPeers, [&](std::shared_ptr<Peer> const& peer) {
+        trigger(peer, TriggerReason::reply);
+    });
 }
 
 Json::Value

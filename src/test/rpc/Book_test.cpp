@@ -41,12 +41,7 @@ class Book_test : public beast::unit_test::suite
             uint256 offerIndex;
             unsigned int bookEntry;
             cdirFirst(
-                *view,
-                sleOfferDir->key(),
-                sleOfferDir,
-                bookEntry,
-                offerIndex,
-                env.journal);
+                *view, sleOfferDir->key(), sleOfferDir, bookEntry, offerIndex);
             auto sleOffer = view->read(keylet::offer(offerIndex));
             dir = to_string(sleOffer->getFieldH256(sfBookDirectory));
         }

@@ -19,17 +19,13 @@
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <ripple/protocol/digest.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -99,7 +95,7 @@ bool
 Shard::init(Scheduler& scheduler, nudb::context& context)
 {
     Section section{app_.config().section(ConfigSection::shardDatabase())};
-    std::string const type{get<std::string>(section, "type", "nudb")};
+    std::string const type{get(section, "type", "nudb")};
     auto const factory{Manager::instance().find(type)};
     if (!factory)
     {
@@ -1218,18 +1214,18 @@ Shard::Count
 Shard::makeBackendCount()
 {
     if (stop_ || busy_)
-        return {nullptr};
+        return Shard::Count{nullptr};
 
     std::lock_guard lock(mutex_);
     if (!backend_)
     {
         JLOG(j_.error()) << "shard " << index_ << " not initialized";
-        return {nullptr};
+        return Shard::Count{nullptr};
     }
     if (!backend_->isOpen())
     {
         if (!open(lock))
-            return {nullptr};
+            return Shard::Count{nullptr};
     }
     else if (state_ == ShardState::finalized)
         lastAccess_ = std::chrono::steady_clock::now();

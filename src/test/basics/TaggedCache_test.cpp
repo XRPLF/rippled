@@ -21,6 +21,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/protocol/Protocol.h>
 #include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
@@ -48,7 +49,7 @@ public:
         TestStopwatch clock;
         clock.set(0);
 
-        using Key = int;
+        using Key = LedgerIndex;
         using Value = std::string;
         using Cache = TaggedCache<Key, Value>;
 

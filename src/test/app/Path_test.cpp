@@ -35,6 +35,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <thread>
 
 namespace ripple {
@@ -171,6 +172,21 @@ IPE(Issue const& iss)
 
 class Path_test : public beast::unit_test::suite
 {
+    jtx::Env
+    pathTestEnv()
+    {
+        // These tests were originally written with search parameters that are
+        // different from the current defaults. This function creates an env
+        // with the search parameters that the tests were written for.
+        using namespace jtx;
+        return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->PATH_SEARCH_OLD = 7;
+            cfg->PATH_SEARCH = 7;
+            cfg->PATH_SEARCH_MAX = 10;
+            return cfg;
+        }));
+    }
+
 public:
     class gate
     {
@@ -314,7 +330,7 @@ public:
         testcase("source currency limits");
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         env.fund(XRP(10000), "alice", "bob", gw);
         env.trust(gw["USD"](100), "alice", "bob");
@@ -396,7 +412,7 @@ public:
     {
         testcase("no direct path no intermediary no alternatives");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
 
         auto const result =
@@ -409,7 +425,7 @@ public:
     {
         testcase("direct path no intermediary");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("alice")["USD"](700), "bob");
 
@@ -426,7 +442,7 @@ public:
     {
         testcase("payment auto path find");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
@@ -445,7 +461,7 @@ public:
     {
         testcase("path find");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
@@ -467,7 +483,7 @@ public:
     {
         using namespace jtx;
         testcase("XRP to XRP");
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
 
         auto const result = find_paths(env, "alice", "bob", XRP(5));
@@ -481,7 +497,7 @@ public:
         using namespace jtx;
 
         {
-            Env env(*this);
+            Env env = pathTestEnv();
             env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
             env.trust(Account("alice")["USD"](10), "bob");
             env.trust(Account("bob")["USD"](10), "carol");
@@ -500,7 +516,7 @@ public:
         }
 
         {
-            Env env(*this);
+            Env env = pathTestEnv();
             auto const gw = Account("gateway");
             auto const USD = gw["USD"];
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
@@ -534,7 +550,7 @@ public:
     {
         testcase("alternative path consume both");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -563,7 +579,7 @@ public:
     {
         testcase("alternative paths consume best transfer");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -592,7 +608,7 @@ public:
     {
         testcase("alternative paths - consume best transfer first");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -623,7 +639,7 @@ public:
     {
         testcase("alternative paths - limit returned paths to best quality");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -658,7 +674,7 @@ public:
     {
         testcase("path negative: Issue #5");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
         env.trust(Account("bob")["USD"](100), "alice", "carol", "dan");
         env.trust(Account("alice")["USD"](100), "dan");
@@ -696,7 +712,7 @@ public:
     {
         testcase("path negative: ripple-client issue #23: smaller");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
         env.trust(Account("alice")["USD"](40), "bob");
         env.trust(Account("dan")["USD"](20), "bob");
@@ -715,7 +731,7 @@ public:
     {
         testcase("path negative: ripple-client issue #23: larger");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
         env.trust(Account("alice")["USD"](120), "edward");
         env.trust(Account("edward")["USD"](25), "bob");
@@ -742,7 +758,7 @@ public:
     {
         testcase("via gateway");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const AUD = gw["AUD"];
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
@@ -764,7 +780,7 @@ public:
     {
         testcase("path find");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol");
         env.trust(Account("alice")["USD"](1000), "bob");
         env.trust(Account("bob")["USD"](1000), "carol");
@@ -782,7 +798,7 @@ public:
     {
         testcase("quality set and test");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
         env(trust("bob", Account("alice")["USD"](1000)),
             json("{\"" + sfQualityIn.fieldName + "\": 2000}"),
@@ -828,7 +844,7 @@ public:
     {
         testcase("trust normal clear");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("bob")["USD"](1000), "alice");
         env.trust(Account("alice")["USD"](1000), "bob");
@@ -878,7 +894,7 @@ public:
     {
         testcase("trust auto clear");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("bob")["USD"](1000), "alice");
         env(pay("bob", "alice", Account("bob")["USD"](50)));
@@ -931,7 +947,7 @@ public:
     {
         testcase("Path Find: XRP -> XRP and XRP -> IOU");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         Account A1{"A1"};
         Account A2{"A2"};
         Account A3{"A3"};
@@ -1018,7 +1034,7 @@ public:
     {
         testcase("Path Find: non-XRP -> XRP");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         Account A1{"A1"};
         Account A2{"A2"};
         Account G3{"G3"};
@@ -1055,7 +1071,7 @@ public:
     {
         testcase("Path Find: Bitstamp and SnapSwap, liquidity with no offers");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         Account A1{"A1"};
         Account A2{"A2"};
         Account G1BS{"G1BS"};
@@ -1135,7 +1151,7 @@ public:
     {
         testcase("Path Find: non-XRP -> non-XRP, same currency");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         Account A1{"A1"};
         Account A2{"A2"};
         Account A3{"A3"};
@@ -1264,7 +1280,7 @@ public:
     {
         testcase("Path Find: non-XRP -> non-XRP, same currency)");
         using namespace jtx;
-        Env env(*this);
+        Env env = pathTestEnv();
         Account A1{"A1"};
         Account A2{"A2"};
         Account A3{"A3"};
@@ -1315,7 +1331,7 @@ public:
         auto const USD = gw["USD"];
         {
             // XRP -> IOU receive max
-            Env env(*this);
+            Env env = pathTestEnv();
             env.fund(XRP(10000), alice, bob, charlie, gw);
             env.close();
             env.trust(USD(100), alice, bob, charlie);
@@ -1338,7 +1354,7 @@ public:
         }
         {
             // IOU -> XRP receive max
-            Env env(*this);
+            Env env = pathTestEnv();
             env.fund(XRP(10000), alice, bob, charlie, gw);
             env.close();
             env.trust(USD(100), alice, bob, charlie);
@@ -1360,6 +1376,69 @@ public:
                     pathElem.getCurrency() == xrpCurrency());
             }
         }
+    }
+
+    void
+    noripple_combinations()
+    {
+        using namespace jtx;
+        // This test will create trust lines with various values of the noRipple
+        // flag. alice <-> george <-> bob george will sort of act like a
+        // gateway, but use a different name to avoid the usual assumptions
+        // about gateways.
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const george = Account("george");
+        auto const USD = george["USD"];
+        auto test = [&](std::string casename,
+                        bool aliceRipple,
+                        bool bobRipple,
+                        bool expectPath) {
+            testcase(casename);
+
+            Env env = pathTestEnv();
+            env.fund(XRP(10000), noripple(alice, bob, george));
+            env.close();
+            // Set the same flags at both ends of the trustline, even though
+            // only george's matter.
+            env(trust(
+                alice,
+                USD(100),
+                aliceRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(
+                george,
+                alice["USD"](100),
+                aliceRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(
+                bob, USD(100), bobRipple ? tfClearNoRipple : tfSetNoRipple));
+            env(trust(
+                george,
+                bob["USD"](100),
+                bobRipple ? tfClearNoRipple : tfSetNoRipple));
+            env.close();
+            env(pay(george, alice, USD(70)));
+            env.close();
+
+            auto [st, sa, da] =
+                find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+            BEAST_EXPECT(equal(da, bob["USD"](5)));
+
+            if (expectPath)
+            {
+                BEAST_EXPECT(st.size() == 1);
+                BEAST_EXPECT(same(st, stpath("george")));
+                BEAST_EXPECT(equal(sa, alice["USD"](5)));
+            }
+            else
+            {
+                BEAST_EXPECT(st.size() == 0);
+                BEAST_EXPECT(equal(sa, XRP(0)));
+            }
+        };
+        test("ripple -> ripple", true, true, true);
+        test("ripple -> no ripple", true, false, true);
+        test("no ripple -> ripple", false, true, true);
+        test("no ripple -> no ripple", false, false, false);
     }
 
     void
@@ -1385,6 +1464,7 @@ public:
         trust_auto_clear_trust_auto_clear();
         xrp_to_xrp();
         receive_max();
+        noripple_combinations();
 
         // The following path_find_NN tests are data driven tests
         // that were originally implemented in js/coffee and migrated

@@ -223,6 +223,47 @@ struct base_uint_test : beast::unit_test::suite
             static_assert(test96("00000000000000000000000~").signum() == 1);
 #endif  // 0
 
+            // Using the constexpr constructor in a non-constexpr context
+            // with an error in the parsing throws an exception.
+            {
+                // Invalid length for string.
+                bool caught = false;
+                try
+                {
+                    // Try to prevent constant evaluation.
+                    std::vector<char> str(23, '7');
+                    std::string_view sView(str.data(), str.size());
+                    [[maybe_unused]] test96 t96(sView);
+                }
+                catch (std::invalid_argument const& e)
+                {
+                    BEAST_EXPECT(
+                        e.what() ==
+                        std::string("invalid length for hex string"));
+                    caught = true;
+                }
+                BEAST_EXPECT(caught);
+            }
+            {
+                // Invalid character in string.
+                bool caught = false;
+                try
+                {
+                    // Try to prevent constant evaluation.
+                    std::vector<char> str(23, '7');
+                    str.push_back('G');
+                    std::string_view sView(str.data(), str.size());
+                    [[maybe_unused]] test96 t96(sView);
+                }
+                catch (std::range_error const& e)
+                {
+                    BEAST_EXPECT(
+                        e.what() == std::string("invalid hex character"));
+                    caught = true;
+                }
+                BEAST_EXPECT(caught);
+            }
+
             // Verify that constexpr base_uints interpret a string the same
             // way parseHex() does.
             struct StrBaseUint

@@ -36,9 +36,9 @@ env:
     - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
     - PARALLEL_TESTS=true
     # this is NOT used by linux container based builds (which already have boost installed)
-    - BOOST_URL='https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2'
+    - BOOST_URL='https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz'
     # Alternate dowload location
-    - BOOST_URL2='https://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
+    - BOOST_URL2='https://downloads.sourceforge.net/project/boost/boost/1.75.0/boost_1_75_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
     # Travis downloader doesn't seem to have updated certs. Using this option
     # introduces obvious security risks, but they're Travis's risks.
     # Note that this option is only used if the "normal" build fails.
@@ -122,6 +122,25 @@ matrix:
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dcoverage=ON"
         - TARGET=coverage_report
+        - SKIP_TESTS=true
+    # test-free builds
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: gcc-8
+      name: no-tests-unity, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dtests=OFF"
+        - SKIP_TESTS=true
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: clang-8
+      name: no-tests-non-unity, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dtests=OFF -Dunity=OFF"
         - SKIP_TESTS=true
     # nounity
     - <<: *linux
@@ -263,7 +282,7 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
-        - CMAKE_EXE=/opt/local/cmake-3.9/bin/cmake
+        - CMAKE_EXE=/opt/local/cmake/bin/cmake
         - SKIP_TESTS=true
     # validator keys project as subproj of rippled
     - <<: *linux
@@ -280,15 +299,15 @@ matrix:
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_mac/
       stage: build
       os: osx
-      osx_image: xcode11.2
-      name: xcode11.2, debug
+      osx_image: xcode13.1
+      name: xcode13.1, debug
       env:
         # put NIH in non-cache location since it seems to
         # cause failures when homebrew updates
         - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
         - BLD_CONFIG=Debug
         - TEST_EXTRA_ARGS=""
-        - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
+        - BOOST_ROOT=${CACHE_DIR}/boost_1_75_0
         - >-
           CMAKE_ADD="
           -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
@@ -319,7 +338,7 @@ matrix:
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
         - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}
     - <<: *macos
-      name: xcode11.2, release
+      name: xcode13.1, release
       before_script:
         - export BLD_CONFIG=Release
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dassert=ON"
@@ -328,8 +347,8 @@ matrix:
       before_script:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
-      osx_image: xcode11.2
-      name: xcode11.2, debug
+      osx_image: xcode13.1
+      name: xcode13.1, debug
     # windows
     - &windows
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_win/
@@ -342,13 +361,13 @@ matrix:
         - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
         - VCPKG_DEFAULT_TRIPLET="x64-windows-static"
         - MATRIX_EVAL="CC=cl.exe && CXX=cl.exe"
-        - BOOST_ROOT=${CACHE_DIR}/boost_1_70
+        - BOOST_ROOT=${CACHE_DIR}/boost_1_75
         - >-
           CMAKE_ADD="
           -DCMAKE_PREFIX_PATH=${BOOST_ROOT}/_INSTALLED_
           -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
           -DBoost_ROOT=${BOOST_ROOT}/_INSTALLED_
-          -DBoost_DIR=${BOOST_ROOT}/_INSTALLED_/lib/cmake/Boost-1.70.0
+          -DBoost_DIR=${BOOST_ROOT}/_INSTALLED_/lib/cmake/Boost-1.75.0
           -DBoost_COMPILER=vc141
           -DCMAKE_VERBOSE_MAKEFILE=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
@@ -439,4 +458,3 @@ cache:
 
 notifications:
   email: false
-

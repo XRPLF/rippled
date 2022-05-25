@@ -12,10 +12,16 @@ Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: rippled daemon
 
+Package: rippled-reporting
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: rippled reporting daemon
+
 Package: rippled-dev
 Section: devel
 Recommends: rippled (= ${binary:Version})
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends}, ${shlibs:Depends}, libprotobuf-dev, libssl-dev
+Depends: ${misc:Depends}, ${shlibs:Depends}, libprotobuf-dev, libprotoc-dev, protobuf-compiler
 Description: development files for applications using xrpl core library (serialize + sign)

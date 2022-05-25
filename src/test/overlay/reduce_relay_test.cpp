@@ -159,6 +159,23 @@ public:
     {
         return false;
     }
+    bool
+    txReduceRelayEnabled() const override
+    {
+        return false;
+    }
+    void
+    sendTxQueue() override
+    {
+    }
+    void
+    addTxQueue(const uint256&) override
+    {
+    }
+    void
+    removeTxQueue(const uint256&) override
+    {
+    }
 };
 
 /** Manually advanced clock. */
@@ -491,7 +508,7 @@ class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
 public:
     using id_t = Peer::id_t;
     using clock_type = ManualClock;
-    OverlaySim(Application& app) : slots_(app, *this), app_(app)
+    OverlaySim(Application& app) : slots_(app.logs(), *this), logs_(app.logs())
     {
     }
 
@@ -545,7 +562,7 @@ public:
         Peer::id_t id;
         if (peersCache_.empty() || !useCache)
         {
-            peer = std::make_shared<PeerSim>(*this, app_.journal("Squelch"));
+            peer = std::make_shared<PeerSim>(*this, logs_.journal("Squelch"));
             id = peer->id();
         }
         else
@@ -665,7 +682,7 @@ private:
     Peers peers_;
     Peers peersCache_;
     reduce_relay::Slots<ManualClock> slots_;
-    Application& app_;
+    Logs& logs_;
 };
 
 class Network
@@ -1398,7 +1415,8 @@ vp_squelched=1
 
             auto run = [&](int npeers) {
                 handler.maxDuration_ = 0;
-                reduce_relay::Slots<ManualClock> slots(env_.app(), handler);
+                reduce_relay::Slots<ManualClock> slots(
+                    env_.app().logs(), handler);
                 // 1st message from a new peer switches the slot
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
@@ -1494,8 +1512,9 @@ vp_squelched=1
                 auto request = ripple::makeRequest(
                     true,
                     env_.app().config().COMPRESSION,
-                    env_.app().config().VP_REDUCE_RELAY_ENABLE,
-                    false);
+                    false,
+                    env_.app().config().TX_REDUCE_RELAY_ENABLE,
+                    env_.app().config().VP_REDUCE_RELAY_ENABLE);
                 http_request_type http_request;
                 http_request.version(request.version());
                 http_request.base() = request.base();

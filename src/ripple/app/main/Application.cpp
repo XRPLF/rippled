@@ -45,8 +45,8 @@
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/Wallet.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ByteUtilities.h>
@@ -79,12 +79,14 @@
 
 #include <date/date.h>
 
+#include <chrono>
 #include <condition_variable>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <mutex>
 #include <optional>
+#include <sstream>
 #include <utility>
 #include <variant>
 
@@ -217,15 +219,17 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::unique_ptr<RelationalDBInterface> mRelationalDBInterface;
+    std::unique_ptr<RelationalDatabase> mRelationalDatabase;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
 
     boost::asio::signal_set m_signals;
 
-    std::condition_variable cv_;
-    mutable std::mutex mut_;
-    bool isTimeToStop = false;
+    // Once we get C++20, we could use `std::atomic_flag` for `isTimeToStop`
+    // and eliminate the need for the condition variable and the mutex.
+    std::condition_variable stoppingCondition_;
+    mutable std::mutex stoppingMutex_;
+    std::atomic<bool> isTimeToStop = false;
 
     std::atomic<bool> checkSigs_;
 
@@ -244,6 +248,10 @@ public:
 #if RIPPLE_SINGLE_IO_SERVICE_THREAD
         return 1;
 #else
+
+        if (config.IO_WORKERS > 0)
+            return config.IO_WORKERS;
+
         auto const cores = std::thread::hardware_concurrency();
 
         // Use a single thread when running on under-provisioned systems
@@ -273,6 +281,7 @@ public:
               perf::setup_PerfLog(
                   config_->section("perf"),
                   config_->CONFIG_DIR),
+              *this,
               logs_->journal("PerfLog"),
               [this] { signalStop(); }))
 
@@ -283,6 +292,29 @@ public:
               logs_->journal("Collector")))
 
         , m_jobQueue(std::make_unique<JobQueue>(
+              [](std::unique_ptr<Config> const& config) {
+                  if (config->standalone() && !config->reporting() &&
+                      !config->FORCE_MULTI_THREAD)
+                      return 1;
+
+                  if (config->WORKERS)
+                      return config->WORKERS;
+
+                  auto count =
+                      static_cast<int>(std::thread::hardware_concurrency());
+
+                  // Be more aggressive about the number of threads to use
+                  // for the job queue if the server is configured as "large"
+                  // or "huge" if there are enough cores.
+                  if (config->NODE_SIZE >= 4 && count >= 16)
+                      count = 6 + std::min(count, 8);
+                  else if (config->NODE_SIZE >= 3 && count >= 8)
+                      count = 4 + std::min(count, 6);
+                  else
+                      count = 2 + std::min(count, 4);
+
+                  return count;
+              }(config_),
               m_collectorManager->group("jobq"),
               logs_->journal("JobQueue"),
               *logs_,
@@ -304,14 +336,21 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
 
-        , cachedSLEs_(std::chrono::minutes(1), stopwatch())
+        , cachedSLEs_(
+              "Cached SLEs",
+              0,
+              std::chrono::minutes(1),
+              stopwatch(),
+              logs_->journal("CachedSLEs"))
+
         , validatorKeys_(*config_, m_journal)
 
         , m_resourceManager(Resource::make_Manager(
               m_collectorManager->collector(),
               logs_->journal("Resource")))
 
-        , m_nodeStore(m_shaMapStore->makeNodeStore(4))
+        , m_nodeStore(m_shaMapStore->makeNodeStore(
+              config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
 
         , nodeFamily_(*this, *m_collectorManager)
 
@@ -412,8 +451,7 @@ public:
 
         , hashRouter_(std::make_unique<HashRouter>(
               stopwatch(),
-              HashRouter::getDefaultHoldTime(),
-              HashRouter::getDefaultRecoverLimit()))
+              HashRouter::getDefaultHoldTime()))
 
         , mValidations(
               ValidationParms(),
@@ -839,11 +877,11 @@ public:
         return *txQ_;
     }
 
-    RelationalDBInterface&
-    getRelationalDBInterface() override
+    RelationalDatabase&
+    getRelationalDatabase() override
     {
-        assert(mRelationalDBInterface.get() != nullptr);
-        return *mRelationalDBInterface;
+        assert(mRelationalDatabase.get() != nullptr);
+        return *mRelationalDatabase;
     }
 
     DatabaseCon&
@@ -869,14 +907,14 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    initRDBMS()
+    initRelationalDatabase()
     {
         assert(mWalletDB.get() == nullptr);
 
         try
         {
-            mRelationalDBInterface =
-                RelationalDBInterface::init(*this, *config_, *m_jobQueue);
+            mRelationalDatabase =
+                RelationalDatabase::init(*this, *config_, *m_jobQueue);
 
             // wallet database
             auto setup = setup_DatabaseCon(*config_, m_journal);
@@ -924,108 +962,7 @@ public:
                            << "' took " << elapsed.count() << " seconds.";
         }
 
-        // tune caches
-        using namespace std::chrono;
-
-        m_ledgerMaster->tune(
-            config_->getValueFor(SizedItem::ledgerSize),
-            seconds{config_->getValueFor(SizedItem::ledgerAge)});
-
         return true;
-    }
-
-    //--------------------------------------------------------------------------
-
-    // Called to indicate shutdown.
-    void
-    stop()
-    {
-        JLOG(m_journal.debug()) << "Application stopping";
-
-        m_io_latency_sampler.cancel_async();
-
-        // VFALCO Enormous hack, we have to force the probe to cancel
-        //        before we stop the io_service queue or else it never
-        //        unblocks in its destructor. The fix is to make all
-        //        io_objects gracefully handle exit so that we can
-        //        naturally return from io_service::run() instead of
-        //        forcing a call to io_service::stop()
-        m_io_latency_sampler.cancel();
-
-        m_resolver->stop_async();
-
-        // NIKB This is a hack - we need to wait for the resolver to
-        //      stop. before we stop the io_server_queue or weird
-        //      things will happen.
-        m_resolver->stop();
-
-        {
-            boost::system::error_code ec;
-            sweepTimer_.cancel(ec);
-            if (ec)
-            {
-                JLOG(m_journal.error())
-                    << "Application: sweepTimer cancel error: " << ec.message();
-            }
-
-            ec.clear();
-            entropyTimer_.cancel(ec);
-            if (ec)
-            {
-                JLOG(m_journal.error())
-                    << "Application: entropyTimer cancel error: "
-                    << ec.message();
-            }
-        }
-        // Make sure that any waitHandlers pending in our timers are done
-        // before we declare ourselves stopped.
-        using namespace std::chrono_literals;
-        waitHandlerCounter_.join("Application", 1s, m_journal);
-
-        mValidations.flush();
-
-        validatorSites_->stop();
-
-        // TODO Store manifests in manifests.sqlite instead of wallet.db
-        validatorManifests_->save(
-            getWalletDB(),
-            "ValidatorManifests",
-            [this](PublicKey const& pubKey) {
-                return validators().listed(pubKey);
-            });
-
-        publisherManifests_->save(
-            getWalletDB(),
-            "PublisherManifests",
-            [this](PublicKey const& pubKey) {
-                return validators().trustedPublisher(pubKey);
-            });
-
-        // The order of these stop calls is delicate.
-        // Re-ordering them risks undefined behavior.
-        m_loadManager->stop();
-        m_shaMapStore->stop();
-        m_jobQueue->stop();
-        if (shardArchiveHandler_)
-            shardArchiveHandler_->stop();
-        if (overlay_)
-            overlay_->stop();
-        if (shardStore_)
-            shardStore_->stop();
-        grpcServer_->stop();
-        m_networkOPs->stop();
-        serverHandler_->stop();
-        m_ledgerReplayer->stop();
-        m_inboundTransactions->stop();
-        m_inboundLedgers->stop();
-        ledgerCleaner_->stop();
-        if (reportingETL_)
-            reportingETL_->stop();
-        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
-                &*mRelationalDBInterface))
-            pg->stop();
-        m_nodeStore->stop();
-        perfLog_->stop();
     }
 
     //--------------------------------------------------------------------------
@@ -1049,7 +986,7 @@ public:
                     if (e.value() == boost::system::errc::success)
                     {
                         m_jobQueue->addJob(
-                            jtSWEEP, "sweep", [this](Job&) { doSweep(); });
+                            jtSWEEP, "sweep", [this]() { doSweep(); });
                     }
                     // Recover as best we can if an unexpected error occurs.
                     if (e.value() != boost::system::errc::success &&
@@ -1065,7 +1002,8 @@ public:
         {
             using namespace std::chrono;
             sweepTimer_.expires_from_now(
-                seconds{config_->getValueFor(SizedItem::sweepInterval)});
+                seconds{config_->SWEEP_INTERVAL.value_or(
+                    config_->getValueFor(SizedItem::sweepInterval))});
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
     }
@@ -1103,7 +1041,7 @@ public:
     doSweep()
     {
         if (!config_->standalone() &&
-            !getRelationalDBInterface().transactionDbHasSpace(*config_))
+            !getRelationalDatabase().transactionDbHasSpace(*config_))
         {
             signalStop();
         }
@@ -1121,15 +1059,14 @@ public:
             shardStore_->sweep();
         getLedgerMaster().sweep();
         getTempNodeCache().sweep();
-        getValidations().expire();
+        getValidations().expire(m_journal);
         getInboundLedgers().sweep();
         getLedgerReplayer().sweep();
         m_acceptedLedgerCache.sweep();
-        cachedSLEs_.expire();
+        cachedSLEs_.sweep();
 
 #ifdef RIPPLED_REPORTING
-        if (auto pg = dynamic_cast<RelationalDBInterfacePostgres*>(
-                &*mRelationalDBInterface))
+        if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
             pg->sweep();
 #endif
 
@@ -1221,13 +1158,10 @@ ApplicationImp::setup()
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
 
-    m_jobQueue->setThreadCount(
-        config_->WORKERS, config_->standalone() && !config_->reporting());
-
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
 
-    if (!initRDBMS() || !initNodeStore())
+    if (!initRelationalDatabase() || !initNodeStore())
         return false;
 
     if (shardStore_)
@@ -1250,33 +1184,36 @@ ApplicationImp::setup()
 
     // Configure the amendments the server supports
     {
-        auto const& sa = detail::supportedAmendments();
-        std::vector<std::string> saHashes;
-        saHashes.reserve(sa.size());
-        for (auto const& name : sa)
-        {
-            auto const f = getRegisteredFeature(name);
-            BOOST_ASSERT(f);
-            if (f)
-                saHashes.push_back(to_string(*f) + " " + name);
-        }
-        Section supportedAmendments("Supported Amendments");
-        supportedAmendments.append(saHashes);
+        auto const supported = []() {
+            auto const& amendments = detail::supportedAmendments();
+            std::vector<AmendmentTable::FeatureInfo> supported;
+            supported.reserve(amendments.size());
+            for (auto const& [a, vote] : amendments)
+            {
+                auto const f = ripple::getRegisteredFeature(a);
+                assert(f);
+                if (f)
+                    supported.emplace_back(a, *f, vote);
+            }
+            return supported;
+        }();
+        Section const& downVoted = config_->section(SECTION_VETO_AMENDMENTS);
 
-        Section enabledAmendments = config_->section(SECTION_AMENDMENTS);
+        Section const& upVoted = config_->section(SECTION_AMENDMENTS);
 
         m_amendmentTable = make_AmendmentTable(
             *this,
             config().AMENDMENT_MAJORITY_TIME,
-            supportedAmendments,
-            enabledAmendments,
-            config_->section(SECTION_VETO_AMENDMENTS),
+            supported,
+            upVoted,
+            downVoted,
             logs_->journal("Amendments"));
     }
 
     Pathfinder::initPathTable();
 
     auto const startUp = config_->START_UP;
+    JLOG(m_journal.debug()) << "startUp: " << startUp;
     if (!config_->reporting())
     {
         if (startUp == Config::FRESH)
@@ -1298,7 +1235,16 @@ ApplicationImp::setup()
             {
                 JLOG(m_journal.error())
                     << "The specified ledger could not be loaded.";
-                return false;
+                if (config_->FAST_LOAD)
+                {
+                    // Fall back to syncing from the network, such as
+                    // when there's no existing data.
+                    startGenesisLedger();
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
         else if (startUp == Config::NETWORK)
@@ -1590,27 +1536,101 @@ ApplicationImp::run()
     }
 
     {
-        std::unique_lock<std::mutex> lk{mut_};
-        cv_.wait(lk, [this] { return isTimeToStop; });
+        std::unique_lock<std::mutex> lk{stoppingMutex_};
+        stoppingCondition_.wait(lk, [this] { return isTimeToStop.load(); });
     }
 
-    JLOG(m_journal.info()) << "Received shutdown request";
-    stop();
+    JLOG(m_journal.debug()) << "Application stopping";
+
+    m_io_latency_sampler.cancel_async();
+
+    // VFALCO Enormous hack, we have to force the probe to cancel
+    //        before we stop the io_service queue or else it never
+    //        unblocks in its destructor. The fix is to make all
+    //        io_objects gracefully handle exit so that we can
+    //        naturally return from io_service::run() instead of
+    //        forcing a call to io_service::stop()
+    m_io_latency_sampler.cancel();
+
+    m_resolver->stop_async();
+
+    // NIKB This is a hack - we need to wait for the resolver to
+    //      stop. before we stop the io_server_queue or weird
+    //      things will happen.
+    m_resolver->stop();
+
+    {
+        boost::system::error_code ec;
+        sweepTimer_.cancel(ec);
+        if (ec)
+        {
+            JLOG(m_journal.error())
+                << "Application: sweepTimer cancel error: " << ec.message();
+        }
+
+        ec.clear();
+        entropyTimer_.cancel(ec);
+        if (ec)
+        {
+            JLOG(m_journal.error())
+                << "Application: entropyTimer cancel error: " << ec.message();
+        }
+    }
+
+    // Make sure that any waitHandlers pending in our timers are done
+    // before we declare ourselves stopped.
+    using namespace std::chrono_literals;
+
+    waitHandlerCounter_.join("Application", 1s, m_journal);
+
+    mValidations.flush();
+
+    validatorSites_->stop();
+
+    // TODO Store manifests in manifests.sqlite instead of wallet.db
+    validatorManifests_->save(
+        getWalletDB(), "ValidatorManifests", [this](PublicKey const& pubKey) {
+            return validators().listed(pubKey);
+        });
+
+    publisherManifests_->save(
+        getWalletDB(), "PublisherManifests", [this](PublicKey const& pubKey) {
+            return validators().trustedPublisher(pubKey);
+        });
+
+    // The order of these stop calls is delicate.
+    // Re-ordering them risks undefined behavior.
+    m_loadManager->stop();
+    m_shaMapStore->stop();
+    m_jobQueue->stop();
+    if (shardArchiveHandler_)
+        shardArchiveHandler_->stop();
+    if (overlay_)
+        overlay_->stop();
+    if (shardStore_)
+        shardStore_->stop();
+    grpcServer_->stop();
+    m_networkOPs->stop();
+    serverHandler_->stop();
+    m_ledgerReplayer->stop();
+    m_inboundTransactions->stop();
+    m_inboundLedgers->stop();
+    ledgerCleaner_->stop();
+    if (reportingETL_)
+        reportingETL_->stop();
+    if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
+        pg->stop();
+    m_nodeStore->stop();
+    perfLog_->stop();
+
     JLOG(m_journal.info()) << "Done.";
 }
 
 void
 ApplicationImp::signalStop()
 {
-    // Unblock the main thread (which is sitting in run()).
-    // When we get C++20 this can use std::latch.
-    std::lock_guard lk{mut_};
-
-    if (!isTimeToStop)
-    {
-        isTimeToStop = true;
-        cv_.notify_all();
-    }
+    if (!isTimeToStop.exchange(true))
+        stoppingCondition_.notify_all();
 }
 
 bool
@@ -1628,8 +1648,7 @@ ApplicationImp::checkSigs(bool check)
 bool
 ApplicationImp::isStopping() const
 {
-    std::lock_guard lk{mut_};
-    return isTimeToStop;
+    return isTimeToStop.load();
 }
 
 int
@@ -1972,7 +1991,7 @@ ApplicationImp::loadOldLedger(
             return false;
         }
 
-        if (!loadLedger->walkLedger(journal("Ledger")))
+        if (!loadLedger->walkLedger(journal("Ledger"), true))
         {
             JLOG(m_journal.fatal()) << "Ledger is missing nodes.";
             assert(false);
@@ -2116,7 +2135,7 @@ ApplicationImp::nodeToShards()
 void
 ApplicationImp::setMaxDisallowedLedger()
 {
-    auto seq = getRelationalDBInterface().getMaxLedgerSeq();
+    auto seq = getRelationalDatabase().getMaxLedgerSeq();
     if (seq)
         maxDisallowedLedger_ = *seq;
 

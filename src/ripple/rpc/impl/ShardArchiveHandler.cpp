@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/ShardArchive.h>
 #include <ripple/basics/Archive.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/core/ConfigSections.h>
@@ -360,7 +360,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
     // to prevent holding up the lock if the downloader
     // sleeps.
     auto const& url{archives_.begin()->second};
-    auto wrapper = jobCounter_.wrap([this, url, dstDir](Job&) {
+    auto wrapper = jobCounter_.wrap([this, url, dstDir]() {
         auto const ssl = (url.scheme == "https");
         auto const defaultPort = ssl ? 443 : 80;
 
@@ -382,7 +382,7 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
         return onClosureFailed(
             "failed to wrap closure for starting download", l);
 
-    app_.getJobQueue().addJob(jtCLIENT, "ShardArchiveHandler", *wrapper);
+    app_.getJobQueue().addJob(jtCLIENT_SHARD, "ShardArchiveHandler", *wrapper);
 
     return true;
 }
@@ -416,42 +416,41 @@ ShardArchiveHandler::complete(path dstPath)
     }
 
     // Make lambdas mutable captured vars can be moved from
-    auto wrapper =
-        jobCounter_.wrap([=, dstPath = std::move(dstPath)](Job&) mutable {
-            if (stopping_)
-                return;
+    auto wrapper = jobCounter_.wrap([=,
+                                     dstPath = std::move(dstPath)]() mutable {
+        if (stopping_)
+            return;
 
-            // If not synced then defer and retry
-            auto const mode{app_.getOPs().getOperatingMode()};
-            if (mode != OperatingMode::FULL)
-            {
-                std::lock_guard lock(m_);
-                timer_.expires_from_now(static_cast<std::chrono::seconds>(
-                    (static_cast<std::size_t>(OperatingMode::FULL) -
-                     static_cast<std::size_t>(mode)) *
-                    10));
+        // If not synced then defer and retry
+        auto const mode{app_.getOPs().getOperatingMode()};
+        if (mode != OperatingMode::FULL)
+        {
+            std::lock_guard lock(m_);
+            timer_.expires_from_now(static_cast<std::chrono::seconds>(
+                (static_cast<std::size_t>(OperatingMode::FULL) -
+                 static_cast<std::size_t>(mode)) *
+                10));
 
-                auto wrapper = timerCounter_.wrap(
-                    [=, dstPath = std::move(dstPath)](
-                        boost::system::error_code const& ec) mutable {
-                        if (ec != boost::asio::error::operation_aborted)
-                            complete(std::move(dstPath));
-                    });
+            auto wrapper = timerCounter_.wrap(
+                [=, dstPath = std::move(dstPath)](
+                    boost::system::error_code const& ec) mutable {
+                    if (ec != boost::asio::error::operation_aborted)
+                        complete(std::move(dstPath));
+                });
 
-                if (!wrapper)
-                    onClosureFailed(
-                        "failed to wrap closure for operating mode timer",
-                        lock);
-                else
-                    timer_.async_wait(*wrapper);
-            }
+            if (!wrapper)
+                onClosureFailed(
+                    "failed to wrap closure for operating mode timer", lock);
             else
-            {
-                process(dstPath);
-                std::lock_guard lock(m_);
-                removeAndProceed(lock);
-            }
-        });
+                timer_.async_wait(*wrapper);
+        }
+        else
+        {
+            process(dstPath);
+            std::lock_guard lock(m_);
+            removeAndProceed(lock);
+        }
+    });
 
     if (!wrapper)
     {
@@ -465,7 +464,7 @@ ShardArchiveHandler::complete(path dstPath)
     }
 
     // Process in another thread to not hold up the IO service
-    app_.getJobQueue().addJob(jtCLIENT, "ShardArchiveHandler", *wrapper);
+    app_.getJobQueue().addJob(jtCLIENT_SHARD, "ShardArchiveHandler", *wrapper);
 }
 
 void

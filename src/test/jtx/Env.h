@@ -73,8 +73,9 @@ supported_amendments()
         auto const& sa = ripple::detail::supportedAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
-        for (auto const& s : sa)
+        for (auto const& [s, vote] : sa)
         {
+            (void)vote;
             if (auto const f = getRegisteredFeature(s))
                 feats.push_back(*f);
             else

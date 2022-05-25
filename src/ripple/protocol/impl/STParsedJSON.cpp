@@ -293,37 +293,22 @@ parseLeaf(
                     {
                         if (field == sfTransactionType)
                         {
-                            TxType const txType(
-                                TxFormats::getInstance().findTypeByName(
-                                    strValue));
-
-                            if (txType == ttINVALID)
-                                Throw<std::runtime_error>(
-                                    "Invalid transaction format name");
                             ret = detail::make_stvar<STUInt16>(
-                                field, static_cast<std::uint16_t>(txType));
+                                field,
+                                static_cast<std::uint16_t>(
+                                    TxFormats::getInstance().findTypeByName(
+                                        strValue)));
 
                             if (*name == sfGeneric)
                                 name = &sfTransaction;
                         }
                         else if (field == sfLedgerEntryType)
                         {
-                            LedgerEntryType const type(
-                                LedgerFormats::getInstance().findTypeByName(
-                                    strValue));
-
-                            if (!(0u <= type &&
-                                  type <=
-                                      std::min<unsigned>(
-                                          std::numeric_limits<
-                                              std::uint16_t>::max(),
-                                          std::numeric_limits<
-                                              std::underlying_type_t<
-                                                  LedgerEntryType>>::max())))
-                                Throw<std::runtime_error>(
-                                    "Invalid ledger entry type: out of range");
                             ret = detail::make_stvar<STUInt16>(
-                                field, static_cast<std::uint16_t>(type));
+                                field,
+                                static_cast<std::uint16_t>(
+                                    LedgerFormats::getInstance().findTypeByName(
+                                        strValue)));
 
                             if (*name == sfGeneric)
                                 name = &sfLedgerEntry;
@@ -440,7 +425,7 @@ parseLeaf(
 
             break;
 
-        case STI_HASH128: {
+        case STI_UINT128: {
             if (!value.isString())
             {
                 error = bad_type(json_name, fieldName);
@@ -460,11 +445,11 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STHash128>(field, num);
+            ret = detail::make_stvar<STUInt128>(field, num);
             break;
         }
 
-        case STI_HASH160: {
+        case STI_UINT160: {
             if (!value.isString())
             {
                 error = bad_type(json_name, fieldName);
@@ -484,11 +469,11 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STHash160>(field, num);
+            ret = detail::make_stvar<STUInt160>(field, num);
             break;
         }
 
-        case STI_HASH256: {
+        case STI_UINT256: {
             if (!value.isString())
             {
                 error = bad_type(json_name, fieldName);
@@ -508,7 +493,7 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STHash256>(field, num);
+            ret = detail::make_stvar<STUInt256>(field, num);
             break;
         }
 
@@ -875,8 +860,9 @@ parseObject(
 
         return data;
     }
-    catch (STObject::FieldErr const&)
+    catch (STObject::FieldErr const& e)
     {
+        std::cerr << "template_mismatch: " << e.what() << "\n";
         error = template_mismatch(inName);
     }
     catch (std::exception const&)

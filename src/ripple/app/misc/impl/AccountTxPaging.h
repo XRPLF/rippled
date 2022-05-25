@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 #define RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -31,7 +31,7 @@ namespace ripple {
 
 void
 convertBlobsToTxResult(
-    RelationalDBInterface::AccountTxs& to,
+    RelationalDatabase::AccountTxs& to,
     std::uint32_t ledger_index,
     std::string const& status,
     Blob const& rawTxn,

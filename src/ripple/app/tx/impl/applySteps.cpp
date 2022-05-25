@@ -29,6 +29,11 @@
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
+#include <ripple/app/tx/impl/NFTokenAcceptOffer.h>
+#include <ripple/app/tx/impl/NFTokenBurn.h>
+#include <ripple/app/tx/impl/NFTokenCancelOffer.h>
+#include <ripple/app/tx/impl/NFTokenCreateOffer.h>
+#include <ripple/app/tx/impl/NFTokenMint.h>
 #include <ripple/app/tx/impl/PayChan.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
@@ -132,6 +137,16 @@ invoke_preflight(PreflightContext const& ctx)
         case ttFEE:
         case ttUNL_MODIFY:
             return invoke_preflight_helper<Change>(ctx);
+        case ttNFTOKEN_MINT:
+            return invoke_preflight_helper<NFTokenMint>(ctx);
+        case ttNFTOKEN_BURN:
+            return invoke_preflight_helper<NFTokenBurn>(ctx);
+        case ttNFTOKEN_CREATE_OFFER:
+            return invoke_preflight_helper<NFTokenCreateOffer>(ctx);
+        case ttNFTOKEN_CANCEL_OFFER:
+            return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -223,6 +238,16 @@ invoke_preclaim(PreclaimContext const& ctx)
         case ttFEE:
         case ttUNL_MODIFY:
             return invoke_preclaim<Change>(ctx);
+        case ttNFTOKEN_MINT:
+            return invoke_preclaim<NFTokenMint>(ctx);
+        case ttNFTOKEN_BURN:
+            return invoke_preclaim<NFTokenBurn>(ctx);
+        case ttNFTOKEN_CREATE_OFFER:
+            return invoke_preclaim<NFTokenCreateOffer>(ctx);
+        case ttNFTOKEN_CANCEL_OFFER:
+            return invoke_preclaim<NFTokenCancelOffer>(ctx);
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return invoke_preclaim<NFTokenAcceptOffer>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -276,6 +301,16 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
         case ttFEE:
         case ttUNL_MODIFY:
             return Change::calculateBaseFee(view, tx);
+        case ttNFTOKEN_MINT:
+            return NFTokenMint::calculateBaseFee(view, tx);
+        case ttNFTOKEN_BURN:
+            return NFTokenBurn::calculateBaseFee(view, tx);
+        case ttNFTOKEN_CREATE_OFFER:
+            return NFTokenCreateOffer::calculateBaseFee(view, tx);
+        case ttNFTOKEN_CANCEL_OFFER:
+            return NFTokenCancelOffer::calculateBaseFee(view, tx);
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return NFTokenAcceptOffer::calculateBaseFee(view, tx);
         default:
             assert(false);
             return FeeUnit64{0};
@@ -406,6 +441,26 @@ invoke_apply(ApplyContext& ctx)
         case ttFEE:
         case ttUNL_MODIFY: {
             Change p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_MINT: {
+            NFTokenMint p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_BURN: {
+            NFTokenBurn p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_CREATE_OFFER: {
+            NFTokenCreateOffer p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_CANCEL_OFFER: {
+            NFTokenCancelOffer p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_ACCEPT_OFFER: {
+            NFTokenAcceptOffer p(ctx);
             return p();
         }
         default:

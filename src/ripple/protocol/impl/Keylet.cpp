@@ -23,17 +23,16 @@
 namespace ripple {
 
 bool
-Keylet::check(SLE const& sle) const
+Keylet::check(STLedgerEntry const& sle) const
 {
+    assert(sle.getType() != ltANY || sle.getType() != ltCHILD);
+
     if (type == ltANY)
         return true;
-    if (type == ltINVALID)
-        return false;
+
     if (type == ltCHILD)
-    {
-        assert(sle.getType() != ltDIR_NODE);
         return sle.getType() != ltDIR_NODE;
-    }
+
     return sle.getType() == type;
 }
 

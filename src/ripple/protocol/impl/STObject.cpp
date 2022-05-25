@@ -40,10 +40,7 @@ STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
     set(type);
 }
 
-STObject::STObject(
-    SOTemplate const& type,
-    SerialIter& sit,
-    SField const& name) noexcept(false)
+STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name)
     : STBase(name)
 {
     v_.reserve(type.size());
@@ -58,6 +55,36 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
     set(sit, depth);
+}
+
+STBase*
+STObject::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STObject::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STObject::getSType() const
+{
+    return STI_OBJECT;
+}
+
+bool
+STObject::isDefault() const
+{
+    return v_.empty();
+}
+
+void
+STObject::add(Serializer& s) const
+{
+    add(s, withAllFields);  // just inner elements
 }
 
 STObject&
@@ -86,7 +113,7 @@ STObject::set(const SOTemplate& type)
 }
 
 void
-STObject::applyTemplate(const SOTemplate& type) noexcept(false)
+STObject::applyTemplate(const SOTemplate& type)
 {
     auto throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
@@ -140,7 +167,7 @@ STObject::applyTemplate(const SOTemplate& type) noexcept(false)
 }
 
 void
-STObject::applyTemplateFromSField(SField const& sField) noexcept(false)
+STObject::applyTemplateFromSField(SField const& sField)
 {
     SOTemplate const* elements =
         InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
@@ -150,7 +177,7 @@ STObject::applyTemplateFromSField(SField const& sField) noexcept(false)
 
 // return true = terminated with end-of-object
 bool
-STObject::set(SerialIter& sit, int depth) noexcept(false)
+STObject::set(SerialIter& sit, int depth)
 {
     bool reachedEndOfObject = false;
 
@@ -229,9 +256,9 @@ STObject::getFullText() const
     std::string ret;
     bool first = true;
 
-    if (fName->hasName())
+    if (getFName().hasName())
     {
-        ret = fName->getName();
+        ret = getFName().getName();
         ret += " = {";
     }
     else
@@ -543,19 +570,19 @@ STObject::getFieldU64(SField const& field) const
 uint128
 STObject::getFieldH128(SField const& field) const
 {
-    return getFieldByValue<STHash128>(field);
+    return getFieldByValue<STUInt128>(field);
 }
 
 uint160
 STObject::getFieldH160(SField const& field) const
 {
-    return getFieldByValue<STHash160>(field);
+    return getFieldByValue<STUInt160>(field);
 }
 
 uint256
 STObject::getFieldH256(SField const& field) const
 {
-    return getFieldByValue<STHash256>(field);
+    return getFieldByValue<STUInt256>(field);
 }
 
 AccountID
@@ -643,13 +670,13 @@ STObject::setFieldU64(SField const& field, std::uint64_t v)
 void
 STObject::setFieldH128(SField const& field, uint128 const& v)
 {
-    setFieldUsingSetValue<STHash128>(field, v);
+    setFieldUsingSetValue<STUInt128>(field, v);
 }
 
 void
 STObject::setFieldH256(SField const& field, uint256 const& v)
 {
-    setFieldUsingSetValue<STHash256>(field, v);
+    setFieldUsingSetValue<STUInt256>(field, v);
 }
 
 void

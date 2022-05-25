@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RESOURCE_CONSUMER_H_INCLUDED
 #define RIPPLE_RESOURCE_CONSUMER_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/resource/Charge.h>
 #include <ripple/resource/Disposition.h>
 
@@ -76,7 +77,7 @@ public:
 
     /** Returns `true` if the consumer should be disconnected. */
     bool
-    disconnect();
+    disconnect(beast::Journal const& j);
 
     /** Returns the credit balance representing consumption. */
     int

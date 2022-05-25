@@ -41,11 +41,35 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
     }
 }
 
+STBase*
+STVector256::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STVector256::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STVector256::getSType() const
+{
+    return STI_VECTOR256;
+}
+
+bool
+STVector256::isDefault() const
+{
+    return mValue.empty();
+}
+
 void
 STVector256::add(Serializer& s) const
 {
-    assert(fName->isBinary());
-    assert(fName->fieldType == STI_VECTOR256);
+    assert(getFName().isBinary());
+    assert(getFName().fieldType == STI_VECTOR256);
     s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
 }
 

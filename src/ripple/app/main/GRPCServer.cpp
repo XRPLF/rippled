@@ -22,7 +22,7 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/resource/Fees.h>
 
-#include <beast/net/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 
 namespace ripple {
 
@@ -144,11 +144,11 @@ GRPCServerImpl::CallData<Request, Response>::process(
     {
         auto usage = getUsage();
         bool isUnlimited = clientIsUnlimited();
-        if (!isUnlimited && usage.disconnect())
+        if (!isUnlimited && usage.disconnect(app_.journal("gRPCServer")))
         {
             grpc::Status status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED,
-                "usage balance exceeds threshhold"};
+                "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);
         }
         else
@@ -431,18 +431,17 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     {
         Section section = app_.config().section("port_grpc");
 
-        std::pair<std::string, bool> ipPair = section.find("ip");
-        if (!ipPair.second)
+        auto const optIp = section.get("ip");
+        if (!optIp)
             return;
 
-        std::pair<std::string, bool> portPair = section.find("port");
-        if (!portPair.second)
+        auto const optPort = section.get("port");
+        if (!optPort)
             return;
         try
         {
             boost::asio::ip::tcp::endpoint endpoint(
-                boost::asio::ip::make_address(ipPair.first),
-                std::stoi(portPair.first));
+                boost::asio::ip::make_address(*optIp), std::stoi(*optPort));
 
             std::stringstream ss;
             ss << endpoint;
@@ -451,16 +450,15 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
         catch (std::exception const&)
         {
             JLOG(journal_.error()) << "Error setting grpc server address";
-            Throw<std::exception>();
+            Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        std::pair<std::string, bool> secureGateway =
-            section.find("secure_gateway");
-        if (secureGateway.second)
+        auto const optSecureGateway = section.get("secure_gateway");
+        if (optSecureGateway)
         {
             try
             {
-                std::stringstream ss{secureGateway.first};
+                std::stringstream ss{*optSecureGateway};
                 std::string ip;
                 while (std::getline(ss, ip, ','))
                 {
@@ -472,7 +470,8 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                         JLOG(journal_.error())
                             << "Can't pass unspecified IP in "
                             << "secure_gateway section of port_grpc";
-                        Throw<std::exception>();
+                        Throw<std::runtime_error>(
+                            "Unspecified IP in secure_gateway section");
                     }
 
                     secureGatewayIPs_.emplace_back(addr);
@@ -482,7 +481,8 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             {
                 JLOG(journal_.error())
                     << "Error parsing secure gateway IPs for grpc server";
-                Throw<std::exception>();
+                Throw<std::runtime_error>(
+                    "Error parsing secure_gateway section");
             }
         }
     }

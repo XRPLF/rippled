@@ -129,12 +129,11 @@ fillHandler(JsonContext& context, Handler const*& result)
 {
     if (!isUnlimited(context.role))
     {
-        // VFALCO NOTE Should we also add up the jtRPC jobs?
-        //
-        int jc = context.app.getJobQueue().getJobCountGE(jtCLIENT);
-        if (jc > Tuning::maxJobQueueClients)
+        // Count all jobs at jtCLIENT priority or higher.
+        int const jobCount = context.app.getJobQueue().getJobCountGE(jtCLIENT);
+        if (jobCount > Tuning::maxJobQueueClients)
         {
-            JLOG(context.j.debug()) << "Too busy for command: " << jc;
+            JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
             return rpcTOO_BUSY;
         }
     }

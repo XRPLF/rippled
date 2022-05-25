@@ -24,6 +24,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/Book.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Consumer.h>
 #include <mutex>
 
@@ -32,7 +33,18 @@ namespace ripple {
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
-class PathRequest;
+class InfoSubRequest
+{
+public:
+    using pointer = std::shared_ptr<InfoSubRequest>;
+
+    virtual ~InfoSubRequest() = default;
+
+    virtual Json::Value
+    doClose() = 0;
+    virtual Json::Value
+    doStatus(Json::Value const&) = 0;
+};
 
 /** Manages a client's subscription to data feeds.
  */
@@ -81,6 +93,34 @@ public:
             std::uint64_t uListener,
             hash_set<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
+
+        /**
+         * subscribe an account's new transactions and retrieve the account's
+         * historical transactions
+         * @return rpcSUCCESS if successful, otherwise an error code
+         */
+        virtual error_code_i
+        subAccountHistory(ref ispListener, AccountID const& account) = 0;
+
+        /**
+         * unsubscribe an account's transactions
+         * @param historyOnly if true, only stop historical transactions
+         * @note once a client receives enough historical transactions,
+         * it should unsubscribe with historyOnly == true to stop receiving
+         * more historical transactions. It will continue to receive new
+         * transactions.
+         */
+        virtual void
+        unsubAccountHistory(
+            ref ispListener,
+            AccountID const& account,
+            bool historyOnly) = 0;
+
+        virtual void
+        unsubAccountHistoryInternal(
+            std::uint64_t uListener,
+            AccountID const& account,
+            bool historyOnly) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool
@@ -168,14 +208,21 @@ public:
     void
     deleteSubAccountInfo(AccountID const& account, bool rt);
 
-    void
-    clearPathRequest();
+    // return false if already subscribed to this account
+    bool
+    insertSubAccountHistory(AccountID const& account);
 
     void
-    setPathRequest(const std::shared_ptr<PathRequest>& req);
+    deleteSubAccountHistory(AccountID const& account);
 
-    std::shared_ptr<PathRequest> const&
-    getPathRequest();
+    void
+    clearRequest();
+
+    void
+    setRequest(const std::shared_ptr<InfoSubRequest>& req);
+
+    std::shared_ptr<InfoSubRequest> const&
+    getRequest();
 
 protected:
     std::mutex mLock;
@@ -185,8 +232,9 @@ private:
     Source& m_source;
     hash_set<AccountID> realTimeSubscriptions_;
     hash_set<AccountID> normalSubscriptions_;
-    std::shared_ptr<PathRequest> mPathRequest;
+    std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t mSeq;
+    hash_set<AccountID> accountHistorySubscriptions_;
 
     static int
     assign_id()

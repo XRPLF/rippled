@@ -488,8 +488,9 @@ public:
             auto request = ripple::makeRequest(
                 true,
                 env->app().config().COMPRESSION,
-                env->app().config().VP_REDUCE_RELAY_ENABLE,
-                false);
+                false,
+                env->app().config().TX_REDUCE_RELAY_ENABLE,
+                env->app().config().VP_REDUCE_RELAY_ENABLE);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();

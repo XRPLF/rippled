@@ -35,9 +35,11 @@ enum {
         consider it diverged */
     divergedLedgerLimit = 128,
 
-    /** The maximum number of ledger entries in a single
-        reply */
-    maxReplyNodes = 8192,
+    /** The soft cap on the number of ledger entries in a single reply. */
+    softMaxReplyNodes = 8192,
+
+    /** The hard cap on the number of ledger entries in a single reply. */
+    hardMaxReplyNodes = 12288,
 
     /** How many timer intervals a sendq has to stay large before we disconnect
      */
@@ -54,6 +56,9 @@ enum {
 
     /** How often we check for idle peers (seconds) */
     checkIdlePeers = 4,
+
+    /** The maximum number of levels to search */
+    maxQueryDepth = 3,
 };
 
 /** Size of buffer used to read from the socket. */

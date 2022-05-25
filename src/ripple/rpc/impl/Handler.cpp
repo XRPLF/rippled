@@ -67,6 +67,7 @@ Handler const handlerArray[]{
      NO_CONDITION},
     {"account_lines", byRef(&doAccountLines), Role::USER, NO_CONDITION},
     {"account_channels", byRef(&doAccountChannels), Role::USER, NO_CONDITION},
+    {"account_nfts", byRef(&doAccountNFTs), Role::USER, NO_CONDITION},
     {"account_objects", byRef(&doAccountObjects), Role::USER, NO_CONDITION},
     {"account_offers", byRef(&doAccountOffers), Role::USER, NO_CONDITION},
     {"account_tx", byRef(&doAccountTxJson), Role::USER, NO_CONDITION},
@@ -82,7 +83,11 @@ Handler const handlerArray[]{
      Role::USER,
      NO_CONDITION},
     {"download_shard", byRef(&doDownloadShard), Role::ADMIN, NO_CONDITION},
+#ifdef RIPPLED_REPORTING
+    {"gateway_balances", byRef(&doGatewayBalances), Role::ADMIN, NO_CONDITION},
+#else
     {"gateway_balances", byRef(&doGatewayBalances), Role::USER, NO_CONDITION},
+#endif
     {"get_counts", byRef(&doGetCounts), Role::ADMIN, NO_CONDITION},
     {"feature", byRef(&doFeature), Role::ADMIN, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
@@ -107,10 +112,9 @@ Handler const handlerArray[]{
     {"log_level", byRef(&doLogLevel), Role::ADMIN, NO_CONDITION},
     {"logrotate", byRef(&doLogRotate), Role::ADMIN, NO_CONDITION},
     {"manifest", byRef(&doManifest), Role::USER, NO_CONDITION},
-    {"nodetoshard_status",
-     byRef(&doNodeToShardStatus),
-     Role::USER,
-     NO_CONDITION},
+    {"nft_buy_offers", byRef(&doNFTBuyOffers), Role::USER, NO_CONDITION},
+    {"nft_sell_offers", byRef(&doNFTSellOffers), Role::USER, NO_CONDITION},
+    {"node_to_shard", byRef(&doNodeToShard), Role::ADMIN, NO_CONDITION},
     {"noripple_check", byRef(&doNoRippleCheck), Role::USER, NO_CONDITION},
     {"owner_info", byRef(&doOwnerInfo), Role::USER, NEEDS_CURRENT_LEDGER},
     {"peers", byRef(&doPeers), Role::ADMIN, NO_CONDITION},
@@ -147,6 +151,7 @@ Handler const handlerArray[]{
     {"transaction_entry", byRef(&doTransactionEntry), Role::USER, NO_CONDITION},
     {"tx", byRef(&doTxJson), Role::USER, NEEDS_NETWORK_CONNECTION},
     {"tx_history", byRef(&doTxHistory), Role::USER, NO_CONDITION},
+    {"tx_reduce_relay", byRef(&doTxReduceRelay), Role::USER, NO_CONDITION},
     {"unl_list", byRef(&doUnlList), Role::ADMIN, NO_CONDITION},
     {"validation_create",
      byRef(&doValidationCreate),
@@ -191,7 +196,8 @@ public:
     }
 
     Handler const*
-    getHandler(unsigned version, bool betaEnabled, std::string name) const
+    getHandler(unsigned version, bool betaEnabled, std::string const& name)
+        const
     {
         if (version < RPC::apiMinimumSupportedVersion ||
             version > (betaEnabled ? RPC::apiBetaVersion

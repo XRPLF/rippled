@@ -27,12 +27,86 @@ namespace ripple {
 class Feature_test : public beast::unit_test::suite
 {
     void
+    testInternals()
+    {
+        testcase("internals");
+
+        std::map<std::string, DefaultVote> const& supported =
+            ripple::detail::supportedAmendments();
+        BEAST_EXPECT(
+            supported.size() ==
+            ripple::detail::numDownVotedAmendments() +
+                ripple::detail::numUpVotedAmendments());
+        std::size_t up = 0, down = 0;
+        for (std::pair<std::string const, DefaultVote> const& amendment :
+             supported)
+        {
+            if (amendment.second == DefaultVote::no)
+                ++down;
+            else
+            {
+                if (BEAST_EXPECT(amendment.second == DefaultVote::yes))
+                    ++up;
+            }
+        }
+        BEAST_EXPECT(down == ripple::detail::numDownVotedAmendments());
+        BEAST_EXPECT(up == ripple::detail::numUpVotedAmendments());
+    }
+
+    void
+    testFeatureLookups()
+    {
+        testcase("featureToName");
+
+        // Test all the supported features. In a perfect world, this would test
+        // FeatureCollections::featureNames, but that's private. Leave it that
+        // way.
+        auto const supported = ripple::detail::supportedAmendments();
+
+        for (auto const& [feature, vote] : supported)
+        {
+            (void)vote;
+            auto const registered = getRegisteredFeature(feature);
+            if (BEAST_EXPECT(registered))
+            {
+                BEAST_EXPECT(featureToName(*registered) == feature);
+                BEAST_EXPECT(
+                    bitsetIndexToFeature(featureToBitsetIndex(*registered)) ==
+                    *registered);
+            }
+        }
+
+        // Test an arbitrary unknown feature
+        uint256 zero{0};
+        BEAST_EXPECT(featureToName(zero) == to_string(zero));
+        BEAST_EXPECT(
+            featureToName(zero) ==
+            "0000000000000000000000000000000000000000000000000000000000000000");
+
+        // Test looking up an unknown feature
+        BEAST_EXPECT(!getRegisteredFeature("unknown"));
+
+        // Test a random sampling of the variables. If any of these get retired
+        // or removed, swap out for any other feature.
+        BEAST_EXPECT(featureToName(featureOwnerPaysFee) == "OwnerPaysFee");
+        BEAST_EXPECT(featureToName(featureFlow) == "Flow");
+        BEAST_EXPECT(featureToName(featureNegativeUNL) == "NegativeUNL");
+        BEAST_EXPECT(featureToName(fix1578) == "fix1578");
+        BEAST_EXPECT(
+            featureToName(fixTakerDryOfferRemoval) ==
+            "fixTakerDryOfferRemoval");
+    }
+
+    void
     testNoParams()
     {
         testcase("No Params, None Enabled");
 
         using namespace test::jtx;
         Env env{*this};
+
+        std::map<std::string, DefaultVote> const& votes =
+            ripple::detail::supportedAmendments();
 
         auto jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -41,13 +115,15 @@ class Feature_test : public beast::unit_test::suite
         {
             if (!BEAST_EXPECT(feature.isMember(jss::name)))
                 return;
-            // default config - so all should be disabled, not vetoed, and
-            // supported
+            // default config - so all should be disabled, and
+            // supported. Some may be vetoed.
+            bool expectVeto =
+                !(votes.at(feature[jss::name].asString()) == DefaultVote::yes);
             BEAST_EXPECTS(
                 !feature[jss::enabled].asBool(),
                 feature[jss::name].asString() + " enabled");
             BEAST_EXPECTS(
-                !feature[jss::vetoed].asBool(),
+                feature[jss::vetoed].asBool() == expectVeto,
                 feature[jss::name].asString() + " vetoed");
             BEAST_EXPECTS(
                 feature[jss::supported].asBool(),
@@ -67,6 +143,9 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
+        BEAST_EXPECT(
+            jrr.isMember("586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF"
+                         "1FC07EFE41D"));
         auto feature = *(jrr.begin());
 
         BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
@@ -121,6 +200,9 @@ class Feature_test : public beast::unit_test::suite
         Env env{
             *this, FeatureBitset(featureDepositAuth, featureDepositPreauth)};
 
+        std::map<std::string, DefaultVote> const& votes =
+            ripple::detail::supportedAmendments();
+
         auto jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
             return;
@@ -135,11 +217,13 @@ class Feature_test : public beast::unit_test::suite
             bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
             bool expectSupported =
                 env.app().getAmendmentTable().isSupported(id);
+            bool expectVeto =
+                !(votes.at((*it)[jss::name].asString()) == DefaultVote::yes);
             BEAST_EXPECTS(
                 (*it)[jss::enabled].asBool() == expectEnabled,
                 (*it)[jss::name].asString() + " enabled");
             BEAST_EXPECTS(
-                !(*it)[jss::vetoed].asBool(),
+                (*it)[jss::vetoed].asBool() == expectVeto,
                 (*it)[jss::name].asString() + " vetoed");
             BEAST_EXPECTS(
                 (*it)[jss::supported].asBool() == expectSupported,
@@ -198,6 +282,8 @@ class Feature_test : public beast::unit_test::suite
         // There should be at least 5 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
         BEAST_EXPECT(majorities.size() >= 5);
+        std::map<std::string, DefaultVote> const& votes =
+            ripple::detail::supportedAmendments();
 
         jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -206,9 +292,15 @@ class Feature_test : public beast::unit_test::suite
         {
             if (!BEAST_EXPECT(feature.isMember(jss::name)))
                 return;
+            bool expectVeto =
+                !(votes.at(feature[jss::name].asString()) == DefaultVote::yes);
             BEAST_EXPECTS(
-                feature.isMember(jss::majority),
+                expectVeto ^ feature.isMember(jss::majority),
                 feature[jss::name].asString() + " majority");
+            BEAST_EXPECTS(
+                feature.isMember(jss::vetoed) &&
+                    feature[jss::vetoed].asBool() == expectVeto,
+                feature[jss::name].asString() + " vetoed");
             BEAST_EXPECTS(
                 feature.isMember(jss::count),
                 feature[jss::name].asString() + " count");
@@ -218,10 +310,12 @@ class Feature_test : public beast::unit_test::suite
             BEAST_EXPECTS(
                 feature.isMember(jss::validations),
                 feature[jss::name].asString() + " validations");
-            BEAST_EXPECT(feature[jss::count] == 1);
+            BEAST_EXPECT(feature[jss::count] == (expectVeto ? 0 : 1));
             BEAST_EXPECT(feature[jss::threshold] == 1);
             BEAST_EXPECT(feature[jss::validations] == 1);
-            BEAST_EXPECT(feature[jss::majority] == 2540);
+            BEAST_EXPECTS(
+                expectVeto || feature[jss::majority] == 2540,
+                "Majority: " + feature[jss::majority].asString());
         }
     }
 
@@ -273,6 +367,8 @@ public:
     void
     run() override
     {
+        testInternals();
+        testFeatureLookups();
         testNoParams();
         testSingleFeature();
         testInvalidFeature();

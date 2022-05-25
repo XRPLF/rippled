@@ -27,8 +27,10 @@
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/shamap/impl/TaggedPointer.h>
 
+#include <atomic>
 #include <bitset>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -53,7 +55,8 @@ private:
     std::uint32_t fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
 
-    static std::mutex childLock;
+    /** A bitlock for the children of this node, with one bit per child */
+    mutable std::atomic<std::uint16_t> lock_ = 0;
 
     /** Convert arrays stored in `hashesAndChildren_` so they can store the
         requested number of children.
@@ -155,7 +158,7 @@ public:
     std::shared_ptr<SHAMapTreeNode>
     getChild(int branch);
 
-    virtual std::shared_ptr<SHAMapTreeNode>
+    std::shared_ptr<SHAMapTreeNode>
     canonicalizeChild(int branch, std::shared_ptr<SHAMapTreeNode> node);
 
     // sync functions

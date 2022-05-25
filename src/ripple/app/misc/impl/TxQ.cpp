@@ -26,7 +26,6 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
-#include <boost/algorithm/clamp.hpp>
 #include <algorithm>
 #include <limits>
 #include <numeric>
@@ -99,23 +98,22 @@ TxQ::FeeMetrics::update(
     std::sort(feeLevels.begin(), feeLevels.end());
     assert(size == feeLevels.size());
 
-    JLOG(j_.debug()) << "Ledger " << view.info().seq << " has " << size
-                     << " transactions. "
-                     << "Ledgers are processing "
-                     << (timeLeap ? "slowly" : "as expected")
-                     << ". Expected transactions is currently " << txnsExpected_
-                     << " and multiplier is " << escalationMultiplier_;
+    JLOG((timeLeap ? j_.warn() : j_.debug()))
+        << "Ledger " << view.info().seq << " has " << size << " transactions. "
+        << "Ledgers are processing " << (timeLeap ? "slowly" : "as expected")
+        << ". Expected transactions is currently " << txnsExpected_
+        << " and multiplier is " << escalationMultiplier_;
 
     if (timeLeap)
     {
         // Ledgers are taking to long to process,
         // so clamp down on limits.
         auto const cutPct = 100 - setup.slowConsensusDecreasePercent;
-        // upperLimit must be >= minimumTxnCount_ or boost::clamp can give
+        // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
             mulDiv(txnsExpected_, cutPct, 100).second, minimumTxnCount_);
-        txnsExpected_ = boost::algorithm::clamp(
+        txnsExpected_ = std::clamp<std::uint64_t>(
             mulDiv(size, cutPct, 100).second, minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
@@ -266,6 +264,8 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
 
     return totalFeeLevel;
 }
+
+LedgerHash TxQ::MaybeTx::parentHashComp{};
 
 TxQ::MaybeTx::MaybeTx(
     std::shared_ptr<STTx const> const& txn_,
@@ -467,30 +467,14 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     assert(byFee_.iterator_to(accountIter->second) == candidateIter);
     auto const accountNextIter = std::next(accountIter);
 
-    // Check if the next transaction for this account has a greater
-    // SeqProxy, and a higher fee level, which means we skipped it
-    // earlier, and need to try it again.
-    //
-    // Edge cases:
-    //  o If the next account tx has a lower fee level, it's going to be
-    //    later in the fee queue, so we haven't skipped it yet.
-    //
-    //  o If the next tx has an equal fee level, it was...
-    //
-    //     * EITHER submitted later, so it's also going to be later in the
-    //       fee queue,
-    //
-    //     * OR the current was resubmitted to bump up the fee level, and
-    //       we have skipped that next tx.
-    //
-    //    In the latter case, continue through the fee queue anyway
-    //    to head off potential ordering manipulation problems.
+    // Check if the next transaction for this account is earlier in the queue,
+    // which means we skipped it earlier, and need to try it again.
     auto const feeNextIter = std::next(candidateIter);
     bool const useAccountNext =
         accountNextIter != txQAccount.transactions.end() &&
         accountNextIter->first > candidateIter->seqProxy &&
         (feeNextIter == byFee_.end() ||
-         accountNextIter->second.feeLevel > feeNextIter->feeLevel);
+         byFee_.value_comp()(accountNextIter->second, *feeNextIter));
 
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
@@ -1177,8 +1161,7 @@ TxQ::apply(
             for some other reason. Tx is allowed to queue in case
             conditions change, but don't waste the effort to clear).
     */
-    if (!(flags & tapPREFER_QUEUE) && txSeqProx.isSeq() && txIter &&
-        multiTxn.has_value() &&
+    if (txSeqProx.isSeq() && txIter && multiTxn.has_value() &&
         txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
         feeLevelPaid > requiredFeeLevel && requiredFeeLevel > baseLevel)
     {
@@ -1226,9 +1209,19 @@ TxQ::apply(
     if (!replacedTxIter && isFull())
     {
         auto lastRIter = byFee_.rbegin();
-        if (lastRIter->account == account)
+        while (lastRIter != byFee_.rend() && lastRIter->account == account)
         {
-            JLOG(j_.warn())
+            ++lastRIter;
+        }
+        if (lastRIter == byFee_.rend())
+        {
+            // The only way this condition can happen is if the entire
+            // queue is filled with transactions from this account. This
+            // is impossible with default settings - minimum queue size
+            // is 2000, and an account can only have 10 transactions
+            // queued. However, it can occur if settings are changed,
+            // and there is unit test coverage.
+            JLOG(j_.info())
                 << "Queue is full, and transaction " << transactionID
                 << " would kick a transaction from the same account ("
                 << account << ") out of the queue.";
@@ -1269,7 +1262,7 @@ TxQ::apply(
             // valuable, so kick out the cheapest transaction.
             auto dropRIter = endAccount.transactions.rbegin();
             assert(dropRIter->second.account == lastRIter->account);
-            JLOG(j_.warn())
+            JLOG(j_.info())
                 << "Removing last item of account " << lastRIter->account
                 << " from queue with average fee of " << endEffectiveFeeLevel
                 << " in favor of " << transactionID << " with fee of "
@@ -1278,7 +1271,7 @@ TxQ::apply(
         }
         else
         {
-            JLOG(j_.warn())
+            JLOG(j_.info())
                 << "Queue is full, and transaction " << transactionID
                 << " fee is lower than end item's account average fee";
             return {telCAN_NOT_QUEUE_FULL, false};
@@ -1307,9 +1300,6 @@ TxQ::apply(
 
     // Don't allow soft failures, which can lead to retries
     flags &= ~tapRETRY;
-
-    // Don't queue because we're already in the queue
-    flags &= ~tapPREFER_QUEUE;
 
     auto& candidate = accountIter->second.add(
         {tx, transactionID, feeLevelPaid, flags, pfresult});
@@ -1499,7 +1489,7 @@ TxQ::accept(Application& app, OpenView& view)
                     {
                         // Since the failed transaction has a ticket, order
                         // doesn't matter.  Drop this one.
-                        JLOG(j_.warn())
+                        JLOG(j_.info())
                             << "Queue is nearly full, and transaction "
                             << candidateIter->txID << " failed with "
                             << transToken(txnResult)
@@ -1518,7 +1508,7 @@ TxQ::accept(Application& app, OpenView& view)
                             dropRIter->second.account ==
                             candidateIter->account);
 
-                        JLOG(j_.warn())
+                        JLOG(j_.info())
                             << "Queue is nearly full, and transaction "
                             << candidateIter->txID << " failed with "
                             << transToken(txnResult)
@@ -1539,6 +1529,37 @@ TxQ::accept(Application& app, OpenView& view)
             break;
         }
     }
+
+    // All transactions that can be moved out of the queue into the open
+    // ledger have been. Rebuild the queue using the open ledger's
+    // parent hash, so that transactions paying the same fee are
+    // reordered.
+    LedgerHash const& parentHash = view.info().parentHash;
+#if !NDEBUG
+    auto const startingSize = byFee_.size();
+    assert(parentHash != parentHash_);
+    parentHash_ = parentHash;
+#endif
+    // byFee_ doesn't "own" the candidate objects inside it, so it's
+    // perfectly safe to wipe it and start over, repopulating from
+    // byAccount_.
+    //
+    // In the absence of a "re-sort the list in place" function, this
+    // was the fastest method tried to repopulate the list.
+    // Other methods included: create a new list and moving items over one at a
+    // time, create a new list and merge the old list into it.
+    byFee_.clear();
+
+    MaybeTx::parentHashComp = parentHash;
+
+    for (auto& [_, account] : byAccount_)
+    {
+        for (auto& [_, candidate] : account.transactions)
+        {
+            byFee_.insert(candidate);
+        }
+    }
+    assert(byFee_.size() == startingSize);
 
     return ledgerChanged;
 }
@@ -1613,13 +1634,7 @@ TxQ::getRequiredFeeLevel(
     FeeMetrics::Snapshot const& metricsSnapshot,
     std::lock_guard<std::mutex> const& lock) const
 {
-    FeeLevel64 const feeLevel =
-        FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
-
-    if ((flags & tapPREFER_QUEUE) && !byFee_.empty())
-        return std::max(feeLevel, byFee_.begin()->feeLevel);
-
-    return feeLevel;
+    return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
 
 std::optional<std::pair<TER, bool>>
@@ -1757,7 +1772,7 @@ TxQ::getTxRequiredFeeAndSeq(
 }
 
 std::vector<TxQ::TxDetails>
-TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
+TxQ::getAccountTxs(AccountID const& account) const
 {
     std::vector<TxDetails> result;
 
@@ -1778,7 +1793,7 @@ TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
 }
 
 std::vector<TxQ::TxDetails>
-TxQ::getTxs(ReadView const& view) const
+TxQ::getTxs() const
 {
     std::vector<TxDetails> result;
 
@@ -1885,7 +1900,7 @@ setup_TxQ(Config const& config)
         "normal_consensus_increase_percent",
         section);
     setup.normalConsensusIncreasePercent =
-        boost::algorithm::clamp(setup.normalConsensusIncreasePercent, 0, 1000);
+        std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
     /* If this percentage is outside of the 0-100 range, the results
        are nonsensical (uint overflows happen, so the limit grows
@@ -1895,7 +1910,7 @@ setup_TxQ(Config const& config)
         "slow_consensus_decrease_percent",
         section);
     setup.slowConsensusDecreasePercent =
-        boost::algorithm::clamp(setup.slowConsensusDecreasePercent, 0, 100);
+        std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
     set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
     set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);

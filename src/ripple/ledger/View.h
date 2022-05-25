@@ -48,6 +48,30 @@ namespace ripple {
 //
 //------------------------------------------------------------------------------
 
+/** Determines whether the given expiration time has passed.
+
+    In the XRP Ledger, expiration times are defined as the number of whole
+    seconds after the "Ripple Epoch" which, for historical reasons, is set
+    to January 1, 2000 (00:00 UTC).
+
+    This is like the way the Unix epoch works, except the Ripple Epoch is
+    precisely 946,684,800 seconds after the Unix Epoch.
+
+    See https://xrpl.org/basic-data-types.html#specifying-time
+
+    Expiration is defined in terms of the close time of the parent ledger,
+    because we definitively know the time that it closed (since consensus
+    agrees on time) but we do not know the closing time of the ledger that
+    is under construction.
+
+    @param view The ledger whose parent time is used as the clock.
+    @param exp The optional expiration time we want to check.
+
+    @returns `true` if `exp` is in the past; `false` otherwise.
+ */
+[[nodiscard]] bool
+hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
+
 /** Controls the treatment of frozen account balances */
 enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 
@@ -94,14 +118,14 @@ xrpLiquid(
     std::int32_t ownerCountAdj,
     beast::Journal j);
 
-/** Iterate all items in an account's owner directory. */
+/** Iterate all items in the given directory. */
 void
 forEachItem(
     ReadView const& view,
-    AccountID const& id,
-    std::function<void(std::shared_ptr<SLE const> const&)> f);
+    Keylet const& root,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f);
 
-/** Iterate all items after an item in an owner directory.
+/** Iterate all items after an item in the given directory.
     @param after The key of the item to start after
     @param hint The directory page containing `after`
     @param limit The maximum number of items to return
@@ -110,11 +134,39 @@ forEachItem(
 bool
 forEachItemAfter(
     ReadView const& view,
+    Keylet const& root,
+    uint256 const& after,
+    std::uint64_t const hint,
+    unsigned int limit,
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f);
+
+/** Iterate all items in an account's owner directory. */
+inline void
+forEachItem(
+    ReadView const& view,
+    AccountID const& id,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
+{
+    return forEachItem(view, keylet::ownerDir(id), f);
+}
+
+/** Iterate all items after an item in an owner directory.
+    @param after The key of the item to start after
+    @param hint The directory page containing `after`
+    @param limit The maximum number of items to return
+    @return `false` if the iteration failed
+*/
+inline bool
+forEachItemAfter(
+    ReadView const& view,
     AccountID const& id,
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> f);
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
+{
+    return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
+}
 
 [[nodiscard]] Rate
 transferRate(ReadView const& view, AccountID const& issuer);
@@ -124,30 +176,6 @@ transferRate(ReadView const& view, AccountID const& issuer);
 */
 [[nodiscard]] bool
 dirIsEmpty(ReadView const& view, Keylet const& k);
-
-// Return the first entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
-bool
-cdirFirst(
-    ReadView const& view,
-    uint256 const& uRootIndex,            // --> Root of directory.
-    std::shared_ptr<SLE const>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,              // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
-
-// Return the current entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
-bool
-cdirNext(
-    ReadView const& view,
-    uint256 const& uRootIndex,            // --> Root of directory
-    std::shared_ptr<SLE const>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,              // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
@@ -222,29 +250,69 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j);
 
-// Return the first entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
+/** @{ */
+/** Returns the first entry in the directory, advancing the index
+
+    @deprecated These are legacy function that are considered deprecated
+                and will soon be replaced with an iterator-based model
+                that is easier to use. You should not use them in new code.
+
+    @param view The view against which to operate
+    @param root The root (i.e. first page) of the directory to iterate
+    @param page The current page
+    @param index The index inside the current page
+    @param entry The entry at the current index
+
+    @return true if the directory isn't empty; false otherwise
+ */
+bool
+cdirFirst(
+    ReadView const& view,
+    uint256 const& root,
+    std::shared_ptr<SLE const>& page,
+    unsigned int& index,
+    uint256& entry);
+
 bool
 dirFirst(
     ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory.
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-- next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry);
+/** @} */
 
-// Return the current entry and advance uDirEntry.
-// <-- true, if had a next entry.
-// VFALCO Fix these clumsy routines with an iterator
+/** @{ */
+/** Returns the next entry in the directory, advancing the index
+
+    @deprecated These are legacy function that are considered deprecated
+                and will soon be replaced with an iterator-based model
+                that is easier to use. You should not use them in new code.
+
+    @param view The view against which to operate
+    @param root The root (i.e. first page) of the directory to iterate
+    @param page The current page
+    @param index The index inside the current page
+    @param entry The entry at the current index
+
+    @return true if the directory isn't empty; false otherwise
+ */
+bool
+cdirNext(
+    ReadView const& view,
+    uint256 const& root,
+    std::shared_ptr<SLE const>& page,
+    unsigned int& index,
+    uint256& entry);
+
 bool
 dirNext(
     ApplyView& view,
-    uint256 const& uRootIndex,      // --> Root of directory
-    std::shared_ptr<SLE>& sleNode,  // <-> current node
-    unsigned int& uDirEntry,        // <-> next entry
-    uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
-    beast::Journal j);
+    uint256 const& root,
+    std::shared_ptr<SLE>& page,
+    unsigned int& index,
+    uint256& entry);
+/** @} */
 
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);

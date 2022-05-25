@@ -52,7 +52,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
     auto node = std::static_pointer_cast<SHAMapInnerNode>(root_);
     int pos = 0;
 
-    while (1)
+    while (true)
     {
         while (pos < 16)
         {
@@ -99,7 +99,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
 void
 SHAMap::visitDifferences(
     SHAMap const* have,
-    std::function<bool(SHAMapTreeNode const&)> function) const
+    std::function<bool(SHAMapTreeNode const&)> const& function) const
 {
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
@@ -305,6 +305,7 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
     }
 
     mn.finishedReads_.clear();
+    mn.finishedReads_.reserve(mn.maxDefer_);
     mn.deferred_ = 0;
 }
 
@@ -321,7 +322,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     MissingNodes mn(
         max,
         filter,
-        4096,  // number of async reads per pass
+        512,  // number of async reads per pass
         f_.getFullBelowCache(ledgerSeq_)->getGeneration());
 
     if (!root_->isInner() ||
@@ -425,8 +426,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 bool
 SHAMap::getNodeFat(
     SHAMapNodeID const& wanted,
-    std::vector<SHAMapNodeID>& nodeIDs,
-    std::vector<Blob>& rawNodes,
+    std::vector<std::pair<SHAMapNodeID, Blob>>& data,
     bool fatLeaves,
     std::uint32_t depth) const
 {
@@ -442,16 +442,15 @@ SHAMap::getNodeFat(
         auto inner = static_cast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
-
         node = descendThrow(inner, branch);
         nodeID = nodeID.getChildNodeID(branch);
     }
 
     if (node == nullptr || wanted != nodeID)
     {
-        JLOG(journal_.warn()) << "peer requested node that is not in the map:\n"
-                              << wanted << " but found\n"
-                              << nodeID;
+        JLOG(journal_.info())
+            << "peer requested node that is not in the map: " << wanted
+            << " but found " << nodeID;
         return false;
     }
 
@@ -464,18 +463,17 @@ SHAMap::getNodeFat(
     std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, int>> stack;
     stack.emplace(node, nodeID, depth);
 
+    Serializer s(8192);
+
     while (!stack.empty())
     {
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        {
-            // Add this node to the reply
-            Serializer s;
-            node->serializeForWire(s);
-            nodeIDs.push_back(nodeID);
-            rawNodes.push_back(std::move(s.modData()));
-        }
+        // Add this node to the reply
+        s.erase();
+        node->serializeForWire(s);
+        data.emplace_back(std::make_pair(nodeID, s.getData()));
 
         if (node->isInner())
         {
@@ -483,6 +481,7 @@ SHAMap::getNodeFat(
             // without decrementing the depth
             auto inner = static_cast<SHAMapInnerNode*>(node);
             int bc = inner->getBranchCount();
+
             if ((depth > 0) || (bc == 1))
             {
                 // We need to process this node's children
@@ -491,7 +490,7 @@ SHAMap::getNodeFat(
                     if (!inner->isEmptyBranch(i))
                     {
                         auto const childNode = descendThrow(inner, i);
-                        SHAMapNodeID const childID = nodeID.getChildNodeID(i);
+                        auto const childID = nodeID.getChildNodeID(i);
 
                         if (childNode->isInner() && ((depth > 1) || (bc == 1)))
                         {
@@ -505,10 +504,10 @@ SHAMap::getNodeFat(
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer ns;
-                            childNode->serializeForWire(ns);
-                            nodeIDs.push_back(childID);
-                            rawNodes.push_back(std::move(ns.modData()));
+                            s.erase();
+                            childNode->serializeForWire(s);
+                            data.emplace_back(
+                                std::make_pair(childID, s.getData()));
                         }
                     }
                 }
@@ -582,7 +581,6 @@ SHAMap::addKnownNode(
     }
 
     auto const generation = f_.getFullBelowCache(ledgerSeq_)->getGeneration();
-    auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 
@@ -611,6 +609,8 @@ SHAMap::addKnownNode(
 
         if (iNode == nullptr)
         {
+            auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
+
             if (!newNode || childHash != newNode->getHash())
             {
                 JLOG(journal_.warn()) << "Corrupt node received";

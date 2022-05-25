@@ -292,7 +292,7 @@ ServerHandlerImp::onRequest(Session& session)
 
     std::shared_ptr<Session> detachedSession = session.detach();
     auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT,
+        jtCLIENT_RPC,
         "RPC-Client",
         [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
@@ -339,7 +339,7 @@ ServerHandlerImp::onWSMessage(
     JLOG(m_journal.trace()) << "Websocket received '" << jv << "'";
 
     auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT,
+        jtCLIENT_WEBSOCKET,
         "WS-Client",
         [this, session, jv = std::move(jv)](
             std::shared_ptr<JobQueue::Coro> const& coro) {
@@ -377,6 +377,25 @@ ServerHandlerImp::onStopped(Server&)
 
 //------------------------------------------------------------------------------
 
+template <class T>
+void
+logDuration(
+    Json::Value const& request,
+    T const& duration,
+    beast::Journal& journal)
+{
+    using namespace std::chrono_literals;
+    auto const level = (duration >= 10s)
+        ? journal.error()
+        : (duration >= 1s) ? journal.warn() : journal.debug();
+
+    JLOG(level) << "RPC request processing duration = "
+                << std::chrono::duration_cast<std::chrono::microseconds>(
+                       duration)
+                       .count()
+                << " microseconds. request = " << request;
+}
+
 Json::Value
 ServerHandlerImp::processSession(
     std::shared_ptr<WSSession> const& session,
@@ -384,7 +403,7 @@ ServerHandlerImp::processSession(
     Json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
-    if (is->getConsumer().disconnect())
+    if (is->getConsumer().disconnect(m_journal))
     {
         session->close(
             {boost::beast::websocket::policy_error, "threshold exceeded"});
@@ -458,7 +477,10 @@ ServerHandlerImp::processSession(
                 jv,
                 {is->user(), is->forwarded_for()}};
 
+            auto start = std::chrono::system_clock::now();
             RPC::doCommand(context, jr[jss::result]);
+            auto end = std::chrono::system_clock::now();
+            logDuration(jv, end - start, m_journal);
         }
     }
     catch (std::exception const& ex)
@@ -687,7 +709,7 @@ ServerHandlerImp::processRequest(
         {
             usage = m_resourceManager.newInboundEndpoint(
                 remoteIPAddress, role == Role::PROXY, forwardedFor);
-            if (usage.disconnect())
+            if (usage.disconnect(m_journal))
             {
                 if (!batch)
                 {
@@ -851,7 +873,11 @@ ServerHandlerImp::processRequest(
             params,
             {user, forwardedFor}};
         Json::Value result;
+        auto start = std::chrono::system_clock::now();
         RPC::doCommand(context, result);
+        auto end = std::chrono::system_clock::now();
+        logDuration(params, end - start, m_journal);
+
         usage.charge(loadType);
         if (usage.warn())
             result[jss::warning] = jss::load;
@@ -1034,10 +1060,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         Throw<std::exception>();
     }
     p.port = *parsed.port;
-    if (parsed.admin_ip)
-        p.admin_ip = *parsed.admin_ip;
-    if (parsed.secure_gateway_ip)
-        p.secure_gateway_ip = *parsed.secure_gateway_ip;
 
     if (parsed.protocol.empty())
     {
@@ -1057,6 +1079,10 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     p.pmd_options = parsed.pmd_options;
     p.ws_queue_limit = parsed.ws_queue_limit;
     p.limit = parsed.limit;
+    p.admin_nets_v4 = parsed.admin_nets_v4;
+    p.admin_nets_v6 = parsed.admin_nets_v6;
+    p.secure_gateway_nets_v4 = parsed.secure_gateway_nets_v4;
+    p.secure_gateway_nets_v6 = parsed.secure_gateway_nets_v6;
 
     return p;
 }

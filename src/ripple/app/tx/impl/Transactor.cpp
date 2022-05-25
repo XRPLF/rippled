@@ -22,6 +22,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
@@ -174,15 +175,19 @@ Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    auto const feeDue =
-        minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
-
     // Only check fee is sufficient when the ledger is open.
-    if (ctx.view.open() && feePaid < feeDue)
+    if (ctx.view.open())
     {
-        JLOG(ctx.j.trace()) << "Insufficient fee paid: " << to_string(feePaid)
-                            << "/" << to_string(feeDue);
-        return telINSUF_FEE_P;
+        auto const feeDue =
+            minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
+
+        if (feePaid < feeDue)
+        {
+            JLOG(ctx.j.trace())
+                << "Insufficient fee paid: " << to_string(feePaid) << "/"
+                << to_string(feeDue);
+            return telINSUF_FEE_P;
+        }
     }
 
     if (feePaid == beast::zero)
@@ -554,8 +559,8 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
-    if (accountSigners.second != tesSUCCESS)
-        return accountSigners.second;
+    if (!accountSigners)
+        return accountSigners.error();
 
     // Get the array of transaction signers.
     STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
@@ -567,7 +572,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     // matching multi-signers to account signers should be a simple
     // linear walk.  *All* signers must be valid or the transaction fails.
     std::uint32_t weightSum = 0;
-    auto iter = accountSigners.first.begin();
+    auto iter = accountSigners->begin();
     for (auto const& txSigner : txSigners)
     {
         AccountID const txSignerAcctID = txSigner.getAccountID(sfAccount);
@@ -575,7 +580,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         // Attempt to match the SignerEntry with a Signer;
         while (iter->account < txSignerAcctID)
         {
-            if (++iter == accountSigners.first.end())
+            if (++iter == accountSigners->end())
             {
                 JLOG(ctx.j.trace())
                     << "applyTransaction: Invalid SigningAccount.Account.";
@@ -712,6 +717,25 @@ removeUnfundedOffers(
     }
 }
 
+static void
+removeExpiredNFTokenOffers(
+    ApplyView& view,
+    std::vector<uint256> const& offers,
+    beast::Journal viewJ)
+{
+    std::size_t removed = 0;
+
+    for (auto const& index : offers)
+    {
+        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        {
+            nft::deleteTokenOffer(view, offer);
+            if (++removed == expiredOfferRemoveLimit)
+                return;
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -803,10 +827,14 @@ Transactor::operator()()
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
-        (isTecClaimHardFail(result, view().flags())))
+        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
+        // FIXME: This mechanism for doing work while returning a `tec` is
+        //        awkward and very limiting. A more general purpose approach
+        //        should be used, making it possible to do more useful work
+        //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
 
         if ((result == tecOVERSIZE) || (result == tecKILLED))
@@ -830,6 +858,25 @@ Transactor::operator()()
             });
         }
 
+        std::vector<uint256> expiredNFTokenOffers;
+
+        if (result == tecEXPIRED)
+        {
+            ctx_.visit([&expiredNFTokenOffers](
+                           uint256 const& index,
+                           bool isDelete,
+                           std::shared_ptr<SLE const> const& before,
+                           std::shared_ptr<SLE const> const& after) {
+                if (isDelete)
+                {
+                    assert(before && after);
+                    if (before && after &&
+                        (before->getType() == ltNFTOKEN_OFFER))
+                        expiredNFTokenOffers.push_back(index);
+                }
+            });
+        }
+
         // Reset the context, potentially adjusting the fee.
         {
             auto const resetResult = reset(fee);
@@ -843,6 +890,10 @@ Transactor::operator()()
         if ((result == tecOVERSIZE) || (result == tecKILLED))
             removeUnfundedOffers(
                 view(), removedOffers, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredNFTokenOffers(
+                view(), expiredNFTokenOffers, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

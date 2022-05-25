@@ -34,11 +34,14 @@ Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
 std::optional<Endpoint>
 Endpoint::from_string_checked(std::string const& s)
 {
-    std::stringstream is(boost::trim_copy(s));
-    Endpoint endpoint;
-    is >> endpoint;
-    if (!is.fail() && is.rdbuf()->in_avail() == 0)
-        return endpoint;
+    if (s.size() <= 64)
+    {
+        std::stringstream is(boost::trim_copy(s));
+        Endpoint endpoint;
+        is >> endpoint;
+        if (!is.fail() && is.rdbuf()->in_avail() == 0)
+            return endpoint;
+    }
     return {};
 }
 

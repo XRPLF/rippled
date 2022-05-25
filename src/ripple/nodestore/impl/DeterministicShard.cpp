@@ -84,7 +84,7 @@ DeterministicShard::init(Serializer const& finalKey)
 
     Config const& config{app_.config()};
     Section section{config.section(ConfigSection::shardDatabase())};
-    auto const type{get<std::string>(section, "type", "nudb")};
+    auto const type{get(section, "type", "nudb")};
     auto const factory{Manager::instance().find(type)};
     if (!factory)
         return fail("failed to find factory for " + type);

@@ -51,25 +51,25 @@ doPathFind(RPC::JsonContext& context)
     if (sSubCommand == "create")
     {
         context.loadType = Resource::feeHighBurdenRPC;
-        context.infoSub->clearPathRequest();
+        context.infoSub->clearRequest();
         return context.app.getPathRequests().makePathRequest(
             context.infoSub, lpLedger, context.params);
     }
 
     if (sSubCommand == "close")
     {
-        PathRequest::pointer request = context.infoSub->getPathRequest();
+        InfoSubRequest::pointer request = context.infoSub->getRequest();
 
         if (!request)
             return rpcError(rpcNO_PF_REQUEST);
 
-        context.infoSub->clearPathRequest();
-        return request->doClose(context.params);
+        context.infoSub->clearRequest();
+        return request->doClose();
     }
 
     if (sSubCommand == "status")
     {
-        PathRequest::pointer request = context.infoSub->getPathRequest();
+        InfoSubRequest::pointer request = context.infoSub->getRequest();
 
         if (!request)
             return rpcError(rpcNO_PF_REQUEST);

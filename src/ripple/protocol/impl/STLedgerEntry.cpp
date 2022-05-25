@@ -32,22 +32,12 @@ namespace ripple {
 STLedgerEntry::STLedgerEntry(Keylet const& k)
     : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
 {
-    // The on-ledger representation of a key type is a 16-bit unsigned integer
-    // but the LedgerEntryType enum has a larger range (including negative
-    // values), so catch obviously wrong values:
-    constexpr auto const minValidValue =
-        static_cast<LedgerEntryType>(std::numeric_limits<std::uint16_t>::min());
-
-    constexpr auto const maxValidValue =
-        static_cast<LedgerEntryType>(std::numeric_limits<std::uint16_t>::max());
-
-    if (type_ < minValidValue || type_ > maxValidValue)
-        Throw<std::runtime_error>("invalid ledger entry type: out of range");
-
     auto const format = LedgerFormats::getInstance().findByType(type_);
 
     if (format == nullptr)
-        Throw<std::runtime_error>("unknown ledger entry type");
+        Throw<std::runtime_error>(
+            "Attempt to create a SLE of unknown type " +
+            std::to_string(safe_cast<std::uint16_t>(k.type)));
 
     set(format->getSOTemplate());
 
@@ -96,6 +86,24 @@ STLedgerEntry::getFullText() const
     ret += STObject::getFullText();
     ret += "}";
     return ret;
+}
+
+STBase*
+STLedgerEntry::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STLedgerEntry::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STLedgerEntry::getSType() const
+{
+    return STI_LEDGERENTRY;
 }
 
 std::string

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/shamap/impl/TaggedPointer.h>
-
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/shamap/SHAMapInnerNode.h>
+#include <ripple/shamap/impl/TaggedPointer.h>
 
 #include <array>
 
@@ -372,7 +372,7 @@ inline TaggedPointer::TaggedPointer(
                     ++srcDstIndex;
                 }
             }
-            else if (!inDst && !inDst)
+            else if (!inSrc && !inDst)
             {
                 // in neither
                 if (srcDstIsDense)
@@ -433,7 +433,7 @@ inline TaggedPointer::TaggedPointer(
                     ++srcIndex;
                 }
             }
-            else if (!inDst && !inDst)
+            else if (!inSrc && !inDst)
             {
                 // in neither
                 if (dstIsDense)

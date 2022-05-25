@@ -43,7 +43,7 @@ else()
       --build .
       --config $<CONFIG>
       --target lz4_static
-      $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
+      --parallel ${ep_procs}
       $<$<BOOL:${is_multiconfig}>:
         COMMAND
           ${CMAKE_COMMAND} -E copy

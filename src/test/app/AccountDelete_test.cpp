@@ -924,7 +924,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple

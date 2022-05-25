@@ -26,10 +26,10 @@
 #include "org/xrpl/rpc/v1/transaction.pb.h"
 
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/TxMeta.h>
 
 #include <functional>
 

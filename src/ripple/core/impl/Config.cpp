@@ -115,19 +115,19 @@ sizedItems
     //        what they control and whether there exists an explicit
     //        config option that can be used to override the default.
 
-    //                                tiny    small   medium    large      huge
-    {SizedItem::sweepInterval,   {{     10,      30,      60,      90,      120 }}},
-    {SizedItem::treeCacheSize,   {{ 128000,  256000,  512000,  768000,  2048000 }}},
-    {SizedItem::treeCacheAge,    {{     30,      60,      90,     120,      900 }}},
-    {SizedItem::ledgerSize,      {{     32,     128,     256,     384,      768 }}},
-    {SizedItem::ledgerAge,       {{     30,      90,     180,     240,      900 }}},
-    {SizedItem::ledgerFetch,     {{      2,       3,       4,       5,        8 }}},
-    {SizedItem::hashNodeDBCache, {{      4,      12,      24,      64,      128 }}},
-    {SizedItem::txnDBCache,      {{      4,      12,      24,      64,      128 }}},
-    {SizedItem::lgrDBCache,      {{      4,       8,      16,      32,      128 }}},
-    {SizedItem::openFinalLimit,  {{      8,      16,      32,      64,      128 }}},
-    {SizedItem::burstSize,       {{      4,       8,      16,      32,       48 }}},
-    {SizedItem::ramSizeGB,       {{      8,      12,      16,      24,       32 }}},
+    //                                tiny    small   medium    large     huge
+    {SizedItem::sweepInterval,   {{     10,      30,      60,      90,     120 }}},
+    {SizedItem::treeCacheSize,   {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
+    {SizedItem::treeCacheAge,    {{     30,      60,      90,     120,     900 }}},
+    {SizedItem::ledgerSize,      {{     32,      32,      64,     256,     384 }}},
+    {SizedItem::ledgerAge,       {{     30,      60,     180,     300,     600 }}},
+    {SizedItem::ledgerFetch,     {{      2,       3,       4,       5,       8 }}},
+    {SizedItem::hashNodeDBCache, {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::txnDBCache,      {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::lgrDBCache,      {{      4,       8,      16,      32,     128 }}},
+    {SizedItem::openFinalLimit,  {{      8,      16,      32,      64,     128 }}},
+    {SizedItem::burstSize,       {{      4,       8,      16,      32,      48 }}},
+    {SizedItem::ramSizeGB,       {{      8,      12,      16,      24,      32 }}},
 }};
 
 // Ensure that the order of entries in the table corresponds to the
@@ -426,6 +426,9 @@ Config::setup(
     std::string ledgerTxDbType;
     Section ledgerTxTablesSection = section("ledger_tx_tables");
     get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
+
+    Section& nodeDbSection{section(ConfigSection::nodeDatabase())};
+    get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
 void
@@ -553,9 +556,11 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_RELAY_VALIDATIONS, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))
-            RELAY_UNTRUSTED_VALIDATIONS = true;
+            RELAY_UNTRUSTED_VALIDATIONS = 1;
         else if (boost::iequals(strTemp, "trusted"))
-            RELAY_UNTRUSTED_VALIDATIONS = false;
+            RELAY_UNTRUSTED_VALIDATIONS = 0;
+        else if (boost::iequals(strTemp, "drop_untrusted"))
+            RELAY_UNTRUSTED_VALIDATIONS = -1;
         else
             Throw<std::runtime_error>(
                 "Invalid value specified in [" SECTION_RELAY_VALIDATIONS
@@ -565,9 +570,11 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_RELAY_PROPOSALS, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))
-            RELAY_UNTRUSTED_PROPOSALS = true;
+            RELAY_UNTRUSTED_PROPOSALS = 1;
         else if (boost::iequals(strTemp, "trusted"))
-            RELAY_UNTRUSTED_PROPOSALS = false;
+            RELAY_UNTRUSTED_PROPOSALS = 0;
+        else if (boost::iequals(strTemp, "drop_untrusted"))
+            RELAY_UNTRUSTED_PROPOSALS = -1;
         else
             Throw<std::runtime_error>(
                 "Invalid value specified in [" SECTION_RELAY_PROPOSALS
@@ -615,6 +622,11 @@ Config::loadFromString(std::string const& fileContents)
             FETCH_DEPTH = 10;
     }
 
+    // By default, validators don't have pathfinding enabled, unless it is
+    // explicitly requested by the server's admin.
+    if (exists(SECTION_VALIDATION_SEED) || exists(SECTION_VALIDATOR_TOKEN))
+        PATH_SEARCH_MAX = 0;
+
     if (getSingleSection(secConfig, SECTION_PATH_SEARCH_OLD, strTemp, j_))
         PATH_SEARCH_OLD = beast::lexicalCastThrow<int>(strTemp);
     if (getSingleSection(secConfig, SECTION_PATH_SEARCH, strTemp, j_))
@@ -627,8 +639,44 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
         DEBUG_LOGFILE = strTemp;
 
+    if (getSingleSection(secConfig, SECTION_SWEEP_INTERVAL, strTemp, j_))
+    {
+        SWEEP_INTERVAL = beast::lexicalCastThrow<std::size_t>(strTemp);
+
+        if (SWEEP_INTERVAL < 10 || SWEEP_INTERVAL > 600)
+            Throw<std::runtime_error>("Invalid " SECTION_SWEEP_INTERVAL
+                                      ": must be between 10 and 600 inclusive");
+    }
+
     if (getSingleSection(secConfig, SECTION_WORKERS, strTemp, j_))
-        WORKERS = beast::lexicalCastThrow<std::size_t>(strTemp);
+    {
+        WORKERS = beast::lexicalCastThrow<int>(strTemp);
+
+        if (WORKERS < 1 || WORKERS > 1024)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_WORKERS
+                ": must be between 1 and 1024 inclusive.");
+    }
+
+    if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
+    {
+        IO_WORKERS = beast::lexicalCastThrow<int>(strTemp);
+
+        if (IO_WORKERS < 1 || IO_WORKERS > 1024)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_IO_WORKERS
+                ": must be between 1 and 1024 inclusive.");
+    }
+
+    if (getSingleSection(secConfig, SECTION_PREFETCH_WORKERS, strTemp, j_))
+    {
+        PREFETCH_WORKERS = beast::lexicalCastThrow<int>(strTemp);
+
+        if (PREFETCH_WORKERS < 1 || PREFETCH_WORKERS > 1024)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_PREFETCH_WORKERS
+                ": must be between 1 and 1024 inclusive.");
+    }
 
     if (getSingleSection(secConfig, SECTION_COMPRESSION, strTemp, j_))
         COMPRESSION = beast::lexicalCastThrow<bool>(strTemp);
@@ -641,6 +689,17 @@ Config::loadFromString(std::string const& fileContents)
         auto sec = section(SECTION_REDUCE_RELAY);
         VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
         VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
+        TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
+        TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
+        TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
+        TX_RELAY_PERCENTAGE = sec.value_or("tx_relay_percentage", 25);
+        if (TX_RELAY_PERCENTAGE < 10 || TX_RELAY_PERCENTAGE > 100 ||
+            TX_REDUCE_RELAY_MIN_PEERS < 10)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_REDUCE_RELAY
+                ", tx_min_peers must be greater or equal to 10"
+                ", tx_relay_percentage must be greater or equal to 10 "
+                "and less or equal to 100");
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
@@ -671,7 +730,7 @@ Config::loadFromString(std::string const& fileContents)
 
         try
         {
-            if (auto val = sec.get<std::string>("max_unknown_time"))
+            if (auto val = sec.get("max_unknown_time"))
                 MAX_UNKNOWN_TIME =
                     seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
         }
@@ -689,7 +748,7 @@ Config::loadFromString(std::string const& fileContents)
 
         try
         {
-            if (auto val = sec.get<std::string>("max_diverged_time"))
+            if (auto val = sec.get("max_diverged_time"))
                 MAX_DIVERGED_TIME =
                     seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
         }

@@ -112,16 +112,19 @@ struct Config
 /** Describes a connectible peer address along with some metadata. */
 struct Endpoint
 {
-    Endpoint();
+    Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, int hops_);
+    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
 
-    int hops;
+    std::uint32_t hops = 0;
     beast::IP::Endpoint address;
 };
 
-bool
-operator<(Endpoint const& lhs, Endpoint const& rhs);
+inline bool
+operator<(Endpoint const& lhs, Endpoint const& rhs)
+{
+    return lhs.address < rhs.address;
+}
 
 /** A set of Endpoint used for connecting. */
 using Endpoints = std::vector<Endpoint>;

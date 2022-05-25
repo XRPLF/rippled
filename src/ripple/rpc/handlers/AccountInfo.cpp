@@ -109,16 +109,26 @@ doAccountInfo(RPC::JsonContext& context)
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 
-            result[jss::account_data][jss::signer_lists] =
-                std::move(jvSignerList);
+            // Documentation states this is returned as part of the account_info
+            // response, but previously the code put it under account_data. We
+            // can move this to the documentated location from apiVersion 2
+            // onwards.
+            if (context.apiVersion == 1)
+            {
+                result[jss::account_data][jss::signer_lists] =
+                    std::move(jvSignerList);
+            }
+            else
+            {
+                result[jss::signer_lists] = std::move(jvSignerList);
+            }
         }
         // Return queue info if that is requested
         if (queue)
         {
             Json::Value jvQueueData = Json::objectValue;
 
-            auto const txs =
-                context.app.getTxQ().getAccountTxs(accountID, *ledger);
+            auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
                 jvQueueData[jss::txn_count] =
@@ -287,7 +297,7 @@ doAccountInfoGrpc(
                 return {result, errorStatus};
             }
             std::vector<TxQ::TxDetails> const txs =
-                context.app.getTxQ().getAccountTxs(accountID, *ledger);
+                context.app.getTxQ().getAccountTxs(accountID);
             org::xrpl::rpc::v1::QueueData& queueData =
                 *result.mutable_queue_data();
             RPC::convert(queueData, txs);
