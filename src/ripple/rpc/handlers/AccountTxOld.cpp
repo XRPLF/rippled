@@ -149,7 +149,7 @@ doAccountTxOld(RPC::JsonContext& context)
 
         Json::Value ret(Json::objectValue);
 
-        ret[jss::account] = context.app.accountIDCache().toBase58(*raAccount);
+        ret[jss::account] = toBase58(*raAccount);
         Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
         RelationalDatabase::AccountTxOptions options = {

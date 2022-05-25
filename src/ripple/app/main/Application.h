@@ -89,7 +89,6 @@ class PathRequests;
 class PendingSaves;
 class PublicKey;
 class SecretKey;
-class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;
 class TransactionMaster;
@@ -245,8 +244,6 @@ public:
     getSHAMapStore() = 0;
     virtual PendingSaves&
     pendingSaves() = 0;
-    virtual AccountIDCache const&
-    accountIDCache() const = 0;
     virtual OpenLedger&
     openLedger() = 0;
     virtual OpenLedger const&
