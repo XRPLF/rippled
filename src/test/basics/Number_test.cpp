@@ -64,6 +64,10 @@ public:
         BEAST_EXPECT(z == Number{});
         Number y{1'000'000'000'000'001'500, 32000};
         BEAST_EXPECT((y == Number{1'000'000'000'000'002, 32003}));
+        Number m{std::numeric_limits<std::int64_t>::min()};
+        BEAST_EXPECT((m == Number{-9'223'372'036'854'776, 3}));
+        Number M{std::numeric_limits<std::int64_t>::max()};
+        BEAST_EXPECT((M == Number{9'223'372'036'854'776, 3}));
         caught = false;
         try
         {
