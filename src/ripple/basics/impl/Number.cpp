@@ -619,6 +619,44 @@ root(Number f, unsigned d)
     return Number{r.mantissa(), r.exponent() + e / di};
 }
 
+Number
+root2(Number f)
+{
+    if (f == one)
+        return f;
+    if (f < Number{})
+        throw std::overflow_error("Number::root nan");
+    if (f == Number{})
+        return f;
+
+    // Scale f into the range (0, 1) such that f's exponent is a multiple of d
+    auto e = f.exponent() + 16;
+    if (e % 2 != 0)
+        ++e;
+    f = Number{f.mantissa(), f.exponent() - e};  // f /= 10^e;
+
+    // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
+    auto const D = 105;
+    auto const a0 = 18;
+    auto const a1 = 144;
+    auto const a2 = -60;
+    Number r = ((Number{a2} * f + Number{a1}) * f + Number{a0}) / Number{D};
+
+    //  Newton–Raphson iteration of f^(1/2) with initial guess r
+    //  halt when r stops changing, checking for bouncing on the last iteration
+    Number rm1{};
+    Number rm2{};
+    do
+    {
+        rm2 = rm1;
+        rm1 = r;
+        r = (r + f / r) / Number(2);
+    } while (r != rm1 && r != rm2);
+
+    //  return r * 10^(e/2) to reverse scaling
+    return Number{r.mantissa(), r.exponent() + e / 2};
+}
+
 // Returns f^(n/d)
 
 Number
