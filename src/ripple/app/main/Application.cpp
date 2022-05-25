@@ -181,7 +181,6 @@ public:
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr<SHAMapStore> m_shaMapStore;
     PendingSaves pendingSaves_;
-    AccountIDCache accountIDCache_;
     std::optional<OpenLedger> openLedger_;
 
     NodeCache m_tempNodeCache;
@@ -335,8 +334,6 @@ public:
               *this,
               m_nodeStoreScheduler,
               logs_->journal("SHAMapStore")))
-
-        , accountIDCache_(128000)
 
         , m_tempNodeCache(
               "NodeCache",
@@ -494,6 +491,8 @@ public:
               config_->reporting() ? std::make_unique<ReportingETL>(*this)
                                    : nullptr)
     {
+        initAccountIdCache(config_->getValueFor(SizedItem::accountIdCacheSize));
+
         add(m_resourceManager.get());
 
         //
@@ -854,12 +853,6 @@ public:
     pendingSaves() override
     {
         return pendingSaves_;
-    }
-
-    AccountIDCache const&
-    accountIDCache() const override
-    {
-        return accountIDCache_;
     }
 
     OpenLedger&

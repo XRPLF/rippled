@@ -17,17 +17,95 @@
 */
 //==============================================================================
 
+#include <ripple/basics/hardened_hash.h>
+#include <ripple/basics/spinlock.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/tokens.h>
+#include <array>
 #include <cstring>
+#include <mutex>
 
 namespace ripple {
+
+namespace detail {
+
+/** Caches the base58 representations of AccountIDs */
+class AccountIdCache
+{
+private:
+    struct CachedAccountID
+    {
+        AccountID id;
+        char encoding[40] = {0};
+    };
+
+    // The actual cache
+    std::vector<CachedAccountID> cache_;
+
+    // We use a hash function designed to resist algorithmic complexity attacks
+    hardened_hash<> hasher_;
+
+    // 64 spinlocks, packed into a single 64-bit value
+    std::atomic<std::uint64_t> locks_ = 0;
+
+public:
+    AccountIdCache(std::size_t count) : cache_(count)
+    {
+        // This is non-binding, but we try to avoid wasting memory that
+        // is caused by overallocation.
+        cache_.shrink_to_fit();
+    }
+
+    std::string
+    toBase58(AccountID const& id)
+    {
+        auto const index = hasher_(id) % cache_.size();
+
+        packed_spinlock sl(locks_, index % 64);
+
+        {
+            std::lock_guard lock(sl);
+
+            // The check against the first character of the encoding ensures
+            // that we don't mishandle the case of the all-zero account:
+            if (cache_[index].encoding[0] != 0 && cache_[index].id == id)
+                return cache_[index].encoding;
+        }
+
+        auto ret =
+            encodeBase58Token(TokenType::AccountID, id.data(), id.size());
+
+        assert(ret.size() <= 38);
+
+        {
+            std::lock_guard lock(sl);
+            cache_[index].id = id;
+            std::strcpy(cache_[index].encoding, ret.c_str());
+        }
+
+        return ret;
+    }
+};
+
+}  // namespace detail
+
+static std::unique_ptr<detail::AccountIdCache> accountIdCache;
+
+void
+initAccountIdCache(std::size_t count)
+{
+    if (!accountIdCache && count != 0)
+        accountIdCache = std::make_unique<detail::AccountIdCache>(count);
+}
 
 std::string
 toBase58(AccountID const& v)
 {
+    if (accountIdCache)
+        return accountIdCache->toBase58(v);
+
     return encodeBase58Token(TokenType::AccountID, v.data(), v.size());
 }
 
@@ -110,54 +188,6 @@ to_issuer(AccountID& issuer, std::string const& s)
         return false;
     issuer = *account;
     return true;
-}
-
-//------------------------------------------------------------------------------
-
-/*  VFALCO NOTE
-    An alternate implementation could use a pair of insert-only
-    hash maps that each use a single large memory allocation
-    to store a fixed size hash table and all of the AccountID/string
-    pairs laid out in memory (wouldn't use std::string here just a
-    length prefixed or zero terminated array). Possibly using
-    boost::intrusive as the basis for the unordered container.
-    This would cut down to one allocate/free cycle per swap of
-    the map.
-*/
-
-AccountIDCache::AccountIDCache(std::size_t capacity) : capacity_(capacity)
-{
-    m1_.reserve(capacity_);
-}
-
-std::string
-AccountIDCache::toBase58(AccountID const& id) const
-{
-    std::lock_guard lock(mutex_);
-    auto iter = m1_.find(id);
-    if (iter != m1_.end())
-        return iter->second;
-    iter = m0_.find(id);
-    std::string result;
-    if (iter != m0_.end())
-    {
-        result = iter->second;
-        // Can use insert-only hash maps if
-        // we didn't erase from here.
-        m0_.erase(iter);
-    }
-    else
-    {
-        result = ripple::toBase58(id);
-    }
-    if (m1_.size() >= capacity_)
-    {
-        m0_ = std::move(m1_);
-        m1_.clear();
-        m1_.reserve(capacity_);
-    }
-    m1_.emplace(id, result);
-    return result;
 }
 
 }  // namespace ripple

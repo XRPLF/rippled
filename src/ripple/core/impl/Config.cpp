@@ -108,26 +108,27 @@ namespace ripple {
 
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
-inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 12>
+inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
 sizedItems
 {{
     // FIXME: We should document each of these items, explaining exactly
     //        what they control and whether there exists an explicit
     //        config option that can be used to override the default.
 
-    //                                tiny    small   medium    large     huge
-    {SizedItem::sweepInterval,   {{     10,      30,      60,      90,     120 }}},
-    {SizedItem::treeCacheSize,   {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
-    {SizedItem::treeCacheAge,    {{     30,      60,      90,     120,     900 }}},
-    {SizedItem::ledgerSize,      {{     32,      32,      64,     256,     384 }}},
-    {SizedItem::ledgerAge,       {{     30,      60,     180,     300,     600 }}},
-    {SizedItem::ledgerFetch,     {{      2,       3,       4,       5,       8 }}},
-    {SizedItem::hashNodeDBCache, {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::txnDBCache,      {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::lgrDBCache,      {{      4,       8,      16,      32,     128 }}},
-    {SizedItem::openFinalLimit,  {{      8,      16,      32,      64,     128 }}},
-    {SizedItem::burstSize,       {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::ramSizeGB,       {{      8,      12,      16,      24,      32 }}},
+    //                                   tiny    small   medium    large     huge
+    {SizedItem::sweepInterval,      {{     10,      30,      60,      90,     120 }}},
+    {SizedItem::treeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
+    {SizedItem::treeCacheAge,       {{     30,      60,      90,     120,     900 }}},
+    {SizedItem::ledgerSize,         {{     32,      32,      64,     256,     384 }}},
+    {SizedItem::ledgerAge,          {{     30,      60,     180,     300,     600 }}},
+    {SizedItem::ledgerFetch,        {{      2,       3,       4,       5,       8 }}},
+    {SizedItem::hashNodeDBCache,    {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::txnDBCache,         {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::lgrDBCache,         {{      4,       8,      16,      32,     128 }}},
+    {SizedItem::openFinalLimit,     {{      8,      16,      32,      64,     128 }}},
+    {SizedItem::burstSize,          {{      4,       8,      16,      32,      48 }}},
+    {SizedItem::ramSizeGB,          {{      8,      12,      16,      24,      32 }}},
+    {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
 
 // Ensure that the order of entries in the table corresponds to the
