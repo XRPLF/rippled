@@ -172,6 +172,8 @@ popd
 
 if [[ "${TARGET}" == "validator-keys" ]] ; then
     export APP_PATH="$PWD/build/${BUILD_DIR}/validator-keys/validator-keys"
+elif [[ "${TARGET}" == "rippled-reporting" ]] ; then
+    export APP_PATH="$PWD/build/${BUILD_DIR}/${TARGET}"
 else
     export APP_PATH="$PWD/build/${BUILD_DIR}/rippled"
 fi

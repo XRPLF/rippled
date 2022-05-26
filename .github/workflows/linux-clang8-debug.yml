@@ -207,6 +207,7 @@ jobs:
             - # Reporting mode
               name: "Reporting"
               CMAKE_ADD: "-Dreporting=ON"
+              TARGET: rippled-reporting
             - # Coverage builds
               name: "Coverage"
               CMAKE_ADD: "-Dcoverage=ON"
