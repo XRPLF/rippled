@@ -2,6 +2,16 @@
 # so as to remove type range check exceptions that cause
 # us trouble when using boost::optional to select int values
 
+# Soci's CMake setup leaves flags in place that will cause warnings to
+# be treated as errors, but some compiler versions throw "new" warnings
+# that then cause the build to fail. Simplify that until soci fixes
+# those warnings.
+if (RIPPLED_SOURCE)
+  execute_process( COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ${RIPPLED_SOURCE}/Builds/CMake/SociConfig.cmake.patched
+      cmake/SociConfig.cmake )
+endif ()
+
 # Some versions of CMake erroneously patch external projects on every build.
 # If the patch makes no changes, skip it. This workaround can be
 # removed once we stop supporting vulnerable versions of CMake.
