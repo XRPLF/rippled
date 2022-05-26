@@ -51,7 +51,8 @@ else()
     # This patch process is likely fragile and should be reviewed carefully
     # whenever we update the GIT_TAG above.
     PATCH_COMMAND
-      ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/soci_patch.cmake
+      ${CMAKE_COMMAND} -D RIPPLED_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/soci_patch.cmake
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
