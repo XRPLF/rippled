@@ -229,7 +229,7 @@ jobs:
             - # verify build with min version of cmake
               name: "min cmake version"
               NINJA_BUILD: true
-              CMAKE_EXE: /opt/local/cmake-3.9/bin/cmake
+              CMAKE_EXE: /opt/local/cmake-3.16/bin/cmake
               SKIP_TESTS: true
 
             - # validator keys project as subproj of rippled
