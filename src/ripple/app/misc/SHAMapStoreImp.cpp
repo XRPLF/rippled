@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/SHAMapStoreImp.h>
+
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/SHAMapStoreImp.h>
 #include <ripple/app/rdb/State.h>
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/Pg.h>
-#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
-
 #include <ripple/nodestore/Scheduler.h>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
+#include <ripple/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -363,11 +364,24 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
-            validatedLedger->stateMap().snapShot(false)->visitNodes(std::bind(
-                &SHAMapStoreImp::copyNode,
-                this,
-                std::ref(nodeCount),
-                std::placeholders::_1));
+
+            try
+            {
+                validatedLedger->stateMap().snapShot(false)->visitNodes(
+                    std::bind(
+                        &SHAMapStoreImp::copyNode,
+                        this,
+                        std::ref(nodeCount),
+                        std::placeholders::_1));
+            }
+            catch (SHAMapMissingNode const& e)
+            {
+                JLOG(journal_.error())
+                    << "Missing node while copying ledger before rotate: "
+                    << e.what();
+                continue;
+            }
+
             if (stopping())
                 return;
             // Only log if we completed without a "health" abort
