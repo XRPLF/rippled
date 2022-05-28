@@ -19,7 +19,9 @@ env:
   # introduces obvious security risks, but they're Travis's risks.
   # Note that this option is only used if the "normal" build fails.
   #BOOST_WGET_OPTIONS: '--no-check-certificate'
-  CMAKE_ARGS: "-G Ninja -Dwerr=ON -Dwextra=ON -DBoost_ARCHITECTURE=-x64 -DBoost_NO_SYSTEM_PATHS=ON -DCMAKE_VERBOSE_MAKEFILE=ON"
+  # Disable warnings as errors temporarily
+  # CMAKE_ARGS: "-G Ninja -Dwerr=ON -Dwextra=ON -DBoost_ARCHITECTURE=-x64 -DBoost_NO_SYSTEM_PATHS=ON -DCMAKE_VERBOSE_MAKEFILE=ON"
+  CMAKE_ARGS: "-G Ninja -DBoost_ARCHITECTURE=-x64 -DBoost_NO_SYSTEM_PATHS=ON -DCMAKE_VERBOSE_MAKEFILE=ON"
   homebrew_packages: 'protobuf grpc pkg-config bash ninja cmake wget zstd libarchive openssl@1.1 ccache'
   srcdir: ${{ github.workspace }}/rippled
   builddir: ${{ github.workspace }}/rippled/build/macos
