@@ -282,9 +282,6 @@ private:
             if (u.cfg.failFetch)
             {
                 using namespace std::chrono;
-                log << " -- Msg: "
-                    << myStatus[jss::last_refresh_message].asString()
-                    << std::endl;
                 std::stringstream nextRefreshStr{
                     myStatus[jss::next_refresh_time].asString()};
                 system_clock::time_point nextRefresh;
@@ -357,9 +354,6 @@ private:
                     sink.messages().str().find(u.expectMsg) !=
                         std::string::npos,
                     sink.messages().str());
-                log << " -- Msg: "
-                    << myStatus[jss::last_refresh_message].asString()
-                    << std::endl;
             }
         }
     }

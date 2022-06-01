@@ -200,9 +200,6 @@ class io_latency_probe_test : public beast::unit_test::suite,
                 duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        log << "expected_probe_count_min: " << expected_probe_count_min << "\n";
-        log << "expected_probe_count_max: " << expected_probe_count_max << "\n";
-
         test_sampler io_probe{interval, get_io_service()};
         io_probe.start();
         MyTimer timer{get_io_service(), probe_duration};
