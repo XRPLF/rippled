@@ -2122,7 +2122,7 @@ public:
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName][jss::value] ==
-            "-0.966500000033334");
+            "-0.9665000000333333");
     }
 
     void
