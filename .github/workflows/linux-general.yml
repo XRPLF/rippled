@@ -431,6 +431,7 @@ jobs:
 
             - # Reporting mode
               name: "Reporting"
+              NINJA_BUILD: true
               CMAKE_ADD: "-Dreporting=ON"
               TARGET: rippled-reporting
               PARALLEL_TESTS: true
@@ -441,6 +442,7 @@ jobs:
 
             - # Coverage builds
               name: "Coverage"
+              NINJA_BUILD: true
               CMAKE_ADD: "-Dcoverage=ON"
               TARGET: coverage_report
               PARALLEL_TESTS: true
@@ -454,6 +456,7 @@ jobs:
               name: "asan"
               ASAN_OPTIONS: "print_stats=true:atexit=true"
               CMAKE_ADD: "-Dsan=address"
+              NINJA_BUILD: true
               PARALLEL_TESTS: false
               CC: "clang-8"
               CXX: "clang++-8"
@@ -464,6 +467,7 @@ jobs:
               name: "ubsan"
               UBSAN_OPTIONS: "print_stacktrace=1:report_error_type=1"
               CMAKE_ADD: "-Dsan=undefined"
+              NINJA_BUILD: true
               PARALLEL_TESTS: false
               CC: "clang-8"
               CXX: "clang++-8"
@@ -477,6 +481,7 @@ jobs:
             #  name: "tsan"
             #  TSAN_OPTIONS: "history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
             #  CMAKE_ADD: "-Dsan=thread"
+            #  NINJA_BUILD: true
             #  PARALLEL_TESTS: false
             #  CC: "clang-8"
             #  CXX: "clang++-8"
