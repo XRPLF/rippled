@@ -249,7 +249,14 @@ if [[ ${MANUAL_TESTS:-} == true && ${PARALLEL_TESTS:-} != true ]]; then
         fi
     done
 else
-    ${APP_PATH} ${APP_ARGS}
+    # If tests fail, let them retry up to 2 more times
+    retry=2
+    until ${APP_PATH} ${APP_ARGS} || [[ $retry -le 0 ]]
+    do
+        retry=$[ $retry - 1 ]
+        echo $retry retries remaining
+        sleep 5
+    done
     TEST_STAT=$?
 fi
 set -e
