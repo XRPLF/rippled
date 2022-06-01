@@ -1,4 +1,4 @@
-name: "Linux build, general"
+name: "Linux build"
 on: [push, pull_request]
 
 # The files starting with "linux-" are all interdependent.
@@ -182,7 +182,7 @@ jobs:
             build/**/CMakeOutput.log
             build/**/CMakeError.log
 
-  linux_everything_else:
+  linux_base:
     name: Linux ${{ matrix.compiler.CC }}, ${{ matrix.BUILD_TYPE }}, unity ${{ matrix.unity }}, ${{ matrix.name }}
     needs: linux_cache
     runs-on: ubuntu-18.04
@@ -232,24 +232,6 @@ jobs:
         BUILD_TYPE: [ "Debug", "Release" ]
         unity: [ "OFF", "ON" ]
         name: [ "base" ]
-
-        exclude:
-            - # These combos are covered by the individual builds
-              compiler:
-                CC: 'clang-8'
-                CXX: 'clang++-8'
-                image_user: "rippleci"
-                image_name: "rippled-ci-builder"
-                image_tag: "2020-01-08"
-              unity: "ON"
-
-            - compiler:
-                CC: "gcc-8"
-                CXX: 'g++-8'
-                image_user: "rippleci"
-                image_name: "rippled-ci-builder"
-                image_tag: "2020-01-08"
-              unity: "ON"
 
     container:
       image: "${{ matrix.compiler.image_user }}/${{ matrix.compiler.image_name }}:${{ matrix.compiler.image_tag }}"
@@ -364,6 +346,592 @@ jobs:
         continue-on-error: true
         with:
           name: rippled ${{ matrix.name }} ${{ matrix.compiler.CC }} ${{ matrix.BUILD_TYPE }} unity=${{ matrix.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/rippled
+            !build/**/_INSTALLED_/**
+
+  linux_gcc8_release_runner:
+    # Can't access env in the name, so hard code
+    name: Linux manual tests gcc-8, Release, unity
+    needs: linux_base
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+    env:
+      CC: "gcc-8"
+      CXX: "g++-8"
+      BUILD_TYPE: "Release"
+      unity: "ON"
+      image_user: "rippleci"
+      image_name: "rippled-ci-builder"
+      image_tag: "2020-01-08"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download rippled artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: rippled base ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+
+      - name: Run manual tests
+        shell: bash
+        env:
+          verbose: ${{ contains(env.commit_message, 'ci_verbose') }}
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            find -iname rippled -ls
+            # There can be only one
+            [[ $( find -name rippled | wc -l ) -eq 1 ]]
+            APP_PATH="$( find -iname rippled )"
+            chmod a+rx "${APP_PATH}"
+
+            : ${APP_ARGS:=}
+            declare -a manual_tests=$( bin/ci/ubuntu/manual-tests.sh "${APP_PATH}" )
+            APP_ARGS+=" --unittest=${manual_tests}"
+
+            APP_ARGS+=" --unittest-jobs ${NUM_PROCESSORS:-$(nproc)}"
+
+            # Verbose or not, it's good to see the right params are being used
+            echo Run: "${APP_PATH}" ${APP_ARGS}
+            "${APP_PATH}" ${APP_ARGS}
+
+  linux_gcc8_debug_unity_derived:
+    # Can't access env in the name, so hard code
+    name: Linux ${{ matrix.name }}, gcc-8, Debug, unity
+    needs: [ linux_base ]
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+            # Special cases which add to or override the cases in the
+            # matrix.
+            #
+            # Note that "name" is used in the cache key, which cannot
+            # contain commas (',').
+            #
+            - # Coverage builds
+              name: "Coverage"
+              TARGET: coverage_report
+              SKIP_TESTS: true
+              NINJA_BUILD: true
+              CMAKE_ADD: "-Dcoverage=ON"
+
+            - # dynamic lib builds
+              name: "non-static"
+              NINJA_BUILD: true
+              CMAKE_ADD: "-Dstatic=OFF"
+
+            - name: "non-static BUILD_SHARED_LIBS"
+              NINJA_BUILD: true
+              CMAKE_ADD: "-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
+
+            - # makefile
+              name: "makefile generator"
+              NINJA_BUILD: false
+
+            - # verify build with min version of cmake
+              name: "min cmake version"
+              NINJA_BUILD: true
+              CMAKE_EXE: /opt/local/cmake-3.16/bin/cmake
+              SKIP_TESTS: true
+
+            - # validator keys project as subproj of rippled
+              name: "validator-keys"
+              NINJA_BUILD: true
+              TARGET: validator-keys
+              CMAKE_ADD: "-Dvalidator_keys=ON"
+
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    continue-on-error: false
+    container:
+      # The env object is not accessible from here, so specify directly
+      image: rippleci/rippled-ci-builder:2020-01-08
+    env:
+      CC: "gcc-8"
+      CXX: "g++-8"
+      BUILD_TYPE: Debug
+      unity: "ON"
+      # Need this image because it has the coverage tools
+      image_user: "rippleci"
+      image_name: "rippled-ci-builder"
+      image_tag: "2020-01-08"
+      CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
+      TARGET: ${{ matrix.TARGET }}
+      SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
+      NINJA_BUILD: ${{ matrix.NINJA_BUILD }}
+      CMAKE_EXE: ${{ matrix.CMAKE_EXE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        # The cache key is built on the following in order
+        # 1) OS.
+        # 2) The hash of all the CMake config files.
+        # 3) The build compiler
+        # 4) The build type
+        # 5) The build unity setting
+        # 6) The build custom name.
+        # 7) The hash of all the header files under the source dir.
+        # 8) The hash of all the code files under the source dir.
+        # 9) The hash of the files controlling this job
+        # When restoring, if the matching cache is not found, search for the
+        # cache from the "base" build, which should have just completed, and
+        # the NIH built as a fallback, but that should never happen.
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-base-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          # Because of the parent job, this cache key should definitely exist,
+          # but the disclaimer in the parent job still applies.
+          key: ${{ runner.os }}-nihsrc-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.image_tag }}-${{ needs.linux_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.image_tag }}-
+
+      - name: Reset ccache stats
+        shell: bash
+        run: |
+            if ! type -a ccache
+            then
+              apt install ccache
+            fi
+            ccache -s
+            # Reset the stats so only this build counts
+            ccache -z
+
+      - name: Disk space before
+        shell: bash
+        continue-on-error: true
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Build and test
+        uses: ./.github/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+
+      - name: Disk space after
+        shell: bash
+        continue-on-error: true
+        if: always()
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Post-run ccache stats
+        shell: bash
+        run: ccache -s
+
+      - name: Debug output artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/CMakeOutput.log
+            build/**/CMakeError.log
+
+      - name: rippled executable artifact
+        if: matrix.TARGET != 'validator-keys'
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: rippled ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/rippled
+            !build/**/_INSTALLED_/**
+
+      - name: validator-keys executable artifact
+        if: matrix.TARGET == 'validator-keys'
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: validator-keys
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/validator-keys
+            !build/**/_INSTALLED_/**
+            !build/**/CMake*
+            !build/**/cmake*
+
+  linux_gcc8_debug_unity_runner:
+    # Can't access env in the name, so hard code
+    name: Linux manual tests gcc-8, Debug, unity
+    needs: linux_base
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+    env:
+      CC: "gcc-8"
+      CXX: "g++-8"
+      BUILD_TYPE: Debug
+      unity: "ON"
+      # Need this image because it has the coverage tools
+      image_user: "rippleci"
+      image_name: "rippled-ci-builder"
+      image_tag: "2020-01-08"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download rippled artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: rippled base ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+
+      - name: Run manual tests
+        shell: bash
+        env:
+          verbose: ${{ contains(env.commit_message, 'ci_verbose') }}
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            find -iname rippled -ls
+            # There can be only one
+            [[ $( find -name rippled | wc -l ) -eq 1 ]]
+            APP_PATH="$( find -iname rippled )"
+            chmod a+rx "${APP_PATH}"
+
+            : ${APP_ARGS:=}
+            declare -a manual_tests=$( bin/ci/ubuntu/manual-tests.sh "${APP_PATH}" )
+            APP_ARGS+=" --unittest=${manual_tests}"
+
+            APP_ARGS+=" --unittest-jobs ${NUM_PROCESSORS:-2}"
+
+            # Verbose or not, it's good to see the right params are being used
+            echo Run: "${APP_PATH}" ${APP_ARGS}
+            "${APP_PATH}" ${APP_ARGS}
+
+  linux_clang8_release_unity_derived:
+    # Can't access env in the name, so hard code
+    name: Linux ${{ matrix.name }}, clang-8, Release, unity
+    needs: [ linux_base ]
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+            # Special cases which add to or override the cases in the
+            # matrix.
+            #
+            # Note that "name" is used in the cache key, which cannot
+            # contain commas (',').
+            #
+            - # asan
+              name: "asan"
+              ASAN_OPTIONS: "print_stats=true:atexit=true"
+              CMAKE_ADD: "-Dsan=address"
+              canfail: false
+            - # ubsan
+              name: "ubsan"
+              UBSAN_OPTIONS: "print_stacktrace=1:report_error_type=1"
+              CMAKE_ADD: "-Dsan=undefined"
+              canfail: false
+            #- # tsan
+            #  # current tsan failure *might* be related to:
+            #  # https://github.com/google/sanitizers/issues/1104
+            #  # but we can't get it to run, so leave it disabled for now
+            #  name: "tsan"
+            #  TSAN_OPTIONS: "history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
+            #  CMAKE_ADD: "-Dsan=thread"
+            #  canfail: true
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    continue-on-error: ${{ matrix.canfail }}
+    container:
+      # The env object is not accessible from here, so specify directly
+      image: rippleci/rippled-ci-builder:2020-01-08
+    env:
+      CC: "clang-8"
+      CXX: "clang++-8"
+      BUILD_TYPE: "Release"
+      unity: "ON"
+      image_user: "rippleci"
+      image_name: "rippled-ci-builder"
+      image_tag: "2020-01-08"
+      # specify unity directly
+      CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
+      PARALLEL_TESTS: false
+      ASAN_OPTIONS: ${{ matrix.ASAN_OPTIONS }}
+      UBSAN_OPTIONS: ${{ matrix.UBSAN_OPTIONS }}
+      TSAN_OPTIONS: ${{ matrix.TSAN_OPTIONS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        # The cache key is built on the following in order
+        # 1) OS.
+        # 2) The hash of all the CMake config files.
+        # 3) The build compiler
+        # 4) The build type
+        # 5) The build unity setting
+        # 6) The build custom name.
+        # 7) The hash of all the header files under the source dir.
+        # 8) The hash of all the code files under the source dir.
+        # 9) The hash of the files controlling this job
+        # When restoring, if the matching cache is not found, search for the
+        # cache from the "base" build, which should have just completed, and
+        # the NIH built as a fallback, but that should never happen.
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-base-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          # Because of the parent job, this cache key should definitely exist,
+          # but the disclaimer in the parent job still applies.
+          key: ${{ runner.os }}-nihsrc-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.image_tag }}-${{ needs.linux_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.image_tag }}-
+
+      - name: Disk space before
+        shell: bash
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Build and test
+        uses: ./.github/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+
+      - name: Disk space after
+        shell: bash
+        if: always()
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Post-run ccache stats
+        shell: bash
+        run: ccache -s
+
+      - name: Debug output artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/CMakeOutput.log
+            build/**/CMakeError.log
+
+      - name: rippled executable artifact
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: rippled ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/rippled
+            !build/**/_INSTALLED_/**
+
+  linux_clang8_debug_unity_derived:
+    # Can't access env in the name, so hard code
+    name: Linux ${{ matrix.name }}, clang-8, Debug, unity
+    needs: [ linux_base ]
+    runs-on: ubuntu-18.04
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        # Note that "name" is used in the cache key, which cannot
+        # contain commas (',').
+        #
+        include:
+            - # Reporting mode
+              name: "Reporting"
+              CMAKE_ADD: "-Dreporting=ON"
+              TARGET: rippled-reporting
+            - # Coverage builds
+              name: "Coverage"
+              CMAKE_ADD: "-Dcoverage=ON"
+              TARGET: coverage_report
+              SKIP_TESTS: true
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    continue-on-error: false
+    container:
+      # The env object is not accessible from here, so specify directly
+      image: rippleci/rippled-ci-builder:2020-01-08
+    env:
+      CC: "clang-8"
+      CXX: "clang++-8"
+      BUILD_TYPE: "Debug"
+      unity: "ON"
+      # Need this image because it has the coverage tools
+      image_user: "rippleci"
+      image_name: "rippled-ci-builder"
+      image_tag: "2020-01-08"
+      # Specify unity directly
+      CMAKE_ADD: "-Dunity=ON ${{ matrix.CMAKE_ADD }}"
+      TARGET: ${{ matrix.TARGET }}
+      SKIP_TESTS: ${{ matrix.SKIP_TESTS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        # The cache key is built on the following in order
+        # 1) OS.
+        # 2) The hash of all the CMake config files.
+        # 3) The build compiler
+        # 4) The build type
+        # 5) The build unity setting
+        # 6) The build custom name.
+        # 7) The hash of all the header files under the source dir.
+        # 8) The hash of all the code files under the source dir.
+        # 9) The hash of the files controlling this job
+        # When restoring, if the matching cache is not found, search for the
+        # cache from the "base" build, which should have just completed, and
+        # the NIH built as a fallback, but that should never happen.
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-${{ matrix.name }}-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.CC }}-${{ env.BUILD_TYPE }}-${{ env.unity }}-base-${{ needs.linux_cache.outputs.headers }}-${{ needs.linux_cache.outputs.source }}-${{ needs.linux_cache.outputs.instructions }}
+
+      - name: Source cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.NIH_SRC_PATH}}
+          # Because of the parent job, this cache key should definitely exist,
+          # but the disclaimer in the parent job still applies.
+          key: ${{ runner.os }}-nihsrc-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.image_tag }}-${{ needs.linux_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-nihsrc-${{ needs.linux_cache.outputs.cmakeconfig }}-${{ env.image_tag }}-
+
+      - name: Reset ccache stats
+        shell: bash
+        run: |
+            if ! type -a ccache
+            then
+              apt install ccache
+            fi
+            ccache -s
+            # Reset the stats so only this build counts
+            ccache -z
+
+      - name: Disk space before
+        shell: bash
+        continue-on-error: true
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Build and test
+        uses: ./.github/build-action
+
+      - name: Unity files
+        if: failure()
+        shell: bash
+        # Unity builds sometimes cause OOM failures.
+        # When that happens, this may help diagnose which source file
+        #  is the problem.
+        run: |
+          find build -iname 'unity_*.cxx' -ls -exec cat {} \;
+
+      - name: Disk space after
+        shell: bash
+        continue-on-error: true
+        if: always()
+        run: |
+          df -h
+          du -sh ${CACHE_DIR}
+          du -sh ${CCACHE_DIR} || true
+          find ${NIH_SRC_PATH} ${NIH_CACHE_ROOT} -maxdepth 2 \
+            -type d -exec du -sh {} \; || true
+
+      - name: Post-run ccache stats
+        shell: bash
+        run: ccache -s
+
+      - name: Debug output artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/CMakeOutput.log
+            build/**/CMakeError.log
+
+      - name: rippled executable artifact
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: rippled ${{ matrix.name }} ${{ env.CC }} ${{ env.BUILD_TYPE }} unity=${{ env.unity }}
           retention-days: 7
           if-no-files-found: ignore
           path: |

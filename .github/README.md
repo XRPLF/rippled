@@ -43,15 +43,9 @@ documentation](../Builds/levelization/README.md) for more information.
 
 ### Continuous integration
 
-The design of Github Actions allows
-[workflows to be re-run](https://docs.github.com/en/actions/managing-workflow-runs/re-running-a-workflow#re-run-a-workflow-using-the-github-ui).
-However, the workflow must be run _as a whole and in it's entirety_. If a
-single job in the workflow fails, it can not be run by itself. Spurious
-failures should be rare, but if they happen, it would be convenient to not
-have to run all 45 or so jobs just to retry the one. Thus the continuous
-integration tasks were split into seven different workflows: five for Linux
-jobs, and one each for MacOS and Windows. This allows a small subset of the
-jobs to be re-run if necessary. One file describes one workflow.
+For some simplicity the continuous
+integration tasks were split into three different workflows: one job each for
+Linux, MacOS, and Windows. One file describes one workflow.
 
 The workflows are generally built using some or all of the following stages:
 
@@ -77,69 +71,40 @@ by the job.
 1. `linux-general.yml` stages:
     1. Pre-downloads dependencies into "NIH" ("Not Invented Here") caches.
     2. Builds and tests `rippled` using all of the combinations of the
-       following **except** those built in the special case jobs below.
+       following.
        * gcc-8, gcc-9, clang-8, clang-9, and clang-10
        * Debug and Release
        * unity and non-unity
-    3. There is no stage 3 in this workflow.
-    4. There is no stage 4 in this workflow.
-2. `linux-clang8-debug.yml` stages:
-    1. There is no stage 1 in this workflow, but if there is an appropriate
-       NIH cache available from `linux-general.yml`, it will be used.
-    2. Builds and tests a base `rippled` using
-       * clang-8
-       * Debug
-       * unity
-    3. Using the cache from the base stage, builds and tests the following
-       special configurations:
-       * Reporting
-       * Coverage
-    4. There is no stage 4 in this workflow.
-3. `linux-clang8-release.yml` stages:
-    1. There is no stage 1 in this workflow, but if there is an appropriate
-       NIH cache available from `linux-general.yml`, it will be used.
-    2. Builds and tests a base `rippled` using
-       * clang-8
-       * Release
-       * unity
-    3. Using the cache from the base stage, builds and tests the following
-       special configurations:
-       * Address sanitizer (asan)
-       * Undefined behavior sanitizer (ubsan)
-       * A thread sanitizer (tsan) job is defined, but disabled, because it
-         currently fails to run.
-    4. There is no stage 4 in this workflow.
-4. `linux-gcc8-debug.yml` stages:
-    1. There is no stage 1 in this workflow, but if there is an appropriate
-       NIH cache available from `linux-general.yml`, it will be used.
-    2. Builds and tests a base `rippled` using
-       * gcc-8
-       * Debug
-       * unity
-    3. Using the cache from the base stage, builds and tests the following
-       special configurations:
-       * Coverage
-       * Non-static
-       * Non-static with shared libraries
-       * Makefile (instead of Ninja)
-       * Minimum cmake version
-       * The separate
-         [`validator-keys`](https://github.com/ripple/validator-keys-tool)
-         application
-    4. Uses the `rippled` artifact from the base job to run all of the manual
-       tests defined in `ripple` except a few that use too much memory to run
-       on Github's hosts.
-5. `linux-gcc8-release.yml` stages:
-    1. There is no stage 1 in this workflow, but if there is an appropriate
-       NIH cache available from `linux-general.yml`, it will be used.
-    2. Builds and tests a base `rippled` using
-       * gcc-8
-       * Release
-       * unity
-    3. There is no stage 3 in this workflow.
-    4. Uses the `rippled` artifact from the base job to run all of the manual
-       tests defined in `ripple` except a few that use too much memory to run
-       on Github's hosts.
+    3. Special cases:
+       a. For clang-8, Debug, unity, uses the cache from the base stage to
+           build and test the following special configurations:
+          * Reporting
+          * Coverage
+       b. For clang-8, Release, unity, uses the cache from the base stage to
+          build and test the following special configurations:
+          * Address sanitizer (asan)
+          * Undefined behavior sanitizer (ubsan)
+          * A thread sanitizer (tsan) job is defined, but disabled, because it
+             currently fails to run.
+       c. For gcc-8, Debug unity, uses the cache from the base stage to build
+          and test the following special configurations:
+          * Coverage
+          * Non-static
+          * Non-static with shared libraries
+          * Makefile (instead of Ninja)
+          * Minimum cmake version
+          * The separate
+            [`validator-keys`](https://github.com/ripple/validator-keys-tool)
+            application
+    4. Manual tests:
+       a. For gcc-8, Debug unity, uses the `rippled` artifact from the base job
+          to run all of the manual
+          tests defined in `rippled` except a few that use too much memory to
+          run on Github's hosts.
+       b. For gcc-8, Release, unity, uses the `rippled` artifact from the base
+          job to run all of the manual
+          tests defined in `rippled` except a few that use too much memory to
+          run on Github's hosts.
 
 #### MacOS
 

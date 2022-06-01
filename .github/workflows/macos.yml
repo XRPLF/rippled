@@ -1,4 +1,4 @@
-name: "MacOS build, general"
+name: "MacOS build"
 on: [push, pull_request]
 
 env:
