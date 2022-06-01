@@ -3,15 +3,8 @@
    core functionality, useable by some client software perhaps
 #]===================================================================]
 
-if (CMAKE_VERSION VERSION_LESS 3.14)
-  string (APPEND CMAKE_CXX_FLAGS " -pie")
-else()
-  if(POLICY CMP0083)
-    cmake_policy(SET CMP0083 NEW)
-    include(CheckPIESupported)
-    check_pie_supported()
-  endif()
-endif()
+include(CheckPIESupported)
+check_pie_supported()
 
 file (GLOB_RECURSE rb_headers
   src/ripple/beast/*.h
