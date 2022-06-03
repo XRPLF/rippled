@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_MATHUTILITIES_H_INCLUDED
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <cstddef>
 
 namespace ripple {
