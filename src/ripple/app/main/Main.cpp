@@ -368,6 +368,10 @@ run(int argc, char** argv)
         "conf", po::value<std::string>(), "Specify the configuration file.")(
         "debug", "Enable normally suppressed debug logging")(
         "help,h", "Display this message.")(
+        "newnodeid", "Generate a new node identity for this server.")(
+        "nodeid",
+        po::value<std::string>(),
+        "Specify the node identity for this server.")(
         "quorum",
         po::value<std::size_t>(),
         "Override the minimum validation quorum.")(
@@ -752,7 +756,7 @@ run(int argc, char** argv)
         auto app = make_Application(
             std::move(config), std::move(logs), std::move(timeKeeper));
 
-        if (!app->setup())
+        if (!app->setup(vm))
             return -1;
 
         // With our configuration parsed, ensure we have

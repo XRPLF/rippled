@@ -52,10 +52,12 @@
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -164,6 +166,8 @@ public:
     std::unique_ptr<Config> config_;
     std::unique_ptr<Logs> logs_;
     std::unique_ptr<TimeKeeper> timeKeeper_;
+
+    std::uint64_t const instanceCookie_;
 
     beast::Journal m_journal;
     std::unique_ptr<perf::PerfLog> perfLog_;
@@ -274,6 +278,11 @@ public:
         , config_(std::move(config))
         , logs_(std::move(logs))
         , timeKeeper_(std::move(timeKeeper))
+        , instanceCookie_(
+              1 +
+              rand_int(
+                  crypto_prng(),
+                  std::numeric_limits<std::uint64_t>::max() - 1))
         , m_journal(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
@@ -508,13 +517,13 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    setup() override;
+    setup(boost::program_options::variables_map const& cmdline) override;
     void
     start(bool withTimers) override;
     void
     run() override;
     void
-    signalStop() override;
+    signalStop(std::string msg = "") override;
     bool
     checkSigs() const override;
     void
@@ -525,6 +534,12 @@ public:
     fdRequired() const override;
 
     //--------------------------------------------------------------------------
+
+    std::uint64_t
+    instanceID() const override
+    {
+        return instanceCookie_;
+    }
 
     Logs&
     logs() override
@@ -1108,7 +1123,7 @@ private:
 
 // TODO Break this up into smaller, more digestible initialization segments.
 bool
-ApplicationImp::setup()
+ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 {
     // We want to intercept CTRL-C and the standard termination signal SIGTERM
     // and terminate the process. This handler will NEVER be invoked twice.
@@ -1146,8 +1161,10 @@ ApplicationImp::setup()
         if (logs_->threshold() > kDebug)
             logs_->threshold(kDebug);
     }
-    JLOG(m_journal.info()) << "process starting: "
-                           << BuildInfo::getFullVersionString();
+
+    JLOG(m_journal.info()) << "Process starting: "
+                           << BuildInfo::getFullVersionString()
+                           << ", Instance Cookie: " << instanceCookie_;
 
     if (numberOfThreads(*config_) < 2)
     {
@@ -1265,7 +1282,7 @@ ApplicationImp::setup()
     if (!config().reporting())
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
-    nodeIdentity_ = getNodeIdentity(*this);
+    nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
     if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
     {
@@ -1627,10 +1644,17 @@ ApplicationImp::run()
 }
 
 void
-ApplicationImp::signalStop()
+ApplicationImp::signalStop(std::string msg)
 {
     if (!isTimeToStop.exchange(true))
+    {
+        if (msg.empty())
+            JLOG(m_journal.warn()) << "Server stopping";
+        else
+            JLOG(m_journal.warn()) << "Server stopping: " << msg;
+
         stoppingCondition_.notify_all();
+    }
 }
 
 bool
