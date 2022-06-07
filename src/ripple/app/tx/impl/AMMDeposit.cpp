@@ -43,6 +43,12 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
+    if (ctx.tx.getFlags() & tfUniversalMask)
+    {
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
+        return temINVALID_FLAG;
+    }
+
     auto const asset1In = ctx.tx[~sfAsset1In];
     auto const asset2In = ctx.tx[~sfAsset2In];
     auto const ePrice = ctx.tx[~sfEPrice];

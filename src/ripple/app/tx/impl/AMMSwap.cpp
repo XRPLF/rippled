@@ -43,6 +43,12 @@ AMMSwap::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
+    if (ctx.tx.getFlags() & tfUniversalMask)
+    {
+        JLOG(ctx.j.debug()) << "AMM Swap: invalid flags.";
+        return temINVALID_FLAG;
+    }
+
     // Valid combinations are:
     //   AssetIn
     //   AssetOut

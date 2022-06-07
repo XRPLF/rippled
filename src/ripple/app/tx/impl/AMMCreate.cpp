@@ -24,6 +24,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -46,7 +47,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    if (tx.getFlags() != 0)
+    if (tx.getFlags() & tfUniversalMask)
     {
         JLOG(j.debug()) << "AMM Instance: invalid flags.";
         return temINVALID_FLAG;

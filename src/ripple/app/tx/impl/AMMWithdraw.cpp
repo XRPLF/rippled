@@ -44,20 +44,29 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
+    auto const uFlags = ctx.tx.getFlags();
+    if (uFlags & tfAMMWithdrawMask)
+    {
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
+        return temINVALID_FLAG;
+    }
+    bool const withdrawAll = uFlags & tfAMMWithdrawAll;
+
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokens];
     // Valid combinations are:
-    //   LPTokens
+    //   LPTokens|tfAMMWithdrawAll
     //   Asset1Out
     //   Asset1Out and Asset2Out
-    //   Asset1Out and LPTokens
+    //   Asset1Out and [LPTokens|tfAMMWithdrawAll]
     //   Asset1Out and EPrice
-    if ((!lpTokens && !asset1Out) || (lpTokens && (asset2Out || ePrice)) ||
+    if ((!lpTokens && !asset1Out && !withdrawAll) ||
+        (lpTokens && (asset2Out || ePrice || withdrawAll)) ||
         (asset1Out &&
-         ((asset2Out && (lpTokens || ePrice)) ||
-          (ePrice && (asset2Out || lpTokens)))))
+         ((asset2Out && (lpTokens || ePrice || withdrawAll)) ||
+          (ePrice && (asset2Out || lpTokens || withdrawAll)))))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid combination of "
                                "deposit fields.";
@@ -67,7 +76,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: withdraw all tokens";
     }
-    if (auto const res = validAmount(asset1Out, lpTokens.has_value()))
+    if (auto const res =
+            validAmount(asset1Out, withdrawAll || lpTokens.has_value()))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
         return *res;
@@ -437,11 +447,11 @@ AMMWithdraw::getTxLPTokens(
     STTx const& tx,
     beast::Journal const journal)
 {
-    // special case - withdraw all tokens
-    if (auto const tokens = tx[~sfLPTokens]; tokens && *tokens == beast::zero)
+    // withdraw all tokens - get the balance
+    if (tx.getFlags() & tfAMMWithdrawAll)
         return getLPTokens(view, ammAccount, tx[sfAccount], journal);
     else
-        return tokens;
+        return tx[~sfLPTokens];
 }
 
 }  // namespace ripple

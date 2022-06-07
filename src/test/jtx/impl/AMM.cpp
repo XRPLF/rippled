@@ -345,8 +345,15 @@ AMM::withdraw(
     std::optional<ter> const& ter)
 {
     Json::Value jv;
-    STAmount saTokens{calcLPTIssue(ammAccountID_), tokens, 0};
-    saTokens.setJson(jv[jss::LPTokens]);
+    if (tokens == 0)
+    {
+        jv[jss::Flags] = tfAMMWithdrawAll;
+    }
+    else
+    {
+        STAmount saTokens{calcLPTIssue(ammAccountID_), tokens, 0};
+        saTokens.setJson(jv[jss::LPTokens]);
+    }
     if (asset1Out)
         asset1Out->setJson(jv[jss::Asset1Out]);
     withdraw(account, jv, ter);
