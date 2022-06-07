@@ -48,7 +48,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (tx.getFlags() != 0)
     {
-        JLOG(j.debug()) << "Malformed AMM Instance: invalid flags.";
+        JLOG(j.debug()) << "AMM Instance: invalid flags.";
         return temINVALID_FLAG;
     }
 
@@ -56,13 +56,12 @@ AMMCreate::preflight(PreflightContext const& ctx)
     auto const saAsset2 = tx[sfAsset2];
     if (saAsset1.issue() == saAsset2.issue())
     {
-        JLOG(j.debug())
-            << "Malformed AMM Instance: assets can not have the same issue.";
+        JLOG(j.debug()) << "AMM Instance: assets can not have the same issue.";
         return temBAD_AMM;
     }
     if (saAsset1 <= beast::zero || saAsset2 <= beast::zero)
     {
-        JLOG(j.debug()) << "Malformed AMM Instance: bad amount.";
+        JLOG(j.debug()) << "AMM Instance: bad amount.";
         return temBAD_AMOUNT;
     }
 
@@ -70,14 +69,14 @@ AMMCreate::preflight(PreflightContext const& ctx)
     if (badCurrency() == saAsset1.getCurrency() ||
         badCurrency() == saAsset2.getCurrency())
     {
-        JLOG(j.debug()) << "Malformed AMM Instance: bad currency.";
+        JLOG(j.debug()) << "AMM Instance: bad currency.";
         return temBAD_CURRENCY;
     }
 
     if ((saAsset1.native() && saAsset1.native() != !saAsset1.getIssuer()) ||
         (saAsset2.native() && saAsset2.native() != !saAsset2.getIssuer()))
     {
-        JLOG(j.debug()) << "Malformed AMM Instance: bad issuer.";
+        JLOG(j.debug()) << "AMM Instance: bad issuer.";
         return temBAD_ISSUER;
     }
 
@@ -85,7 +84,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
     auto const tfee = tx[sfTradingFee];
     if (tfee > 70000)
     {
-        JLOG(j.debug()) << "Malformed AMM Instance: invalid trading fee.";
+        JLOG(j.debug()) << "AMM Instance: invalid trading fee.";
         return temBAD_FEE;
     }
 
@@ -104,7 +103,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (requireAuth(ctx.view, saAsset1.issue(), accountID) ||
         requireAuth(ctx.view, saAsset2.issue(), accountID))
     {
-        JLOG(j.debug()) << "AMM Instance account is not authorized";
+        JLOG(j.debug()) << "AMM Instance: account is not authorized";
         return tecNO_PERMISSION;
     }
 
@@ -112,7 +111,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
          isGlobalFrozen(ctx.view, saAsset1.getIssuer())) ||
         (!saAsset2.native() && isGlobalFrozen(ctx.view, saAsset2.getIssuer())))
     {
-        JLOG(j.debug()) << "AMM Instance involves frozen asset";
+        JLOG(j.debug()) << "AMM Instance: involves frozen asset";
         return tecFROZEN;
     }
 
@@ -132,7 +131,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         ctx.j);
     if (issue1Balance < saAsset1 || issue2Balance < saAsset2)
     {
-        JLOG(j.debug()) << "AMM Instance has insufficient funds";
+        JLOG(j.debug()) << "AMM Instance: has insufficient funds";
         return tecUNFUNDED_PAYMENT;
     }
 
@@ -220,7 +219,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (res != tesSUCCESS)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else
-        JLOG(j_.debug()) << "AMM Instance: success " << ammAccountID << " "
+        JLOG(j_.trace()) << "AMM Instance: success " << ammAccountID << " "
                          << ammHash << " " << lptIssue << " " << saAsset1 << " "
                          << saAsset2 << " " << weight;
 

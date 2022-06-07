@@ -58,28 +58,28 @@ AMMDeposit::preflight(PreflightContext const& ctx)
          ((asset2In && (lpTokens || ePrice)) ||
           (ePrice && (asset2In || lpTokens)))))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid combination of "
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid combination of "
                                "deposit fields.";
         return temBAD_AMM_OPTIONS;
     }
     if (lpTokens && *lpTokens == beast::zero)
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid LPTokens";
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
         return temBAD_AMM_TOKENS;
     }
     else if (auto const res = validAmount(asset1In, lpTokens.has_value()))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid Asset1In";
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
         return *res;
     }
     else if (auto const res = validAmount(asset2In))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid Asset2InAmount";
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset2InAmount";
         return *res;
     }
     else if (auto const res = validAmount(ePrice))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid EPrice";
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
         return *res;
     }
 
@@ -105,7 +105,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
-        JLOG(ctx.j.error())
+        JLOG(ctx.j.debug())
             << "AMM Deposit: reserves or tokens balance is zero";
         return tecAMM_BALANCE;
     }
@@ -241,14 +241,15 @@ AMMDeposit::deposit(
     if (!balance(asset1))
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Trade: account has insufficient balance to deposit "
+            << "AMM Deposit: account has insufficient balance to deposit "
             << asset1;
         return tecUNFUNDED_AMM;
     }
     auto res = accountSend(view, account_, ammAccount, asset1, ctx_.journal);
     if (res != tesSUCCESS)
     {
-        JLOG(ctx_.journal.debug()) << "AMM Trade: failed to deposit " << asset1;
+        JLOG(ctx_.journal.debug())
+            << "AMM Deposit: failed to deposit " << asset1;
         return res;
     }
 
@@ -258,7 +259,7 @@ AMMDeposit::deposit(
         if (!balance(*asset2))
         {
             JLOG(ctx_.journal.debug())
-                << "AMM Trade: account has insufficient balance to deposit "
+                << "AMM Deposit: account has insufficient balance to deposit "
                 << *asset2;
             return tecUNFUNDED_AMM;
         }
@@ -266,7 +267,7 @@ AMMDeposit::deposit(
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())
-                << "AMM Trade: failed to deposit " << *asset2;
+                << "AMM Deposit: failed to deposit " << *asset2;
             return res;
         }
     }
@@ -275,7 +276,7 @@ AMMDeposit::deposit(
     res = accountSend(view, ammAccount, account_, lpTokens, ctx_.journal);
     if (res != tesSUCCESS)
     {
-        JLOG(ctx_.journal.debug()) << "AMM Trade: failed to deposit LPTokens";
+        JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";
         return res;
     }
 

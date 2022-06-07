@@ -59,27 +59,27 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
          ((asset2Out && (lpTokens || ePrice)) ||
           (ePrice && (asset2Out || lpTokens)))))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid combination of "
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid combination of "
                                "deposit fields.";
         return temBAD_AMM_OPTIONS;
     }
     if (lpTokens && *lpTokens == beast::zero)
     {
-        JLOG(ctx.j.debug()) << "Withdraw all tokens";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: withdraw all tokens";
     }
     if (auto const res = validAmount(asset1Out, lpTokens.has_value()))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid Asset1Out";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
         return *res;
     }
     else if (auto const res = validAmount(asset2Out))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid Asset2OutAmount";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset2OutAmount";
         return *res;
     }
     else if (auto const res = validAmount(ePrice))
     {
-        JLOG(ctx.j.debug()) << "Malformed transaction: invalid EPrice";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice";
         return *res;
     }
 
@@ -103,12 +103,12 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const lpTokens = getTxLPTokens(ctx.view, ammAccountID, ctx.tx, ctx.j);
     if (lptBalance <= beast::zero)
     {
-        JLOG(ctx.j.error()) << "AMM Withdraw: tokens balance is zero";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero";
         return tecAMM_BALANCE;
     }
     if (lpTokens && *lpTokens > lptBalance)
     {
-        JLOG(ctx.j.error()) << "AMM Withdraw: invalid tokens";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens";
         return tecAMM_INVALID_TOKENS;
     }
     if (isFrozen(ctx.view, asset1Out) || isFrozen(ctx.view, sfAsset2Out))
