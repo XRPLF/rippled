@@ -45,6 +45,12 @@ protocolMessageType(protocol::TMGetLedger const&)
 }
 
 inline protocol::MessageType
+protocolMessageType(protocol::TMGetObjectByHash const&)
+{
+    return protocol::mtGET_OBJECTS;
+}
+
+inline protocol::MessageType
 protocolMessageType(protocol::TMReplayDeltaRequest const&)
 {
     return protocol::mtREPLAY_DELTA_REQ;

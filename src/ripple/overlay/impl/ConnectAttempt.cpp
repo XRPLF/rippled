@@ -390,6 +390,7 @@ ConnectAttempt::processResponse()
             id_,
             overlay_);
 
+        app_.getPeerScheduler().add(peer);
         overlay_.add_active(peer);
     }
     catch (std::exception const& e)

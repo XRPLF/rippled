@@ -36,6 +36,7 @@
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/PeerScheduler.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/predicates.h>
@@ -135,6 +136,7 @@ PeerImp::~PeerImp()
 {
     const bool inCluster{cluster()};
 
+    app_.getPeerScheduler().remove(id_);
     overlay_.deletePeer(id_);
     overlay_.onPeerDeactivate(id_);
     overlay_.peerFinder().on_closed(slot_);
@@ -1880,6 +1882,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     // If there is a request cookie, attempt to relay the message
     if (m->has_requestcookie())
     {
+        if (m->requestcookie() >= PeerScheduler::MINIMUM_REQUEST_ID)
+        {
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "PeerScheduler", [&app = app_, m]() {
+                    app.getPeerScheduler().receive(m);
+                });
+            return;
+        }
+
         if (auto peer = overlay_.findPeerByShortID(m->requestcookie()))
         {
             m->clear_requestcookie();
@@ -2745,6 +2756,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         std::uint32_t pLSeq = 0;
         bool pLDo = true;
         bool progress = false;
+
+        if (packet.type() == protocol::TMGetObjectByHash::otUNKNOWN &&
+            packet.seq() >= PeerScheduler::MINIMUM_REQUEST_ID)
+        {
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "PeerScheduler", [&app = app_, m]() {
+                    app.getPeerScheduler().receive(m);
+                });
+            return;
+        }
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {

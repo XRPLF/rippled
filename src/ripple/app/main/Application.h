@@ -86,6 +86,7 @@ class OpenLedger;
 class OrderBookDB;
 class Overlay;
 class PathRequests;
+class PeerScheduler;
 class PendingSaves;
 class PublicKey;
 class SecretKey;
@@ -216,6 +217,8 @@ public:
     virtual TaggedCache<uint256, AcceptedLedger>&
     getAcceptedLedgerCache() = 0;
 
+    virtual PeerScheduler&
+    getPeerScheduler() = 0;
     virtual LedgerMaster&
     getLedgerMaster() = 0;
     virtual LedgerCleaner&
