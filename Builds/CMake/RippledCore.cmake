@@ -156,6 +156,7 @@ install (
     src/ripple/basics/MathUtilities.h
     src/ripple/basics/safe_cast.h
     src/ripple/basics/Slice.h
+    src/ripple/basics/spinlock.h
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
