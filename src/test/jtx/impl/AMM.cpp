@@ -40,7 +40,7 @@ AMM::AMM(
     std::optional<ter> const& ter)
     : env_(env)
     , creatorAccount_(account)
-    , ammHash_(ripple::calcAMMHash(weight1, asset1.issue(), asset2.issue()))
+    , ammHash_(ripple::calcAMMGroupHash(asset1.issue(), asset2.issue()))
     , ammAccountID_{}
     , asset1_(asset1)
     , asset2_(asset2)
@@ -81,11 +81,8 @@ AMM::create(std::uint32_t tfee)
         env_(jv, *ter_);
     else
         env_(jv);
-    if (auto const sleAMM = env_.current()->read(keylet::amm(ammHash_)))
-    {
-        ammAccountID_ = sleAMM->getAccountID(sfAMMAccount);
-        lptIssue_ = ripple::calcLPTIssue(ammAccountID_);
-    }
+    ammAccountID_ = amm;
+    lptIssue_ = ripple::calcLPTIssue(ammAccountID_);
 }
 
 std::optional<Json::Value>

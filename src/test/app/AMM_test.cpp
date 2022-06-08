@@ -73,8 +73,29 @@ domap(std::string const& s, std::optional<idmap_t> const& idmap)
     return str;
 }
 
+std::vector<std::pair<STAmount, STAmount>>
+offersFromJson(Json::Value const& j)
+{
+    if (!j.isMember("result") || !j["result"].isMember("status") ||
+        j["result"]["status"].asString() != "success" ||
+        !j["result"].isMember("offers") || !j["result"]["offers"].isArray())
+        return {};
+    Json::Value offers = j["result"]["offers"];
+    std::vector<std::pair<STAmount, STAmount>> res{};
+    for (auto it = offers.begin(); it != offers.end(); ++it)
+    {
+        STAmount gets;
+        STAmount pays;
+        if (!amountFromJsonNoThrow(gets, (*it)["taker_gets"]) ||
+            !amountFromJsonNoThrow(pays, (*it)["taker_pays"]))
+            return {};
+        res.emplace_back(std::make_pair(gets, pays));
+    }
+    return res;
+}
+
 template <typename E>
-void
+Json::Value
 readOffers(
     E& env,
     AccountID const& acct,
@@ -82,19 +103,18 @@ readOffers(
 {
     Json::Value jv;
     jv[jss::account] = to_string(acct);
-    auto const r = rpc(env, "account_offers", jv);
-    std::cout << "offers " << domap(r.toStyledString(), idmap) << std::endl;
+    return rpc(env, "account_offers", jv);
 }
 
 template <typename E>
-void
+Json::Value
 readOffers(E& env, AccountX const& acct)
 {
-    readOffers(env, acct.id(), acct.idmap());
+    return readOffers(env, acct.id(), acct.idmap());
 }
 
 template <typename E>
-void
+Json::Value
 readLines(
     E& env,
     AccountID const& acctId,
@@ -103,77 +123,130 @@ readLines(
 {
     Json::Value jv;
     jv[jss::account] = to_string(acctId);
-    auto const r = rpc(env, "account_lines", jv);
-    std::cout << name << " account lines " << domap(r.toStyledString(), idmap)
-              << std::endl;
+    return rpc(env, "account_lines", jv);
 }
 
 template <typename E>
-void
+Json::Value
 readLines(E& env, AccountX const& acct)
 {
-    readLines(env, acct.id(), acct.name(), acct.idmap());
+    return readLines(env, acct.id(), acct.name(), acct.idmap());
 }
 
-struct AMM_test : public beast::unit_test::suite
+class Test : public beast::unit_test::suite
 {
+protected:
     AccountX const gw;
     AccountX const carol;
     AccountX const alice;
     AccountX const bob;
     jtx::IOU const USD;
     jtx::IOU const EUR;
+    jtx::IOU const GBP;
     jtx::IOU const BTC;
     jtx::IOU const BAD;
 
 public:
-    AMM_test()
+    Test()
         : gw("gateway")
         , carol("carol")
         , alice("alice")
         , bob("bob")
         , USD(gw["USD"])
         , EUR(gw["EUR"])
+        , GBP(gw["GBP"])
         , BTC(gw["BTC"])
         , BAD(jtx::IOU(gw, badCurrency()))
     {
     }
 
-private:
+protected:
+    void
+    fund(
+        jtx::Env& env,
+        jtx::Account const& gw,
+        std::vector<jtx::Account> const& accounts,
+        std::vector<STAmount> const& amts,
+        bool fundXRP)
+    {
+        if (fundXRP)
+            env.fund(jtx::XRP(30000), gw);
+        for (auto const& account : accounts)
+        {
+            if (fundXRP)
+                env.fund(jtx::XRP(30000), account);
+            for (auto const& amt : amts)
+            {
+                env.trust(amt + amt, account);
+                env(pay(gw, account, amt));
+            }
+        }
+    }
+
     template <typename F>
     void
     proc(
         F&& cb,
-        std::optional<std::pair<std::uint32_t, std::uint32_t>> const& pool = {},
+        std::optional<std::pair<STAmount, STAmount>> const& pool = {},
         std::optional<IOUAmount> const& lpt = {},
         std::uint32_t fee = 0)
     {
         using namespace jtx;
         Env env{*this};
 
-        env.fund(jtx::XRP(30000), alice, carol, gw);
-        env.trust(USD(30000), alice);
-        env.trust(USD(30000), carol);
-
-        env(pay(gw, alice, USD(30000)));
-        env(pay(gw, carol, USD(30000)));
-
-        auto [asset1, asset2] =
-            [&]() -> std::pair<std::uint32_t, std::uint32_t> {
+        auto [asset1, asset2] = [&]() -> std::pair<STAmount, STAmount> {
             if (pool)
                 return *pool;
-            return {10000, 10000};
+            return {XRP(10000), USD(10000)};
         }();
+
+        fund(
+            env,
+            gw,
+            {alice, carol},
+            {STAmount{asset2.issue(), 30000, 0}},
+            true);
+        if (!asset1.native())
+            fund(
+                env,
+                gw,
+                {alice, carol},
+                {STAmount{asset1.issue(), 30000, 0}},
+                false);
         auto tokens = [&]() {
             if (lpt)
                 return *lpt;
             return IOUAmount{10000000, 0};
         }();
-        AMM ammAlice(env, alice, XRP(asset1), USD(asset2), false, 50, fee);
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(asset1), USD(asset2), tokens));
+        AMM ammAlice(env, alice, asset1, asset2, false, 50, fee);
+        BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, tokens));
         cb(ammAlice, env);
     }
 
+    template <typename C>
+    void
+    stats(C const& t, std::string const& msg)
+    {
+        auto const sum = std::accumulate(t.begin(), t.end(), 0.0);
+        auto const avg = sum / static_cast<double>(t.size());
+        auto sd = std::accumulate(
+            t.begin(), t.end(), 0.0, [&](auto const init, auto const r) {
+                return init + pow((r - avg), 2);
+            });
+        sd = sqrt(sd / t.size());
+        std::cout << msg << " exec time: avg " << avg << " "
+                  << " sd " << sd << std::endl;
+    }
+};
+
+struct AMM_test : public Test
+{
+public:
+    AMM_test() : Test()
+    {
+    }
+
+private:
     void
     testInstanceCreate()
     {
@@ -181,46 +254,32 @@ private:
 
         using namespace jtx;
 
-        auto fund = [&](auto& env) {
-            env.fund(XRP(20000), alice, carol, gw);
-            env.trust(USD(10000), alice);
-            env.trust(USD(25000), carol);
-            env.trust(BTC(0.625), carol);
-
-            env(pay(gw, alice, USD(10000)));
-            env(pay(gw, carol, USD(25000)));
-            env(pay(gw, carol, BTC(0.625)));
-        };
-
-        {
-            Env env{*this};
-            fund(env);
-            // XRP to IOU
-            AMM ammAlice(env, alice, XRP(10000), USD(10000));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}, alice));
+        // XRP to IOU
+        proc([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}, alice));
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
 
-            // IOU to IOU
-            AMM ammCarol(env, carol, USD(20000), BTC(0.5));
-            BEAST_EXPECT(ammCarol.expectBalances(
-                USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            BEAST_EXPECT(ammCarol.expectAmmRpcInfo(
-                USD(20000), BTC(0.5), IOUAmount{100, 0}, carol));
-        }
+        // IOU to IOU
+        proc(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
+                    USD(20000), BTC(0.5), IOUAmount{100, 0}));
+            },
+            std::make_pair(USD(20000), BTC(0.5)),
+            IOUAmount{100, 0});
 
+        // IOU to IOU + transfer fee
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(25000), BTC(0.625)}, true);
             env(rate(gw, 1.25));
-            // IOU to IOU
-            AMM ammCarol(env, carol, USD(20000), BTC(0.5));
-            BEAST_EXPECT(ammCarol.expectBalances(
+            AMM ammAlice(env, alice, USD(20000), BTC(0.5));
+            BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
             // Charging the AMM's LP the transfer fee.
-            env.require(balance(carol, USD(0)));
-            env.require(balance(carol, BTC(0)));
+            env.require(balance(alice, USD(0)));
+            env.require(balance(alice, BTC(0)));
         }
     }
 
@@ -231,18 +290,9 @@ private:
 
         using namespace jtx;
 
-        auto fund = [&](auto& env) {
-            env.fund(XRP(30000), alice, carol, gw);
-            env.trust(USD(30000), alice);
-            env.trust(USD(30000), carol);
-
-            env(pay(gw, alice, USD(30000)));
-            env(pay(gw, carol, USD(30000)));
-        };
-
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Can't have both XRP tokens
             AMM ammAlice(env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -250,7 +300,7 @@ private:
 
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Can't have both tokens the same IOU
             AMM ammAlice(env, alice, USD(10000), USD(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -258,7 +308,7 @@ private:
 
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Can't have zero amounts
             AMM ammAlice(env, alice, XRP(0), USD(10000), ter(temBAD_AMOUNT));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -266,7 +316,7 @@ private:
 
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Bad currency
             AMM ammAlice(
                 env, alice, XRP(10000), BAD(10000), ter(temBAD_CURRENCY));
@@ -275,7 +325,7 @@ private:
 
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Insufficient IOU balance
             AMM ammAlice(
                 env, alice, XRP(10000), USD(40000), ter(tecUNFUNDED_PAYMENT));
@@ -284,7 +334,7 @@ private:
 
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Insufficient XRP balance
             AMM ammAlice(
                 env, alice, XRP(40000), USD(10000), ter(tecUNFUNDED_PAYMENT));
@@ -293,13 +343,13 @@ private:
 
         {
             Env env{*this};
-            fund(env);
+            fund(env, gw, {alice}, {USD(30000)}, true);
             // Invalid trading fee
             AMM ammAlice(
                 env,
                 alice,
                 XRP(10000),
-                USD(10001),
+                USD(10000),
                 false,
                 50,
                 70001,
@@ -307,16 +357,10 @@ private:
             BEAST_EXPECT(!ammAlice.accountRootExists());
         }
 
-        {
-            Env env{*this};
-            fund(env);
-            // AMM already exists
-            AMM ammAlice(env, alice, XRP(10000), USD(10000));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        proc([&](AMM& ammAlice, Env& env) {
             AMM ammCarol(
                 env, carol, XRP(10000), USD(10000), ter(tecAMM_EXISTS));
-        }
+        });
     }
 
     void
@@ -725,7 +769,7 @@ private:
     }
 };
 
-struct AMM_manual_test : public beast::unit_test::suite
+struct AMM_manual_test : public Test
 {
     void
     testSwapOutPerf()
@@ -796,30 +840,13 @@ struct AMM_manual_test : public beast::unit_test::suite
     {
         testcase("Performance Offers");
 
-        auto const N = 1;
-        std::vector<std::uint64_t> t(N);
-        auto stats = [&](std::string const& msg) {
-            auto const avg =
-                static_cast<float>(std::accumulate(t.begin(), t.end(), 0)) /
-                static_cast<float>(N);
-            auto const sd = std::accumulate(
-                t.begin(), t.end(), 0., [&](auto accum, auto const& v) {
-                    return accum + (v - avg) * (v - avg);
-                });
-            std::cout << msg << " avg " << avg << " sd "
-                      << std::sqrt(sd / static_cast<float>(N)) << std::endl;
-        };
+        auto const N = 10;
+        std::array<std::uint64_t, N> t;
 
         for (auto i = 0; i < N; i++)
         {
             using namespace jtx;
             Env env(*this);
-            Account gw("gw");
-            Account alice("alice");
-            Account carol("alice");
-            Account bob("alice");
-            auto const USD = gw["USD"];
-            auto const EUR = gw["EUR"];
 
             env.fund(XRP(1000), alice, carol, bob, gw);
             env.trust(USD(1000), carol);
@@ -837,21 +864,14 @@ struct AMM_manual_test : public beast::unit_test::suite
             std::uint64_t microseconds =
                 std::chrono::duration_cast<std::chrono::microseconds>(elapsed)
                     .count();
-            t.push_back(microseconds);
+            t[i] = microseconds;
         }
-        stats("single offer");
+        stats(t, "single offer");
 
-        t.clear();
         for (auto i = 0; i < N; i++)
         {
             using namespace jtx;
             Env env(*this);
-            Account gw("gw");
-            Account alice("alice");
-            Account carol("alice");
-            Account bob("alice");
-            auto const USD = gw["USD"];
-            auto const EUR = gw["EUR"];
 
             env.fund(XRP(1000), alice, carol, bob, gw);
             env.trust(USD(1000), carol);
@@ -870,9 +890,9 @@ struct AMM_manual_test : public beast::unit_test::suite
             std::uint64_t microseconds =
                 std::chrono::duration_cast<std::chrono::microseconds>(elapsed)
                     .count();
-            t.push_back(microseconds);
+            t[i] = microseconds;
         }
-        stats("multiple offers");
+        stats(t, "multiple offers");
     }
 
     void

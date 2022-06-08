@@ -52,14 +52,14 @@ doAMMInfo(RPC::JsonContext& context)
     std::optional<AccountID> accountID;
 
     uint256 ammHash{};
+    std::uint8_t const weight = params.isMember(jss::AssetWeight)
+        ? params[jss::AssetWeight].asUInt()
+        : 50;
     if (!params.isMember(jss::AMMHash))
     {
         // May provide asset1/asset2 as amounts
         if (!params.isMember(jss::Asset1) || !params.isMember(jss::Asset2))
             return RPC::missing_field_error(jss::AMMHash);
-        std::uint8_t const weight = params.isMember(jss::AssetWeight)
-            ? params[jss::AssetWeight].asUInt()
-            : 50;
         STAmount asset1;
         STAmount asset2;
         if (!amountFromJsonNoThrow(asset1, params[jss::Asset1]) ||
@@ -68,7 +68,7 @@ doAMMInfo(RPC::JsonContext& context)
             RPC::inject_error(rpcACT_MALFORMED, result);
             return result;
         }
-        ammHash = calcAMMHash(weight, asset1.issue(), asset2.issue());
+        ammHash = calcAMMGroupHash(asset1.issue(), asset2.issue());
     }
     else if (!ammHash.parseHex(params[jss::AMMHash].asString()))
     {
@@ -91,11 +91,11 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const sleAMM = getAMMSle(*ledger, ammHash);
-    if (!sleAMM)
+    auto const amm = findAMM(*ledger, ammHash, weight);
+    if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
 
-    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
+    auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
@@ -145,6 +145,8 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
 
     // decode AMM hash
     uint256 ammHash;
+    auto const weight = params.has_weight() ? params.weight().value() : 50;
+    assert(weight < 100);
     if (!params.has_ammhash())
     {
         if (!params.has_asset1() || !params.has_asset2())
@@ -170,7 +172,7 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
                 result,
                 grpc::Status(
                     grpc::StatusCode::NOT_FOUND, "Account malformed.")};
-        ammHash = calcAMMHash(50, *issue1, *issue2);
+        ammHash = calcAMMGroupHash(*issue1, *issue2);
     }
     else if (!ammHash.parseHex(params.ammhash().value()))
         return {
@@ -198,13 +200,13 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
                     grpc::StatusCode::INVALID_ARGUMENT, "Account malformed."}};
     }
 
-    auto const sleAMM = getAMMSle(*ledger, ammHash);
-    if (!sleAMM)
+    auto const amm = findAMM(*ledger, ammHash, weight);
+    if (!amm)
         return {
             result,
             grpc::Status(grpc::StatusCode::NOT_FOUND, "Account not found.")};
 
-    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
+    auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,

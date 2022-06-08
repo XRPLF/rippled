@@ -565,6 +565,7 @@ extern SField const sfSignerEntry;
 extern SField const sfNFToken;
 extern SField const sfEmitDetails;
 extern SField const sfHook;
+extern SField const sfAMM;
 
 extern SField const sfSigner;
 extern SField const sfMajority;
@@ -587,6 +588,7 @@ extern SField const sfAffectedNodes;
 extern SField const sfMemos;
 extern SField const sfNFTokens;
 extern SField const sfHooks;
+extern SField const sfAMMs;
 
 // array of objects (uncommon)
 extern SField const sfMajorities;

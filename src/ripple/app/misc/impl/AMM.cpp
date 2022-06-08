@@ -23,29 +23,13 @@
 namespace ripple {
 
 uint256
-calcAMMHash(std::uint8_t weight1, Issue const& issue1, Issue const& issue2)
+calcAMMGroupHash(Issue const& issue1, Issue const& issue2)
 {
     if (issue1 < issue2)
         return sha512Half(
-            weight1,
-            issue1.account,
-            issue1.currency,
-            issue2.account,
-            issue2.currency);
+            issue1.account, issue1.currency, issue2.account, issue2.currency);
     return sha512Half(
-        static_cast<std::uint8_t>(100 - weight1),
-        issue2.account,
-        issue2.currency,
-        issue1.account,
-        issue1.currency);
-}
-
-std::pair<uint256, std::uint8_t>
-calcAMMHashAndWeight(int weight1, Issue const& issue1, Issue const& issue2)
-{
-    auto const weight2 = 100 - weight1;
-    auto const weight = issue1 < issue2 ? weight1 : weight2;
-    return std::make_pair(calcAMMHash(weight1, issue1, issue2), weight);
+        issue2.account, issue2.currency, issue1.account, issue1.currency);
 }
 
 Currency
@@ -243,6 +227,42 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     }
 
     return false;
+}
+
+void
+forEachAMM(
+    std::shared_ptr<const STLedgerEntry> const& sle,
+    std::function<bool(STObject const&)> const& f)
+{
+    if (sle)
+    {
+        for (auto const& amm : sle->getFieldArray(sfAMMs))
+        {
+            if (!f(amm))
+                break;
+        }
+    }
+}
+
+void
+forEachAMM(
+    ReadView const& view,
+    uint256 ammHash,
+    std::function<bool(STObject const&)> const& f)
+{
+    forEachAMM(view.read(keylet::amm(ammHash)), f);
+}
+
+std::optional<STObject>
+findAMM(ReadView const& view, uint256 ammHash, std::uint8_t weight)
+{
+    std::optional<STObject> found{};
+    forEachAMM(view, ammHash, [&](STObject const& amm) {
+        if (amm.getFieldU8(sfAssetWeight) == weight)
+            found = amm;
+        return !found.has_value();
+    });
+    return found;
 }
 
 }  // namespace ripple

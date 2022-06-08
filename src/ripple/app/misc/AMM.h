@@ -22,6 +22,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/digest.h>
 
@@ -44,23 +45,12 @@ calcAccountID(Args const&... args)
     return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
 }
 
-/** Calculate AMM's unique hash.
- * Issues are sorted in canonical order.
- * @param weight1 weight of the issue1
- * @param issue1 issue of one side of the AMM instance
- * @param issue2 issue of the other side of the AMM instance
- * @return hash
+/** Calculate AMM group hash. The ltAMM object
+ * contains all AMM's for the same issues and different
+ * weights.
  */
 uint256
-calcAMMHash(std::uint8_t weight1, Issue const& issue1, Issue const& issue2);
-
-/** Same as above. Returns weight in the issues
- * canonical order in addition to the hash.
- * weight is weight1 if issue1 < issue2, otherwise
- * it's 100 - weight1.
- */
-std::pair<uint256, std::uint8_t>
-calcAMMHashAndWeight(int weight1, Issue const& issue1, Issue const& issue2);
+calcAMMGroupHash(Issue const& issue1, Issue const& issue2);
 
 /** Calculate Liquidity Provider Token (LPT) Currency.
  * @param ammAccountID AMM's instance account id
@@ -133,11 +123,12 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
 std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash);
 
-/** Return weight that corresponds to issue1.
+/** Return weight:
  * If issue1 < issue2
  *   weight
  * else
  *   100 - weight
+ * where weight corresponds to issue1.
  */
 std::uint8_t
 orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2);
@@ -148,6 +139,28 @@ orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2);
  */
 bool
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Iterate over all AMM with different weights. The callback returns true
+ * to continue the iteration, false to stop the iteration.
+ */
+void
+forEachAMM(
+    ReadView const& view,
+    uint256 ammHash,
+    std::function<bool(STObject const&)> const& f);
+
+/** Iterate over all AMM with different weights. The callback returns true
+ * to continue the iteration, false to stop the iteration.
+ */
+void
+forEachAMM(
+    std::shared_ptr<const STLedgerEntry> const& sle,
+    std::function<bool(STObject const&)> const& f);
+
+/** Find AMM object give ammHash=hash{issue1, issue2} and the weight.
+ */
+std::optional<STObject>
+findAMM(ReadView const& view, uint256 ammHash, std::uint8_t weight);
 
 }  // namespace ripple
 

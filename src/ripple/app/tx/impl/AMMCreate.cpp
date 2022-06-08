@@ -160,12 +160,13 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (!sleCreator)
         return {terNO_ACCOUNT, false};
 
+    auto const ammHash = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
     // The weight matches issue's canonical order.
-    auto const [ammHash, weight] =
-        calcAMMHashAndWeight(weight1, saAsset1.issue(), saAsset2.issue());
+    auto const weight =
+        orderWeight(weight1, saAsset1.issue(), saAsset2.issue());
 
-    // AMM already exists.
-    if (sb.peek(keylet::amm(ammHash)) || sb.peek(keylet::account(ammAccountID)))
+    // AMM account already exists.
+    if (sb.peek(keylet::account(ammAccountID)))
     {
         JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
         return {tecAMM_EXISTS, false};
@@ -179,6 +180,44 @@ AMMCreate::applyGuts(Sandbox& sb)
         return {tecAMM_EXISTS, false};
     }
 
+    // Check if AMM with the weight already exists
+    auto ammSle = sb.peek(keylet::amm(ammHash));
+    STArray updatedAmms;
+    bool exists = false;
+    forEachAMM(ammSle, [&](STObject const& amm) {
+        if (amm.getFieldU8(sfAssetWeight) == weight)
+            exists = true;
+        else
+            updatedAmms.push_back(amm);
+        return !exists;
+    });
+    if (exists)
+    {
+        JLOG(j_.debug()) << "AMM Instance: AMM already exists for weight "
+                         << weight;
+        return {tecAMM_EXISTS, false};
+    }
+    auto updateAMMs = [&](auto& sle) {
+        STObject amm(sfAMM);
+        amm.setFieldU8(sfAssetWeight, weight);
+        amm.setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
+        amm.setAccountID(sfAMMAccount, ammAccountID);
+        updatedAmms.push_back(amm);
+        sle->setFieldArray(sfAMMs, updatedAmms);
+    };
+    // Update/Create ltAMM ledger object
+    if (ammSle)
+    {
+        updateAMMs(ammSle);
+        sb.update(ammSle);
+    }
+    else
+    {
+        ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
+        updateAMMs(ammSle);
+        sb.insert(ammSle);
+    }
+
     // Create AMM Root Account.
     auto sleAMMRoot = std::make_shared<SLE>(keylet::account(ammAccountID));
     sleAMMRoot->setAccountID(sfAccount, ammAccountID);
@@ -189,13 +228,6 @@ AMMCreate::applyGuts(Sandbox& sb)
     // Ignore reserves requirement and disable the master key.
     sleAMMRoot->setFieldU32(sfFlags, lsfAMM | lsfDisableMaster);
     sb.insert(sleAMMRoot);
-
-    // Create AMM ledger object
-    auto sleAMM = std::make_shared<SLE>(keylet::amm(ammHash));
-    sleAMM->setFieldU8(sfAssetWeight, weight);
-    sleAMM->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
-    sleAMM->setAccountID(sfAMMAccount, ammAccountID);
-    sb.insert(sleAMM);
 
     // Calculate initial LPT balance.
     auto const lpTokens = calcAMMLPT(saAsset1, saAsset2, lptIssue, weight1);

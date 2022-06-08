@@ -95,15 +95,18 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 TER
 AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleAMM = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
-    if (!sleAMM)
+    auto const weight1 = ctx.tx.isFieldPresent(sfAssetWeight)
+        ? ctx.tx.getFieldU8(sfAssetWeight)
+        : 50;
+    auto const amm = findAMM(ctx.view, ctx.tx[sfAMMHash], weight1);
+    if (!amm)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account";
         return temBAD_SRC_ACCOUNT;
     }
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
         ctx.view,
-        sleAMM->getAccountID(sfAMMAccount),
+        amm->getAccountID(sfAMMAccount),
         std::nullopt,
         std::nullopt,
         std::nullopt,
@@ -138,9 +141,12 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const asset2In = ctx_.tx[~sfAsset2In];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokens = ctx_.tx[~sfLPTokens];
-    auto const sleAMM = sb.peek(keylet::amm(ctx_.tx[sfAMMHash]));
-    assert(sleAMM);
-    auto const ammAccountID = sleAMM->getAccountID(sfAMMAccount);
+    auto const weight1 = ctx_.tx.isFieldPresent(sfAssetWeight)
+        ? ctx_.tx.getFieldU8(sfAssetWeight)
+        : 50;
+    auto const amm = findAMM(ctx_.view(), ctx_.tx[sfAMMHash], weight1);
+    assert(amm);
+    auto const ammAccountID = amm->getAccountID(sfAMMAccount);
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
         sb,
         ammAccountID,
@@ -149,9 +155,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         asset2In ? asset2In->issue() : std::optional<Issue>{},
         ctx_.journal);
 
-    auto const tfee = sleAMM->getFieldU32(sfTradingFee);
-    auto const weight1 = orderWeight(
-        sleAMM->getFieldU8(sfAssetWeight), asset1.issue(), asset2.issue());
+    auto const tfee = amm->getFieldU32(sfTradingFee);
 
     TER result = tesSUCCESS;
 
