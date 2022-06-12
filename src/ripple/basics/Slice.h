@@ -48,6 +48,7 @@ private:
     std::size_t size_ = 0;
 
 public:
+    using value_type = std::uint8_t;
     using const_iterator = std::uint8_t const*;
 
     /** Default constructed Slice has length 0. */
