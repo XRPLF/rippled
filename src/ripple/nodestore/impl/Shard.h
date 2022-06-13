@@ -324,7 +324,7 @@ private:
     GUARDED_BY(mutex_) std::uint32_t fdRequired_{0};
 
     // NuDB key/value store for node objects
-    GUARDED_BY(mutex_) std::unique_ptr<Backend> backend_;
+    std::unique_ptr<Backend> backend_ GUARDED_BY(mutex_);
 
     std::atomic<std::uint32_t> backendCount_{0};
 
