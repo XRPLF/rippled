@@ -11,7 +11,7 @@ import "org/xrpl/rpc/v1/ledger.proto";
 import "org/xrpl/rpc/v1/common.proto";
 
 // A request to get info about an account.
-// Next field: 6
+// Next field: 5
 message GetAmmInfoRequest
 {
   // The amm hash to get info about.
@@ -25,8 +25,6 @@ message GetAmmInfoRequest
   LedgerSpecifier ledger = 4;
 
   Account account = 5;
-
-  AssetWeight weight = 6;
 }
 
 // Response to GetAmmInfo RPC

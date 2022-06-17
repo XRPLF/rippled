@@ -220,17 +220,6 @@ message TradingFee
     uint32 value = 1;
 }
 
-message Slippage
-{
-    uint32 value = 1;
-}
-
-message AssetWeight
-{
-    // is actually uint8
-    uint32 value = 1;
-}
-
 // *** Messages wrapping uint64 ***
 
 message BaseFee
@@ -576,21 +565,6 @@ message Asset1Out
 }
 
 message Asset2Out
-{
-    CurrencyAmount value = 1;
-}
-
-message AssetIn
-{
-    CurrencyAmount value = 1;
-}
-
-message AssetOut
-{
-    CurrencyAmount value = 1;
-}
-
-message LimitSpotPrice
 {
     CurrencyAmount value = 1;
 }

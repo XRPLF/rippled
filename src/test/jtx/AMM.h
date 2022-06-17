@@ -74,12 +74,6 @@ class AMM
         std::optional<ter> const& ter = {});
 
     void
-    swap(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<ter> const& ter = {});
-
-    void
     log(bool log)
     {
         log_ = log;
@@ -189,31 +183,6 @@ public:
         std::optional<STAmount> const& asset2Out = {},
         std::optional<STAmount> const& maxEP = {},
         std::optional<ter> const& ter = {});
-
-    void
-    swapIn(
-        std::optional<Account> const& account,
-        STAmount const& assetIn,
-        std::optional<std::uint16_t> const& slippage = std::nullopt,
-        std::optional<STAmount> const& limitSP = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
-    void
-    swapOut(
-        std::optional<Account> const& account,
-        STAmount const& assetOut,
-        std::optional<STAmount> const& limitSP = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
-    // This could be either swap in/out depending on
-    // the combination of asset/slippage/limit SP
-    void
-    swap(
-        std::optional<Account> const& account,
-        STAmount const& asset,
-        std::uint16_t const& slippage,
-        STAmount const& limitSP,
-        std::optional<ter> const& ter = std::nullopt);
 
     AccountID
     ammAccount() const

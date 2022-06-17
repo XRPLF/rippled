@@ -339,14 +339,12 @@ extern SF_UINT8 const sfTransactionResult;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
-extern SF_UINT8 const sfAssetWeight;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
 extern SF_UINT16 const sfTransactionType;
 extern SF_UINT16 const sfSignerWeight;
 extern SF_UINT16 const sfTransferFee;
-extern SF_UINT16 const sfSlippage;
 
 // 16-bit integers (uncommon)
 extern SF_UINT16 const sfVersion;
@@ -486,10 +484,7 @@ extern SF_AMOUNT const sfAsset1In;
 extern SF_AMOUNT const sfAsset2In;
 extern SF_AMOUNT const sfAsset1Out;
 extern SF_AMOUNT const sfAsset2Out;
-extern SF_AMOUNT const sfLimitSpotPrice;
 extern SF_AMOUNT const sfEPrice;
-extern SF_AMOUNT const sfAssetIn;
-extern SF_AMOUNT const sfAssetOut;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;

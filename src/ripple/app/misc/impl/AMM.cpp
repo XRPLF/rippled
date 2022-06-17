@@ -229,40 +229,4 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return false;
 }
 
-void
-forEachAMM(
-    std::shared_ptr<const STLedgerEntry> const& sle,
-    std::function<bool(STObject const&)> const& f)
-{
-    if (sle)
-    {
-        for (auto const& amm : sle->getFieldArray(sfAMMs))
-        {
-            if (!f(amm))
-                break;
-        }
-    }
-}
-
-void
-forEachAMM(
-    ReadView const& view,
-    uint256 ammHash,
-    std::function<bool(STObject const&)> const& f)
-{
-    forEachAMM(view.read(keylet::amm(ammHash)), f);
-}
-
-std::optional<STObject>
-findAMM(ReadView const& view, uint256 ammHash, std::uint8_t weight)
-{
-    std::optional<STObject> found{};
-    forEachAMM(view, ammHash, [&](STObject const& amm) {
-        if (amm.getFieldU8(sfAssetWeight) == weight)
-            found = amm;
-        return !found.has_value();
-    });
-    return found;
-}
-
 }  // namespace ripple

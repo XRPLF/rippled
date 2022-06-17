@@ -419,14 +419,12 @@ message NegativeUNL
     Flags flags = 4;
 }
 
-// Next field: 4
+// Next field: 3
 message AMM
 {
     AMMAccount amm_account = 1;
 
-    AssetWeight asset_weight = 2;
+    TradingFee trading_fee = 2;
 
-    TradingFee trading_fee = 3;
-
-    Flags flags = 4;
+    Flags flags = 3;
 }

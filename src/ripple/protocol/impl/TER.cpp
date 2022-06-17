@@ -46,7 +46,6 @@ transResults()
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
         MAKE_ERROR(tecAMM_FAILED_DEPOSIT,            "AMM failed deposit."),
         MAKE_ERROR(tecAMM_FAILED_WITHDRAW,           "AMM failed withdraw."),
-        MAKE_ERROR(tecAMM_FAILED_SWAP,               "AMM failed swap."),
         MAKE_ERROR(tecAMM_EXISTS,                    "AMM instance exists."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),

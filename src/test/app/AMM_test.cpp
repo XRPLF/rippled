@@ -425,16 +425,24 @@ private:
                 XRP(10201), USD(10000), IOUAmount{10100000, 0}));
         });
 
-#if 0  // specs in works
-       // Single deposit with SP not exceeding specified:
-       // 100USD with SP not to exceed 100000 (USD relative to XRP)
-        proc([&](AMM& ammAlice) {
+        // Single deposit with SP not exceeding specified:
+        // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut)
+        proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(
-                carol, USD(1000), std::nullopt, XRPAmount{1000000});
+                carol, USD(1000), std::nullopt, STAmount{USD.issue(), 1, -1});
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(11000), IOUAmount{104880884817015, -7}));
+                XRP(10000), USD(11000), IOUAmount{1048808848170152, -8}));
         });
-#endif
+
+        // Single deposit with SP not exceeding specified:
+        // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut)
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(
+                carol, USD(0), std::nullopt, STAmount{USD.issue(), 10, 0});
+            std::cout << ammAlice.ammRpcInfo()->toStyledString();
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(11000), IOUAmount{1048808848170152, -8}));
+        });
     }
 
     void
@@ -542,7 +550,7 @@ private:
                 alice, USD(1000), std::nullopt, XRPAmount{1100000});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000),
-                STAmount{USD.issue(), 95119115182985llu, -10},
+                STAmount{USD.issue(), static_cast<std::uint64_t>(95119115182985), -10},
                 IOUAmount{9752902910568, -6}));
         });
 
@@ -633,7 +641,10 @@ private:
             ammAlice.withdraw(carol, 0, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000),
-                STAmount{USD.issue(), 90909090909091llu, -10},
+                STAmount{
+                    USD.issue(),
+                    static_cast<std::uint64_t>(90909090909091),
+                    -10},
                 IOUAmount{10000000, 0}));
         });
 
@@ -651,80 +662,6 @@ private:
         // Withdrawing 90% in USD is also invalid. Besides the impact
         // on the pool there should be a max threshold for single
         // deposit.
-    }
-
-    void
-    testSwap()
-    {
-        testcase("Swap");
-
-        using namespace jtx;
-
-        // Swap in USD1000
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapIn(alice, USD(1000));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{9090909091}, USD(11000), IOUAmount{10000000, 0}));
-        });
-
-        // Swap in USD1000, Slippage not to exceed 10000
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapIn(alice, USD(1000), 10000);
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{9090909091}, USD(11000), IOUAmount{10000000, 0}));
-        });
-
-        // Swap in USD1000, limitSP not to exceed 1100000
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapIn(alice, USD(1000), std::nullopt, XRPAmount{1100000});
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{9534625893},
-                STAmount{USD.issue(), 1048808848170152llu, -11},
-                IOUAmount{10000000, 0}));
-        });
-
-        // Swap in USD1000, limitSP not to exceed 110000.
-        // This transaction fails.
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapIn(
-                alice,
-                USD(1000),
-                std::nullopt,
-                XRPAmount{110000},
-                ter(tecAMM_FAILED_SWAP));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-        });
-
-        // Swap out
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapOut(alice, USD(1000));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{11111111111}, USD(9000), IOUAmount{10000000, 0}));
-        });
-
-#if 0
-        // Swap out USD1000, limitSP not to exceed 1100000
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapOut(alice, USD(1000), XRPAmount{1100000});
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{10513133959},
-                STAmount{USD.issue(), 951191151829848llu, -11},
-                IOUAmount{10000000, 0}));
-        });
-
-        // Swap out USD1000, limitSP not to exceed 900000
-        // This transaction fails.
-        proc([&](AMM& ammAlice, Env&) {
-            ammAlice.swapOut(
-                alice,
-                USD(1000),
-                XRPAmount{900000},
-                std::optional<ter>(tecAMM_FAILED_SWAP));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-        });
-#endif
     }
 
     void
@@ -764,37 +701,12 @@ private:
         testInstanceCreate();
         testDeposit();
         testWithdraw();
-        testSwap();
         testRequireAuth();
     }
 };
 
 struct AMM_manual_test : public Test
 {
-    void
-    testSwapOutPerf()
-    {
-        testcase("Performance 100 Swap Out");
-        using namespace std::chrono;
-
-        auto const start = high_resolution_clock::now();
-        for (int i = 0; i < 100; ++i)
-        {
-            swapAssetOut(
-                STAmount{noIssue(), 10000 + 1, 0},
-                STAmount{noIssue(), 10000 + 1, 0},
-                STAmount{noIssue(), i, 0},
-                80,
-                1000);
-        }
-        auto const elapsed = high_resolution_clock::now() - start;
-
-        std::cout << "100 swap out "
-                  << duration_cast<std::chrono::microseconds>(elapsed).count()
-                  << std::endl;
-        BEAST_EXPECT(true);
-    }
-
     void
     testFibonnaciPerf()
     {
@@ -898,7 +810,6 @@ struct AMM_manual_test : public Test
     void
     run() override
     {
-        testSwapOutPerf();
         testFibonnaciPerf();
     }
 };

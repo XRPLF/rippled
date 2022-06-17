@@ -33,8 +33,6 @@ message Transaction
 
         AMMWithdraw ammwithdraw = 43;
 
-        AMMSwap ammswap = 44;
-
         CheckCancel check_cancel = 15;
 
         CheckCash check_cash = 16;
@@ -183,20 +181,6 @@ message AMMWithdraw
     LPTokens lptokens = 4;
 
     EPrice eprice = 5;
-}
-
-// Next field: 5
-message AMMSwap
-{
-    AMMHash ammhash = 1;
-
-    AssetIn asset_in = 2;
-
-    AssetOut asset_out = 3;
-
-    LimitSpotPrice limit_spot_price = 4;
-
-    Slippage slippage = 5;
 }
 
 // Next field: 2

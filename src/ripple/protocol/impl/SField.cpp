@@ -84,7 +84,6 @@ CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA
 CONSTRUCT_TYPED_SFIELD(sfCloseResolution,       "CloseResolution",      UINT8,      1);
 CONSTRUCT_TYPED_SFIELD(sfMethod,                "Method",               UINT8,      2);
 CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,      3);
-CONSTRUCT_TYPED_SFIELD(sfAssetWeight,           "AssetWeight",          UINT8,      5);
 
 // 8-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
@@ -96,7 +95,6 @@ CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16,     2);
 CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
 CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16,     4);
-CONSTRUCT_TYPED_SFIELD(sfSlippage,              "Slippage",             UINT16,     5);
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
@@ -243,10 +241,7 @@ CONSTRUCT_TYPED_SFIELD(sfAsset1In,              "Asset1In",             AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfAsset2In,              "Asset2In",             AMOUNT,    21);
 CONSTRUCT_TYPED_SFIELD(sfAsset1Out,             "Asset1Out",            AMOUNT,    22);
 CONSTRUCT_TYPED_SFIELD(sfAsset2Out,             "Asset2Out",            AMOUNT,    23);
-CONSTRUCT_TYPED_SFIELD(sfLimitSpotPrice,        "LimitSpotPrice",       AMOUNT,    27);
 CONSTRUCT_TYPED_SFIELD(sfLPTokens,              "LPTokens",             AMOUNT,    28);
-CONSTRUCT_TYPED_SFIELD(sfAssetIn,               "AssetIn",              AMOUNT,    29);
-CONSTRUCT_TYPED_SFIELD(sfAssetOut,              "AssetOut",             AMOUNT,    30);
 CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    31);
 
 // variable length (common)

@@ -297,8 +297,7 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_FAILED_DEPOSIT = 164,
     tecAMM_FAILED_WITHDRAW = 165,
     tecAMM_INVALID_TOKENS = 166,
-    tecAMM_FAILED_SWAP = 167,
-    tecAMM_EXISTS = 168,
+    tecAMM_EXISTS = 167,
 };
 
 //------------------------------------------------------------------------------

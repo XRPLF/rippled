@@ -126,7 +126,6 @@ private:
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1Out asset1 withdraw amount
-     * @param weight asset1 weight
      * @param tfee trading fee in basis points
      * @return
      */
@@ -137,7 +136,6 @@ private:
         STAmount const& asset1Balance,
         STAmount const& lptAMMBalance,
         STAmount const& asset1Out,
-        std::uint8_t weight,
         std::uint16_t tfee);
 
     /** Single asset withdrawal proportional to the share
@@ -148,7 +146,6 @@ private:
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1Out asset1 withdraw amount
      * @param tokens to withdraw
-     * @param weight asset1 weight
      * @param tfee trading fee in basis points
      * @return
      */
@@ -160,18 +157,15 @@ private:
         STAmount const& lptAMMBalance,
         STAmount const& asset1Out,
         STAmount const& tokens,
-        std::uint8_t weight,
         std::uint16_t tfee);
 
     /**
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
-     * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1Out aset1 withdraw amount
+     * @param asset1Out asset1 withdraw amount
      * @param ePrice maximum asset1 effective price
-     * @param weight1 asset1 weight
      * @param tfee trading fee in basis points
      * @return
      */
@@ -180,11 +174,9 @@ private:
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
-        STAmount const& asset2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& asset1Out,
         STAmount const& ePrice,
-        std::uint8_t weight1,
         std::uint16_t tfee);
 
     /** Delete AMM account.

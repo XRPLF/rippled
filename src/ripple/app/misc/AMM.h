@@ -140,28 +140,6 @@ orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2);
 bool
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 
-/** Iterate over all AMM with different weights. The callback returns true
- * to continue the iteration, false to stop the iteration.
- */
-void
-forEachAMM(
-    ReadView const& view,
-    uint256 ammHash,
-    std::function<bool(STObject const&)> const& f);
-
-/** Iterate over all AMM with different weights. The callback returns true
- * to continue the iteration, false to stop the iteration.
- */
-void
-forEachAMM(
-    std::shared_ptr<const STLedgerEntry> const& sle,
-    std::function<bool(STObject const&)> const& f);
-
-/** Find AMM object give ammHash=hash{issue1, issue2} and the weight.
- */
-std::optional<STObject>
-findAMM(ReadView const& view, uint256 ammHash, std::uint8_t weight);
-
 }  // namespace ripple
 
 #endif  // RIPPLE_APP_MISC_AMM_H_INLCUDED

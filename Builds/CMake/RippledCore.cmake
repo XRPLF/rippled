@@ -421,7 +421,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/Wallet.cpp
   src/ripple/app/tx/impl/AMMCreate.cpp
   src/ripple/app/tx/impl/AMMDeposit.cpp
-  src/ripple/app/tx/impl/AMMSwap.cpp
   src/ripple/app/tx/impl/AMMWithdraw.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp

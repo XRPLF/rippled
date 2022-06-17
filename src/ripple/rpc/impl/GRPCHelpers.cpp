@@ -1192,40 +1192,6 @@ populateAsset2Out(T& to, STObject const& from)
         [&to]() { return to.mutable_asset2_out(); }, from, sfAsset2Out);
 }
 
-template <class T>
-void
-populateAssetIn(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset_in(); }, from, sfAssetIn);
-}
-
-template <class T>
-void
-populateAssetOut(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset_out(); }, from, sfAssetOut);
-}
-
-template <class T>
-void
-populateLimitPrice(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_limit_spot_price(); },
-        from,
-        sfLimitSpotPrice);
-}
-
-template <class T>
-void
-populateSlippage(T& to, STObject const& from)
-{
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_slippage(); }, from, sfSlippage);
-}
-
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1925,20 +1891,6 @@ convert(org::xrpl::rpc::v1::AMMWithdraw& to, STObject const& from)
 }
 
 void
-convert(org::xrpl::rpc::v1::AMMSwap& to, STObject const& from)
-{
-    populateAMMHash(to, from);
-
-    populateAssetIn(to, from);
-
-    populateAssetOut(to, from);
-
-    populateLimitPrice(to, from);
-
-    populateSlippage(to, from);
-}
-
-void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -2367,9 +2319,6 @@ convert(
             break;
         case TxType::ttAMM_WITHDRAW:
             convert(*to.mutable_ammwithdraw(), fromObj);
-            break;
-        case TxType::ttAMM_SWAP:
-            convert(*to.mutable_ammswap(), fromObj);
             break;
         default:
             break;

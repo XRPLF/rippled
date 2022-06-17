@@ -266,7 +266,8 @@ LedgerFormats::LedgerFormats()
     add(jss::AMM,
         ltAMM,
         {
-            {sfAMMs, soeREQUIRED},
+            {sfAMMAccount, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
         },
         commonFields);
 }

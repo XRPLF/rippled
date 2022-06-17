@@ -52,7 +52,6 @@ JSS(AMMAccount);             // field
 JSS(AMMHash);                // field
 JSS(AMMInstanceCreate);      // transaction type
 JSS(AMMDeposit);             // transaction type
-JSS(AMMSwap);                // transaction type
 JSS(AMMWithdraw);            // transaction type
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
@@ -62,9 +61,6 @@ JSS(Asset1In);               // in: AMM Deposit option
 JSS(Asset2In);               // in: AMM Deposit option
 JSS(Asset1Out);              // in: AMM Withdraw option
 JSS(Asset2Out);              // in: AMM Withdraw option
-JSS(AssetIn);                // in: AMM Swap option
-JSS(AssetOut);               // in: AMM Swap option
-JSS(AssetWeight);            // in/out: AMM asset1 weight
 JSS(Check);                  // ledger type.
 JSS(CheckCancel);            // transaction type.
 JSS(CheckCash);              // transaction type.
@@ -96,7 +92,6 @@ JSS(NFTokenCancelOffer);     // transaction type.
 JSS(NFTokenCreateOffer);     // transaction type.
 JSS(NFTokenPage);            // ledger type.
 JSS(LPTokens);               // in: AMM Deposit/Withdraw option
-JSS(LimitSpotPrice);         // in: AMM Deposit option
 JSS(Offer);                  // ledger type.
 JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.
@@ -119,7 +114,6 @@ JSS(SetRegularKey);          // transaction type.
 JSS(SignerList);             // ledger type.
 JSS(SignerListSet);          // transaction type.
 JSS(SigningPubKey);          // field.
-JSS(Slippage);               // in: AMM Swap option
 JSS(TakerGets);              // field.
 JSS(TakerPays);              // field.
 JSS(Ticket);                 // ledger type.

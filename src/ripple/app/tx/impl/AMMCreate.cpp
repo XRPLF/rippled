@@ -151,9 +151,6 @@ AMMCreate::applyGuts(Sandbox& sb)
     auto const ammAccountID = ctx_.tx[sfAMMAccount];
     auto const saAsset1 = ctx_.tx[sfAsset1];
     auto const saAsset2 = ctx_.tx[sfAsset2];
-    auto const weight1 = ctx_.tx.isFieldPresent(sfAssetWeight)
-        ? ctx_.tx.getFieldU8(sfAssetWeight)
-        : 50;
 
     // AMM's creator account.
     auto const sleCreator = sb.peek(keylet::account(account_));
@@ -161,9 +158,6 @@ AMMCreate::applyGuts(Sandbox& sb)
         return {terNO_ACCOUNT, false};
 
     auto const ammHash = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
-    // The weight matches issue's canonical order.
-    auto const weight =
-        orderWeight(weight1, saAsset1.issue(), saAsset2.issue());
 
     // AMM account already exists.
     if (sb.peek(keylet::account(ammAccountID)))
@@ -180,41 +174,18 @@ AMMCreate::applyGuts(Sandbox& sb)
         return {tecAMM_EXISTS, false};
     }
 
-    // Check if AMM with the weight already exists
-    auto ammSle = sb.peek(keylet::amm(ammHash));
-    STArray updatedAmms;
-    bool exists = false;
-    forEachAMM(ammSle, [&](STObject const& amm) {
-        if (amm.getFieldU8(sfAssetWeight) == weight)
-            exists = true;
-        else
-            updatedAmms.push_back(amm);
-        return !exists;
-    });
-    if (exists)
+    // Check if ltAMM object exists
+    if (auto ammSle = sb.peek(keylet::amm(ammHash)))
     {
-        JLOG(j_.debug()) << "AMM Instance: AMM already exists for weight "
-                         << weight;
+        JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
         return {tecAMM_EXISTS, false};
     }
-    auto updateAMMs = [&](auto& sle) {
-        STObject amm(sfAMM);
-        amm.setFieldU8(sfAssetWeight, weight);
-        amm.setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
-        amm.setAccountID(sfAMMAccount, ammAccountID);
-        updatedAmms.push_back(amm);
-        sle->setFieldArray(sfAMMs, updatedAmms);
-    };
-    // Update/Create ltAMM ledger object
-    if (ammSle)
-    {
-        updateAMMs(ammSle);
-        sb.update(ammSle);
-    }
+    // Create ltAMM
     else
     {
         ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
-        updateAMMs(ammSle);
+        ammSle->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
+        ammSle->setAccountID(sfAMMAccount, ammAccountID);
         sb.insert(ammSle);
     }
 
@@ -230,7 +201,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.
-    auto const lpTokens = calcAMMLPT(saAsset1, saAsset2, lptIssue, weight1);
+    auto const lpTokens = calcAMMLPT(saAsset1, saAsset2, lptIssue);
     // Send LPT to LP.
     auto res = accountSend(sb, ammAccountID, account_, lpTokens, ctx_.journal);
     if (res != tesSUCCESS)
@@ -252,9 +223,9 @@ AMMCreate::applyGuts(Sandbox& sb)
     if (res != tesSUCCESS)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else
-        JLOG(j_.trace()) << "AMM Instance: success " << ammAccountID << " "
+        JLOG(j_.debug()) << "AMM Instance: success " << ammAccountID << " "
                          << ammHash << " " << lptIssue << " " << saAsset1 << " "
-                         << saAsset2 << " " << weight;
+                         << saAsset2;
 
     return {res, res == tesSUCCESS};
 }

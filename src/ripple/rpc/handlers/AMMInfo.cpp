@@ -52,9 +52,6 @@ doAMMInfo(RPC::JsonContext& context)
     std::optional<AccountID> accountID;
 
     uint256 ammHash{};
-    std::uint8_t const weight = params.isMember(jss::AssetWeight)
-        ? params[jss::AssetWeight].asUInt()
-        : 50;
     if (!params.isMember(jss::AMMHash))
     {
         // May provide asset1/asset2 as amounts
@@ -91,7 +88,7 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const amm = findAMM(*ledger, ammHash, weight);
+    auto const amm = ledger->read(keylet::amm(ammHash));
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
 
@@ -145,8 +142,6 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
 
     // decode AMM hash
     uint256 ammHash;
-    auto const weight = params.has_weight() ? params.weight().value() : 50;
-    assert(weight < 100);
     if (!params.has_ammhash())
     {
         if (!params.has_asset1() || !params.has_asset2())
@@ -200,7 +195,7 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
                     grpc::StatusCode::INVALID_ARGUMENT, "Account malformed."}};
     }
 
-    auto const amm = findAMM(*ledger, ammHash, weight);
+    auto const amm = ledger->read(keylet::amm(ammHash));
     if (!amm)
         return {
             result,
