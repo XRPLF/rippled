@@ -104,6 +104,14 @@ getLPTokens(
     AccountID const& lpAccount,
     beast::Journal const j);
 
+/** Return the balance of AMM LP tokens.
+ */
+STAmount
+getLPTokens(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    beast::Journal const j);
+
 /** Validate the amount.
  */
 std::optional<TEMcodes>
@@ -122,16 +130,6 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
  */
 std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash);
-
-/** Return weight:
- * If issue1 < issue2
- *   weight
- * else
- *   100 - weight
- * where weight corresponds to issue1.
- */
-std::uint8_t
-orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2);
 
 /** Check if the account requires authorization.
  *  Return true if issuer's account, account, and trust line exist

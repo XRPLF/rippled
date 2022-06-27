@@ -28,7 +28,7 @@ message GetAmmInfoRequest
 }
 
 // Response to GetAmmInfo RPC
-// Next field: 7
+// Next field: 8
 message GetAmmInfoResponse
 {
   Asset1 asset1 = 1;
@@ -41,7 +41,9 @@ message GetAmmInfoResponse
 
   AMMHash ammHash = 5;
 
-  uint32 ledger_index = 6;
+  TradingFee trading_fee = 6;
 
-  bool validated = 7;
+  uint32 ledger_index = 7;
+
+  bool validated = 8;
 }

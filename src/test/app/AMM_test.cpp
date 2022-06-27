@@ -136,6 +136,7 @@ readLines(E& env, AccountX const& acct)
 class Test : public beast::unit_test::suite
 {
 protected:
+    enum class Fund { All, Acct, None };
     AccountX const gw;
     AccountX const carol;
     AccountX const alice;
@@ -167,13 +168,13 @@ protected:
         jtx::Account const& gw,
         std::vector<jtx::Account> const& accounts,
         std::vector<STAmount> const& amts,
-        bool fundXRP)
+        Fund fund)
     {
-        if (fundXRP)
+        if (fund == Fund::All)
             env.fund(jtx::XRP(30000), gw);
         for (auto const& account : accounts)
         {
-            if (fundXRP)
+            if (fund == Fund::All || fund == Fund::Acct)
                 env.fund(jtx::XRP(30000), account);
             for (auto const& amt : amts)
             {
@@ -189,7 +190,8 @@ protected:
         F&& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = {},
         std::optional<IOUAmount> const& lpt = {},
-        std::uint32_t fee = 0)
+        std::uint32_t fee = 0,
+        std::optional<jtx::ter> const& ter = std::nullopt)
     {
         using namespace jtx;
         Env env{*this};
@@ -205,20 +207,20 @@ protected:
             gw,
             {alice, carol},
             {STAmount{asset2.issue(), 30000, 0}},
-            true);
+            Fund::All);
         if (!asset1.native())
             fund(
                 env,
                 gw,
                 {alice, carol},
                 {STAmount{asset1.issue(), 30000, 0}},
-                false);
+                Fund::None);
         auto tokens = [&]() {
             if (lpt)
                 return *lpt;
             return IOUAmount{10000000, 0};
         }();
-        AMM ammAlice(env, alice, asset1, asset2, false, 50, fee);
+        AMM ammAlice(env, alice, asset1, asset2, false, fee);
         BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, tokens));
         cb(ammAlice, env);
     }
@@ -272,7 +274,7 @@ private:
         // IOU to IOU + transfer fee
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(25000), BTC(0.625)}, true);
+            fund(env, gw, {alice}, {USD(25000), BTC(0.625)}, Fund::All);
             env(rate(gw, 1.25));
             AMM ammAlice(env, alice, USD(20000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -292,7 +294,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Can't have both XRP tokens
             AMM ammAlice(env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -300,7 +302,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Can't have both tokens the same IOU
             AMM ammAlice(env, alice, USD(10000), USD(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -308,7 +310,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Can't have zero amounts
             AMM ammAlice(env, alice, XRP(0), USD(10000), ter(temBAD_AMOUNT));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -316,7 +318,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Bad currency
             AMM ammAlice(
                 env, alice, XRP(10000), BAD(10000), ter(temBAD_CURRENCY));
@@ -325,7 +327,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Insufficient IOU balance
             AMM ammAlice(
                 env, alice, XRP(10000), USD(40000), ter(tecUNFUNDED_PAYMENT));
@@ -334,7 +336,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Insufficient XRP balance
             AMM ammAlice(
                 env, alice, XRP(40000), USD(10000), ter(tecUNFUNDED_PAYMENT));
@@ -343,7 +345,7 @@ private:
 
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(30000)}, true);
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             // Invalid trading fee
             AMM ammAlice(
                 env,
@@ -351,7 +353,6 @@ private:
                 XRP(10000),
                 USD(10000),
                 false,
-                50,
                 70001,
                 ter(temBAD_FEE));
             BEAST_EXPECT(!ammAlice.accountRootExists());
@@ -425,7 +426,7 @@ private:
                 XRP(10201), USD(10000), IOUAmount{10100000, 0}));
         });
 
-        // Single deposit with SP not exceeding specified:
+        // Single deposit with EP not exceeding specified:
         // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut)
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(
@@ -434,14 +435,26 @@ private:
                 XRP(10000), USD(11000), IOUAmount{1048808848170152, -8}));
         });
 
-        // Single deposit with SP not exceeding specified:
-        // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut)
+        // Single deposit with EP not exceeding specified:
+        // 100USD with EP not to exceed 0.002004 (AssetIn/TokensOut)
         proc([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(
-                carol, USD(0), std::nullopt, STAmount{USD.issue(), 10, 0});
-            std::cout << ammAlice.ammRpcInfo()->toStyledString();
+                carol, USD(100), std::nullopt, STAmount{USD.issue(), 2004, -6});
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(11000), IOUAmount{1048808848170152, -8}));
+                XRP(10000),
+                STAmount{USD.issue(), 1008016, -2},
+                IOUAmount{10040000, 0}));
+        });
+
+        // Single deposit with EP not exceeding specified:
+        // 0USD with EP not to exceed 0.002004 (AssetIn/TokensOut)
+        proc([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(
+                carol, USD(0), std::nullopt, STAmount{USD.issue(), 2004, -6});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000),
+                STAmount{USD.issue(), 1008016, -2},
+                IOUAmount{10040000, 0}));
         });
     }
 
@@ -683,6 +696,116 @@ private:
     }
 
     void
+    testFeeVote()
+    {
+        testcase("Fee Vote");
+        using namespace jtx;
+
+        // Invalid fee.
+        proc([&](AMM& ammAlice, Env& env) {
+            ammAlice.vote({}, 70001, ter(temBAD_FEE));
+            auto const jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 0);
+        });
+
+        // One vote sets fee to 1%.
+        proc([&](AMM& ammAlice, Env& env) {
+            ammAlice.vote({}, 1000);
+            auto const jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 1000);
+        });
+
+        // Eight votes fill all voting slots, set fee 2.25%.
+        proc([&](AMM& ammAlice, Env& env) {
+            for (int i = 0; i < 8; ++i)
+            {
+                Account a(std::to_string(i));
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, 10000);
+                ammAlice.vote(a, 500 * (i + 1));
+            }
+            auto const jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
+        });
+
+        // Eight votes fill all voting slots, set fee 2.25%.
+        // New vote, same account, sets fee 2.75%
+        proc([&](AMM& ammAlice, Env& env) {
+            auto vote = [&](Account const& a, int i) {
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, 10000);
+                ammAlice.vote(a, 500 * (i + 1));
+            };
+            Account a("0");
+            vote(a, 0);
+            for (int i = 1; i < 8; ++i)
+            {
+                Account a(std::to_string(i));
+                vote(a, i);
+            }
+            auto jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
+            ammAlice.vote(a, 4500);
+            jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2750);
+        });
+
+        // Eight votes fill all voting slots, set fee 2.25%.
+        // New vote, new account, same vote weight, fee is unchanged.
+        proc([&](AMM& ammAlice, Env& env) {
+            auto vote = [&](int i) {
+                Account a(std::to_string(i));
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, 10000);
+                ammAlice.vote(a, 500 * (i + 1));
+            };
+            for (int i = 0; i < 8; ++i)
+                vote(i);
+            auto jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
+            vote(8);
+            jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
+        });
+
+        // Eight votes fill all voting slots, set fee 2.25%.
+        // New vote, new account, higher vote weight, set higher fee 2.945%
+        proc([&](AMM& ammAlice, Env& env) {
+            auto vote = [&](int i, std::uint32_t tokens) {
+                Account a(std::to_string(i));
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, tokens);
+                ammAlice.vote(a, 500 * (i + 1));
+            };
+            for (int i = 0; i < 8; ++i)
+                vote(i, 10000);
+            auto jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
+            vote(8, 20000);
+            jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2945);
+        });
+
+        // Eight votes fill all voting slots, set fee 2.75%.
+        // New vote, new account, higher vote weight, set smaller fee 2.056%
+        proc([&](AMM& ammAlice, Env& env) {
+            auto vote = [&](int i, std::uint32_t tokens) {
+                Account a(std::to_string(i));
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, tokens);
+                ammAlice.vote(a, 500 * (i + 1));
+            };
+            for (int i = 8; i > 0; --i)
+                vote(i, 10000);
+            auto jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2750);
+            vote(0, 20000);
+            jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2056);
+        });
+    }
+
+    void
     testAmendment()
     {
         testcase("Amendment");
@@ -702,6 +825,7 @@ private:
         testDeposit();
         testWithdraw();
         testRequireAuth();
+        testFeeVote();
     }
 };
 

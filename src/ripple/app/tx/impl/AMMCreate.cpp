@@ -81,9 +81,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    // TODO can the fee be 0?
-    auto const tfee = tx[sfTradingFee];
-    if (tfee > 70000)
+    if (tx[sfTradingFee] > 70000)
     {
         JLOG(j.debug()) << "AMM Instance: invalid trading fee.";
         return temBAD_FEE;
@@ -186,6 +184,8 @@ AMMCreate::applyGuts(Sandbox& sb)
         ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
         ammSle->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
         ammSle->setAccountID(sfAMMAccount, ammAccountID);
+        STArray voteEntries;
+        ammSle->setFieldArray(sfVoteEntries, voteEntries);
         sb.insert(ammSle);
     }
 

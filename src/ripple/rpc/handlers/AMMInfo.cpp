@@ -94,6 +94,10 @@ doAMMInfo(RPC::JsonContext& context)
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
+    auto const ammSle = ledger->read(keylet::account(ammAccountID));
+    if (!ammSle)
+        return rpcError(rpcACT_NOT_FOUND);
+
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
         ammAccountID,
@@ -105,6 +109,7 @@ doAMMInfo(RPC::JsonContext& context)
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
     lptAMMBalance.setJson(result[jss::LPTokens]);
+    result[jss::TradingFee] = amm->getFieldU32(sfTradingFee);
     result[jss::AMMAccount] = to_string(ammAccountID);
     if (!params.isMember(jss::AMMHash))
         result[jss::AMMHash] = to_string(ammHash);
@@ -203,6 +208,12 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
+    auto const ammSle = ledger->read(keylet::account(ammAccountID));
+    if (!ammSle)
+        return {
+            result,
+            grpc::Status(grpc::StatusCode::NOT_FOUND, "Account not found.")};
+
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
         ammAccountID,
@@ -217,6 +228,7 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
     ripple::RPC::convert(*asset2, asset2Balance);
     auto tokens = result.mutable_tokens();
     ripple::RPC::convert(*tokens, lptAMMBalance);
+    result.mutable_trading_fee()->set_value(amm->getFieldU32(sfTradingFee));
     *result.mutable_ammaccount()->mutable_value()->mutable_address() =
         toBase58(ammAccountID);
     if (!params.has_ammhash())

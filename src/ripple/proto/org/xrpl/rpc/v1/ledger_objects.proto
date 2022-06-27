@@ -419,12 +419,14 @@ message NegativeUNL
     Flags flags = 4;
 }
 
-// Next field: 3
+// Next field: 4
 message AMM
 {
-    AMMAccount amm_account = 1;
+    AMMAccount account = 1;
 
     TradingFee trading_fee = 2;
 
-    Flags flags = 3;
+    repeated VoteEntry vote_entries = 3;
+
+    Flags flags = 4;
 }

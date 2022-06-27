@@ -103,6 +103,13 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account";
         return temBAD_SRC_ACCOUNT;
     }
+    if (auto const ammRoot =
+            ctx.view.read(keylet::account(ammSle->getAccountID(sfAMMAccount)));
+        !ammRoot)
+    {
+        JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account.";
+        return temBAD_SRC_ACCOUNT;
+    }
     auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
         ctx.view,
         ammSle->getAccountID(sfAMMAccount),

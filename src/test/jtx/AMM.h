@@ -92,7 +92,6 @@ public:
         STAmount const& asset1,
         STAmount const& asset2,
         bool log = false,
-        std::uint8_t weight1 = 50,
         std::uint32_t tfee = 0,
         std::optional<ter> const& ter = std::nullopt);
     AMM(Env& env,
@@ -182,6 +181,12 @@ public:
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = {},
         std::optional<STAmount> const& maxEP = {},
+        std::optional<ter> const& ter = {});
+
+    void
+    vote(
+        std::optional<Account> const& account,
+        std::uint32_t feeVal,
         std::optional<ter> const& ter = {});
 
     AccountID

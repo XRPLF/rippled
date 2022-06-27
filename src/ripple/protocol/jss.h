@@ -52,6 +52,7 @@ JSS(AMMAccount);             // field
 JSS(AMMHash);                // field
 JSS(AMMInstanceCreate);      // transaction type
 JSS(AMMDeposit);             // transaction type
+JSS(AMMVote);                // transaction type
 JSS(AMMWithdraw);            // transaction type
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
@@ -78,6 +79,7 @@ JSS(EscrowCreate);           // transaction type.
 JSS(EscrowFinish);           // transaction type.
 JSS(Fee);                    // in/out: TransactionSign; field.
 JSS(FeeSettings);            // ledger type.
+JSS(FeeVal);                 // in: AMM Vote
 JSS(Flags);                  // in/out: TransactionSign; field.
 JSS(incomplete_shards);      // out: OverlayImpl, PeerImp
 JSS(Invalid);                //
@@ -123,6 +125,7 @@ JSS(TradingFee);             // in/out: AMM trading fee
 JSS(TransactionType);        // in: TransactionSign.
 JSS(TransferRate);           // in: TransferRate.
 JSS(TrustSet);               // transaction type.
+JSS(VoteWeight);             // in: AMM Vote
 JSS(aborted);                // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
 JSS(account);                // in/out: many

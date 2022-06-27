@@ -35,7 +35,6 @@ AMM::AMM(
     STAmount const& asset1,
     STAmount const& asset2,
     bool log,
-    std::uint8_t weight1,
     std::uint32_t tfee,
     std::optional<ter> const& ter)
     : env_(env)
@@ -57,7 +56,7 @@ AMM::AMM(
     STAmount const& asset2,
     ter const& ter,
     bool log)
-    : AMM(env, account, asset1, asset2, log, 50, 0, ter)
+    : AMM(env, account, asset1, asset2, log, 0, ter)
 {
 }
 
@@ -372,6 +371,25 @@ AMM::withdraw(
     if (maxEP)
         maxEP->setJson(jv[jss::EPrice]);
     withdraw(account, jv, ter);
+}
+
+void
+AMM::vote(
+    std::optional<Account> const& account,
+    std::uint32_t feeVal,
+    std::optional<ter> const& ter)
+{
+    Json::Value jv;
+    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
+    jv[jss::AMMHash] = to_string(ammHash_);
+    jv[jss::FeeVal] = feeVal;
+    jv[jss::TransactionType] = jss::AMMVote;
+    if (log_)
+        std::cout << jv.toStyledString();
+    if (ter)
+        env_(jv, *ter);
+    else
+        env_(jv);
 }
 
 namespace amm {

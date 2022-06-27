@@ -1192,6 +1192,38 @@ populateAsset2Out(T& to, STObject const& from)
         [&to]() { return to.mutable_asset2_out(); }, from, sfAsset2Out);
 }
 
+template <class T>
+void
+populateFeeVal(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_fee_val(); }, from, sfFeeVal);
+}
+
+template <class T>
+void
+populateVoteWeight(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_vote_weight(); }, from, sfVoteWeight);
+}
+
+template <class T>
+void
+populateVoteEntries(T& to, STObject const& from)
+{
+    populateProtoArray(
+        [&to]() { return to.add_vote_entries(); },
+        [&](auto& innerObj, auto& innerProto) {
+            populateAccount(innerProto, innerObj);
+            populateFeeVal(innerProto, innerObj);
+            populateVoteWeight(innerProto, innerObj);
+        },
+        from,
+        sfVoteEntries,
+        sfVoteEntry);
+}
+
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1891,6 +1923,26 @@ convert(org::xrpl::rpc::v1::AMMWithdraw& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::AMMVote& to, STObject const& from)
+{
+    populateAMMHash(to, from);
+
+    populateFeeVal(to, from);
+}
+
+void
+convert(org::xrpl::rpc::v1::AMM& to, STObject const& from)
+{
+    populateAMMAccount(to, from);
+
+    populateTradingFee(to, from);
+
+    populateVoteEntries(to, from);
+
+    populateFlags(to, from);
+}
+
+void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -1961,6 +2013,10 @@ setLedgerEntryType(
             proto.set_ledger_entry_type(
                 org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NFTOKEN_PAGE);
             break;
+        case ltAMM:
+            proto.set_ledger_entry_type(
+                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_AMM);
+            break;
     }
 }
 
@@ -2017,6 +2073,9 @@ convert(T& to, STObject& from, std::uint16_t type)
             break;
         case ltNFTOKEN_PAGE:
             RPC::convert(*to.mutable_nftoken_page(), from);
+            break;
+        case ltAMM:
+            RPC::convert(*to.mutable_amm(), from);
             break;
     }
 }
@@ -2319,6 +2378,9 @@ convert(
             break;
         case TxType::ttAMM_WITHDRAW:
             convert(*to.mutable_ammwithdraw(), fromObj);
+            break;
+        case TxType::ttAMM_VOTE:
+            convert(*to.mutable_ammvote(), fromObj);
             break;
         default:
             break;

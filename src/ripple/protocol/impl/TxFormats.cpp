@@ -115,6 +115,15 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::AMMVote,
+        ttAMM_VOTE,
+        {
+            {sfAMMHash, soeREQUIRED},
+            {sfFeeVal, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
     add(jss::OfferCancel,
         ttOFFER_CANCEL,
         {

@@ -33,6 +33,8 @@ message Transaction
 
         AMMWithdraw ammwithdraw = 43;
 
+        AMMVote ammvote = 44;
+
         CheckCancel check_cancel = 15;
 
         CheckCash check_cash = 16;
@@ -181,6 +183,14 @@ message AMMWithdraw
     LPTokens lptokens = 4;
 
     EPrice eprice = 5;
+}
+
+// Next field: 2
+message AMMVote
+{
+    AMMHash ammhash = 1;
+
+    FeeVal fee_val = 2;
 }
 
 // Next field: 2

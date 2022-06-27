@@ -59,6 +59,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfNFTokenID, soeREQUIRED},
             {sfURI, soeOPTIONAL},
         });
+
+    add(sfVoteEntry.jsonName.c_str(),
+        sfVoteEntry.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfFeeVal, soeREQUIRED},
+            {sfVoteWeight, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

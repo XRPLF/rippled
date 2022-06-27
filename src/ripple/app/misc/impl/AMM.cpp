@@ -171,6 +171,19 @@ getLPTokens(
         j);
 }
 
+STAmount
+getLPTokens(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    beast::Journal const j)
+{
+    auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
+        view, ammAccountID, std::nullopt, std::nullopt, std::nullopt, j);
+    (void)asset1;
+    (void)asset2;
+    return lptAMMBalance;
+}
+
 std::optional<TEMcodes>
 validAmount(std::optional<STAmount> const& a, bool zero)
 {
@@ -198,15 +211,6 @@ getAMMSle(ReadView const& view, uint256 ammHash)
     if (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount))))
         return nullptr;
     return sle;
-}
-
-std::uint8_t
-orderWeight(std::uint8_t weight, Issue const& issue1, Issue const& issue2)
-{
-    if (issue1 < issue2)
-        return weight;
-    else
-        return 100 - weight;
 }
 
 bool

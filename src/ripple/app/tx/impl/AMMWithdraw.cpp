@@ -106,6 +106,13 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account";
         return temBAD_SRC_ACCOUNT;
     }
+    if (auto const ammRoot =
+            ctx.view.read(keylet::account(ammSle->getAccountID(sfAMMAccount)));
+        !ammRoot)
+    {
+        JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account.";
+        return temBAD_SRC_ACCOUNT;
+    }
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);

@@ -220,6 +220,16 @@ message TradingFee
     uint32 value = 1;
 }
 
+message FeeVal
+{
+    uint32 value = 1;
+}
+
+message VoteWeight
+{
+    uint32 value = 1;
+}
+
 // *** Messages wrapping uint64 ***
 
 message BaseFee
@@ -662,5 +672,15 @@ message DisabledValidator
     PublicKey public_key = 1;
 
     FirstLedgerSequence ledger_sequence = 2;
+}
+
+// Next field: 3
+message VoteEntry
+{
+    Account account = 1;
+
+    FeeVal fee_val = 2;
+
+    VoteWeight vote_weight = 3;
 }
 
