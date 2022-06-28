@@ -60,6 +60,7 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/MessageScheduler.h>
 #include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/make_Overlay.h>
@@ -202,6 +203,8 @@ public:
     std::unique_ptr<LedgerReplayer> m_ledgerReplayer;
     TaggedCache<uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr<NetworkOPs> m_networkOPs;
+    std::unique_ptr<Overlay> overlay_;
+    std::unique_ptr<MessageScheduler> messageScheduler_;
     std::unique_ptr<Cluster> cluster_;
     std::unique_ptr<PeerReservationTable> peerReservations_;
     std::unique_ptr<ManifestCache> validatorManifests_;
@@ -221,7 +224,6 @@ public:
 
     std::unique_ptr<RelationalDatabase> mRelationalDatabase;
     std::unique_ptr<DatabaseCon> mWalletDB;
-    std::unique_ptr<Overlay> overlay_;
 
     boost::asio::signal_set m_signals;
 
@@ -417,6 +419,10 @@ public:
               logs_->journal("NetworkOPs"),
               m_collectorManager->collector()))
 
+        , messageScheduler_(std::make_unique<MessageScheduler>(
+              get_io_service(),
+              logs_->journal("MessageScheduler")))
+
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
 
         , peerReservations_(std::make_unique<PeerReservationTable>(
@@ -598,6 +604,12 @@ public:
     getIOLatency() override
     {
         return m_io_latency_sampler.get();
+    }
+
+    MessageScheduler&
+    getMessageScheduler() override
+    {
+        return *messageScheduler_;
     }
 
     LedgerMaster&
@@ -1605,6 +1617,7 @@ ApplicationImp::run()
     m_jobQueue->stop();
     if (shardArchiveHandler_)
         shardArchiveHandler_->stop();
+    messageScheduler_->stop();
     if (overlay_)
         overlay_->stop();
     if (shardStore_)

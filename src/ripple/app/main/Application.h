@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
 #define RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
 
+#include <ripple/basics/Blob.h>
+#include <ripple/basics/SHAMapHash.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/core/Config.h>
 #include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/protocol/Protocol.h>
-#include <ripple/shamap/FullBelowCache.h>
-#include <ripple/shamap/TreeNodeCache.h>
 #include <boost/asio.hpp>
 #include <memory>
 #include <mutex>
@@ -53,14 +53,6 @@ class ShardArchiveHandler;
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
 
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
-class TaggedCache;
 class STLedgerEntry;
 using SLE = STLedgerEntry;
 using CachedSLEs = TaggedCache<uint256, SLE const>;
@@ -86,6 +78,7 @@ class OpenLedger;
 class OrderBookDB;
 class Overlay;
 class PathRequests;
+class MessageScheduler;
 class PendingSaves;
 class PublicKey;
 class SecretKey;
@@ -216,6 +209,8 @@ public:
     virtual TaggedCache<uint256, AcceptedLedger>&
     getAcceptedLedgerCache() = 0;
 
+    virtual MessageScheduler&
+    getMessageScheduler() = 0;
     virtual LedgerMaster&
     getLedgerMaster() = 0;
     virtual LedgerCleaner&

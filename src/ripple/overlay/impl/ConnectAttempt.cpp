@@ -19,6 +19,7 @@
 
 #include <ripple/json/json_reader.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/MessageScheduler.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
@@ -390,6 +391,7 @@ ConnectAttempt::processResponse()
             id_,
             overlay_);
 
+        app_.getMessageScheduler().connect(peer);
         overlay_.add_active(peer);
     }
     catch (std::exception const& e)

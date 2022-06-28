@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -36,6 +37,7 @@
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/MessageScheduler.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/predicates.h>
@@ -135,6 +137,7 @@ PeerImp::~PeerImp()
 {
     const bool inCluster{cluster()};
 
+    app_.getMessageScheduler().disconnect(id_);
     overlay_.deletePeer(id_);
     overlay_.onPeerDeactivate(id_);
     overlay_.peerFinder().on_closed(slot_);
@@ -1880,6 +1883,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     // If there is a request cookie, attempt to relay the message
     if (m->has_requestcookie())
     {
+        if (m->requestcookie() >= MessageScheduler::MINIMUM_REQUEST_ID)
+        {
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "MessageScheduler", [&app = app_, m]() {
+                    app.getMessageScheduler().receive(m);
+                });
+            return;
+        }
+
         if (auto peer = overlay_.findPeerByShortID(m->requestcookie()))
         {
             m->clear_requestcookie();
@@ -2745,6 +2757,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         std::uint32_t pLSeq = 0;
         bool pLDo = true;
         bool progress = false;
+
+        if (packet.type() == protocol::TMGetObjectByHash::otUNKNOWN &&
+            packet.seq() >= MessageScheduler::MINIMUM_REQUEST_ID)
+        {
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "MessageScheduler", [&app = app_, m]() {
+                    app.getMessageScheduler().receive(m);
+                });
+            return;
+        }
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {
