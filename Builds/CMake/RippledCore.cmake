@@ -543,6 +543,7 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/ConnectAttempt.cpp
   src/ripple/overlay/impl/Handshake.cpp
   src/ripple/overlay/impl/Message.cpp
+  src/ripple/overlay/impl/MessageScheduler.cpp
   src/ripple/overlay/impl/OverlayImpl.cpp
   src/ripple/overlay/impl/PeerImp.cpp
   src/ripple/overlay/impl/PeerReservationTable.cpp

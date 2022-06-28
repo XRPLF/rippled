@@ -25,14 +25,17 @@
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <ripple/protocol/messages.h>
+#include <ripple.pb.h>
+
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/system/error_code.hpp>
+#include <google/protobuf/message.h>
+
 #include <cassert>
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <ripple.pb.h>
 #include <type_traits>
 #include <vector>
 
@@ -42,6 +45,12 @@ inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
 {
     return protocol::mtGET_LEDGER;
+}
+
+inline protocol::MessageType
+protocolMessageType(protocol::TMGetObjectByHash const&)
+{
+    return protocol::mtGET_OBJECTS;
 }
 
 inline protocol::MessageType
