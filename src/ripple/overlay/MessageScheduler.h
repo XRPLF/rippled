@@ -2,6 +2,7 @@
 #define RIPPLE_OVERLAY_MESSAGESCHEDULER_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/random.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
@@ -24,51 +25,6 @@
 #include <random>
 
 namespace ripple {
-
-// TODO: Maybe we just want static constants instead of an enumeration?
-enum class Priority : std::int8_t {
-    // A ledger needed to catch up with consensus.
-    TOP = 100,
-    // A ledger wanted to choose the preferred branch.
-    HIGH = 10,
-    // A ledger wanted by us for a non-specific reason.
-    DEFAULT = 0,
-    // A ledger wanted by a peer.
-    LOW = -10,
-    // A ledger wanted to backfill history.
-    BOTTOM = -100,
-};
-
-inline std::ostream&
-operator<<(std::ostream& out, Priority priority)
-{
-    auto name = (priority > Priority::TOP) ? "TOP"
-        : (priority > Priority::HIGH)      ? "HIGH"
-        : (priority > Priority::LOW)       ? "DEFAULT"
-        : (priority < Priority::BOTTOM)    ? "BOTTOM"
-                                           : "LOW";
-    return out << name;
-}
-
-// C++23: We may be able to switch to std::randint.
-// https://en.cppreference.com/w/cpp/experimental/randint
-template <typename T>
-T
-random_int(T low, T high)
-{
-    std::random_device engine;
-    std::uniform_int_distribution<T> distribution(low, high);
-    return distribution(engine);
-}
-
-struct noop
-{
-    template <typename... Args>
-    void
-    operator()(Args&&...)
-    {
-    }
-};
 
 /**
  * We must hold idle peers by `std::weak_ptr` so that they can destruct upon
@@ -145,8 +101,10 @@ private:
     bool stopped_ = false;
 
     // Randomize the first ID to avoid collisions after a restart.
+    // C++23: We may be able to switch to std::randint.
+    // https://en.cppreference.com/w/cpp/experimental/randint
     std::atomic<RequestId> nextId_ =
-        random_int<RequestId>(MINIMUM_REQUEST_ID, 1 << 24);
+        rand_int<RequestId>(MINIMUM_REQUEST_ID, 1 << 24);
     std::mutex requestsMutex_;
     // TODO: Might make sense to use a set instead.
     hash_map<RequestId, std::unique_ptr<Request>> requests_;
