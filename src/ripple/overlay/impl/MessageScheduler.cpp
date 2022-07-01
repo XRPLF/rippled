@@ -18,7 +18,7 @@ using RequestId = MessageScheduler::RequestId;
 // behavior. Instead, we just save the sender here to be handled after the
 // callback returns.
 thread_local static std::vector<MessageScheduler::Sender*>* tsenders = nullptr;
-// `caller` is logged whenever a sender is scheduled or a peer is offered.
+// `caller` is logged whenever a sender is scheduled or a channel is offered.
 // It names the method that called either (a) the callback that called
 // `schedule` or (b) `_offer`.
 // The (b) case can be solved with a parameter (to `offer_`), but the (a) case
@@ -49,9 +49,9 @@ struct push_value
 };
 
 void
-MessageScheduler::connect(std::vector<WeakPeer> peers)
+MessageScheduler::connect(std::vector<Channel> channels)
 {
-    if (peers.empty())
+    if (channels.empty())
     {
         return;
     }
@@ -59,10 +59,10 @@ MessageScheduler::connect(std::vector<WeakPeer> peers)
     if (!senders_.empty())
     {
         push_value top(caller, "connect");
-        _offer(peers, senders_);
+        _offer(channels, senders_);
     }
-    peers_.reserve(peers_.size() + peers.size());
-    std::move(peers.begin(), peers.end(), std::back_inserter(peers_));
+    channels_.reserve(channels_.size() + channels.size());
+    std::move(channels.begin(), channels.end(), std::back_inserter(channels_));
 }
 
 void
@@ -75,10 +75,10 @@ MessageScheduler::disconnect(Peer::id_t peerId)
     std::lock_guard<std::mutex> lock(offersMutex_);
     {
         auto end = std::remove_if(
-            peers_.begin(), peers_.end(), [peerId](auto const& peer) {
-                return peer.id == peerId;
+            channels_.begin(), channels_.end(), [peerId](auto const& channel) {
+                return channel.peerId == peerId;
             });
-        peers_.erase(end, peers_.end());
+        channels_.erase(end, channels_.end());
     }
     std::vector<Sender*> senders;
     {
@@ -87,7 +87,7 @@ MessageScheduler::disconnect(Peer::id_t peerId)
         // C++20: Use `std::erase_if`.
         for (auto it = requests_.begin(); it != requests_.end();)
         {
-            if (it->second->peer.id == peerId)
+            if (it->second->channel.peerId == peerId)
             {
                 // This callback may add a sender to `senders`.
                 try
@@ -108,9 +108,9 @@ MessageScheduler::disconnect(Peer::id_t peerId)
     }
     if (!senders.empty())
     {
-        if (!peers_.empty())
+        if (!channels_.empty())
         {
-            _offer(peers_, senders);
+            _offer(channels_, senders);
         }
         std::move(senders.begin(), senders.end(), std::back_inserter(senders_));
     }
@@ -134,10 +134,10 @@ MessageScheduler::schedule(Sender* sender)
         return false;
     }
     std::vector<Sender*> senders = {sender};
-    if (!peers_.empty())
+    if (!channels_.empty())
     {
         push_value top(caller, "schedule");
-        _offer(peers_, senders);
+        _offer(channels_, senders);
     }
     std::move(senders.begin(), senders.end(), std::back_inserter(senders_));
     return true;
@@ -175,13 +175,13 @@ MessageScheduler::send(
 
 void
 MessageScheduler::_offer(
-    std::vector<WeakPeer>& peers,
+    std::vector<Channel>& channels,
     std::vector<Sender*>& senders)
 {
     JLOG(journal_.trace()) << "offer,during=" << caller
-                           << ",peers=" << peers.size()
+                           << ",channels=" << channels.size()
                            << ",senders=" << senders.size();
-    assert(!peers.empty());
+    assert(!channels.empty());
     assert(!senders.empty());
     push_value top1(tsenders, &senders);
     // We must iterate `senders` using an index
@@ -189,11 +189,11 @@ MessageScheduler::_offer(
     // invalidating any iterators or references.
     for (auto i = 0; i < senders.size(); ++i)
     {
-        // If this is the last sender, offer it the full set of peers.
+        // If this is the last sender, offer it the full set of channels.
         // If there are more senders waiting, offer one at a time, in turn.
-        auto supply = (i + 1 == senders.size()) ? peers.size() : 1;
+        auto supply = (i + 1 == senders.size()) ? channels.size() : 1;
         {
-            PeerOffer offer{*this, peers, supply};
+            Offer offer{*this, channels, supply};
             try
             {
                 senders[i]->onOffer(offer);
@@ -205,9 +205,10 @@ MessageScheduler::_offer(
             {
                 senders[i] = nullptr;
             }
-            // Consumed peers are removed here, in the destructor of the offer.
+            // Consumed channels are removed here,
+            // in the destructor of the offer.
         }
-        if (peers.empty())
+        if (channels.empty())
         {
             break;
         }
@@ -232,7 +233,7 @@ MessageScheduler::_send(
     // https://stackoverflow.com/a/55144743/618906
     auto request = std::unique_ptr<Request>(new Request{
         requestId,
-        toWeakPeer(peer),
+        toChannel(peer),
         receiver,
         Timer(io_service_),
         Clock::now()});
@@ -255,7 +256,7 @@ MessageScheduler::_send(
                 {
                     break;
                 }
-                auto peer = std::move(it->second->peer);
+                auto channel = std::move(it->second->channel);
                 try
                 {
                     it->second->receiver->onFailure(
@@ -265,12 +266,12 @@ MessageScheduler::_send(
                 {
                 }
                 requests_.erase(it);
-                peers_.emplace_back(peer);
+                channels_.emplace_back(channel);
             } while (false);
         }
-        if (!peers_.empty() && !senders_.empty())
+        if (!channels_.empty() && !senders_.empty())
         {
-            _offer(peers_, senders_);
+            _offer(channels_, senders_);
         }
     };
     {
@@ -317,7 +318,7 @@ MessageScheduler::_receive(
 {
     push_value top(caller, "receive");
     std::vector<Sender*> senders;
-    std::vector<WeakPeer> peers;
+    std::vector<Channel> channels;
     {
         // We push `tsenders` here to keep `onSuccess` callbacks from
         // trying to lock offers after requests have been locked.
@@ -349,7 +350,7 @@ MessageScheduler::_receive(
                    << ",time=" << duration_ms.count()
                    << ",size=" << message->ByteSizeLong();
         }
-        peers.emplace_back(std::move(it->second->peer));
+        channels.emplace_back(std::move(it->second->channel));
         try
         {
             it->second->receiver->onSuccess(requestId, message);
@@ -359,20 +360,21 @@ MessageScheduler::_receive(
         }
         requests_.erase(it);
     }
-    assert(peers.size() == 1);
+    assert(channels.size() == 1);
     {
         std::lock_guard<std::mutex> lock(offersMutex_);
         if (!senders_.empty())
         {
-            // Offer the released peer to waiting senders.
-            _offer(peers, senders_);
+            // Offer the released channel to waiting senders.
+            _offer(channels, senders_);
         }
-        // If the peer was not consumed, add it to the pool.
-        std::move(peers.begin(), peers.end(), std::back_inserter(peers_));
-        if (!peers_.empty() && !senders.empty())
+        // If the channel was not consumed, add it to the pool.
+        std::move(
+            channels.begin(), channels.end(), std::back_inserter(channels_));
+        if (!channels_.empty() && !senders.empty())
         {
-            // Offer the waiting peers to new senders.
-            _offer(peers_, senders);
+            // Offer the waiting channels to new senders.
+            _offer(channels_, senders);
         }
         // If any senders were unsatisfied, add them to the queue.
         std::move(senders.begin(), senders.end(), std::back_inserter(senders_));

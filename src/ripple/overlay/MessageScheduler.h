@@ -28,17 +28,20 @@ namespace ripple {
 
 /**
  * We must hold idle peers by `std::weak_ptr` so that they can destruct upon
- * disconnect, but we need to know each peer's ID to find its pointer in
- * `remove`, because `std::weak_ptr` is not equality-comparable with anything.
+ * disconnect.
+ * When we remove channels in `remove`, we need to find them by peer ID,
+ * because `std::weak_ptr` is not equality-comparable with anything,
+ * but we do not want to lock the `std::weak_ptr` to get that ID,
+ * so we copy it.
  */
-struct WeakPeer
+struct Channel
 {
-    Peer::id_t id;
+    Peer::id_t peerId;
     std::weak_ptr<Peer> peer;
 };
 
-inline WeakPeer
-toWeakPeer(std::shared_ptr<Peer> peer)
+inline Channel
+toChannel(std::shared_ptr<Peer> peer)
 {
     return {peer->id(), peer};
 }
@@ -57,7 +60,7 @@ public:
 
     using RequestId = uint32_t;
 
-    class PeerOffer;
+    class Offer;
 
     class Sender;
 
@@ -83,7 +86,7 @@ private:
     struct Request
     {
         RequestId id;
-        WeakPeer peer;
+        Channel channel;
         Receiver* receiver;
         Timer timer;
         Time sent;
@@ -95,7 +98,7 @@ private:
     // Offers are negotiations between peers and senders.
     // This mutex must be locked when handling either set.
     std::mutex offersMutex_;
-    std::vector<WeakPeer> peers_;
+    std::vector<Channel> channels_;
     // TODO: Use a priority queue.
     std::vector<Sender*> senders_;
     bool stopped_ = false;
@@ -118,13 +121,13 @@ public:
     }
 
     /**
-     * If there are any waiting senders, offer these peers to them.
-     * Add any remaining unconsumed peers to the pool.
+     * If there are any waiting senders, offer these channels to them.
+     * Add any remaining unconsumed channels to the pool.
      *
      * TODO: Maybe this can be private.
      */
     void
-    connect(std::vector<WeakPeer> peers);
+    connect(std::vector<Channel> channels);
 
     void
     connect(std::shared_ptr<Peer> peer)
@@ -132,18 +135,19 @@ public:
         JLOG(journal_.trace())
             << "connect,id=" << peer->id()
             << ",address=" << peer->getRemoteAddress().to_string();
-        WeakPeer wpeer{peer->id(), peer};
-        constexpr std::size_t SIMULTANEOUS_REQUESTS_PER_PEER = 1;
-        std::vector<WeakPeer> peers(SIMULTANEOUS_REQUESTS_PER_PEER, wpeer);
-        return connect(peers);
+        Channel channel{peer->id(), peer};
+        // TODO: Let a peer choose its number of channels when it connects.
+        constexpr std::size_t CHANNELS_PER_PEER = 1;
+        std::vector<Channel> channels(CHANNELS_PER_PEER, channel);
+        return connect(channels);
     }
 
     /**
-     * If this peer is in the pool, remove it.
+     * If this peer has any channels in the pool, remove them.
      * If it is responsible for any in-flight requests,
      * call their failure callbacks.
      * If those callbacks schedule any new senders,
-     * offer them the other peers in the pool.
+     * offer them the other channels in the pool.
      */
     void
     disconnect(Peer::id_t peerId);
@@ -184,18 +188,18 @@ public:
 
 private:
     /**
-     * Offer peers to senders, in turn, until senders either
-     * (a) consume no peers,
+     * Offer channels to senders, in turn, until senders either
+     * (a) consume no channels,
      * in which case we skip over them, or
      * (b) stop scheduling new senders,
      * in which case they are effectively removed.
      *
-     * @pre `peers` is not empty.
-     * @post Either `peers` is empty,
+     * @pre `channels` is not empty.
+     * @post Either `channels` is empty,
      * or every sender in `senders` refused to consume any peer.
      */
     void
-    _offer(std::vector<WeakPeer>& peers, std::vector<Sender*>& senders);
+    _offer(std::vector<Channel>& channels, std::vector<Sender*>& senders);
 
     template <typename Message>
     void
@@ -253,17 +257,17 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
 }
 
 /**
- * `PeerOffer` represents an offering to consume M among N peers, M <= N.
+ * `Offer` represents an offer to consume M among N channels, M <= N.
  * M is called the "supply".
  *
- * `PeerOffer` is an interface around a set of peers represented by
+ * `Offer` is an interface around a set of channels represented by
  * a `std::vector` of weak pointers.
- * `PeerOffer` does not own the set; it holds the set by reference.
+ * `Offer` does not own the set; it holds the set by reference.
  * The set is owned by the stack.
- * When passed a `PeerOffer`, a `Sender` must use it or lose it.
+ * When passed an `Offer`, a `Sender` must use it or lose it.
  * `Sender`s may not save references to `PeerOffers`, or make copies.
  *
- * `PeerOffer` has a companion iterator class, `PeerOffer::Iterator`, that
+ * `Offer` has a companion iterator class, `Offer::Iterator`, that
  * provides a convenient interface for skipping over dead weak pointers and
  * detecting supply exhaustion.
  * Its intended usage pattern is different from that of STL iterators:
@@ -278,11 +282,11 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
  *     it.send(...);
  * }
  *
- * `Sender`s may consume peers in the offer by sending messages to them.
- * After `PeerOffer` is destroyed, the set is left with only the remaining
- * unconsumed peers.
+ * `Sender`s may consume channels in the offer by sending messages to them.
+ * After `Offer` is destroyed, the set is left with only the remaining
+ * unconsumed channels.
  */
-class MessageScheduler::PeerOffer
+class MessageScheduler::Offer
 {
 public:
     class Iterator;
@@ -292,31 +296,31 @@ public:
 
 private:
     MessageScheduler& scheduler_;
-    std::vector<WeakPeer>& peers_;
+    std::vector<Channel>& channels_;
     std::vector<RequestId> requestIds_;
     std::size_t supply_;
     std::size_t consumed_ = 0;
     std::size_t end_;
 
 public:
-    PeerOffer(
+    Offer(
         MessageScheduler& scheduler,
-        std::vector<WeakPeer>& peers,
+        std::vector<Channel>& channels,
         std::size_t supply)
         : scheduler_(scheduler)
-        , peers_(peers)
+        , channels_(channels)
         , supply_(supply)
-        , end_(peers.size())
+        , end_(channels.size())
     {
     }
 
     // Delete all copy and move constructors and assignments.
-    PeerOffer&
-    operator=(PeerOffer&&) = delete;
+    Offer&
+    operator=(Offer&&) = delete;
 
-    ~PeerOffer()
+    ~Offer()
     {
-        peers_.erase(peers_.begin() + end_, peers_.end());
+        channels_.erase(channels_.begin() + end_, channels_.end());
     }
 
     Iterator
@@ -343,19 +347,19 @@ private:
     {
         assert(index < end_);
         --end_;
-        peers_[index] = std::move(peers_[end_]);
+        channels_[index] = std::move(channels_[end_]);
     }
 };
 
-class MessageScheduler::PeerOffer::Iterator
+class MessageScheduler::Offer::Iterator
 {
 private:
-    PeerOffer& offer_;
+    Offer& offer_;
     std::shared_ptr<Peer> value_ = nullptr;
     std::size_t index_ = 0;
 
 public:
-    Iterator(PeerOffer& offer) : offer_(offer)
+    Iterator(Offer& offer) : offer_(offer)
     {
         next();
     }
@@ -396,10 +400,10 @@ private:
         value_.reset();
         if (offer_.supply_)
         {
-            auto& peers = offer_.peers_;
+            auto& channels = offer_.channels_;
             while (index_ < offer_.end_)
             {
-                value_ = peers[index_].peer.lock();
+                value_ = channels[index_].peer.lock();
                 if (value_)
                 {
                     break;
@@ -413,8 +417,8 @@ private:
     }
 };
 
-inline MessageScheduler::PeerOffer::Iterator
-MessageScheduler::PeerOffer::begin()
+inline MessageScheduler::Offer::Iterator
+MessageScheduler::Offer::begin()
 {
     return Iterator(*this);
 }
@@ -423,7 +427,7 @@ class MessageScheduler::Sender
 {
 public:
     virtual void
-    onOffer(PeerOffer&) = 0;
+    onOffer(Offer&) = 0;
     virtual void
     onDiscard() = 0;
     virtual ~Sender()
