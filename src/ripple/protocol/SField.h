@@ -435,6 +435,8 @@ extern SF_UINT160 const sfTakerPaysCurrency;
 extern SF_UINT160 const sfTakerPaysIssuer;
 extern SF_UINT160 const sfTakerGetsCurrency;
 extern SF_UINT160 const sfTakerGetsIssuer;
+extern SF_UINT160 const sfTokenCurrency;
+extern SF_UINT160 const sfTokenIssuer;
 
 // 256-bit (common)
 extern SF_UINT256 const sfLedgerHash;
@@ -492,6 +494,7 @@ extern SF_AMOUNT const sfEPrice;
 extern SF_AMOUNT const sfMinSlotPrice;
 extern SF_AMOUNT const sfMaxSlotPrice;
 extern SF_AMOUNT const sfPrice;
+extern SF_AMOUNT const sfLPTokenBalance;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;
@@ -570,6 +573,9 @@ extern SField const sfHook;
 extern SField const sfVoteEntry;
 extern SField const sfAuctionSlot;
 extern SField const sfAuthAccount;
+extern SField const sfAMMToken;
+extern SField const sfToken1;
+extern SField const sfToken2;
 
 extern SField const sfSigner;
 extern SField const sfMajority;

@@ -316,6 +316,12 @@ message TakerPaysIssuer
     bytes value = 1;
 }
 
+message TokenIssuer
+{
+    // 20 bytes
+    bytes value = 1;
+}
+
 
 // *** Messages wrapping 32 bytes ***
 
@@ -485,6 +491,11 @@ message TakerPaysCurrency
     Currency value = 1;
 }
 
+message TokenCurrency
+{
+    Currency value = 1;
+}
+
 
 // *** Messages wrapping a CurrencyAmount ***
 
@@ -609,6 +620,10 @@ message Price
     CurrencyAmount value = 1;
 }
 
+message LPTokenBalance
+{
+    CurrencyAmount value = 1;
+}
 
 // *** Messages wrapping an AccountAddress ***
 
@@ -715,6 +730,7 @@ message AuthAccount
     Account account = 1;
 }
 
+// Next field: 5
 message AuctionSlot
 {
     Account account = 1;
@@ -728,3 +744,27 @@ message AuctionSlot
     repeated AuthAccount auth_accounts = 5;
 }
 
+// Next field: 2
+message Token1
+{
+    TokenCurrency token_currency = 1;
+
+    TokenIssuer  token_issuer = 2;
+}
+
+// Next field: 2
+message Token2
+{
+    TokenCurrency token_currency = 1;
+
+    TokenIssuer  token_issuer = 2;
+}
+
+// Next field: 2
+message AMMToken
+{
+
+    Token1 token1 = 1;
+
+    Token2 token2 = 2;
+}

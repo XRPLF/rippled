@@ -77,6 +77,27 @@ InnerObjectFormats::InnerObjectFormats()
             {sfPrice, soeREQUIRED},
             {sfAuthAccounts, soeOPTIONAL},
         });
+
+    add(sfToken1.jsonName.c_str(),
+        sfToken1.getCode(),
+        {
+            {sfTokenCurrency, soeREQUIRED},
+            {sfTokenIssuer, soeREQUIRED},
+        });
+
+    add(sfToken2.jsonName.c_str(),
+        sfToken2.getCode(),
+        {
+            {sfTokenCurrency, soeREQUIRED},
+            {sfTokenIssuer, soeREQUIRED},
+        });
+
+    add(sfAMMToken.jsonName.c_str(),
+        sfAMMToken.getCode(),
+        {
+            {sfToken1, soeREQUIRED},
+            {sfToken2, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

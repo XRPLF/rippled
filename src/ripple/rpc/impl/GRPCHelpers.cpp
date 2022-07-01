@@ -1255,6 +1255,26 @@ populateAuctionSlot(T& to, STObject const& from)
     populateAuthAccounts(to, from);
 }
 
+template <class T>
+void
+populateToken(T& to, STObject const& from)
+{
+    populateProtoCurrency(
+        [&to]() { return to.mutable_token_currency(); }, from, sfTokenCurrency);
+
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_token_issuer(); }, from, sfTokenIssuer);
+}
+
+template <class T>
+void
+populateAMMToken(T& to, STObject const& from)
+{
+    populateToken(*to.mutable_token1(), from);
+
+    populateToken(*to.mutable_token2(), from);
+}
+
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1985,6 +2005,13 @@ convert(org::xrpl::rpc::v1::AMM& to, STObject const& from)
     populateVoteEntries(to, from);
 
     populateAuctionSlot(*to.mutable_auction_slot(), from);
+
+    populateProtoAmount(
+        [&to]() { return to.mutable_lp_token_balance(); },
+        from,
+        sfLPTokenBalance);
+
+    populateAMMToken(*to.mutable_amm_token(), from);
 
     populateFlags(to, from);
 }

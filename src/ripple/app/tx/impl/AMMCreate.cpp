@@ -173,18 +173,10 @@ AMMCreate::applyGuts(Sandbox& sb)
     }
 
     // Check if ltAMM object exists
-    if (auto ammSle = sb.peek(keylet::amm(ammHash)))
+    if (sb.peek(keylet::amm(ammHash)))
     {
         JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
         return {tecAMM_EXISTS, false};
-    }
-    // Create ltAMM
-    else
-    {
-        ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
-        ammSle->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
-        ammSle->setAccountID(sfAMMAccount, ammAccountID);
-        sb.insert(ammSle);
     }
 
     // Create AMM Root Account.
@@ -200,6 +192,28 @@ AMMCreate::applyGuts(Sandbox& sb)
 
     // Calculate initial LPT balance.
     auto const lpTokens = calcAMMLPT(saAsset1, saAsset2, lptIssue);
+
+    // Create ltAMM
+    auto ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
+    ammSle->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
+    ammSle->setAccountID(sfAMMAccount, ammAccountID);
+    ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
+    auto const& issue1 = saAsset1.issue() < saAsset2.issue() ? saAsset1.issue()
+                                                             : saAsset2.issue();
+    auto const& issue2 =
+        issue1 == saAsset1.issue() ? saAsset2.issue() : saAsset1.issue();
+    ammSle->makeFieldPresent(sfAMMToken);
+    auto& ammToken = ammSle->peekFieldObject(sfAMMToken);
+    auto setToken = [&](SField const& field, Issue const& issue) {
+        ammToken.makeFieldPresent(field);
+        auto& token = ammToken.peekFieldObject(field);
+        token.setFieldH160(sfTokenCurrency, issue.currency);
+        token.setFieldH160(sfTokenIssuer, issue.account);
+    };
+    setToken(sfToken1, issue1);
+    setToken(sfToken2, issue2);
+    sb.insert(ammSle);
+
     // Send LPT to LP.
     auto res = accountSend(sb, ammAccountID, account_, lpTokens, ctx_.journal);
     if (res != tesSUCCESS)

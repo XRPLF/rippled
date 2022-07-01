@@ -419,7 +419,7 @@ message NegativeUNL
     Flags flags = 4;
 }
 
-// Next field: 5
+// Next field: 7
 message AMM
 {
     AMMAccount account = 1;
@@ -430,5 +430,9 @@ message AMM
 
     AuctionSlot auction_slot = 4;
 
-    Flags flags = 5;
+    LPTokenBalance lp_token_balance = 5;
+
+    AMMToken amm_token = 6;
+
+    Flags flags = 7;
 }

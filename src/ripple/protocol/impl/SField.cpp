@@ -185,6 +185,8 @@ CONSTRUCT_TYPED_SFIELD(sfTakerPaysCurrency,     "TakerPaysCurrency",    UINT160,
 CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      UINT160,    2);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    UINT160,    3);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      UINT160,    4);
+CONSTRUCT_TYPED_SFIELD(sfTokenCurrency,         "TokenCurrency",        UINT160,    5);
+CONSTRUCT_TYPED_SFIELD(sfTokenIssuer,           "TokenIssuer",          UINT160,    6);
 
 // 256-bit (common)
 CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           UINT256,    1);
@@ -250,6 +252,7 @@ CONSTRUCT_TYPED_SFIELD(sfAsset2Out,             "Asset2Out",            AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfLPTokens,              "LPTokens",             AMOUNT,    24);
 CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    25);
 CONSTRUCT_TYPED_SFIELD(sfPrice,                 "Price",                AMOUNT,    26);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    27);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
@@ -334,6 +337,9 @@ CONSTRUCT_UNTYPED_SFIELD(sfHookGrant,           "HookGrant",            OBJECT, 
 CONSTRUCT_UNTYPED_SFIELD(sfVoteEntry,           "VoteEntry",            OBJECT,    25);
 CONSTRUCT_UNTYPED_SFIELD(sfAuctionSlot,         "AuctionSlot",          OBJECT,    27);
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccount,         "AuthAccount",          OBJECT,    28);
+CONSTRUCT_UNTYPED_SFIELD(sfAMMToken,            "AMMToken",             OBJECT,    29);
+CONSTRUCT_UNTYPED_SFIELD(sfToken1,              "Token1",               OBJECT,    30);
+CONSTRUCT_UNTYPED_SFIELD(sfToken2,              "Token2",               OBJECT,    31);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array

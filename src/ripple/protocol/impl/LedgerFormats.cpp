@@ -261,15 +261,20 @@ LedgerFormats::LedgerFormats()
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
-    // clang-format on
 
     add(jss::AMM,
         ltAMM,
-        {{sfAMMAccount, soeREQUIRED},
-         {sfTradingFee, soeREQUIRED},
-         {sfVoteEntries, soeOPTIONAL},
-         {sfAuctionSlot, soeOPTIONAL}},
+        {
+            {sfAMMAccount, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+            {sfVoteEntries, soeOPTIONAL},
+            {sfAuctionSlot, soeOPTIONAL},
+            {sfLPTokenBalance, soeREQUIRED},
+            {sfAMMToken, soeREQUIRED}
+        },
         commonFields);
+
+    // clang-format on
 }
 
 LedgerFormats const&
