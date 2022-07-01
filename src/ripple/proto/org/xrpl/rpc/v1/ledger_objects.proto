@@ -419,7 +419,7 @@ message NegativeUNL
     Flags flags = 4;
 }
 
-// Next field: 4
+// Next field: 5
 message AMM
 {
     AMMAccount account = 1;
@@ -428,5 +428,7 @@ message AMM
 
     repeated VoteEntry vote_entries = 3;
 
-    Flags flags = 4;
+    AuctionSlot auction_slot = 4;
+
+    Flags flags = 5;
 }

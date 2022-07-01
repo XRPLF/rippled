@@ -298,6 +298,7 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_FAILED_WITHDRAW = 165,
     tecAMM_INVALID_TOKENS = 166,
     tecAMM_EXISTS = 167,
+    tecAMM_FAILED_BID = 168,
 };
 
 //------------------------------------------------------------------------------

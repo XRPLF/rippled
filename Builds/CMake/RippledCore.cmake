@@ -419,6 +419,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/UnitaryShard.cpp
   src/ripple/app/rdb/impl/Vacuum.cpp
   src/ripple/app/rdb/impl/Wallet.cpp
+  src/ripple/app/tx/impl/AMMBid.cpp
   src/ripple/app/tx/impl/AMMCreate.cpp
   src/ripple/app/tx/impl/AMMDeposit.cpp
   src/ripple/app/tx/impl/AMMVote.cpp

@@ -61,18 +61,10 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    if (auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMHash]));
-        !ammSle)
-    {
-        JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM hash.";
-        return temBAD_SRC_ACCOUNT;
-    }
-    else if (auto const ammRoot = ctx.view.read(
-                 keylet::account(ammSle->getAccountID(sfAMMAccount)));
-             !ammRoot)
+    if (!getAMMSle(ctx.view, ctx.tx[sfAMMHash]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM account.";
-        return temBAD_SRC_ACCOUNT;
+        return terNO_ACCOUNT;
     }
 
     return tesSUCCESS;
@@ -88,11 +80,9 @@ std::pair<TER, bool>
 AMMVote::applyGuts(Sandbox& sb)
 {
     auto const feeNew = ctx_.tx[sfFeeVal];
-    auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMHash]));
+    auto const amm = getAMMSle(sb, ctx_.tx[sfAMMHash]);
     assert(amm);
     auto const ammAccount = amm->getAccountID(sfAMMAccount);
-    auto const ammRoot = sb.peek(keylet::account(ammAccount));
-    assert(ammRoot);
     auto const lptAMMBalance = getLPTokens(sb, ammAccount, ctx_.journal);
     auto const lpTokensNew =
         getLPTokens(sb, ammAccount, account_, ctx_.journal);

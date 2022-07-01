@@ -137,6 +137,12 @@ public:
         std::optional<AccountID> const& account = std::nullopt) const;
 
     bool
+    expectAuctionSlot(
+        std::uint32_t fee,
+        std::uint32_t timeInterval,
+        IOUAmount const& price);
+
+    bool
     expectAmmRpcInfo(
         STAmount const& asset1,
         STAmount const& asset2,
@@ -187,6 +193,13 @@ public:
     vote(
         std::optional<Account> const& account,
         std::uint32_t feeVal,
+        std::optional<ter> const& ter = {});
+
+    void
+    bid(std::optional<Account> const& account,
+        std::optional<std::uint64_t> const& minSlotPrice = {},
+        std::optional<std::uint64_t> const& maxSlotPrice = {},
+        std::vector<Account> const& authAccounts = {},
         std::optional<ter> const& ter = {});
 
     AccountID

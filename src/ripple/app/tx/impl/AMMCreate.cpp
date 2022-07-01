@@ -184,8 +184,6 @@ AMMCreate::applyGuts(Sandbox& sb)
         ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
         ammSle->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
         ammSle->setAccountID(sfAMMAccount, ammAccountID);
-        STArray voteEntries;
-        ammSle->setFieldArray(sfVoteEntries, voteEntries);
         sb.insert(ammSle);
     }
 

@@ -230,6 +230,16 @@ message VoteWeight
     uint32 value = 1;
 }
 
+message TimeStamp
+{
+    uint32 value = 1;
+}
+
+message DiscountedFee
+{
+    uint32 value = 1;
+}
+
 // *** Messages wrapping uint64 ***
 
 message BaseFee
@@ -584,6 +594,21 @@ message Tokens
     CurrencyAmount value = 1;
 }
 
+message MinSlotPrice
+{
+    CurrencyAmount value = 1;
+}
+
+message MaxSlotPrice
+{
+    CurrencyAmount value = 1;
+}
+
+message Price
+{
+    CurrencyAmount value = 1;
+}
+
 
 // *** Messages wrapping an AccountAddress ***
 
@@ -682,5 +707,24 @@ message VoteEntry
     FeeVal fee_val = 2;
 
     VoteWeight vote_weight = 3;
+}
+
+// Next field: 1
+message AuthAccount
+{
+    Account account = 1;
+}
+
+message AuctionSlot
+{
+    Account account = 1;
+
+    TimeStamp time_stamp = 2;
+
+    DiscountedFee discounted_fee = 3;
+
+    Price price = 4;
+
+    repeated AuthAccount auth_accounts = 5;
 }
 

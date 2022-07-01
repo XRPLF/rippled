@@ -44,6 +44,24 @@ getAccount(Json::Value const& v, Json::Value& result)
     return std::optional<AccountID>(accountID);
 }
 
+std::uint16_t
+timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot)
+{
+    using namespace std::chrono;
+    std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
+    std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / 20;
+    auto const current =
+        duration_cast<seconds>(clock.time_since_epoch()).count();
+    if (auctionSlot.isFieldPresent(sfTimeStamp))
+    {
+        auto const stamp = auctionSlot.getFieldU32(sfTimeStamp);
+        auto const diff = current - stamp;
+        if (diff < totalSlotTimeSecs)
+            return diff / intervalDuration;
+    }
+    return 0;
+}
+
 Json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
@@ -88,15 +106,11 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const amm = ledger->read(keylet::amm(ammHash));
+    auto const amm = getAMMSle(*ledger, ammHash);
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
-
-    auto const ammSle = ledger->read(keylet::account(ammAccountID));
-    if (!ammSle)
-        return rpcError(rpcACT_NOT_FOUND);
 
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
@@ -111,6 +125,34 @@ doAMMInfo(RPC::JsonContext& context)
     lptAMMBalance.setJson(result[jss::LPTokens]);
     result[jss::TradingFee] = amm->getFieldU32(sfTradingFee);
     result[jss::AMMAccount] = to_string(ammAccountID);
+    Json::Value voteEntries(Json::arrayValue);
+    if (amm->isFieldPresent(sfVoteEntries))
+    {
+        for (auto const& voteEntry : amm->getFieldArray(sfVoteEntries))
+        {
+            Json::Value vote;
+            vote[jss::FeeVal] = voteEntry.getFieldU32(sfFeeVal);
+            vote[jss::VoteWeight] = voteEntry.getFieldU32(sfVoteWeight);
+            voteEntries.append(vote);
+        }
+    }
+    if (voteEntries.size() > 0)
+        result[jss::VoteEntries] = voteEntries;
+    if (amm->isFieldPresent(sfAuctionSlot))
+    {
+        auto const& auctionSlot =
+            static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+        if (auctionSlot.isFieldPresent(sfAccount))
+        {
+            Json::Value auction;
+            auction[jss::TimeInterval] =
+                timeSlot(ledger->info().parentCloseTime, auctionSlot);
+            auctionSlot.getFieldAmount(sfPrice).setJson(auction[jss::Price]);
+            auction[jss::DiscountedFee] =
+                auctionSlot.getFieldU32(sfDiscountedFee);
+            result[jss::AuctionSlot] = auction;
+        }
+    }
     if (!params.isMember(jss::AMMHash))
         result[jss::AMMHash] = to_string(ammHash);
 
@@ -200,19 +242,13 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
                     grpc::StatusCode::INVALID_ARGUMENT, "Account malformed."}};
     }
 
-    auto const amm = ledger->read(keylet::amm(ammHash));
+    auto const amm = getAMMSle(*ledger, ammHash);
     if (!amm)
         return {
             result,
             grpc::Status(grpc::StatusCode::NOT_FOUND, "Account not found.")};
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
-
-    auto const ammSle = ledger->read(keylet::account(ammAccountID));
-    if (!ammSle)
-        return {
-            result,
-            grpc::Status(grpc::StatusCode::NOT_FOUND, "Account not found.")};
 
     auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
         *ledger,
@@ -233,6 +269,33 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
         toBase58(ammAccountID);
     if (!params.has_ammhash())
         *result.mutable_ammhash()->mutable_value() = to_string(ammHash);
+    if (amm->isFieldPresent(sfVoteEntries))
+    {
+        for (auto const& voteEntry : amm->getFieldArray(sfVoteEntries))
+        {
+            auto& vote_entries = *result.add_vote_entries();
+            vote_entries.mutable_fee_val()->set_value(
+                voteEntry.getFieldU32(sfFeeVal));
+            vote_entries.mutable_vote_weight()->set_value(
+                voteEntry.getFieldU32(sfVoteWeight));
+        }
+    }
+    if (amm->isFieldPresent(sfAuctionSlot))
+    {
+        auto const& auctionSlot =
+            static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+        if (auctionSlot.isFieldPresent(sfAccount))
+        {
+            auto& auction_slot = *result.mutable_auction_slot();
+            auction_slot.set_time_interval(
+                timeSlot(ledger->info().parentCloseTime, auctionSlot));
+            auction_slot.mutable_discounted_fee()->set_value(
+                auctionSlot.getFieldU32(sfDiscountedFee));
+            ripple::RPC::convert(
+                *auction_slot.mutable_price(),
+                auctionSlot.getFieldAmount(sfPrice));
+        }
+    }
 
     result.set_ledger_index(ledger->info().seq);
     result.set_validated(

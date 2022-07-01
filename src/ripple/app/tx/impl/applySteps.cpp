@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/app/tx/impl/AMMBid.h>
 #include <ripple/app/tx/impl/AMMCreate.h>
 #include <ripple/app/tx/impl/AMMDeposit.h>
 #include <ripple/app/tx/impl/AMMVote.h>
@@ -159,6 +160,8 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<AMMWithdraw>(ctx);
         case ttAMM_VOTE:
             return invoke_preflight_helper<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preflight_helper<AMMBid>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -268,6 +271,8 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<AMMWithdraw>(ctx);
         case ttAMM_VOTE:
             return invoke_preclaim<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preclaim<AMMBid>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -339,6 +344,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return AMMWithdraw::calculateBaseFee(view, tx);
         case ttAMM_VOTE:
             return AMMVote::calculateBaseFee(view, tx);
+        case ttAMM_BID:
+            return AMMBid::calculateBaseFee(view, tx);
         default:
             assert(false);
             return FeeUnit64{0};
@@ -505,6 +512,10 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttAMM_VOTE: {
             AMMVote p(ctx);
+            return p();
+        }
+        case ttAMM_BID: {
+            AMMBid p(ctx);
             return p();
         }
         default:

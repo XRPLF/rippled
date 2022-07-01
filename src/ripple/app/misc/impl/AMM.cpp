@@ -18,6 +18,7 @@
 //==============================================================================
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/paths/TrustLine.h>
+#include <ripple/ledger/Sandbox.h>
 #include <ripple/protocol/STArray.h>
 
 namespace ripple {
@@ -213,6 +214,15 @@ getAMMSle(ReadView const& view, uint256 ammHash)
     return sle;
 }
 
+std::shared_ptr<STLedgerEntry>
+getAMMSle(Sandbox& view, uint256 ammHash)
+{
+    auto const sle = view.peek(keylet::amm(ammHash));
+    if (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount))))
+        return nullptr;
+    return sle;
+}
+
 bool
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 {
@@ -231,6 +241,28 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     }
 
     return false;
+}
+
+std::uint32_t
+getTradingFee(
+    std::shared_ptr<SLE const> const& ammSle,
+    AccountID const& account)
+{
+    if (ammSle && ammSle->isFieldPresent(sfAuctionSlot))
+    {
+        auto const& auctionSlot =
+            static_cast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
+        if (auctionSlot.isFieldPresent(sfAccount) &&
+            auctionSlot.getAccountID(sfAccount) == account)
+            return auctionSlot.getFieldU32(sfDiscountedFee);
+        if (auctionSlot.isFieldPresent(sfAuthAccounts))
+        {
+            for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
+                if (acct.getAccountID(sfAccount) == account)
+                    return auctionSlot.getFieldU32(sfDiscountedFee);
+        }
+    }
+    return ammSle->getFieldU32(sfTradingFee);
 }
 
 }  // namespace ripple

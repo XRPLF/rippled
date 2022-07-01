@@ -27,8 +27,26 @@ message GetAmmInfoRequest
   Account account = 5;
 }
 
+// Next field: 2
+message VoteEntryResp
+{
+  FeeVal fee_val = 1;
+
+  VoteWeight vote_weight = 2;
+}
+
+// Next field: 3
+message AuctionSlotResp
+{
+  uint32 time_interval = 1;
+
+  DiscountedFee discounted_fee = 2;
+
+  Amount price = 3;
+}
+
 // Response to GetAmmInfo RPC
-// Next field: 8
+// Next field: 10
 message GetAmmInfoResponse
 {
   Asset1 asset1 = 1;
@@ -43,7 +61,11 @@ message GetAmmInfoResponse
 
   TradingFee trading_fee = 6;
 
-  uint32 ledger_index = 7;
+  repeated VoteEntryResp vote_entries = 7;
 
-  bool validated = 8;
+  AuctionSlotResp auction_slot = 8;
+
+  uint32 ledger_index = 9;
+
+  bool validated = 10;
 }

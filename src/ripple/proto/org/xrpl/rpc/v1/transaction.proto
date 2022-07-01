@@ -35,6 +35,8 @@ message Transaction
 
         AMMVote ammvote = 44;
 
+        AMMBid ammbid = 45;
+
         CheckCancel check_cancel = 15;
 
         CheckCash check_cash = 16;
@@ -191,6 +193,18 @@ message AMMVote
     AMMHash ammhash = 1;
 
     FeeVal fee_val = 2;
+}
+
+// Next field: 5
+message AMMBid
+{
+    AMMHash ammhash = 1;
+
+    MinSlotPrice min_slot_price = 2;
+
+    MaxSlotPrice max_slot_price = 3;
+
+    repeated AuthAccount auth_accounts = 4;
 }
 
 // Next field: 2

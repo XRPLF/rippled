@@ -1224,6 +1224,37 @@ populateVoteEntries(T& to, STObject const& from)
         sfVoteEntry);
 }
 
+template <class T>
+void
+populateAuthAccounts(T& to, STObject const& from)
+{
+    populateProtoArray(
+        [&to]() { return to.add_auth_accounts(); },
+        [&](auto& innerObj, auto& innerProto) {
+            populateAccount(innerProto, innerObj);
+        },
+        from,
+        sfAuthAccounts,
+        sfAuthAccount);
+}
+
+template <class T>
+void
+populateAuctionSlot(T& to, STObject const& from)
+{
+    populateAccount(to, from);
+
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_time_stamp(); }, from, sfTimeStamp);
+
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_discounted_fee(); }, from, sfDiscountedFee);
+
+    populateProtoAmount([&to]() { return to.mutable_price(); }, from, sfPrice);
+
+    populateAuthAccounts(to, from);
+}
+
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1931,6 +1962,20 @@ convert(org::xrpl::rpc::v1::AMMVote& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::AMMBid& to, STObject const& from)
+{
+    populateAMMHash(to, from);
+
+    populateProtoAmount(
+        [&to]() { return to.mutable_min_slot_price(); }, from, sfMinSlotPrice);
+
+    populateProtoAmount(
+        [&to]() { return to.mutable_max_slot_price(); }, from, sfMaxSlotPrice);
+
+    populateAuthAccounts(to, from);
+}
+
+void
 convert(org::xrpl::rpc::v1::AMM& to, STObject const& from)
 {
     populateAMMAccount(to, from);
@@ -1938,6 +1983,8 @@ convert(org::xrpl::rpc::v1::AMM& to, STObject const& from)
     populateTradingFee(to, from);
 
     populateVoteEntries(to, from);
+
+    populateAuctionSlot(*to.mutable_auction_slot(), from);
 
     populateFlags(to, from);
 }
@@ -2381,6 +2428,8 @@ convert(
             break;
         case TxType::ttAMM_VOTE:
             convert(*to.mutable_ammvote(), fromObj);
+        case TxType::ttAMM_BID:
+            convert(*to.mutable_ammbid(), fromObj);
             break;
         default:
             break;

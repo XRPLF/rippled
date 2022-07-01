@@ -368,6 +368,8 @@ extern SF_UINT32 const sfWalletSize;
 extern SF_UINT32 const sfOwnerCount;
 extern SF_UINT32 const sfDestinationTag;
 extern SF_UINT32 const sfTradingFee;
+extern SF_UINT32 const sfTimeStamp;
+extern SF_UINT32 const sfDiscountedFee;
 
 // 32-bit integers (uncommon)
 extern SF_UINT32 const sfHighQualityIn;
@@ -487,6 +489,9 @@ extern SF_AMOUNT const sfAsset2In;
 extern SF_AMOUNT const sfAsset1Out;
 extern SF_AMOUNT const sfAsset2Out;
 extern SF_AMOUNT const sfEPrice;
+extern SF_AMOUNT const sfMinSlotPrice;
+extern SF_AMOUNT const sfMaxSlotPrice;
+extern SF_AMOUNT const sfPrice;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;
@@ -563,6 +568,8 @@ extern SField const sfNFToken;
 extern SField const sfEmitDetails;
 extern SField const sfHook;
 extern SField const sfVoteEntry;
+extern SField const sfAuctionSlot;
+extern SField const sfAuthAccount;
 
 extern SField const sfSigner;
 extern SField const sfMajority;
@@ -586,6 +593,7 @@ extern SField const sfMemos;
 extern SField const sfNFTokens;
 extern SField const sfHooks;
 extern SField const sfVoteEntries;
+extern SField const sfAuthAccounts;
 
 // array of objects (uncommon)
 extern SField const sfMajorities;

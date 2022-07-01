@@ -29,6 +29,7 @@
 namespace ripple {
 
 class ReadView;
+class Sandbox;
 class STLedgerEntry;
 
 /** Calculate AMM account ID.
@@ -131,12 +132,24 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
 std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash);
 
+std::shared_ptr<STLedgerEntry>
+getAMMSle(Sandbox& view, uint256 ammHash);
+
 /** Check if the account requires authorization.
  *  Return true if issuer's account, account, and trust line exist
  *  and the account requires authorization.
  */
 bool
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Get AMM trading fee for the given account. The fee is discounted
+ * if the account is the auction slot owner or one of the slot's authorized
+ * accounts.
+ */
+std::uint32_t
+getTradingFee(
+    std::shared_ptr<SLE const> const& ammSle,
+    AccountID const& account);
 
 }  // namespace ripple
 

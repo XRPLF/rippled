@@ -100,18 +100,11 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMHash]));
+    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account";
-        return temBAD_SRC_ACCOUNT;
-    }
-    if (auto const ammRoot =
-            ctx.view.read(keylet::account(ammSle->getAccountID(sfAMMAccount)));
-        !ammRoot)
-    {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account.";
-        return temBAD_SRC_ACCOUNT;
+        return terNO_ACCOUNT;
     }
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
@@ -121,17 +114,17 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const lpTokens = getTxLPTokens(ctx.view, ammAccountID, ctx.tx, ctx.j);
     if (lptBalance <= beast::zero)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
         return tecAMM_BALANCE;
     }
     if (lpTokens && *lpTokens > lptBalance)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
         return tecAMM_INVALID_TOKENS;
     }
     if (isFrozen(ctx.view, asset1Out) || isFrozen(ctx.view, sfAsset2Out))
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset";
+        JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
         return tecFROZEN;
     }
     return tesSUCCESS;
@@ -149,7 +142,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const asset1Out = ctx_.tx[~sfAsset1Out];
     auto const asset2Out = ctx_.tx[~sfAsset2Out];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto const ammSle = ctx_.view().read(keylet::amm(ctx_.tx[sfAMMHash]));
+    auto const ammSle = getAMMSle(ctx_.view(), ctx_.tx[sfAMMHash]);
     assert(ammSle);
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
     auto const lpTokens =
@@ -162,7 +155,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         asset2Out ? asset2Out->issue() : std::optional<Issue>{},
         ctx_.journal);
 
-    auto const tfee = ammSle->getFieldU32(sfTradingFee);
+    auto const tfee = getTradingFee(ammSle, account_);
 
     TER result = tesSUCCESS;
 

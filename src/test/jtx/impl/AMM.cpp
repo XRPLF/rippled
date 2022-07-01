@@ -206,6 +206,30 @@ AMM::expectBalances(
 }
 
 bool
+AMM::expectAuctionSlot(
+    std::uint32_t fee,
+    std::uint32_t timeInterval,
+    IOUAmount const& price)
+{
+    try
+    {
+        if (auto const jv = *ammRpcInfo())
+        {
+            auto const auctionSlot = jv[jss::AuctionSlot];
+            STAmount saPrice;
+            return auctionSlot[jss::DiscountedFee].asUInt() == fee &&
+                auctionSlot[jss::TimeInterval].asUInt() == timeInterval &&
+                amountFromJsonNoThrow(saPrice, auctionSlot[jss::Price]) &&
+                saPrice.iou() == price;
+        }
+    }
+    catch (...)
+    {
+    }
+    return false;
+}
+
+bool
 AMM::accountRootExists() const
 {
     return env_.current()->read(keylet::account(ammAccountID_)) != nullptr;
@@ -384,6 +408,49 @@ AMM::vote(
     jv[jss::AMMHash] = to_string(ammHash_);
     jv[jss::FeeVal] = feeVal;
     jv[jss::TransactionType] = jss::AMMVote;
+    if (log_)
+        std::cout << jv.toStyledString();
+    if (ter)
+        env_(jv, *ter);
+    else
+        env_(jv);
+}
+
+void
+AMM::bid(
+    std::optional<Account> const& account,
+    std::optional<std::uint64_t> const& minSlotPrice,
+    std::optional<std::uint64_t> const& maxSlotPrice,
+    std::vector<Account> const& authAccounts,
+    std::optional<ter> const& ter)
+{
+    Json::Value jv;
+    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
+    jv[jss::AMMHash] = to_string(ammHash_);
+    if (minSlotPrice)
+    {
+        STAmount saTokens{calcLPTIssue(ammAccountID_), *minSlotPrice, 0};
+        saTokens.setJson(jv[jss::MinSlotPrice]);
+    }
+    if (maxSlotPrice)
+    {
+        STAmount saTokens{calcLPTIssue(ammAccountID_), *maxSlotPrice, 0};
+        saTokens.setJson(jv[jss::MaxSlotPrice]);
+    }
+    if (authAccounts.size() > 0)
+    {
+        Json::Value accounts(Json::arrayValue);
+        for (auto const& account : authAccounts)
+        {
+            Json::Value acct;
+            Json::Value authAcct;
+            acct[jss::Account] = account.human();
+            authAcct[jss::AuthAccount] = acct;
+            accounts.append(authAcct);
+        }
+        jv[jss::AuthAccounts] = accounts;
+    }
+    jv[jss::TransactionType] = jss::AMMBid;
     if (log_)
         std::cout << jv.toStyledString();
     if (ter)

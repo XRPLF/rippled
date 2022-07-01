@@ -267,7 +267,8 @@ LedgerFormats::LedgerFormats()
         ltAMM,
         {{sfAMMAccount, soeREQUIRED},
          {sfTradingFee, soeREQUIRED},
-         {sfVoteEntries, soeREQUIRED}},
+         {sfVoteEntries, soeOPTIONAL},
+         {sfAuctionSlot, soeOPTIONAL}},
         commonFields);
 }
 

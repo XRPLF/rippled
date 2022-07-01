@@ -67,6 +67,16 @@ InnerObjectFormats::InnerObjectFormats()
             {sfFeeVal, soeREQUIRED},
             {sfVoteWeight, soeREQUIRED},
         });
+
+    add(sfAuctionSlot.jsonName.c_str(),
+        sfAuctionSlot.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfTimeStamp, soeREQUIRED},
+            {sfDiscountedFee, soeREQUIRED},
+            {sfPrice, soeREQUIRED},
+            {sfAuthAccounts, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&

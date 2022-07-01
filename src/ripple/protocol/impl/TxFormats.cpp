@@ -124,6 +124,17 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::AMMBid,
+        ttAMM_BID,
+        {
+            {sfAMMHash, soeREQUIRED},
+            {sfMinSlotPrice, soeOPTIONAL},
+            {sfMaxSlotPrice, soeOPTIONAL},
+            {sfAuthAccounts, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
     add(jss::OfferCancel,
         ttOFFER_CANCEL,
         {
