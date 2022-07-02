@@ -67,8 +67,8 @@ PathRequests::getLineCache(
 void
 PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
-    auto event =
-        app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
+    auto ev = app_.getJobQueue().createLoadEvent(
+        jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
     std::shared_ptr<RippleLineCache> cache;

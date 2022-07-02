@@ -23,27 +23,27 @@
 
 namespace ripple {
 
-Job::Job() : mType(jtINVALID), mJobIndex(0)
-{
-}
-
-Job::Job(JobType type, std::uint64_t index) : mType(type), mJobIndex(index)
-{
-}
-
 Job::Job(
     JobType type,
-    std::string const& name,
+    std::string name,
     std::uint64_t index,
-    LoadMonitor& lm,
+    std::reference_wrapper<LoadSampler const> sample,
     std::function<void()> const& job)
     : mType(type)
     , mJobIndex(index)
     , mJob(job)
-    , mName(name)
+    , m_loadEvent(sample, std::move(name), false)
     , m_queue_time(clock_type::now())
 {
-    m_loadEvent = std::make_shared<LoadEvent>(std::ref(lm), name, false);
+}
+
+Job::Job(Job&& other)
+    : mType(other.mType)
+    , mJobIndex(other.mJobIndex)
+    , mJob(std::move(other.mJob))
+    , m_loadEvent(std::move(other.m_loadEvent))
+    , m_queue_time(other.m_queue_time)
+{
 }
 
 JobType
@@ -61,10 +61,9 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    beast::setCurrentThreadName("Job: " + mName);
+    beast::setCurrentThreadName("Job: " + m_loadEvent.name());
 
-    m_loadEvent->start();
-    m_loadEvent->setName(mName);
+    m_loadEvent.start();
 
     mJob();
 

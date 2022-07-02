@@ -194,7 +194,7 @@ callMethod(
     {
         perfLog.rpcStart(name, curId);
         auto v =
-            context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
+            context.app.getJobQueue().createLoadEvent(jtGENERIC, "cmd:" + name);
 
         auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);

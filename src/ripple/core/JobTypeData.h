@@ -22,17 +22,18 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/beast/insight/Collector.h>
-#include <ripple/core/JobTypeInfo.h>
+#include <ripple/core/JobTypes.h>
+#include <ripple/core/LoadMonitor.h>
 
 namespace ripple {
 
 struct JobTypeData
 {
 private:
-    LoadMonitor m_load;
+    LoadMonitor load_;
 
     /* Support for insight */
-    beast::insight::Collector::ptr m_collector;
+    beast::insight::Collector::ptr collector_;
 
 public:
     /* The job category which we represent */
@@ -55,20 +56,20 @@ public:
         JobTypeInfo const& info_,
         beast::insight::Collector::ptr const& collector,
         Logs& logs) noexcept
-        : m_load(logs.journal("LoadMonitor"))
-        , m_collector(collector)
+        : load_(
+              info.averageLatency,
+              info.peakLatency,
+              logs.journal("LoadMonitor"))
+        , collector_(collector)
         , info(info_)
         , waiting(0)
         , running(0)
         , deferred(0)
     {
-        m_load.setTargetLatency(
-            info.getAverageLatency(), info.getPeakLatency());
-
         if (!info.special())
         {
-            dequeue = m_collector->make_event(info.name() + "_q");
-            execute = m_collector->make_event(info.name());
+            dequeue = collector_->make_event(std::string(info.name) + "_q");
+            execute = collector_->make_event(std::string(info.name));
         }
     }
 
@@ -77,28 +78,30 @@ public:
     JobTypeData&
     operator=(JobTypeData const& other) = delete;
 
-    std::string
+    JobTypeData(JobTypeData&& other) = default;
+
+    std::string_view
     name() const
     {
-        return info.name();
+        return info.name;
     }
 
     JobType
     type() const
     {
-        return info.type();
+        return info.type;
     }
 
     LoadMonitor&
     load()
     {
-        return m_load;
+        return load_;
     }
 
     LoadMonitor::Stats
     stats()
     {
-        return m_load.getStats();
+        return load_.getStats();
     }
 };
 

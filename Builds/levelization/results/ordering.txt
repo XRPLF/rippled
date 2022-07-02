@@ -121,7 +121,6 @@ test.core > ripple.basics
 test.core > ripple.beast
 test.core > ripple.core
 test.core > ripple.crypto
-test.core > ripple.json
 test.core > ripple.server
 test.core > test.jtx
 test.core > test.toplevel

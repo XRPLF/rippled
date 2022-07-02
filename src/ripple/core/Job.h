@@ -22,9 +22,7 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/core/ClosureCounter.h>
-#include <ripple/core/LoadMonitor.h>
-#include <functional>
-
+#include <ripple/core/LoadEvent.h>
 #include <functional>
 
 namespace ripple {
@@ -32,10 +30,7 @@ namespace ripple {
 // Note that this queue should only be used for CPU-bound jobs
 // It is primarily intended for signature checking
 
-enum JobType {
-    // Special type indicating an invalid job - will go away soon.
-    jtINVALID = -1,
-
+enum JobType : std::uint32_t {
     // Job types - the position in this enum indicates the job priority with
     // earlier jobs having lower priority than later jobs. If you wish to
     // insert a job at a specific priority, simply add it at the right location.
@@ -98,27 +93,15 @@ class Job : public CountedObject<Job>
 public:
     using clock_type = std::chrono::steady_clock;
 
-    /** Default constructor.
+    Job() = delete;
 
-        Allows Job to be used as a container type.
-
-        This is used to allow things like jobMap [key] = value.
-    */
-    // VFALCO NOTE I'd prefer not to have a default constructed object.
-    //             What is the semantic meaning of a Job with no associated
-    //             function? Having the invariant "all Job objects refer to
-    //             a job" would reduce the number of states.
-    //
-    Job();
-
-    Job(JobType type, std::uint64_t index);
-
-    // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job(JobType type,
-        std::string const& name,
+        std::string name,
         std::uint64_t index,
-        LoadMonitor& lm,
+        std::reference_wrapper<LoadSampler const> sampler,
         std::function<void()> const& job);
+
+    Job(Job&& other);
 
     JobType
     getType() const;
@@ -145,8 +128,7 @@ private:
     JobType mType;
     std::uint64_t mJobIndex;
     std::function<void()> mJob;
-    std::shared_ptr<LoadEvent> m_loadEvent;
-    std::string mName;
+    LoadEvent m_loadEvent;
     clock_type::time_point m_queue_time;
 };
 

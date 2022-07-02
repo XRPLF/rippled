@@ -205,8 +205,9 @@ private:
     STAmount mRemainingAmount;
     bool convert_all_;
 
+    std::optional<LoadEvent> loadEvent_;
+
     std::shared_ptr<ReadView const> mLedger;
-    std::unique_ptr<LoadEvent> m_loadEvent;
     std::shared_ptr<RippleLineCache> mRLCache;
 
     STPathElement mSource;

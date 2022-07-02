@@ -1019,7 +1019,8 @@ PeerImp::onMessageBegin(
     bool isCompressed)
 {
     load_event_ =
-        app_.getJobQueue().makeLoadEvent(jtPEER, protocolMessageName(type));
+        app_.getJobQueue().createLoadEvent(jtPEER, protocolMessageName(type));
+
     fee_ = Resource::feeLightPeer;
     auto const category = TrafficCount::categorize(*m, type, true);
     overlay_.reportTraffic(category, true, static_cast<int>(size));
