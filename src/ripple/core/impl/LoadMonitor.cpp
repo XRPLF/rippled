@@ -23,104 +23,95 @@
 
 namespace ripple {
 
-/*
-
-TODO
-----
-
-- Use Journal for logging
-
-*/
-
-//------------------------------------------------------------------------------
-
-LoadMonitor::Stats::Stats()
-    : count(0), latencyAvg(0), latencyPeak(0), isOverloaded(false)
-{
-}
-
-//------------------------------------------------------------------------------
-
-LoadMonitor::LoadMonitor(beast::Journal j)
-    : mCounts(0)
-    , mLatencyEvents(0)
-    , mLatencyMSAvg(0)
-    , mLatencyMSPeak(0)
-    , mTargetLatencyAvg(0)
-    , mTargetLatencyPk(0)
-    , mLastUpdate(UptimeClock::now())
+LoadMonitor::LoadMonitor(
+    std::optional<std::chrono::milliseconds> targetAverageLatency,
+    std::optional<std::chrono::milliseconds> targetPeakLatency,
+    beast::Journal j)
+    : targetAverageLatency_([&targetAverageLatency]() {
+        using namespace std::chrono_literals;
+        if (targetAverageLatency.has_value() && targetAverageLatency == 0ms)
+            targetAverageLatency.reset();
+        return targetAverageLatency;
+    }())
+    , targetPeakLatency_([&targetPeakLatency]() {
+        using namespace std::chrono_literals;
+        if (targetPeakLatency.has_value() && targetPeakLatency == 0ms)
+            targetPeakLatency.reset();
+        return targetPeakLatency;
+    }())
+    , lastUpdate_(UptimeClock::now())
     , j_(j)
+    , eventCallback_([this](
+                         char const* name,
+                         std::chrono::steady_clock::duration run,
+                         std::chrono::steady_clock::duration wait) {
+        using namespace std::chrono;
+
+        auto const latency = [total = run + wait] {
+            // Don't include "jitter" as part of the latency
+            if (total < 5ms)
+                return 0ms;
+
+            return round<milliseconds>(total);
+        }();
+
+        if (latency > targetPeakLatency_.value_or(1s))
+        {
+            // Log at a higher severity if the latency is much greater than
+            // the peak latency we want to target.
+            auto mj = (latency > 2 * targetPeakLatency_.value_or(latency))
+                ? j_.warn()
+                : j_.info();
+
+            JLOG(mj) << "Job: " << name
+                     << " run: " << round<milliseconds>(run).count() << "ms"
+                     << " wait: " << round<milliseconds>(wait).count() << "ms";
+        }
+
+        addSamples(1, latency);
+    })
 {
 }
 
-// VFALCO NOTE WHY do we need "the mutex?" This dependence on
-//         a hidden global, especially a synchronization primitive,
-//         is a flawed design.
-//         It's not clear exactly which data needs to be protected.
-//
-// call with the mutex
 void
 LoadMonitor::update()
 {
     using namespace std::chrono_literals;
-    auto now = UptimeClock::now();
-    if (now == mLastUpdate)  // current
-        return;
 
-    // VFALCO TODO Why 8?
-    if ((now < mLastUpdate) || (now > (mLastUpdate + 8s)))
+    if (auto const now = UptimeClock::now(); now != lastUpdate_)
     {
-        // way out of date
-        mCounts = 0;
-        mLatencyEvents = 0;
-        mLatencyMSAvg = 0ms;
-        mLatencyMSPeak = 0ms;
-        mLastUpdate = now;
-        return;
+        // VFALCO TODO Why 8?
+        if ((now < lastUpdate_) || (now > (lastUpdate_ + 8s)))
+        {
+            // way out of date
+            samples_ = 0;
+            averageLatency_ = 0ms;
+            peakLatency_ = 0ms;
+            lastUpdate_ = now;
+            return;
+        }
+
+        // do exponential decay
+        /*
+            David:
+
+            "Imagine if you add 10 to something every second. And you
+             also reduce it by 1/4 every second. It will "idle" at 40,
+             correponding to 10 counts per second."
+        */
+        do
+        {
+            lastUpdate_ += 1s;
+            samples_ -= ((samples_ + 3) / 4);
+            averageLatency_ -= (averageLatency_ / 4);
+            peakLatency_ -= (peakLatency_ / 4);
+        } while (lastUpdate_ < now);
     }
-
-    // do exponential decay
-    /*
-        David:
-
-        "Imagine if you add 10 to something every second. And you
-         also reduce it by 1/4 every second. It will "idle" at 40,
-         correponding to 10 counts per second."
-    */
-    do
-    {
-        mLastUpdate += 1s;
-        mCounts -= ((mCounts + 3) / 4);
-        mLatencyEvents -= ((mLatencyEvents + 3) / 4);
-        mLatencyMSAvg -= (mLatencyMSAvg / 4);
-        mLatencyMSPeak -= (mLatencyMSPeak / 4);
-    } while (mLastUpdate < now);
-}
-
-void
-LoadMonitor::addLoadSample(LoadEvent const& s)
-{
-    using namespace std::chrono;
-
-    auto const total = s.runTime() + s.waitTime();
-    // Don't include "jitter" as part of the latency
-    auto const latency = total < 2ms ? 0ms : round<milliseconds>(total);
-
-    if (latency > 500ms)
-    {
-        auto mj = (latency > 1s) ? j_.warn() : j_.info();
-        JLOG(mj) << "Job: " << s.name()
-                 << " run: " << round<milliseconds>(s.runTime()).count() << "ms"
-                 << " wait: " << round<milliseconds>(s.waitTime()).count()
-                 << "ms";
-    }
-
-    addSamples(1, latency);
 }
 
 /* Add multiple samples
    @param count The number of samples to add
-   @param latencyMS The total number of milliseconds
+   @param latency The total number of milliseconds
 */
 void
 LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
@@ -128,77 +119,45 @@ LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
     std::lock_guard sl(mutex_);
 
     update();
-    mCounts += count;
-    mLatencyEvents += count;
-    mLatencyMSAvg += latency;
-    mLatencyMSPeak += latency;
+    samples_ += count;
+    averageLatency_ += latency;
+    peakLatency_ += latency;
 
-    auto const latencyPeak = mLatencyEvents * latency * 4 / count;
+    auto const latencyPeak = samples_ * latency * 4 / count;
 
-    if (mLatencyMSPeak < latencyPeak)
-        mLatencyMSPeak = latencyPeak;
-}
-
-void
-LoadMonitor::setTargetLatency(
-    std::chrono::milliseconds avg,
-    std::chrono::milliseconds pk)
-{
-    mTargetLatencyAvg = avg;
-    mTargetLatencyPk = pk;
-}
-
-bool
-LoadMonitor::isOverTarget(
-    std::chrono::milliseconds avg,
-    std::chrono::milliseconds peak)
-{
-    using namespace std::chrono_literals;
-    return (mTargetLatencyPk > 0ms && (peak > mTargetLatencyPk)) ||
-        (mTargetLatencyAvg > 0ms && (avg > mTargetLatencyAvg));
+    if (peakLatency_ < latencyPeak)
+        peakLatency_ = latencyPeak;
 }
 
 bool
 LoadMonitor::isOver()
 {
-    std::lock_guard sl(mutex_);
-
-    update();
-
-    if (mLatencyEvents == 0)
-        return 0;
-
-    return isOverTarget(
-        mLatencyMSAvg / (mLatencyEvents * 4),
-        mLatencyMSPeak / (mLatencyEvents * 4));
+    return getStats().isOverloaded;
 }
 
 LoadMonitor::Stats
 LoadMonitor::getStats()
 {
     using namespace std::chrono_literals;
-    Stats stats;
 
     std::lock_guard sl(mutex_);
 
     update();
 
-    stats.count = mCounts / 4;
+    Stats s;
+    s.count = samples_ / 4;
 
-    if (mLatencyEvents == 0)
+    if (samples_ != 0)
     {
-        stats.latencyAvg = 0ms;
-        stats.latencyPeak = 0ms;
-    }
-    else
-    {
-        stats.latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
-        stats.latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
+        s.averageLatency = averageLatency_ / (samples_ * 4);
+        s.peakLatency = peakLatency_ / (samples_ * 4);
     }
 
-    stats.isOverloaded = isOverTarget(stats.latencyAvg, stats.latencyPeak);
+    s.isOverloaded =
+        (s.averageLatency > targetAverageLatency_.value_or(s.averageLatency)) ||
+        (s.peakLatency > targetPeakLatency_.value_or(s.peakLatency));
 
-    return stats;
+    return s;
 }
 
 }  // namespace ripple

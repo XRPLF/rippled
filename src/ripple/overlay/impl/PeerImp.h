@@ -158,7 +158,7 @@ private:
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
-    std::unique_ptr<LoadEvent> load_event_;
+    std::optional<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
     // been sent to or received from this peer.
     hash_map<PublicKey, std::size_t> publisherListSequences_;
@@ -497,15 +497,6 @@ private:
         std::shared_ptr<protocol::TMTransaction> const& m,
         bool eraseTxQueue);
 
-    /** Handle protocol message with hashes of transactions that have not
-       been relayed by an upstream node down to its peers - request
-       transactions, which have not been relayed to this peer.
-       @param m protocol message with transactions' hashes
-     */
-    void
-    handleHaveTransactions(
-        std::shared_ptr<protocol::TMHaveTransactions> const& m);
-
     // Check if reduce-relay feature is enabled and
     // reduce_relay::WAIT_ON_BOOTUP time passed since the start
     bool
@@ -616,18 +607,6 @@ private:
         int flags,
         bool checkSignature,
         std::shared_ptr<STTx const> const& stx);
-
-    void
-    checkPropose(
-        bool isTrusted,
-        std::shared_ptr<protocol::TMProposeSet> const& packet,
-        RCLCxPeerPos peerPos);
-
-    void
-    checkValidation(
-        std::shared_ptr<STValidation> const& val,
-        uint256 const& key,
-        std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
     sendLedgerBase(

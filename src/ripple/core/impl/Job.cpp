@@ -23,102 +23,60 @@
 
 namespace ripple {
 
-Job::Job() : mType(jtINVALID), mJobIndex(0)
-{
-}
-
-Job::Job(JobType type, std::uint64_t index) : mType(type), mJobIndex(index)
-{
-}
-
 Job::Job(
     JobType type,
-    std::string const& name,
+    std::string name,
     std::uint64_t index,
-    LoadMonitor& lm,
-    std::function<void()> const& job)
-    : mType(type)
-    , mJobIndex(index)
-    , mJob(job)
-    , mName(name)
-    , m_queue_time(clock_type::now())
+    std::reference_wrapper<LoadSampler const> sample,
+    std::function<void()> job)
+    : type_(type)
+    , index_(index)
+    , queued_(clock_type::now())
+    , work_(std::move(job))
+    , loadEvent_(sample, std::move(name), false)
 {
-    m_loadEvent = std::make_shared<LoadEvent>(std::ref(lm), name, false);
+}
+
+Job::Job(Job&& other)
+    : type_(other.type_)
+    , index_(other.index_)
+    , queued_(other.queued_)
+    , work_(std::move(other.work_))
+    , loadEvent_(std::move(other.loadEvent_))
+
+{
 }
 
 JobType
 Job::getType() const
 {
-    return mType;
+    return type_;
 }
 
 Job::clock_type::time_point const&
 Job::queue_time() const
 {
-    return m_queue_time;
+    return queued_;
+}
+
+std::string const&
+Job::description() const
+{
+    return loadEvent_.name();
 }
 
 void
-Job::doJob()
+Job::execute()
 {
-    beast::setCurrentThreadName("Job: " + mName);
+    beast::setCurrentThreadName("Job: " + loadEvent_.name());
 
-    m_loadEvent->start();
-    m_loadEvent->setName(mName);
+    loadEvent_.start();
 
-    mJob();
+    work_();
 
     // Destroy the lambda, otherwise we won't include
     // its duration in the time measurement
-    mJob = nullptr;
-}
-
-bool
-Job::operator>(const Job& j) const
-{
-    if (mType < j.mType)
-        return true;
-
-    if (mType > j.mType)
-        return false;
-
-    return mJobIndex > j.mJobIndex;
-}
-
-bool
-Job::operator>=(const Job& j) const
-{
-    if (mType < j.mType)
-        return true;
-
-    if (mType > j.mType)
-        return false;
-
-    return mJobIndex >= j.mJobIndex;
-}
-
-bool
-Job::operator<(const Job& j) const
-{
-    if (mType < j.mType)
-        return false;
-
-    if (mType > j.mType)
-        return true;
-
-    return mJobIndex < j.mJobIndex;
-}
-
-bool
-Job::operator<=(const Job& j) const
-{
-    if (mType < j.mType)
-        return false;
-
-    if (mType > j.mType)
-        return true;
-
-    return mJobIndex <= j.mJobIndex;
+    work_ = nullptr;
 }
 
 }  // namespace ripple

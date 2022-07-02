@@ -32,33 +32,27 @@ template <class Generator>
 void
 rngfill(void* buffer, std::size_t bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    if constexpr (std::is_invocable_v<Generator, void(void*, std::size_t)>)
+        return g(buffer, bytes);
 
-    while (bytes >= sizeof(result_type))
+    // The number of random bytes returned per iteration:
+    auto constexpr bs = sizeof(decltype(g()));
+
+    auto ptr = reinterpret_cast<std::uint8_t*>(buffer);
+
+    std::size_t const count = bytes / bs;
+
+    for (std::size_t i = 0; i != count; ++i)
     {
         auto const v = g();
-        std::memcpy(buffer, &v, sizeof(v));
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
-        bytes -= sizeof(v);
+        memcpy(ptr + (i * bs), &v, bs);
     }
 
-    assert(bytes < sizeof(result_type));
-
-#ifdef __GNUC__
-    // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#endif
-
-    if (bytes > 0)
+    if (auto leftover = bytes - (count * bs))
     {
         auto const v = g();
-        std::memcpy(buffer, &v, bytes);
+        std::memcpy(ptr + (count * bs), &v, leftover);
     }
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 }
 
 template <

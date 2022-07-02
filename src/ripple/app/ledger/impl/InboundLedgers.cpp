@@ -190,24 +190,29 @@ public:
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "processLedgerData", [ledger]() {
-                        ledger->runData();
-                    });
+                    jtLEDGER_DATA,
+                    "ledger data:" + to_string(hash),
+                    [ledger]() { ledger->runData(); });
 
             return true;
         }
 
-        JLOG(j_.trace()) << "Got data for ledger " << hash
-                         << " which we're no longer acquiring";
-
-        // If it's state node data, stash it because it still might be
-        // useful.
         if (packet->type() == protocol::liAS_NODE)
         {
-            app_.getJobQueue().addJob(
-                jtLEDGER_DATA, "gotStaleData", [this, packet]() {
-                    gotStaleData(packet);
-                });
+            auto const overloaded = app_.getJobQueue().isOverloaded();
+
+            JLOG(j_.trace())
+                << (overloaded ? "Eliding processing of" : "Processing")
+                << " data (" << packet->nodes().size() << ") for " << hash
+                << " which we're no longer acquiring.";
+
+            if (!overloaded)
+            {
+                app_.getJobQueue().addJob(
+                    jtLEDGER_DATA,
+                    "stale data: " + to_string(hash),
+                    [this, packet]() { gotStaleData(packet); });
+            }
         }
 
         return false;

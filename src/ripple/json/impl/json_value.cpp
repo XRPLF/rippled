@@ -231,6 +231,12 @@ Value::Value(const char* value) : type_(stringValue), allocated_(true)
     value_.string_ = valueAllocator()->duplicateStringValue(value);
 }
 
+Value::Value(std::string_view value) : type_(stringValue), allocated_(true)
+{
+    value_.string_ = valueAllocator()->duplicateStringValue(
+        value.data(), (unsigned int)value.size());
+}
+
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
     value_.string_ = valueAllocator()->duplicateStringValue(
@@ -870,6 +876,18 @@ const Value&
 Value::operator[](std::string const& key) const
 {
     return (*this)[key.c_str()];
+}
+
+Value&
+Value::operator[](std::string_view key)
+{
+    return (*this)[std::string(key)];
+}
+
+const Value&
+Value::operator[](std::string_view key) const
+{
+    return (*this)[std::string(key)];
 }
 
 Value&

@@ -22,46 +22,52 @@
 
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/core/LoadEvent.h>
 #include <chrono>
+#include <functional>
 #include <mutex>
+#include <optional>
 
 namespace ripple {
 
-// Monitors load levels and response times
+using LoadSampler = std::function<void(
+    char const*,
+    std::chrono::steady_clock::duration,
+    std::chrono::steady_clock::duration)>;
 
-// VFALCO TODO Rename this. Having both LoadManager and LoadMonitor is
-// confusing.
-//
+/** Monitors load levels and response times
+
+    @todo Consider renaming this, since having both a LoadManager and a
+          LoadMonitor is confusing, especially considering that they do
+          different things.
+ */
 class LoadMonitor
 {
 public:
-    explicit LoadMonitor(beast::Journal j);
+    struct Stats
+    {
+        std::uint64_t count = 0;
 
-    void
-    addLoadSample(LoadEvent const& sample);
+        std::chrono::milliseconds averageLatency{};
+        std::chrono::milliseconds peakLatency{};
+
+        bool isOverloaded = false;
+    };
+
+    explicit LoadMonitor(
+        std::optional<std::chrono::milliseconds> targetAverageLatency,
+        std::optional<std::chrono::milliseconds> targetPeakLatency,
+        beast::Journal j);
+
+    LoadMonitor(LoadMonitor const& other) = delete;
+    LoadMonitor&
+    operator=(LoadMonitor const& other) = delete;
+
+    LoadMonitor(LoadMonitor&& other) = delete;
+    LoadMonitor&
+    operator=(LoadMonitor&& other) = delete;
 
     void
     addSamples(int count, std::chrono::milliseconds latency);
-
-    void
-    setTargetLatency(
-        std::chrono::milliseconds avg,
-        std::chrono::milliseconds pk);
-
-    bool
-    isOverTarget(std::chrono::milliseconds avg, std::chrono::milliseconds peak);
-
-    // VFALCO TODO make this return the values in a struct.
-    struct Stats
-    {
-        Stats();
-
-        std::uint64_t count;
-        std::chrono::milliseconds latencyAvg;
-        std::chrono::milliseconds latencyPeak;
-        bool isOverloaded;
-    };
 
     Stats
     getStats();
@@ -69,20 +75,27 @@ public:
     bool
     isOver();
 
+    /** A reference to a function object used to report performance events. */
+    std::reference_wrapper<LoadSampler const>
+    sample()
+    {
+        return std::cref(eventCallback_);
+    }
+
 private:
     void
     update();
 
     std::mutex mutex_;
 
-    std::uint64_t mCounts;
-    int mLatencyEvents;
-    std::chrono::milliseconds mLatencyMSAvg;
-    std::chrono::milliseconds mLatencyMSPeak;
-    std::chrono::milliseconds mTargetLatencyAvg;
-    std::chrono::milliseconds mTargetLatencyPk;
-    UptimeClock::time_point mLastUpdate;
+    std::uint64_t samples_ = 0;
+    std::chrono::milliseconds averageLatency_{};
+    std::chrono::milliseconds peakLatency_{};
+    std::optional<std::chrono::milliseconds> targetAverageLatency_{};
+    std::optional<std::chrono::milliseconds> targetPeakLatency_{};
+    UptimeClock::time_point lastUpdate_;
     beast::Journal const j_;
+    LoadSampler eventCallback_;
 };
 
 }  // namespace ripple

@@ -120,23 +120,28 @@ public:
 
         auto& jq = env.app().getJobQueue();
 
-        static int const N = 4;
-        std::array<std::shared_ptr<JobQueue::Coro>, N> a;
+        // The test assumes that all the threads and coroutines it launches
+        // all run in a single thread.
+        BEAST_EXPECT(jq.getThreadCount() == 1);
+
+        std::array<std::shared_ptr<JobQueue::Coro>, 4> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
 
         gate g;
+
         jq.addJob(jtCLIENT, "LocalValue-Test", [&]() {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
+
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(*lv == -1);
 
-        for (int i = 0; i < N; ++i)
+        for (int i = 0; i < a.size(); ++i)
         {
             jq.postCoro(jtCLIENT, "Coroutine-Test", [&, id = i](auto const& c) {
                 a[id] = c;
@@ -154,12 +159,14 @@ public:
             BEAST_EXPECT(g.wait_for(5s));
             a[i]->join();
         }
+
         for (auto const& c : a)
         {
             c->post();
             BEAST_EXPECT(g.wait_for(5s));
             c->join();
         }
+
         for (auto const& c : a)
         {
             c->post();
@@ -170,6 +177,7 @@ public:
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
+
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(*lv == -1);
     }

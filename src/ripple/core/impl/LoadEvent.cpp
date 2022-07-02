@@ -18,23 +18,55 @@
 //==============================================================================
 
 #include <ripple/core/LoadEvent.h>
-#include <ripple/core/LoadMonitor.h>
 #include <cassert>
-#include <iomanip>
 
 namespace ripple {
 
 LoadEvent::LoadEvent(
-    LoadMonitor& monitor,
-    std::string const& name,
+    std::reference_wrapper<LoadSampler const> callback,
+    std::string name,
     bool shouldStart)
-    : monitor_(monitor)
-    , running_(shouldStart)
-    , name_(name)
-    , mark_{std::chrono::steady_clock::now()}
+    : name_(std::move(name))
+    , callback_(callback)
+    , mark_(std::chrono::steady_clock::now())
     , timeWaiting_{}
     , timeRunning_{}
+    , running_(shouldStart)
+    , neutered_(false)
 {
+}
+
+LoadEvent::LoadEvent(LoadEvent&& other)
+    : name_(std::move(other.name_))
+    , callback_(other.callback_)
+    , mark_(other.mark_)
+    , timeWaiting_(other.timeWaiting_)
+    , timeRunning_(other.timeRunning_)
+    , running_(other.running_)
+    , neutered_(false)
+{
+    other.running_ = false;
+    other.neutered_ = true;
+}
+
+LoadEvent&
+LoadEvent::operator=(LoadEvent&& other)
+{
+    if (this != &other)
+    {
+        name_ = std::move(other.name_);
+        callback_ = other.callback_;
+        running_ = other.running_;
+        mark_ = other.mark_;
+        timeWaiting_ = other.timeWaiting_;
+        timeRunning_ = other.timeRunning_;
+
+        // Leave the moved-from object in a sane but "neutered" state.
+        other.running_ = false;
+        other.neutered_ = true;
+    }
+
+    return *this;
 }
 
 LoadEvent::~LoadEvent()
@@ -49,27 +81,11 @@ LoadEvent::name() const
     return name_;
 }
 
-std::chrono::steady_clock::duration
-LoadEvent::waitTime() const
-{
-    return timeWaiting_;
-}
-
-std::chrono::steady_clock::duration
-LoadEvent::runTime() const
-{
-    return timeRunning_;
-}
-
-void
-LoadEvent::setName(std::string const& name)
-{
-    name_ = name;
-}
-
 void
 LoadEvent::start()
 {
+    assert(!neutered_);
+
     auto const now = std::chrono::steady_clock::now();
 
     // If we had already called start, this call will
@@ -83,6 +99,7 @@ LoadEvent::start()
 void
 LoadEvent::stop()
 {
+    assert(!neutered_);
     assert(running_);
 
     auto const now = std::chrono::steady_clock::now();
@@ -91,7 +108,8 @@ LoadEvent::stop()
     mark_ = now;
     running_ = false;
 
-    monitor_.addLoadSample(*this);
+    if (!neutered_)
+        callback_(name_.c_str(), timeRunning_, timeWaiting_);
 }
 
 }  // namespace ripple

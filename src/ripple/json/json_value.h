@@ -24,6 +24,7 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 /** \brief JSON (JavaScript Object Notation).
@@ -227,6 +228,7 @@ public:
      */
     Value(const StaticString& value);
     Value(std::string const& value);
+    Value(std::string_view value);
     Value(bool value);
     Value(const Value& other);
     ~Value();
@@ -347,6 +349,10 @@ public:
     /// that name.
     const Value&
     operator[](std::string const& key) const;
+    Value&
+    operator[](std::string_view key);
+    const Value&
+    operator[](std::string_view key) const;
     /** \brief Access an object value by name, create a null member if it does
      not exist.
 
