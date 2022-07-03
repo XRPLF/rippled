@@ -121,7 +121,8 @@ AMMBid::applyGuts(Sandbox& sb)
     auto const amm = getAMMSle(sb, ctx_.tx[sfAMMHash]);
     assert(amm);
     auto const ammAccount = amm->getAccountID(sfAMMAccount);
-    auto const lptAMMBalance = getLPTokens(sb, ammAccount, ctx_.journal);
+    auto const lptAMMBalance =
+        getAMMLPTokens(sb, ctx_.tx[sfAMMHash], ctx_.journal);
     auto const lpTokens = getLPTokens(sb, ammAccount, account_, ctx_.journal);
     if (!amm->isFieldPresent(sfAuctionSlot))
         amm->makeFieldPresent(sfAuctionSlot);
@@ -165,18 +166,17 @@ AMMBid::applyGuts(Sandbox& sb)
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
             auctionSlot.setFieldArray(
                 sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
-        // Burn the remaining bid price
-        auto res = redeemIOU(
-            sb,
-            account_,
-            toSTAmount(lpTokens.issue(), burn),
-            lpTokens.issue(),
-            ctx_.journal);
+        // Burn the remaining bid amount
+        auto const saBurn = toSTAmount(lpTokens.issue(), burn);
+        auto res =
+            redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
         }
+        amm->setFieldAmount(
+            sfLPTokenBalance, amm->getFieldAmount(sfLPTokenBalance) - saBurn);
         sb.update(amm);
         return tesSUCCESS;
     };

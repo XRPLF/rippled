@@ -61,18 +61,18 @@ private:
     /** Deposit requested assets and tokens amount into LP account.
      * @param view
      * @param ammAccount AMM account
-     * @param asset1 deposit amount
-     * @param asset2 deposit amount
-     * @param lpTokens LPT deposit amount
+     * @param asset1Deposit deposit amount
+     * @param asset2Deposit deposit amount
+     * @param lpTokensDeposit amount of tokens to deposit
      * @return
      */
-    TER
+    std::pair<TER, STAmount>
     deposit(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1,
-        std::optional<STAmount> const& asset2,
-        STAmount const& lpTokens);
+        STAmount const& asset1Deposit,
+        std::optional<STAmount> const& asset2Deposit,
+        STAmount const& lpTokensDeposit);
 
     /** Equal asset deposit for the specified share of the AMM instance pools.
      * Depositing assets proportionally doesn't change the assets ratio and
@@ -83,17 +83,17 @@ private:
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param tokensPct percentage of the AMM instance pool in basis points
+     * @param lpTokensDeposit amount of tokens to deposit
      * @return
      */
-    TER
+    std::pair<TER, STAmount>
     equalDepositTokens(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& asset2Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& tokens);
+        STAmount const& lpTokensDeposit);
 
     /** Equal asset deposit with the constraint on the maximum amount of
      * both assets that the trader is willing to deposit. The fee is not
@@ -107,7 +107,7 @@ private:
      * @param asset2In maximum asset2 deposit amount
      * @return
      */
-    TER
+    std::pair<TER, STAmount>
     equalDepositLimit(
         Sandbox& view,
         AccountID const& ammAccount,
@@ -126,7 +126,7 @@ private:
      * @param tfee trading fee in basis points
      * @return
      */
-    TER
+    std::pair<TER, STAmount>
     singleDeposit(
         Sandbox& view,
         AccountID const& ammAccount,
@@ -142,17 +142,17 @@ private:
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param tokens number of tokens to deposit
+     * @param lpTokensDeposit amount of tokens to deposit
      * @param tfee trading fee in basis points
      * @return
      */
-    TER
+    std::pair<TER, STAmount>
     singleDepositTokens(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& tokens,
+        STAmount const& lpTokensDeposit,
         std::uint16_t tfee);
 
     /** Single asset deposit with the constraint that the effective price
@@ -166,7 +166,7 @@ private:
      * @param tfee
      * @return
      */
-    TER
+    std::pair<TER, STAmount>
     singleDepositEPrice(
         Sandbox& view,
         AccountID const& ammAccount,

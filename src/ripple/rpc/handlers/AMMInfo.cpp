@@ -112,13 +112,8 @@ doAMMInfo(RPC::JsonContext& context)
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
-        *ledger,
-        ammAccountID,
-        accountID,
-        std::nullopt,
-        std::nullopt,
-        context.j);
+    auto const [asset1Balance, asset2Balance, lptAMMBalance] =
+        getAMMBalances(*ledger, amm, ammAccountID, accountID, context.j);
 
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
@@ -250,13 +245,8 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] = getAMMBalances(
-        *ledger,
-        ammAccountID,
-        accountID,
-        std::nullopt,
-        std::nullopt,
-        context.j);
+    auto const [asset1Balance, asset2Balance, lptAMMBalance] =
+        getAMMBalances(*ledger, amm, ammAccountID, accountID, context.j);
 
     auto asset1 = result.mutable_asset1();
     ripple::RPC::convert(*asset1, asset1Balance);

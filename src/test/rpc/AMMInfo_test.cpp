@@ -98,14 +98,14 @@ public:
         // Invalid LP account id
         proc([&](AMM& ammAlice, Env&) {
             Account bogie("bogie");
-            auto const jv = ammAlice.ammRpcInfo(bogie.human());
+            auto const jv = ammAlice.ammRpcInfo(bogie.id());
             BEAST_EXPECT(
                 jv.has_value() &&
                 (*jv)[jss::error_message] == "Account malformed.");
         });
         proc([&](AMM& ammAlice, Env&) {
             Account bogie("bogie");
-            auto const jv = ammAlice.ammgRPCInfo(bogie.human());
+            auto const jv = ammAlice.ammgRPCInfo(bogie.id());
             BEAST_EXPECT(
                 jv.has_value() &&
                 (*jv)[jss::error_message] == "Account malformed.");

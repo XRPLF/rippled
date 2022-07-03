@@ -49,39 +49,25 @@ std::pair<STAmount, STAmount>
 getAMMPoolBalances(
     ReadView const& view,
     AccountID const& ammAccountID,
-    Issue const& in,
-    Issue const& out,
+    Issue const& issue1,
+    Issue const& issue2,
     beast::Journal const j)
 {
     auto const assetInBalance = accountHolds(
         view,
         ammAccountID,
-        in.currency,
-        in.account,
+        issue1.currency,
+        issue1.account,
         FreezeHandling::fhZERO_IF_FROZEN,
         j);
     auto const assetOutBalance = accountHolds(
         view,
         ammAccountID,
-        out.currency,
-        out.account,
+        issue2.currency,
+        issue2.account,
         FreezeHandling::fhZERO_IF_FROZEN,
         j);
     return std::make_pair(assetInBalance, assetOutBalance);
-}
-
-template <typename F>
-void
-forEeachAMMTrustLine(ReadView const& view, AccountID const& ammAccountID, F&& f)
-{
-    forEachItem(view, ammAccountID, [&](std::shared_ptr<SLE const> const& sle) {
-        if (sle && sle->getType() == ltRIPPLE_STATE)
-        {
-            auto const line =
-                ripple::PathFindTrustLine::makeItem(ammAccountID, sle);
-            f(*line);
-        }
-    });
 }
 
 std::tuple<STAmount, STAmount, STAmount>
@@ -89,70 +75,73 @@ getAMMBalances(
     ReadView const& view,
     AccountID const& ammAccountID,
     std::optional<AccountID> const& lpAccountID,
-    std::optional<Issue> const& issue1,
-    std::optional<Issue> const& issue2,
+    Issue const& issue1,
+    Issue const& issue2,
     beast::Journal const j)
 {
-    std::optional<Issue> issue1Opt{};
-    std::optional<Issue> issue2Opt = xrpIssue();
-    auto const lptIssue = calcLPTIssue(ammAccountID);
-    // tokens of all LP's
-    STAmount ammLPTokens{lptIssue, 0};
-    forEeachAMMTrustLine(
-        view, ammAccountID, [&](ripple::PathFindTrustLine const& line) {
-            auto balance = line.getBalance();
-            if (balance.getCurrency() == lptIssue.currency)
-            {
-                balance.setIssuer(ammAccountID);
-                if (balance.negative())
-                    balance.negate();
-                ammLPTokens += balance;
-                return true;
-            }
-            if (!issue1Opt)
-            {
-                issue1Opt = balance.issue();
-                issue1Opt->account = line.getAccountIDPeer();
-            }
-            else
-            {
-                issue2Opt = balance.issue();
-                issue2Opt->account = line.getAccountIDPeer();
-            }
-            return true;
-        });
-    auto issue = [](auto const& issue) { return issue ? *issue : noIssue(); };
-    if (!issue1Opt)
-        return std::make_tuple(
-            STAmount{issue(issue1), 0},
-            STAmount{issue(issue2), 0},
-            STAmount{lptIssue, 0});
-    // re-order if needed
-    if ((issue1 && *issue1Opt != *issue1) ||
-        (!issue1 && issue2 && *issue2Opt != *issue2))
-        issue1Opt.swap(issue2Opt);
-    // validate issues
-    if ((issue1 && *issue1Opt != *issue1) || (issue2 && *issue2Opt != *issue2))
-        return std::make_tuple(
-            STAmount{issue(issue1), 0},
-            STAmount{issue(issue2), 0},
-            STAmount{lptIssue, 0});
-    auto const [balance1, balance2] =
-        getAMMPoolBalances(view, ammAccountID, *issue1Opt, *issue2Opt, j);
+    auto const lptAMMBalance =
+        getAMMLPTokens(view, calcAMMGroupHash(issue1, issue2), j);
+    if (lptAMMBalance == STAmount{noIssue()})
+        return {STAmount{noIssue()}, STAmount{noIssue()}, STAmount{noIssue()}};
+    auto const [asset1, asset2] =
+        getAMMPoolBalances(view, ammAccountID, issue1, issue2, j);
+    if (lpAccountID.has_value())
+    {
+        auto const lpTokens = getLPTokens(view, ammAccountID, *lpAccountID, j);
+        auto const frac = divide(lpTokens, lptAMMBalance, noIssue());
+        auto const lpAsset1 = multiply(asset1, frac, asset1.issue());
+        auto const lpAsset2 = multiply(asset2, frac, asset2.issue());
+        return {lpAsset1, lpAsset2, lpTokens};
+    }
+    return {asset1, asset2, lptAMMBalance};
+}
 
-    if (!lpAccountID)
-        return {balance1, balance2, ammLPTokens};
+std::tuple<STAmount, STAmount, STAmount>
+getAMMBalances(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& ammSle,
+    AccountID const& ammAccountID,
+    std::optional<AccountID> const& lpAccountID,
+    std::optional<Issue> const& optIssue1,
+    std::optional<Issue> const& optIssue2,
+    beast::Journal const j)
+{
+    if (!ammSle)
+        return {STAmount{noIssue()}, STAmount{noIssue()}, STAmount{noIssue()}};
+    if (optIssue1 && optIssue2)
+        return getAMMBalances(
+            view, ammAccountID, lpAccountID, *optIssue1, *optIssue2, j);
+    auto const [issue1, issue2] = [&]() -> std::pair<Issue, Issue> {
+        auto const [issue1, issue2] = getTokensIssue(ammSle);
+        if (optIssue1)
+        {
+            if (*optIssue1 == issue1)
+                return {issue1, issue2};
+            return {issue2, issue1};
+        }
+        else if (optIssue2)
+        {
+            if (*optIssue2 == issue2)
+                return {issue2, issue1};
+            return {issue1, issue2};
+        }
+        return {issue1, issue2};
+    }();
+    return getAMMBalances(view, ammAccountID, lpAccountID, issue1, issue2, j);
+}
 
-    auto const lpTokens = getLPTokens(view, ammAccountID, *lpAccountID, j);
-    if (lpTokens <= beast::zero)
-        return std::make_tuple(
-            STAmount{*issue1Opt, 0},
-            STAmount{*issue2Opt, 0},
-            STAmount{lptIssue, 0});
-    auto const frac = divide(lpTokens, ammLPTokens, noIssue());
-    auto const lpBalance1 = multiply(balance1, frac, balance1.issue());
-    auto const lpBalance2 = multiply(balance2, frac, balance2.issue());
-    return {lpBalance1, lpBalance2, lpTokens};
+std::tuple<STAmount, STAmount, STAmount>
+getAMMBalances(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& ammSle,
+    AccountID const& ammAccountID,
+    std::optional<AccountID> const& lpAccountID,
+    beast::Journal const j)
+{
+    if (!ammSle)
+        return {STAmount{noIssue()}, STAmount{noIssue()}, STAmount{noIssue()}};
+    auto const [issue1, issue2] = getTokensIssue(ammSle);
+    return getAMMBalances(view, ammAccountID, lpAccountID, issue1, issue2, j);
 }
 
 STAmount
@@ -173,16 +162,11 @@ getLPTokens(
 }
 
 STAmount
-getLPTokens(
-    ReadView const& view,
-    AccountID const& ammAccountID,
-    beast::Journal const j)
+getAMMLPTokens(ReadView const& view, uint256 ammHash, beast::Journal const j)
 {
-    auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
-        view, ammAccountID, std::nullopt, std::nullopt, std::nullopt, j);
-    (void)asset1;
-    (void)asset2;
-    return lptAMMBalance;
+    if (auto const ammSle = view.read(keylet::amm(ammHash)))
+        return ammSle->getFieldAmount(sfLPTokenBalance);
+    return STAmount{noIssue()};
 }
 
 std::optional<TEMcodes>
@@ -208,19 +192,21 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a)
 std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash)
 {
-    auto const sle = view.read(keylet::amm(ammHash));
-    if (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount))))
+    if (auto const sle = view.read(keylet::amm(ammHash));
+        (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount)))))
         return nullptr;
-    return sle;
+    else
+        return sle;
 }
 
 std::shared_ptr<STLedgerEntry>
 getAMMSle(Sandbox& view, uint256 ammHash)
 {
-    auto const sle = view.peek(keylet::amm(ammHash));
-    if (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount))))
+    if (auto const sle = view.peek(keylet::amm(ammHash));
+        (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount)))))
         return nullptr;
-    return sle;
+    else
+        return sle;
 }
 
 bool
@@ -248,21 +234,46 @@ getTradingFee(
     std::shared_ptr<SLE const> const& ammSle,
     AccountID const& account)
 {
-    if (ammSle && ammSle->isFieldPresent(sfAuctionSlot))
+    if (ammSle)
     {
-        auto const& auctionSlot =
-            static_cast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
-        if (auctionSlot.isFieldPresent(sfAccount) &&
-            auctionSlot.getAccountID(sfAccount) == account)
-            return auctionSlot.getFieldU32(sfDiscountedFee);
-        if (auctionSlot.isFieldPresent(sfAuthAccounts))
+        if (ammSle->isFieldPresent(sfAuctionSlot))
         {
-            for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
-                if (acct.getAccountID(sfAccount) == account)
-                    return auctionSlot.getFieldU32(sfDiscountedFee);
+            auto const& auctionSlot = static_cast<STObject const&>(
+                ammSle->peekAtField(sfAuctionSlot));
+            if (auctionSlot.isFieldPresent(sfAccount) &&
+                auctionSlot.getAccountID(sfAccount) == account)
+                return auctionSlot.getFieldU32(sfDiscountedFee);
+            if (auctionSlot.isFieldPresent(sfAuthAccounts))
+            {
+                for (auto const& acct :
+                     auctionSlot.getFieldArray(sfAuthAccounts))
+                    if (acct.getAccountID(sfAccount) == account)
+                        return auctionSlot.getFieldU32(sfDiscountedFee);
+            }
         }
+        return ammSle->getFieldU32(sfTradingFee);
     }
-    return ammSle->getFieldU32(sfTradingFee);
+    return 0;
+}
+
+std::pair<Issue, Issue>
+getTokensIssue(std::shared_ptr<SLE const> const& ammSle)
+{
+    if (ammSle)
+    {
+        auto const ammToken =
+            static_cast<STObject const&>(ammSle->peekAtField(sfAMMToken));
+        auto getIssue = [&](SField const& field) {
+            auto const token =
+                static_cast<STObject const&>(ammToken.peekAtField(field));
+            Issue issue;
+            issue.currency = token.getFieldH160(sfTokenCurrency);
+            issue.account = token.getFieldH160(sfTokenIssuer);
+            return issue;
+        };
+        return {getIssue(sfToken1), getIssue(sfToken2)};
+    }
+    return {noIssue(), noIssue()};
 }
 
 }  // namespace ripple

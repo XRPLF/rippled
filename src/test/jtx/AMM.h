@@ -105,7 +105,7 @@ public:
      */
     std::optional<Json::Value>
     ammRpcInfo(
-        std::optional<Account> const& account = {},
+        std::optional<AccountID> const& account = {},
         std::optional<std::string> const& ledgerIndex = {},
         std::optional<uint256> const& ammHash = {},
         bool useAssets = false) const;
@@ -114,7 +114,7 @@ public:
      */
     std::optional<Json::Value>
     ammgRPCInfo(
-        std::optional<Account> const& account = {},
+        std::optional<AccountID> const& account = {},
         std::optional<std::string> const& ledgerIndex = {},
         std::optional<uint256> const& ammHash = {},
         bool useAssets = false) const;
@@ -124,17 +124,22 @@ public:
     std::tuple<STAmount, STAmount, STAmount>
     ammBalances(
         std::optional<AccountID> const& account,
-        std::optional<Issue> const& issue1 = {},
-        std::optional<Issue> const& issue2 = {}) const;
+        Issue const& issue1,
+        Issue const& issue2) const;
 
     /** Verify the AMM balances.
      */
     bool
     expectBalances(
         STAmount const& asset1,
-        std::optional<STAmount> const& asset2 = std::nullopt,
-        std::optional<IOUAmount> const& lpt = std::nullopt,
+        STAmount const& asset2,
+        IOUAmount const& lpt,
         std::optional<AccountID> const& account = std::nullopt) const;
+
+    /** Expect all balances 0
+     */
+    bool
+    expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
 
     bool
     expectAuctionSlot(
@@ -157,7 +162,7 @@ public:
         std::optional<Account> const& account = {});
 
     bool
-    accountRootExists() const;
+    ammExists() const;
 
     void
     deposit(

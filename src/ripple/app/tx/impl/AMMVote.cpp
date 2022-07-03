@@ -83,7 +83,8 @@ AMMVote::applyGuts(Sandbox& sb)
     auto const amm = getAMMSle(sb, ctx_.tx[sfAMMHash]);
     assert(amm);
     auto const ammAccount = amm->getAccountID(sfAMMAccount);
-    auto const lptAMMBalance = getLPTokens(sb, ammAccount, ctx_.journal);
+    auto const lptAMMBalance =
+        getAMMLPTokens(sb, ctx_.tx[sfAMMHash], ctx_.journal);
     auto const lpTokensNew =
         getLPTokens(sb, ammAccount, account_, ctx_.journal);
     if (lpTokensNew == beast::zero)

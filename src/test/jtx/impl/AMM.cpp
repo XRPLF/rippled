@@ -86,14 +86,14 @@ AMM::create(std::uint32_t tfee)
 
 std::optional<Json::Value>
 AMM::ammRpcInfo(
-    std::optional<Account> const& account,
+    std::optional<AccountID> const& account,
     std::optional<std::string> const& ledgerIndex,
     std::optional<uint256> const& ammHash,
     bool useAssets) const
 {
     Json::Value jv;
     if (account)
-        jv[jss::account] = account->human();
+        jv[jss::account] = to_string(*account);
     if (ledgerIndex)
         jv[jss::ledger_index] = *ledgerIndex;
     if (useAssets)
@@ -117,7 +117,7 @@ AMM::ammRpcInfo(
 
 std::optional<Json::Value>
 AMM::ammgRPCInfo(
-    const std::optional<Account>& account,
+    const std::optional<AccountID>& account,
     const std::optional<std::string>& ledgerIndex,
     std::optional<uint256> const& ammHash,
     bool useAssets) const
@@ -180,8 +180,8 @@ AMM::ammgRPCInfo(
 std::tuple<STAmount, STAmount, STAmount>
 AMM::ammBalances(
     std::optional<AccountID> const& account,
-    std::optional<Issue> const& issue1,
-    std::optional<Issue> const& issue2) const
+    Issue const& issue1,
+    Issue const& issue2) const
 {
     return getAMMBalances(
         *env_.current(), ammAccountID_, account, issue1, issue2, env_.journal);
@@ -190,19 +190,22 @@ AMM::ammBalances(
 bool
 AMM::expectBalances(
     STAmount const& asset1,
-    std::optional<STAmount> const& asset2,
-    std::optional<IOUAmount> const& lpt,
+    STAmount const& asset2,
+    IOUAmount const& lpt,
     std::optional<AccountID> const& account) const
 {
-    STAmount a1;
-    STAmount a2;
-    STAmount l;
-    std::tie(a1, a2, l) = ammBalances(
-        account,
-        asset1.issue(),
-        asset2 ? std::optional<Issue>(asset2->issue()) : std::nullopt);
-    return a1 == asset1 && (!asset2 || a2 == *asset2) &&
-        (!lpt || *lpt == l.iou());
+    auto const [a1, a2, l] =
+        ammBalances(account, asset1.issue(), asset2.issue());
+    return a1 == asset1 && a2 == asset2 && l.iou() == lpt;
+}
+
+bool
+AMM::expectLPTokens(AccountID const& account, IOUAmount const& eTokens) const
+{
+    STAmount const saTokens{eTokens, lptIssue_};
+    auto const tokens =
+        getLPTokens(*env_.current(), ammAccountID_, account, env_.journal);
+    return saTokens == tokens;
 }
 
 bool
@@ -230,9 +233,11 @@ AMM::expectAuctionSlot(
 }
 
 bool
-AMM::accountRootExists() const
+AMM::ammExists() const
 {
-    return env_.current()->read(keylet::account(ammAccountID_)) != nullptr;
+    return env_.current()->read(keylet::account(ammAccountID_)) != nullptr &&
+        env_.current()->read(keylet::amm(
+            calcAMMGroupHash(asset1_.issue(), asset2_.issue()))) != nullptr;
 }
 
 bool
