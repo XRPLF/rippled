@@ -37,7 +37,7 @@ class AMM
     Env& env_;
     Account const creatorAccount_;
     uint256 ammHash_;
-    AccountID ammAccountID_;
+    Account ammAccount_;
     Issue lptIssue_;
     STAmount asset1_;
     STAmount asset2_;
@@ -199,10 +199,10 @@ public:
         std::vector<Account> const& authAccounts = {},
         std::optional<ter> const& ter = {});
 
-    AccountID
+    Account const&
     ammAccount() const
     {
-        return ammAccountID_;
+        return ammAccount_;
     }
 
     uint256

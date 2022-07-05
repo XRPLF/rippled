@@ -40,7 +40,7 @@ AMM::AMM(
     : env_(env)
     , creatorAccount_(account)
     , ammHash_(ripple::calcAMMGroupHash(asset1.issue(), asset2.issue()))
-    , ammAccountID_{}
+    , ammAccount_{to_string(ripple::rand_int())}
     , asset1_(asset1)
     , asset2_(asset2)
     , ter_(ter)
@@ -63,9 +63,8 @@ AMM::AMM(
 void
 AMM::create(std::uint32_t tfee)
 {
-    Account amm(to_string(ripple::rand_int()));
     Json::Value jv;
-    jv[jss::AMMAccount] = amm.human();
+    jv[jss::AMMAccount] = ammAccount_.human();
     jv[jss::Account] = creatorAccount_.human();
     jv[jss::Asset1] = asset1_.getJson(JsonOptions::none);
     jv[jss::Asset2] = asset2_.getJson(JsonOptions::none);
@@ -80,8 +79,7 @@ AMM::create(std::uint32_t tfee)
         env_(jv, *ter_);
     else
         env_(jv);
-    ammAccountID_ = amm;
-    lptIssue_ = ripple::calcLPTIssue(ammAccountID_);
+    lptIssue_ = ripple::calcLPTIssue(ammAccount_.id());
 }
 
 std::optional<Json::Value>
@@ -230,7 +228,7 @@ AMM::expectAuctionSlot(
 bool
 AMM::ammExists() const
 {
-    return env_.current()->read(keylet::account(ammAccountID_)) != nullptr &&
+    return env_.current()->read(keylet::account(ammAccount_.id())) != nullptr &&
         env_.current()->read(keylet::amm(
             calcAMMGroupHash(asset1_.issue(), asset2_.issue()))) != nullptr;
 }
@@ -314,7 +312,7 @@ AMM::deposit(
 {
     ter_ = ter;
     Json::Value jv;
-    STAmount saTokens{calcLPTIssue(ammAccountID_), tokens, 0};
+    STAmount saTokens{calcLPTIssue(ammAccount_.id()), tokens, 0};
     saTokens.setJson(jv[jss::LPTokens]);
     if (asset1In)
         asset1In->setJson(jv[jss::Asset1In]);
@@ -371,7 +369,7 @@ AMM::withdraw(
     }
     else
     {
-        STAmount saTokens{calcLPTIssue(ammAccountID_), tokens, 0};
+        STAmount saTokens{calcLPTIssue(ammAccount_.id()), tokens, 0};
         saTokens.setJson(jv[jss::LPTokens]);
     }
     if (asset1Out)
@@ -429,12 +427,12 @@ AMM::bid(
     jv[jss::AMMHash] = to_string(ammHash_);
     if (minSlotPrice)
     {
-        STAmount saTokens{calcLPTIssue(ammAccountID_), *minSlotPrice, 0};
+        STAmount saTokens{calcLPTIssue(ammAccount_.id()), *minSlotPrice, 0};
         saTokens.setJson(jv[jss::MinSlotPrice]);
     }
     if (maxSlotPrice)
     {
-        STAmount saTokens{calcLPTIssue(ammAccountID_), *maxSlotPrice, 0};
+        STAmount saTokens{calcLPTIssue(ammAccount_.id()), *maxSlotPrice, 0};
         saTokens.setJson(jv[jss::MaxSlotPrice]);
     }
     if (authAccounts.size() > 0)

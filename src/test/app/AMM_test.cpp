@@ -918,6 +918,26 @@ private:
     }
 
     void
+    testPayment()
+    {
+        testcase("Payment");
+        using namespace jtx;
+
+        // Can't pay into/out of AMM account.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.memoize(ammAlice.ammAccount());
+            env(pay(carol, ammAlice.ammAccount(), XRP(10)),
+                ter(tecAMM_DIRECT_PAYMENT));
+            env(pay(ammAlice.ammAccount(), carol, XRP(10)),
+                ter(tefMASTER_DISABLED));
+            env(pay(carol, ammAlice.ammAccount(), USD(10)),
+                ter(tecAMM_DIRECT_PAYMENT));
+            env(pay(ammAlice.ammAccount(), carol, USD(10)),
+                ter(tefMASTER_DISABLED));
+        });
+    }
+
+    void
     testAmendment()
     {
         testcase("Amendment");
@@ -939,6 +959,7 @@ private:
         testRequireAuth();
         testFeeVote();
         testBid();
+        testPayment();
     }
 };
 

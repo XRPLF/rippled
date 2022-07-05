@@ -299,6 +299,7 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_INVALID_TOKENS = 166,
     tecAMM_EXISTS = 167,
     tecAMM_FAILED_BID = 168,
+    tecAMM_DIRECT_PAYMENT = 169
 };
 
 //------------------------------------------------------------------------------
