@@ -46,7 +46,7 @@ calcLPTIssue(AccountID const& ammAccountID)
 }
 
 std::pair<STAmount, STAmount>
-getAMMPoolBalances(
+ammPoolHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
     Issue const& issue1,
@@ -71,81 +71,42 @@ getAMMPoolBalances(
 }
 
 std::tuple<STAmount, STAmount, STAmount>
-getAMMBalances(
+ammHolds(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& lpAccountID,
-    Issue const& issue1,
-    Issue const& issue2,
-    beast::Journal const j)
-{
-    auto const lptAMMBalance =
-        getAMMLPTokens(view, calcAMMGroupHash(issue1, issue2), j);
-    if (lptAMMBalance == STAmount{noIssue()})
-        return {STAmount{noIssue()}, STAmount{noIssue()}, STAmount{noIssue()}};
-    auto const [asset1, asset2] =
-        getAMMPoolBalances(view, ammAccountID, issue1, issue2, j);
-    if (lpAccountID.has_value())
-    {
-        auto const lpTokens = getLPTokens(view, ammAccountID, *lpAccountID, j);
-        auto const frac = divide(lpTokens, lptAMMBalance, noIssue());
-        auto const lpAsset1 = multiply(asset1, frac, asset1.issue());
-        auto const lpAsset2 = multiply(asset2, frac, asset2.issue());
-        return {lpAsset1, lpAsset2, lpTokens};
-    }
-    return {asset1, asset2, lptAMMBalance};
-}
-
-std::tuple<STAmount, STAmount, STAmount>
-getAMMBalances(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& ammSle,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& lpAccountID,
+    SLE const& ammSle,
     std::optional<Issue> const& optIssue1,
     std::optional<Issue> const& optIssue2,
     beast::Journal const j)
 {
-    if (!ammSle)
-        return {STAmount{noIssue()}, STAmount{noIssue()}, STAmount{noIssue()}};
-    if (optIssue1 && optIssue2)
-        return getAMMBalances(
-            view, ammAccountID, lpAccountID, *optIssue1, *optIssue2, j);
     auto const [issue1, issue2] = [&]() -> std::pair<Issue, Issue> {
+        if (optIssue1 && optIssue2)
+            return {*optIssue1, *optIssue2};
         auto const [issue1, issue2] = getTokensIssue(ammSle);
         if (optIssue1)
         {
             if (*optIssue1 == issue1)
                 return {issue1, issue2};
-            return {issue2, issue1};
+            else if (*optIssue1 == issue2)
+                return {issue2, issue1};
+            Throw<std::runtime_error>("ammHolds: Invalid optIssue1.");
         }
         else if (optIssue2)
         {
             if (*optIssue2 == issue2)
                 return {issue2, issue1};
-            return {issue1, issue2};
+            else if (*optIssue2 == issue1)
+                return {issue1, issue2};
+            Throw<std::runtime_error>("ammHolds: Invalid optIssue2.");
         }
         return {issue1, issue2};
     }();
-    return getAMMBalances(view, ammAccountID, lpAccountID, issue1, issue2, j);
-}
-
-std::tuple<STAmount, STAmount, STAmount>
-getAMMBalances(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& ammSle,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& lpAccountID,
-    beast::Journal const j)
-{
-    if (!ammSle)
-        return {STAmount{noIssue()}, STAmount{noIssue()}, STAmount{noIssue()}};
-    auto const [issue1, issue2] = getTokensIssue(ammSle);
-    return getAMMBalances(view, ammAccountID, lpAccountID, issue1, issue2, j);
+    auto const [asset1, asset2] = ammPoolHolds(
+        view, ammSle.getAccountID(sfAMMAccount), issue1, issue2, j);
+    return {asset1, asset2, ammSle.getFieldAmount(sfLPTokenBalance)};
 }
 
 STAmount
-getLPTokens(
+lpHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
     AccountID const& lpAccount,
@@ -159,14 +120,6 @@ getLPTokens(
         lptIssue.account,
         FreezeHandling::fhZERO_IF_FROZEN,
         j);
-}
-
-STAmount
-getAMMLPTokens(ReadView const& view, uint256 ammHash, beast::Journal const j)
-{
-    if (auto const ammSle = view.read(keylet::amm(ammHash)))
-        return ammSle->getFieldAmount(sfLPTokenBalance);
-    return STAmount{noIssue()};
 }
 
 std::optional<TEMcodes>
@@ -230,50 +183,39 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 }
 
 std::uint32_t
-getTradingFee(
-    std::shared_ptr<SLE const> const& ammSle,
-    AccountID const& account)
+getTradingFee(SLE const& ammSle, AccountID const& account)
 {
-    if (ammSle)
+    if (ammSle.isFieldPresent(sfAuctionSlot))
     {
-        if (ammSle->isFieldPresent(sfAuctionSlot))
+        auto const& auctionSlot =
+            static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
+        if (auctionSlot.isFieldPresent(sfAccount) &&
+            auctionSlot.getAccountID(sfAccount) == account)
+            return auctionSlot.getFieldU32(sfDiscountedFee);
+        if (auctionSlot.isFieldPresent(sfAuthAccounts))
         {
-            auto const& auctionSlot = static_cast<STObject const&>(
-                ammSle->peekAtField(sfAuctionSlot));
-            if (auctionSlot.isFieldPresent(sfAccount) &&
-                auctionSlot.getAccountID(sfAccount) == account)
-                return auctionSlot.getFieldU32(sfDiscountedFee);
-            if (auctionSlot.isFieldPresent(sfAuthAccounts))
-            {
-                for (auto const& acct :
-                     auctionSlot.getFieldArray(sfAuthAccounts))
-                    if (acct.getAccountID(sfAccount) == account)
-                        return auctionSlot.getFieldU32(sfDiscountedFee);
-            }
+            for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
+                if (acct.getAccountID(sfAccount) == account)
+                    return auctionSlot.getFieldU32(sfDiscountedFee);
         }
-        return ammSle->getFieldU32(sfTradingFee);
     }
-    return 0;
+    return ammSle.getFieldU32(sfTradingFee);
 }
 
 std::pair<Issue, Issue>
-getTokensIssue(std::shared_ptr<SLE const> const& ammSle)
+getTokensIssue(SLE const& ammSle)
 {
-    if (ammSle)
-    {
-        auto const ammToken =
-            static_cast<STObject const&>(ammSle->peekAtField(sfAMMToken));
-        auto getIssue = [&](SField const& field) {
-            auto const token =
-                static_cast<STObject const&>(ammToken.peekAtField(field));
-            Issue issue;
-            issue.currency = token.getFieldH160(sfTokenCurrency);
-            issue.account = token.getFieldH160(sfTokenIssuer);
-            return issue;
-        };
-        return {getIssue(sfToken1), getIssue(sfToken2)};
-    }
-    return {noIssue(), noIssue()};
+    auto const ammToken =
+        static_cast<STObject const&>(ammSle.peekAtField(sfAMMToken));
+    auto getIssue = [&](SField const& field) {
+        auto const token =
+            static_cast<STObject const&>(ammToken.peekAtField(field));
+        Issue issue;
+        issue.currency = token.getFieldH160(sfTokenCurrency);
+        issue.account = token.getFieldH160(sfTokenIssuer);
+        return issue;
+    };
+    return {getIssue(sfToken1), getIssue(sfToken2)};
 }
 
 }  // namespace ripple

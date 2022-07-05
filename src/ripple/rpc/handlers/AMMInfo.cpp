@@ -70,13 +70,13 @@ doAMMInfo(RPC::JsonContext& context)
     std::optional<AccountID> accountID;
 
     uint256 ammHash{};
+    STAmount asset1{noIssue()};
+    STAmount asset2{noIssue()};
     if (!params.isMember(jss::AMMHash))
     {
         // May provide asset1/asset2 as amounts
         if (!params.isMember(jss::Asset1) || !params.isMember(jss::Asset2))
             return RPC::missing_field_error(jss::AMMHash);
-        STAmount asset1;
-        STAmount asset2;
         if (!amountFromJsonNoThrow(asset1, params[jss::Asset1]) ||
             !amountFromJsonNoThrow(asset2, params[jss::Asset2]))
         {
@@ -110,10 +110,19 @@ doAMMInfo(RPC::JsonContext& context)
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
 
+    auto const [issue1, issue2] = [&]() {
+        if (asset1.issue() == noIssue())
+            return getTokensIssue(*amm);
+        return std::make_pair(asset1.issue(), asset2.issue());
+    }();
+
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] =
-        getAMMBalances(*ledger, amm, ammAccountID, accountID, context.j);
+    auto const [asset1Balance, asset2Balance] =
+        ammPoolHolds(*ledger, ammAccountID, issue1, issue2, context.j);
+    auto const lptAMMBalance = accountID
+        ? lpHolds(*ledger, ammAccountID, *accountID, context.j)
+        : amm->getFieldAmount(sfLPTokenBalance);
 
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
@@ -184,6 +193,8 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
 
     // decode AMM hash
     uint256 ammHash;
+    Issue issue1{noIssue()};
+    Issue issue2{noIssue()};
     if (!params.has_ammhash())
     {
         if (!params.has_asset1() || !params.has_asset2())
@@ -191,25 +202,25 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
                 result,
                 grpc::Status(
                     grpc::StatusCode::NOT_FOUND, "Missing field ammHash.")};
-        auto getIssue = [](auto const& v) -> std::optional<Issue> {
+        auto getIssue = [](auto const& v) {
             if (v.has_xrp_amount())
                 return xrpIssue();
             auto const iou = v.issued_currency_amount();
             auto const account =
                 RPC::accountFromStringStrict(iou.issuer().address());
             if (!account)
-                return {};
+                return noIssue();
             Currency currency = to_currency(iou.currency().name());
             return Issue(currency, *account);
         };
-        auto const issue1 = getIssue(params.asset1().value());
-        auto const issue2 = getIssue(params.asset2().value());
-        if (!issue1.has_value() || !issue2.has_value())
+        issue1 = getIssue(params.asset1().value());
+        issue2 = getIssue(params.asset2().value());
+        if (issue1 == noIssue() || issue2 == noIssue())
             return {
                 result,
                 grpc::Status(
                     grpc::StatusCode::NOT_FOUND, "Account malformed.")};
-        ammHash = calcAMMGroupHash(*issue1, *issue2);
+        ammHash = calcAMMGroupHash(issue1, issue2);
     }
     else if (!ammHash.parseHex(params.ammhash().value()))
         return {
@@ -243,10 +254,16 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
             result,
             grpc::Status(grpc::StatusCode::NOT_FOUND, "Account not found.")};
 
+    if (issue1 == noIssue())
+        std::tie(issue1, issue2) = getTokensIssue(*amm);
+
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] =
-        getAMMBalances(*ledger, amm, ammAccountID, accountID, context.j);
+    auto const [asset1Balance, asset2Balance] =
+        ammPoolHolds(*ledger, ammAccountID, issue1, issue2, context.j);
+    auto const lptAMMBalance = accountID
+        ? lpHolds(*ledger, ammAccountID, *accountID, context.j)
+        : amm->getFieldAmount(sfLPTokenBalance);
 
     auto asset1 = result.mutable_asset1();
     ripple::RPC::convert(*asset1, asset1Balance);

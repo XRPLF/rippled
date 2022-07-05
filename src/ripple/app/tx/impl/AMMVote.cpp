@@ -83,10 +83,8 @@ AMMVote::applyGuts(Sandbox& sb)
     auto const amm = getAMMSle(sb, ctx_.tx[sfAMMHash]);
     assert(amm);
     auto const ammAccount = amm->getAccountID(sfAMMAccount);
-    auto const lptAMMBalance =
-        getAMMLPTokens(sb, ctx_.tx[sfAMMHash], ctx_.journal);
-    auto const lpTokensNew =
-        getLPTokens(sb, ammAccount, account_, ctx_.journal);
+    auto const lptAMMBalance = amm->getFieldAmount(sfLPTokenBalance);
+    auto const lpTokensNew = lpHolds(sb, ammAccount, account_, ctx_.journal);
     if (lpTokensNew == beast::zero)
     {
         JLOG(ctx_.journal.debug()) << "AMM Vote: account is not LP.";
@@ -102,7 +100,7 @@ AMMVote::applyGuts(Sandbox& sb)
     for (auto const& entry : amm->getFieldArray(sfVoteEntries))
     {
         auto const account = entry.getAccountID(sfAccount);
-        auto lpTokens = getLPTokens(sb, ammAccount, account, ctx_.journal);
+        auto lpTokens = lpHolds(sb, ammAccount, account, ctx_.journal);
         if (lpTokens == beast::zero)
             continue;
         auto feeVal = entry.getFieldU32(sfFeeVal);

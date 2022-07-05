@@ -103,12 +103,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account.";
         return terNO_ACCOUNT;
     }
-    auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
-        ctx.view,
-        ammSle,
-        ammSle->getAccountID(sfAMMAccount),
-        std::nullopt,
-        ctx.j);
+    auto const [asset1, asset2, lptAMMBalance] =
+        ammHolds(ctx.view, *ammSle, std::nullopt, std::nullopt, ctx.j);
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
@@ -143,14 +139,12 @@ AMMDeposit::applyGuts(Sandbox& sb)
     assert(ammSle);
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
 
-    auto const tfee = getTradingFee(ammSle, account_);
+    auto const tfee = getTradingFee(*ammSle, account_);
 
     auto const [result, depositedTokens] = [&]() -> std::pair<TER, STAmount> {
-        auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
+        auto const [asset1, asset2, lptAMMBalance] = ammHolds(
             sb,
-            ammSle,
-            ammAccountID,
-            std::nullopt,
+            *ammSle,
             asset1In ? asset1In->issue() : std::optional<Issue>{},
             asset2In ? asset2In->issue() : std::optional<Issue>{},
             ctx_.journal);

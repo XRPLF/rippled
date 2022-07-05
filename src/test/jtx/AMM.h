@@ -84,7 +84,7 @@ class AMM
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
-        Json::Value const& jv);
+        Json::Value const& jv) const;
 
 public:
     AMM(Env& env,
@@ -119,14 +119,6 @@ public:
         std::optional<uint256> const& ammHash = {},
         bool useAssets = false) const;
 
-    /** Get AMM pool and tokens balance.
-     */
-    std::tuple<STAmount, STAmount, STAmount>
-    ammBalances(
-        std::optional<AccountID> const& account,
-        Issue const& issue1,
-        Issue const& issue2) const;
-
     /** Verify the AMM balances.
      */
     bool
@@ -145,21 +137,21 @@ public:
     expectAuctionSlot(
         std::uint32_t fee,
         std::uint32_t timeInterval,
-        IOUAmount const& price);
+        IOUAmount const& price) const;
 
     bool
     expectAmmRpcInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
-        std::optional<Account> const& account = {});
+        std::optional<AccountID> const& account = {}) const;
 
     bool
     expectAmmgRPCInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
-        std::optional<Account> const& account = {});
+        std::optional<AccountID> const& account = {}) const;
 
     bool
     ammExists() const;

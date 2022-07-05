@@ -110,7 +110,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
     auto const lptBalance =
-        getLPTokens(ctx.view, ammAccountID, ctx.tx[sfAccount], ctx.j);
+        lpHolds(ctx.view, ammAccountID, ctx.tx[sfAccount], ctx.j);
     auto const lpTokens = getTxLPTokens(ctx.view, ammAccountID, ctx.tx, ctx.j);
     if (lptBalance <= beast::zero)
     {
@@ -148,14 +148,12 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const lpTokensWithdraw =
         getTxLPTokens(ctx_.view(), ammAccountID, ctx_.tx, ctx_.journal);
 
-    auto const tfee = getTradingFee(ammSle, account_);
+    auto const tfee = getTradingFee(*ammSle, account_);
 
     auto const [result, withdrawnTokens] = [&]() -> std::pair<TER, STAmount> {
-        auto const [asset1, asset2, lptAMMBalance] = getAMMBalances(
+        auto const [asset1, asset2, lptAMMBalance] = ammHolds(
             sb,
-            ammSle,
-            ammAccountID,
-            std::nullopt,
+            *ammSle,
             asset1Out ? asset1Out->issue() : std::optional<Issue>{},
             asset2Out ? asset2Out->issue() : std::optional<Issue>{},
             ctx_.journal);
@@ -269,9 +267,9 @@ AMMWithdraw::withdraw(
     auto const ammSle = getAMMSle(view, ctx_.tx[sfAMMHash]);
     assert(ammSle);
     auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-    auto const [issue1, issue2] = getTokensIssue(ammSle);
+    auto const [issue1, issue2] = getTokensIssue(*ammSle);
     auto const [asset1, asset2] =
-        getAMMPoolBalances(view, ammAccount, issue1, issue2, j_);
+        ammPoolHolds(view, ammAccount, issue1, issue2, j_);
 
     // TODO there should be constraints on what can be withdrawn.
     // For instance, all tokens can't be withdrawn from one pool.
@@ -462,7 +460,7 @@ AMMWithdraw::getTxLPTokens(
 {
     // withdraw all tokens - get the balance
     if (tx.getFlags() & tfAMMWithdrawAll)
-        return getLPTokens(view, ammAccount, tx[sfAccount], journal);
+        return lpHolds(view, ammAccount, tx[sfAccount], journal);
     else
         return tx[~sfLPTokens];
 }

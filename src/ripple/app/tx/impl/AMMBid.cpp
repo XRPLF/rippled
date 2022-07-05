@@ -90,7 +90,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const lpTokens = getLPTokens(
+    auto const lpTokens = lpHolds(
         ctx.view, ammSle->getAccountID(sfAMMAccount), ctx.tx[sfAccount], ctx.j);
     if (auto const minSlotPrice = ctx.tx[~sfMinSlotPrice];
         minSlotPrice && *minSlotPrice > lpTokens)
@@ -121,9 +121,8 @@ AMMBid::applyGuts(Sandbox& sb)
     auto const amm = getAMMSle(sb, ctx_.tx[sfAMMHash]);
     assert(amm);
     auto const ammAccount = amm->getAccountID(sfAMMAccount);
-    auto const lptAMMBalance =
-        getAMMLPTokens(sb, ctx_.tx[sfAMMHash], ctx_.journal);
-    auto const lpTokens = getLPTokens(sb, ammAccount, account_, ctx_.journal);
+    auto const lptAMMBalance = amm->getFieldAmount(sfLPTokenBalance);
+    auto const lpTokens = lpHolds(sb, ammAccount, account_, ctx_.journal);
     if (!amm->isFieldPresent(sfAuctionSlot))
         amm->makeFieldPresent(sfAuctionSlot);
     auto& auctionSlot = amm->peekFieldObject(sfAuctionSlot);
@@ -151,7 +150,7 @@ AMMBid::applyGuts(Sandbox& sb)
     // Account must exist, is LP, and the slot not expired.
     auto validOwner = [&](AccountID const& account) {
         return sb.read(keylet::account(account)) &&
-            getLPTokens(sb, ammAccount, account, ctx_.journal) != beast::zero &&
+            lpHolds(sb, ammAccount, account, ctx_.journal) != beast::zero &&
             timeSlot.has_value() && *timeSlot < 19;
     };
 

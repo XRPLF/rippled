@@ -497,12 +497,12 @@ private:
             ammAlice.deposit(carol, 1000000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(1000), USD(1000), IOUAmount{1000000, 0}, carol));
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{1000000, 0}));
 
             // Carol withdraws all tokens
             ammAlice.withdraw(carol, 1000000);
-            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{}));
+            BEAST_EXPECT(
+                ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
         });
 
         // Equal withdraw by tokens 1000000, 10%
@@ -562,7 +562,8 @@ private:
             ammAlice.withdraw(carol, 0, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{}));
+            BEAST_EXPECT(
+                ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
         });
 
         // Single deposit 1000USD, withdraw all tokens in XRP

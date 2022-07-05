@@ -177,16 +177,6 @@ AMM::ammgRPCInfo(
     return jv;
 }
 
-std::tuple<STAmount, STAmount, STAmount>
-AMM::ammBalances(
-    std::optional<AccountID> const& account,
-    Issue const& issue1,
-    Issue const& issue2) const
-{
-    return getAMMBalances(
-        *env_.current(), ammAccountID_, account, issue1, issue2, env_.journal);
-}
-
 bool
 AMM::expectBalances(
     STAmount const& asset1,
@@ -194,25 +184,30 @@ AMM::expectBalances(
     IOUAmount const& lpt,
     std::optional<AccountID> const& account) const
 {
-    auto const [a1, a2, l] =
-        ammBalances(account, asset1.issue(), asset2.issue());
-    return a1 == asset1 && a2 == asset2 && l.iou() == lpt;
+    return expectAmmRpcInfo(asset1, asset2, lpt, account);
 }
 
 bool
-AMM::expectLPTokens(AccountID const& account, IOUAmount const& eTokens) const
+AMM::expectLPTokens(AccountID const& account, IOUAmount const& expTokens) const
 {
-    STAmount const saTokens{eTokens, lptIssue_};
-    auto const tokens =
-        getLPTokens(*env_.current(), ammAccountID_, account, env_.journal);
-    return saTokens == tokens;
+    try
+    {
+        STAmount saTokens;
+        if (auto const jv = *ammRpcInfo(account);
+            amountFromJsonNoThrow(saTokens, jv[jss::LPTokens]))
+            return saTokens.iou() == expTokens;
+    }
+    catch (...)
+    {
+    }
+    return false;
 }
 
 bool
 AMM::expectAuctionSlot(
     std::uint32_t fee,
     std::uint32_t timeInterval,
-    IOUAmount const& price)
+    IOUAmount const& price) const
 {
     try
     {
@@ -245,7 +240,7 @@ AMM::expectAmmRpcInfo(
     const STAmount& asset1,
     const STAmount& asset2,
     const IOUAmount& balance,
-    const std::optional<Account>& account)
+    const std::optional<AccountID>& account) const
 {
     auto const jv = ammRpcInfo(account);
     if (!jv)
@@ -258,7 +253,7 @@ AMM::expectAmmgRPCInfo(
     const STAmount& asset1,
     const STAmount& asset2,
     const IOUAmount& balance,
-    const std::optional<Account>& account)
+    const std::optional<AccountID>& account) const
 {
     auto const jv = ammgRPCInfo(account);
     if (!jv)
@@ -271,7 +266,7 @@ AMM::expectAmmInfo(
     STAmount const& asset1,
     STAmount const& asset2,
     IOUAmount const& balance,
-    Json::Value const& jv)
+    Json::Value const& jv) const
 {
     if (!jv.isMember(jss::Asset1) || !jv.isMember(jss::Asset2) ||
         !jv.isMember(jss::LPTokens))

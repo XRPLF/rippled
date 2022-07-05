@@ -67,50 +67,24 @@ calcLPTCurrency(AccountID const& ammAccountID);
 Issue
 calcLPTIssue(AccountID const& ammAccountID);
 
-/** Get AMM pool balances in/out.
+/** Get AMM pool balances.
  */
 std::pair<STAmount, STAmount>
-getAMMPoolBalances(
+ammPoolHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
     Issue const& issue1,
     Issue const& issue2,
     beast::Journal const j);
 
-/** Get AMM pool and LPT balances.
- * If lpAccountID is seated then
- * the balances are for LP proportional
- * to the owned LP tokens.
+/** Get AMM pool and LP token balances. If both optIssue are
+ * provided then they are used as the AMM token pair issues.
+ * Otherwise the missing issues are fetched from ammSle.
  */
 std::tuple<STAmount, STAmount, STAmount>
-getAMMBalances(
+ammHolds(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& lpAccountID,
-    Issue const& issue1,
-    Issue const& issue2,
-    beast::Journal const j);
-
-/** Get AMM pool and LPT balances. Get token issues from ammSle.
- */
-std::tuple<STAmount, STAmount, STAmount>
-getAMMBalances(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& ammSle,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& lpAccountID,
-    beast::Journal const j);
-
-/** Get AMM pool and LPT balances. If one or two issues are
- * provided then order returned pool amounts by the issues.
- * Get missing token issue from ammSle.
- */
-std::tuple<STAmount, STAmount, STAmount>
-getAMMBalances(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& ammSle,
-    AccountID const& ammAccountID,
-    std::optional<AccountID> const& lpAccountID,
+    SLE const& ammSle,
     std::optional<Issue> const& optIssue1,
     std::optional<Issue> const& optIssue2,
     beast::Journal const j);
@@ -118,16 +92,11 @@ getAMMBalances(
 /** Get the balance of LP tokens.
  */
 STAmount
-getLPTokens(
+lpHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
     AccountID const& lpAccount,
     beast::Journal const j);
-
-/** Get the balance of AMM LP tokens.
- */
-STAmount
-getAMMLPTokens(ReadView const& view, uint256 ammHash, beast::Journal const j);
 
 /** Validate the amount.
  * If zero is false and amount is beast::zero then bad amount.
@@ -164,14 +133,12 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * accounts.
  */
 std::uint32_t
-getTradingFee(
-    std::shared_ptr<SLE const> const& ammSle,
-    AccountID const& account);
+getTradingFee(SLE const& ammSle, AccountID const& account);
 
 /** Get Issue from sfToken1/sfToken2 fields.
  */
 std::pair<Issue, Issue>
-getTokensIssue(std::shared_ptr<SLE const> const& ammSle);
+getTokensIssue(SLE const& ammSle);
 
 }  // namespace ripple
 
