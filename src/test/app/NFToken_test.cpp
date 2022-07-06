@@ -96,7 +96,10 @@ class NFToken_test : public beast::unit_test::suite
         {
             // If the NFT amendment is not enabled, you should not be able
             // to create or burn NFTs.
-            Env env{*this, features - featureNonFungibleTokensV1};
+            Env env{
+                *this,
+                features - featureNonFungibleTokensV1 -
+                    featureNonFungibleTokensV1_1};
             Account const& master = env.master;
 
             BEAST_EXPECT(ownerCount(env, master) == 0);
@@ -4650,7 +4653,8 @@ class NFToken_test : public beast::unit_test::suite
 
         // Test both with and without fixNFTokenNegOffer
         for (auto const& tweakedFeatures :
-             {features - fixNFTokenNegOffer, features | fixNFTokenNegOffer})
+             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+              features | fixNFTokenNegOffer})
         {
             // There was a bug in the initial NFT implementation that
             // allowed offers to be placed with negative amounts.  Verify
@@ -4759,7 +4763,9 @@ class NFToken_test : public beast::unit_test::suite
         // Test what happens if NFTokenOffers are created with negative amounts
         // and then fixNFTokenNegOffer goes live.  What does an acceptOffer do?
         {
-            Env env{*this, features - fixNFTokenNegOffer};
+            Env env{
+                *this,
+                features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1};
 
             env.fund(XRP(1000000), issuer, buyer, gw);
             env.close();
@@ -4844,7 +4850,8 @@ class NFToken_test : public beast::unit_test::suite
         // Test buy offers with a destination with and without
         // fixNFTokenNegOffer.
         for (auto const& tweakedFeatures :
-             {features - fixNFTokenNegOffer, features | fixNFTokenNegOffer})
+             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+              features | fixNFTokenNegOffer})
         {
             Env env{*this, tweakedFeatures};
 
