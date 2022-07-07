@@ -382,16 +382,19 @@ AMM::withdraw(
     std::optional<Account> const& account,
     STAmount const& asset1Out,
     std::optional<STAmount> const& asset2Out,
-    std::optional<STAmount> const& maxEP,
+    std::optional<IOUAmount> const& maxEP,
     std::optional<ter> const& ter)
 {
-    assert(!(asset2Out && limitSP));
+    assert(!(asset2Out && maxEP));
     Json::Value jv;
     asset1Out.setJson(jv[jss::Asset1Out]);
     if (asset2Out)
         asset2Out->setJson(jv[jss::Asset2Out]);
     if (maxEP)
-        maxEP->setJson(jv[jss::EPrice]);
+    {
+        STAmount const saMaxEP{*maxEP, lptIssue_};
+        saMaxEP.setJson(jv[jss::EPrice]);
+    }
     withdraw(account, jv, ter);
 }
 

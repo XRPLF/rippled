@@ -183,7 +183,7 @@ public:
         std::optional<Account> const& account,
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = {},
-        std::optional<STAmount> const& maxEP = {},
+        std::optional<IOUAmount> const& maxEP = {},
         std::optional<ter> const& ter = {});
 
     void

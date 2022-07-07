@@ -178,7 +178,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                     *lpTokensWithdraw,
                     tfee);
             else if (ePrice)
-                return singleWithdrawEPrice(
+                return singleWithdrawalEPrice(
                     sb,
                     ammAccountID,
                     asset1,
@@ -266,7 +266,7 @@ AMMWithdraw::withdraw(
 {
     auto const ammSle = getAMMSle(view, ctx_.tx[sfAMMHash]);
     assert(ammSle);
-    auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
+    auto const lpTokens = lpHolds(view, ammAccount, account_, ctx_.journal);
     auto const [issue1, issue2] = getTokensIssue(*ammSle);
     auto const [asset1, asset2] =
         ammPoolHolds(view, ammAccount, issue1, issue2, j_);
@@ -426,7 +426,7 @@ AMMWithdraw::singleWithdrawalTokens(
 }
 
 std::pair<TER, STAmount>
-AMMWithdraw::singleWithdrawEPrice(
+AMMWithdraw::singleWithdrawalEPrice(
     Sandbox& view,
     AccountID const& ammAccount,
     STAmount const& asset1Balance,
@@ -435,12 +435,15 @@ AMMWithdraw::singleWithdrawEPrice(
     STAmount const& ePrice,
     std::uint16_t tfee)
 {
-    auto const tokens =
-        Number(2) - 1 / (asset1Balance * ePrice * feeMultHalf(tfee));
+    auto const tokens = lptAMMBalance *
+        (Number(2) -
+         lptAMMBalance / (asset1Balance * ePrice * feeMultHalf(tfee)));
+    if (tokens <= 0)
+        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
     auto const asset1Out_ = toSTAmount(asset1Out.issue(), tokens / ePrice);
     if (asset1Out == beast::zero ||
         (asset1Out != beast::zero && asset1Out_ >= asset1Out))
-        withdraw(
+        return withdraw(
             view,
             ammAccount,
             asset1Out_,

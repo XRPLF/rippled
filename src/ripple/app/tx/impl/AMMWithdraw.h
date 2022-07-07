@@ -170,7 +170,7 @@ private:
      * @return
      */
     std::pair<TER, STAmount>
-    singleWithdrawEPrice(
+    singleWithdrawalEPrice(
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& asset1Balance,

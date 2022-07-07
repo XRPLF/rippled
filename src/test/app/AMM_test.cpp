@@ -430,7 +430,7 @@ private:
         // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut)
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(
-                carol, USD(1000), std::nullopt, STAmount{USD.issue(), 1, -1});
+                carol, USD(1000), std::nullopt, STAmount{USD, 1, -1});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(11000), IOUAmount{1048808848170152, -8}));
         });
@@ -439,10 +439,10 @@ private:
         // 100USD with EP not to exceed 0.002004 (AssetIn/TokensOut)
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(
-                carol, USD(100), std::nullopt, STAmount{USD.issue(), 2004, -6});
+                carol, USD(100), std::nullopt, STAmount{USD, 2004, -6});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000),
-                STAmount{USD.issue(), 1008016, -2},
+                STAmount{USD, 1008016, -2},
                 IOUAmount{10040000, 0}));
         });
 
@@ -450,10 +450,10 @@ private:
         // 0USD with EP not to exceed 0.002004 (AssetIn/TokensOut)
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(
-                carol, USD(0), std::nullopt, STAmount{USD.issue(), 2004, -6});
+                carol, USD(0), std::nullopt, STAmount{USD, 2004, -6});
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000),
-                STAmount{USD.issue(), 1008016, -2},
+                STAmount{USD, 1008016, -2},
                 IOUAmount{10040000, 0}));
         });
     }
@@ -465,7 +465,7 @@ private:
 
         using namespace jtx;
 
-        // Should fail - Carol is not a Liquidity Provider.
+        // Fails, Carol is not a Liquidity Provider.
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(
                 carol, 10000, std::nullopt, std::optional<ter>(tecAMM_BALANCE));
@@ -473,7 +473,7 @@ private:
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
 
-        // Should fail - Carol withdraws more than deposited
+        // Fail, Carol withdraws more than she owns.
         testAMM([&](AMM& ammAlice, Env&) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
@@ -490,7 +490,7 @@ private:
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
         });
 
-        // Equal withdraw by Carol: 1000000 of tokens, 10% of the current pool
+        // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current pool
         testAMM([&](AMM& ammAlice, Env&) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
@@ -505,7 +505,7 @@ private:
                 ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
         });
 
-        // Equal withdraw by tokens 1000000, 10%
+        // Equal withdrawal by tokens 1000000, 10%
         // of the current pool
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, 1000000);
@@ -513,7 +513,7 @@ private:
                 XRP(9000), USD(9000), IOUAmount{9000000, 0}));
         });
 
-        // Equal withdraw with a limit. Withdraw XRP200.
+        // Equal withdrawal with a limit. Withdraw XRP200.
         // If proportional withdraw of USD is less than 100
         // the withdraw that amount, otherwise withdraw USD100
         // and proportionally withdraw XRP. It's the latter
@@ -524,21 +524,21 @@ private:
                 XRP(9900), USD(9900), IOUAmount{9900000, 0}));
         });
 
-        // Equal withdraw with a limit. XRP100/USD100.
+        // Equal withdrawal with a limit. XRP100/USD100.
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, XRP(100), USD(200));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(9900), USD(9900), IOUAmount{9900000, 0}));
         });
 
-        // Single withdraw by amount XRP1000
+        // Single withdrawal by amount XRP1000
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, XRP(1000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(9000), USD(10000), IOUAmount{948683298050514, -8}));
         });
 
-        // Single withdraw by tokens 10000.
+        // Single withdrawal by tokens 10000.
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(alice, 10000, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -574,18 +574,20 @@ private:
                 XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
         });
 
-        // Single deposit/withdraw 1000USD
-        // TODO There is a round-off error. The number of
+        // Single deposit/withdrawal 1000USD. Fails due to round-off error,
         // tokens to withdraw exceeds the LP tokens balance.
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(10000));
-            ammAlice.withdraw(carol, USD(10000));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+            ammAlice.withdraw(
+                carol,
+                USD(10000),
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
         });
 
-        // Single deposit/withdraw 1000USD
-        // TODO There is a round-off error. There remains
+        // Single deposit/withdrawal 1000USD
+        // There is a round-off error. There remains
         // a dust amount of tokens
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
@@ -596,9 +598,7 @@ private:
         });
 
         // Single deposit by different accounts and then withdraw
-        // in reverse must result in all balances back to the original
-        // state.
-        // TODO There is a round-off error. There remains
+        // in reverse. There is a round-off error. There remains
         // a dust amount of tokens.
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
@@ -624,10 +624,7 @@ private:
             ammAlice.withdraw(carol, 0, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000),
-                STAmount{
-                    USD.issue(),
-                    static_cast<std::uint64_t>(90909090909091),
-                    -10},
+                STAmount{USD, static_cast<std::int64_t>(90909090909091), -10},
                 IOUAmount{10000000, 0}));
         });
 
@@ -637,6 +634,56 @@ private:
             ammAlice.withdraw(carol, 0, XRP(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
+        });
+
+        // Withdraw with EPrice limit.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(carol, USD(100), std::nullopt, IOUAmount{520, 0});
+            BEAST_EXPECT(
+                ammAlice.expectBalances(
+                    XRPAmount(11000000000),
+                    STAmount{
+                        USD, static_cast<std::int64_t>(937278106508876), -11},
+                    IOUAmount{1015384615384616, -8}) &&
+                ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
+        });
+
+        // Withdraw with EPrice limit. AssetOut is 0.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(carol, USD(0), std::nullopt, IOUAmount{520, 0});
+            BEAST_EXPECT(
+                ammAlice.expectBalances(
+                    XRPAmount(11000000000),
+                    STAmount{
+                        USD, static_cast<std::int64_t>(937278106508876), -11},
+                    IOUAmount{1015384615384616, -8}) &&
+                ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
+        });
+
+        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
+        // to withdraw are 0.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(
+                carol,
+                USD(100),
+                std::nullopt,
+                IOUAmount{500, 0},
+                ter(tecAMM_FAILED_WITHDRAW));
+        });
+
+        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
+        // to withdraw are greater than the LP shares.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(
+                carol,
+                USD(100),
+                std::nullopt,
+                IOUAmount{600, 0},
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // TODO there should be a limit on a single withdrawal amount.
