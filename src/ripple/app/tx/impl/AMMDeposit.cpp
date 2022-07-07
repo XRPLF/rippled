@@ -141,13 +141,19 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     auto const tfee = getTradingFee(*ammSle, account_);
 
-    auto const [result, depositedTokens] = [&]() -> std::pair<TER, STAmount> {
-        auto const [asset1, asset2, lptAMMBalance] = ammHolds(
-            sb,
-            *ammSle,
-            asset1In ? asset1In->issue() : std::optional<Issue>{},
-            asset2In ? asset2In->issue() : std::optional<Issue>{},
-            ctx_.journal);
+    auto const [asset1, asset2, lptAMMBalance] = ammHolds(
+        sb,
+        *ammSle,
+        asset1In ? asset1In->issue() : std::optional<Issue>{},
+        asset2In ? asset2In->issue() : std::optional<Issue>{},
+        ctx_.journal);
+
+    auto const [result, depositedTokens] =
+        [&,
+         asset1 = std::ref(asset1),
+         asset2 = std::ref(asset2),
+         lptAMMBalance =
+             std::ref(lptAMMBalance)]() -> std::pair<TER, STAmount> {
         if (asset1In)
         {
             if (asset2In)
@@ -196,8 +202,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     if (result == tesSUCCESS && depositedTokens != beast::zero)
     {
         ammSle->setFieldAmount(
-            sfLPTokenBalance,
-            ammSle->getFieldAmount(sfLPTokenBalance) + depositedTokens);
+            sfLPTokenBalance, lptAMMBalance + depositedTokens);
         sb.update(ammSle);
     }
 

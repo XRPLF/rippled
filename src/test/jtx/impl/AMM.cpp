@@ -180,9 +180,10 @@ AMM::expectBalances(
     STAmount const& asset1,
     STAmount const& asset2,
     IOUAmount const& lpt,
-    std::optional<AccountID> const& account) const
+    std::optional<AccountID> const& account,
+    std::optional<std::string> const& ledger_index) const
 {
-    return expectAmmRpcInfo(asset1, asset2, lpt, account);
+    return expectAmmRpcInfo(asset1, asset2, lpt, account, ledger_index);
 }
 
 bool
@@ -205,11 +206,12 @@ bool
 AMM::expectAuctionSlot(
     std::uint32_t fee,
     std::uint32_t timeInterval,
-    IOUAmount const& price) const
+    IOUAmount const& price,
+    std::optional<std::string> const& ledger_index) const
 {
     try
     {
-        if (auto const jv = *ammRpcInfo())
+        if (auto const jv = *ammRpcInfo(std::nullopt, ledger_index))
         {
             auto const auctionSlot = jv[jss::AuctionSlot];
             STAmount saPrice;
@@ -238,9 +240,10 @@ AMM::expectAmmRpcInfo(
     const STAmount& asset1,
     const STAmount& asset2,
     const IOUAmount& balance,
-    const std::optional<AccountID>& account) const
+    const std::optional<AccountID> const& account,
+    const std::optional<std::string> const& ledger_index) const
 {
-    auto const jv = ammRpcInfo(account);
+    auto const jv = ammRpcInfo(account, ledger_index);
     if (!jv)
         return false;
     return expectAmmInfo(asset1, asset2, balance, *jv);

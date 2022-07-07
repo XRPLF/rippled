@@ -150,13 +150,19 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     auto const tfee = getTradingFee(*ammSle, account_);
 
-    auto const [result, withdrawnTokens] = [&]() -> std::pair<TER, STAmount> {
-        auto const [asset1, asset2, lptAMMBalance] = ammHolds(
-            sb,
-            *ammSle,
-            asset1Out ? asset1Out->issue() : std::optional<Issue>{},
-            asset2Out ? asset2Out->issue() : std::optional<Issue>{},
-            ctx_.journal);
+    auto const [asset1, asset2, lptAMMBalance] = ammHolds(
+        sb,
+        *ammSle,
+        asset1Out ? asset1Out->issue() : std::optional<Issue>{},
+        asset2Out ? asset2Out->issue() : std::optional<Issue>{},
+        ctx_.journal);
+
+    auto const [result, withdrawnTokens] =
+        [&,
+         asset1 = std::ref(asset1),
+         asset2 = std::ref(asset2),
+         lptAMMBalance =
+             std::ref(lptAMMBalance)]() -> std::pair<TER, STAmount> {
         if (asset1Out)
         {
             if (asset2Out)
@@ -206,8 +212,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (result == tesSUCCESS && withdrawnTokens != beast::zero)
     {
         ammSle->setFieldAmount(
-            sfLPTokenBalance,
-            ammSle->getFieldAmount(sfLPTokenBalance) - withdrawnTokens);
+            sfLPTokenBalance, lptAMMBalance - withdrawnTokens);
         sb.update(ammSle);
     }
 

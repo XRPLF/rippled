@@ -71,7 +71,7 @@ class AMM
     withdraw(
         std::optional<Account> const& account,
         Json::Value& jv,
-        std::optional<ter> const& ter = {});
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     log(bool log)
@@ -105,18 +105,18 @@ public:
      */
     std::optional<Json::Value>
     ammRpcInfo(
-        std::optional<AccountID> const& account = {},
-        std::optional<std::string> const& ledgerIndex = {},
-        std::optional<uint256> const& ammHash = {},
+        std::optional<AccountID> const& account = std::nullopt,
+        std::optional<std::string> const& ledgerIndex = std::nullopt,
+        std::optional<uint256> const& ammHash = std::nullopt,
         bool useAssets = false) const;
 
     /** Send amm_info gRPC command
      */
     std::optional<Json::Value>
     ammgRPCInfo(
-        std::optional<AccountID> const& account = {},
-        std::optional<std::string> const& ledgerIndex = {},
-        std::optional<uint256> const& ammHash = {},
+        std::optional<AccountID> const& account = std::nullopt,
+        std::optional<std::string> const& ledgerIndex = std::nullopt,
+        std::optional<uint256> const& ammHash = std::nullopt,
         bool useAssets = false) const;
 
     /** Verify the AMM balances.
@@ -126,7 +126,8 @@ public:
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& lpt,
-        std::optional<AccountID> const& account = std::nullopt) const;
+        std::optional<AccountID> const& account = std::nullopt,
+        std::optional<std::string> const& ledger_index = std::nullopt) const;
 
     /** Expect all balances 0
      */
@@ -137,21 +138,23 @@ public:
     expectAuctionSlot(
         std::uint32_t fee,
         std::uint32_t timeInterval,
-        IOUAmount const& price) const;
+        IOUAmount const& price,
+        std::optional<std::string> const& ledger_index = std::nullopt) const;
 
     bool
     expectAmmRpcInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
-        std::optional<AccountID> const& account = {}) const;
+        std::optional<AccountID> const& account = std::nullopt,
+        std::optional<std::string> const& ledger_index = std::nullopt) const;
 
     bool
     expectAmmgRPCInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
-        std::optional<AccountID> const& account = {}) const;
+        std::optional<AccountID> const& account = std::nullopt) const;
 
     bool
     ammExists() const;
@@ -160,44 +163,44 @@ public:
     deposit(
         std::optional<Account> const& account,
         std::uint64_t tokens,
-        std::optional<STAmount> const& asset1InDetails = {},
-        std::optional<ter> const& ter = {});
+        std::optional<STAmount> const& asset1InDetails = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     deposit(
         std::optional<Account> const& account,
         STAmount const& asset1InDetails,
-        std::optional<STAmount> const& asset2InAmount = {},
-        std::optional<STAmount> const& maxEP = {},
-        std::optional<ter> const& ter = {});
+        std::optional<STAmount> const& asset2InAmount = std::nullopt,
+        std::optional<STAmount> const& maxEP = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     withdraw(
         std::optional<Account> const& account,
         std::uint64_t tokens,
-        std::optional<STAmount> const& asset1OutDetails = {},
-        std::optional<ter> const& ter = {});
+        std::optional<STAmount> const& asset1OutDetails = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     withdraw(
         std::optional<Account> const& account,
         STAmount const& asset1Out,
-        std::optional<STAmount> const& asset2Out = {},
-        std::optional<IOUAmount> const& maxEP = {},
-        std::optional<ter> const& ter = {});
+        std::optional<STAmount> const& asset2Out = std::nullopt,
+        std::optional<IOUAmount> const& maxEP = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     vote(
         std::optional<Account> const& account,
         std::uint32_t feeVal,
-        std::optional<ter> const& ter = {});
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     bid(std::optional<Account> const& account,
-        std::optional<std::uint64_t> const& minSlotPrice = {},
-        std::optional<std::uint64_t> const& maxSlotPrice = {},
+        std::optional<std::uint64_t> const& minSlotPrice = std::nullopt,
+        std::optional<std::uint64_t> const& maxSlotPrice = std::nullopt,
         std::vector<Account> const& authAccounts = {},
-        std::optional<ter> const& ter = {});
+        std::optional<ter> const& ter = std::nullopt);
 
     Account const&
     ammAccount() const

@@ -174,8 +174,7 @@ AMMBid::applyGuts(Sandbox& sb)
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
         }
-        amm->setFieldAmount(
-            sfLPTokenBalance, amm->getFieldAmount(sfLPTokenBalance) - saBurn);
+        amm->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
         sb.update(amm);
         return tesSUCCESS;
     };

@@ -891,6 +891,8 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             auto constexpr intervalDuration = 24 * 3600 / 20;
             ammAlice.deposit(carol, 1000000);
+            env.close();
+
             fund(env, gw, {bob}, {USD(10000)}, Fund::Acct);
             ammAlice.deposit(bob, 1000000);
             env.close();
