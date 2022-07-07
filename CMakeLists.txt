@@ -1,10 +1,17 @@
-cmake_minimum_required (VERSION 3.16)
+cmake_minimum_required(VERSION 3.16)
 
-if (POLICY CMP0074)
+if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
-endif ()
+endif()
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0077 NEW)
+endif()
 
-project (rippled)
+# Fix "unrecognized escape" issues when passing CMAKE_MODULE_PATH on Windows.
+file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
+
+project(rippled)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,9 +28,6 @@ if(Git_FOUND)
     endif()
 endif() #git
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/deps")
-
 include (CheckCXXCompilerFlag)
 include (FetchContent)
 include (ExternalProject)
@@ -36,7 +40,6 @@ endif ()
 include(RippledSanity)
 include(RippledVersion)
 include(RippledSettings)
-include(RippledNIH)
 include(RippledRelease)
 # this check has to remain in the top-level cmake
 # because of the early return statement
@@ -52,21 +55,52 @@ include(RippledInterface)
 ###
 
 include(deps/Boost)
-include(deps/OpenSSL)
-include(deps/Secp256k1)
-include(deps/Ed25519-donna)
-include(deps/Lz4)
-include(deps/Libarchive)
-include(deps/Sqlite)
-include(deps/Soci)
-include(deps/Snappy)
-include(deps/Rocksdb)
-include(deps/Nudb)
-include(deps/date)
+find_package(OpenSSL 1.1.1 REQUIRED)
+set_target_properties(OpenSSL::SSL PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
+)
+add_subdirectory(src/secp256k1)
+add_subdirectory(src/ed25519-donna)
+find_package(lz4 REQUIRED)
+# Target names with :: are not allowed in a generator expression.
+# We need to pull the include directories and imported location properties
+# from separate targets.
+find_package(LibArchive REQUIRED)
+find_package(SOCI REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(Snappy REQUIRED)
+find_package(RocksDB REQUIRED)
+set_target_properties(RocksDB::rocksdb PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
+)
+find_package(nudb REQUIRED)
+find_package(date REQUIRED)
 include(deps/Protobuf)
 include(deps/gRPC)
-include(deps/cassandra)
-include(deps/Postgres)
+
+target_link_libraries(ripple_libs INTERFACE
+  ed25519::ed25519
+  LibArchive::LibArchive
+  lz4::lz4
+  nudb::core
+  OpenSSL::Crypto
+  OpenSSL::SSL
+  Ripple::grpc_pbufs
+  Ripple::pbufs
+  RocksDB::rocksdb
+  secp256k1::secp256k1
+  soci::soci
+  SQLite::SQLite3
+)
+
+if(reporting)
+  find_package(cassandra-cpp-driver REQUIRED)
+  find_package(PostgreSQL REQUIRED)
+  target_link_libraries(ripple_libs INTERFACE
+    cassandra-cpp-driver::cassandra-cpp-driver
+    PostgreSQL::PostgreSQL
+  )
+endif()
 
 ###
 

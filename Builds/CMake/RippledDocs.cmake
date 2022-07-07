@@ -1,6 +1,13 @@
 #[===================================================================[
    docs target (optional)
 #]===================================================================]
+
+# Early return if the `docs` directory is missing,
+# e.g. when we are building a Conan package.
+if(NOT EXISTS docs)
+  return()
+endif()
+
 if (tests)
   find_package (Doxygen)
   if (NOT TARGET Doxygen::doxygen)
