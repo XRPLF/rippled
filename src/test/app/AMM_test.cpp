@@ -965,9 +965,9 @@ private:
     }
 
     void
-    testPayment()
+    testInvalidAMMPayment()
     {
-        testcase("Payment");
+        testcase("Invalid AMM Payment");
         using namespace jtx;
 
         // Can't pay into/out of AMM account.
@@ -1006,7 +1006,7 @@ private:
         testRequireAuth();
         testFeeVote();
         testBid();
-        testPayment();
+        testInvalidAMMPayment();
     }
 };
 
