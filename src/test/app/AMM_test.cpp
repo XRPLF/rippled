@@ -847,7 +847,7 @@ private:
             ammAlice.bid(carol, 0, std::nullopt, {}, ter(temBAD_AMM_TOKENS));
         });
 
-        // Bid invalid options, transaction fails.
+        // Bid invalid options with [Min,Max]SlotPrice, transaction fails.
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
             ammAlice.bid(carol, 100, 100, {}, ter(temBAD_AMM_OPTIONS));
@@ -865,6 +865,22 @@ private:
         // Auth account is invalid.
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.bid(carol, 100, std::nullopt, {bob}, ter(terNO_ACCOUNT));
+        });
+
+        // More than 4 of Auth accounts.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Account ed("ed");
+            Account bill("bill");
+            Account scott("scott");
+            Account james("james");
+            env.fund(XRP(1000), bob, ed, bill, scott, james);
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.bid(
+                carol,
+                100,
+                std::nullopt,
+                {bob, ed, bill, scott, james},
+                ter(temBAD_AMM_OPTIONS));
         });
 
         // Bid 100 tokens. The slot is not owned and the MinSlotPrice is 110

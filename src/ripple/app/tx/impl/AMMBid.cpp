@@ -79,7 +79,14 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        for (auto& account : ctx.tx.getFieldArray(sfAuthAccounts))
+        auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
+        if (authAccounts.size() > 4)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
+            return temBAD_AMM_OPTIONS;
+        }
+
+        for (auto& account : authAccounts)
         {
             if (!ctx.view.read(
                     keylet::account(account.getAccountID(sfAccount))))
