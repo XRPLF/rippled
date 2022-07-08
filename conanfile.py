@@ -90,7 +90,8 @@ class Xrpl(ConanFile):
         path = f'{self.recipe_folder}/src/ripple/protocol/impl/BuildInfo.cpp'
         regex = r'versionString\s?=\s?\"(.*)\"'
         with open(path, 'r') as file:
-            next(match for line in file if (match := re.search(regex, line)))
+            matches = (re.search(regex, line) for line in file)
+            match = next(m for m in matches if m)
             self.version = match.group(1)
 
     def requirements(self):

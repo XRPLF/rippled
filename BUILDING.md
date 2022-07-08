@@ -7,8 +7,8 @@ testing, and support. Additionally, 32-bit Windows development is not supported.
 
 ## Prerequisites
 
-To build this package, you will need [Conan][] and [CMake][] (>=
-3.16).
+To build this package, you will need Python (>= 3.7),
+[Conan][] (>= 1.46), and [CMake][] (>= 3.16).
 These instructions assume a basic understanding of those tools.
 
 [Conan]: https://conan.io/downloads.html
@@ -41,18 +41,12 @@ architecture:
 conan profile update settings.compiler.arch=x86_64 default
 ```
 
-Windows developers using Visual Studio 2022 will need to supply their own
-installation of [Boost][].
-This is because rippled is not compatible with Boost versions 1.78 or 1.79,
+Visual Studio 2022 is not yet supported.
+This is because rippled is not compatible with [Boost][] versions 1.78 or 1.79,
 but Conan cannot build Boost versions released earlier than them with VS 2022.
-You can either remove the `boost` requirement from the `requires` attribute in
-[`conanfile.py`](./conanfile.py) _before_ you run `conan install`,
-or you can remove the modules Conan installs at `build/generators/Boost*` under
-your build directory _after_ you run `conan install`.
-Then when configuring CMake, you need to pass a `BOOST_ROOT` variable pointing
-to your Boost installation.
-If you want to build Boost 1.77 with VS 2022, then you will need to [patch][4]
-it first.
+We expect that rippled will be compatible with Boost 1.80, which should be
+released in August 2022.
+Until then, we advise Windows developers to use Visual Studio 2019.
 
 [Boost]: https://www.boost.org/
 
@@ -82,43 +76,41 @@ git checkout develop
 
 ## How to build and test
 
+This is the general structure of the workflow to build and test rippled:
+
 1. Export [our Conan recipe for RocksDB](./external/rocksdb).
-
-    ```
-    conan export external/rocksdb
-    ```
-
 1. Create a build directory. You can choose any name you want.
-
-    ```
-    mkdir .build
-    cd .build
-    ```
-
 1. Build and install dependencies using Conan.
-
-    ```
-    conan install .. --output-folder . --build missing --settings build_type=Release
-    ```
-
 1. Configure CMake and generate the build system.
-
-    ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
-    ```
-
 1. Build rippled.
-
-    ```
-    cmake --build . --config Release
-    ```
-
 1. Test rippled.
-    The executable's exact location depends on your choice of CMake generator.
+The executable's exact location depends on your choice of CMake generator.
 
-    ```
-    ./rippled --unittest
-    ```
+Here is an example workflow commonly used to build with a single-configuration
+generator (e.g. Unix Makefiles) on Linux or OSX:
+
+```
+conan export external/rocksdb
+mkdir .build
+cd .build
+conan install .. --output-folder . --build missing --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+./rippled --unittest
+```
+
+Here is its equivalent for a multi-configuration generator (e.g. Visual Studio)
+on Windows:
+
+```
+conan export external/rocksdb
+mkdir .build
+cd .build
+conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake --build . --config Release
+./Release/rippled --unittest
+```
 
 In addition to choosing a different build configuration, there are a few options
 you can pass to CMake.
