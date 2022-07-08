@@ -686,6 +686,18 @@ private:
                 ter(tecAMM_INVALID_TOKENS));
         });
 
+        // Withdraw with EPrice limit. Fails to withdraw, amount1
+        // to withdraw is less than 1700USD.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(
+                carol,
+                USD(1700),
+                std::nullopt,
+                IOUAmount{520, 0},
+                ter(tecAMM_FAILED_WITHDRAW));
+        });
+
         // TODO there should be a limit on a single withdrawal amount.
         // For instance, in 10000USD and 10000XRP amm with all liquidity
         // provided by one LP, LP can not withdraw all tokens in USD.
