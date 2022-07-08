@@ -23,13 +23,6 @@ then you will need to choose the `libstdc++11` ABI:
 conan profile update settings.compiler.libcxx=libstdc++11 default
 ```
 
-Windows developers will commonly have a default Conan profile that is missing
-a selection for the [MSVC runtime library][2].
-You must set the Conan setting `compiler.runtime`
-to ensure a consistent choice among all binaries in the dependency graph.
-Which value you must use depends on which configuration you are trying to
-build: `MT` for release and `MTd` for debug.
-
 We find it necessary to use the x64 native build tools on Windows.
 An easy way to do that is to run the shortcut "x64 Native Tools Command
 Prompt" for the version of Visual Studio that you have installed.
@@ -106,7 +99,7 @@ on Windows:
 conan export external/rocksdb
 mkdir .build
 cd .build
-conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
+conan install .. --output-folder . --build missing --settings build_type=Release
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
 cmake --build . --config Release
 ./Release/rippled --unittest
@@ -149,7 +142,4 @@ working:
 
 
 [1]: https://docs.conan.io/en/latest/reference/profiles.html
-[2]: https://docs.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library
-[3]: https://cmake.org/cmake/help/git-stage/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
-[4]: https://github.com/boostorg/build/issues/735#issuecomment-943377899
 [5]: https://en.wikipedia.org/wiki/Unity_build
