@@ -240,7 +240,7 @@ change the `/opt/local` module path above to match your chosen installation pref
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit with summary info after running the unit tests.
 
-## Known Installation Issues
+## Workaround for a compile error in soci
 
 *Compilation Errors pertaining to soci:* Certain compilation errors have been observed with Apple Clang 13.1.6+ and soci v4.x. soci compiles with -Werror flag which causes certain warnings to be reported as errors. These warings pertain to style and not that of correctness. Since these errors are more than 20 in number, it causes fatal termination of the cmake process.
 
