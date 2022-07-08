@@ -32,6 +32,8 @@
 
 namespace ripple {
 
+using UInt32or256 = std::variant<uint32_t, uint256>;
+
 class SeqProxy;
 /** Keylet computation funclets.
 
@@ -48,6 +50,25 @@ class SeqProxy;
     These functions each return a type-specific keylet.
 */
 namespace keylet {
+
+/** The (fixed) index of the object containing the emitted txns for the ledger. */
+Keylet const&
+emittedDir() noexcept;
+
+Keylet
+emitted(uint256 const& id) noexcept;
+
+Keylet
+hookDefinition(uint256 const& hash) noexcept;
+
+Keylet
+hook(AccountID const& id) noexcept;
+
+Keylet
+hookState(AccountID const& id, uint256 const& key, uint256 const& ns) noexcept;
+
+Keylet
+hookStateDir(AccountID const& id, uint256 const& ns) noexcept;
 
 /** AccountID root */
 Keylet
@@ -124,7 +145,7 @@ line(AccountID const& id, Issue const& issue) noexcept
 /** An offer from an account */
 /** @{ */
 Keylet
-offer(AccountID const& id, std::uint32_t seq) noexcept;
+offer(AccountID const& id, UInt32or256 const& seq) noexcept;
 
 inline Keylet
 offer(uint256 const& key) noexcept
@@ -173,7 +194,7 @@ signers(AccountID const& account) noexcept;
 /** A Check */
 /** @{ */
 Keylet
-check(AccountID const& id, std::uint32_t seq) noexcept;
+check(AccountID const& id, UInt32or256 const& seq) noexcept;
 
 inline Keylet
 check(uint256 const& key) noexcept
@@ -219,11 +240,11 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 
 /** An escrow entry */
 Keylet
-escrow(AccountID const& src, std::uint32_t seq) noexcept;
+escrow(AccountID const& src, UInt32or256 const& seq) noexcept;
 
 /** A PaymentChannel */
 Keylet
-payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
+payChan(AccountID const& src, AccountID const& dst, UInt32or256 const& seq) noexcept;
 
 /** NFT page keylets
 
@@ -247,7 +268,7 @@ nftpage(Keylet const& k, uint256 const& token);
 
 /** An offer from an account to buy or sell an NFT */
 Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq);
+nftoffer(AccountID const& owner, UInt32or256 const& seq);
 
 inline Keylet
 nftoffer(uint256 const& offer)

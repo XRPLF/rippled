@@ -174,8 +174,7 @@ NFTokenCreateOffer::doApply()
 
     auto const nftokenID = ctx_.tx[sfNFTokenID];
 
-    auto const offerID =
-        keylet::nftoffer(account_, ctx_.tx.getSeqProxy().value());
+    Keylet const offerID = keylet::nftoffer(account_, seqID(ctx_));
 
     // Create the offer:
     {

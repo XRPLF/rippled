@@ -112,6 +112,10 @@ public:
     std::shared_ptr<OpenView const>
     current() const;
 
+    // not mutex guarded, only use if you are sure
+    std::shared_ptr<OpenView const>
+    current_unsafe() const;
+
     /** Modify the open ledger
 
         Thread safety:

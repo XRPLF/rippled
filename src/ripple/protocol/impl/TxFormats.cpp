@@ -40,6 +40,8 @@ TxFormats::TxFormats()
         {sfSigningPubKey, soeREQUIRED},
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
+        {sfEmitDetails, soeOPTIONAL},
+        {sfFirstLedgerSequence, soeOPTIONAL},
     };
 
     add(jss::AccountSet,
@@ -76,6 +78,7 @@ TxFormats::TxFormats()
             {sfTakerGets, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
+            {sfOfferID, soeOPTIONAL},              // keylet as alternative to offerseq
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -84,6 +87,7 @@ TxFormats::TxFormats()
         ttOFFER_CANCEL,
         {
             {sfOfferSequence, soeREQUIRED},
+            {sfOfferID, soeOPTIONAL},              // keylet as alternative to offerseq
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -128,6 +132,7 @@ TxFormats::TxFormats()
         {
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
+            {sfEscrowID, soeOPTIONAL},              // keylet as alternative to offerseq
             {sfFulfillment, soeOPTIONAL},
             {sfCondition, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
@@ -139,6 +144,7 @@ TxFormats::TxFormats()
         {
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
+            {sfEscrowID, soeOPTIONAL},              // keylet as alternative to offerseq
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -148,6 +154,14 @@ TxFormats::TxFormats()
         {
             {sfLedgerSequence, soeREQUIRED},
             {sfAmendment, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::EmitFailure,
+        ttEMIT_FAILURE,
+        {
+            {sfLedgerSequence, soeREQUIRED},
+            {sfTransactionHash, soeREQUIRED},
         },
         commonFields);
 
@@ -270,6 +284,13 @@ TxFormats::TxFormats()
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+    
+    add(jss::SetHook,
+        ttHOOK_SET,
+        {
+            {sfHooks, soeREQUIRED},
         },
         commonFields);
 

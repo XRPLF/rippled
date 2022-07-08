@@ -22,6 +22,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/to_string.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Protocol.h>
@@ -562,8 +563,9 @@ isPseudoTx(STObject const& tx)
     auto t = tx[~sfTransactionType];
     if (!t)
         return false;
+
     auto tt = safe_cast<TxType>(*t);
-    return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
+    return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY || tt == ttEMIT_FAILURE;
 }
 
 }  // namespace ripple

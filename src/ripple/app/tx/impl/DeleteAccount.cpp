@@ -223,6 +223,12 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
+    // do not allow the account to be removed if there are hooks installed or one or more hook states
+    // when these fields are completely empty the field is made absent so this test is sufficient
+    // these fields cannot be populated unless hooks is enabled so the rules do not need to be checked
+    if (sleAccount->isFieldPresent(sfHookNamespaces) || sleAccount->isFieldPresent(sfHooks))
+        return tecHAS_OBLIGATIONS;
+
     // Verify that the account does not own any objects that would prevent
     // the account from being deleted.
     Keylet const ownerDirKeylet{keylet::ownerDir(account)};
@@ -283,6 +289,12 @@ DeleteAccount::doApply()
 
     if (!src || !dst)
         return tefBAD_LEDGER;
+    
+    // do not allow the account to be removed if there are hooks installed or one or more hook states
+    // when these fields are completely empty the field is made absent so this test is sufficient
+    // these fields cannot be populated unless hooks is enabled so the rules do not need to be checked
+    if (src->isFieldPresent(sfHookNamespaces) || src->isFieldPresent(sfHooks))
+        return tecHAS_OBLIGATIONS;
 
     // Delete all of the entries in the account directory.
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};

@@ -415,6 +415,24 @@ SetAccount::doApply()
     }
 
     //
+    // TshCollect
+    //
+    if (view().rules().enabled(featureHooks))
+    {
+        if (uSetFlag == asfTshCollect)
+        {
+            JLOG(j_.trace()) << "Set lsfTshCollect.";
+            uFlagsOut |= lsfTshCollect;
+        }
+        else if (uClearFlag == asfTshCollect)
+        {
+            JLOG(j_.trace()) << "Clear lsfTshCollect.";
+            uFlagsOut &= ~lsfTshCollect;
+        }
+    }
+
+
+    //
     // EmailHash
     //
     if (tx.isFieldPresent(sfEmailHash))

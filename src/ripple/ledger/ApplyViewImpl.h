@@ -24,7 +24,11 @@
 #include <ripple/ledger/detail/ApplyViewBase.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
-
+#include <optional>
+#include <algorithm>
+#include <vector>
+#include <iterator>
+ 
 namespace ripple {
 
 /** Editable, discardable view that can build metadata for one tx.
@@ -68,6 +72,36 @@ public:
         deliver_ = amount;
     }
 
+    TxMeta
+    generateProvisionalMeta(OpenView const& to, STTx const& tx, beast::Journal j);
+   
+    /* Set hook metadata for a hook execution
+     * Takes ownership / use std::move
+     */
+    void
+    addHookMetaData(STObject&& hookExecution)
+    {
+        hookExecution_.push_back(std::move(hookExecution));
+    }
+
+    void
+    setHookMetaData(std::vector<STObject>&& vec)
+    {
+        hookExecution_ = std::move(vec);
+    }
+
+    void
+    copyHookMetaData(std::vector<STObject>& into)
+    {
+        std::copy(hookExecution_.begin(), hookExecution_.end(), std::back_inserter(into));
+    }
+
+    uint16_t
+    nextHookExecutionIndex()
+    {
+        return hookExecution_.size();
+    }
+
     /** Get the number of modified entries
      */
     std::size_t
@@ -84,8 +118,10 @@ public:
             std::shared_ptr<SLE const> const& before,
             std::shared_ptr<SLE const> const& after)> const& func);
 
+
 private:
     std::optional<STAmount> deliver_;
+    std::vector<STObject> hookExecution_;
 };
 
 }  // namespace ripple

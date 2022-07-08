@@ -161,7 +161,9 @@ decodeBase58(std::string const& s)
     }
 
     if (remain > 64)
+    {
         return {};
+    }
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
@@ -170,7 +172,9 @@ decodeBase58(std::string const& s)
     {
         auto carry = alphabetReverse[*psz];
         if (carry == -1)
+        {
             return {};
+        }
         // Apply "b256 = b256 * 58 + carry".
         for (auto iter = b256.rbegin(); iter != b256.rend(); ++iter)
         {
@@ -190,6 +194,7 @@ decodeBase58(std::string const& s)
     result.assign(zeroes, 0x00);
     while (iter != b256.end())
         result.push_back(*(iter++));
+    
     return result;
 }
 

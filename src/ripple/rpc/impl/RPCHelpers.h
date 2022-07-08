@@ -31,6 +31,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <optional>
 #include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <variant>
 
 namespace Json {
 class Value;
@@ -104,6 +105,25 @@ getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    uint256 dirIndex,
+    uint256 const& entryIndex,
+    std::uint32_t const limit,
+    Json::Value& jvResult);
+
+/** Gathers all hook state objects for an account namespace in a ledger.
+    @param ledger Ledger to search account objects.
+    @param account AccountID to find objects for.
+    @param ns Namespace ID to find objects for.
+    @param dirIndex Begin gathering account objects from this directory.
+    @param entryIndex Begin gathering objects from this directory node.
+    @param limit Maximum number of objects to find.
+    @param jvResult A JSON result that holds the request objects.
+*/
+bool
+getAccountNamespace(
+    ReadView const& ledger,
+    AccountID const& account,
+    uint256 const& ns,
     uint256 dirIndex,
     uint256 const& entryIndex,
     std::uint32_t const limit,
@@ -286,6 +306,11 @@ chooseLedgerEntryType(Json::Value const& params);
  */
 unsigned int
 getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
+
+/** Return a ledger based on ledger_hash or ledger_index,
+    or an RPC error */
+std::variant<std::shared_ptr<Ledger const>, Json::Value>
+getLedgerByContext(RPC::JsonContext& context);
 
 }  // namespace RPC
 }  // namespace ripple

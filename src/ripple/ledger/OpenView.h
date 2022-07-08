@@ -99,6 +99,7 @@ private:
     bool open_ = true;
 
 public:
+
     OpenView() = delete;
     OpenView&
     operator=(OpenView&&) = delete;

@@ -27,7 +27,9 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxMeta.h>
+#include <utility>
 #include <memory>
+
 
 namespace ripple {
 namespace detail {
@@ -37,6 +39,7 @@ class ApplyStateTable
 {
 public:
     using key_type = ReadView::key_type;
+    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
 
 private:
     enum class Action {
@@ -64,12 +67,22 @@ public:
     void
     apply(RawView& to) const;
 
+
+    std::pair<TxMeta, Mods>
+    generateTxMeta(
+        OpenView const& to,
+        STTx const& tx,
+        std::optional<STAmount> const& deliver,
+        std::vector<STObject> const& hookExecution,
+        beast::Journal j);
+    
     void
     apply(
         OpenView& to,
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        std::vector<STObject> const& hookExecution,
         beast::Journal j);
 
     bool
@@ -125,7 +138,6 @@ public:
     }
 
 private:
-    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
 
     static void
     threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);

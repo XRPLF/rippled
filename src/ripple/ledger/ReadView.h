@@ -26,6 +26,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>

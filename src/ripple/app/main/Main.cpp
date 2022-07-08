@@ -15,8 +15,7 @@
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-//==============================================================================
-
+    //==============================================================================
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/rdb/Vacuum.h>
@@ -346,6 +345,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
+    
     beast::setCurrentThreadName(
         "rippled: main " + BuildInfo::getVersionString());
 
@@ -778,9 +778,13 @@ run(int argc, char** argv)
 
 }  // namespace ripple
 
+// Must be outside the namespace for obvious reasons
+//
+
 int
 main(int argc, char** argv)
 {
+
 #if BOOST_OS_WINDOWS
     {
         // Work around for https://svn.boost.org/trac/boost/ticket/10657

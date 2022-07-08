@@ -76,6 +76,9 @@ public:
     }
 
     void
+    setResult(TER res, int index);
+
+    void
     setAffectedNode(uint256 const&, SField const& type, std::uint16_t nodeType);
     STObject&
     getAffectedNode(SLE::ref node, SField const& type);  // create if needed
@@ -113,6 +116,24 @@ public:
         mDelivered = delivered;
     }
 
+    STArray const&
+    getHookExecutions() const
+    {
+        return *mHookExecutions;
+    }
+
+    void
+    setHookExecutions(STArray const& hookExecutions)
+    {
+        mHookExecutions = hookExecutions;
+    }
+
+    bool
+    hasHookExecutions() const
+    {
+        return static_cast<bool>(mHookExecutions);
+    }
+
     STAmount
     getDeliveredAmount() const
     {
@@ -133,6 +154,7 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
+    std::optional<STArray> mHookExecutions;
 
     STArray mNodes;
 };

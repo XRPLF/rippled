@@ -437,6 +437,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Payment.cpp
   src/ripple/app/tx/impl/SetAccount.cpp
   src/ripple/app/tx/impl/SetRegularKey.cpp
+  src/ripple/app/tx/impl/SetHook.cpp
   src/ripple/app/tx/impl/SetSignerList.cpp
   src/ripple/app/tx/impl/SetTrust.cpp
   src/ripple/app/tx/impl/SignerEntries.cpp
@@ -444,6 +445,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Transactor.cpp
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
+  src/ripple/app/hook/impl/applyHook.cpp
   src/ripple/app/tx/impl/details/NFTokenUtils.cpp
   #[===============================[
      main sources:
@@ -578,6 +580,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/AccountLines.cpp
   src/ripple/rpc/handlers/AccountObjects.cpp
   src/ripple/rpc/handlers/AccountOffers.cpp
+  src/ripple/rpc/handlers/AccountNamespace.cpp
   src/ripple/rpc/handlers/AccountTx.cpp
   src/ripple/rpc/handlers/AccountTxOld.cpp
   src/ripple/rpc/handlers/BlackList.cpp

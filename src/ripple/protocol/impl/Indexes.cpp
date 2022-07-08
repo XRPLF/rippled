@@ -56,10 +56,16 @@ enum class LedgerNameSpace : std::uint16_t {
     FEE_SETTINGS = 'e',
     TICKET = 'T',
     SIGNER_LIST = 'S',
-    XRP_PAYMENT_CHANNEL = 'x',
+    PAYMENT_CHANNEL = 'x',
     CHECK = 'C',
     DEPOSIT_PREAUTH = 'p',
     NEGATIVE_UNL = 'N',
+    HOOK = 'H',
+    HOOK_STATE_DIR = 'J',
+    HOOK_STATE = 'v',
+    HOOK_DEFINITION = 'D',
+    EMITTED = 'E',
+    EMITTED_DIR = 'F',
     NFTOKEN_OFFER = 'q',
     NFTOKEN_BUY_OFFERS = 'h',
     NFTOKEN_SELL_OFFERS = 'i',
@@ -128,6 +134,44 @@ getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 //------------------------------------------------------------------------------
 
 namespace keylet {
+
+Keylet const&
+emittedDir() noexcept
+{
+    static Keylet const ret{
+        ltDIR_NODE, indexHash(LedgerNameSpace::EMITTED_DIR)};
+    return ret;
+}
+
+Keylet 
+hookStateDir(AccountID const& id, uint256 const& ns) noexcept
+{
+    return {ltDIR_NODE, indexHash(LedgerNameSpace::HOOK_STATE_DIR, id, ns)};
+}
+
+Keylet
+emitted(uint256 const& id) noexcept
+{
+    return {ltEMITTED, indexHash(LedgerNameSpace::EMITTED, id)};
+}
+
+Keylet
+hook(AccountID const& id) noexcept
+{
+    return {ltHOOK, indexHash(LedgerNameSpace::HOOK, id)};
+}
+
+Keylet
+hookDefinition(uint256 const& hash) noexcept
+{
+    return {ltHOOK_DEFINITION, indexHash(LedgerNameSpace::HOOK_DEFINITION, hash)};
+}
+
+Keylet
+hookState(AccountID const& id, uint256 const& key, uint256 const& ns) noexcept
+{
+    return {ltHOOK_STATE, indexHash(LedgerNameSpace::HOOK_STATE, id, key, ns)};
+}
 
 Keylet
 account(AccountID const& id) noexcept
@@ -219,7 +263,7 @@ line(
 }
 
 Keylet
-offer(AccountID const& id, std::uint32_t seq) noexcept
+offer(AccountID const& id, UInt32or256 const& seq) noexcept
 {
     return {ltOFFER, indexHash(LedgerNameSpace::OFFER, id, seq)};
 }
@@ -278,7 +322,7 @@ signers(AccountID const& account) noexcept
 }
 
 Keylet
-check(AccountID const& id, std::uint32_t seq) noexcept
+check(AccountID const& id, UInt32or256 const& seq) noexcept
 {
     return {ltCHECK, indexHash(LedgerNameSpace::CHECK, id, seq)};
 }
@@ -315,17 +359,17 @@ page(uint256 const& key, std::uint64_t index) noexcept
 }
 
 Keylet
-escrow(AccountID const& src, std::uint32_t seq) noexcept
+escrow(AccountID const& src, UInt32or256 const& seq) noexcept
 {
     return {ltESCROW, indexHash(LedgerNameSpace::ESCROW, src, seq)};
 }
 
 Keylet
-payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
+payChan(AccountID const& src, AccountID const& dst, UInt32or256 const& seq) noexcept
 {
     return {
         ltPAYCHAN,
-        indexHash(LedgerNameSpace::XRP_PAYMENT_CHANNEL, src, dst, seq)};
+        indexHash(LedgerNameSpace::PAYMENT_CHANNEL, src, dst, seq)};
 }
 
 Keylet
@@ -352,7 +396,7 @@ nftpage(Keylet const& k, uint256 const& token)
 }
 
 Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq)
+nftoffer(AccountID const& owner, UInt32or256 const& seq)
 {
     return {
         ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NFTOKEN_OFFER, owner, seq)};

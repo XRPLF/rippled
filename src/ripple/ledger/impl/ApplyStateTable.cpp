@@ -109,12 +109,154 @@ ApplyStateTable::visit(
     }
 }
 
+// return a txmeta and a set of created nodes
+// does not modify ledger
+std::pair<TxMeta, ApplyStateTable::Mods>
+ApplyStateTable::generateTxMeta(
+    OpenView const& to,
+    STTx const& tx,
+    std::optional<STAmount> const& deliver,
+    std::vector<STObject> const& hookExecution,
+    beast::Journal j)
+{
+    TxMeta meta(tx.getTransactionID(), to.seq());
+    if (deliver)
+        meta.setDeliveredAmount(*deliver);
+
+    if (!hookExecution.empty())
+        meta.setHookExecutions(STArray{hookExecution, sfHookExecutions});
+
+    Mods newMod;
+    for (auto& item : items_)
+    {
+        SField const* type;
+        switch (item.second.first)
+        {
+            default:
+            case Action::cache:
+                continue;
+            case Action::erase:
+                type = &sfDeletedNode;
+                break;
+            case Action::insert:
+                type = &sfCreatedNode;
+                break;
+            case Action::modify:
+                type = &sfModifiedNode;
+                break;
+        }
+        auto const origNode = to.read(keylet::unchecked(item.first));
+        auto curNode = item.second.second;
+        if ((type == &sfModifiedNode) && (*curNode == *origNode))
+            continue;
+        std::uint16_t nodeType = curNode
+            ? curNode->getFieldU16(sfLedgerEntryType)
+            : origNode->getFieldU16(sfLedgerEntryType);
+        meta.setAffectedNode(item.first, *type, nodeType);
+        if (type == &sfDeletedNode)
+        {
+            assert(origNode && curNode);
+            threadOwners(to, meta, origNode, newMod, j);
+
+            STObject prevs(sfPreviousFields);
+            for (auto const& obj : *origNode)
+            {
+                // go through the original node for
+                // modified  fields saved on modification
+                if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
+                    !curNode->hasMatchingEntry(obj))
+                    prevs.emplace_back(obj);
+            }
+
+            if (!prevs.empty())
+                meta.getAffectedNode(item.first)
+                    .emplace_back(std::move(prevs));
+
+            STObject finals(sfFinalFields);
+            for (auto const& obj : *curNode)
+            {
+                // go through the final node for final fields
+                if (obj.getFName().shouldMeta(
+                        SField::sMD_Always | SField::sMD_DeleteFinal))
+                    finals.emplace_back(obj);
+            }
+
+            if (!finals.empty())
+                meta.getAffectedNode(item.first)
+                    .emplace_back(std::move(finals));
+        }
+        else if (type == &sfModifiedNode)
+        {
+            assert(curNode && origNode);
+
+            if (curNode->isThreadedType())  // thread transaction to node
+                                            // item modified
+                threadItem(meta, curNode);
+
+            STObject prevs(sfPreviousFields);
+            for (auto const& obj : *origNode)
+            {
+                // search the original node for values saved on modify
+                if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
+                    !curNode->hasMatchingEntry(obj))
+                    prevs.emplace_back(obj);
+            }
+
+            if (!prevs.empty())
+                meta.getAffectedNode(item.first)
+                    .emplace_back(std::move(prevs));
+
+            STObject finals(sfFinalFields);
+            for (auto const& obj : *curNode)
+            {
+                // search the final node for values saved always
+                if (obj.getFName().shouldMeta(
+                        SField::sMD_Always | SField::sMD_ChangeNew))
+                    finals.emplace_back(obj);
+            }
+
+            if (!finals.empty())
+                meta.getAffectedNode(item.first)
+                    .emplace_back(std::move(finals));
+        }
+        else if (type == &sfCreatedNode)  // if created, thread to owner(s)
+        {
+            assert(curNode && !origNode);
+            threadOwners(to, meta, curNode, newMod, j);
+
+            if (curNode->isThreadedType())  // always thread to self
+                threadItem(meta, curNode);
+
+            STObject news(sfNewFields);
+            for (auto const& obj : *curNode)
+            {
+                // save non-default values
+                if (!obj.isDefault() &&
+                    obj.getFName().shouldMeta(
+                        SField::sMD_Create | SField::sMD_Always))
+                    news.emplace_back(obj);
+            }
+
+            if (!news.empty())
+                meta.getAffectedNode(item.first)
+                    .emplace_back(std::move(news));
+        }
+        else
+        {
+            assert(false);
+        }
+    }
+
+    return {meta, newMod};
+}
+
 void
 ApplyStateTable::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
+    std::vector<STObject> const& hookExecution,
     beast::Journal j)
 {
     // Build metadata and insert
@@ -123,129 +265,10 @@ ApplyStateTable::apply(
     std::shared_ptr<Serializer> sMeta;
     if (!to.open())
     {
-        TxMeta meta(tx.getTransactionID(), to.seq());
-        if (deliver)
-            meta.setDeliveredAmount(*deliver);
-        Mods newMod;
-        for (auto& item : items_)
-        {
-            SField const* type;
-            switch (item.second.first)
-            {
-                default:
-                case Action::cache:
-                    continue;
-                case Action::erase:
-                    type = &sfDeletedNode;
-                    break;
-                case Action::insert:
-                    type = &sfCreatedNode;
-                    break;
-                case Action::modify:
-                    type = &sfModifiedNode;
-                    break;
-            }
-            auto const origNode = to.read(keylet::unchecked(item.first));
-            auto curNode = item.second.second;
-            if ((type == &sfModifiedNode) && (*curNode == *origNode))
-                continue;
-            std::uint16_t nodeType = curNode
-                ? curNode->getFieldU16(sfLedgerEntryType)
-                : origNode->getFieldU16(sfLedgerEntryType);
-            meta.setAffectedNode(item.first, *type, nodeType);
-            if (type == &sfDeletedNode)
-            {
-                assert(origNode && curNode);
-                threadOwners(to, meta, origNode, newMod, j);
 
-                STObject prevs(sfPreviousFields);
-                for (auto const& obj : *origNode)
-                {
-                    // go through the original node for
-                    // modified  fields saved on modification
-                    if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
-                        !curNode->hasMatchingEntry(obj))
-                        prevs.emplace_back(obj);
-                }
-
-                if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
-
-                STObject finals(sfFinalFields);
-                for (auto const& obj : *curNode)
-                {
-                    // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_DeleteFinal))
-                        finals.emplace_back(obj);
-                }
-
-                if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
-            }
-            else if (type == &sfModifiedNode)
-            {
-                assert(curNode && origNode);
-
-                if (curNode->isThreadedType())  // thread transaction to node
-                                                // item modified
-                    threadItem(meta, curNode);
-
-                STObject prevs(sfPreviousFields);
-                for (auto const& obj : *origNode)
-                {
-                    // search the original node for values saved on modify
-                    if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
-                        !curNode->hasMatchingEntry(obj))
-                        prevs.emplace_back(obj);
-                }
-
-                if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
-
-                STObject finals(sfFinalFields);
-                for (auto const& obj : *curNode)
-                {
-                    // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_ChangeNew))
-                        finals.emplace_back(obj);
-                }
-
-                if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
-            }
-            else if (type == &sfCreatedNode)  // if created, thread to owner(s)
-            {
-                assert(curNode && !origNode);
-                threadOwners(to, meta, curNode, newMod, j);
-
-                if (curNode->isThreadedType())  // always thread to self
-                    threadItem(meta, curNode);
-
-                STObject news(sfNewFields);
-                for (auto const& obj : *curNode)
-                {
-                    // save non-default values
-                    if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(
-                            SField::sMD_Create | SField::sMD_Always))
-                        news.emplace_back(obj);
-                }
-
-                if (!news.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(news));
-            }
-            else
-            {
-                assert(false);
-            }
-        }
+        // generate meta
+        auto [meta, newMod] =
+            generateTxMeta(to, tx, deliver, hookExecution, j);
 
         // add any new modified nodes to the modification set
         for (auto& mod : newMod)

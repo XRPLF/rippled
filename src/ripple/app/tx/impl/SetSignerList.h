@@ -24,6 +24,7 @@
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STArray.h>

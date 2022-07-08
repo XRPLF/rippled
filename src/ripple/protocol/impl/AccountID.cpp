@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/digest.h>

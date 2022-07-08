@@ -73,10 +73,18 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_EXPIRATION;
     }
 
-    if (auto const cancelSequence = tx[~sfOfferSequence];
-        cancelSequence && *cancelSequence == 0)
+    auto const offerID = tx[~sfOfferID];
+    
+    auto const cancelSequence = tx[~sfOfferSequence];
+    if (cancelSequence && *cancelSequence == 0)
     {
         JLOG(j.debug()) << "Malformed offer: bad cancel sequence";
+        return temBAD_SEQUENCE;
+    }
+
+    if (offerID && cancelSequence)
+    {
+        JLOG(j.debug()) << "Malformed offer: expect exactly zero or one of: sfOfferID, sfCancelSequence";
         return temBAD_SEQUENCE;
     }
 
@@ -162,6 +170,15 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
             << "delay: Offers must be at least partially funded.";
         return tecUNFUNDED_OFFER;
     }
+
+    bool hooksEnabled = ctx.view.rules().enabled(featureHooks);
+    auto const offerID = ctx.tx[~sfOfferID];
+
+    if (!hooksEnabled && offerID)
+        return temDISABLED;
+
+    if (offerID && cancelSequence)
+        return temBAD_SEQUENCE;
 
     // This can probably be simplified to make sure that you cancel sequences
     // before the transaction sequence number.
@@ -901,6 +918,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
     using beast::zero;
 
+    bool hooksEnabled = sb.rules().enabled(featureHooks);
+
     std::uint32_t const uTxFlags = ctx_.tx.getFlags();
 
     bool const bPassive(uTxFlags & tfPassive);
@@ -912,6 +931,9 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto saTakerGets = ctx_.tx[sfTakerGets];
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
+    std::optional<uint256> offerID;
+    if (hooksEnabled)
+        offerID = ctx_.tx[~sfOfferID];   // this can be used in place of cancel seq
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
@@ -927,17 +949,23 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     TER result = tesSUCCESS;
 
     // Process a cancellation request that's passed along with an offer.
-    if (cancelSequence)
+    if (cancelSequence || offerID)
     {
-        auto const sleCancel =
-            sb.peek(keylet::offer(account_, *cancelSequence));
+        Keylet cancel = offerID
+            ? Keylet(ltOFFER, *offerID)
+            : keylet::offer(account_, *cancelSequence);
+
+        auto const sleCancel = sb.peek(cancel);
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
         // to fail to delete it.
         if (sleCancel)
         {
-            JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
+            if (!offerID)
+                JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
+            else
+                JLOG(j_.debug()) << "Create cancels order " << *offerID;
             result = offerDelete(sb, sleCancel, viewJ);
         }
     }
@@ -1136,7 +1164,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    auto const offer_index = keylet::offer(account_, offerSequence);
+    Keylet offer_index = keylet::offer(account_, seqID(ctx_)); 
 
     // Add offer to owner's directory.
     auto const ownerNode = sb.dirInsert(
@@ -1214,7 +1242,10 @@ CreateOffer::doApply()
 
     auto const result = applyGuts(sb, sbCancel);
     if (result.second)
+    {
         sb.apply(ctx_.rawView());
+        addWeakTSHFromSandbox(sb);
+    }
     else
         sbCancel.apply(ctx_.rawView());
     return result.first;

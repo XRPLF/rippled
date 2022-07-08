@@ -59,6 +59,7 @@ JSS(DepositPreauth);         // transaction and ledger type.
 JSS(Destination);            // in: TransactionSign; field.
 JSS(DirectoryNode);          // ledger type.
 JSS(EnableAmendment);        // transaction type.
+JSS(EmitFailure);            // transaction type. (cleanup emit)
 JSS(Escrow);                 // ledger type.
 JSS(EscrowCancel);           // transaction type.
 JSS(EscrowCreate);           // transaction type.
@@ -97,6 +98,11 @@ JSS(SendMax);                // in: TransactionSign
 JSS(Sequence);               // in/out: TransactionSign; field.
 JSS(SetFlag);                // field.
 JSS(SetRegularKey);          // transaction type.
+JSS(SetHook);                // transaction type.
+JSS(Hook);                   // ledger type.
+JSS(HookState);              // ledger type.
+JSS(HookDefinition);
+JSS(Emitted);                // ledger type.
 JSS(SignerList);             // ledger type.
 JSS(SignerListSet);          // transaction type.
 JSS(SigningPubKey);          // field.
@@ -257,6 +263,7 @@ JSS(features);              // out: Feature
 JSS(fee);                   // out: NetworkOPs, Peers
 JSS(fee_base);              // out: NetworkOPs
 JSS(fee_div_max);           // in: TransactionSign
+JSS(fee_hooks_feeunits);    // out: Fee rpc call
 JSS(fee_level);             // out: AccountInfo
 JSS(fee_mult_max);          // in: TransactionSign
 JSS(fee_ref);               // out: NetworkOPs
@@ -285,6 +292,7 @@ JSS(have_transactions);     // out: InboundLedger
 JSS(highest_sequence);      // out: AccountInfo
 JSS(highest_ticket);        // out: AccountInfo
 JSS(historical_perminute);  // historical_perminute.
+JSS(hook_hash);             // in: LedgerEntry
 JSS(hostid);                // out: NetworkOPs
 JSS(hotwallet);             // in: GatewayBalances
 JSS(id);                    // websocket.
@@ -396,6 +404,8 @@ JSS(minimum_fee);                // out: TxQ
 JSS(minimum_level);              // out: TxQ
 JSS(missingCommand);             // error
 JSS(name);                       // out: AmendmentTableImpl, PeerImp
+JSS(namespace_entries);          // out: AccountNamespace
+JSS(namespace_id);               // in/out: AccountNamespace
 JSS(needed_state_hashes);        // out: InboundLedger
 JSS(needed_transaction_hashes);  // out: InboundLedger
 JSS(network_id);                 // out: NetworkOPs

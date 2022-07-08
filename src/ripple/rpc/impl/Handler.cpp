@@ -66,6 +66,7 @@ Handler const handlerArray[]{
      Role::USER,
      NO_CONDITION},
     {"account_lines", byRef(&doAccountLines), Role::USER, NO_CONDITION},
+    {"account_namespace", byRef(&doAccountNamespace), Role::USER, NO_CONDITION},
     {"account_channels", byRef(&doAccountChannels), Role::USER, NO_CONDITION},
     {"account_nfts", byRef(&doAccountNFTs), Role::USER, NO_CONDITION},
     {"account_objects", byRef(&doAccountObjects), Role::USER, NO_CONDITION},

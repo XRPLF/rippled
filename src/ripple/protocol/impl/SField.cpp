@@ -69,8 +69,8 @@ static SField::private_access_tag_t access;
 // clang-format off
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const sfInvalid(access, -1);
-SField const sfGeneric(access, 0);
+SField const sfInvalid {access, -1};
+SField const sfGeneric {access, 0};
 SField const sfHash(access, STI_UINT256, 257, "hash");
 SField const sfIndex(access, STI_UINT256, 258, "index");
 
@@ -150,6 +150,7 @@ CONSTRUCT_TYPED_SFIELD(sfMintedNFTokens,        "MintedNFTokens",       UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfBurnedNFTokens,        "BurnedNFTokens",       UINT32,    44);
 CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32,    45);
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
+CONSTRUCT_TYPED_SFIELD(sfLockCount,             "LockCount",            UINT32,    47);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -215,6 +216,8 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,
 CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
 CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
 CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
+CONSTRUCT_TYPED_SFIELD(sfOfferID,               "OfferID",              UINT256,   34);
+CONSTRUCT_TYPED_SFIELD(sfEscrowID,              "EscrowID",             UINT256,   35);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
@@ -233,6 +236,8 @@ CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
+CONSTRUCT_TYPED_SFIELD(sfHookCallbackFee,       "HookCallbackFee",      AMOUNT,    20);
+CONSTRUCT_TYPED_SFIELD(sfLockedBalance,         "LockedBalance",        AMOUNT,    21);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
@@ -282,6 +287,7 @@ CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR25
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR256,  4);
+CONSTRUCT_TYPED_SFIELD(sfHookNamespaces,        "HookNamespaces",       VECTOR256,  5);
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);

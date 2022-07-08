@@ -74,8 +74,9 @@ LedgerHandler::check()
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
-        if (!isUnlimited(context_.role))
-            return rpcNO_PERMISSION;
+// RH TODO: recomment this for prod
+//        if (!isUnlimited(context_.role))
+//            return rpcNO_PERMISSION;
 
         if (context_.app.getFeeTrack().isLoadedLocal() &&
             !isUnlimited(context_.role))

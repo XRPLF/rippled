@@ -2,7 +2,7 @@
    declare user options/settings
 #]===================================================================]
 
-option (assert "Enables asserts, even in release builds" OFF)
+option (assert "Enables asserts, even in release builds" ON)
 
 option (reporting "Build rippled with reporting mode enabled" OFF)
 
