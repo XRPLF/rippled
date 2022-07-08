@@ -72,6 +72,8 @@ git checkout develop
 This is the general structure of the workflow to build and test rippled:
 
 1. Export [our Conan recipe for RocksDB](./external/rocksdb).
+It builds version 6.27.3, which, as of July 8, 2022,
+is not available in [Conan Center](https://conan.io/center/rocksdb).
 1. Create a build directory. You can choose any name you want.
 1. Build and install dependencies using Conan.
 1. Configure CMake and generate the build system.
