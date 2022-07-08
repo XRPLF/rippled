@@ -105,6 +105,11 @@ class Xrpl(ConanFile):
 
     def layout(self):
         cmake_layout(self)
+        # Fix this setting to follow the default introduced in Conan 1.48,
+        # so that users with earlier versions can follow our build
+        # instructions. If ever we bump the minimum required version of
+        # Conan to one >= 1.48, then we can remove this line.
+        self.folders.generators = 'build/generators'
 
     generators = 'CMakeDeps'
     def generate(self):

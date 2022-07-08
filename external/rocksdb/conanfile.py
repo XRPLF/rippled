@@ -124,18 +124,17 @@ class RocksDB(ConanFile):
         self._cmake.definitions['WITH_LIBRADOS'] = False
         if ms.is_msvc(self):
             self._cmake.definitions['WITH_MD_LIBRARY'] = (
-                'MD' in ms.msvc_runtime_flag(self)
+                ms.msvc_runtime_flag(self).startswith('MD')
+            )
+            self._cmake.definitions['WITH_RUNTIME_DEBUG'] = (
+                ms.msvc_runtime_flag(self).endswith('d')
             )
         self._cmake.definitions['WITH_NUMA'] = False
         self._cmake.definitions['WITH_TSAN'] = False
         self._cmake.definitions['WITH_UBSAN'] = False
         self._cmake.definitions['WITH_WINDOWS_UTF8_FILENAMES'] = False
         self._cmake.definitions['WITH_XPRESS'] = False
-
         self._cmake.definitions['WITH_FALLOCATE'] = True
-        self._cmake.definitions['WITH_RUNTIME_DEBUG'] = (
-            self.settings.build_type == 'Debug'
-        )
 
 
     def build(self):
