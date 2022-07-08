@@ -242,7 +242,15 @@ executable. The executable will exit with summary info after running the unit te
 
 ## Workaround for a compile error in soci
 
-*Compilation Errors pertaining to soci:* Certain compilation errors have been observed with Apple Clang 13.1.6+ and soci v4.x. soci compiles with -Werror flag which causes certain warnings to be reported as errors. These warings pertain to style and not that of correctness. Since these errors are more than 20 in number, it causes fatal termination of the cmake process.
+Compilation errors have been observed with Apple Clang 13.1.6+ and soci v4.x. soci compiles with the `-Werror` flag which causes warnings to be treated as errors. These warnings pertain to style (not correctness). However, they cause the cmake process to fail.
+
+Here's an example of how this looks:
+```
+.../rippled/.nih_c/unix_makefiles/AppleClang_13.1.6.13160021/Debug/src/soci/src/core/session.cpp:450:66: note: in instantiation of function template specialization 'soci::use<std::string>' requested here
+    return prepare << backEnd_->get_column_descriptions_query(), use(table_name, "t");
+                                                                 ^
+1 error generated.
+```
 
 Please apply the below patch (courtesy of Scott Determan) to remove these errors. `.nih_c/unix_makefiles/AppleClang_13.1.6.13160021/Debug/src/soci/cmake/SociConfig.cmake` file needs to be edited. This file is an example for Mac OS and it might be slightly different for other OS/Architectures.
 
