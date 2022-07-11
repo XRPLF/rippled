@@ -165,6 +165,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a1a79f0c33d1405fe85c40d63a49658bd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;json)</td></tr>
 <tr class="memdesc:a1a79f0c33d1405fe85c40d63a49658bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if the json contains an rpc error specification.  <a href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">More...</a><br /></td></tr>
 <tr class="separator:a1a79f0c33d1405fe85c40d63a49658bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memTemplParams" colspan="2">template&lt;class L &gt; </td></tr>
+<tr class="memitem:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2e549c81edcbd0befcfa4ee871c6f27e">computeBookChanges</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; L const &gt; const &amp;lpAccepted)</td></tr>
+<tr class="separator:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a450c9303d63990d398fa57edea5dc6c7"><td class="memTemplParams" colspan="2">template&lt;class GetLedgerIndex , class GetCloseTime &gt; </td></tr>
 <tr class="memitem:a450c9303d63990d398fa57edea5dc6c7"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a450c9303d63990d398fa57edea5dc6c7">getDeliveredAmount</a> (GetLedgerIndex const &amp;getLedgerIndex, GetCloseTime const &amp;getCloseTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;serializedTx, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta)</td></tr>
 <tr class="separator:a450c9303d63990d398fa57edea5dc6c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -723,6 +726,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a1913cdcfd25a883affb49c4f40174cd6"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">getAPIVersionNumber</a> (const <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;value, bool betaEnabled)</td></tr>
 <tr class="memdesc:a1913cdcfd25a883affb49c4f40174cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the api version number from the json value.  <a href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">More...</a><br /></td></tr>
 <tr class="separator:a1913cdcfd25a883affb49c4f40174cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a683b3428260044b6718d1f9dc0857f8d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a683b3428260044b6718d1f9dc0857f8d">getLedgerByContext</a> (<a class="el" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> &amp;context)</td></tr>
+<tr class="memdesc:a683b3428260044b6718d1f9dc0857f8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a ledger based on ledger_hash or ledger_index, or an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> error.  <a href="namespaceripple_1_1RPC.html#a683b3428260044b6718d1f9dc0857f8d">More...</a><br /></td></tr>
+<tr class="separator:a683b3428260044b6718d1f9dc0857f8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0d8f7023aadd4a6fd6a24af152f856f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#af0d8f7023aadd4a6fd6a24af152f856f">isHexTxID</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;txid)</td></tr>
 <tr class="separator:af0d8f7023aadd4a6fd6a24af152f856f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a952d28abf431af0330afa7db13e7253d"><td class="memTemplParams" colspan="2">template&lt;class Object &gt; </td></tr>
@@ -862,7 +868,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a4c04e509451d50d9449cff3d477ff4f2af275a9f97d64cc8d9bbec02e4a361755"></a>VALIDATED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00128">128</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00129">129</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -1425,6 +1431,28 @@ template&lt;class JsonValue &gt; </div>
 <p>Returns <code>true</code> if the json contains an rpc error specification. </p>
 
 <p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00204">204</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a2e549c81edcbd0befcfa4ee871c6f27e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e549c81edcbd0befcfa4ee871c6f27e">&#9670;&nbsp;</a></span>computeBookChanges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class L &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::RPC::computeBookChanges </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; L const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>lpAccepted</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="BookChanges_8h_source.html#l00038">38</a> of file <a class="el" href="BookChanges_8h_source.html">BookChanges.h</a>.</p>
 
 </div>
 </div>
@@ -7081,7 +7109,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00242">242</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00243">243</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
 
 </div>
 </div>
@@ -7102,7 +7130,7 @@ template&lt;class T &gt; </div>
 
 <p>Return names of all methods. </p>
 
-<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00248">248</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00249">249</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
 
 </div>
 </div>
@@ -7232,7 +7260,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00225">225</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00230">230</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -7264,7 +7292,7 @@ template&lt;class T &gt; </div>
 
 <p>Execute an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command and store the results in a <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00245">245</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00250">250</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -7300,7 +7328,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00292">292</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00297">297</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -7322,7 +7350,7 @@ template&lt;class T &gt; </div>
 
 <p>Get an AccountID from an account ID or public key. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00040">40</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00042">42</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7369,7 +7397,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>code representing error, or rpcSUCCES on success </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00056">56</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00058">58</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7405,7 +7433,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00084">84</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00086">86</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7444,7 +7472,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00094">94</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00096">96</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7490,7 +7518,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00111">111</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00113">113</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7564,7 +7592,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00135">135</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00137">137</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7596,7 +7624,7 @@ template&lt;class T , class R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00295">295</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00297">297</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7746,7 +7774,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00327">327</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00329">329</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7786,7 +7814,7 @@ template&lt;class T &gt; </div>
 
 <p>Get ledger by hash If there is no error in the return value, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00386">386</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00388">388</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7826,7 +7854,7 @@ template&lt;class T &gt; </div>
 
 <p>Get ledger by sequence If there is no error in the return value, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00396">396</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00398">398</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -7867,7 +7895,7 @@ template&lt;class T &gt; </div>
 <p>Get ledger specified in shortcut. </p>
 <p>If there is no error in the return value, the ledger pointer will have been filled </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00427">427</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00429">429</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8005,7 +8033,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00510">510</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00512">512</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8044,7 +8072,7 @@ template&lt;class T &gt; </div>
 <p>Look up a ledger from a request and fill a Json::Result with the data representing a ledger. </p>
 <p>If the returned <a class="el" href="structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail.">Status</a> is OK, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00582">582</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00584">584</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8077,7 +8105,7 @@ template&lt;class T &gt; </div>
 <p>Look up a ledger from a request and fill a Json::Result with either an error, or data representing a ledger. </p>
 <p>If there is no error in the return value, then the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00608">608</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00610">610</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8097,7 +8125,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00618">618</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00620">620</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8131,7 +8159,7 @@ template&lt;class T &gt; </div>
 <p>Effects: Adds the JSON description of <code>sle</code> to <code>jv</code>.</p>
 <p>If <code>sle</code> holds an account root, also adds the urlgravatar field JSON if sfEmailHash is present. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00634">634</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00636">636</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8170,7 +8198,7 @@ template&lt;class T &gt; </div>
 <p>Retrieve the limit value from a <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a>, or set a default - then restrict the limit by max and min if not an ADMIN request. </p>
 <p>If there is an error, return it as JSON. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00659">659</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00661">661</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8190,7 +8218,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00678">678</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00680">680</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8220,7 +8248,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00697">697</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00699">699</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8250,7 +8278,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00756">756</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00758">758</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8270,7 +8298,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00886">886</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00888">888</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8311,7 +8339,29 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the api version number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00939">939</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00941">941</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a683b3428260044b6718d1f9dc0857f8d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a683b3428260044b6718d1f9dc0857f8d">&#9670;&nbsp;</a></span>getLedgerByContext()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt; ripple::RPC::getLedgerByContext </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> &amp;&#160;</td>
+          <td class="paramname"><em>context</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return a ledger based on ledger_hash or ledger_index, or an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> error. </p>
+
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00962">962</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -8367,7 +8417,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00252">252</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00253">253</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -8917,7 +8967,7 @@ template&lt;class Object &gt; </div>
 
 <p>API version numbers used in API version 1. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00214">214</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00215">215</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -8933,7 +8983,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00215">215</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00216">216</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -8949,7 +8999,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00216">216</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00217">217</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -8979,7 +9029,7 @@ template&lt;class Object &gt; </div>
 <p>Network Requests without explicit version numbers use apiVersionIfUnspecified. apiVersionIfUnspecified is 1, because all the <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> requests with a version &gt;= 2 must explicitly specify the version in the requests. Note that apiVersionIfUnspecified will be lower than apiMinimumSupportedVersion when we stop supporting API version 1.</p>
 <p>Command line Requests use apiMaximumSupportedVersion. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00240">240</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00241">241</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -9003,7 +9053,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00241">241</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00242">242</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -9027,7 +9077,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00242">242</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00243">243</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -9051,7 +9101,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00243">243</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00244">244</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -9075,7 +9125,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00244">244</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00245">245</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>

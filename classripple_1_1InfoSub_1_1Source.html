@@ -108,6 +108,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad0b605951cb74872c096b5a816c8175c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9aa6655862d29312e9118e8d38440f58"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a9aa6655862d29312e9118e8d38440f58">unsubLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uListener)=0</td></tr>
 <tr class="separator:a9aa6655862d29312e9118e8d38440f58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a638bb4c55fbededbc2c4388c8536aae1"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a638bb4c55fbededbc2c4388c8536aae1">subBookChanges</a> (<a class="el" href="classripple_1_1InfoSub.html#a35f86745473f425773220ed4b4620349">ref</a> ispListener)=0</td></tr>
+<tr class="separator:a638bb4c55fbededbc2c4388c8536aae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b8ebe71987649d294b76ee492015ea8"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a9b8ebe71987649d294b76ee492015ea8">unsubBookChanges</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uListener)=0</td></tr>
+<tr class="separator:a9b8ebe71987649d294b76ee492015ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82b61d2da59461b189c512947998783c"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#a82b61d2da59461b189c512947998783c">subManifests</a> (<a class="el" href="classripple_1_1InfoSub.html#a35f86745473f425773220ed4b4620349">ref</a> ispListener)=0</td></tr>
 <tr class="separator:a82b61d2da59461b189c512947998783c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb5be08317131c3dfd4a5fe64bb1842f"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub_1_1Source.html#abb5be08317131c3dfd4a5fe64bb1842f">unsubManifests</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uListener)=0</td></tr>
@@ -515,6 +519,62 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#af8371cff174d65276ea6899fcbeeb752">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="a638bb4c55fbededbc2c4388c8536aae1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a638bb4c55fbededbc2c4388c8536aae1">&#9670;&nbsp;</a></span>subBookChanges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::InfoSub::Source::subBookChanges </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1InfoSub.html#a35f86745473f425773220ed4b4620349">ref</a>&#160;</td>
+          <td class="paramname"><em>ispListener</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#acf89aa1bff48351c937e4f3e789fae25">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="a9b8ebe71987649d294b76ee492015ea8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b8ebe71987649d294b76ee492015ea8">&#9670;&nbsp;</a></span>unsubBookChanges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::InfoSub::Source::unsubBookChanges </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>uListener</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a0bce3f762dd3e7a64101b506035666b3">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
