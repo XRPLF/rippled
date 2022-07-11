@@ -191,9 +191,9 @@ MessageScheduler::_offer(
     {
         // If this is the last sender, offer it the full set of channels.
         // If there are more senders waiting, offer one at a time, in turn.
-        auto supply = (i + 1 == senders.size()) ? channels.size() : 1;
+        auto size = (i + 1 == senders.size()) ? channels.size() : 1;
         {
-            Offer offer{*this, channels, supply};
+            Offer offer{*this, channels, size};
             try
             {
                 senders[i]->onOffer(offer);
@@ -201,11 +201,11 @@ MessageScheduler::_offer(
             catch (std::exception const&)
             {
             }
-            if (offer.consumed())
+            if (offer.closed())
             {
                 senders[i] = nullptr;
             }
-            // Consumed channels are removed here,
+            // Closed channels are removed here,
             // in the destructor of the offer.
         }
         if (channels.empty())
@@ -368,7 +368,7 @@ MessageScheduler::_receive(
             // Offer the released channel to waiting senders.
             _offer(channels, senders_);
         }
-        // If the channel was not consumed, add it to the pool.
+        // If the channel was not closed, then add it to the pool.
         std::move(
             channels.begin(), channels.end(), std::back_inserter(channels_));
         if (!channels_.empty() && !senders.empty())

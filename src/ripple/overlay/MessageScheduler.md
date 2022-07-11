@@ -2,33 +2,42 @@
 
 At times, our server needs to communicate with its peers:
 sending them transactions, proposals, and validations, or requesting data.
-We need a component to facilitate this communication that balances a number of
-concerns.
+We need a component to facilitate this communication that balances concerns
+including throughput, congestion, and prioritization.
 
 ## Motivation
 
 The existing architecture for communication is designed for this pattern:
 
-- Senders build fixed size `PeerSet`s holding a subset of connected peers
-    and send messages to those peers whenever they want.
-- Receivers are singletons and all responses of a given message type are
+- Each sender builds a fixed size `PeerSet` holding a subset of connected
+    peers and sends messages to those peers whenever they want.
+- Each receiver is a singleton and all responses of a given message type are
     delivered to the same receiver.
 
 In the existing architecture,
-if you want to add a new component that sends an existing message type
+if we want to add a new component that sends an existing message type
 and thus receives an existing message type,
-then you must find some way to divert responses to your messages
+then we must find some way to divert responses to our messages
 away from the existing singleton receiver.
 Typically, that means attaching an identifier to the request
 that is copied to the response,
-and reserving a subset of those identifiers for your component,
-so when they are spotted in a response,
-the dispatcher knows to forward them to your component.
+and reserving a subset of those identifiers for our component,
+so that when they are spotted in a response,
+the dispatcher knows to forward them to our component.
 Only two existing response types have this feature:
 `TMLedgerData` and `TMGetObjectByHash`.
-For responses now and in the future that have this feature,
+For these responses, and others we may add with this feature,
 we want to relieve senders from the responsibility of managing request IDs.
-We want to let them just send a messsage with a receiver callback.
+We want to let them just send a messsage with an arbitrary receiver callback.
+
+In the existing architecture,
+a sender is not notified when peers in its `PeerSet` disconnect,
+becoming unavailable to receive messages
+or respond to any outstanding requests.
+It is up to the sender to detect this condition,
+add new connected peers to its set,
+and timeout oustanding requests.
+We want to relieve senders from these responsibilities.
 
 In the existing architecture,
 `PeerSet` starts with small subset of connected peers, typically two,
@@ -39,8 +48,9 @@ We want to let senders who generate high volumes of traffic
 immediately use as many connected peers as are available.
 
 With great power comes great responsibility, however.
-At different times we may be sending more than we are receiving, or vice versa.
-We have to strike a balance between our ability to flood peers with
+At different times we may be sending more messages than we are receiving,
+or vice versa.
+We need to strike a balance between our ability to flood peers with
 messages and their ability to read and respond to those messages.
 If not, then we run the risk of overwhelming our peers in traffic
 indistinguishable from a denial-of-service attack.
@@ -58,8 +68,8 @@ a particular message to,
 but the existing architecture encourages a sender to lock itself to a subset
 of connected peers for the duration of its communication.
 We want to let indiscriminate senders send their next message to any available
-peer, selected by the broker based only on its responsibility as a load
-balancer.
+peer, selected by the broker according to its best judgment,
+based on factors like latency and load balancing.
 
 
 ## Related Work
@@ -120,8 +130,9 @@ I want to introduce terminology to frame that discussion.
 - **peer**: A connected peer server. Each peer has one or more channels.
     Peers do not necessarily have the same numbers of channels.
 - **channel**: The unit of capacity for messaging a peer.
-    A channel is either **open** (ready to send a message to the peer) or
-    **closed** (giving the peer time to read and maybe respond to the last
+    A channel is either **open** (ready to send exactly one message to the
+    peer) or
+    **closed** (giving the peer time to read and respond to the last
     message sent).
 - **message**: A message sent to or received from a peer. A message is either
     a request, a response, or a notification.
@@ -140,31 +151,30 @@ a dependent.
 The first step is to schedule a **sender**, adding it to a queue of senders
 ordered by priority.[^5]
 A sender represents a demand for at least one open channel to which to send
-messages.[^4]
-The sender has a callback method, `onOffer`, that accepts an **offer**.[^6]
+messages.
+Each channel represents the capacity to send one message to one peer.
+The sender has a callback method, `onOffer`, that accepts an **offer**.
+The `onOffer` callback may be called immediately,
+in the same thread that scheduled the sender.
+If the caller wants the offer to come in a different thread,
+perhaps to avoid blocking the current thread or double locking a mutex,
+then it should schedule a job that will schedule the sender in another thread.
 
-[^4]: Each "peer" in this document represents capacity for one message.
-A peer that can actually handle multiple simultaneous messages is represented
-in the scheduler by copies of that peer.
 [^5]: For now, the priority order is just first come, first served.
 We want to consider more sophisticated priority schemes for the future.
-[^6]: The `onOffer` callback may be called immediately,
-in the same thread that scheduled the sender.
-If a caller wants the offer to come in a different thread,
-so as not to block the current thread or double lock a mutex,
-then it should schedule a job that will schedule the sender.
 
 Eventually an offer will be made by passing it to `sender.onOffer`.
 An offer contains N open channels,
-and permits the sender to send messages to M &lt;= N of them.
-Each peer represents the capacity to send exactly one message.
-M is called the **supply** of the offer.
+and permits the sender to send messages to a subset M &lt;= N of them.
+M is called the **size** of the offer.
 The sender can iterate through the open channels in the offer,
+selecting the ones it likes,
 sending messages to as many or as few as it wants,
 until (a) it has no more messages to send,
-(b) the supply is exhausted, or
-(c) it has considered every peer in the offer.
-Sending a message to a peer is called **consuming** the peer.
+(b) the offer is exhausted, or
+(c) it has considered every channel in the offer.
+Sending a message to a channel closes the channel.
+Once a channel is closed, it may not be used to send another message.
 
 If a sender expects a response to its message, then we call that message
 a **request**.
@@ -181,17 +191,17 @@ For notifications, this timeout reflects the time it expects the peer to need
 to digest the notification,
 effectively limiting the message rate of senders.
 
-If the sender consumed any peers, it will be removed from the sender queue.
-If it consumed no peers, perhaps because it is waiting for a specific peer,
+If the sender closed any channels, it will be removed from the sender queue.
+If it closed no channels, perhaps because it is waiting for a specific peer,
 then it will be left in the queue to see another, different offer later.
-If it consumed a peer, but wants more, perhaps because it has more messages
-to send than there was supply in the offer, then it must schedule another
-sender.
+If it closed a channel, but wants more, perhaps because it has more messages
+to send than there were open channels in the offer,
+then it must schedule another sender.
 
 When the response arrives, the receiver's success callback will be called with
 it.
-If the timeout expires before, then the receiver's failure callback will be
-called with an error code.
+If, before that happens, the timeout expires or the peer disconnects,
+then the receiver's failure callback will be called with an error code.
 Either way, it may choose to schedule another sender, looping back around.
 
 
@@ -213,7 +223,7 @@ fairness strategies.
 For now, the strategy is for M to be 1 as long as multiple senders are waiting,
 and N otherwise.
 
-If a sender consumes peers from an offer but is not wholly satisfied,
+If a sender closes channels from an offer but is not wholly satisfied,
 then it may schedule another "continuing" sender to wait for
 another offer.
 That continuing sender will be placed in the queue by priority (currently
@@ -221,10 +231,10 @@ ordered by arrival), and if there are any remaining open channels after offering
 them to any higher priority senders, then they will be offered to the
 continuing sender.
 
-When a sender is offered open channels, it may filter through them and consume the
-ones it prefers, up to the offer's supply.
-If it does not consume any peers, then it will remain in its place in the queue
-and wait for another offer containing a different set of open channels.
+When a sender is offered open channels, it may filter through them and close
+the ones it prefers, up to the offer's size.
+If it does not close any channels, then it will remain in its place in the
+queue and wait for another offer containing a different set of open channels.
 That set is guaranteed to be different, but it may overlap, even significantly.
 In fact, it is likely that the next offer will be simply one new open channel
 plus the set in the previous offer.
@@ -292,8 +302,8 @@ As a sender iterates through an offer, those `std::weak_ptr`s are locked to
 `std::shared_ptr`s.
 If it cannot be locked, then the peer object has already been destroyed, and it
 will be skipped over, silently.
-(This means that it is possible that a sender receives an offer that has less
-true supply than what is suggested, and even possibly zero supply.)
+(This means it is possible that a sender receives an offer that has
+a smaller true size than what is suggested, and even possibly zero size.)
 As an offer discovers it is holding dead peers, it removes those peers.
 An offer that is a priori known to be empty is never passed to a sender.
 

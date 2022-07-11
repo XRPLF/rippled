@@ -122,7 +122,7 @@ public:
 
     /**
      * If there are any waiting senders, offer these channels to them.
-     * Add any remaining unconsumed channels to the pool.
+     * Add any remaining open channels to the pool.
      *
      * TODO: Maybe this can be private.
      */
@@ -189,14 +189,14 @@ public:
 private:
     /**
      * Offer channels to senders, in turn, until senders either
-     * (a) consume no channels,
+     * (a) close no channels,
      * in which case we skip over them, or
      * (b) stop scheduling new senders,
      * in which case they are effectively removed.
      *
      * @pre `channels` is not empty.
      * @post Either `channels` is empty,
-     * or every sender in `senders` refused to consume any peer.
+     * or every sender in `senders` refused to close any channel.
      */
     void
     _offer(std::vector<Channel>& channels, std::vector<Sender*>& senders);
@@ -257,8 +257,8 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
 }
 
 /**
- * `Offer` represents an offer to consume M among N channels, M <= N.
- * M is called the "supply".
+ * `Offer` represents an offer to close M among N channels, M <= N.
+ * M is called the "size".
  *
  * `Offer` is an interface around a set of channels represented by
  * a `std::vector` of weak pointers.
@@ -269,7 +269,7 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
  *
  * `Offer` has a companion iterator class, `Offer::Iterator`, that
  * provides a convenient interface for skipping over dead weak pointers and
- * detecting supply exhaustion.
+ * detecting offer exhaustion.
  * Its intended usage pattern is different from that of STL iterators:
  *
  * auto it = offer.begin();
@@ -282,9 +282,9 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
  *     it.send(...);
  * }
  *
- * `Sender`s may consume channels in the offer by sending messages to them.
+ * `Sender`s may close channels in the offer by sending messages to them.
  * After `Offer` is destroyed, the set is left with only the remaining
- * unconsumed channels.
+ * open channels.
  */
 class MessageScheduler::Offer
 {
@@ -298,18 +298,18 @@ private:
     MessageScheduler& scheduler_;
     std::vector<Channel>& channels_;
     std::vector<RequestId> requestIds_;
-    std::size_t supply_;
-    std::size_t consumed_ = 0;
+    std::size_t size_;
+    std::size_t closed_ = 0;
     std::size_t end_;
 
 public:
     Offer(
         MessageScheduler& scheduler,
         std::vector<Channel>& channels,
-        std::size_t supply)
+        std::size_t size)
         : scheduler_(scheduler)
         , channels_(channels)
-        , supply_(supply)
+        , size_(size)
         , end_(channels.size())
     {
     }
@@ -327,18 +327,18 @@ public:
     begin();
 
     /**
-     * Return the remaining supply.
+     * Return the remaining size.
      */
     std::size_t
-    supply() const
+    size() const
     {
-        return supply_ - consumed_;
+        return size_ - closed_;
     }
 
     std::size_t
-    consumed() const
+    closed() const
     {
-        return consumed_;
+        return closed_;
     }
 
 private:
@@ -383,7 +383,7 @@ public:
         auto requestId =
             offer_.scheduler_.send(value_, message, receiver, timeout);
         offer_.requestIds_.push_back(requestId);
-        ++offer_.consumed_;
+        ++offer_.closed_;
         offer_.remove(index_);
         next();
     }
@@ -398,7 +398,7 @@ private:
     next()
     {
         value_.reset();
-        if (offer_.supply_)
+        if (offer_.size())
         {
             auto& channels = offer_.channels_;
             while (index_ < offer_.end_)
