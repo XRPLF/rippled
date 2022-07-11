@@ -10,7 +10,6 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/system/detail/error_code.hpp>
 #include <google/protobuf/message.h>
 
 #include <atomic>
