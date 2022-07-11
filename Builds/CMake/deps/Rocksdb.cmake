@@ -2,7 +2,7 @@
    NIH dep: rocksdb
 #]===================================================================]
 
-option(use_rocksdb "build rocksdb" OFF)
+option(use_rocksdb "build rocksdb" ON)
 
 if(NOT use_rocksdb)
   return()
