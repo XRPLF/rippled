@@ -35,7 +35,6 @@ class Xrpl(ConanFile):
         'tests': True,
         'unity': False,
 
-        'boost:visibility': 'global',
         'cassandra-cpp-driver:shared': False,
         'date:header_only': True,
         'grpc:shared': False,
@@ -95,6 +94,10 @@ class Xrpl(ConanFile):
             matches = (re.search(regex, line) for line in file)
             match = next(m for m in matches if m)
             self.version = match.group(1)
+
+    def configure(self):
+        if self.settings.compiler == 'apple-clang':
+            self.options['boost'].visibility = 'global'
 
     def requirements(self):
         if self.options.jemalloc:
