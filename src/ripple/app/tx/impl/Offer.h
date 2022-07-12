@@ -135,6 +135,9 @@ public:
     issueIn() const;
     Issue
     issueOut() const;
+
+    static TIn
+    minPrecisionSafeAmountIn();
 };
 
 using Offer = TOffer<>;
@@ -242,6 +245,20 @@ inline std::ostream&
 operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
 {
     return os << offer.id();
+}
+
+template <class TIn, class TOut>
+inline TIn
+TOffer<TIn, TOut>::minPrecisionSafeAmountIn()
+{
+    return TIn::minPositiveAmount();
+}
+
+template <>
+inline XRPAmount
+TOffer<XRPAmount, IOUAmount>::minPrecisionSafeAmountIn()
+{
+    return XRPAmount{1000};
 }
 
 }  // namespace ripple
