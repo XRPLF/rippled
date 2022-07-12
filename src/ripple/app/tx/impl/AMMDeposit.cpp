@@ -97,6 +97,12 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 TER
 AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
+    if (!ctx.view.read(keylet::account(ctx.tx[sfAccount])))
+    {
+        JLOG(ctx.j.debug()) << "AMM Deposit: Invalid account.";
+        return terNO_ACCOUNT;
+    }
+
     auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
     if (!ammSle)
     {
@@ -119,6 +125,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit involves frozen asset";
         return tecFROZEN;
     }
+
     return tesSUCCESS;
 }
 

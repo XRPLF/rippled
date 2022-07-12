@@ -99,6 +99,12 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const saAsset1 = tx[sfAsset1];
     auto const saAsset2 = tx[sfAsset2];
 
+    if (!ctx.view.read(keylet::account(accountID)))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: Invalid account.";
+        return terNO_ACCOUNT;
+    }
+
     if (requireAuth(ctx.view, saAsset1.issue(), accountID) ||
         requireAuth(ctx.view, saAsset2.issue(), accountID))
     {
@@ -114,21 +120,18 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
-    auto const issue1Balance = accountHolds(
-        ctx.view,
-        accountID,
-        saAsset1.issue().currency,
-        saAsset1.issue().account,
-        FreezeHandling::fhZERO_IF_FROZEN,
-        ctx.j);
-    auto const issue2Balance = accountHolds(
-        ctx.view,
-        accountID,
-        saAsset2.issue().currency,
-        saAsset2.issue().account,
-        FreezeHandling::fhZERO_IF_FROZEN,
-        ctx.j);
-    if (issue1Balance < saAsset1 || issue2Balance < saAsset2)
+    auto insufficientBalance = [&](STAmount const& asset) {
+        auto const balance = accountHolds(
+            ctx.view,
+            accountID,
+            asset.issue().currency,
+            asset.issue().account,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            ctx.j);
+        return balance < asset;
+    };
+
+    if (insufficientBalance(saAsset1) || insufficientBalance(saAsset2))
     {
         JLOG(j.debug()) << "AMM Instance: has insufficient funds";
         return tecUNFUNDED_PAYMENT;
@@ -149,11 +152,6 @@ AMMCreate::applyGuts(Sandbox& sb)
     auto const ammAccountID = ctx_.tx[sfAMMAccount];
     auto const saAsset1 = ctx_.tx[sfAsset1];
     auto const saAsset2 = ctx_.tx[sfAsset2];
-
-    // AMM's creator account.
-    auto const sleCreator = sb.peek(keylet::account(account_));
-    if (!sleCreator)
-        return {terNO_ACCOUNT, false};
 
     auto const ammHash = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
 

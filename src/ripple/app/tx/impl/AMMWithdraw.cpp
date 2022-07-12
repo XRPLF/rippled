@@ -100,6 +100,12 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
+    if (!ctx.view.read(keylet::account(ctx.tx[sfAccount])))
+    {
+        JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid account.";
+        return terNO_ACCOUNT;
+    }
+
     auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
     if (!ammSle)
     {
@@ -127,6 +133,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
         return tecFROZEN;
     }
+
     return tesSUCCESS;
 }
 

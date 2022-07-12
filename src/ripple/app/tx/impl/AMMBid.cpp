@@ -70,6 +70,12 @@ AMMBid::preflight(PreflightContext const& ctx)
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
+    if (!ctx.view.read(keylet::account(ctx.tx[sfAccount])))
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: Invalid account.";
+        return terNO_ACCOUNT;
+    }
+
     auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
     if (!ammSle)
     {

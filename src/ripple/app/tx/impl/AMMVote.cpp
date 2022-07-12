@@ -61,6 +61,12 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
+    if (!ctx.view.read(keylet::account(ctx.tx[sfAccount])))
+    {
+        JLOG(ctx.j.debug()) << "AMM Vote: Invalid account.";
+        return terNO_ACCOUNT;
+    }
+
     if (!getAMMSle(ctx.view, ctx.tx[sfAMMHash]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM account.";
