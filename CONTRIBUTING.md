@@ -10,6 +10,13 @@ To contribute, please:
 7. Squash your commits (i.e. rebase) into as few commits as is reasonable to describe your changes at a high level (typically a single commit for a small change.)
 8. Open a PR to the main repository onto the _develop_ branch, and follow the provided template.
 
+# Commit Etiquette
+1. All commits must be _signed_ using an appropriately set key, such that GitHub marks the commit as `verified`. Please see [Signing Commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
+2. Commit messages must be expressive and professional. Please see the following: [
+How to Write Good Git Commit Messages](https://chiamakaikeanyi.dev/how-to-write-good-git-commit-messages/).
+3. When asked by a reviewer to fix something in your PR you should force push a rebase on your branch to replace previous bad commits with good commits while your PR is open.
+4. If the `develop` branch moves forward without your PR being merged, it is your responsibility to keep it *fully up to date and merge-compatible* with the develop branch. If this is not done in a timely manner your PR may be closed and you will be asked to reopen when your PR is merge-compatible.
+
 # Major Changes
 If your code change is a major feature, a breaking change or in some other way makes a significant alteration to the way the XRPL will operate, then you must first write an XLS document (XRP Ledger Standard) describing your change.
 To do this:
