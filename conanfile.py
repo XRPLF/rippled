@@ -35,6 +35,7 @@ class Xrpl(ConanFile):
         'tests': True,
         'unity': False,
 
+        'boost:visibility': 'global',
         'cassandra-cpp-driver:shared': False,
         'date:header_only': True,
         'grpc:shared': False,
