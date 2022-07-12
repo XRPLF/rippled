@@ -69,10 +69,16 @@ find_package(LibArchive REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(Snappy REQUIRED)
-find_package(RocksDB REQUIRED)
-set_target_properties(RocksDB::rocksdb PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
-)
+
+option(rocksdb "Enable RocksDB" ON)
+if(rocksdb)
+  find_package(RocksDB REQUIRED)
+  set_target_properties(RocksDB::rocksdb PROPERTIES
+    INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
+  )
+  target_link_libraries(ripple_libs INTERFACE RocksDB::rocksdb)
+endif()
+
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
 include(deps/Protobuf)
@@ -87,7 +93,6 @@ target_link_libraries(ripple_libs INTERFACE
   OpenSSL::SSL
   Ripple::grpc_pbufs
   Ripple::pbufs
-  RocksDB::rocksdb
   secp256k1::secp256k1
   soci::soci
   SQLite::SQLite3

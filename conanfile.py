@@ -16,6 +16,7 @@ class Xrpl(ConanFile):
         'fPIC': [True, False],
         'jemalloc': [True, False],
         'reporting': [True, False],
+        'rocksdb': [True, False],
         'shared': [True, False],
         'static': [True, False],
         'tests': [True, False],
@@ -28,6 +29,7 @@ class Xrpl(ConanFile):
         'fPIC': True,
         'jemalloc': False,
         'reporting': False,
+        'rocksdb': True,
         'shared': False,
         'static': True,
         'tests': True,
@@ -78,7 +80,6 @@ class Xrpl(ConanFile):
         'grpc/1.44.0',
         'nudb/2.0.8',
         'openssl/1.1.1m',
-        'rocksdb/6.27.3',
         'protobuf/3.19.2',
         'snappy/1.1.9',
         'soci/4.0.3',
@@ -100,6 +101,8 @@ class Xrpl(ConanFile):
         if self.options.reporting:
             self.requires('cassandra-cpp-driver/2.15.3')
             self.requires('libpq/13.6')
+        if self.options.rocksdb:
+            self.requires('rocksdb/6.27.3')
 
     exports_sources = 'CMakeLists.txt', 'Builds/CMake/*', 'src/*', 'cfg/*'
 
@@ -119,12 +122,13 @@ class Xrpl(ConanFile):
         tc.variables['coverage'] = self.options.coverage
         tc.variables['jemalloc'] = self.options.jemalloc
         tc.variables['reporting'] = self.options.reporting
+        tc.variables['rocksdb'] = self.options.rocksdb
         tc.variables['BUILD_SHARED_LIBS'] = self.options.shared
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
         tc.generate()
 
-    def build(self, cli_args='--parallel $(nproc)'):
+    def build(self):
         cmake = CMake(self)
         cmake.verbose = True
         cmake.configure()
