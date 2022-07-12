@@ -39,7 +39,7 @@ public:
         std::unordered_set<uint256, beast::uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments)
-        : presets_(presets), digest_(digest)
+        : digest_(digest), presets_(presets)
     {
         set_.reserve(amendments.size());
         set_.insert(amendments.begin(), amendments.end());

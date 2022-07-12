@@ -18,7 +18,7 @@
 //==============================================================================
 
 #ifndef RIPPLE_RPC_BOOKCHANGES_H_INCLUDED
-#define RIPPLE_RPC_BOOKCAHNGES_H_INCLUDED
+#define RIPPLE_RPC_BOOKCHANGES_H_INCLUDED
 
 namespace Json {
 class Value;
