@@ -283,6 +283,30 @@ private:
             env.require(balance(alice, USD(0)));
             env.require(balance(alice, BTC(0)));
         }
+
+        // Require authorization is set, account is authorized
+        {
+            Env env{*this};
+            env.fund(XRP(30000), gw, alice);
+            env(fset(gw, asfRequireAuth));
+            env.trust(USD(30000), alice);
+            env(trust(gw, alice["USD"](30000)), txflags(tfSetfAuth));
+            env(pay(gw, alice, USD(10000)));
+            AMM ammAlice(env, alice, XRP(10000), USD(10000));
+        }
+
+        // Cleared global freeze
+        {
+            Env env{*this};
+            env.fund(XRP(30000), gw, alice);
+            env(fset(gw, asfGlobalFreeze));
+            env.trust(USD(30000), alice);
+            AMM ammAliceFail(
+                env, alice, XRP(10000), USD(10000), ter(tecFROZEN));
+            env(fclear(gw, asfGlobalFreeze));
+            env(pay(gw, alice, USD(10000)));
+            AMM ammAlice(env, alice, XRP(10000), USD(10000));
+        }
     }
 
     void
@@ -292,61 +316,61 @@ private:
 
         using namespace jtx;
 
+        // Can't have both XRP tokens
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Can't have both XRP tokens
             AMM ammAlice(env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Can't have both tokens the same IOU
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Can't have both tokens the same IOU
             AMM ammAlice(env, alice, USD(10000), USD(10000), ter(temBAD_AMM));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Can't have zero amounts
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Can't have zero amounts
             AMM ammAlice(env, alice, XRP(0), USD(10000), ter(temBAD_AMOUNT));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Bad currency
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Bad currency
             AMM ammAlice(
                 env, alice, XRP(10000), BAD(10000), ter(temBAD_CURRENCY));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Insufficient IOU balance
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Insufficient IOU balance
             AMM ammAlice(
                 env, alice, XRP(10000), USD(40000), ter(tecUNFUNDED_PAYMENT));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Insufficient XRP balance
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Insufficient XRP balance
             AMM ammAlice(
                 env, alice, XRP(40000), USD(10000), ter(tecUNFUNDED_PAYMENT));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Invalid trading fee
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            // Invalid trading fee
             AMM ammAlice(
                 env,
                 alice,
@@ -354,14 +378,73 @@ private:
                 USD(10000),
                 false,
                 70001,
+                std::nullopt,
+                std::nullopt,
                 ter(temBAD_FEE));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // AMM already exists
         testAMM([&](AMM& ammAlice, Env& env) {
             AMM ammCarol(
                 env, carol, XRP(10000), USD(10000), ter(tecAMM_EXISTS));
         });
+
+        // Invalid flags
+        {
+            Env env{*this};
+            fund(env, gw, {alice}, {USD(30000)}, Fund::All);
+            AMM ammAlice(
+                env,
+                alice,
+                XRP(10000),
+                USD(10000),
+                false,
+                0,
+                tfAMMWithdrawAll,
+                std::nullopt,
+                ter(temINVALID_FLAG));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // Invalid Account
+        {
+            Env env{*this};
+            Account bad("bad");
+            env.memoize(bad);
+            AMM ammAlice(
+                env,
+                bad,
+                XRP(10000),
+                USD(10000),
+                false,
+                0,
+                std::nullopt,
+                seq(1),
+                ter(terNO_ACCOUNT));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // Require authorization is set
+        {
+            Env env{*this};
+            env.fund(XRP(30000), gw, alice);
+            env(fset(gw, asfRequireAuth));
+            env(trust(gw, alice["USD"](30000)));
+            AMM ammAlice(
+                env, alice, XRP(10000), USD(10000), ter(tecNO_PERMISSION));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // Global freeze
+        {
+            Env env{*this};
+            env.fund(XRP(30000), gw, alice);
+            env(fset(gw, asfGlobalFreeze));
+            env(trust(gw, alice["USD"](30000)));
+            AMM ammAlice(env, alice, XRP(10000), USD(10000), ter(tecFROZEN));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
     }
 
     void

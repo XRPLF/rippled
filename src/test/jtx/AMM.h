@@ -62,7 +62,10 @@ class AMM
     };
 
     void
-    create(std::uint32_t tfee = 0);
+    create(
+        std::uint32_t tfee = 0,
+        std::optional<std::uint32_t> flags = std::nullopt,
+        std::optional<jtx::seq> seq = std::nullopt);
 
     void
     deposit(std::optional<Account> const& account, Json::Value& jv);
@@ -93,6 +96,8 @@ public:
         STAmount const& asset2,
         bool log = false,
         std::uint32_t tfee = 0,
+        std::optional<std::uint32_t> flags = std::nullopt,
+        std::optional<jtx::seq> seq = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
     AMM(Env& env,
         Account const& account,

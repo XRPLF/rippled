@@ -36,6 +36,8 @@ AMM::AMM(
     STAmount const& asset2,
     bool log,
     std::uint32_t tfee,
+    std::optional<std::uint32_t> flags,
+    std::optional<jtx::seq> seq,
     std::optional<ter> const& ter)
     : env_(env)
     , creatorAccount_(account)
@@ -46,7 +48,7 @@ AMM::AMM(
     , ter_(ter)
     , log_(log)
 {
-    create(tfee);
+    create(tfee, flags, seq);
 }
 
 AMM::AMM(
@@ -56,26 +58,30 @@ AMM::AMM(
     STAmount const& asset2,
     ter const& ter,
     bool log)
-    : AMM(env, account, asset1, asset2, log, 0, ter)
+    : AMM(env, account, asset1, asset2, log, 0, std::nullopt, std::nullopt, ter)
 {
 }
 
 void
-AMM::create(std::uint32_t tfee)
+AMM::create(
+    std::uint32_t tfee,
+    std::optional<std::uint32_t> flags,
+    std::optional<jtx::seq> seq)
 {
     Json::Value jv;
     jv[jss::AMMAccount] = ammAccount_.human();
     jv[jss::Account] = creatorAccount_.human();
     jv[jss::Asset1] = asset1_.getJson(JsonOptions::none);
     jv[jss::Asset2] = asset2_.getJson(JsonOptions::none);
-#if 0
-    jv[jss::AssetWeight] = weight1_;
-#endif
     jv[jss::TradingFee] = tfee;
     jv[jss::TransactionType] = jss::AMMInstanceCreate;
+    if (flags)
+        jv[jss::Flags] = *flags;
     if (log_)
         std::cout << jv.toStyledString();
-    if (ter_)
+    if (ter_ && seq)
+        env_(jv, *seq, *ter_);
+    else if (ter_)
         env_(jv, *ter_);
     else
         env_(jv);
@@ -237,11 +243,11 @@ AMM::ammExists() const
 
 bool
 AMM::expectAmmRpcInfo(
-    const STAmount& asset1,
-    const STAmount& asset2,
-    const IOUAmount& balance,
-    const std::optional<AccountID> const& account,
-    const std::optional<std::string> const& ledger_index) const
+    STAmount const& asset1,
+    STAmount const& asset2,
+    IOUAmount const& balance,
+    std::optional<AccountID> const& account,
+    std::optional<std::string> const& ledger_index) const
 {
     auto const jv = ammRpcInfo(account, ledger_index);
     if (!jv)
@@ -251,10 +257,10 @@ AMM::expectAmmRpcInfo(
 
 bool
 AMM::expectAmmgRPCInfo(
-    const STAmount& asset1,
-    const STAmount& asset2,
-    const IOUAmount& balance,
-    const std::optional<AccountID>& account) const
+    STAmount const& asset1,
+    STAmount const& asset2,
+    IOUAmount const& balance,
+    std::optional<AccountID> const& account) const
 {
     auto const jv = ammgRPCInfo(account);
     if (!jv)
