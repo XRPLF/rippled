@@ -58,7 +58,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
     if (saAsset1.issue() == saAsset2.issue())
     {
         JLOG(j.debug()) << "AMM Instance: assets can not have the same issue.";
-        return temBAD_AMM;
+        return temBAD_AMM_TOKENS;
     }
     if (saAsset1 <= beast::zero || saAsset2 <= beast::zero)
     {

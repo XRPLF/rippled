@@ -109,6 +109,14 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account.";
         return terNO_ACCOUNT;
     }
+
+    if (isFrozen(ctx.view, ctx.tx[~sfAsset1In]) ||
+        isFrozen(ctx.view, ctx.tx[~sfAsset2Out]))
+    {
+        JLOG(ctx.j.debug()) << "AMM Deposit involves frozen asset";
+        return tecFROZEN;
+    }
+
     auto const [asset1, asset2, lptAMMBalance] =
         ammHolds(ctx.view, *ammSle, std::nullopt, std::nullopt, ctx.j);
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
@@ -117,13 +125,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug())
             << "AMM Deposit: reserves or tokens balance is zero";
         return tecAMM_BALANCE;
-    }
-
-    if (isFrozen(ctx.view, ctx.tx[~sfAsset1In]) ||
-        isFrozen(ctx.view, ctx.tx[~sfAsset2Out]))
-    {
-        JLOG(ctx.j.debug()) << "AMM Deposit involves frozen asset";
-        return tecFROZEN;
     }
 
     return tesSUCCESS;

@@ -134,7 +134,6 @@ transResults()
         MAKE_ERROR(telCAN_NOT_QUEUE_FULL,     "Can not queue at this time: queue is full."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
-        MAKE_ERROR(temBAD_AMM,                   "Malformed: AMM Instance."),
         MAKE_ERROR(temBAD_AMM_OPTIONS,           "Malformed: Invalid combination of options."),
         MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
         MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),

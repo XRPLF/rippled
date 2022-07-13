@@ -299,14 +299,19 @@ AMM::expectAmmInfo(
 }
 
 void
-AMM::deposit(std::optional<Account> const& account, Json::Value& jv)
+AMM::deposit(
+    std::optional<Account> const& account,
+    Json::Value& jv,
+    std::optional<jtx::seq> const& seq)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
     jv[jss::AMMHash] = to_string(ammHash_);
     jv[jss::TransactionType] = jss::AMMDeposit;
     if (log_)
         std::cout << jv.toStyledString();
-    if (ter_)
+    if (ter_ && seq)
+        env_(jv, *seq, *ter_);
+    else if (ter_)
         env_(jv, *ter_);
     else
         env_(jv);
@@ -317,15 +322,18 @@ AMM::deposit(
     std::optional<Account> const& account,
     std::uint64_t tokens,
     std::optional<STAmount> const& asset1In,
+    std::optional<std::uint32_t> const& flags,
     std::optional<ter> const& ter)
 {
-    ter_ = ter;
-    Json::Value jv;
-    STAmount saTokens{calcLPTIssue(ammAccount_.id()), tokens, 0};
-    saTokens.setJson(jv[jss::LPTokens]);
-    if (asset1In)
-        asset1In->setJson(jv[jss::Asset1In]);
-    deposit(account, jv);
+    deposit(
+        account,
+        tokens,
+        asset1In,
+        std::nullopt,
+        std::nullopt,
+        std::nullopt,
+        flags,
+        ter);
 }
 
 void
@@ -334,17 +342,49 @@ AMM::deposit(
     STAmount const& asset1In,
     std::optional<STAmount> const& asset2In,
     std::optional<STAmount> const& maxEP,
+    std::optional<std::uint32_t> const& flags,
     std::optional<ter> const& ter)
 {
     assert(!(asset2In && maxEP));
-    ter_ = ter;
+    deposit(
+        account,
+        std::nullopt,
+        asset1In,
+        asset2In,
+        maxEP,
+        std::nullopt,
+        flags,
+        ter);
+}
+
+void
+AMM::deposit(
+    std::optional<Account> const& account,
+    std::optional<std::uint64_t> tokens,
+    std::optional<STAmount> const& asset1In,
+    std::optional<STAmount> const& asset2In,
+    std::optional<STAmount> const& maxEP,
+    std::optional<jtx::seq> const& seq,
+    std::optional<std::uint32_t> const& flags,
+    std::optional<ter> const& ter)
+{
+    if (ter)
+        ter_ = *ter;
     Json::Value jv;
-    asset1In.setJson(jv[jss::Asset1In]);
+    if (tokens)
+    {
+        STAmount saTokens{calcLPTIssue(ammAccount_.id()), *tokens, 0};
+        saTokens.setJson(jv[jss::LPTokens]);
+    }
+    if (asset1In)
+        asset1In->setJson(jv[jss::Asset1In]);
     if (asset2In)
         asset2In->setJson(jv[jss::Asset2In]);
     if (maxEP)
         maxEP->setJson(jv[jss::EPrice]);
-    deposit(account, jv);
+    if (flags)
+        jv[jss::Flags] = *flags;
+    deposit(account, jv, seq);
 }
 
 void

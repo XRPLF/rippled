@@ -320,7 +320,8 @@ private:
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            AMM ammAlice(env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM));
+            AMM ammAlice(
+                env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM_TOKENS));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -328,7 +329,8 @@ private:
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
-            AMM ammAlice(env, alice, USD(10000), USD(10000), ter(temBAD_AMM));
+            AMM ammAlice(
+                env, alice, USD(10000), USD(10000), ter(temBAD_AMM_TOKENS));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -445,6 +447,124 @@ private:
             AMM ammAlice(env, alice, XRP(10000), USD(10000), ter(tecFROZEN));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
+    }
+
+    void
+    testInvalidDeposit()
+    {
+        testcase("Invalid Deposit");
+
+        using namespace jtx;
+
+        // Invalid flags
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice,
+                1000000,
+                std::nullopt,
+                tfAMMWithdrawAll,
+                ter(temINVALID_FLAG));
+        });
+
+        // Invalid options: tokens, asset1In, asset2in, EPrice
+        std::vector<std::tuple<
+            std::optional<std::uint32_t>,
+            std::optional<STAmount>,
+            std::optional<STAmount>,
+            std::optional<STAmount>>>
+            invalidOptions = {
+                {1000, std::nullopt, USD(100), std::nullopt},
+                {1000, std::nullopt, std::nullopt, STAmount{USD, 1, -1}},
+                {std::nullopt, std::nullopt, USD(100), STAmount{USD, 1, -1}},
+                {std::nullopt, XRP(100), USD(100), STAmount{USD, 1, -1}},
+                {1000, XRP(100), USD(100), std::nullopt}};
+        for (auto const& it : invalidOptions)
+        {
+            testAMM([&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    alice,
+                    std::get<0>(it),
+                    std::get<1>(it),
+                    std::get<2>(it),
+                    std::get<3>(it),
+                    std::nullopt,
+                    std::nullopt,
+                    ter(temBAD_AMM_OPTIONS));
+            });
+        }
+
+        // Invalid tokens
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
+        });
+
+        // Invalid amount value
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice,
+                USD(0),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMOUNT));
+        });
+
+        // Bad currency
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice,
+                BAD(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_CURRENCY));
+        });
+
+        // Invalid Account
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Account bad("bad");
+            env.memoize(bad);
+            ammAlice.deposit(
+                bad,
+                1000000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                seq(1),
+                std::nullopt,
+                ter(terNO_ACCOUNT));
+        });
+
+        // Invalid AMM
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(alice, 0);
+            ammAlice.deposit(
+                alice, 10000, std::nullopt, std::nullopt, ter(terNO_ACCOUNT));
+        });
+
+        // Frozen asset
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(fset(gw, asfGlobalFreeze));
+            ammAlice.deposit(
+                carol,
+                USD(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecFROZEN));
+        });
+
+        // Frozen asset, balance is not available
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(fset(gw, asfGlobalFreeze));
+            ammAlice.deposit(
+                carol,
+                1000000,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_BALANCE));
+        });
     }
 
     void
@@ -573,7 +693,8 @@ private:
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
         });
 
-        // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current pool
+        // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current
+        // pool
         testAMM([&](AMM& ammAlice, Env&) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
@@ -787,24 +908,6 @@ private:
         // Withdrawing 90% in USD is also invalid. Besides the impact
         // on the pool there should be a max threshold for single
         // deposit.
-    }
-
-    void
-    testRequireAuth()
-    {
-        testcase("Require Authorization");
-        using namespace jtx;
-
-        Env env{*this};
-        auto const aliceUSD = alice["USD"];
-        env.fund(XRP(20000), alice, gw);
-        env(fset(gw, asfRequireAuth));
-        env(trust(gw, aliceUSD(10000)), txflags(tfSetfAuth));
-        env(trust(alice, USD(10000)));
-        env(pay(gw, alice, USD(10000)));
-        AMM ammAlice(env, alice, XRP(10000), USD(10000));
-        BEAST_EXPECT(ammAlice.expectBalances(
-            XRP(10000), USD(10000), IOUAmount{10000000, 0}, alice));
     }
 
     void
@@ -1114,9 +1217,9 @@ private:
     {
         testInvalidInstance();
         testInstanceCreate();
+        testInvalidDeposit();
         testDeposit();
         testWithdraw();
-        testRequireAuth();
         testFeeVote();
         testBid();
         testInvalidAMMPayment();
