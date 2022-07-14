@@ -1213,10 +1213,6 @@ public:
         Json::Value jvParams,
         bool allowAnyCommand)
     {
-        // creating an instance of MyTimer. This instance is destroyed at the end of the parseCommand function.
-        // The duration of existence of this object is used as a proxy 
-        // to measure the time-taken for searching through commands array
-
         if (auto stream = j_.trace())
         {
             stream << "Method: '" << strMethod << "'";
@@ -1231,6 +1227,9 @@ public:
             int maxParams;
         };
 
+        // FIXME: replace this with a function-static std::map and the lookup
+        // code with std::map::find when the problem with magic statics on
+        // Visual Studio is fixed.
         constexpr static Command commands[]{
             // Request-response methods
             // - Returns an error, or the request.
