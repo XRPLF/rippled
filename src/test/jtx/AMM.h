@@ -77,6 +77,7 @@ class AMM
     withdraw(
         std::optional<Account> const& account,
         Json::Value& jv,
+        std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -191,16 +192,30 @@ public:
         std::optional<STAmount> const& asset1In,
         std::optional<STAmount> const& asset2In,
         std::optional<STAmount> const& maxEP,
-        std::optional<jtx::seq> const& seq,
         std::optional<std::uint32_t> const& flags,
+        std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
     void
     withdraw(
         std::optional<Account> const& account,
-        std::uint64_t tokens,
+        std::optional<std::uint64_t> const& tokens,
         std::optional<STAmount> const& asset1OutDetails = std::nullopt,
+        std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
+
+    void
+    withdrawAll(
+        std::optional<Account> const& account,
+        std::optional<STAmount> const& asset1OutDetails = std::nullopt)
+    {
+        withdraw(
+            account,
+            std::nullopt,
+            asset1OutDetails,
+            tfAMMWithdrawAll,
+            std::nullopt);
+    }
 
     void
     withdraw(
@@ -208,6 +223,17 @@ public:
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = std::nullopt,
         std::optional<IOUAmount> const& maxEP = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
+
+    void
+    withdraw(
+        std::optional<Account> const& account,
+        std::optional<std::uint64_t> const& tokens,
+        std::optional<STAmount> const& asset1Out,
+        std::optional<STAmount> const& asset2Out,
+        std::optional<IOUAmount> const& maxEP,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
     void

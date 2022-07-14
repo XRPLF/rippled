@@ -66,15 +66,18 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         (lpTokens && (asset2Out || ePrice || withdrawAll)) ||
         (asset1Out &&
          ((asset2Out && (lpTokens || ePrice || withdrawAll)) ||
-          (ePrice && (asset2Out || lpTokens || withdrawAll)))))
+          (ePrice && (asset2Out || lpTokens || withdrawAll)))) ||
+        (ePrice && (asset2Out || lpTokens || withdrawAll)) ||
+        (asset2Out && withdrawAll && *asset2Out != beast::zero))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid combination of "
-                               "deposit fields.";
+                               "withdraw fields.";
         return temBAD_AMM_OPTIONS;
     }
     if (lpTokens && *lpTokens == beast::zero)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: withdraw all tokens";
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
+        return temBAD_AMM_TOKENS;
     }
     if (auto const res = validAmount(
             asset1Out,
@@ -112,26 +115,31 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account.";
         return terNO_ACCOUNT;
     }
+
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
+
+    if (isFrozen(ctx.view, asset1Out) || isFrozen(ctx.view, sfAsset2Out))
+    {
+        JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
+        return tecFROZEN;
+    }
+
     auto const lptBalance =
         lpHolds(ctx.view, ammAccountID, ctx.tx[sfAccount], ctx.j);
     auto const lpTokens = getTxLPTokens(ctx.view, ammAccountID, ctx.tx, ctx.j);
+
     if (lptBalance <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
         return tecAMM_BALANCE;
     }
+
     if (lpTokens && *lpTokens > lptBalance)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
         return tecAMM_INVALID_TOKENS;
-    }
-    if (isFrozen(ctx.view, asset1Out) || isFrozen(ctx.view, sfAsset2Out))
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
-        return tecFROZEN;
     }
 
     return tesSUCCESS;

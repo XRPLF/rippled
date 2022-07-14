@@ -331,8 +331,8 @@ AMM::deposit(
         asset1In,
         std::nullopt,
         std::nullopt,
-        std::nullopt,
         flags,
+        std::nullopt,
         ter);
 }
 
@@ -352,8 +352,8 @@ AMM::deposit(
         asset1In,
         asset2In,
         maxEP,
-        std::nullopt,
         flags,
+        std::nullopt,
         ter);
 }
 
@@ -364,8 +364,8 @@ AMM::deposit(
     std::optional<STAmount> const& asset1In,
     std::optional<STAmount> const& asset2In,
     std::optional<STAmount> const& maxEP,
-    std::optional<jtx::seq> const& seq,
     std::optional<std::uint32_t> const& flags,
+    std::optional<jtx::seq> const& seq,
     std::optional<ter> const& ter)
 {
     if (ter)
@@ -391,6 +391,7 @@ void
 AMM::withdraw(
     std::optional<Account> const& account,
     Json::Value& jv,
+    std::optional<jtx::seq> const& seq,
     std::optional<ter> const& ter)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
@@ -398,7 +399,9 @@ AMM::withdraw(
     jv[jss::TransactionType] = jss::AMMWithdraw;
     if (log_)
         std::cout << jv.toStyledString();
-    if (ter)
+    if (ter && seq)
+        env_(jv, *seq, *ter);
+    else if (ter)
         env_(jv, *ter);
     else
         env_(jv);
@@ -407,23 +410,20 @@ AMM::withdraw(
 void
 AMM::withdraw(
     std::optional<Account> const& account,
-    std::uint64_t tokens,
+    std::optional<std::uint64_t> const& tokens,
     std::optional<STAmount> const& asset1Out,
+    std::optional<std::uint32_t> const& flags,
     std::optional<ter> const& ter)
 {
-    Json::Value jv;
-    if (tokens == 0)
-    {
-        jv[jss::Flags] = tfAMMWithdrawAll;
-    }
-    else
-    {
-        STAmount saTokens{calcLPTIssue(ammAccount_.id()), tokens, 0};
-        saTokens.setJson(jv[jss::LPTokens]);
-    }
-    if (asset1Out)
-        asset1Out->setJson(jv[jss::Asset1Out]);
-    withdraw(account, jv, ter);
+    withdraw(
+        account,
+        tokens,
+        asset1Out,
+        std::nullopt,
+        std::nullopt,
+        flags,
+        std::nullopt,
+        ter);
 }
 
 void
@@ -435,8 +435,36 @@ AMM::withdraw(
     std::optional<ter> const& ter)
 {
     assert(!(asset2Out && maxEP));
+    withdraw(
+        account,
+        std::nullopt,
+        asset1Out,
+        asset2Out,
+        maxEP,
+        std::nullopt,
+        std::nullopt,
+        ter);
+}
+
+void
+AMM::withdraw(
+    std::optional<Account> const& account,
+    std::optional<std::uint64_t> const& tokens,
+    std::optional<STAmount> const& asset1Out,
+    std::optional<STAmount> const& asset2Out,
+    std::optional<IOUAmount> const& maxEP,
+    std::optional<std::uint32_t> const& flags,
+    std::optional<jtx::seq> const& seq,
+    std::optional<ter> const& ter)
+{
     Json::Value jv;
-    asset1Out.setJson(jv[jss::Asset1Out]);
+    if (tokens)
+    {
+        STAmount saTokens{calcLPTIssue(ammAccount_.id()), *tokens, 0};
+        saTokens.setJson(jv[jss::LPTokens]);
+    }
+    if (asset1Out)
+        asset1Out->setJson(jv[jss::Asset1Out]);
     if (asset2Out)
         asset2Out->setJson(jv[jss::Asset2Out]);
     if (maxEP)
@@ -444,7 +472,9 @@ AMM::withdraw(
         STAmount const saMaxEP{*maxEP, lptIssue_};
         saMaxEP.setJson(jv[jss::EPrice]);
     }
-    withdraw(account, jv, ter);
+    if (flags)
+        jv[jss::Flags] = *flags;
+    withdraw(account, jv, seq, ter);
 }
 
 void

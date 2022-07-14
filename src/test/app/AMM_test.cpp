@@ -466,13 +466,14 @@ private:
                 ter(temINVALID_FLAG));
         });
 
-        // Invalid options: tokens, asset1In, asset2in, EPrice
+        // Invalid options
         std::vector<std::tuple<
             std::optional<std::uint32_t>,
             std::optional<STAmount>,
             std::optional<STAmount>,
             std::optional<STAmount>>>
             invalidOptions = {
+                // tokens, asset1In, asset2in, EPrice
                 {1000, std::nullopt, USD(100), std::nullopt},
                 {1000, std::nullopt, std::nullopt, STAmount{USD, 1, -1}},
                 {std::nullopt, std::nullopt, USD(100), STAmount{USD, 1, -1}},
@@ -531,14 +532,14 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                seq(1),
                 std::nullopt,
+                seq(1),
                 ter(terNO_ACCOUNT));
         });
 
         // Invalid AMM
         testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.withdraw(alice, 0);
+            ammAlice.withdrawAll(alice);
             ammAlice.deposit(
                 alice, 10000, std::nullopt, std::nullopt, ter(terNO_ACCOUNT));
         });
@@ -662,21 +663,158 @@ private:
     }
 
     void
-    testWithdraw()
+    testInvalidWithdraw()
     {
-        testcase("Withdraw");
+        testcase("Invalid Withdraw");
 
         using namespace jtx;
 
-        // Fails, Carol is not a Liquidity Provider.
+        // Invalid flags
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice,
+                1000000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                tfPartialPayment,
+                std::nullopt,
+                ter(temINVALID_FLAG));
+        });
+
+        // Invalid options
+        std::vector<std::tuple<
+            std::optional<std::uint32_t>,
+            std::optional<STAmount>,
+            std::optional<STAmount>,
+            std::optional<IOUAmount>,
+            std::optional<std::uint32_t>>>
+            invalidOptions = {
+                // tokens, asset1Out, asset2Out, EPrice, tfAMMWithdrawAll
+                {std::nullopt,
+                 std::nullopt,
+                 std::nullopt,
+                 std::nullopt,
+                 std::nullopt},
+                {1000,
+                 std::nullopt,
+                 std::nullopt,
+                 std::nullopt,
+                 tfAMMWithdrawAll},
+                {std::nullopt,
+                 std::nullopt,
+                 USD(100),
+                 std::nullopt,
+                 tfAMMWithdrawAll},
+                {1000, std::nullopt, USD(100), std::nullopt, std::nullopt},
+                {std::nullopt,
+                 std::nullopt,
+                 std::nullopt,
+                 IOUAmount{250, 0},
+                 tfAMMWithdrawAll},
+                {1000,
+                 std::nullopt,
+                 std::nullopt,
+                 IOUAmount{250, 0},
+                 std::nullopt},
+                {std::nullopt,
+                 std::nullopt,
+                 USD(100),
+                 IOUAmount{250, 0},
+                 std::nullopt},
+                {std::nullopt,
+                 XRP(100),
+                 USD(100),
+                 IOUAmount{250, 0},
+                 std::nullopt},
+                {1000, XRP(100), USD(100), std::nullopt, std::nullopt},
+                {std::nullopt,
+                 XRP(100),
+                 USD(100),
+                 std::nullopt,
+                 tfAMMWithdrawAll}};
+        for (auto const& it : invalidOptions)
+        {
+            testAMM([&](AMM& ammAlice, Env& env) {
+                ammAlice.withdraw(
+                    alice,
+                    std::get<0>(it),
+                    std::get<1>(it),
+                    std::get<2>(it),
+                    std::get<3>(it),
+                    std::get<4>(it),
+                    std::nullopt,
+                    ter(temBAD_AMM_OPTIONS));
+            });
+        }
+
+        // Invalid tokens
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
+        });
+
+        // Invalid amount value
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice, USD(0), std::nullopt, std::nullopt, ter(temBAD_AMOUNT));
+        });
+
+        // Bad currency
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice,
+                BAD(100),
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_CURRENCY));
+        });
+
+        // Invalid Account
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Account bad("bad");
+            env.memoize(bad);
+            ammAlice.withdraw(
+                bad,
+                1000000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                seq(1),
+                ter(terNO_ACCOUNT));
+        });
+
+        // Invalid AMM
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdrawAll(alice);
+            ammAlice.withdraw(
+                alice, 10000, std::nullopt, std::nullopt, ter(terNO_ACCOUNT));
+        });
+
+        // Frozen asset
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(fset(gw, asfGlobalFreeze));
+            ammAlice.withdraw(
+                carol, USD(100), std::nullopt, std::nullopt, ter(tecFROZEN));
+        });
+
+        // Frozen asset, balance is not available
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(fset(gw, asfGlobalFreeze));
+            ammAlice.withdraw(
+                carol, 1000, std::nullopt, std::nullopt, ter(tecAMM_BALANCE));
+        });
+
+        // Carol is not a Liquidity Provider
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.withdraw(
-                carol, 10000, std::nullopt, std::optional<ter>(tecAMM_BALANCE));
+                carol, 10000, std::nullopt, std::nullopt, ter(tecAMM_BALANCE));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
 
-        // Fail, Carol withdraws more than she owns.
+        // Carol withdraws more than she owns
         testAMM([&](AMM& ammAlice, Env&) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
@@ -688,10 +826,67 @@ private:
                 carol,
                 2000000,
                 std::nullopt,
-                std::optional<ter>(tecAMM_INVALID_TOKENS));
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
         });
+
+        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
+        // to withdraw are 0.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(
+                carol,
+                USD(100),
+                std::nullopt,
+                IOUAmount{500, 0},
+                ter(tecAMM_FAILED_WITHDRAW));
+        });
+
+        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
+        // to withdraw are greater than the LP shares.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(
+                carol,
+                USD(100),
+                std::nullopt,
+                IOUAmount{600, 0},
+                ter(tecAMM_INVALID_TOKENS));
+        });
+
+        // Withdraw with EPrice limit. Fails to withdraw, amount1
+        // to withdraw is less than 1700USD.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.withdraw(
+                carol,
+                USD(1700),
+                std::nullopt,
+                IOUAmount{520, 0},
+                ter(tecAMM_FAILED_WITHDRAW));
+        });
+
+        // Single deposit/withdrawal 1000USD. Fails due to round-off error,
+        // tokens to withdraw exceeds the LP tokens balance.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(10000));
+            ammAlice.withdraw(
+                carol,
+                USD(10000),
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+        });
+    }
+
+    void
+    testWithdraw()
+    {
+        testcase("Withdraw");
+
+        using namespace jtx;
 
         // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current
         // pool
@@ -749,9 +944,9 @@ private:
                 XRP(10000), USD(9980.01), IOUAmount{9990000, 0}));
         });
 
-        // Withdraw all tokens. 0 is a special case to withdraw all tokens.
+        // Withdraw all tokens.
         testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.withdraw(alice, 0);
+            ammAlice.withdrawAll(alice);
             BEAST_EXPECT(!ammAlice.ammExists());
 
             // Can create AMM for the XRP/USD pair
@@ -763,7 +958,7 @@ private:
         // Single deposit 1000USD, withdraw all tokens in USD
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, USD(1000));
-            ammAlice.withdraw(carol, 0, USD(0));
+            ammAlice.withdrawAll(carol, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
             BEAST_EXPECT(
@@ -773,21 +968,9 @@ private:
         // Single deposit 1000USD, withdraw all tokens in XRP
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
-            ammAlice.withdraw(carol, 0, XRP(0));
+            ammAlice.withdrawAll(carol, XRP(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
-        });
-
-        // Single deposit/withdrawal 1000USD. Fails due to round-off error,
-        // tokens to withdraw exceeds the LP tokens balance.
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(carol, USD(10000));
-            ammAlice.withdraw(
-                carol,
-                USD(10000),
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Single deposit/withdrawal 1000USD
@@ -817,7 +1000,7 @@ private:
         // Equal deposit 10%, withdraw all tokens
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(carol, 0);
+            ammAlice.withdrawAll(carol);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
@@ -825,7 +1008,7 @@ private:
         // Equal deposit 10%, withdraw all tokens in USD
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(carol, 0, USD(0));
+            ammAlice.withdrawAll(carol, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000),
                 STAmount{USD, static_cast<std::int64_t>(90909090909091), -10},
@@ -835,7 +1018,7 @@ private:
         // Equal deposit 10%, withdraw all tokens in XRP
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(carol, 0, XRP(0));
+            ammAlice.withdrawAll(carol, XRP(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
         });
@@ -864,42 +1047,6 @@ private:
                         USD, static_cast<std::int64_t>(937278106508876), -11},
                     IOUAmount{1015384615384616, -8}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
-        });
-
-        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
-        // to withdraw are 0.
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(
-                carol,
-                USD(100),
-                std::nullopt,
-                IOUAmount{500, 0},
-                ter(tecAMM_FAILED_WITHDRAW));
-        });
-
-        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
-        // to withdraw are greater than the LP shares.
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(
-                carol,
-                USD(100),
-                std::nullopt,
-                IOUAmount{600, 0},
-                ter(tecAMM_INVALID_TOKENS));
-        });
-
-        // Withdraw with EPrice limit. Fails to withdraw, amount1
-        // to withdraw is less than 1700USD.
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(
-                carol,
-                USD(1700),
-                std::nullopt,
-                IOUAmount{520, 0},
-                ter(tecAMM_FAILED_WITHDRAW));
         });
 
         // TODO there should be a limit on a single withdrawal amount.
@@ -1219,6 +1366,7 @@ private:
         testInstanceCreate();
         testInvalidDeposit();
         testDeposit();
+        testInvalidWithdraw();
         testWithdraw();
         testFeeVote();
         testBid();
