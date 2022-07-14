@@ -150,8 +150,6 @@ MessageScheduler::send(
     Receiver* receiver,
     NetClock::duration timeout)
 {
-    // REVIEWER: Do we want random request IDs? Responses should be signed by
-    // the peer, so we shouldn't have to worry about fake responses.
     auto requestId = ++nextId_;
     message.set_requestcookie(requestId);
     _send(peer, requestId, message, receiver, timeout);
@@ -280,7 +278,6 @@ MessageScheduler::_send(
         request->timer.async_wait(std::move(onTimer));
         requests_.emplace(requestId, std::move(request));
     }
-    // REVIEWER: Should we send before or after bookkeeping?
     peer->send(packet);
     JLOG(journal_.trace()) << "send,id=" << requestId << ",peer=" << peer->id();
 }
@@ -290,7 +287,7 @@ MessageScheduler::receive(std::shared_ptr<protocol::TMLedgerData> message)
 {
     if (!message->has_requestcookie())
     {
-        JLOG(journal_.warn()) << "LedgerData message missing request ID";
+        JLOG(journal_.info()) << "LedgerData message missing request ID";
         return;
     }
     auto requestId = message->requestcookie();
@@ -304,7 +301,7 @@ MessageScheduler::receive(std::shared_ptr<protocol::TMGetObjectByHash> message)
                            << message->objects().size();
     if (!message->has_seq())
     {
-        JLOG(journal_.warn()) << "LedgerData message missing request ID";
+        JLOG(journal_.info()) << "GetObjectByHash message missing request ID";
         return;
     }
     auto requestId = message->seq();
@@ -329,7 +326,7 @@ MessageScheduler::_receive(
         {
             // Either we never requested this data,
             // or it took too long to arrive.
-            JLOG(journal_.warn()) << "unknown request ID: " << requestId;
+            JLOG(journal_.info()) << "unknown request ID: " << requestId;
             return;
         }
         assert(it->second->id == requestId);

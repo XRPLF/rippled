@@ -74,7 +74,7 @@ public:
     // IDs, `PeerImp` can dispatch incoming responses `TMLedgerData` messages to
     // the correct receiver. Similarly for the `seq` field on
     // `TMGetObjectByHash` messages.
-    static constexpr RequestId MINIMUM_REQUEST_ID = 1 << 9;
+    static constexpr RequestId MINIMUM_REQUEST_ID = 1 << 24;
 
 private:
     using Clock = std::chrono::steady_clock;
@@ -182,6 +182,8 @@ public:
     void
     receive(std::shared_ptr<protocol::TMGetObjectByHash> message);
 
+    // TODO: Let callers withdraw senders and receivers.
+
     void
     stop();
 
@@ -264,22 +266,7 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
  * `Offer` does not own the set; it holds the set by reference.
  * The set is owned by the stack.
  * When passed an `Offer`, a `Sender` must use it or lose it.
- * `Sender`s may not save references to `PeerOffers`, or make copies.
- *
- * `Offer` has a companion iterator class, `Offer::Iterator`, that
- * provides a convenient interface for skipping over dead weak pointers and
- * detecting offer exhaustion.
- * Its intended usage pattern is different from that of STL iterators:
- *
- * auto it = offer.begin();
- * while (it) {
- *     Peer& peer = *it;
- *     if (!isAcceptable(peer)) {
- *         it.skip();
- *         continue;
- *     }
- *     it.send(...);
- * }
+ * `Sender`s may not save references to `Channel`s, or make copies.
  *
  * `Sender`s may close channels in the offer by sending messages to them.
  * After `Offer` is destroyed, the set is left with only the remaining
@@ -350,6 +337,23 @@ private:
     }
 };
 
+/**
+ * Iterate over open channels until offer is exhausted.
+ *
+ * Skips over dead peer weak pointers.
+ *
+ * The intended usage pattern is different from that of STL iterators:
+ *
+ * auto it = offer.begin();
+ * while (it) {
+ *     Peer& peer = *it;
+ *     if (!isAcceptable(peer)) {
+ *         it.skip();
+ *         continue;
+ *     }
+ *     it.send(...);
+ * }
+ */
 class MessageScheduler::Offer::Iterator
 {
 private:
@@ -425,10 +429,38 @@ MessageScheduler::Offer::begin()
 class MessageScheduler::Sender
 {
 public:
+    /**
+     * Called when channels are open.
+     *
+     * Each offer has a size that limits the number of messages the sender may
+     * send.
+     * Senders should respect this limit, but it is not enforced.
+     * `Offer::Iterator`, provided for the sender's convenience,
+     * respects the offer size.
+     *
+     * Senders may not save references to peers or channels found in this
+     * offer.
+     * The channels in this offer are good only for the lifetime of the offer,
+     * i.e. the duration of the call to `Sender::onOffer`.
+     *
+     * Senders may filter through the offer, selecting channels for messages
+     * based on any arbitrary condition.
+     * Senders may send as few or as many messages as they want, from zero to
+     * the offer size, inclusive.
+     *
+     * @see MessageScheduler::Offer
+     * @see MessageScheduler::Offer::Iterator
+     */
     virtual void
     onOffer(Offer&) = 0;
+
+    /**
+     * Called when the message scheduler is shutting down but no one withdrew
+     * the sender.
+     */
     virtual void
     onDiscard() = 0;
+
     virtual ~Sender()
     {
     }
@@ -437,10 +469,23 @@ public:
 class MessageScheduler::Receiver
 {
 public:
+    /**
+     * Called when a response has arrived.
+     */
     virtual void onSuccess(
         RequestId,
         std::shared_ptr<::google::protobuf::Message>) = 0;
+
+    /**
+     * Called under a few failure conditions:
+     *
+     * - The request timed out.
+     * - The peer disconnected.
+     * - The message scheduler is shutting down but no one withdrew the
+     *   receiver.
+     */
     virtual void onFailure(RequestId, FailureCode) = 0;
+
     virtual ~Receiver()
     {
     }
