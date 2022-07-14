@@ -1312,7 +1312,7 @@ public:
         };
 
         auto const count = jvParams.size();
-        
+
         for (auto const& command : commands)
         {
             if (strMethod == command.name)
