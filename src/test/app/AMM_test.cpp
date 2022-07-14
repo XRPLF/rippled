@@ -1058,17 +1058,63 @@ private:
     }
 
     void
+    testInvalidFeeVote()
+    {
+        testcase("Invalid Fee Vote");
+        using namespace jtx;
+
+        // Invalid flags
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.vote(
+                std::nullopt,
+                1000,
+                tfAMMWithdrawAll,
+                std::nullopt,
+                ter(temINVALID_FLAG));
+        });
+
+        // Invalid fee.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.vote(
+                std::nullopt,
+                70001,
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_FEE));
+            auto const jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 0);
+        });
+
+        // Invalid Account
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Account bad("bad");
+            env.memoize(bad);
+            ammAlice.vote(bad, 1000, std::nullopt, seq(1), ter(terNO_ACCOUNT));
+        });
+
+        // Invalid AMM
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdrawAll(alice);
+            ammAlice.vote(
+                alice, 1000, std::nullopt, std::nullopt, ter(terNO_ACCOUNT));
+        });
+
+        // Account is not LP
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.vote(
+                carol,
+                1000,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+        });
+    }
+
+    void
     testFeeVote()
     {
         testcase("Fee Vote");
         using namespace jtx;
-
-        // Invalid fee.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.vote({}, 70001, ter(temBAD_FEE));
-            auto const jv = ammAlice.ammRpcInfo();
-            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 0);
-        });
 
         // One vote sets fee to 1%.
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -1168,39 +1214,101 @@ private:
     }
 
     void
-    testBid()
+    testInvalidBid()
     {
-        testcase("Bid");
+        testcase("Invalid Bid");
         using namespace jtx;
         using namespace std::chrono;
 
-        // Bid price is 0, transaction fails.
+        // Invalid flags
         testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.bid(carol, 0, std::nullopt, {}, ter(temBAD_AMM_TOKENS));
+            ammAlice.bid(
+                carol,
+                0,
+                std::nullopt,
+                {},
+                tfAMMWithdrawAll,
+                std::nullopt,
+                ter(temINVALID_FLAG));
         });
 
-        // Bid invalid options with [Min,Max]SlotPrice, transaction fails.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.bid(carol, 100, 100, {}, ter(temBAD_AMM_OPTIONS));
-        });
-
-        // Bid price exceeds LP owned tokens, transaction fails.
+        // Invalid bid options with [Min,Max]SlotPrice
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
             ammAlice.bid(
-                carol, 1000001, std::nullopt, {}, ter(tecAMM_INVALID_TOKENS));
+                carol,
+                100,
+                100,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_OPTIONS));
+        });
+
+        // Invalid Bid price 0
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(carol, 1000000);
             ammAlice.bid(
-                carol, std::nullopt, 1000001, {}, ter(tecAMM_INVALID_TOKENS));
+                carol,
+                0,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.bid(
+                carol,
+                std::nullopt,
+                0,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+
+        // Invalid Account
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Account bad("bad");
+            env.memoize(bad);
+            ammAlice.bid(
+                bad,
+                std::nullopt,
+                100,
+                {},
+                std::nullopt,
+                seq(1),
+                ter(terNO_ACCOUNT));
+        });
+
+        // Invalid AMM
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdrawAll(alice);
+            ammAlice.bid(
+                alice,
+                std::nullopt,
+                100,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(terNO_ACCOUNT));
         });
 
         // Auth account is invalid.
         testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.bid(carol, 100, std::nullopt, {bob}, ter(terNO_ACCOUNT));
+            ammAlice.bid(
+                carol,
+                100,
+                std::nullopt,
+                {bob},
+                std::nullopt,
+                std::nullopt,
+                ter(terNO_ACCOUNT));
         });
 
-        // More than 4 of Auth accounts.
+        // More than four Auth accounts.
         testAMM([&](AMM& ammAlice, Env& env) {
             Account ed("ed");
             Account bill("bill");
@@ -1213,8 +1321,39 @@ private:
                 100,
                 std::nullopt,
                 {bob, ed, bill, scott, james},
+                std::nullopt,
+                std::nullopt,
                 ter(temBAD_AMM_OPTIONS));
         });
+
+        // Bid price exceeds LP owned tokens
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.bid(
+                carol,
+                1000001,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+            ammAlice.bid(
+                carol,
+                std::nullopt,
+                1000001,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+        });
+    }
+
+    void
+    testBid()
+    {
+        testcase("Bid");
+        using namespace jtx;
+        using namespace std::chrono;
 
         // Bid 100 tokens. The slot is not owned and the MinSlotPrice is 110
         // (currently 0.001% of the pool token balance).
@@ -1242,7 +1381,14 @@ private:
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{1155, -1}));
 
             // Bid MaxSlotPrice fails because the computed price is higher.
-            ammAlice.bid(carol, std::nullopt, 120, {}, ter(tecAMM_FAILED_BID));
+            ammAlice.bid(
+                carol,
+                std::nullopt,
+                120,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_BID));
             // Bid MaxSlotPrice succeeds.
             ammAlice.bid(carol, std::nullopt, 135);
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{135, 0}));
@@ -1368,7 +1514,9 @@ private:
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
+        testInvalidFeeVote();
         testFeeVote();
+        testInvalidBid();
         testBid();
         testInvalidAMMPayment();
     }

@@ -481,6 +481,8 @@ void
 AMM::vote(
     std::optional<Account> const& account,
     std::uint32_t feeVal,
+    std::optional<std::uint32_t> const& flags,
+    std::optional<jtx::seq> const& seq,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
@@ -488,9 +490,13 @@ AMM::vote(
     jv[jss::AMMHash] = to_string(ammHash_);
     jv[jss::FeeVal] = feeVal;
     jv[jss::TransactionType] = jss::AMMVote;
+    if (flags)
+        jv[jss::Flags] = *flags;
     if (log_)
         std::cout << jv.toStyledString();
-    if (ter)
+    if (ter && seq)
+        env_(jv, *seq, *ter);
+    else if (ter)
         env_(jv, *ter);
     else
         env_(jv);
@@ -502,6 +508,8 @@ AMM::bid(
     std::optional<std::uint64_t> const& minSlotPrice,
     std::optional<std::uint64_t> const& maxSlotPrice,
     std::vector<Account> const& authAccounts,
+    std::optional<std::uint32_t> const& flags,
+    std::optional<jtx::seq> const& seq,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
@@ -530,10 +538,14 @@ AMM::bid(
         }
         jv[jss::AuthAccounts] = accounts;
     }
+    if (flags)
+        jv[jss::Flags] = *flags;
     jv[jss::TransactionType] = jss::AMMBid;
     if (log_)
         std::cout << jv.toStyledString();
-    if (ter)
+    if (ter && seq)
+        env_(jv, *seq, *ter);
+    else if (ter)
         env_(jv, *ter);
     else
         env_(jv);

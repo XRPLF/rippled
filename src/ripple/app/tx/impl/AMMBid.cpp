@@ -45,16 +45,16 @@ AMMBid::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx[~sfMinSlotPrice] && ctx.tx[~sfMaxSlotPrice])
-    {
-        JLOG(ctx.j.debug()) << "AMM Bid: invalid options.";
-        return temBAD_AMM_OPTIONS;
-    }
-
     if (ctx.tx.getFlags() & tfUniversalMask)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: invalid flags.";
         return temINVALID_FLAG;
+    }
+
+    if (ctx.tx[~sfMinSlotPrice] && ctx.tx[~sfMaxSlotPrice])
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: invalid options.";
+        return temBAD_AMM_OPTIONS;
     }
 
     if (validAmount(ctx.tx[~sfMinSlotPrice]) ||

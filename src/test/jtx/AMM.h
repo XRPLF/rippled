@@ -240,6 +240,8 @@ public:
     vote(
         std::optional<Account> const& account,
         std::uint32_t feeVal,
+        std::optional<std::uint32_t> const& flags = std::nullopt,
+        std::optional<jtx::seq> const& seq = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -247,6 +249,8 @@ public:
         std::optional<std::uint64_t> const& minSlotPrice = std::nullopt,
         std::optional<std::uint64_t> const& maxSlotPrice = std::nullopt,
         std::vector<Account> const& authAccounts = {},
+        std::optional<std::uint32_t> const& flags = std::nullopt,
+        std::optional<jtx::seq> const& seq = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     Account const&
