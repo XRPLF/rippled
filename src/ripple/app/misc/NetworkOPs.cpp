@@ -2323,10 +2323,6 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (!app_.config().SERVER_DOMAIN.empty())
         info[jss::server_domain] = app_.config().SERVER_DOMAIN;
 
-    if (!app_.config().reporting())
-        if (auto const netid = app_.overlay().networkID())
-            info[jss::network_id] = static_cast<Json::UInt>(*netid);
-
     info[jss::build_version] = BuildInfo::getVersionString();
 
     info[jss::server_state] = strOperatingMode(admin);
@@ -2469,6 +2465,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (!app_.config().reporting())
     {
+        if (auto const netid = app_.overlay().networkID())
+            info[jss::network_id] = static_cast<Json::UInt>(*netid);
+
         auto const escalationMetrics =
             app_.getTxQ().getMetrics(*app_.openLedger().current());
 
