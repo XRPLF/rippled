@@ -43,6 +43,8 @@ doAccountTxJson(RPC::JsonContext&);
 Json::Value
 doBookOffers(RPC::JsonContext&);
 Json::Value
+doBookChanges(RPC::JsonContext&);
+Json::Value
 doBlackList(RPC::JsonContext&);
 Json::Value
 doCanDelete(RPC::JsonContext&);
