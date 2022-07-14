@@ -1230,7 +1230,7 @@ public:
         // FIXME: replace this with a function-static std::map and the lookup
         // code with std::map::find when the problem with magic statics on
         // Visual Studio is fixed.
-        static Command const commands[]{
+        static Command const commands[] = {
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
