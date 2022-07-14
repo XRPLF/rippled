@@ -49,24 +49,6 @@
 #include <type_traits>
 #include <unordered_map>
 
-// the below variable keeps track of number of invocations of the MyTimer destructor.
-static std::atomic_int64_t numOfCalls = {};
-
-// @Scott Schurr: The above variable is not correctly tracking the number of invocations of the destructor.
-// I tried placing the increment operation within the constructor, setting numOfCalls as a static variable of the class.
-// But none of these methods help in counting the calls.
-// But when I run ./rippled --unittest, I can observe non-zero values for numOfCalls. (It increases with successive unit tests as expected)
-
-class MyTimer
-{
-public:
-    ~MyTimer()
-    {
-        numOfCalls++;
-        std::cerr << "Destructor: Total calls: " << numOfCalls << std::endl;
-    }
-};
-
 namespace ripple {
 
 class RPCParser;
@@ -1235,8 +1217,6 @@ public:
         // The duration of existence of this object is used as a proxy 
         // to measure the time-taken for searching through commands array
 
-        MyTimer();
-
         if (auto stream = j_.trace())
         {
             stream << "Method: '" << strMethod << "'";
@@ -1251,7 +1231,7 @@ public:
             int maxParams;
         };
 
-        constexpr static Command modified_commands[]{
+        constexpr static Command commands[]{
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
@@ -1333,7 +1313,7 @@ public:
         };
 
         auto const count = jvParams.size();
-        for (auto const& command : modified_commands)
+        for (auto const& command : commands)
         {
             if (strMethod == command.name)
             {
