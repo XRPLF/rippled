@@ -379,7 +379,7 @@ private:
                 XRP(10000),
                 USD(10000),
                 false,
-                70001,
+                65001,
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_FEE));
@@ -1077,7 +1077,7 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.vote(
                 std::nullopt,
-                70001,
+                65001,
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_FEE));

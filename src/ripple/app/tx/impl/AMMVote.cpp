@@ -49,7 +49,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (ctx.tx[sfFeeVal] > 70000)
+    if (ctx.tx[sfFeeVal] > 65000)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
         return temBAD_FEE;
@@ -124,7 +124,7 @@ AMMVote::applyGuts(Sandbox& sb)
         newEntry.setFieldU32(
             sfVoteWeight,
             (std::int64_t)(
-                Number(lpTokens) * 10000 / lptAMMBalance + Number(1) / 2));
+                Number(lpTokens) * 100000 / lptAMMBalance + Number(1) / 2));
         if (!minTokens || lpTokens < *minTokens)
         {
             minTokens = lpTokens;
@@ -141,7 +141,7 @@ AMMVote::applyGuts(Sandbox& sb)
             newEntry.setFieldU32(
                 sfVoteWeight,
                 (std::int64_t)(
-                    Number(lpTokensNew) * 10000 / lptAMMBalance +
+                    Number(lpTokensNew) * 100000 / lptAMMBalance +
                     Number(1) / 2));
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
