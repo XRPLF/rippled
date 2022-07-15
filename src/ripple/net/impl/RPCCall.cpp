@@ -1227,10 +1227,17 @@ public:
             int maxParams;
         };
 
-        // FIXME: replace this with a function-static std::map and the lookup
-        // code with std::map::find when the problem with magic statics on
-        // Visual Studio is fixed.
-        static Command const commands[] = {
+        // The below data structure (commands) is profiled with four alternatives - 
+        // - linear search on an array
+        // - binary search on a sorted array
+        // - using std::map data structure
+        // - using std::unordered_map data structure.
+        // Both linear search and std::unordered_map outperformed the other alternatives.
+        // Hence, I don't think it warrants a change. 
+        // If the number of rpc-handler-commands increase in the future, 
+        // there might be a scope for improvement.
+        // Detailed desc - https://github.com/XRPLF/rippled/issues/3298#issuecomment-1185946010
+        static constexpr Command commands[] = {
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
