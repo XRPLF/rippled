@@ -196,14 +196,17 @@ public:
         return true;
     }
 
+    using SweptPointersVector = std::pair<
+        std::vector<std::shared_ptr<mapped_type>>,
+        std::vector<std::weak_ptr<mapped_type>>>;
+
     void
     sweep()
     {
         // Keep references to all the stuff we sweep
         // For performance, each worker thread should exit before the swept data
         // is destroyed but still within the main cache lock.
-        std::vector<std::vector<std::shared_ptr<mapped_type>>> allStuffToSweep(
-            m_cache.partitions());
+        std::vector<SweptPointersVector> allStuffToSweep(m_cache.partitions());
 
         clock_type::time_point const now(m_clock.now());
         clock_type::time_point when_expire;
@@ -652,9 +655,9 @@ private:
         clock_type::time_point const& when_expire,
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
-        std::vector<std::shared_ptr<mapped_type>>& stuffToSweep,
+        SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const& lock)
+        std::lock_guard<std::recursive_mutex> const&)
     {
         return std::thread([&, this]() {
             int cacheRemovals = 0;
@@ -662,7 +665,8 @@ private:
 
             // Keep references to all the stuff we sweep
             // so that we can destroy them outside the lock.
-            stuffToSweep.reserve(partition.size());
+            stuffToSweep.first.reserve(partition.size());
+            stuffToSweep.second.reserve(partition.size());
             {
                 auto cit = partition.begin();
                 while (cit != partition.end())
@@ -672,6 +676,8 @@ private:
                         // weak
                         if (cit->second.isExpired())
                         {
+                            stuffToSweep.second.push_back(
+                                std::move(cit->second.weak_ptr));
                             ++mapRemovals;
                             cit = partition.erase(cit);
                         }
@@ -686,7 +692,8 @@ private:
                         ++cacheRemovals;
                         if (cit->second.ptr.use_count() == 1)
                         {
-                            stuffToSweep.push_back(cit->second.ptr);
+                            stuffToSweep.first.push_back(
+                                std::move(cit->second.ptr));
                             ++mapRemovals;
                             cit = partition.erase(cit);
                         }
@@ -722,9 +729,9 @@ private:
         clock_type::time_point const& when_expire,
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
-        std::vector<std::shared_ptr<mapped_type>>& stuffToSweep,
+        SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const& lock)
+        std::lock_guard<std::recursive_mutex> const&)
     {
         return std::thread([&, this]() {
             int cacheRemovals = 0;
@@ -732,7 +739,6 @@ private:
 
             // Keep references to all the stuff we sweep
             // so that we can destroy them outside the lock.
-            stuffToSweep.reserve(partition.size());
             {
                 auto cit = partition.begin();
                 while (cit != partition.end())
