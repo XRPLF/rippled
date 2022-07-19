@@ -56,6 +56,9 @@ public:
     preclaim(PreclaimContext const& ctx);
 
 private:
+    bool
+    activateTrustLinesToSelfFix();
+
     TER
     applyAmendment();
 
