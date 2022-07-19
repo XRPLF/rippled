@@ -325,42 +325,45 @@ $(function() {
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    soci::transaction tr(session);</div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> sql =</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="stringliteral">&quot;SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes&quot;</span>;</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="comment">// SOCI requires boost::optional (not std::optional) as parameters.</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    boost::optional&lt;std::string&gt; amendment_hash;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    boost::optional&lt;std::string&gt; amendment_name;</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    boost::optional&lt;int&gt; vote_to_veto;</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    soci::statement st =</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        (session.prepare &lt;&lt; sql,</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;         soci::into(amendment_hash),</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;         soci::into(amendment_name),</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;         soci::into(vote_to_veto));</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    st.execute();</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keywordflow">while</span> (st.fetch())</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    {</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        callback(amendment_hash, amendment_name, intToVote(vote_to_veto));</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    }</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;}</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00275"></a><span class="lineno"><a class="line" href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">  275</a></span>&#160;<a class="code" href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">voteAmendment</a>(</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    soci::session&amp; session,</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; amendment,</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name,</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <a class="code" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> vote)</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;{</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    soci::transaction tr(session);</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> sql =</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <span class="stringliteral">&quot;INSERT INTO FeatureVotes (AmendmentHash, AmendmentName, Veto) VALUES &quot;</span></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        <span class="stringliteral">&quot;(&#39;&quot;</span>;</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    sql += <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(amendment);</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    sql += <span class="stringliteral">&quot;&#39;, &#39;&quot;</span> + name;</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    sql += <span class="stringliteral">&quot;&#39;, &#39;&quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(safe_cast&lt;int&gt;(vote)) + <span class="stringliteral">&quot;&#39;);&quot;</span>;</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    session &lt;&lt; sql;</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    tr.commit();</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;}</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="stringliteral">&quot;SELECT AmendmentHash, AmendmentName, Veto FROM &quot;</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <span class="stringliteral">&quot;( SELECT AmendmentHash, AmendmentName, Veto, RANK() OVER &quot;</span></div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <span class="stringliteral">&quot;(  PARTITION BY AmendmentHash ORDER BY ROWID DESC ) &quot;</span></div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        <span class="stringliteral">&quot;as rnk FROM FeatureVotes ) WHERE rnk = 1&quot;</span>;</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="comment">// SOCI requires boost::optional (not std::optional) as parameters.</span></div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    boost::optional&lt;std::string&gt; amendment_hash;</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    boost::optional&lt;std::string&gt; amendment_name;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    boost::optional&lt;int&gt; vote_to_veto;</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    soci::statement st =</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        (session.prepare &lt;&lt; sql,</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;         soci::into(amendment_hash),</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;         soci::into(amendment_name),</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;         soci::into(vote_to_veto));</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    st.execute();</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keywordflow">while</span> (st.fetch())</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    {</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        callback(amendment_hash, amendment_name, intToVote(vote_to_veto));</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    }</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;}</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00278"></a><span class="lineno"><a class="line" href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">  278</a></span>&#160;<a class="code" href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">voteAmendment</a>(</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    soci::session&amp; session,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; amendment,</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="code" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> vote)</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;{</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    soci::transaction tr(session);</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> sql =</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <span class="stringliteral">&quot;INSERT INTO FeatureVotes (AmendmentHash, AmendmentName, Veto) VALUES &quot;</span></div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        <span class="stringliteral">&quot;(&#39;&quot;</span>;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    sql += <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(amendment);</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    sql += <span class="stringliteral">&quot;&#39;, &#39;&quot;</span> + name;</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    sql += <span class="stringliteral">&quot;&#39;, &#39;&quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(safe_cast&lt;int&gt;(vote)) + <span class="stringliteral">&quot;&#39;);&quot;</span>;</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    session &lt;&lt; sql;</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    tr.commit();</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;}</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a29b57ac75b457310c19803014311345a"><div class="ttname"><a href="namespaceripple.html#a29b57ac75b457310c19803014311345a">ripple::getNodeIdentity</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; getNodeIdentity(Application &amp;app)</div><div class="ttdoc">The cryptographic credentials identifying this server instance.</div><div class="ttdef"><b>Definition:</b> <a href="NodeIdentity_8cpp_source.html#l00032">NodeIdentity.cpp:32</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af68738fadb1f5ce44fb53c4b06436ac1"><div class="ttname"><a href="namespaceripple.html#af68738fadb1f5ce44fb53c4b06436ac1">ripple::WalletDBName</a></div><div class="ttdeci">constexpr auto WalletDBName</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00217">DBInit.h:217</a></div></div>
@@ -375,7 +378,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a53836f0b1a1019c51a41955b523d8b45"><div class="ttname"><a href="namespaceripple.html#a53836f0b1a1019c51a41955b523d8b45">ripple::addValidatorManifest</a></div><div class="ttdeci">void addValidatorManifest(soci::session &amp;session, std::string const &amp;serialized)</div><div class="ttdoc">addValidatorManifest Saves the manifest of a validator to the database.</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00115">Wallet.cpp:115</a></div></div>
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a749483c19248acfb0e4679a9560faaa2"><div class="ttname"><a href="namespaceripple.html#a749483c19248acfb0e4679a9560faaa2">ripple::makeTestWalletDB</a></div><div class="ttdeci">std::unique_ptr&lt; DatabaseCon &gt; makeTestWalletDB(DatabaseCon::Setup const &amp;setup, std::string const &amp;dbname)</div><div class="ttdoc">makeTestWalletDB Opens a test wallet database with an arbitrary name.</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00034">Wallet.cpp:34</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00075">base_uint.h:75</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00081">base_uint.h:81</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html"><div class="ttname"><a href="classripple_1_1PublicKey.html">ripple::PublicKey</a></div><div class="ttdoc">A public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00059">PublicKey.h:59</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac2e5e1557daef529932fd0a047d5c5d6"><div class="ttname"><a href="namespaceripple.html#ac2e5e1557daef529932fd0a047d5c5d6">ripple::derivePublicKey</a></div><div class="ttdeci">PublicKey derivePublicKey(KeyType type, SecretKey const &amp;sk)</div><div class="ttdoc">Derive the public key from a secret key.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00313">SecretKey.cpp:313</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae4478d625c3ba008aed0712de8900573"><div class="ttname"><a href="namespaceripple.html#ae4478d625c3ba008aed0712de8900573">ripple::getManifests</a></div><div class="ttdeci">void getManifests(soci::session &amp;session, std::string const &amp;dbTable, ManifestCache &amp;mCache, beast::Journal j)</div><div class="ttdoc">getManifests Loads a manifest from the wallet database and stores it in the cache.</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00042">Wallet.cpp:42</a></div></div>
@@ -393,7 +396,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1ManifestCache_html"><div class="ttname"><a href="classripple_1_1ManifestCache.html">ripple::ManifestCache</a></div><div class="ttdoc">Remembers manifests with the highest sequence number.</div><div class="ttdef"><b>Definition:</b> <a href="Manifest_8h_source.html#l00225">Manifest.h:225</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="ainsert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">std::unordered_set::insert</a></div><div class="ttdeci">T insert(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_af4775b9f1e9a5a194f086f657c9faa37"><div class="ttname"><a href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">ripple::voteAmendment</a></div><div class="ttdeci">void voteAmendment(soci::session &amp;session, uint256 const &amp;amendment, std::string const &amp;name, AmendmentVote vote)</div><div class="ttdoc">voteAmendment Set the veto value for a particular amendment.</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00275">Wallet.cpp:275</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af4775b9f1e9a5a194f086f657c9faa37"><div class="ttname"><a href="namespaceripple.html#af4775b9f1e9a5a194f086f657c9faa37">ripple::voteAmendment</a></div><div class="ttdeci">void voteAmendment(soci::session &amp;session, uint256 const &amp;amendment, std::string const &amp;name, AmendmentVote vote)</div><div class="ttdoc">voteAmendment Set the veto value for a particular amendment.</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00278">Wallet.cpp:278</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a52d17fa82fb263f290c0c4a0f9e5b484"><div class="ttname"><a href="namespaceripple.html#a52d17fa82fb263f290c0c4a0f9e5b484">ripple::makeWalletDB</a></div><div class="ttdeci">std::unique_ptr&lt; DatabaseCon &gt; makeWalletDB(DatabaseCon::Setup const &amp;setup)</div><div class="ttdoc">makeWalletDB Opens the wallet database and returns it.</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00026">Wallet.cpp:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aef409acedc98fb36174d50a9eb3c5e6f"><div class="ttname"><a href="namespaceripple.html#aef409acedc98fb36174d50a9eb3c5e6f">ripple::saveManifest</a></div><div class="ttdeci">static void saveManifest(soci::session &amp;session, std::string const &amp;dbTable, std::string const &amp;serialized)</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8cpp_source.html#l00075">Wallet.cpp:75</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1dcb4cf27e683bd94d11f5322836c689"><div class="ttname"><a href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">ripple::AmendmentVote</a></div><div class="ttdeci">AmendmentVote</div><div class="ttdef"><b>Definition:</b> <a href="Wallet_8h_source.html#l00138">Wallet.h:138</a></div></div>

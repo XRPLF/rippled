@@ -90,8 +90,10 @@ Collaboration diagram for ripple::Slice:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a27b912d49c4818a295425d1332e3c877"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const  *</td></tr>
-<tr class="separator:a27b912d49c4818a295425d1332e3c877"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77d74884c6cdda148bccb3c539da6804"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a77d74884c6cdda148bccb3c539da6804">value_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></td></tr>
+<tr class="separator:a77d74884c6cdda148bccb3c539da6804"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f70574ecc6a44893f01134750f03afb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a> = <a class="el" href="classripple_1_1Slice.html#a77d74884c6cdda148bccb3c539da6804">value_type</a> const  *</td></tr>
+<tr class="separator:a6f70574ecc6a44893f01134750f03afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -120,13 +122,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4e8d0e9da187938baa8fd4f3e7051867"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a4e8d0e9da187938baa8fd4f3e7051867">remove_suffix</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n)</td></tr>
 <tr class="memdesc:a4e8d0e9da187938baa8fd4f3e7051867"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shrinks the slice by moving its end backward by n characters.  <a href="classripple_1_1Slice.html#a4e8d0e9da187938baa8fd4f3e7051867">More...</a><br /></td></tr>
 <tr class="separator:a4e8d0e9da187938baa8fd4f3e7051867"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ae79b3980ca850a6070e9dda9c19679"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a3ae79b3980ca850a6070e9dda9c19679">begin</a> () const noexcept</td></tr>
+<tr class="memitem:a3ae79b3980ca850a6070e9dda9c19679"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a3ae79b3980ca850a6070e9dda9c19679">begin</a> () const noexcept</td></tr>
 <tr class="separator:a3ae79b3980ca850a6070e9dda9c19679"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6bd58d1949a0ff8d1ff226f1a8a82fc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a6bd58d1949a0ff8d1ff226f1a8a82fc6">cbegin</a> () const noexcept</td></tr>
+<tr class="memitem:a6bd58d1949a0ff8d1ff226f1a8a82fc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a6bd58d1949a0ff8d1ff226f1a8a82fc6">cbegin</a> () const noexcept</td></tr>
 <tr class="separator:a6bd58d1949a0ff8d1ff226f1a8a82fc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a40d87684d01acbc62ec048ffae21b7d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a40d87684d01acbc62ec048ffae21b7d3">end</a> () const noexcept</td></tr>
+<tr class="memitem:a40d87684d01acbc62ec048ffae21b7d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a40d87684d01acbc62ec048ffae21b7d3">end</a> () const noexcept</td></tr>
 <tr class="separator:a40d87684d01acbc62ec048ffae21b7d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3dfd26fc868ea74a200ef6ad27298b9a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a3dfd26fc868ea74a200ef6ad27298b9a">cend</a> () const noexcept</td></tr>
+<tr class="memitem:a3dfd26fc868ea74a200ef6ad27298b9a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a3dfd26fc868ea74a200ef6ad27298b9a">cend</a> () const noexcept</td></tr>
 <tr class="separator:a3dfd26fc868ea74a200ef6ad27298b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0789f9e98153bd7c63d63000decb3b1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a0789f9e98153bd7c63d63000decb3b1b">substr</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> pos, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> count=<a class="elRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;::max()) const</td></tr>
 <tr class="memdesc:a0789f9e98153bd7c63d63000decb3b1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a "sub slice" of given length starting at the given position.  <a href="classripple_1_1Slice.html#a0789f9e98153bd7c63d63000decb3b1b">More...</a><br /></td></tr>
@@ -157,19 +159,35 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00044">44</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a27b912d49c4818a295425d1332e3c877"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27b912d49c4818a295425d1332e3c877">&#9670;&nbsp;</a></span>const_iterator</h2>
+<a id="a77d74884c6cdda148bccb3c539da6804"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77d74884c6cdda148bccb3c539da6804">&#9670;&nbsp;</a></span>value_type</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">ripple::Slice::const_iterator</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const*</td>
+          <td class="memname">using <a class="el" href="classripple_1_1Slice.html#a77d74884c6cdda148bccb3c539da6804">ripple::Slice::value_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00051">51</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+
+</div>
+</div>
+<a id="a6f70574ecc6a44893f01134750f03afb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f70574ecc6a44893f01134750f03afb">&#9670;&nbsp;</a></span>const_iterator</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">ripple::Slice::const_iterator</a> =  <a class="el" href="classripple_1_1Slice.html#a77d74884c6cdda148bccb3c539da6804">value_type</a> const*</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00052">52</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -263,7 +281,7 @@ Private Attributes</h2></td></tr>
 
 <p>Create a slice pointing to existing memory. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00061">61</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00062">62</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -319,7 +337,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return <code>true</code> if the byte range is empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00068">68</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00069">69</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -349,7 +367,7 @@ Private Attributes</h2></td></tr>
 <p>Returns the number of bytes in the storage. </p>
 <p>This may be zero for an empty range. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00079">79</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00080">80</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -376,7 +394,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00085">85</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00086">86</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -406,7 +424,7 @@ Private Attributes</h2></td></tr>
 <p>Return a pointer to beginning of the storage. </p>
 <dl class="section note"><dt>Note</dt><dd>The return type is guaranteed to be a pointer to a single byte, to facilitate pointer arithmetic. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00096">96</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00097">97</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -436,7 +454,7 @@ Private Attributes</h2></td></tr>
 
 <p>Access raw bytes. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00103">103</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00104">104</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -458,7 +476,7 @@ Private Attributes</h2></td></tr>
 
 <p>Advance the buffer. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00112">112</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00113">113</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -478,7 +496,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00122">122</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00123">123</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -500,7 +518,7 @@ Private Attributes</h2></td></tr>
 
 <p>Shrinks the slice by moving its start forward by n characters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00131">131</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00132">132</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -522,7 +540,7 @@ Private Attributes</h2></td></tr>
 
 <p>Shrinks the slice by moving its end backward by n characters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00139">139</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00140">140</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -536,7 +554,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a> ripple::Slice::begin </td>
+          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a> ripple::Slice::begin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -549,7 +567,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00145">145</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00146">146</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -563,7 +581,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a> ripple::Slice::cbegin </td>
+          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a> ripple::Slice::cbegin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -576,7 +594,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00151">151</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00152">152</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -590,7 +608,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a> ripple::Slice::end </td>
+          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a> ripple::Slice::end </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -603,7 +621,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00157">157</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00158">158</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -617,7 +635,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a> ripple::Slice::cend </td>
+          <td class="memname"><a class="el" href="classripple_1_1Slice.html#a6f70574ecc6a44893f01134750f03afb">const_iterator</a> ripple::Slice::cend </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -630,7 +648,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00163">163</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00164">164</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -676,7 +694,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00180">180</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00181">181</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>

@@ -14,7 +14,7 @@ var searchData=
   ['openssl_5fsha256_5fhasher_14317',['openssl_sha256_hasher',['../structripple_1_1openssl__sha256__hasher.html',1,'ripple']]],
   ['openssl_5fsha512_5fhasher_14318',['openssl_sha512_hasher',['../structripple_1_1openssl__sha512__hasher.html',1,'ripple']]],
   ['openview_14319',['OpenView',['../classripple_1_1OpenView.html',1,'ripple']]],
-  ['optional_14320',['optional',['http://en.cppreference.com/w/cpp/utility/optional.html',1,'std::optional'],['http://en.cppreference.com/w/cpp/experimental/optional.html',1,'std::experimental::optional']]],
+  ['optional_14320',['optional',['http://en.cppreference.com/w/cpp/experimental/optional.html',1,'std::experimental::optional'],['http://en.cppreference.com/w/cpp/utility/optional.html',1,'std::optional']]],
   ['optional_3c_20beast_3a_3aip_3a_3aendpoint_20_3e_14321',['optional&lt; beast::IP::Endpoint &gt;',['http://en.cppreference.com/w/cpp/utility/optional.html',1,'std']]],
   ['optional_3c_20bool_20_3e_14322',['optional&lt; bool &gt;',['http://en.cppreference.com/w/cpp/utility/optional.html',1,'std']]],
   ['optional_3c_20boost_3a_3aasio_3a_3aexecutor_5fwork_5fguard_3c_20boost_3a_3aasio_3a_3aexecutor_20_3e_20_3e_14323',['optional&lt; boost::asio::executor_work_guard&lt; boost::asio::executor &gt; &gt;',['http://en.cppreference.com/w/cpp/utility/optional.html',1,'std']]],

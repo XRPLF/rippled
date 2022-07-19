@@ -143,7 +143,7 @@ $(function() {
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index))</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keyword">auto</span> indexValue = params[jss::ledger_index];</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">if</span> (!indexValue.isNumeric())</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">if</span> (indexValue.isString())</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        {</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keyword">auto</span> index = indexValue.<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="keywordflow">return</span> index == <span class="stringliteral">&quot;current&quot;</span> || index == <span class="stringliteral">&quot;closed&quot;</span>;</div>

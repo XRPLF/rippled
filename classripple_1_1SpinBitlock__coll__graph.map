@@ -1,5 +1,0 @@
-<map id="ripple::SpinBitlock" name="ripple::SpinBitlock">
-<area shape="rect" id="node1" title="A specialized 16&#45;way spinlock used to protect inner node branches." alt="" coords="20,184,160,211"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="108,95,315,121"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
-</map>

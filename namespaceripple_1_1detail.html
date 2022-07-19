@@ -109,6 +109,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1is__contiguous__container_3_01Container_00_01std_1_1void__t_3_01declty5b72e96ce5f7645bf11da72bb5b4c85a.html">is_contiguous_container&lt; Container, std::void_t&lt; decltype(std::declval&lt; Container const &gt;().size()), decltype(std::declval&lt; Container const &gt;().data()), typename Container::value_type &gt; &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1is__contiguous__container_3_01Slice_01_4.html">is_contiguous_container&lt; Slice &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1LocalValues.html">LocalValues</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1detail_1_1MessageHeader.html">MessageHeader</a></td></tr>
@@ -305,6 +307,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a782678181f37cb84c4b976f5e35d4e65"><td class="memTemplParams" colspan="2">template&lt;class  = void&gt; </td></tr>
 <tr class="memitem:a782678181f37cb84c4b976f5e35d4e65"><td class="memTemplItemLeft" align="right" valign="top">boost::thread_specific_ptr&lt; <a class="el" href="structripple_1_1detail_1_1LocalValues.html">detail::LocalValues</a> &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">getLocalValues</a> ()</td></tr>
 <tr class="separator:a782678181f37cb84c4b976f5e35d4e65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86d9198b3b1df674eb3345f3ad8f4320"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a86d9198b3b1df674eb3345f3ad8f4320">spin_pause</a> () noexcept</td></tr>
+<tr class="memdesc:a86d9198b3b1df674eb3345f3ad8f4320"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inform the processor that we are in a tight spin-wait loop.  <a href="namespaceripple_1_1detail.html#a86d9198b3b1df674eb3345f3ad8f4320">More...</a><br /></td></tr>
+<tr class="separator:a86d9198b3b1df674eb3345f3ad8f4320"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af55810910292bce584eb1aa14e55fae1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#af55810910292bce584eb1aa14e55fae1">getSociSqliteInit</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dir, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;ext)</td></tr>
 <tr class="separator:af55810910292bce584eb1aa14e55fae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fc6c0177558ca5d07f884e0efcb1c3d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a2fc6c0177558ca5d07f884e0efcb1c3d">getSociInit</a> (<a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbName)</td></tr>
@@ -370,7 +375,7 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a8ae7bb2924041d323f1d27c2f7b8af9f"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8ae7bb2924041d323f1d27c2f7b8af9f">TableTypeCount</a> = 3</td></tr>
 <tr class="separator:a8ae7bb2924041d323f1d27c2f7b8af9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 48</td></tr>
+<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 50</td></tr>
 <tr class="separator:a21f3cf18de89d49823e064f09526cb5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1detail_1_1defaultObject__t.html">defaultObject_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad7cc030b8a64621b81be32a2dc7ad84f">defaultObject</a></td></tr>
 <tr class="separator:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2627,6 +2632,37 @@ template&lt;class  = void&gt; </div>
 
 </div>
 </div>
+<a id="a86d9198b3b1df674eb3345f3ad8f4320"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86d9198b3b1df674eb3345f3ad8f4320">&#9670;&nbsp;</a></span>spin_pause()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::detail::spin_pause </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Inform the processor that we are in a tight spin-wait loop. </p>
+<p>Spinlocks caught in tight loops can result in the processor's pipeline filling up with comparison operations, resulting in a misprediction at the time the lock is finally acquired, necessitating pipeline flushing which is ridiculously expensive and results in very high latency.</p>
+<p>This function instructs the processor to "pause" for some architecture specific amount of time, to prevent this. </p>
+
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00044">44</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+
+</div>
+</div>
 <a id="af55810910292bce584eb1aa14e55fae1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af55810910292bce584eb1aa14e55fae1">&#9670;&nbsp;</a></span>getSociSqliteInit()</h2>
 
@@ -3371,7 +3407,7 @@ template&lt;class T , class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config__test_8cpp_source.html#l00206">206</a> of file <a class="el" href="Config__test_8cpp_source.html">Config_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config__test_8cpp_source.html#l00203">203</a> of file <a class="el" href="Config__test_8cpp_source.html">Config_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3410,7 +3446,7 @@ template&lt;class T , class... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 48</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 50</td>
         </tr>
       </table>
   </td>
