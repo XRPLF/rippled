@@ -118,7 +118,7 @@ SHAMap::dirtyUp(
         assert(branch >= 0);
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(branch, child);
+        node->setChild(branch, std::move(child));
 
         child = std::move(node);
     }
@@ -718,7 +718,7 @@ SHAMap::delItem(uint256 const& id)
         stack.pop();
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(selectBranch(nodeID, id), prevNode);
+        node->setChild(selectBranch(nodeID, id), std::move(prevNode));
 
         if (!nodeID.isRoot())
         {
@@ -796,7 +796,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item)
         int branch = selectBranch(nodeID, tag);
         assert(inner->isEmptyBranch(branch));
         auto newNode = makeTypedLeaf(type, std::move(item), cowid_);
-        inner->setChild(branch, newNode);
+        inner->setChild(branch, std::move(newNode));
     }
     else
     {
