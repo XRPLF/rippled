@@ -279,7 +279,7 @@ private:
             AMM ammAlice(env, alice, USD(20000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            // Charging the AMM's LP the transfer fee.
+            // Charge AMM's LP the transfer fee.
             env.require(balance(alice, USD(0)));
             env.require(balance(alice, BTC(0)));
         }
@@ -660,6 +660,26 @@ private:
                 STAmount{USD, 1008016, -2},
                 IOUAmount{10040000, 0}));
         });
+
+        // IOU to IOU + transfer fee
+        {
+            Env env{*this};
+            fund(env, gw, {alice}, {USD(25000), BTC(0.625)}, Fund::All);
+            env(rate(gw, 1.25));
+            AMM ammAlice(env, alice, USD(20000), BTC(0.5));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                USD(20000), BTC(0.5), IOUAmount{100, 0}));
+            // Charge AMM's LP the transfer fee.
+            env.require(balance(alice, USD(0)));
+            env.require(balance(alice, BTC(0)));
+            // LP deposits, pays transfer fee
+            fund(env, gw, {carol}, {USD(2500), BTC(0.0625)}, Fund::Acct);
+            ammAlice.deposit(carol, 10);
+            BEAST_EXPECT(ammAlice.expectBalances(
+                USD(22000), BTC(0.55), IOUAmount{110, 0}));
+            env.require(balance(carol, USD(0)));
+            env.require(balance(carol, BTC(0)));
+        }
     }
 
     void
@@ -1055,6 +1075,33 @@ private:
         // Withdrawing 90% in USD is also invalid. Besides the impact
         // on the pool there should be a max threshold for single
         // deposit.
+
+        // IOU to IOU + transfer fee
+        {
+            Env env{*this};
+            fund(env, gw, {alice}, {USD(25000), BTC(0.625)}, Fund::All);
+            env(rate(gw, 1.25));
+            AMM ammAlice(env, alice, USD(20000), BTC(0.5));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                USD(20000), BTC(0.5), IOUAmount{100, 0}));
+            // Charge AMM's LP the transfer fee.
+            env.require(balance(alice, USD(0)));
+            env.require(balance(alice, BTC(0)));
+            // LP deposits, pays transfer fee
+            fund(env, gw, {carol}, {USD(2500), BTC(0.0625)}, Fund::Acct);
+            ammAlice.deposit(carol, 10);
+            BEAST_EXPECT(ammAlice.expectBalances(
+                USD(22000), BTC(0.55), IOUAmount{110, 0}));
+            env.require(balance(carol, USD(0)));
+            env.require(balance(carol, BTC(0)));
+            // LP withdraws, AMM pays the transfer fee
+            ammAlice.withdraw(carol, 10);
+            BEAST_EXPECT(ammAlice.expectBalances(
+                USD(19500), BTC(0.4875), IOUAmount{100, 0}));
+            ammAlice.expectLPTokens(carol, IOUAmount{0, 0});
+            env.require(balance(carol, USD(2000)));
+            env.require(balance(carol, BTC(0.05)));
+        }
     }
 
     void
