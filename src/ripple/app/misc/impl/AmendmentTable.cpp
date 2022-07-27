@@ -425,7 +425,7 @@ AmendmentTableImpl::AmendmentTableImpl(
             }
             else  // up-vote
             {
-                auto s = add(amend_hash, lock);
+                AmendmentState& s = add(amend_hash, lock);
 
                 JLOG(j_.debug()) << "Amendment {" << *amendment_name << ", "
                                  << amend_hash << "} is upvoted.";
