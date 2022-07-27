@@ -727,7 +727,7 @@ private:
         clock_type::time_point const& when_expire,
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
-        SweptPointersVector& stuffToSweep,
+        SweptPointersVector&,
         std::atomic<int>& allRemovals)
     {
         return std::thread([&, this]() {
