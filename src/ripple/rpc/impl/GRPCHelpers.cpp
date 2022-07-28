@@ -2455,6 +2455,7 @@ convert(
             break;
         case TxType::ttAMM_VOTE:
             convert(*to.mutable_ammvote(), fromObj);
+            break;
         case TxType::ttAMM_BID:
             convert(*to.mutable_ammbid(), fromObj);
             break;
