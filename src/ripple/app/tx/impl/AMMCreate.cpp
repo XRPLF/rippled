@@ -193,7 +193,7 @@ AMMCreate::applyGuts(Sandbox& sb)
 
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
-    ammSle->setFieldU32(sfTradingFee, ctx_.tx[sfTradingFee]);
+    ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
     ammSle->setAccountID(sfAMMAccount, ammAccountID);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& issue1 = saAsset1.issue() < saAsset2.issue() ? saAsset1.issue()

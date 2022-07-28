@@ -159,48 +159,48 @@ changeSpotPrice(
 
 /** Find in/out amounts to change the spot price quality to the requested
  * quality.
- * @param poolIn AMM poolIn balance
- * @param poolOut AMM poolOut balance
+ * @param pool AMM pool balances
  * @param quality requested quality
  * @param tfee trading fee in basis points
  * @return seated in/out amounts if the quality can be changed
  */
-std::optional<std::pair<STAmount, STAmount>>
+std::optional<Amounts>
 changeSpotPriceQuality(
-    STAmount const& poolIn,
-    STAmount const& poolOut,
+    Amounts const& pool,
     Quality const& quality,
     std::uint32_t tfee);
 
 /** Swap assetIn into the pool and swap out a proportional amount
  * of the other asset.
- * @param asset1Balance current AMM asset1 balance
- * @param asset2Balance current AMM asset2 balance
- * @param assetIn amount to swap in, same issue as asset1Balance
+ * @param pool current AMM pool balances
+ * @param assetIn amount to swap in
  * @param tfee trading fee in basis points
  * @return
  */
+template <typename TIn>
 STAmount
-swapAssetIn(
-    STAmount const& asset1Balance,
-    STAmount const& asset2Balance,
-    STAmount const& assetIn,
-    std::uint16_t tfee);
+swapAssetIn(Amounts const& pool, TIn const& assetIn, std::uint16_t tfee)
+{
+    return toSTAmount(
+        pool.out.issue(),
+        pool.out * (1 - pool.in / (pool.in + assetIn * feeMult(tfee))));
+}
 
 /** Swap assetOut out of the pool and swap in a proportional amount
  * of the other asset.
- * @param asset1Balance current AMM asset1 balance
- * @param asset2Balance current AMM asset2 balance
- * @param assetOut amount to swap out, same issue as asset1Balance
+ * @param pool current AMM pool balances
+ * @param assetOut amount to swap out
  * @param tfee trading fee in basis points
  * @return
  */
+template <typename TOut>
 STAmount
-swapAssetOut(
-    STAmount const& asset1Balance,
-    STAmount const& asset2Balance,
-    STAmount const& assetOut,
-    std::uint16_t tfee);
+swapAssetOut(Amounts const& pool, TOut const& assetOut, std::uint16_t tfee)
+{
+    return toSTAmount(
+        pool.in.issue(),
+        pool.in * (pool.out / (pool.out - assetOut) - 1) / feeMult(tfee));
+}
 
 /** Get amount based on T
  */

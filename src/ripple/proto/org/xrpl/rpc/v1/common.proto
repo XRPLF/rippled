@@ -217,6 +217,7 @@ message TransferRate
 
 message TradingFee
 {
+    // is actually uint16
     uint32 value = 1;
 }
 

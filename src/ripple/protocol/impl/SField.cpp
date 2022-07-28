@@ -95,6 +95,7 @@ CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16,     2);
 CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
 CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16,     4);
+CONSTRUCT_TYPED_SFIELD(sfTradingFee,            "TradingFee",           UINT16,     5);
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
@@ -117,7 +118,6 @@ CONSTRUCT_TYPED_SFIELD(sfTransferRate,          "TransferRate",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfWalletSize,            "WalletSize",           UINT32,    12);
 CONSTRUCT_TYPED_SFIELD(sfOwnerCount,            "OwnerCount",           UINT32,    13);
 CONSTRUCT_TYPED_SFIELD(sfDestinationTag,        "DestinationTag",       UINT32,    14);
-CONSTRUCT_TYPED_SFIELD(sfTradingFee,            "TradingFee",           UINT32,    15);
 
 // 32-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHighQualityIn,         "HighQualityIn",        UINT32,    16);

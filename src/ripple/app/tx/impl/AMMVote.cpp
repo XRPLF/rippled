@@ -161,7 +161,7 @@ AMMVote::applyGuts(Sandbox& sb)
     }
 
     amm->setFieldArray(sfVoteEntries, updatedVoteEntries);
-    amm->setFieldU32(sfTradingFee, (std::int64_t)(num / den + Number(1) / 2));
+    amm->setFieldU16(sfTradingFee, (std::int64_t)(num / den + Number(1) / 2));
     sb.update(amm);
 
     return {tesSUCCESS, true};

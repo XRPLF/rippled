@@ -127,7 +127,7 @@ doAMMInfo(RPC::JsonContext& context)
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
     lptAMMBalance.setJson(result[jss::LPTokens]);
-    result[jss::TradingFee] = amm->getFieldU32(sfTradingFee);
+    result[jss::TradingFee] = amm->getFieldU16(sfTradingFee);
     result[jss::AMMAccount] = to_string(ammAccountID);
     Json::Value voteEntries(Json::arrayValue);
     if (amm->isFieldPresent(sfVoteEntries))
@@ -271,7 +271,7 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
     ripple::RPC::convert(*asset2, asset2Balance);
     auto tokens = result.mutable_tokens();
     ripple::RPC::convert(*tokens, lptAMMBalance);
-    result.mutable_trading_fee()->set_value(amm->getFieldU32(sfTradingFee));
+    result.mutable_trading_fee()->set_value(amm->getFieldU16(sfTradingFee));
     *result.mutable_ammaccount()->mutable_value()->mutable_address() =
         toBase58(ammAccountID);
     if (!params.has_ammhash())

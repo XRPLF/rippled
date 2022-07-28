@@ -23,7 +23,9 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
+#include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/digest.h>
 
 namespace ripple {
@@ -132,7 +134,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * if the account is the auction slot owner or one of the slot's authorized
  * accounts.
  */
-std::uint32_t
+std::uint16_t
 getTradingFee(SLE const& ammSle, AccountID const& account);
 
 /** Get Issue from sfToken1/sfToken2 fields.

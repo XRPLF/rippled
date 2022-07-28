@@ -182,7 +182,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return false;
 }
 
-std::uint32_t
+std::uint16_t
 getTradingFee(SLE const& ammSle, AccountID const& account)
 {
     if (ammSle.isFieldPresent(sfAuctionSlot))
@@ -199,7 +199,7 @@ getTradingFee(SLE const& ammSle, AccountID const& account)
                     return auctionSlot.getFieldU32(sfDiscountedFee);
         }
     }
-    return ammSle.getFieldU32(sfTradingFee);
+    return ammSle.getFieldU16(sfTradingFee);
 }
 
 std::pair<Issue, Issue>

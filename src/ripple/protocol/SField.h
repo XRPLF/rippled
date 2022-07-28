@@ -345,6 +345,7 @@ extern SF_UINT16 const sfLedgerEntryType;
 extern SF_UINT16 const sfTransactionType;
 extern SF_UINT16 const sfSignerWeight;
 extern SF_UINT16 const sfTransferFee;
+extern SF_UINT16 const sfTradingFee;
 
 // 16-bit integers (uncommon)
 extern SF_UINT16 const sfVersion;
@@ -367,7 +368,6 @@ extern SF_UINT32 const sfTransferRate;
 extern SF_UINT32 const sfWalletSize;
 extern SF_UINT32 const sfOwnerCount;
 extern SF_UINT32 const sfDestinationTag;
-extern SF_UINT32 const sfTradingFee;
 extern SF_UINT32 const sfTimeStamp;
 extern SF_UINT32 const sfDiscountedFee;
 
