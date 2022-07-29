@@ -735,7 +735,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         auto const baseFee = env.current()->fees().base;
         env(noop(alice),
             msig(gw),
-            fee(2 * baseFee),
+            fee(3 * baseFee),
             memo("data", "format", "type"));
         env.close();
 
@@ -753,7 +753,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
                      txns[txns.size() - 1]->getJson(JsonOptions::none);
                  return BEAST_EXPECT(res.has_account_set()) &&
                      BEAST_EXPECT(res.has_fee()) &&
-                     BEAST_EXPECT(res.fee().drops() == 20) &&
+                     BEAST_EXPECT(res.fee().drops() == 30) &&
                      BEAST_EXPECT(res.memos_size() == 1) &&
                      BEAST_EXPECT(res.memos(0).has_memo_data()) &&
                      BEAST_EXPECT(res.memos(0).memo_data().value() == "data") &&

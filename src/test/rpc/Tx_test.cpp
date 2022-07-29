@@ -568,7 +568,7 @@ class Tx_test : public beast::unit_test::suite
         for (int i = 0; i < 14; ++i)
         {
             auto const baseFee = env.current()->fees().base;
-            auto txfee = fee(i + (2 * baseFee));
+            auto txfee = fee(i + (10 * baseFee));
             auto lls = last_ledger_seq(i + startLegSeq + 20);
             auto dsttag = dtag(i * 456);
             auto srctag = stag(i * 321);

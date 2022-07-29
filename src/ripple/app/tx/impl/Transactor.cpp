@@ -152,7 +152,17 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     std::size_t const signerCount =
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
-    return baseFee + (signerCount * baseFee);
+    std::uint32_t memoCount = 0;
+
+    if (tx.isFieldPresent(sfMemos) &&
+        view.rules().enabled(featureMemoFeeScaling))
+    {
+        Serializer s(2048);
+        tx.getFieldArray(sfMemos).add(s);
+        memoCount = 1 + static_cast<std::uint32_t>(s.size() / 32);
+    }
+
+    return baseFee * (1 + signerCount + memoCount);
 }
 
 XRPAmount
