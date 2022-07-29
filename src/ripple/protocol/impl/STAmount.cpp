@@ -1245,8 +1245,28 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
         v1.negative() != v2.negative());
 }
 
+// This is the legacy version of canonicalizeRound.  It's been in use
+// for years, so it is deeply embedded in the behavior of cross-currency
+// transactions.
+//
+// However in 2022 it was noticed that the rounding characteristics were
+// surprising.  When the code converts from IOU-like to XRP-like there may
+// be a fraction of the IOU-like representation that is too small to be
+// represented in drops.  `canonicalizeRound()` currently does some unusual
+// rounding.
+//
+//  1. If the fractional part is greater than or equal to 0.1, then the
+//     number of drops is rounded up.
+//
+//  2. However, if the fractional part is less than 0.1 (for example,
+//     0.099999), then the number of drops is rounded down.
+//
+// The XRP Ledger has this rounding behavior baked in.  But there are
+// situations where this rounding behavior led to undesirable outcomes.
+// So an alternative rounding approach was introduced.  You'll see that
+// alternative below.
 static void
-canonicalizeRound(bool native, std::uint64_t& value, int& offset)
+canonicalizeRound(bool native, std::uint64_t& value, int& offset, bool)
 {
     if (native)
     {
@@ -1280,8 +1300,56 @@ canonicalizeRound(bool native, std::uint64_t& value, int& offset)
     }
 }
 
-STAmount
-mulRound(
+// The original canonicalizeRound did not allow the rounding direction to
+// be specified.  It also ignored some of the bits that could contribute to
+// rounding decisions.  canonicalizeRoundStrict() tracks all of the bits in
+// the value being rounded.
+static void
+canonicalizeRoundStrict(
+    bool native,
+    std::uint64_t& value,
+    int& offset,
+    bool roundUp)
+{
+    if (native)
+    {
+        if (offset < 0)
+        {
+            bool hadRemainder = false;
+
+            while (offset < -1)
+            {
+                // It would be better to use std::lldiv than to separately
+                // compute the remainder.  But std::lldiv does not support
+                // unsigned arguments.
+                std::uint64_t const newValue = value / 10;
+                hadRemainder |= (value != (newValue * 10));
+                value = newValue;
+                ++offset;
+            }
+            value +=
+                (hadRemainder && roundUp) ? 10 : 9;  // Add before last divide
+            value /= 10;
+            ++offset;
+        }
+    }
+    else if (value > STAmount::cMaxValue)
+    {
+        while (value > (10 * STAmount::cMaxValue))
+        {
+            value /= 10;
+            ++offset;
+        }
+        value += 9;  // add before last divide
+        value /= 10;
+        ++offset;
+    }
+}
+
+// Pass the canonicalizeRound function as a template parameter.
+template <void (*CANONICALIZE)(bool, std::uint64_t&, int&, bool)>
+static STAmount
+mulRoundImpl(
     STAmount const& v1,
     STAmount const& v2,
     Issue const& issue,
@@ -1344,7 +1412,9 @@ mulRound(
 
     int offset = offset1 + offset2 + 14;
     if (resultNegative != roundUp)
-        canonicalizeRound(xrp, amount, offset);
+    {
+        CANONICALIZE(xrp, amount, offset, roundUp);
+    }
     STAmount result(issue, amount, offset, resultNegative);
 
     if (roundUp && !resultNegative && !result)
@@ -1364,6 +1434,26 @@ mulRound(
         return STAmount(issue, amount, offset, resultNegative);
     }
     return result;
+}
+
+STAmount
+mulRound(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp)
+{
+    return mulRoundImpl<canonicalizeRound>(v1, v2, issue, roundUp);
+}
+
+STAmount
+mulRoundStrict(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp)
+{
+    return mulRoundImpl<canonicalizeRoundStrict>(v1, v2, issue, roundUp);
 }
 
 STAmount
@@ -1416,7 +1506,7 @@ divRound(
     int offset = numOffset - denOffset - 17;
 
     if (resultNegative != roundUp)
-        canonicalizeRound(isXRP(issue), amount, offset);
+        canonicalizeRound(isXRP(issue), amount, offset, roundUp);
 
     STAmount result(issue, amount, offset, resultNegative);
     if (roundUp && !resultNegative && !result)

@@ -824,8 +824,15 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
+                    // Careful analysis showed that rounding up this divRound
+                    // result could lead to placing a reduced offer in the
+                    // ledger that blocks order books.  So the
+                    // fixReducedOffersV1 amendment changes the behavior to
+                    // round down instead.
+                    bool const roundUp =
+                        !psb.rules().enabled(fixReducedOffersV1);
                     afterCross.out = divRound(
-                        afterCross.in, rate, takerAmount.out.issue(), true);
+                        afterCross.in, rate, takerAmount.out.issue(), roundUp);
                 }
                 else
                 {
