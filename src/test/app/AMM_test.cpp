@@ -21,6 +21,7 @@
 #include <boost/regex.hpp>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
+#include <test/jtx/sendmax.h>
 
 #include <chrono>
 #include <utility>
@@ -1031,7 +1032,7 @@ private:
             ammAlice.withdrawAll(carol, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000),
-                STAmount{USD, static_cast<std::int64_t>(90909090909091), -10},
+                STAmount{USD, 90909090909091ULL, -10},
                 IOUAmount{10000000, 0}));
         });
 
@@ -1050,8 +1051,7 @@ private:
             BEAST_EXPECT(
                 ammAlice.expectBalances(
                     XRPAmount(11000000000),
-                    STAmount{
-                        USD, static_cast<std::int64_t>(937278106508876), -11},
+                    STAmount{USD, 937278106508876ULL, -11},
                     IOUAmount{1015384615384616, -8}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
         });
@@ -1063,8 +1063,7 @@ private:
             BEAST_EXPECT(
                 ammAlice.expectBalances(
                     XRPAmount(11000000000),
-                    STAmount{
-                        USD, static_cast<std::int64_t>(937278106508876), -11},
+                    STAmount{USD, 937278106508876ULL, -11},
                     IOUAmount{1015384615384616, -8}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
         });
