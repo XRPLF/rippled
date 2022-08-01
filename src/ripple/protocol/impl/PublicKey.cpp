@@ -221,6 +221,8 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
+    if (sig.size() == 0)
+        return false;
     if (publicKeyType(publicKey) != KeyType::secp256k1)
         LogicError("sign: secp256k1 required for digest signing");
     auto const canonicality = ecdsaCanonicality(sig);
