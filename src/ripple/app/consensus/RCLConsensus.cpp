@@ -211,15 +211,10 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     prop.set_nodepubkey(
         validatorKeys_.publicKey.data(), validatorKeys_.publicKey.size());
 
-    auto signingHash = sha512Half(
-        HashPrefix::proposal,
-        std::uint32_t(proposal.proposeSeq()),
-        proposal.closeTime().time_since_epoch().count(),
-        proposal.prevLedger(),
-        proposal.position());
-
     auto sig = signDigest(
-        validatorKeys_.publicKey, validatorKeys_.secretKey, signingHash);
+        validatorKeys_.publicKey,
+        validatorKeys_.secretKey,
+        proposal.signingHash());
 
     prop.set_signature(sig.data(), sig.size());
 
