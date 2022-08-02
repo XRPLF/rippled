@@ -37,6 +37,18 @@ toSTAmount(Issue const& issue, Number const& n)
     return STAmount{issue, n.mantissa(), n.exponent()};
 }
 
+template <typename A>
+STAmount
+toSTAmount(A const& a, Issue const& issue)
+{
+    if constexpr (std::is_same_v<IOUAmount, A>)
+        return toSTAmount(a, issue);
+    else if constexpr (std::is_same_v<XRPAmount, A>)
+        return toSTAmount(a);
+    else
+        return a;
+}
+
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
  * @param asset2 AMM another side of the pool reserve

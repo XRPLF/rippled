@@ -31,6 +31,7 @@
 namespace ripple {
 
 class ReadView;
+class ApplyView;
 class Sandbox;
 class STLedgerEntry;
 
@@ -101,10 +102,11 @@ lpHolds(
     beast::Journal const j);
 
 /** Validate the amount.
- * If zero is false and amount is beast::zero then bad amount.
+ * If zero is false and amount is beast::zero then invalid amount.
+ * Return error code if invalid amount.
  */
 std::optional<TEMcodes>
-validAmount(std::optional<STAmount> const& a, bool zero = false);
+invalidAmount(std::optional<STAmount> const& a, bool zero = false);
 
 /** Check if the line is frozen from the issuer.
  */
@@ -141,6 +143,16 @@ getTradingFee(SLE const& ammSle, AccountID const& account);
  */
 std::pair<Issue, Issue>
 getTokensIssue(SLE const& ammSle);
+
+/** Send w/o fees. Either from or to must be AMM account.
+ */
+TER
+ammSend(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount,
+    beast::Journal j);
 
 }  // namespace ripple
 
