@@ -66,11 +66,10 @@ enum class Supported : bool { no = false, yes };
 // When that happens then the log message in Application.cpp should be
 // updated.
 //
-// All amendments should be set as "DefaultVote::no" whilst amendments
-// that fix critical bugs should be set as "DefaultVote::Yes",
-// IF off-chain consensus is reached amongst code reviewers, 
-// validator operators, and other involved parties.
-// It is up to validators to enable an amendment.
+// Generally, amendments which introduce new features should be set as
+// "DefaultVote::no" whereas in rare cases, amendments that fix critical
+// bugs should be set as "DefaultVote::yes", if off-chain consensus is
+// reached amongst reviewers, validator operators, and other participants.
     
 class FeatureCollections
 {
