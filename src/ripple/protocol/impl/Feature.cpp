@@ -52,7 +52,7 @@ enum class Supported : bool { no = false, yes };
 // enabled using run-time conditionals based on the state of the amendment.
 // There is value in retaining that conditional code for some time after
 // the amendment is enabled to make it simple to replay old transactions.
-// However, once an Amendment has been enabled for, say, more than two years
+// However, once an amendment has been enabled for, say, more than two years
 // then retaining that conditional code has less value since it is
 // uncommon to replay such old transactions.
 //
@@ -61,11 +61,16 @@ enum class Supported : bool { no = false, yes };
 // 2018 needs to happen on an older version of the server code.  There's
 // a log message in Application.cpp that warns about replaying old ledgers.
 //
-// At some point in the future someone may wish to remove Amendment
-// conditional code for Amendments that were enabled after January 2018.
+// At some point in the future someone may wish to remove amendment
+// conditional code for amendments that were enabled after January 2018.
 // When that happens then the log message in Application.cpp should be
 // updated.
-
+//
+// All amendments should be set as "DefaultVote::no" whilst amendments
+// that fix critical bugs should be set as "DefaultVote::Yes",
+// IF off-chain consensus is reached between code reviewers, validators
+// and other involved parties. It is up to validators to enable an amendment.
+    
 class FeatureCollections
 {
     struct Feature
