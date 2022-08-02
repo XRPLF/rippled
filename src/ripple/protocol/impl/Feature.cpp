@@ -68,8 +68,9 @@ enum class Supported : bool { no = false, yes };
 //
 // All amendments should be set as "DefaultVote::no" whilst amendments
 // that fix critical bugs should be set as "DefaultVote::Yes",
-// IF off-chain consensus is reached between code reviewers, validators
-// and other involved parties. It is up to validators to enable an amendment.
+// IF off-chain consensus is reached amongst code reviewers, 
+// validator operators, and other involved parties.
+// It is up to validators to enable an amendment.
     
 class FeatureCollections
 {
