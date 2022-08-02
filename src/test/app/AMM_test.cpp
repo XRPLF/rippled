@@ -1154,6 +1154,26 @@ private:
                 std::nullopt,
                 ter(tecAMM_INVALID_TOKENS));
         });
+
+        // Eight votes fill all voting slots.
+        // New vote, new account. Fails since the account has
+        // fewer tokens share than in the vote slots.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            auto vote = [&](int i,
+                            std::int16_t tokens,
+                            std::optional<ter> ter = std::nullopt) {
+                Account a(std::to_string(i));
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, tokens);
+                ammAlice.vote(
+                    a, 500 * (i + 1), std::nullopt, std::nullopt, ter);
+            };
+            for (int i = 0; i < 8; ++i)
+                vote(i, 10000);
+            auto jv = ammAlice.ammRpcInfo();
+            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
+            vote(8, 10000, ter(tecAMM_FAILED_VOTE));
+        });
     }
 
     void
@@ -1202,24 +1222,6 @@ private:
             ammAlice.vote(a, 4500);
             jv = ammAlice.ammRpcInfo();
             BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2750);
-        });
-
-        // Eight votes fill all voting slots, set fee 2.25%.
-        // New vote, new account, same vote weight, fee is unchanged.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            auto vote = [&](int i) {
-                Account a(std::to_string(i));
-                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
-                ammAlice.deposit(a, 10000);
-                ammAlice.vote(a, 500 * (i + 1));
-            };
-            for (int i = 0; i < 8; ++i)
-                vote(i);
-            auto jv = ammAlice.ammRpcInfo();
-            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
-            vote(8);
-            jv = ammAlice.ammRpcInfo();
-            BEAST_EXPECT(jv && (*jv)[jss::TradingFee].asUInt() == 2250);
         });
 
         // Eight votes fill all voting slots, set fee 2.25%.
